@@ -1,0 +1,25 @@
+name: Publish appcast
+
+# Uploads a pre-signed appcast from docs/appcast/<tag>.xml to that release.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          cp "docs/appcast/$TAG.xml" appcast.xml
+          gh release upload "$TAG" appcast.xml --clobber
