@@ -455,7 +455,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             path = u.path
         }
         path = path.removingPercentEncoding ?? path
-        if let fragment, fragment.isEmpty { fragment = nil }
+        if fragment?.isEmpty == true { fragment = nil }
         guard !path.isEmpty else {
             // Same-document anchor: scroll in place.
             if let fragment { scrollToAnchor(fragment: fragment) }
@@ -481,7 +481,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             webView.call("scrollToSlot", json: String(block.slot))
         } else {
             // Fall back to the page's own anchor lookup (percent-decoding, case variants).
-            webView.call("scrollToFragment", json: (try? JSONSerialization.data(withJSONObject: ["fragment": fragment]).flatMap { String(data: $0, encoding: .utf8) }) ?? "")
+            let fragJSON = (try? JSONSerialization.data(withJSONObject: ["fragment": fragment]))
+                .flatMap { String(data: $0, encoding: .utf8) } ?? ""
+            webView.call("scrollToFragment", json: fragJSON)
         }
     }
 

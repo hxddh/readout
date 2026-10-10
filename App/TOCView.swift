@@ -21,7 +21,7 @@ struct TOCView: View {
             if model.toc.isEmpty {
                 VStack {
                     Spacer()
-                    Text("No headings")
+                    Text(NSLocalizedString("No headings", comment: "Sidebar empty"))
                         .font(.callout)
                         .foregroundStyle(.tertiary)
                     Spacer()

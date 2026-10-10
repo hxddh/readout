@@ -73,7 +73,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func open(_ url: URL, anchor: String? = nil) {
         let url = url.standardizedFileURL
         var isDir: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue else {
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
+              WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else {
             NSSound.beep()
             return
         }
@@ -210,7 +211,7 @@ struct WelcomeView: View {
             Text("Readout")
                 .font(.system(size: 22, weight: .semibold))
                 .padding(.top, 10)
-            Text("Read what your agents write.")
+            Text(NSLocalizedString("Read what your agents write.", comment: "Welcome subtitle"))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
 
@@ -219,7 +220,7 @@ struct WelcomeView: View {
                 .foregroundStyle(targeted ? Color.accentColor : Color.secondary.opacity(0.35))
                 .background(RoundedRectangle(cornerRadius: 12).fill(targeted ? Color.accentColor.opacity(0.06) : .clear))
                 .overlay(
-                    Text("Drop a Markdown file here")
+                    Text(NSLocalizedString("Drop a Markdown file here", comment: "Welcome drop target"))
                         .foregroundStyle(.secondary)
                 )
                 .frame(height: 96)
@@ -228,18 +229,24 @@ struct WelcomeView: View {
                 .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
                     for p in providers {
                         _ = p.loadObject(ofClass: URL.self) { url, _ in
-                            if let url { DispatchQueue.main.async { onOpenURL(url) } }
+                            guard let url else { return }
+                            let ext = url.pathExtension.lowercased()
+                            guard WorkspaceIndex.markdownExtensions.contains(ext) else {
+                                NSSound.beep()
+                                return
+                            }
+                            DispatchQueue.main.async { onOpenURL(url) }
                         }
                     }
                     return true
                 }
 
             HStack(spacing: 10) {
-                Button("Open…", action: onOpen)
+                Button(NSLocalizedString("Open…", comment: "Button"), action: onOpen)
                     .keyboardShortcut("o", modifiers: .command)
                 Button(action: onOpenLatest) {
                     HStack(spacing: 6) {
-                        Text("Open Latest")
+                        Text(NSLocalizedString("Open Latest", comment: "Button"))
                         if settings.hotKey != .none {
                             Text(settings.hotKey.title).foregroundStyle(.secondary)
                         }

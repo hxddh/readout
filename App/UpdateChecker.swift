@@ -57,15 +57,19 @@ enum UpdateChecker {
                 release = try? JSONDecoder().decode(Release.self, from: data)
             }
             DispatchQueue.main.async {
-                AppSettings.shared.lastUpdateCheck = Date()
                 guard let release else {
+                    // A failed background check must not push the weekly timer
+                    // forward: otherwise one offline launch silences updates
+                    // for another week. Only interactive runs record it.
                     if interactive {
+                        AppSettings.shared.lastUpdateCheck = Date()
                         alert(titleKey: "Could Not Check for Updates",
                               body: NSLocalizedString("Readout could not reach GitHub. Please try again later.", comment: "Update alert body"),
                               updateURL: nil)
                     }
                     return
                 }
+                AppSettings.shared.lastUpdateCheck = Date()
                 if isNewer(release.tag, than: currentVersion) {
                     alert(titleKey: "A New Version Is Available",
                           body: "\(release.name ?? release.tag)\n\n\((release.body ?? "").prefix(1200))",

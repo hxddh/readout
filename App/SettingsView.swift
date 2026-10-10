@@ -23,37 +23,37 @@ struct SettingsView: View {
                 .frame(minHeight: 96)
                 .overlay {
                     if settings.workspaces.isEmpty {
-                        Text("No folders yet")
+                        Text(NSLocalizedString("No folders yet", comment: "Settings empty"))
                             .foregroundStyle(.tertiary)
                     }
                 }
                 HStack {
-                    Button("Add Folder…", action: addFolder)
-                    Button("Remove") {
+                    Button(NSLocalizedString("Add Folder…", comment: "Button"), action: addFolder)
+                    Button(NSLocalizedString("Remove", comment: "Button")) {
                         if let s = selection { settings.workspaces.removeAll { $0 == s } }
                         selection = nil
                     }
                     .disabled(selection == nil)
                 }
             } header: {
-                Text("Agent folders")
+                Text(NSLocalizedString("Agent folders", comment: "Settings section"))
             } footer: {
-                Text("Readout watches these folders for Markdown files. The global shortcut opens the newest one.")
+                Text(NSLocalizedString("Readout watches these folders for Markdown files. The global shortcut opens the newest one.", comment: "Settings footer"))
                     .foregroundStyle(.secondary)
             }
 
             Section {
-                Picker("Global shortcut", selection: $settings.hotKey) {
+                Picker(NSLocalizedString("Global shortcut", comment: "Settings label"), selection: $settings.hotKey) {
                     ForEach(AppSettings.HotKeyChoice.allCases) { Text($0.title).tag($0) }
                 }
-                Picker("Open code references in", selection: $settings.editor) {
+                Picker(NSLocalizedString("Open code references in", comment: "Settings label"), selection: $settings.editor) {
                     ForEach(AppSettings.Editor.allCases) { Text($0.title).tag($0) }
                 }
             }
 
             Section {
-                Toggle("Check for updates automatically", isOn: $settings.checkForUpdatesAutomatically)
-                Text("Readout checks GitHub releases for new versions.")
+                Toggle(NSLocalizedString("Check for updates automatically", comment: "Settings label"), isOn: $settings.checkForUpdatesAutomatically)
+                Text(NSLocalizedString("Readout checks GitHub releases for new versions.", comment: "Settings footer"))
                     .foregroundStyle(.secondary)
             }
         }
