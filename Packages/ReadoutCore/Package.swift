@@ -15,6 +15,11 @@ let package = Package(
             name: "ReadoutCore",
             dependencies: [.product(name: "Markdown", package: "swift-markdown")]
         ),
+        .executableTarget(
+            name: "readout-dump",
+            dependencies: ["ReadoutCore"],
+            path: "Tools/readout-dump"
+        ),
         .testTarget(
             name: "ReadoutCoreTests",
             dependencies: ["ReadoutCore"]

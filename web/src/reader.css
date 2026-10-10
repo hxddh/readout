@@ -1,0 +1,384 @@
+/*
+  Readout reader stylesheet.
+  One idea carries the design: the text column is quiet and the change rail is the only voice.
+  Everything else follows the system: SF Pro, the user's accent colour, native light/dark.
+*/
+
+:root {
+  --bg: #ffffff;
+  --text: #1d1d1f;
+  --text-2: #5f5f66;
+  --text-3: #8e8e93;
+  --rule: #e6e6ea;
+  --fill: #f5f5f7;
+  --fill-2: #ececf0;
+  --link: #0a64d6;
+  --accent: #0a84ff;          /* replaced by the macOS accent colour at runtime */
+  --accent-soft: rgba(10, 132, 255, 0.10);
+  --mark-read: #c7c7cc;
+  --note: #0a64d6;
+  --tip: #1f8a4c;
+  --important: #8a4fd0;
+  --warning: #b26a00;
+  --caution: #c9342b;
+
+  --measure: 680px;
+  --size: 16px;
+  --lh: 1.65;
+  --lh-cjk: 1.8;
+  --gutter: 28px;
+
+  --font: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans", "Helvetica Neue", sans-serif;
+  --font-display: -apple-system, "SF Pro Display", "PingFang SC", "Hiragino Sans", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #1e1e1f;
+  --text: #e8e8ea;
+  --text-2: #a8a8ae;
+  --text-3: #7c7c82;
+  --rule: #38383b;
+  --fill: #2a2a2c;
+  --fill-2: #333336;
+  --link: #5aa9ff;
+  --accent-soft: rgba(10, 132, 255, 0.16);
+  --mark-read: #48484a;
+  --note: #5aa9ff;
+  --tip: #4cc27a;
+  --important: #b48af0;
+  --warning: #e0a03a;
+  --caution: #ff6b5e;
+  color-scheme: dark;
+}
+
+:root[data-width="wide"] { --measure: 920px; }
+
+* { box-sizing: border-box; }
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--size);
+  line-height: var(--lh);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  text-autospace: normal;
+  hanging-punctuation: first allow-end;
+  -webkit-text-size-adjust: 100%;
+}
+
+body { margin: 0; }
+
+::selection { background: var(--accent-soft); }
+
+#doc {
+  max-width: calc(var(--measure) + var(--gutter) * 2);
+  margin: 0 auto;
+  padding: 40px var(--gutter) 30vh;
+  position: relative;
+}
+
+/* Large documents: let WebKit skip layout for off-screen blocks. */
+#doc.cv > .blk {
+  content-visibility: auto;
+}
+
+/* ---------- Blocks ---------- */
+
+.blk { position: relative; }
+.blk.cjk { line-height: var(--lh-cjk); }
+
+.blk > p, .blk > ul, .blk > ol, .blk > blockquote, .blk > .table-wrap,
+.blk > .code-block, .blk > .alert, .blk > .math-block, .blk > .mermaid-block, .blk > hr {
+  margin: 0 0 1.1em;
+}
+
+p { margin: 0 0 1.1em; }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 650;
+  line-height: 1.3;
+  margin: 0;
+  scroll-margin-top: 24px;
+}
+.k-heading h1 { font-size: 1.85rem; letter-spacing: -0.015em; margin: 0.2em 0 0.7em; font-weight: 700; }
+.k-heading h2 { font-size: 1.4rem; letter-spacing: -0.01em; margin: 1.8em 0 0.6em; }
+.k-heading h3 { font-size: 1.14rem; margin: 1.5em 0 0.5em; }
+.k-heading h4 { font-size: 1rem; margin: 1.3em 0 0.4em; }
+.k-heading h5, .k-heading h6 { font-size: 0.94rem; margin: 1.2em 0 0.4em; color: var(--text-2); }
+#doc > .k-heading:first-child h1, #doc > .k-heading:first-child h2 { margin-top: 0; }
+
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+strong { font-weight: 650; }
+del { color: var(--text-3); }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--fill);
+  border-radius: 5px;
+  padding: 0.12em 0.36em;
+}
+code.path-link {
+  cursor: pointer;
+  color: var(--link);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+code.path-link:hover { background: var(--fill); }
+
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
+
+img { max-width: 100%; height: auto; border-radius: 6px; }
+
+/* Lists: each item is its own block, so spacing is applied per block. */
+ul.li-block, ol.li-block { margin: 0; padding-left: 1.5em; }
+ul.li-block.li-last, ol.li-block.li-last { margin-bottom: 1.1em; }
+.li-block.li-loose > li { margin-bottom: 0.5em; }
+.li-block li > ul, .li-block li > ol { padding-left: 1.4em; margin: 0.15em 0; }
+.li-block li > p { margin: 0 0 0.5em; }
+li { margin: 0.12em 0; }
+li::marker { color: var(--text-3); }
+ol.li-block > li::marker { font-variant-numeric: tabular-nums; }
+
+li.task { list-style: none; position: relative; }
+li.task > .task-box {
+  position: absolute;
+  left: -1.4em;
+  top: 0.32em;
+  width: 0.95em;
+  height: 0.95em;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1.25px var(--text-3);
+}
+li.task > .task-box.checked {
+  background: var(--accent);
+  box-shadow: none;
+}
+li.task > .task-box.checked::after {
+  content: "";
+  position: absolute;
+  left: 0.31em; top: 0.13em;
+  width: 0.24em; height: 0.48em;
+  border: solid #fff;
+  border-width: 0 0.13em 0.13em 0;
+  transform: rotate(45deg);
+}
+li.task:has(> .task-box.checked) { color: var(--text-2); }
+
+blockquote {
+  margin-left: 0;
+  padding: 0 0 0 1em;
+  border-left: 3px solid var(--rule);
+  color: var(--text-2);
+}
+blockquote > :last-child { margin-bottom: 0; }
+
+/* GitHub alerts */
+.alert {
+  padding: 0.7em 1em 0.75em;
+  border-radius: 8px;
+  background: var(--fill);
+  border-left: 3px solid var(--alert-c);
+}
+.alert > :last-child { margin-bottom: 0; }
+.alert code { background: var(--fill-2); }
+.alert-title { font-weight: 650; color: var(--alert-c); margin: 0 0 0.25em; font-size: 0.93em; }
+.alert-note { --alert-c: var(--note); }
+.alert-tip { --alert-c: var(--tip); }
+.alert-important { --alert-c: var(--important); }
+.alert-warning { --alert-c: var(--warning); }
+.alert-caution { --alert-c: var(--caution); }
+
+/* Front matter */
+.front-matter {
+  display: flex; flex-wrap: wrap; gap: 4px 18px;
+  font-size: 0.82rem; color: var(--text-3);
+  margin: 0 0 1.6em;
+}
+.fm-key { color: var(--text-2); font-weight: 600; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 0.92em; line-height: 1.5; min-width: 50%; }
+th, td { padding: 0.45em 0.9em 0.45em 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+th:last-child, td:last-child { padding-right: 0; }
+th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; }
+td { font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: 0; }
+.table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child {
+  position: sticky; left: 0; background: var(--bg); z-index: 1;
+}
+
+/* Code */
+.code-block {
+  position: relative;
+  background: var(--fill);
+  border-radius: 8px;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+.code-block pre {
+  margin: 0;
+  padding: 0.9em 1.05em;
+  overflow-x: auto;
+  font-family: var(--mono);
+  tab-size: 4;
+  background: transparent !important;
+}
+.code-block pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
+.code-block .cb-tools {
+  position: absolute; top: 6px; right: 6px;
+  display: flex; gap: 6px; align-items: center;
+  opacity: 0; transition: opacity 120ms;
+}
+.code-block:hover .cb-tools, .code-block:focus-within .cb-tools { opacity: 1; }
+.cb-lang { font-size: 0.72rem; color: var(--text-3); }
+.cb-copy {
+  font: inherit; font-size: 0.74rem;
+  border: 0; border-radius: 5px; padding: 2px 8px;
+  background: var(--bg); color: var(--text-2);
+  box-shadow: 0 0 0 1px var(--rule);
+  cursor: pointer;
+}
+.cb-copy:hover { color: var(--text); }
+
+/* Shiki dual themes */
+.shiki span { color: var(--shiki-light); }
+:root[data-theme="dark"] .shiki span { color: var(--shiki-dark); }
+.code-block[data-lang="diff"] .line.add { background: rgba(46, 160, 67, 0.14); display: inline-block; width: 100%; }
+.code-block[data-lang="diff"] .line.del { background: rgba(248, 81, 73, 0.14); display: inline-block; width: 100%; }
+
+/* Math */
+.math-block { overflow-x: auto; overflow-y: hidden; text-align: center; padding: 0.3em 0; }
+.math-block:not(.done), .math:not(.done) { font-family: var(--mono); font-size: 0.86em; color: var(--text-2); }
+.math-block:not(.done) { white-space: pre-wrap; text-align: left; }
+.math-inline.done { font-size: 1.02em; }
+
+/* Mermaid */
+.mermaid-block { overflow-x: auto; text-align: center; }
+.mermaid-block svg { max-width: 100% !important; height: auto; }
+.mermaid-src {
+  text-align: left; margin: 0; padding: 0.9em 1.05em; border-radius: 8px;
+  background: var(--fill); font-family: var(--mono); font-size: 0.82rem; color: var(--text-2);
+  white-space: pre-wrap;
+}
+.mermaid-block.done .mermaid-src { display: none; }
+.mermaid-error { font-size: 0.8rem; color: var(--caution); margin-top: 0.4em; text-align: left; }
+
+/* Remote images */
+.remote-img button {
+  font: inherit; font-size: 0.82rem;
+  border: 1px dashed var(--rule); border-radius: 8px;
+  background: transparent; color: var(--text-2);
+  padding: 0.6em 1em; cursor: pointer;
+}
+
+/* ---------- Change awareness ---------- */
+
+.blk::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--gutter) + 10px);
+  top: 0.25em;
+  bottom: 1.1em;
+  width: 3px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 600ms ease, opacity 600ms ease;
+}
+.k-heading::before { top: 0.6em; bottom: 0.2em; }
+.blk.m-inserted::before { background: var(--accent); }
+.blk.m-modified::before { background: var(--accent); opacity: 0.55; }
+.blk.m-read::before { background: var(--mark-read); opacity: 1; }
+.blk.m-state::before { background: var(--accent); width: 5px; height: 5px; bottom: auto; top: 0.7em; left: calc(-1 * var(--gutter) + 9px); border-radius: 50%; }
+.blk.m-state.m-read::before { background: var(--mark-read); }
+
+.del-mark {
+  position: relative;
+  height: 0;
+}
+.del-mark > button {
+  position: absolute;
+  left: calc(-1 * var(--gutter) + 5px);
+  top: -0.85em;
+  width: 13px; height: 13px;
+  padding: 0; border: 0; background: transparent; cursor: pointer;
+}
+.del-mark > button::before {
+  content: "";
+  position: absolute; left: 1px; top: 2px;
+  border-left: 6px solid var(--accent);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.del-mark.m-read > button::before { border-left-color: var(--mark-read); }
+.del-pop {
+  position: absolute;
+  left: 0; right: 0; top: 0.2em; z-index: 5;
+  max-height: 14em; overflow: auto;
+  margin: 0; padding: 0.7em 0.9em;
+  font-family: var(--mono); font-size: 0.78rem; line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  background: var(--bg);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.12);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--caution) 55%, transparent);
+}
+
+/* Flash for blocks that just changed while visible */
+@keyframes arrive { from { background: var(--accent-soft); } to { background: transparent; } }
+.blk.flash { animation: arrive 1.2s ease-out; border-radius: 4px; }
+
+/* The rail: a thin track on the right edge that maps unread changes onto the document. */
+#rail {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 8px;
+  pointer-events: none; z-index: 10;
+}
+#rail > i {
+  position: absolute; right: 2px; width: 4px; height: 3px; border-radius: 2px;
+  background: var(--accent); pointer-events: auto; cursor: pointer;
+}
+#rail > i.mod { opacity: 0.55; }
+
+/* Rewrite notice */
+#notice {
+  position: sticky; top: 10px; z-index: 20;
+  margin: 0 auto 1.4em; width: max-content; max-width: 100%;
+  font-size: 0.8rem; color: var(--text-2);
+  background: var(--bg); padding: 4px 12px; border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--rule);
+  transition: opacity 400ms;
+}
+#notice[hidden] { display: none; }
+
+/* Empty state */
+#empty { color: var(--text-3); font-size: 0.95rem; padding-top: 18vh; text-align: center; }
+
+/* QuickLook: no change UI */
+:root[data-mode="quicklook"] #rail, :root[data-mode="quicklook"] .blk::before { display: none; }
+:root[data-mode="quicklook"] #doc { padding-top: 28px; padding-bottom: 40px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .blk.flash { animation: none; }
+  .blk::before, .code-block .cb-tools { transition: none; }
+}
+
+@media print {
+  #rail, #notice, .cb-tools, .del-mark { display: none !important; }
+  .blk::before { display: none; }
+  #doc { padding: 0; max-width: none; }
+  #doc.cv > .blk { content-visibility: visible; }
+  .code-block pre { white-space: pre-wrap; }
+}
