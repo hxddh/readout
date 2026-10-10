@@ -25,7 +25,7 @@ enum HTML {
                                      "script", "plaintext", "object", "embed", "base", "meta", "link", "form"]
 
     private static let remoteMediaSrc = try! NSRegularExpression(
-        pattern: #"<(img|video|audio|source|track)\b([^>]*?)\s(src|srcset)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#,
+        pattern: #"<(img|video|audio|source|track)\b[^>]*?\s(src|srcset)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)[^>]*>?"#,
         options: .caseInsensitive)
 
     /// GFM tagfilter plus removal of event handlers and javascript: URLs.
@@ -53,16 +53,21 @@ enum HTML {
         var last = 0
         for m in matches {
             out += ns.substring(with: NSRange(location: last, length: m.range.location - last))
-            let urlValue = ns.substring(with: m.range(at: 4))
+            let urlValue = ns.substring(with: m.range(at: 3))
             let unquoted = urlValue.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
             let lower = unquoted.lowercased()
             let isRemote = lower.hasPrefix("http://") || lower.hasPrefix("https://") || lower.hasPrefix("//")
+            var end = m.range.location + m.range.length
             if isRemote {
+                let tag = ns.substring(with: m.range(at: 1)).lowercased()
+                // Swallow an immediately following empty close tag: <video src="…"></video>.
+                let close = "</\(tag)>"
+                if ns.substring(from: end).lowercased().hasPrefix(close) { end += close.count }
                 out += "<span class=\"remote-img\" data-src=\"\(escape(unquoted))\" data-alt=\"\"></span>"
             } else {
                 out += ns.substring(with: m.range)
             }
-            last = m.range.location + m.range.length
+            last = end
         }
         out += ns.substring(from: last)
         return out
