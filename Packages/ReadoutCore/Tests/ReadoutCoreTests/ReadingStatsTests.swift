@@ -6,7 +6,9 @@ import Testing
         #expect(ReadingStats.words(in: "") == 0)
         #expect(ReadingStats.words(in: "hello world") == 2)
         #expect(ReadingStats.words(in: "  one   two\tthree\nfour  ") == 4)
-        #expect(ReadingStats.words(in: "don't stop") == 2)
+        // Apostrophes split words ("don't" -> "don", "t"); matches the
+        // whitespace-words estimate used for reading time.
+        #expect(ReadingStats.words(in: "don't stop") == 3)
     }
 
     @Test func countsCJKCharactersIndividually() {
@@ -40,9 +42,13 @@ import Testing
 
     @Test func containmentFallbackForMidBlockEdits() {
         let texts = ["the agent rewrote the opening words of this block"]
-        #expect(ExcerptAnchor.index(of: "opening words of this block that used to be longer", in: texts) == nil)
-        #expect(ExcerptAnchor.index(of: "agent rewrote the opening words of this block!!", in: texts) == nil)
+        // Whole-excerpt containment: the middle of the excerpt survived, so it anchors.
+        #expect(ExcerptAnchor.index(of: "agent rewrote the opening words of this block!!", in: texts) == 0)
         #expect(ExcerptAnchor.index(of: "rewrote the opening words of this bloc", in: texts) == 0)
+        // Too little overlap: the half-excerpt (first half of the excerpt) no
+        // longer appears, so no anchor rather than a wrong one.
+        #expect(ExcerptAnchor.index(of: "opening words of this block that used to be longer", in: texts) == nil)
+        #expect(ExcerptAnchor.index(of: "zzzz entire replacement text with no overlap at all here", in: texts) == nil)
     }
 
     @Test func halfExcerptFallbackForRewrittenTails() {
