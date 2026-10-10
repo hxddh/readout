@@ -24,9 +24,6 @@ settings:
 packages:
   ReadoutCore:
     path: Packages/ReadoutCore
-  Sparkle:
-    url: https://github.com/sparkle-project/Sparkle
-    from: "2.9.0"
 
 targets:
   Readout:
@@ -42,7 +39,6 @@ targets:
         buildPhase: resources
     dependencies:
       - package: ReadoutCore
-      - package: Sparkle
       - target: ReadoutQuickLook
         embed: true
         codeSign: true
@@ -60,13 +56,10 @@ targets:
         NSPrincipalClass: NSApplication
         NSSupportsAutomaticTermination: false
         NSSupportsSuddenTermination: false
-        SUFeedURL: https://github.com/hxddh/readout/releases/latest/download/appcast.xml
-        SUPublicEDKey: $(SPARKLE_PUBLIC_KEY)
-        SUEnableAutomaticChecks: true
         CFBundleDocumentTypes:
           - CFBundleTypeName: Markdown Document
             CFBundleTypeRole: Viewer
-            LSHandlerRank: Default
+            LSHandlerRank: Alternate
             LSItemContentTypes:
               - net.daringfireball.markdown
               - io.github.hxddh.readout.markdown
@@ -88,7 +81,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.hxddh.readout
         PRODUCT_NAME: Readout
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        SPARKLE_PUBLIC_KEY: "Xh2SczsdPO3XM/AN6Hwy7Z3dqDvqhg0CiDqZyWiAkkY="
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
         CODE_SIGN_ENTITLEMENTS: App/Readout.entitlements
 

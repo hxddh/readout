@@ -42,6 +42,8 @@ final class AppSettings: ObservableObject {
     @Published var fontSize: Double { didSet { d.set(fontSize, forKey: "fontSize") } }
     @Published var wide: Bool { didSet { d.set(wide, forKey: "wide") } }
     @Published var showSidebar: Bool { didSet { d.set(showSidebar, forKey: "showSidebar") } }
+    @Published var checkForUpdatesAutomatically: Bool { didSet { d.set(checkForUpdatesAutomatically, forKey: "checkForUpdatesAutomatically") } }
+    @Published var lastUpdateCheck: Date? { didSet { d.set(lastUpdateCheck, forKey: "lastUpdateCheck") } }
 
     private init() {
         var ws = d.stringArray(forKey: "workspaces")
@@ -57,6 +59,8 @@ final class AppSettings: ObservableObject {
         fontSize = fs == 0 ? 16 : fs
         wide = d.bool(forKey: "wide")
         showSidebar = d.object(forKey: "showSidebar") as? Bool ?? true
+        checkForUpdatesAutomatically = d.object(forKey: "checkForUpdatesAutomatically") as? Bool ?? true
+        lastUpdateCheck = d.object(forKey: "lastUpdateCheck") as? Date
     }
 }
 
@@ -113,7 +117,11 @@ enum BaselineStore {
 enum EditorOpener {
     static func open(path: String, line: Int, column: Int) {
         let editor = AppSettings.shared.editor
-        let enc = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? path
+        // urlPathAllowed leaves "?" and "#" unescaped: a file literally named
+        // "foo#bar.md" would truncate the editor URL at the fragment.
+        var allowed = CharacterSet.urlPathAllowed
+        allowed.remove(charactersIn: "?#")
+        let enc = path.addingPercentEncoding(withAllowedCharacters: allowed) ?? path
         let pos = line > 0 ? ":\(line)" + (column > 0 ? ":\(column)" : "") : ""
         var url: URL?
         switch editor {

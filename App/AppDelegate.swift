@@ -1,7 +1,6 @@
 import AppKit
 import SwiftUI
 import Combine
-import Sparkle
 import UniformTypeIdentifiers
 
 @MainActor
@@ -12,7 +11,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var hotKey: GlobalHotKey?
     private var cancellables: Set<AnyCancellable> = []
     private var openedAtLaunch = false
-    private(set) var updater: SPUStandardUpdaterController?
 
     static let markdownTypes: [UTType] = {
         var types: [UTType] = [UTType("net.daringfireball.markdown")].compactMap { $0 }
@@ -32,10 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func applicationDidFinishLaunching(_ notification: Notification) {
         WebViewPool.shared.prewarm()
         BaselineStore.prune()
-
-        let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? ""
-        updater = SPUStandardUpdaterController(startingUpdater: !key.isEmpty, updaterDelegate: nil, userDriverDelegate: nil)
-        MainMenu.attachUpdater(updater)
+        UpdateChecker.scheduleAutomaticCheck()
 
         let settings = AppSettings.shared
         settings.$hotKey.sink { [weak self] choice in
@@ -150,7 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func showSettings(_ sender: Any?) {
         if settingsWindow == nil {
-            let host = NSHostingController(rootView: SettingsView(updater: updater?.updater))
+            let host = NSHostingController(rootView: SettingsView())
             let w = NSWindow(contentViewController: host)
             w.title = NSLocalizedString("Settings", comment: "Window title")
             w.styleMask = [.titled, .closable]
@@ -167,6 +162,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     @objc func biggerText(_ sender: Any?) { AppSettings.shared.fontSize = min(24, AppSettings.shared.fontSize + 1) }
     @objc func smallerText(_ sender: Any?) { AppSettings.shared.fontSize = max(12, AppSettings.shared.fontSize - 1) }
     @objc func actualSizeText(_ sender: Any?) { AppSettings.shared.fontSize = 16 }
+
+    @objc func checkForUpdates(_ sender: Any?) { UpdateChecker.check(interactive: true) }
 
     // MARK: Command line tool
 

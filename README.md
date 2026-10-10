@@ -25,7 +25,7 @@ Download `Readout-x.y.z.dmg` from [Releases](https://github.com/hxddh/readout/re
 
 If the build you downloaded is not notarized, macOS will refuse to open it the first time. Open **System Settings → Privacy & Security**, find the message about Readout and click **Open Anyway**.
 
-Readout updates itself through Sparkle (**Readout → Check for Updates…**).
+Readout checks GitHub Releases for new versions (**Readout → Check for Updates…**).
 
 ## Command line and agent hooks
 
@@ -57,7 +57,7 @@ To have Claude Code open Markdown files in Readout as soon as it writes them, ad
 
 | Key | Action |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd> | Next / previous unread change |
+| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change |
 | <kbd>⌘K</kbd> | Mark all as read |
 | <kbd>⌘F</kbd>, <kbd>⌘G</kbd> | Find, find next |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Text size |

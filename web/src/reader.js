@@ -329,11 +329,16 @@ function drawRail() {
   if (!list.length || total <= window.innerHeight) return;
   const scrollTop = document.scrollingElement.scrollTop;
   const h = window.innerHeight;
-  for (const el of list) {
+  for (let i = 0; i < list.length; i++) {
+    const el = list[i];
     const top = el.getBoundingClientRect().top + scrollTop;
-    const tick = document.createElement('i');
-    tick.style.top = `${Math.min(h - 4, (top / total) * h)}px`;
+    const tick = document.createElement('button');
+    tick.type = 'button';
+    const kind = el.classList.contains('m-modified') ? 'edited'
+      : el.classList.contains('del-mark') ? 'removed' : 'added';
     if (el.classList.contains('m-modified')) tick.className = 'mod';
+    tick.style.top = `${Math.min(h - 4, (top / total) * h)}px`;
+    tick.setAttribute('aria-label', `Unread change ${i + 1} of ${list.length}: ${kind}`);
     tick.addEventListener('click', () => el.scrollIntoView({ block: 'center' }));
     rail.appendChild(tick);
   }

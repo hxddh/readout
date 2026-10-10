@@ -27,7 +27,7 @@ case "$1" in
     path=$(printf '%s' "$input" | /usr/bin/plutil -extract tool_input.file_path raw -o - - 2>/dev/null)
     [ -n "$path" ] && is_markdown "$path" && [ -f "$path" ] && exec /usr/bin/open -g -b "$APP_ID" "$path"
     exit 0 ;;
-  -b|--background) shift; exec /usr/bin/open -g -b "$APP_ID" "$@" ;;
+  -b|--background) shift; exec /usr/bin/open -g -b "$APP_ID" -- "$@" ;;
   "") exec /usr/bin/open -b "$APP_ID" ;;
-  *) exec /usr/bin/open -b "$APP_ID" "$@" ;;
+  *) exec /usr/bin/open -b "$APP_ID" -- "$@" ;;
 esac

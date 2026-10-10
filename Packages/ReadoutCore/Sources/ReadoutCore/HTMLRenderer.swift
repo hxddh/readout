@@ -84,13 +84,27 @@ struct HTMLRenderer {
     private func autolink(_ text: String) -> String {
         guard text.utf8.contains(0x3A) /* ":" */ else { return HTML.escape(text) }
         let ns = text as NSString
+        let fullLength = ns.length
         var out = ""
         var last = 0
-        for m in HTMLRenderer.urlRegex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+        for m in HTMLRenderer.urlRegex.matches(in: text, range: NSRange(location: 0, length: fullLength)) {
             out += HTML.escape(ns.substring(with: NSRange(location: last, length: m.range.location - last)))
-            let url = ns.substring(with: m.range)
+            // The regex strips every trailing ")", but GFM keeps balanced
+            // ones: https://en.wikipedia.org/wiki/X_(film) must link fully.
+            // Reclaim ")" chars that follow the match while parens balance.
+            var url = ns.substring(with: m.range)
+            var end = m.range.location + m.range.length
+            var open = 0
+            for ch in url.utf16 {
+                if ch == 0x28 { open += 1 } else if ch == 0x29 { open -= 1 }
+            }
+            while open > 0, end < fullLength, ns.character(at: end) == 0x29 /* ")" */ {
+                url.append(")")
+                end += 1
+                open -= 1
+            }
             out += "<a href=\"\(HTML.escape(url))\">\(HTML.escape(url))</a>"
-            last = m.range.location + m.range.length
+            last = end
         }
         out += HTML.escape(ns.substring(from: last))
         return out

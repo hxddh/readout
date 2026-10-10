@@ -1,10 +1,7 @@
 import SwiftUI
-import Sparkle
 
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
-    let updater: SPUUpdater?
-    @State private var autoUpdate = true
     @State private var selection: String?
 
     var body: some View {
@@ -54,12 +51,10 @@ struct SettingsView: View {
                 }
             }
 
-            if let updater {
-                Section {
-                    Toggle("Check for updates automatically", isOn: $autoUpdate)
-                        .onChange(of: autoUpdate) { _, v in updater.automaticallyChecksForUpdates = v }
-                }
-                .onAppear { autoUpdate = updater.automaticallyChecksForUpdates }
+            Section {
+                Toggle("Check for updates automatically", isOn: $settings.checkForUpdatesAutomatically)
+                Text("Readout checks GitHub releases for new versions.")
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

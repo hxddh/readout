@@ -117,14 +117,46 @@ import Testing
         #expect(!html.contains("<script"))
     }
 
+    @Test func remoteMediaRequiresConsent() {
+        let doc = parse("<img src=\"https://evil.example/x.png\" alt=\"x\">\n\n<video src=\"https://evil.example/v.mp4\"></video>\n\n<img src=\"local/pic.png\">\n")
+        let html = doc.blocks.map(\.html).joined()
+        #expect(!html.contains("evil.example/x.png\""))
+        #expect(!html.contains("evil.example/v.mp4\""))
+        #expect(html.contains("remote-img"))
+        #expect(html.contains("local/pic.png"))
+    }
+
     @Test func autolinksBareURLs() {
         let doc = parse("See https://example.com/a_b, then stop.")
         #expect(doc.blocks[0].html.contains("<a href=\"https://example.com/a_b\">"))
     }
 
+    @Test func autolinkKeepsBalancedParens() {
+        let doc = parse("See https://en.wikipedia.org/wiki/X_(film) end.")
+        #expect(doc.blocks[0].html.contains("<a href=\"https://en.wikipedia.org/wiki/X_(film)\">"))
+        let wrapped = parse("(see https://example.com/foo) done.")
+        #expect(wrapped.blocks[0].html.contains("<a href=\"https://example.com/foo\">"))
+        #expect(!wrapped.blocks[0].html.contains("foo)</a>"))
+    }
+
+    @Test func displayMathBrackets() {
+        let doc = parse("Einstein said \\[E = mc^2\\] loudly.\n")
+        #expect(doc.blocks[0].html.contains("data-tex=\"E = mc^2\""))
+        #expect(!doc.blocks[0].html.contains("\\["))
+    }
+
     @Test func duplicateHeadingSlugs() {
         let doc = parse("## Notes\n\n## Notes\n\n## 实现 细节\n")
         #expect(doc.blocks.map { $0.anchor } == ["notes", "notes-1", "实现-细节"])
+    }
+
+    @Test func explicitSlugCollisionStaysUnique() {
+        let doc = parse("## Notes\n\n## Notes-1\n\n## Notes\n")
+        let anchors = doc.blocks.map { $0.anchor }
+        #expect(anchors[0] == "notes")
+        #expect(anchors[1] == "notes-1")
+        #expect(anchors[2] != "notes-1")
+        #expect(Set(anchors).count == 3)
     }
 
     @Test func cjkDetection() {

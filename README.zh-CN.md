@@ -25,7 +25,7 @@ Agent 会把计划、规格、分析报告和代码解释写成很长的 Markdow
 
 如果下载的版本未经公证，首次打开会被系统拦截：打开**系统设置 → 隐私与安全性**，找到关于 Readout 的提示，点击**仍要打开**。
 
-Readout 通过 Sparkle 自动更新（**Readout → 检查更新…**）。
+Readout 会检查 GitHub Releases 获取新版本（**Readout → 检查更新…**）。
 
 ## 命令行与 Agent hook
 
@@ -57,7 +57,7 @@ readout -b plan.md       # 打开但不切换应用
 
 | 按键 | 作用 |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd> | 下一处 / 上一处未读变更 |
+| <kbd>N</kbd> / <kbd>⇧N</kbd>（或 <kbd>⌘]</kbd> / <kbd>⌘[</kbd>） | 下一处 / 上一处未读变更 |
 | <kbd>⌘K</kbd> | 全部标为已读 |
 | <kbd>⌘F</kbd>、<kbd>⌘G</kbd> | 查找、查找下一个 |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | 文字大小 |

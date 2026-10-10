@@ -55,6 +55,7 @@ final class FileWatcher {
     enum Change { case modified, deleted }
 
     let url: URL
+    private let canonicalExactPath: String
     private let canonicalPath: String
     private var stream: FSEventsStream?
     private var pollTimer: DispatchSourceTimer?
@@ -71,7 +72,8 @@ final class FileWatcher {
 
     init(url: URL, onChange: @escaping (Change) -> Void) {
         self.url = url
-        self.canonicalPath = url.resolvingSymlinksInPath().standardizedFileURL.path.lowercased()
+        self.canonicalExactPath = url.resolvingSymlinksInPath().standardizedFileURL.path
+        self.canonicalPath = canonicalExactPath.lowercased()
         self.onChange = onChange
         start()
     }
@@ -110,9 +112,13 @@ final class FileWatcher {
     }
 
     private func handle(_ events: [FSEventsStream.Event]) {
-        for e in events where e.path.lowercased() == canonicalPath {
-            schedule()
-            return
+        for e in events {
+            // Exact match first: on case-sensitive volumes "Readme.md" and
+            // "README.md" are different files and must not alias each other.
+            if e.path == canonicalExactPath || e.path.lowercased() == canonicalPath {
+                schedule()
+                return
+            }
         }
         // A watched-root change (directory moved/removed) also warrants a re-check.
         if events.contains(where: { $0.flags & UInt32(kFSEventStreamEventFlagRootChanged) != 0 }) { schedule() }

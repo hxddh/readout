@@ -1,0 +1,108 @@
+import AppKit
+
+/// Lightweight update checker backed by GitHub Releases.
+///
+/// Replaces the Sparkle dependency: Sparkle's embedded XPC services must be
+/// signed with the same Developer ID as the host app, which ad-hoc and
+/// mismatched distribution builds cannot satisfy — the app then dies at
+/// launch inside dyld while loading the framework. Checking the public
+/// releases API needs no bundled executable code and no signing relationship.
+@MainActor
+enum UpdateChecker {
+    private static let latestURL = URL(string: "https://api.github.com/repos/hxddh/readout/releases/latest")!
+    private static let releasesURL = URL(string: "https://github.com/hxddh/readout/releases")!
+
+    private struct Release: Decodable {
+        var tag: String
+        var name: String?
+        var body: String?
+        var htmlURL: URL?
+
+        enum CodingKeys: String, CodingKey {
+            case tag = "tag_name"
+            case name
+            case body
+            case htmlURL = "html_url"
+        }
+    }
+
+    private static var currentVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+    }
+
+    /// Compares dotted version strings numerically ("1.0.0" < "1.0.10").
+    static func isNewer(_ tag: String, than current: String) -> Bool {
+        func parts(_ s: String) -> [Int] {
+            s.trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
+                .split(separator: ".")
+                .map { Int($0.split(separator: "-").first ?? $0) ?? 0 }
+        }
+        let a = parts(tag), b = parts(current)
+        for i in 0..<max(a.count, b.count) {
+            let x = i < a.count ? a[i] : 0, y = i < b.count ? b[i] : 0
+            if x != y { return x > y }
+        }
+        return false
+    }
+
+    /// Runs one check. When `interactive` is false, stays silent unless an update is found.
+    static func check(interactive: Bool) {
+        var request = URLRequest(url: latestURL, timeoutInterval: 20)
+        request.setValue("Readout/\(currentVersion)", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            var release: Release?
+            if let data, (response as? HTTPURLResponse)?.statusCode == 200 {
+                release = try? JSONDecoder().decode(Release.self, from: data)
+            }
+            DispatchQueue.main.async {
+                AppSettings.shared.lastUpdateCheck = Date()
+                guard let release else {
+                    if interactive {
+                        alert(titleKey: "Could Not Check for Updates",
+                              body: NSLocalizedString("Readout could not reach GitHub. Please try again later.", comment: "Update alert body"),
+                              updateURL: nil)
+                    }
+                    return
+                }
+                if isNewer(release.tag, than: currentVersion) {
+                    alert(titleKey: "A New Version Is Available",
+                          body: "\(release.name ?? release.tag)\n\n\((release.body ?? "").prefix(1200))",
+                          updateURL: release.htmlURL ?? releasesURL)
+                } else if interactive {
+                    alert(titleKey: "You're Up to Date",
+                          body: String(format: NSLocalizedString("Readout %@ is the latest version.", comment: "Update alert body"), currentVersion),
+                          updateURL: nil)
+                }
+            }
+        }.resume()
+    }
+
+    /// Schedules the weekly background check. Called once at launch.
+    static func scheduleAutomaticCheck() {
+        guard AppSettings.shared.checkForUpdatesAutomatically else { return }
+        let last = AppSettings.shared.lastUpdateCheck ?? .distantPast
+        guard Date().timeIntervalSince(last) > 7 * 86400 else { return }
+        // Delay so the check never slows down launch.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+            guard AppSettings.shared.checkForUpdatesAutomatically else { return }
+            check(interactive: false)
+        }
+    }
+
+    private static func alert(titleKey: String, body: String, updateURL: URL?) {
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString(titleKey, comment: "Update alert title")
+        alert.informativeText = body
+        if let updateURL {
+            alert.addButton(withTitle: NSLocalizedString("Download Update", comment: "Button"))
+            alert.addButton(withTitle: NSLocalizedString("Later", comment: "Button"))
+            NSApp.activate()
+            if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(updateURL) }
+        } else {
+            NSApp.activate()
+            alert.runModal()
+        }
+    }
+}

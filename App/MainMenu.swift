@@ -1,10 +1,8 @@
 import AppKit
-import Sparkle
 
 /// The application menu, built in code.
 @MainActor
 enum MainMenu {
-    private static var updateItem: NSMenuItem?
     private static let recentDelegate = RecentMenuDelegate()
 
     static func build(appDelegate: AppDelegate) -> NSMenu {
@@ -15,9 +13,7 @@ enum MainMenu {
         let app = NSMenu(title: appName)
         app.addItem(withTitle: String(format: NSLocalizedString("About %@", comment: "Menu"), appName),
                     action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
-        let update = NSMenuItem(title: NSLocalizedString("Check for Updates…", comment: "Menu"), action: nil, keyEquivalent: "")
-        updateItem = update
-        app.addItem(update)
+        app.addItem(item(NSLocalizedString("Check for Updates…", comment: "Menu"), #selector(AppDelegate.checkForUpdates(_:))))
         app.addItem(.separator())
         app.addItem(item(NSLocalizedString("Settings…", comment: "Menu"), #selector(AppDelegate.showSettings(_:)), ","))
         app.addItem(item(NSLocalizedString("Install Command Line Tool…", comment: "Menu"), #selector(AppDelegate.installCommandLineTool(_:))))
@@ -106,16 +102,6 @@ enum MainMenu {
         add(help, to: main)
 
         return main
-    }
-
-    static func attachUpdater(_ controller: SPUStandardUpdaterController?) {
-        guard let item = updateItem else { return }
-        if let controller, Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String != "" {
-            item.target = controller
-            item.action = #selector(SPUStandardUpdaterController.checkForUpdates(_:))
-        } else {
-            item.isHidden = true
-        }
     }
 
     private static func item(_ title: String, _ action: Selector?, _ key: String = "",

@@ -24,7 +24,14 @@ enum HTML {
     private static let deniedTags = ["title", "textarea", "style", "xmp", "iframe", "noembed", "noframes",
                                      "script", "plaintext", "object", "embed", "base", "meta", "link", "form"]
 
+    private static let remoteMediaSrc = try! NSRegularExpression(
+        pattern: #"<(img|video|audio|source|track)\b([^>]*?)\s(src|srcset)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#,
+        options: .caseInsensitive)
+
     /// GFM tagfilter plus removal of event handlers and javascript: URLs.
+    /// Remote media sources are replaced with a click-to-load placeholder so
+    /// raw HTML cannot phone home without the reader's consent — the same
+    /// gate Markdown images go through.
     static func sanitize(_ raw: String) -> String {
         var s = raw
         for tag in deniedTags {
@@ -34,13 +41,38 @@ enum HTML {
         s = s.replacingOccurrences(of: #"\son[a-zA-Z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, with: "",
                                    options: .regularExpression)
         s = s.replacingOccurrences(of: "javascript:", with: "blocked:", options: .caseInsensitive)
+        s = gateRemoteMedia(s)
         return s
+    }
+
+    private static func gateRemoteMedia(_ s: String) -> String {
+        let ns = s as NSString
+        let matches = remoteMediaSrc.matches(in: s, range: NSRange(location: 0, length: ns.length))
+        guard !matches.isEmpty else { return s }
+        var out = ""
+        var last = 0
+        for m in matches {
+            out += ns.substring(with: NSRange(location: last, length: m.range.location - last))
+            let urlValue = ns.substring(with: m.range(at: 4))
+            let unquoted = urlValue.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+            let lower = unquoted.lowercased()
+            let isRemote = lower.hasPrefix("http://") || lower.hasPrefix("https://") || lower.hasPrefix("//")
+            if isRemote {
+                out += "<span class=\"remote-img\" data-src=\"\(escape(unquoted))\" data-alt=\"\"></span>"
+            } else {
+                out += ns.substring(with: m.range)
+            }
+            last = m.range.location + m.range.length
+        }
+        out += ns.substring(from: last)
+        return out
     }
 }
 
 /// GitHub-compatible heading slugs, with per-document de-duplication.
 public struct Slugger {
     private var seen: [String: Int] = [:]
+    private var used: Set<String> = []
     public init() {}
 
     public static func slug(_ text: String) -> String {
@@ -58,13 +90,19 @@ public struct Slugger {
 
     public mutating func next(_ text: String) -> String {
         let base = Slugger.slug(text)
-        if let n = seen[base] {
-            seen[base] = n + 1
-            let candidate = "\(base)-\(n)"
-            return candidate
+        // An explicit "Notes-1" heading followed by a repeated "Notes" would
+        // otherwise both claim "notes-1": keep probing until the candidate is
+        // actually unused.
+        var n = seen[base] ?? 0
+        var candidate = base
+        if n > 0 { candidate = "\(base)-\(n)" }
+        while used.contains(candidate) {
+            n += 1
+            candidate = "\(base)-\(n)"
         }
-        seen[base] = 1
-        return base
+        seen[base] = n + 1
+        used.insert(candidate)
+        return candidate
     }
 }
 

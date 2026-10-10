@@ -79,3 +79,11 @@
 "Readout watches these folders for Markdown files. The global shortcut opens the newest one." = "Readout 会监视这些文件夹中的 Markdown 文件，全局快捷键会打开其中最新的一个。";
 "Check for updates automatically" = "自动检查更新";
 "No folders yet" = "尚未添加文件夹";
+"Download Update" = "下载更新";
+"Later" = "稍后";
+"Could Not Check for Updates" = "无法检查更新";
+"Readout could not reach GitHub. Please try again later." = "Readout 无法连接到 GitHub，请稍后再试。";
+"A New Version Is Available" = "有新版本可用";
+"You're Up to Date" = "已是最新版本";
+"Readout %@ is the latest version." = "Readout %@ 已是最新版本。";
+"Readout checks GitHub releases for new versions." = "Readout 会检查 GitHub releases 获取新版本。";

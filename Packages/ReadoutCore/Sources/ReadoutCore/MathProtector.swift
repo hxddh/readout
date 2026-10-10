@@ -82,6 +82,12 @@ struct MathProtector {
                     i = end + 2
                     continue
                 }
+                if chars[i + 1] == "[" , let end = find(chars, from: i + 2, seq: ["\\", "]"]) {
+                    let tex = String(chars[(i + 2)..<end])
+                    out += token(tex, display: true)
+                    i = end + 2
+                    continue
+                }
                 out.append(c); out.append(chars[i + 1]); i += 2
                 continue
             }

@@ -10,7 +10,10 @@ public struct BlockKey: Codable, Sendable, Equatable {
     public init(fingerprint: UInt64, kind: BlockKind, text: String) {
         self.fingerprint = fingerprint
         self.kind = kind
-        self.text = text.count > 2000 ? String(text.prefix(2000)) : text
+        // Persisted baselines only need enough text for similarity matching:
+        // token-bigram Jaccard converges well before 500 characters, and the
+        // common case (exact fingerprint match) needs no text at all.
+        self.text = text.count > 500 ? String(text.prefix(500)) : text
     }
 
     public init(_ block: Block) {

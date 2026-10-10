@@ -410,6 +410,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // MARK: Persistence
 
+    /// Saves the reading position (cheap). Content baselines are saved
+    /// separately, only when unread state changes.
     private func scheduleSave() {
         saveWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.saveNow() }
@@ -417,11 +419,26 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: work)
     }
 
+    private var lastSavedBaseline: [BlockKey]?
+    private var lastSavedAnchorIndex: Int?
+    private var lastSavedAnchorOffset: Double?
+    private var didSaveOnce = false
+
     func saveNow() {
         guard loaded else { return }
         var index: Int? = nil
         if let a = lastAnchor { index = session.blocks.firstIndex { $0.slot == a.slot } }
-        BaselineStore.save(.init(baseline: session.baseline, topBlockIndex: index, topOffset: lastAnchor?.offset, savedAt: Date()), for: url)
+        let baseline = session.baseline
+        let offset = lastAnchor?.offset
+        // Anchor-only scrolls must not rewrite the (potentially large)
+        // baseline payload: skip the write when nothing changed at all.
+        if didSaveOnce, baseline == lastSavedBaseline,
+           index == lastSavedAnchorIndex, offset == lastSavedAnchorOffset { return }
+        didSaveOnce = true
+        lastSavedBaseline = baseline
+        lastSavedAnchorIndex = index
+        lastSavedAnchorOffset = offset
+        BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset, savedAt: Date()), for: url)
     }
 
     // MARK: Actions

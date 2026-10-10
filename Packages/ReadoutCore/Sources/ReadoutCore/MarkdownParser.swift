@@ -119,7 +119,7 @@ public enum MarkdownParser {
                     let src = c.code.trimmingCharacters(in: .newlines)
                     let html = "<div class=\"mermaid-block\"><pre class=\"mermaid-src\">\(HTML.escape(src))</pre></div>"
                     blocks.append(make(.mermaid, c, range: range, html: html))
-                } else if lang == "math" || lang == "latex" && looksLikeDisplayMath(c.code) {
+                } else if lang == "math" || (lang == "latex" && looksLikeDisplayMath(c.code)) {
                     blocks.append(make(.math, c, range: range, html: mathHTML(c.code)))
                 } else {
                     blocks.append(make(.code, c, range: range, html: renderer.codeBlock(language: c.language, code: c.code)))

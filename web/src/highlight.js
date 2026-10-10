@@ -52,7 +52,6 @@ const LANGS = {
   haskell: () => import('@shikijs/langs/haskell'),
   dart: () => import('@shikijs/langs/dart'),
   perl: () => import('@shikijs/langs/perl'),
-  protobuf: () => import('@shikijs/langs/proto'),
 };
 
 const ALIASES = {
@@ -62,7 +61,7 @@ const ALIASES = {
   cs: 'csharp', 'c#': 'csharp', objc: 'objective-c', rb: 'ruby', yml: 'yaml', md: 'markdown',
   dockerfile: 'docker', make: 'makefile', gql: 'graphql', svg: 'xml', ps1: 'powershell', pwsh: 'powershell',
   tf: 'terraform', ex: 'elixir', exs: 'elixir', hs: 'haskell', patch: 'diff', htm: 'html', cfg: 'ini',
-  conf: 'ini', env: 'shellscript', ndjson: 'jsonl',
+  conf: 'ini', env: 'shellscript', ndjson: 'jsonl', protobuf: 'proto',
 };
 
 const PRELOAD = ['shellscript', 'json', 'typescript', 'javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'];
