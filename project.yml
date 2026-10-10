@@ -35,10 +35,9 @@ targets:
     sources:
       - path: App
       - path: Shared
-      - path: web/dist
+      - path: web/build/Web
         type: folder
         buildPhase: resources
-        name: Web
       - path: cli/readout
         buildPhase: resources
     dependencies:
@@ -99,10 +98,9 @@ targets:
     sources:
       - path: QuickLook
       - path: Shared
-      - path: web/dist
+      - path: web/build/Web
         type: folder
         buildPhase: resources
-        name: Web
     dependencies:
       - package: ReadoutCore
       - sdk: Quartz.framework

@@ -6,5 +6,5 @@ build/
 xcuserdata/
 node_modules/
 .DS_Store
-web/dist/
+web/build/
 web/test/out/

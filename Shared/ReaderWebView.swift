@@ -43,6 +43,7 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
 
     private func fail(_ task: WKURLSchemeTask, _ code: Int) {
+        NSLog("Readout scheme handler: %d for %@", code, task.request.url?.absoluteString ?? "?")
         if let url = task.request.url, let r = HTTPURLResponse(url: url, statusCode: code, httpVersion: "HTTP/1.1", headerFields: nil) {
             task.didReceive(r)
             task.didFinish()
@@ -141,6 +142,10 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
 
     func userContentController(_ c: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
+        if type == "error" {
+            NSLog("Readout page error: %@", (body["message"] as? String) ?? "?")
+            return
+        }
         if type == "ready" {
             isReady = true
             let callbacks = readyCallbacks

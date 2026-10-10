@@ -11,7 +11,7 @@ mkdirSync(outDir, { recursive: true });
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const server = http.createServer((req, res) => {
-  const p = join('dist', decodeURIComponent(req.url.split('?')[0]));
+  const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream' });
   res.end(readFileSync(p));

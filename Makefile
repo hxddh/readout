@@ -17,4 +17,4 @@ test:
 	swift test --package-path Packages/ReadoutCore
 
 clean:
-	rm -rf build web/dist Readout.xcodeproj
+	rm -rf build web/build Readout.xcodeproj

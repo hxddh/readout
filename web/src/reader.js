@@ -20,6 +20,9 @@ function post(msg) {
   try { window.webkit.messageHandlers.readout.postMessage(msg); } catch { /* not hosted */ }
 }
 
+window.addEventListener('error', e => post({ type: 'error', message: `${e.message} (${e.filename}:${e.lineno})` }));
+window.addEventListener('unhandledrejection', e => post({ type: 'error', message: `unhandled: ${e.reason && (e.reason.stack || e.reason.message) || e.reason}` }));
+
 // ---------------------------------------------------------------- Anchors
 
 function blockList() { return Array.from(doc.children).filter(e => e.classList.contains('blk')); }

@@ -2,7 +2,7 @@
 import * as esbuild from 'esbuild';
 import { cpSync, mkdirSync, rmSync } from 'node:fs';
 
-const out = 'dist';
+const out = 'build/Web';
 rmSync(out, { recursive: true, force: true });
 mkdirSync(`${out}/vendor/katex`, { recursive: true });
 mkdirSync(`${out}/vendor/mermaid`, { recursive: true });
