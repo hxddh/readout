@@ -33,6 +33,9 @@ jobs:
       - name: Build web renderer
         working-directory: web
         run: npm ci && npm run build
+      - name: Web patch-engine tests
+        working-directory: web
+        run: npx -y playwright@1.49.1 install chromium && npm test
       - name: Generate Xcode project
         run: brew install xcodegen && xcodegen generate
       - name: Xcode version
