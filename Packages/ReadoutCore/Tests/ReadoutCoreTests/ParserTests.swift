@@ -120,9 +120,12 @@ import Testing
     @Test func remoteMediaRequiresConsent() {
         let doc = parse("<img src=\"https://evil.example/x.png\" alt=\"x\">\n\n<video src=\"https://evil.example/v.mp4\"></video>\n\n<img src=\"local/pic.png\">\n")
         let html = doc.blocks.map(\.html).joined()
-        #expect(!html.contains("evil.example/x.png\""))
-        #expect(!html.contains("evil.example/v.mp4\""))
+        // No remote URL may remain in a loadable attribute; placeholders carry it in data-src only.
+        #expect(!html.contains("<img"))
+        #expect(!html.contains("<video"))
+        #expect(!html.contains("src=\"https://"))
         #expect(html.contains("remote-img"))
+        #expect(html.contains("data-src=\"https://evil.example/x.png\""))
         #expect(html.contains("local/pic.png"))
     }
 
