@@ -103,7 +103,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         panel.allowedContentTypes = Self.markdownTypes
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
-        if panel.runModal() == .OK { panel.urls.forEach(open) }
+        if panel.runModal() == .OK { panel.urls.forEach { open($0) } }
     }
 
     @objc func openLatest(_ sender: Any?) {
