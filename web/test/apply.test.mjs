@@ -1,7 +1,8 @@
 // JS unit tests for the reader patch engine (insert order, anchor stability,
-// follow semantics). Runs in Chromium via Playwright; no manual screenshots.
-// Usage: node test/apply.test.mjs  (requires web/build.mjs to have run)
-import { chromium } from 'playwright';
+// follow semantics). Runs in WebKit by default (the production engine) via
+// Playwright; BROWSER selects the engine (webkit | chromium | firefox).
+// Usage: BROWSER=webkit node test/apply.test.mjs  (requires web/build.mjs to have run)
+import { chromium, webkit, firefox } from 'playwright';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -15,7 +16,14 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await chromium.launch();
+const engines = { webkit, chromium, firefox };
+const engineName = (process.env.BROWSER || 'webkit').toLowerCase();
+if (!engines[engineName]) {
+  console.error(`Unknown BROWSER=${process.env.BROWSER}; want webkit | chromium | firefox`);
+  process.exit(2);
+}
+console.log(`engine: ${engineName}`);
+const browser = await engines[engineName].launch();
 const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));

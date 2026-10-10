@@ -20,9 +20,9 @@ jobs:
       - name: Test
         run: swift test --package-path Packages/ReadoutCore
 
-  app:
-    name: Build app (macOS)
-    runs-on: macos-26
+  webkit:
+    name: Web tests (WebKit)
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -33,58 +33,20 @@ jobs:
       - name: Build web renderer
         working-directory: web
         run: npm ci && npm run build
-      - name: Web patch-engine tests
+      - name: Install WebKit
         working-directory: web
-        run: npx -y playwright@1.49.1 install chromium && npm test
-      - name: Generate Xcode project
-        run: brew install xcodegen && xcodegen generate
-      - name: Xcode version
-        run: xcodebuild -version
-      - name: Core tests (macOS)
-        run: swift test --package-path Packages/ReadoutCore
-      - name: Build
-        run: |
-          set -o pipefail
-          xcodebuild -project Readout.xcodeproj -scheme Readout -configuration Debug \
-            -derivedDataPath build -destination 'platform=macOS' build 2>&1 | tee build.log | xcbeautify --renderer github-actions
-      - name: Smoke test
-        run: |
-          mkdir -p "$RUNNER_TEMP/smoke"
-          cp web/test/fixtures/plan.md "$RUNNER_TEMP/smoke/plan.md"
-          APP=build/Build/Products/Debug/Readout.app
-          READOUT_SMOKE_FILE="$RUNNER_TEMP/smoke/plan.md" \
-          READOUT_SMOKE_EDIT="$PWD/web/test/fixtures/plan-v2.md" \
-          READOUT_SMOKE_OUT="$PWD/smoke-out" \
-            "$APP/Contents/MacOS/Readout" > smoke-out.log 2>&1 &
-          PID=$!
-          sleep 7
-          screencapture -x smoke-screen-1.png || true
-          for i in $(seq 1 40); do kill -0 $PID 2>/dev/null || break; sleep 1; done
-          kill $PID 2>/dev/null || true
-          mkdir -p smoke-out && mv smoke-screen-1.png smoke-out/ 2>/dev/null || true
-          cp smoke-out.log smoke-out/ || true
-          # Quick Look: register the extension from /Applications and preview the fixture.
-          ditto "$APP" /Applications/Readout.app
-          /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/Readout.app
-          pluginkit -a /Applications/Readout.app/Contents/PlugIns/ReadoutQuickLook.appex || true
-          sleep 2
-          pluginkit -mAvvv -p com.apple.quicklook.preview | grep -i readout || echo "Quick Look extension not listed"
-          qlmanage -r >/dev/null 2>&1 || true
-          (qlmanage -p "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlmanage.log 2>&1 &)
-          sleep 8
-          screencapture -x smoke-out/7-quicklook.screen.png || true
-          pkill -f qlmanage || true
-          ls -la smoke-out
-          for f in smoke-out/*.json; do echo "$f"; cat "$f"; echo; done
-      - name: Upload smoke test output
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: smoke
-          path: smoke-out
-      - name: Upload build log
-        if: failure()
-        uses: actions/upload-artifact@v5
-        with:
-          name: build-log
-          path: build.log
+        run: npx playwright install --with-deps webkit
+      - name: Patch-engine tests (WebKit)
+        working-directory: web
+        run: npm test
+        env:
+          BROWSER: webkit
+
+  verify:
+    name: Verify signed product
+    needs: [core, webkit]
+    uses: ./.github/workflows/verify.yml
+    with:
+      version: 0.0.0-ci
+      build: ci
+      configuration: Release
