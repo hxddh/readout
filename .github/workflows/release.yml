@@ -120,9 +120,10 @@ jobs:
           echo "checking CI (ci.yml) on $SHA"
           # Note: jobs from the called verify.yml surface as
           # "Verify signed product / Build, sign and smoke test", so match by substring.
+          # (gh api has no --arg flag: interpolate the name into the -q query.)
           for NAME in "Core tests (Linux)" "Web tests (WebKit)" "Verify signed product"; do
             C=$(gh api "repos/{owner}/{repo}/commits/$SHA/check-runs" -q \
-              --arg name "$NAME" '[.check_runs[] | select(.name | contains($name))][0].conclusion' 2>/dev/null || echo "")
+              "[.check_runs[] | select(.name | contains(\"$NAME\"))][0].conclusion" 2>/dev/null || echo "")
             echo "$NAME: ${C:-unknown}"
             [ "$C" = "success" ] || { echo "FAIL: '$NAME' is not success on $SHA"; exit 1; }
           done
@@ -183,8 +184,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           NOTES="docs/releases/$VERSION.md"
-          gh release create "$TAG" "dist/Readout-$VERSION.dmg" "dist/Readout-$VERSION.zip" "dist/SHA256SUMS" \
-            --title "Readout $VERSION" --notes-file "$NOTES" --target "${{ needs.preflight.outputs.sha }}" --draft
+          # Idempotent: a retried run reuses the draft left by the previous
+          # attempt instead of failing on the already-existing release.
+          if gh release view "$TAG" --json isDraft -q .isDraft 2>/dev/null | grep -q true; then
+            echo "reusing existing draft $TAG"
+            gh release upload "$TAG" "dist/Readout-$VERSION.dmg" "dist/Readout-$VERSION.zip" "dist/SHA256SUMS" --clobber
+          elif gh release view "$TAG" >/dev/null 2>&1; then
+            echo "FAIL: $TAG is already published (not a draft); refusing to overwrite a published release"
+            exit 1
+          else
+            gh release create "$TAG" "dist/Readout-$VERSION.dmg" "dist/Readout-$VERSION.zip" "dist/SHA256SUMS" \
+              --title "Readout $VERSION" --notes-file "$NOTES" --target "${{ needs.preflight.outputs.sha }}" --draft
+          fi
 
       - name: Re-download the ZIP and verify its SHA-256
         env:
