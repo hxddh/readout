@@ -3,12 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "test": "node test/apply.test.mjs"
   },
   "dependencies": {
     "esbuild": "0.28.2",
     "katex": "0.19.0",
     "mermaid": "12.1.0",
     "shiki": "4.5.0"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1"
   }
 }

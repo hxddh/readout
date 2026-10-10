@@ -292,7 +292,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             // queued completions wait for that fresher result.
             readAgain = false
             readInFlight = false
-            read { [weak self] _ in self?.drainCompletions(with: $0) }
+            read { [weak self] result in self?.drainCompletions(with: result) }
             return
         }
         readInFlight = false
