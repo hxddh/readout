@@ -5,16 +5,45 @@ import * as hl from './highlight.js';
 const doc = document.getElementById('doc');
 const rail = document.getElementById('rail');
 const notice = document.getElementById('notice');
+const caughtup = document.getElementById('caughtup');
 const root = document.documentElement;
 
 const slots = new Map();          // slot -> element
 const heights = new WeakMap();    // element -> last observed height
 const mermaidCache = new Map();   // source+theme -> svg
 const mathCache = new Map();      // tex+display -> html
-let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn' };
+let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section' };
 let first = true;
 let quicklook = false;
 let followAnchor = null;
+let changesOnly = false;
+
+/**
+ * "Show Only Changes": hides read blocks so the reader sees just what's new.
+ * Headings stay visible as context; blocks with unread marks or deletion
+ * markers (and headings) are kept. Hidden blocks leave the anchor and jump
+ * math untouched — `unreadElements()` already skips them via offsetParent.
+ */
+function applyChangesOnly() {
+  for (const el of slots.values()) {
+    const keep = el.classList.contains('k-heading')
+      || el.classList.contains('m-inserted') || el.classList.contains('m-modified')
+      || el.classList.contains('m-state') || el.nextElementSibling?.classList.contains('del-mark');
+    el.hidden = changesOnly && !keep;
+  }
+  for (const m of doc.querySelectorAll('.del-mark')) m.hidden = false;
+  if (caughtup) {
+    const anyVisible = changesOnly && unreadElements().length === 0 && slots.size > 0;
+    caughtup.textContent = anyVisible ? (strings.caughtUp || 'All caught up') : '';
+    caughtup.hidden = !anyVisible;
+  }
+  scheduleRail();
+}
+
+function setChangesOnly(on) {
+  changesOnly = !!on;
+  applyChangesOnly();
+}
 
 function post(msg) {
   try { window.webkit.messageHandlers.readout.postMessage(msg); } catch { /* not hosted */ }
@@ -165,7 +194,9 @@ function apply(p) {
     } else if (op.op === 'replace') {
       const el = slots.get(op.slot);
       if (!el) continue;
+      const wasMarked = el.className.match(/m-(inserted|modified|state)/)?.[0];
       fillBlock(el, op);
+      if (wasMarked && op.change === 'silent') el.classList.add(wasMarked);
       if (op.change !== 'silent') { changed.add(op.slot); if (!p.reset && inViewport(el)) visibleChanged.push(el); }
     } else if (op.op === 'insert') {
       const el = makeBlock(op);
@@ -188,6 +219,9 @@ function apply(p) {
   }
 
   renderMarks(p.marks || [], p.deletions || []);
+
+  // A silent re-render (checkbox HTML, CJK class) must not disturb the filter.
+  applyChangesOnly();
 
   // Re-baseline heights of touched blocks so the resize compensator does not count this patch twice.
   for (const slot of changed) { const el = slots.get(slot); if (el) heights.set(el, el.getBoundingClientRect().height); }
@@ -302,7 +336,10 @@ function tryRead(el) {
 }
 
 function unreadElements() {
-  return Array.from(doc.querySelectorAll('.blk.m-inserted:not(.m-read), .blk.m-modified:not(.m-read), .blk.m-state:not(.m-read), .del-mark:not(.m-read)'));
+  // `offsetParent === null` covers `hidden` blocks in changes-only mode, so the
+  // rail, jumps and the caught-up state all ignore filtered-out blocks.
+  return Array.from(doc.querySelectorAll('.blk.m-inserted:not(.m-read), .blk.m-modified:not(.m-read), .blk.m-state:not(.m-read), .del-mark:not(.m-read)'))
+    .filter(e => e.offsetParent !== null);
 }
 
 function jump(dir) {
@@ -327,6 +364,7 @@ function markAllRead() {
       el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
       if (el.classList.contains('del-mark')) el.remove();
     });
+    applyChangesOnly();
     scheduleRail();
   }, 700);
 }
@@ -372,7 +410,28 @@ function enhance(el) {
     requestAnimationFrame(() => t.classList.toggle('scrolls', t.scrollWidth > t.clientWidth + 1));
   }
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
+  for (const h of el.classList.contains('k-heading') ? [el] : []) setupHeadingLink(h);
   if (el.querySelector('.math, .math-block')) renderMath(el);
+}
+
+/** Hover link button on headings: copies a `#anchor` link for the section. */
+function setupHeadingLink(h) {
+  if (h.querySelector('.h-link')) return;
+  const anchor = h.dataset.anchor;
+  if (!anchor) return;
+  const btn = document.createElement('button');
+  btn.className = 'h-link';
+  btn.type = 'button';
+  btn.textContent = '§';
+  btn.title = strings.copyLink || 'Copy Link to Section';
+  btn.setAttribute('aria-label', btn.title);
+  btn.addEventListener('click', ev => {
+    ev.stopPropagation();
+    post({ type: 'copyLink', anchor });
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = '§'; }, 1200);
+  });
+  h.appendChild(btn);
 }
 
 function setupCode(cb) {
@@ -670,7 +729,14 @@ function setAppearance(o) {
   }
   if (o.width) root.dataset.width = o.width;
   if (o.fontSize) root.style.setProperty('--size', `${o.fontSize}px`);
-  if (o.strings) strings = { ...strings, ...o.strings };
+  if (o.strings) {
+    strings = { ...strings, ...o.strings };
+    for (const h of doc.querySelectorAll('.k-heading .h-link')) {
+      h.title = strings.copyLink || h.title;
+      h.setAttribute('aria-label', h.title);
+    }
+  }
+  if (o.changesOnly !== undefined) { changesOnly = !!o.changesOnly; applyChangesOnly(); }
   if (o.mode === 'quicklook') { quicklook = true; root.dataset.mode = 'quicklook'; }
   scheduleRail();
 }
@@ -699,6 +765,7 @@ function scrollToFragment(o) {
 window.readout = {
   apply,
   setAppearance,
+  setChangesOnly,
   scrollToSlot,
   scrollToAnchor,
   scrollToFragment,

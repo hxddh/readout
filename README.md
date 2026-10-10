@@ -15,6 +15,7 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 - **Shows what changed.** New and edited blocks get a thin bar in the margin; removed text leaves a small marker you can open. Marks fade once you have actually read them. Press <kbd>N</kbd> for the next change, <kbd>⌘K</kbd> to mark everything read. Readout remembers what you had read, even across launches.
 - **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42` open in your editor.
 - **Outline with progress.** The sidebar lists headings and how many tasks in each section are done.
+- **Focus on what's new.** Filter the document to unread changes only (<kbd>⇧⌘K</kbd>), see word count and reading time at a glance, and copy a link to any section by hovering its heading. The welcome window lists recent files for one-click reopening.
 - **One shortcut to the latest file.** Add the folders your agents write to (Claude Code's `~/.claude/plans` is added automatically) and press <kbd>⌥⌘R</kbd> anywhere to open the newest Markdown file.
 - **Quick Look.** Press Space on a `.md` file in Finder.
 - **Read-only by design.** Readout never writes to your files.

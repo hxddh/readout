@@ -87,3 +87,8 @@
 "You're Up to Date" = "已是最新版本";
 "Readout %@ is the latest version." = "Readout %@ 已是最新版本。";
 "Readout checks GitHub releases for new versions." = "Readout 会检查 GitHub releases 获取新版本。";
+"Show Only Changes" = "只看变更";
+"%d words · %d min read" = "%d 词 · 约 %d 分钟";
+"Recent" = "最近";
+"Copy Link to Section" = "复制章节链接";
+"All caught up" = "已全部读完";

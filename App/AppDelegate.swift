@@ -255,8 +255,52 @@ struct WelcomeView: View {
             }
             .controlSize(.large)
             .padding(.top, 20)
+
+            let recents = NSDocumentController.shared.recentDocumentURLs.filter {
+                WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
+                    && FileManager.default.fileExists(atPath: $0.path)
+            }.prefix(5)
+            if !recents.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(NSLocalizedString("Recent", comment: "Welcome section"))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 32)
+                    ForEach(Array(recents), id: \.self) { url in
+                        Button {
+                            onOpenURL(url)
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                                    .resizable()
+                                    .frame(width: 16, height: 16)
+                                Text(url.lastPathComponent)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Spacer(minLength: 4)
+                                Text(url.deletingLastPathComponent().lastPathComponent)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(1)
+                            }
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 3)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help(url.path)
+                    }
+                }
+                .padding(.top, 14)
+            }
             Spacer(minLength: 24)
         }
-        .frame(width: 460, height: 400)
+        .frame(width: 460, height: hasRecents ? 520 : 400)
+    }
+
+    private var hasRecents: Bool {
+        NSDocumentController.shared.recentDocumentURLs.contains {
+            WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
+                && FileManager.default.fileExists(atPath: $0.path)
+        }
     }
 }

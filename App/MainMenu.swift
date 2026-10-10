@@ -72,6 +72,7 @@ enum MainMenu {
         view.addItem(item(NSLocalizedString("Next Change", comment: "Menu"), #selector(ReaderWindowController.nextChange(_:)), "]"))
         view.addItem(item(NSLocalizedString("Previous Change", comment: "Menu"), #selector(ReaderWindowController.previousChange(_:)), "["))
         view.addItem(item(NSLocalizedString("Mark All as Read", comment: "Menu"), #selector(ReaderWindowController.markAllRead(_:)), "k"))
+        view.addItem(item(NSLocalizedString("Show Only Changes", comment: "Menu"), #selector(ReaderWindowController.toggleChangesOnly(_:)), "K", [.command, .shift]))
         view.addItem(.separator())
         view.addItem(item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "+"))
         let bigger2 = item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "=")

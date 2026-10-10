@@ -58,6 +58,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var deleted = false
     private var lastAnchor: (slot: Int, offset: Double)?
     private var saveWork: DispatchWorkItem?
+    /// Hides every block without an unread mark; headings stay visible as context.
+    private var changesOnly = false
     // Parse coalescing: rapid successive writes share one in-flight parse;
     // completions carry a generation and stale ones are dropped.
     private var readGeneration = 0
@@ -207,7 +209,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         webView.underPageBackgroundColor = dark ? NSColor(srgbRed: 0x1e / 255, green: 0x1e / 255, blue: 0x1f / 255, alpha: 1) : .white
         webView.whenReady { [weak self] in
             self?.webView.setAppearance(dark: dark, accent: .controlAccentColor, width: settings.wide ? "wide" : "narrow",
-                                        fontSize: settings.fontSize, strings: ReaderStrings.all)
+                                        fontSize: settings.fontSize, strings: ReaderStrings.all,
+                                        changesOnly: self?.changesOnly)
         }
     }
 
@@ -328,8 +331,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                     // Cross-file link target: the fragment wins over the saved position.
                     self.pendingAnchor = nil
                     self.scrollToAnchor(fragment: pending)
-                } else if let idx = record?.topBlockIndex, idx < self.session.blocks.count {
-                    let slot = self.session.blocks[idx].slot
+                } else if let slot = self.resumeSlot(from: record) {
                     let anchor = ["slot": slot, "offset": record?.topOffset ?? 0, "ratio": 0] as [String: Any]
                     if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
                         self.webView.call("scrollToAnchor", json: json)
@@ -337,6 +339,20 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 }
             }
         }
+    }
+
+    /// Restores the reading position. Block indices shift as agents edit, so the
+    /// saved text excerpt is matched first; the saved index is a fallback for
+    /// records written before excerpts existed.
+    private func resumeSlot(from record: BaselineStore.Record?) -> Int? {
+        guard let record else { return nil }
+        let texts = session.blocks.map(\.text)
+        if let excerpt = record.topExcerpt,
+           let i = ExcerptAnchor.index(of: excerpt, in: texts), i < session.blocks.count {
+            return session.blocks[i].slot
+        }
+        if let idx = record.topBlockIndex, idx < session.blocks.count { return session.blocks[idx].slot }
+        return nil
     }
 
     private func fileChanged(_ change: FileWatcher.Change) {
@@ -380,6 +396,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         model.tasks = patch.tasks
         model.unread = session.unreadCount
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
+        model.words = ReadingStats.words(in: session.blocks)
         if let enc = decoded.fallbackEncoding {
             model.status = String(format: NSLocalizedString("Decoded as %@", comment: "Status: non-UTF-8 file"), enc)
         } else {
@@ -393,7 +410,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         let t = model.tasks
         window?.subtitle = t.total > 0
             ? String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
-            : ""
+            : String(format: NSLocalizedString("%d words · %d min read", comment: "Window subtitle when no tasks"), model.words,
+                     ReadingStats.minutes(forWords: model.words))
     }
 
     private func updateChangeItem(_ n: Int) {
@@ -424,6 +442,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             if let text = msg["text"] as? String {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(text, forType: .string)
+            }
+        case "copyLink":
+            // Section link: "<filename>#<anchor>" on the clipboard.
+            if let anchor = msg["anchor"] as? String, !anchor.isEmpty {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString("\(url.lastPathComponent)#\(anchor)", forType: .string)
             }
         case "open":
             if let href = msg["href"] as? String { openLink(href) }
@@ -499,6 +523,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     private var lastSavedBaseline: [BlockKey]?
+    private var lastSavedAnchorExcerpt: String?
     private var lastSavedAnchorIndex: Int?
     private var lastSavedAnchorOffset: Double?
     private var didSaveOnce = false
@@ -506,24 +531,35 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     func saveNow() {
         guard loaded else { return }
         var index: Int? = nil
-        if let a = lastAnchor { index = session.blocks.firstIndex { $0.slot == a.slot } }
+        var excerpt: String? = nil
+        if let a = lastAnchor, let i = session.blocks.firstIndex(where: { $0.slot == a.slot }) {
+            index = i
+            excerpt = String(session.blocks[i].text.prefix(120))
+        }
         let baseline = session.baseline
         let offset = lastAnchor?.offset
         // Anchor-only scrolls must not rewrite the (potentially large)
         // baseline payload: skip the write when nothing changed at all.
-        if didSaveOnce, baseline == lastSavedBaseline,
+        if didSaveOnce, baseline == lastSavedBaseline, excerpt == lastSavedAnchorExcerpt,
            index == lastSavedAnchorIndex, offset == lastSavedAnchorOffset { return }
         didSaveOnce = true
         lastSavedBaseline = baseline
+        lastSavedAnchorExcerpt = excerpt
         lastSavedAnchorIndex = index
         lastSavedAnchorOffset = offset
-        BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset, savedAt: Date()), for: url)
+        BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset,
+                                 topExcerpt: excerpt, savedAt: Date()), for: url)
     }
 
     // MARK: Actions
 
     @objc func nextChange(_ sender: Any?) { webView.call("nextChange") }
     @objc func previousChange(_ sender: Any?) { webView.call("previousChange") }
+
+    @objc func toggleChangesOnly(_ sender: Any?) {
+        changesOnly.toggle()
+        webView.call("setChangesOnly", json: changesOnly ? "true" : "false")
+    }
 
     @objc func markAllRead(_ sender: Any?) {
         session.markAllRead()
@@ -596,6 +632,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         switch item.action {
         case #selector(nextChange(_:)), #selector(previousChange(_:)), #selector(markAllRead(_:)):
             return session.unreadCount > 0
+        case #selector(toggleChangesOnly(_:)):
+            item.state = changesOnly ? .on : .off
+            return session.unreadCount > 0 || changesOnly
         case #selector(toggleWidth(_:)):
             item.state = AppSettings.shared.wide ? .on : .off
             return true

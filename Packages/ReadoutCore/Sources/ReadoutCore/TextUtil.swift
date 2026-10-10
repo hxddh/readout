@@ -163,10 +163,63 @@ public enum Similarity {
     }
 
     public static func jaccard(_ a: String, _ b: String) -> Double {
-        let sa = shingles(a), sb = shingles(b)
-        if sa.isEmpty && sb.isEmpty { return a == b ? 1 : 0 }
+        jaccardSets(shingles(a), shingles(b), bothEmpty: a == b)
+    }
+
+    /// Jaccard over precomputed shingle sets. `bothEmpty` is the tiebreaker when
+    /// both sets are empty (the raw texts tokenized to nothing): pass whether the
+    /// original texts were identical.
+    static func jaccardSets(_ sa: Set<String>, _ sb: Set<String>, bothEmpty: Bool = true) -> Double {
+        if sa.isEmpty && sb.isEmpty { return bothEmpty ? 1 : 0 }
         let inter = sa.intersection(sb).count
         let union = sa.union(sb).count
         return union == 0 ? 0 : Double(inter) / Double(union)
+    }
+}
+
+/// Word count and reading-time estimates for subtitles and progress.
+public enum ReadingStats {
+    /// CJK characters count individually; Latin text counts whitespace-separated words.
+    public static func words(in text: String) -> Int {
+        var n = 0
+        var inWord = false
+        for s in text.unicodeScalars {
+            if CJK.isCJK(s) {
+                n += 1
+                inWord = false
+            } else if CharacterSet.alphanumerics.contains(s) {
+                if !inWord { n += 1; inWord = true }
+            } else {
+                inWord = false
+            }
+        }
+        return n
+    }
+
+    public static func words(in blocks: [Block]) -> Int {
+        blocks.reduce(0) { $0 + words(in: $1.text) }
+    }
+
+    /// Whole minutes at `wpm` words per minute, always at least 1.
+    public static func minutes(forWords words: Int, wpm: Int = 400) -> Int {
+        max(1, Int((Double(words) / Double(wpm)).rounded()))
+    }
+}
+
+/// Finds the current index of the block the reader was on when the baseline was
+/// saved. Block indices shift as agents edit; the saved text excerpt survives that.
+public enum ExcerptAnchor {
+    public static func index(of excerpt: String, in texts: [String]) -> Int? {
+        guard !excerpt.isEmpty else { return nil }
+        if let i = texts.firstIndex(where: { $0.hasPrefix(excerpt) }) { return i }
+        // Edited mid-block: fall back to containment, first of the whole excerpt,
+        // then of its first half. Short excerpts are ambiguous — leave those to
+        // the caller's index fallback instead of guessing.
+        if excerpt.count >= 24 {
+            if let i = texts.firstIndex(where: { $0.contains(excerpt) }) { return i }
+            let half = String(excerpt.prefix(max(24, excerpt.count / 2)))
+            if half.count >= 24, let i = texts.firstIndex(where: { $0.contains(half) }) { return i }
+        }
+        return nil
     }
 }

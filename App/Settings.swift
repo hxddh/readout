@@ -70,6 +70,9 @@ enum BaselineStore {
         var baseline: [BlockKey]
         var topBlockIndex: Int?
         var topOffset: Double?
+        /// First 120 characters of the top block's normalized text. Block
+        /// indices shift as agents edit; the excerpt survives that.
+        var topExcerpt: String?
         var savedAt: Date
     }
 

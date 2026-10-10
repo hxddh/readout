@@ -167,13 +167,14 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
     }
 
     func setAppearance(dark: Bool? = nil, accent: NSColor? = nil, width: String? = nil, fontSize: Double? = nil,
-                       strings: [String: String]? = nil, mode: String? = nil) {
+                       strings: [String: String]? = nil, changesOnly: Bool? = nil, mode: String? = nil) {
         var o: [String: Any] = [:]
         if let dark { o["dark"] = dark }
         if let accent { o["accent"] = accent.hexString }
         if let width { o["width"] = width }
         if let fontSize { o["fontSize"] = fontSize }
         if let strings { o["strings"] = strings }
+        if let changesOnly { o["changesOnly"] = changesOnly }
         if let mode { o["mode"] = mode }
         guard let data = try? JSONSerialization.data(withJSONObject: o), let json = String(data: data, encoding: .utf8) else { return }
         call("setAppearance", json: json)
@@ -206,6 +207,8 @@ enum ReaderStrings {
             "empty": NSLocalizedString("This file is empty.", comment: "Empty document"),
             "deletedOne": NSLocalizedString("1 block removed", comment: "Deletion marker tooltip"),
             "deletedMany": NSLocalizedString("%d blocks removed", comment: "Deletion marker tooltip; %d is a number"),
+            "caughtUp": NSLocalizedString("All caught up", comment: "Empty state when filtering to changes with none left"),
+            "copyLink": NSLocalizedString("Copy Link to Section", comment: "Heading link button tooltip"),
         ]
     }
 }

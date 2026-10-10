@@ -115,6 +115,45 @@ await page.evaluate(() => window.readout.scrollToFragment({ fragment: 'target-se
 const fragTop = await page.evaluate(() => document.querySelector('.k-heading').getBoundingClientRect().top);
 check('fragment scroll lands on heading', Math.abs(fragTop - 16) < 4, `top=${fragTop}`);
 
+// 6. Changes-only filter: read blocks hide, headings stay, marks still navigate.
+await page.evaluate(p => window.readout.apply({
+  version: 8, reset: true, rewrite: false,
+  ops: [
+    { op: 'insert', slot: 401, after: 0, html: '<h2 id="s-a">Section A</h2>', kind: 'heading', anchor: 's-a' },
+    { op: 'insert', slot: 402, after: 401, html: '<p>read body</p>', kind: 'paragraph' },
+    { op: 'insert', slot: 403, after: 402, html: '<p>new body</p>', kind: 'paragraph' },
+  ],
+  marks: [{ slot: 403, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+}));
+const linkBtn = await page.evaluate(() => !!document.querySelector('.k-heading .h-link'));
+check('heading has section link button', linkBtn);
+await page.evaluate(() => window.readout.setChangesOnly(true));
+const filtered = await page.evaluate(() => ({
+  readHidden: document.querySelector('.blk[data-slot="402"]').hidden,
+  headVisible: !document.querySelector('.blk[data-slot="401"]').hidden,
+  newVisible: !document.querySelector('.blk[data-slot="403"]').hidden,
+}));
+check('changes-only hides read blocks, keeps heading + new', filtered.readHidden && filtered.headVisible && filtered.newVisible, JSON.stringify(filtered));
+// Clicking the heading link posts a copyLink message with the anchor.
+await page.evaluate(() => { window.__msgs.length = 0; });
+await page.evaluate(() => document.querySelector('.k-heading .h-link').click());
+const copyMsg = await page.evaluate(() => window.__msgs.find(m => m.type === 'copyLink'));
+check('heading link posts copyLink', copyMsg && copyMsg.anchor === 's-a', JSON.stringify(copyMsg));
+// Silent re-render must not drop the unread mark or the filter.
+await page.evaluate(() => window.readout.apply({
+  version: 9, reset: false, rewrite: false,
+  ops: [{ op: 'replace', slot: 403, html: '<p>new body</p>', kind: 'paragraph', change: 'silent' }],
+  marks: [{ slot: 403, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+}));
+const afterSilent = await page.evaluate(() => ({
+  marked: document.querySelector('.blk[data-slot="403"]').classList.contains('m-inserted'),
+  readHidden: document.querySelector('.blk[data-slot="402"]').hidden,
+}));
+check('silent re-render keeps mark + filter', afterSilent.marked && afterSilent.readHidden, JSON.stringify(afterSilent));
+await page.evaluate(() => window.readout.setChangesOnly(false));
+const restored = await page.evaluate(() => !document.querySelector('.blk[data-slot="402"]').hidden);
+check('leaving changes-only restores blocks', restored);
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();

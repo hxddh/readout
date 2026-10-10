@@ -22,3 +22,7 @@ The page is a single WKWebView served from a custom `readout://` scheme. Shiki (
 ## Privacy
 
 Remote images and media — whether written as Markdown (`![](https://…)`) or as raw HTML (`<img>`, `<video>`, `<audio>`) — never load on their own. They render as a placeholder button naming the host; the request goes out only when the reader clicks it. Local images are served from disk through the `readout://file/` scheme, which only serves image file types.
+
+## Focus and resume
+
+The window subtitle and the sidebar footer show word count and estimated reading time (CJK characters count individually, Latin text counts words). "Show Only Changes" (⇧⌘K) hides every block already read; headings offer a hover link button that copies a `path#anchor` link to the section. The saved reading position is excerpt-anchored: the first 120 characters of the top block are stored alongside the baseline, so resume survives block-index shifts from agent edits (falling back to the legacy saved index for older records).

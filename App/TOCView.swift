@@ -9,6 +9,7 @@ final class ReaderModel: ObservableObject {
     @Published var tasks = TaskStats()
     @Published var unread = 0
     @Published var title = ""
+    @Published var words = 0
     @Published var status: String? = nil
     var onSelectHeading: ((Int) -> Void)?
 }
@@ -44,14 +45,22 @@ struct TOCView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if let status = model.status {
-                Text(status)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                if let status = model.status {
+                    Text(status)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if model.words > 0 {
+                    Text(String(format: NSLocalizedString("%d words · %d min read", comment: "Sidebar footer"),
+                                model.words, ReadingStats.minutes(forWords: model.words)))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
