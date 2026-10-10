@@ -1,0 +1,47 @@
+import Foundation
+import Testing
+@testable import ReadoutCore
+
+@Suite struct FileContentTests {
+    @Test func stripsBOM() {
+        let d = FileContent.decode(Data([0xEF, 0xBB, 0xBF]) + Data("hi".utf8))
+        #expect(d.text == "hi")
+    }
+
+    @Test func truncatedUTF8Tail() {
+        let full = Data("中文".utf8)
+        let d = FileContent.decode(full.dropLast(1))
+        #expect(d.truncatedTail)
+        #expect(d.text == "中")
+    }
+
+    @Test func halfWriteVerdicts() {
+        #expect(FileContent.verdict(newSize: 0, previousSize: 100, secondsSincePreviousWrite: 5, truncatedTail: false, retriesSoFar: 0) == .waitForMore)
+        #expect(FileContent.verdict(newSize: 10, previousSize: 100, secondsSincePreviousWrite: 0.2, truncatedTail: false, retriesSoFar: 0) == .waitForMore)
+        #expect(FileContent.verdict(newSize: 10, previousSize: 100, secondsSincePreviousWrite: 5, truncatedTail: false, retriesSoFar: 0) == .accept)
+        #expect(FileContent.verdict(newSize: 0, previousSize: 100, secondsSincePreviousWrite: 0.1, truncatedTail: false, retriesSoFar: 2) == .accept)
+        #expect(FileContent.verdict(newSize: 120, previousSize: nil, secondsSincePreviousWrite: nil, truncatedTail: true, retriesSoFar: 0) == .waitForMore)
+    }
+
+    @Test func largeDocumentPerformance() {
+        var parts: [String] = []
+        for i in 0..<1500 {
+            parts.append("## Section \(i)\n\nThis is paragraph \(i) with `code` and **bold** text and a [link](https://example.com/\(i)).\n\n- item a \(i)\n- [ ] task \(i)\n\n```swift\nlet value\(i) = \(i)\n```\n")
+        }
+        let src = parts.joined(separator: "\n")
+        let t0 = Date()
+        let doc = MarkdownParser.parse(src)
+        let parseTime = Date().timeIntervalSince(t0)
+        let s = DocumentSession()
+        _ = s.load(doc)
+        var edited = parts
+        edited[700] += "\nAn inserted paragraph.\n"
+        let doc2 = MarkdownParser.parse(edited.joined(separator: "\n"))
+        let t1 = Date()
+        let patch = s.update(doc2)
+        let diffTime = Date().timeIntervalSince(t1)
+        print("perf: \(src.utf8.count) bytes, \(doc.blocks.count) blocks, parse \(Int(parseTime * 1000)) ms, diff \(Int(diffTime * 1000)) ms")
+        #expect(patch?.ops.count == 1)
+        #expect(parseTime < 5)
+    }
+}
