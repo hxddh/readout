@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Core tests (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: swift test --package-path Packages/ReadoutCore
+
+  app:
+    name: Build app (macOS)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build web renderer
+        working-directory: web
+        run: npm ci && npm run build
+      - name: Generate Xcode project
+        run: brew install xcodegen && xcodegen generate
+      - name: Xcode version
+        run: xcodebuild -version
+      - name: Core tests (macOS)
+        run: swift test --package-path Packages/ReadoutCore
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild -project Readout.xcodeproj -scheme Readout -configuration Debug \
+            -derivedDataPath build -destination 'platform=macOS' build 2>&1 | tee build.log | xcbeautify --renderer github-actions
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log

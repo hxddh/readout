@@ -1,0 +1,33 @@
+#!/bin/sh
+# readout — open Markdown files in Readout.
+#
+#   readout FILE...            open files and bring Readout forward
+#   readout -b FILE...         open files without switching apps
+#   readout --hook             for agent hooks: read hook JSON on stdin and open
+#                              tool_input.file_path in the background if it is Markdown
+#
+# Bundle identifier of the Readout app.
+APP_ID="io.github.hxddh.readout"
+
+usage() {
+  sed -n '3,8p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+is_markdown() {
+  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+    *.md|*.markdown|*.mdown|*.mkd|*.mkdn|*.mdwn|*.mdtxt|*.mdtext) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+case "$1" in
+  -h|--help) usage; exit 0 ;;
+  --hook)
+    input=$(cat)
+    path=$(printf '%s' "$input" | /usr/bin/plutil -extract tool_input.file_path raw -o - - 2>/dev/null)
+    [ -n "$path" ] && is_markdown "$path" && [ -f "$path" ] && exec /usr/bin/open -g -b "$APP_ID" "$path"
+    exit 0 ;;
+  -b|--background) shift; exec /usr/bin/open -g -b "$APP_ID" "$@" ;;
+  "") exec /usr/bin/open -b "$APP_ID" ;;
+  *) exec /usr/bin/open -b "$APP_ID" "$@" ;;
+esac

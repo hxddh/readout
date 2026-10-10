@@ -1,0 +1,131 @@
+name: Readout
+options:
+  bundleIdPrefix: io.github.hxddh
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+  groupSortPosition: top
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: YES
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    LOCALIZATION_PREFERS_STRING_CATALOGS: NO
+
+packages:
+  ReadoutCore:
+    path: Packages/ReadoutCore
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.9.0"
+
+targets:
+  Readout:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+      - path: Shared
+      - path: web/dist
+        type: folder
+        buildPhase: resources
+        name: Web
+      - path: cli/readout
+        buildPhase: resources
+    dependencies:
+      - package: ReadoutCore
+      - package: Sparkle
+      - target: ReadoutQuickLook
+        embed: true
+        codeSign: true
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleName: Readout
+        CFBundleDisplayName: Readout
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleIconFile: AppIcon
+        LSApplicationCategoryType: public.app-category.developer-tools
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: "© 2026 hxddh"
+        NSPrincipalClass: NSApplication
+        NSSupportsAutomaticTermination: false
+        NSSupportsSuddenTermination: false
+        SUFeedURL: https://github.com/hxddh/readout/releases/latest/download/appcast.xml
+        SUPublicEDKey: $(SPARKLE_PUBLIC_KEY)
+        SUEnableAutomaticChecks: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Markdown Document
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Default
+            LSItemContentTypes:
+              - net.daringfireball.markdown
+              - io.github.hxddh.readout.markdown
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: net.daringfireball.markdown
+            UTTypeDescription: Markdown Document
+            UTTypeConformsTo: [public.plain-text]
+            UTTypeTagSpecification:
+              public.filename-extension: [md, markdown]
+              public.mime-type: [text/markdown]
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: io.github.hxddh.readout.markdown
+            UTTypeDescription: Markdown Document
+            UTTypeConformsTo: [public.plain-text]
+            UTTypeTagSpecification:
+              public.filename-extension: [mdown, mkd, mkdn, mdwn, mdtxt, mdtext]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.hxddh.readout
+        PRODUCT_NAME: Readout
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SPARKLE_PUBLIC_KEY: "Xh2SczsdPO3XM/AN6Hwy7Z3dqDvqhg0CiDqZyWiAkkY="
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        CODE_SIGN_ENTITLEMENTS: App/Readout.entitlements
+
+  ReadoutQuickLook:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: QuickLook
+      - path: Shared
+      - path: web/dist
+        type: folder
+        buildPhase: resources
+        name: Web
+    dependencies:
+      - package: ReadoutCore
+      - sdk: Quartz.framework
+      - sdk: WebKit.framework
+    info:
+      path: QuickLook/Info.plist
+      properties:
+        CFBundleDisplayName: Readout Quick Look
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.preview
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PreviewViewController
+          NSExtensionAttributes:
+            QLIsDataBasedPreview: false
+            QLSupportsSearchableItems: false
+            QLSupportedContentTypes:
+              - net.daringfireball.markdown
+              - io.github.hxddh.readout.markdown
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.hxddh.readout.quicklook
+        PRODUCT_NAME: ReadoutQuickLook
+        CODE_SIGN_ENTITLEMENTS: QuickLook/QuickLook.entitlements
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
