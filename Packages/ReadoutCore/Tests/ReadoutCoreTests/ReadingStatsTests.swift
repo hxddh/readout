@@ -45,9 +45,10 @@ import Testing
         // Whole-excerpt containment: the middle of the excerpt survived, so it anchors.
         #expect(ExcerptAnchor.index(of: "agent rewrote the opening words of this block!!", in: texts) == 0)
         #expect(ExcerptAnchor.index(of: "rewrote the opening words of this bloc", in: texts) == 0)
-        // Too little overlap: the half-excerpt (first half of the excerpt) no
-        // longer appears, so no anchor rather than a wrong one.
-        #expect(ExcerptAnchor.index(of: "opening words of this block that used to be longer", in: texts) == nil)
+        // Rewritten tail: the surviving 25-character head still anchors —
+        // a head that long matching elsewhere by coincidence is unlikely.
+        #expect(ExcerptAnchor.index(of: "opening words of this block that used to be longer", in: texts) == 0)
+        // No overlap at all: no anchor rather than a wrong one.
         #expect(ExcerptAnchor.index(of: "zzzz entire replacement text with no overlap at all here", in: texts) == nil)
     }
 
