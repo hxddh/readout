@@ -33,8 +33,30 @@ enum SmokeTest {
                 try? await Task.sleep(for: .seconds(1))
                 await capture(webView, window: controller.window, to: out, name: "3-marks")
             }
+            // Dark appearance, then the auxiliary windows.
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+            _ = try? await webView.evaluateJavaScript("(() => { const m = document.querySelector('.mermaid-block'); if (m) m.scrollIntoView({block: 'center'}); return 1; })()")
+            try? await Task.sleep(for: .seconds(2.5))
+            await capture(webView, window: controller.window, to: out, name: "4-dark")
+            NSApp.appearance = nil
+            let app = NSApp.delegate as? AppDelegate
+            app?.showSettings(nil)
+            try? await Task.sleep(for: .seconds(1.5))
+            screen(out, "5-settings")
+            NSApp.keyWindow?.close()
+            app?.showWelcome(nil)
+            try? await Task.sleep(for: .seconds(1.5))
+            screen(out, "6-welcome")
             NSApp.terminate(nil)
         }
+    }
+
+    private static func screen(_ dir: URL, _ name: String) {
+        let shot = Process()
+        shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        shot.arguments = ["-x", dir.appendingPathComponent("\(name).screen.png").path]
+        try? shot.run()
+        shot.waitUntilExit()
     }
 
     private static func capture(_ webView: WKWebView, window: NSWindow?, to dir: URL, name: String) async {
@@ -60,11 +82,7 @@ enum SmokeTest {
            let png = rep.representation(using: .png, properties: [:]) {
             try? png.write(to: dir.appendingPathComponent("\(name).png"))
         }
-        let shot = Process()
-        shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-        shot.arguments = ["-x", dir.appendingPathComponent("\(name).screen.png").path]
-        try? shot.run()
-        shot.waitUntilExit()
+        screen(dir, name)
         if let window {
             let info = "frame=\(NSStringFromRect(window.frame)) title=\(window.title) subtitle=\(window.subtitle)"
             try? info.write(to: dir.appendingPathComponent("\(name).window.txt"), atomically: true, encoding: .utf8)

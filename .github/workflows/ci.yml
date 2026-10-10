@@ -60,6 +60,17 @@ jobs:
           kill $PID 2>/dev/null || true
           mkdir -p smoke-out && mv smoke-screen-1.png smoke-out/ 2>/dev/null || true
           cp smoke-out.log smoke-out/ || true
+          # Quick Look: register the extension from /Applications and preview the fixture.
+          ditto "$APP" /Applications/Readout.app
+          /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/Readout.app
+          pluginkit -a /Applications/Readout.app/Contents/PlugIns/ReadoutQuickLook.appex || true
+          sleep 2
+          pluginkit -mAvvv -p com.apple.quicklook.preview | grep -i readout || echo "Quick Look extension not listed"
+          qlmanage -r >/dev/null 2>&1 || true
+          (qlmanage -p "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlmanage.log 2>&1 &)
+          sleep 8
+          screencapture -x smoke-out/7-quicklook.screen.png || true
+          pkill -f qlmanage || true
           ls -la smoke-out
           for f in smoke-out/*.json; do echo "$f"; cat "$f"; echo; done
       - name: Upload smoke test output
