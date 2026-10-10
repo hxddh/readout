@@ -274,6 +274,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             self.webView.whenReady { [weak self] in
                 guard let self else { return }
                 self.webView.call("apply", patch)
+                SmokeTest.run(controller: self, webView: self.webView)
                 if let idx = record?.topBlockIndex, idx < self.session.blocks.count {
                     let slot = self.session.blocks[idx].slot
                     let anchor = ["slot": slot, "offset": record?.topOffset ?? 0, "ratio": 0] as [String: Any]

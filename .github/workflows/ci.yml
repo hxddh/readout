@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:6.1-noble
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Test
         run: swift test --package-path Packages/ReadoutCore
 
@@ -24,8 +24,8 @@ jobs:
     name: Build app (macOS)
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -44,9 +44,33 @@ jobs:
           set -o pipefail
           xcodebuild -project Readout.xcodeproj -scheme Readout -configuration Debug \
             -derivedDataPath build -destination 'platform=macOS' build 2>&1 | tee build.log | xcbeautify --renderer github-actions
+      - name: Smoke test
+        run: |
+          mkdir -p "$RUNNER_TEMP/smoke"
+          cp web/test/fixtures/plan.md "$RUNNER_TEMP/smoke/plan.md"
+          APP=build/Build/Products/Debug/Readout.app
+          READOUT_SMOKE_FILE="$RUNNER_TEMP/smoke/plan.md" \
+          READOUT_SMOKE_EDIT="$PWD/web/test/fixtures/plan-v2.md" \
+          READOUT_SMOKE_OUT="$PWD/smoke-out" \
+            "$APP/Contents/MacOS/Readout" > smoke-out.log 2>&1 &
+          PID=$!
+          sleep 7
+          screencapture -x smoke-screen-1.png || true
+          for i in $(seq 1 40); do kill -0 $PID 2>/dev/null || break; sleep 1; done
+          kill $PID 2>/dev/null || true
+          mkdir -p smoke-out && mv smoke-screen-1.png smoke-out/ 2>/dev/null || true
+          cp smoke-out.log smoke-out/ || true
+          ls -la smoke-out
+          for f in smoke-out/*.json; do echo "$f"; cat "$f"; echo; done
+      - name: Upload smoke test output
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: smoke
+          path: smoke-out
       - name: Upload build log
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-log
           path: build.log

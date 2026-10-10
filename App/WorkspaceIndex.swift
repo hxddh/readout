@@ -11,8 +11,8 @@ final class WorkspaceIndex {
     private let queue = DispatchQueue(label: "readout.workspaces", qos: .utility)
     private var roots: [String] = []
 
-    static let markdownExtensions: Set<String> = ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext"]
-    static let skippedDirectories: Set<String> = ["node_modules", ".git", ".hg", ".svn", "build", ".build", "DerivedData",
+    nonisolated static let markdownExtensions: Set<String> = ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext"]
+    nonisolated static let skippedDirectories: Set<String> = ["node_modules", ".git", ".hg", ".svn", "build", ".build", "DerivedData",
                                                   "Pods", "vendor", "target", "dist", ".next", ".venv", "venv", "__pycache__", ".cache"]
 
     func configure(_ paths: [String]) {

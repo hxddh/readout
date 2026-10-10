@@ -44,6 +44,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }.store(in: &cancellables)
         settings.$workspaces.sink { paths in WorkspaceIndex.shared.configure(paths) }.store(in: &cancellables)
 
+        if let smoke = ProcessInfo.processInfo.environment["READOUT_SMOKE_FILE"] {
+            openedAtLaunch = true
+            open(URL(fileURLWithPath: smoke))
+        }
+
         // Files passed on launch arrive through application(_:open:) right after this; show the welcome
         // window only if none did.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
