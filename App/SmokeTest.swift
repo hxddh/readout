@@ -14,6 +14,7 @@ enum SmokeTest {
         try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
         let env = ProcessInfo.processInfo.environment
 
+        NSApp.activate()
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(3))
             await capture(webView, window: controller.window, to: out, name: "1-initial")
@@ -59,6 +60,11 @@ enum SmokeTest {
            let png = rep.representation(using: .png, properties: [:]) {
             try? png.write(to: dir.appendingPathComponent("\(name).png"))
         }
+        let shot = Process()
+        shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        shot.arguments = ["-x", dir.appendingPathComponent("\(name).screen.png").path]
+        try? shot.run()
+        shot.waitUntilExit()
         if let window {
             let info = "frame=\(NSStringFromRect(window.frame)) title=\(window.title) subtitle=\(window.subtitle)"
             try? info.write(to: dir.appendingPathComponent("\(name).window.txt"), atomically: true, encoding: .utf8)
