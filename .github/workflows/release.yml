@@ -23,7 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ env.TAG }}
+          # Tag pushes build the tag; manual runs build the selected branch and create the tag on release.
+          ref: ${{ github.event_name == 'push' && github.ref || github.sha }}
           fetch-depth: 0
 
       - name: Version
@@ -131,5 +132,5 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" $FILES --clobber
           else
-            gh release create "$TAG" $FILES --title "Readout $VERSION" --notes-file "$NOTES"
+            gh release create "$TAG" $FILES --title "Readout $VERSION" --notes-file "$NOTES" --target "$(git rev-parse HEAD)"
           fi
