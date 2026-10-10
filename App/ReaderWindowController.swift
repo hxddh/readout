@@ -58,10 +58,19 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var deleted = false
     private var lastAnchor: (slot: Int, offset: Double)?
     private var saveWork: DispatchWorkItem?
+    // Parse coalescing: rapid successive writes share one in-flight parse;
+    // completions carry a generation and stale ones are dropped.
+    private var readGeneration = 0
+    private var readInFlight = false
+    private var readAgain = false
+    private var pendingCompletions: [(ReadResult?) -> Void] = []
+    /// Fragment from a cross-file link (other.md#section), scrolled to after load.
+    private var pendingAnchor: String?
 
-    init(url: URL) {
+    init(url: URL, pendingAnchor: String? = nil) {
         self.url = url.standardizedFileURL
         self.webView = WebViewPool.shared.take()
+        self.pendingAnchor = pendingAnchor
 
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1060, height: 820),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -243,12 +252,24 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     private func read(_ completion: @escaping (ReadResult?) -> Void) {
+        // Coalesce: if a parse is already running, queue the completion for
+        // the follow-up read instead of queueing another full parse behind it.
+        if readInFlight {
+            readAgain = true
+            pendingCompletions.append(completion)
+            return
+        }
+        readInFlight = true
+        readGeneration += 1
+        let generation = readGeneration
         let url = self.url
         let resolver = self.resolver
         let cache = self.cache
         parseQueue.async {
             guard let data = try? Data(contentsOf: url) else {
-                DispatchQueue.main.async { completion(nil) }
+                DispatchQueue.main.async { [weak self] in
+                    self?.finishRead(generation: generation, result: nil)
+                }
                 return
             }
             let hash = XXHash64.hash(data)
@@ -256,8 +277,34 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             cache.beginGeneration()
             let doc = MarkdownParser.parse(decoded.text, resolver: resolver, cache: cache)
             let result = ReadResult(doc: doc, hash: hash, size: data.count, decoded: decoded)
-            DispatchQueue.main.async { completion(result) }
+            DispatchQueue.main.async { [weak self] in
+                self?.finishRead(generation: generation, result: result)
+            }
         }
+        // The initiating completion waits for this read like any other.
+        pendingCompletions.append(completion)
+    }
+
+    private func finishRead(generation: Int, result: ReadResult?) {
+        guard generation == readGeneration else { return }  // superseded by a newer read
+        if readAgain {
+            // The file changed while we were parsing: re-read from disk, and
+            // queued completions wait for that fresher result.
+            readAgain = false
+            readInFlight = false
+            read { [weak self] _ in self?.drainCompletions(with: $0) }
+            return
+        }
+        readInFlight = false
+        let completions = pendingCompletions
+        pendingCompletions = []
+        for c in completions { c(result) }
+    }
+
+    private func drainCompletions(with result: ReadResult?) {
+        let completions = pendingCompletions
+        pendingCompletions = []
+        for c in completions { c(result) }
     }
 
     private func load() {
@@ -277,7 +324,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 guard let self else { return }
                 self.webView.call("apply", patch)
                 SmokeTest.run(controller: self, webView: self.webView)
-                if let idx = record?.topBlockIndex, idx < self.session.blocks.count {
+                if let pending = self.pendingAnchor {
+                    // Cross-file link target: the fragment wins over the saved position.
+                    self.pendingAnchor = nil
+                    self.scrollToAnchor(fragment: pending)
+                } else if let idx = record?.topBlockIndex, idx < self.session.blocks.count {
                     let slot = self.session.blocks[idx].slot
                     let anchor = ["slot": slot, "offset": record?.topOffset ?? 0, "ratio": 0] as [String: Any]
                     if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
@@ -391,20 +442,46 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             NSWorkspace.shared.open(u)
             return
         }
-        // Relative or file link: resolve against the document's folder, drop any fragment.
+        // Split off the fragment first: other.md#section should open the file
+        // AND scroll to the section.
+        var fragment: String? = nil
         var path = href
-        if let hash = path.firstIndex(of: "#") { path = String(path[..<hash]) }
-        if path.lowercased().hasPrefix("file://"), let u = URL(string: path) { path = u.path }
+        if let hash = path.firstIndex(of: "#") {
+            fragment = String(path[path.index(after: hash)...])
+            path = String(path[..<hash])
+        }
+        if path.lowercased().hasPrefix("file://"), let u = URL(string: path) {
+            fragment = fragment ?? u.fragment
+            path = u.path
+        }
         path = path.removingPercentEncoding ?? path
-        guard !path.isEmpty else { return }
+        if let fragment, fragment.isEmpty { fragment = nil }
+        guard !path.isEmpty else {
+            // Same-document anchor: scroll in place.
+            if let fragment { scrollToAnchor(fragment: fragment) }
+            return
+        }
         let target = path.hasPrefix("/") ? URL(fileURLWithPath: path)
             : url.deletingLastPathComponent().appendingPathComponent(path).standardizedFileURL
         if WorkspaceIndex.markdownExtensions.contains(target.pathExtension.lowercased()) {
-            (NSApp.delegate as? AppDelegate)?.open(target)
+            (NSApp.delegate as? AppDelegate)?.open(target, anchor: fragment)
         } else if FileManager.default.fileExists(atPath: target.path) {
             NSWorkspace.shared.open(target)
         } else {
             NSSound.beep()
+        }
+    }
+
+    /// Scrolls to the heading whose slug matches the fragment (GitHub-style).
+    func scrollToAnchor(fragment: String) {
+        let slug = fragment.lowercased()
+        if let block = session.blocks.first(where: {
+            $0.kind == .heading && ($0.anchor == slug || $0.anchor?.lowercased() == slug)
+        }) {
+            webView.call("scrollToSlot", json: String(block.slot))
+        } else {
+            // Fall back to the page's own anchor lookup (percent-decoding, case variants).
+            webView.call("scrollToFragment", json: (try? JSONSerialization.data(withJSONObject: ["fragment": fragment]).flatMap { String(data: $0, encoding: .utf8) }) ?? "")
         }
     }
 

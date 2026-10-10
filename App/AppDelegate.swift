@@ -70,7 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     // MARK: Opening
 
-    func open(_ url: URL) {
+    func open(_ url: URL, anchor: String? = nil) {
         let url = url.standardizedFileURL
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue else {
@@ -81,9 +81,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         if let existing = windows[url.path] {
             existing.show()
             NSApp.activate()
+            if let anchor { existing.scrollToAnchor(fragment: anchor) }
             return
         }
-        let controller = ReaderWindowController(url: url)
+        let controller = ReaderWindowController(url: url, pendingAnchor: anchor)
         controller.onClose = { [weak self] c in self?.windows[c.url.path] = nil }
         if let front = NSApp.orderedWindows.first(where: { w in windows.values.contains { $0.window === w } }),
            let w = controller.window {

@@ -131,6 +131,24 @@ function apply(p) {
   first = false;
   const anchor = isFirst ? null : captureAnchor();
   const following = !isFirst && atBottom();
+  // Only follow when the change is at (or below) the viewport: an insertion
+  // at the top of the document must not yank a bottom-dwelling reader.
+  // The anchor block itself counts: if it was edited, restoring it keeps us
+  // at the end anyway.
+  let changeNearViewport = false;
+  if (following && !p.reset) {
+    for (const op of p.ops) {
+      if (op.op === 'remove') continue;
+      const el = slots.get(op.slot);
+      // Inserted blocks have no element yet; locate via the predecessor.
+      const ref = el || (op.after ? slots.get(op.after) : null);
+      if (!ref) { changeNearViewport = true; break; }  // unknown position: stay safe, follow
+      const r = ref.getBoundingClientRect();
+      if (r.top > window.innerHeight - 200) { changeNearViewport = true; break; }
+      if (anchor && op.slot === anchor.slot) { changeNearViewport = true; break; }
+    }
+  }
+  const follow = following && (p.reset || p.rewrite || changeNearViewport);
   const changed = new Set();
   const visibleChanged = [];
 
@@ -178,7 +196,7 @@ function apply(p) {
   if (p.rewrite) showNotice(strings.rewritten);
 
   // Restore position in the same task, before the browser paints.
-  if (following) window.scrollTo(0, document.scrollingElement.scrollHeight);
+  if (follow) window.scrollTo(0, document.scrollingElement.scrollHeight);
   else if (anchor) restoreAnchor(anchor, changed);
 
   for (const el of visibleChanged) {
@@ -667,11 +685,23 @@ function scrollToAnchor(a) {
   restoreAnchor(a, new Set());
 }
 
+function scrollToFragment(o) {
+  const frag = o && o.fragment;
+  if (!frag) return;
+  let id = frag;
+  try { id = decodeURIComponent(frag); } catch { /* keep raw */ }
+  const target = document.getElementById(id)
+    || document.getElementById(id.toLowerCase())
+    || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(id.toLowerCase())}"]`);
+  if (target) { window.scrollBy(0, target.getBoundingClientRect().top - 16); reportActiveHeading(); }
+}
+
 window.readout = {
   apply,
   setAppearance,
   scrollToSlot,
   scrollToAnchor,
+  scrollToFragment,
   captureAnchor,
   nextChange: () => jump(1),
   previousChange: () => jump(-1),
