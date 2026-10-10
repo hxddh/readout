@@ -24,6 +24,12 @@ struct SettingsView: View {
                     }
                 }
                 .frame(minHeight: 96)
+                .overlay {
+                    if settings.workspaces.isEmpty {
+                        Text("No folders yet")
+                            .foregroundStyle(.tertiary)
+                    }
+                }
                 HStack {
                     Button("Add Folder…", action: addFolder)
                     Button("Remove") {

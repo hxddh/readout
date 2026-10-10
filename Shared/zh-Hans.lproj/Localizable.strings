@@ -78,3 +78,4 @@
 "Read what your agents write." = "阅读 Agent 写下的一切。";
 "Readout watches these folders for Markdown files. The global shortcut opens the newest one." = "Readout 会监视这些文件夹中的 Markdown 文件，全局快捷键会打开其中最新的一个。";
 "Check for updates automatically" = "自动检查更新";
+"No folders yet" = "尚未添加文件夹";

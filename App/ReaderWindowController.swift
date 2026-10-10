@@ -194,6 +194,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         let appearance = window?.effectiveAppearance ?? NSApp.effectiveAppearance
         let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         let settings = AppSettings.shared
+        // The area under the toolbar shows the web view's under-page colour; keep it in step with the page.
+        webView.underPageBackgroundColor = dark ? NSColor(srgbRed: 0x1e / 255, green: 0x1e / 255, blue: 0x1f / 255, alpha: 1) : .white
         webView.whenReady { [weak self] in
             self?.webView.setAppearance(dark: dark, accent: .controlAccentColor, width: settings.wide ? "wide" : "narrow",
                                         fontSize: settings.fontSize, strings: ReaderStrings.all)
