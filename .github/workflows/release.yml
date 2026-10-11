@@ -119,21 +119,39 @@ jobs:
           echo "ok: tag is on main"
 
       - name: CI must be green on the tagged commit
+        timeout-minutes: 65
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           SHA="${{ steps.tag.outputs.sha }}"
-          echo "checking CI (ci.yml) on $SHA"
-          # Note: jobs from the called verify.yml surface as
-          # "Verify signed product / Build, sign and smoke test", so match by substring.
-          # (gh api has no --arg flag: interpolate the name into the -q query.)
-          for NAME in "Core tests (Linux)" "Web tests (WebKit)" "Verify signed product"; do
-            C=$(gh api "repos/{owner}/{repo}/commits/$SHA/check-runs" -q \
-              "[.check_runs[] | select(.name | contains(\"$NAME\"))][0].conclusion" 2>/dev/null || echo "")
-            echo "$NAME: ${C:-unknown}"
-            [ "$C" = "success" ] || { echo "FAIL: '$NAME' is not success on $SHA"; exit 1; }
+          # Only the ci.yml run triggered by the push to main for this exact
+          # commit counts: never a PR run, never another commit's run. A tag
+          # pushed right after merging finds that run still going (3.0.1 did),
+          # so wait for it instead of failing.
+          DEADLINE=$(( $(date +%s) + 60 * 60 ))
+          while :; do
+            RUN=$(gh api "repos/{owner}/{repo}/actions/workflows/ci.yml/runs?event=push&branch=main&head_sha=$SHA&per_page=20" \
+              -q '[.workflow_runs[] | select(.head_sha == "'"$SHA"'")] | sort_by(.run_number) | last | if . == null then "" else "\(.id) \(.status) \(.conclusion // "")" end')
+            read -r ID STATUS CONCLUSION <<< "$RUN"
+            echo "$(date -u +%H:%M:%S) ci.yml push run on main for $SHA: ${ID:-none} ${STATUS:-} ${CONCLUSION:-}"
+            [ -n "$ID" ] && [ "$STATUS" = "completed" ] && break
+            [ "$(date +%s)" -lt "$DEADLINE" ] || { echo "FAIL: CI on $SHA did not finish within 60 minutes"; exit 1; }
+            sleep 30
           done
-          echo "ok: CI is green on $SHA"
+          [ "$CONCLUSION" = "success" ] || {
+            echo "FAIL: CI run $ID on $SHA concluded '$CONCLUSION'."
+            echo "If it was cancelled by a newer push to main, re-run it, then re-run this release."
+            exit 1
+          }
+          # Belt and braces: each required job inside that run succeeded.
+          # (Jobs from the called verify.yml are named "Verify signed product / …".)
+          for NAME in "Core tests (Linux)" "Web tests (WebKit)" "Verify signed product"; do
+            C=$(gh api "repos/{owner}/{repo}/actions/runs/$ID/jobs?per_page=100" \
+              -q "[.jobs[] | select(.name | contains(\"$NAME\"))][0].conclusion // \"\"")
+            echo "$NAME: ${C:-missing}"
+            [ "$C" = "success" ] || { echo "FAIL: '$NAME' is not success in run $ID"; exit 1; }
+          done
+          echo "ok: CI run $ID is green on $SHA"
 
   verify:
     name: Verify what will ship

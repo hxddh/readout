@@ -28,10 +28,15 @@ installs WebKit with `npx playwright install --with-deps webkit`.
 
 ## 3. Signed-product smoke test
 
-`App/SmokeTest.swift` (enabled by `READOUT_SMOKE_OUT`) opens the
-`plan.md → plan-v2.md` fixtures in the built app, captures stats JSON, and
-quits by itself. `verify.yml` runs it against the **signed Release app
-copied to /Applications** — the exact bytes users install — and
+`tools/smoke-run.py` launches the built app on a copy of `plan.md` and
+plays the agent: it rewrites the file (temp file + rename) shortly after the
+app opens it (`plan-early.md`) and again mid-session (`plan-v2.md`). The app
+side, `App/SmokeTest.swift` (enabled by `READOUT_SMOKE_OUT`), is read-only: it
+captures stats JSON and screenshots into the output directory, signals the
+harness through marker files, and quits by itself. The app never writes the
+document; `verify.yml` fails if document-writing smoke code returns to the
+sources or the signed binary. `verify.yml` runs it against the **signed
+Release app copied to /Applications** — the exact bytes users install — and
 `tools/smoke-assert.py` asserts:
 
 - `1-initial`: blocks == 33, highlighted >= 2, math >= 3
@@ -39,8 +44,11 @@ copied to /Applications** — the exact bytes users install — and
   |anchorShift| <= 2, mermaid >= 1
 - `4-dark`: theme == "dark"
 - the log contains no `Readout page error` and no `scheme handler: 404`
-- Quick Look: `pluginkit` lists `io.github.hxddh.readout.quicklook` and the
-  `qlmanage` log has no errors
+- Quick Look: `pluginkit` lists `io.github.hxddh.readout.quicklook`, the
+  `qlmanage` log has no errors, and the extension's log line reports the
+  preview was applied with 34 of 34 blocks rendered (proof of content, not
+  just registration; `qlmanage -t` cannot prove this because a preview
+  extension does not produce thumbnails)
 
 CI prints the actual values before asserting. The thresholds come from the
 `plan.md` fixtures; **a mismatch means the product regressed**.

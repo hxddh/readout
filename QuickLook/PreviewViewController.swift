@@ -2,6 +2,9 @@ import AppKit
 import Quartz
 import WebKit
 import ReadoutCore
+import os
+
+private let log = Logger(subsystem: "io.github.hxddh.readout.quicklook", category: "preview")
 
 /// Quick Look preview: the same renderer as the app, static, without change tracking.
 final class PreviewViewController: NSViewController, QLPreviewingController {
@@ -29,20 +32,26 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
             Task { @MainActor in
                 var resumed = false
-                let finish = {
+                let finish = { (how: String) in
                     guard !resumed else { return }
                     resumed = true
+                    // One line per preview, so CI (and Console) can see that
+                    // content actually rendered, not just that we registered.
                     cont.resume()
+                    webView.evaluateJavaScript("document.querySelectorAll('.blk').length") { value, _ in
+                        let rendered = (value as? NSNumber)?.intValue ?? -1
+                        log.notice("preview \(how, privacy: .public): rendered \(rendered, privacy: .public) of \(doc.blocks.count, privacy: .public) blocks")
+                    }
                 }
                 webView.whenReady {
                     let dark = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
                     webView.setAppearance(dark: dark, accent: .controlAccentColor, width: "narrow", fontSize: 15,
                                           strings: ReaderStrings.all, mode: "quicklook")
-                    webView.onMessage = { msg in if msg["type"] as? String == "applied" { finish() } }
+                    webView.onMessage = { msg in if msg["type"] as? String == "applied" { finish("applied") } }
                     webView.call("apply", patch)
                 }
                 // Never hang Quick Look if the page fails to report back.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { finish() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { finish("timed out") }
             }
         }
     }

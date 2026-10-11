@@ -75,27 +75,22 @@ jobs:
           chmod +x tools/sign.sh
           tools/sign.sh dist/Readout.app "-"
 
+      - name: The shipped app never writes the document
+        run: |
+          # File edits during the smoke test come from tools/smoke-run.py, not the app.
+          if grep -rnE "replaceItemAt|copyItem\(|READOUT_SMOKE_(EDIT|EARLY)" App Shared QuickLook; then
+            echo "FAIL: document-writing smoke code is back in the app sources"; exit 1
+          fi
+          if strings -a dist/Readout.app/Contents/MacOS/Readout | grep -E "READOUT_SMOKE_(EDIT|EARLY)|readout-smoke"; then
+            echo "FAIL: the signed binary still carries smoke edit code"; exit 1
+          fi
+          echo "ok: no document writes in the product"
+
       - name: Smoke test the signed app from /Applications
         run: |
           rm -rf /Applications/Readout.app
           ditto dist/Readout.app /Applications/Readout.app
-          mkdir -p "$RUNNER_TEMP/smoke" smoke-out
-          cp web/test/fixtures/plan.md "$RUNNER_TEMP/smoke/plan.md"
-          cp web/test/fixtures/missing-diagram.png "$RUNNER_TEMP/smoke/missing-diagram.png"
-          READOUT_SMOKE_FILE="$RUNNER_TEMP/smoke/plan.md" \
-          READOUT_SMOKE_EDIT="$PWD/web/test/fixtures/plan-v2.md" \
-          READOUT_SMOKE_EARLY_EDIT="$PWD/web/test/fixtures/plan-early.md" \
-          READOUT_SMOKE_OUT="$PWD/smoke-out" \
-            /Applications/Readout.app/Contents/MacOS/Readout > smoke-out/smoke-out.log 2>&1 &
-          PID=$!
-          for _ in $(seq 1 90); do kill -0 $PID 2>/dev/null || break; sleep 1; done
-          if kill -0 $PID 2>/dev/null; then
-            echo "FAIL: the signed app did not exit on its own within 90 seconds"
-            kill $PID 2>/dev/null || true
-            exit 1
-          fi
-          wait $PID
-          echo "signed app exited with code 0"
+          python3 tools/smoke-run.py /Applications/Readout.app/Contents/MacOS/Readout "$RUNNER_TEMP/smoke" smoke-out
 
       - name: Quick Look check
         run: |
@@ -105,11 +100,19 @@ jobs:
           pluginkit -mAvvv -p com.apple.quicklook.preview > smoke-out/ql-pluginkit.log 2>&1 || true
           cat smoke-out/ql-pluginkit.log
           qlmanage -r >/dev/null 2>&1 || true
+          START=$(date '+%Y-%m-%d %H:%M:%S')
           (qlmanage -p "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlmanage.log 2>&1 &)
           sleep 8
           pkill -f qlmanage || true
           sleep 1
           cat smoke-out/qlmanage.log || true
+          # The extension logs one line per preview with the rendered block count.
+          log show --start "$START" --style compact \
+            --predicate 'subsystem == "io.github.hxddh.readout.quicklook"' > smoke-out/ql-render.log 2>&1 || true
+          cat smoke-out/ql-render.log
+          # Informational: a preview-only extension does not provide thumbnails.
+          qlmanage -t -s 512 -o smoke-out "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlthumb.log 2>&1 || true
+          cat smoke-out/qlthumb.log
 
       - name: Print smoke values
         run: |

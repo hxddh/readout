@@ -39,7 +39,7 @@ print(f"1-initial: {initial}")
 check("1-initial blocks == 33", initial.get("blocks") == 33, initial)
 check("1-initial highlighted >= 2", (initial.get("highlighted") or 0) >= 2, initial)
 check("1-initial math >= 3", (initial.get("math") or 0) >= 3, initial)
-# Task E4: the file was replaced 50ms after opening (READOUT_SMOKE_EARLY_EDIT);
+# Task E4: tools/smoke-run.py replaced the file 50ms after the app opened it;
 # the first capture must already show the replacement, not the stale content.
 check("1-initial early edit applied", initial.get("early") is True, initial)
 
@@ -83,6 +83,18 @@ check(
     not re.search(r"error|failed|invalid|cannot|traceback", qmt, re.I),
     qmt[:500],
 )
+
+# Quick Look must have rendered the document, not merely registered: the
+# extension logs "preview applied: rendered N of M blocks" for each preview.
+# The smoke file ends as plan-v2.md (34 blocks).
+qr = OUT / "ql-render.log"
+qrt = qr.read_text() if qr.exists() else ""
+check("ql-render.log present", qr.exists())
+m = re.search(r"preview (applied|timed out): rendered (-?\d+) of (\d+) blocks", qrt)
+check("quicklook preview rendered", bool(m), qrt[-500:])
+if m:
+    check("quicklook preview applied (not timed out)", m.group(1) == "applied", m.group(0))
+    check("quicklook rendered == 34 blocks", m.group(2) == "34" and m.group(3) == "34", m.group(0))
 
 print(f"{len(failures)} failing assertion(s)")
 sys.exit(1 if failures else 0)
