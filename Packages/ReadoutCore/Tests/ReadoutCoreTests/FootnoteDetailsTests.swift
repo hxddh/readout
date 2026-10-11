@@ -80,6 +80,12 @@ import Testing
         #expect(doc.blocks.last!.html.contains("Found."))
     }
 
+    @Test func aCitationFromAnotherNoteGetsAWayBack() {
+        let notes = parse("x[^a] y[^b]\n\n[^a]: A.\n[^b]: B cites[^a].\n").blocks.last!.html
+        #expect(notes.contains(##"href="#user-content-fnref-a-2""##))
+        #expect(notes.contains(##"id="user-content-fnref-a-2""##))
+    }
+
     @Test func everyReferenceGetsAWayBack() {
         let notes = parse("a[^n] b[^n]\n\n[^n]: Note.\n").blocks.last!.html
         #expect(notes.contains(##"href="#user-content-fnref-n""##))

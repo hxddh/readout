@@ -544,6 +544,20 @@ check('rail labels use the localized template',
   check('an unknown earlier text says so', typeof r.unknown === 'string' && r.unknown.length > 10, JSON.stringify(r));
   check('the comparison opens after the block was read', r.afterRead, JSON.stringify(r));
   check('D opens the comparison of an edited block in view', r.byKey, JSON.stringify(r));
+// Code inside a closed <details> is highlighted when it is opened.
+{
+  await page.evaluate(p => window.readout.apply(p), { version: 120, reset: true, rewrite: false,
+    ops: [{ op: 'insert', slot: 1601, after: 0, kind: 'html', html: '<details><summary>More</summary><div class="code-block" data-lang="js"><pre><code>const answer = 42;</code></pre></div></details>' }],
+    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => document.querySelector('.blk[data-slot="1601"] .code-block').dataset.hl);
+  await page.evaluate(() => { document.querySelector('.blk[data-slot="1601"] details').open = true; });
+  let after = '';
+  for (let i = 0; i < 60 && after !== 'done'; i++) {
+    await page.waitForTimeout(50);
+    after = await page.evaluate(() => document.querySelector('.blk[data-slot="1601"] .code-block').dataset.hl);
+  }
+  check('code in a closed <details> is highlighted when opened', after === 'done', JSON.stringify({ before, after }));
 }
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 

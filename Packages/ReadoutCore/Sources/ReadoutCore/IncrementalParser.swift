@@ -36,13 +36,13 @@ public final class IncrementalParser: @unchecked Sendable {
 
     public init(resolver: ResourceResolver? = nil) {
         self.resolver = resolver
-        self.resolverID = String(describing: resolver)
+        self.resolverID = resolver?.identity ?? ""
     }
 
     /// Parses with a (possibly changed) resolver: fragments resolved against
     /// a different one (other search folders) are not reused.
     public func parse(_ rawSource: String, resolver: ResourceResolver?, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
-        let id = String(describing: resolver)
+        let id = resolver?.identity ?? ""
         if id != resolverID {
             previous = [:]
             resolverID = id
