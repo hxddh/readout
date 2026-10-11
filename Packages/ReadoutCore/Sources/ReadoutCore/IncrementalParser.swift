@@ -94,8 +94,10 @@ public final class IncrementalParser: @unchecked Sendable {
 
     // MARK: Fragmenting
 
-    /// Link reference definitions reach across the whole document.
-    private static let documentWide = try! NSRegularExpression(pattern: #"^ {0,3}\[[^\]]+\]:"#)
+    /// Link reference definitions reach across the whole document, also
+    /// from inside a list item or block quote.
+    private static let documentWide = try! NSRegularExpression(
+        pattern: #"^(?:[ \t]*(?:>|(?:[-*+]|\d{1,9}[.)])(?=[ \t]|$)))*[ \t]*\[[^\]]+\]:"#)
 
     /// True when `lines` (footnote definitions taken out) define link
     /// references outside code and raw HTML.

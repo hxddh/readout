@@ -145,7 +145,7 @@ struct HTMLRenderer {
         case is ThematicBreak:
             return "<hr>"
         case let h as HTMLBlock:
-            return HTML.sanitize(h.rawHTML)
+            return HTML.sanitize(h.html)
         case let l as UnorderedList:
             let tight = isTight(l)
             return "<ul>" + l.listItems.map { listItem($0, tight: tight) }.joined() + "</ul>"
@@ -231,5 +231,15 @@ struct HTMLRenderer {
             }
         }
         return true
+    }
+}
+
+extension HTMLBlock {
+    /// The raw HTML without the blank lines cmark keeps at its end or not,
+    /// depending on what follows the block.
+    var html: String {
+        var s = rawHTML
+        while s.hasSuffix("\n\n") { s.removeLast() }
+        return s
     }
 }

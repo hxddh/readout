@@ -9,8 +9,8 @@ export function headingsChanged() { headings = null; }
 export function reportActiveHeading() {
   if (!headings) headings = Array.from(doc.querySelectorAll('.k-heading'));
   // Headings are in document order, so their tops increase: binary search
-  // for the last one at or above the line (hidden ones sit at 0 height and
-  // keep the order).
+  // for the last one at or above the line. This relies on headings never
+  // being hidden ("Show Only Changes" keeps them as context).
   const line = 80;
   let lo = 0, hi = headings.length - 1, active = null;
   while (lo <= hi) {
