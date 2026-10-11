@@ -39,6 +39,9 @@ print(f"1-initial: {initial}")
 check("1-initial blocks == 33", initial.get("blocks") == 33, initial)
 check("1-initial highlighted >= 2", (initial.get("highlighted") or 0) >= 2, initial)
 check("1-initial math >= 3", (initial.get("math") or 0) >= 3, initial)
+# Task E4: the file was replaced 50ms after opening (READOUT_SMOKE_EARLY_EDIT);
+# the first capture must already show the replacement, not the stale content.
+check("1-initial early edit applied", initial.get("early") is True, initial)
 
 edit = load("2-after-edit.json")
 print(f"2-after-edit: {edit}")
