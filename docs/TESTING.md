@@ -62,12 +62,12 @@ licensed repository. `SOURCES.md` lists source, license and agent evidence.
 
 - `CorpusTests` (Core) renders every document to patch JSON
   (`corpus/patches/`) and fails when parser output changes. Regenerate with
-  `READOUT_UPDATE_CORPUS=1 swift test --filter CorpusTests`.
+  `READOUT_UPDATE_CORPUS=1 swift test --package-path Packages/ReadoutCore --filter CorpusTests`.
 - `npm run corpus` (web, CI job "Rendering baselines (WebKit)") renders each
   patch light and dark with code, math and diagrams settled, and compares:
-  - `corpus/snapshots/<doc>-<theme>.json`: every block's position, height and
-    a fingerprint of the computed styles and sizes of everything inside it.
-    Exact; a failure names the changed blocks.
+  - `corpus/snapshots/<doc>-<theme>.json`: every block's slot, position,
+    height, a hash of its text, and a fingerprint of the computed styles and
+    sizes of everything inside it. Exact; a failure names the changed blocks.
   - `corpus/screenshots/<doc>-<theme>.png`: pixels of the first 1200 px,
     with a small anti-aliasing tolerance. Full-page pixel baselines would
     add ~100 MB per rendering change, so the snapshot covers the rest.
@@ -75,9 +75,35 @@ licensed repository. `SOURCES.md` lists source, license and agent evidence.
   full-page screenshots of every document.
 
 Baselines come from CI's WebKit, not a developer machine (fonts differ).
+The test raises Shiki's per-line tokenizing guard so a starved CI machine
+cannot cut highlighting short and render the same page two ways.
 To accept an intended rendering change: download `corpus-actual`, copy
 `actual/snapshots` and `actual/screenshots` over `web/test/corpus/`, review
 each changed image, and say why in the PR.
+
+## 5. Speed budgets
+
+`tools/perf-budgets.json` lists each measured metric with a `target` (the
+goal from the release plan) and a `guard` (the regression limit CI enforces).
+`tools/perf-assert.py WHERE FILE...` fails when a gated metric is missing or
+over its guard; metrics with `"guard": null` are printed but not gated.
+
+| Where | Measured by | Metrics |
+| --- | --- | --- |
+| mac (Verify signed product) | `PerformanceBudgetTests` in a release build, written to the file named by `READOUT_PERF_OUT`; `tools/smoke-run.py` timings from the signed app | update_100kb, update_1mb; cold_start_ms, warm_open_ms, write_to_update_ms |
+| linux-webkit (Web tests) | `node web/test/perf.test.mjs` → `web/test/out/perf-web.json` | web_first_apply_1mb_ms, web_update_20_blocks_1mb_ms (each including the layout it causes), scroll frame pacing (reported) |
+
+Run locally:
+
+```sh
+READOUT_PERF_OUT=/tmp/perf-core.json swift test -c release --package-path Packages/ReadoutCore --filter PerformanceBudgetTests
+cd web && npm run build && node test/perf.test.mjs
+tools/perf-assert.py linux-webkit web/test/out/perf-web.json
+```
+
+Local numbers are not comparable with CI's machines; the guards apply to CI.
+Lower a guard when a metric improves; never raise one to make CI pass, and
+explain any change in `_comment` and the PR.
 
 ## The one rule
 

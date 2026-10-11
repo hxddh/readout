@@ -31,4 +31,4 @@ Clicking an image placeholder posts `loadRemote`; the App downloads it with `Rem
 
 ## Focus and resume
 
-The window subtitle and the sidebar footer show word count and estimated reading time (CJK characters count individually, Latin text counts words). "Show Only Changes" (⇧⌘K) hides every block already read; headings offer a hover link button that copies a `path#anchor` link to the section. The saved reading position is excerpt-anchored: the first 120 characters of the top block are stored alongside the baseline, so resume survives block-index shifts from agent edits (falling back to the legacy saved index for older records).
+The window subtitle shows task progress when the document has task lists, and nothing otherwise. "Show Only Changes" (⇧⌘K) hides every block already read; headings offer a hover link button that copies a `path#anchor` link to the section. The saved reading position is excerpt-anchored: the first 120 characters of the top block are stored alongside the baseline, so resume survives block-index shifts from agent edits (falling back to the legacy saved index for older records).

@@ -17,6 +17,12 @@ import Testing
         #expect(notes.contains(##"href="#user-content-fnref-b" class="fn-back""##))
     }
 
+    @Test func aReferenceRightAfterAURLStaysOutOfTheLink() {
+        let html = parse("See https://example.com/a[^n] and $x$https://b.org.\n\n[^n]: Note.\n").blocks[0].html
+        #expect(html.contains(##"<a href="https://example.com/a">https://example.com/a</a><sup class="fn-ref">"##))
+        #expect(!html.contains("\u{E000}") && !html.contains("\u{E002}"))
+    }
+
     @Test func repeatedReferencesGetDistinctIDs() {
         let html = parse("x[^n] y[^n]\n\n[^n]: Note.\n").blocks[0].html
         #expect(html.contains(##"id="user-content-fnref-n""##))
@@ -33,6 +39,21 @@ import Testing
     @Test func definitionsInsideFencesAreCode() {
         let doc = parse("```\n[^n]: not a definition\n```\n")
         #expect(doc.blocks.map(\.kind) == [.code])
+    }
+
+    @Test func referencesInsideRawHTMLStayLiteral() {
+        let doc = parse("<div>\ntext[^n]\n</div>\n\n[^n]: Note.\n")
+        #expect(doc.blocks[0].html.contains("text[^n]"))
+        #expect(!doc.blocks[0].html.contains("\u{E000}"))
+        #expect(doc.blocks.count == 1)   // never referenced: no footnotes section
+    }
+
+    @Test func definitionsInsideLongerFencesAreCode() {
+        // A ``` line inside a ```` fence does not close it.
+        let doc = parse("See[^n].\n\n````md\n```\n[^n]: inside code\n```\n````\n\n[^n]: real\n")
+        #expect(doc.blocks.map(\.kind) == [.paragraph, .code, .footnotes])
+        #expect(doc.blocks[1].html.contains("[^n]: inside code"))
+        #expect(doc.blocks[2].html.contains("real"))
     }
 
     @Test func multiLineDefinitionsRenderMarkdown() {
@@ -98,6 +119,14 @@ import Testing
         let doc = MarkdownParser.parse("<details>\n<summary>Outer</summary>\n\n<details>\n<summary>Inner</summary>\n\nText\n\n</details>\n\n</details>\n\nAfter.\n")
         #expect(doc.blocks.map(\.kind) == [.html, .paragraph])
         #expect(doc.blocks[0].html.components(separatedBy: "</details>").count == 3)
+    }
+
+    @Test func onlyRealDetailsTagsCount() {
+        #expect(MarkdownParser.detailsDepth("<details-card><details>") == 1)
+        #expect(MarkdownParser.detailsDepth("<details open>x<!-- </details> -->") == 1)
+        #expect(MarkdownParser.detailsDepth("</details >") == -1)
+        let doc = MarkdownParser.parse("<details>\n<summary>S</summary>\n\n<!-- </details> -->\n\nInside.\n\n</details>\n\nAfter.\n")
+        #expect(doc.blocks.map(\.kind) == [.html, .paragraph])
     }
 
     @Test func singleLineDetailsIsUnchanged() {

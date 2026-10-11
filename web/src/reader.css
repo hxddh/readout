@@ -138,6 +138,8 @@ del { color: var(--text-3); }
 code {
   font-family: var(--mono);
   font-size: 0.86em;
+  /* A long path or identifier breaks rather than running past the column. */
+  overflow-wrap: break-word;
   background: var(--fill);
   border-radius: 5px;
   padding: 0.12em 0.36em;
