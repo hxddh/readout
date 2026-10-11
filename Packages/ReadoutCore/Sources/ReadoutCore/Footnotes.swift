@@ -67,7 +67,7 @@ enum Footnotes {
     }
 
     private static let blockStart = try! NSRegularExpression(
-        pattern: #"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|\||<|```|~~~|\[|[-*+](?:[ \t]|$)|\d{1,9}[.)](?:[ \t]|$)|(?:[-*_][ \t]*){3,}$)"#)
+        pattern: #"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|<[A-Za-z/!?]|```|~~~|\[(?:\\.|[^\]\\])+\]:|[-*+](?:[ \t]|$)|\d{1,9}[.)](?:[ \t]|$)|(?:[-*_][ \t]*){3,}$)"#)
 
     /// A line that a paragraph can take as its continuation: not blank, not
     /// indented code, and not the start of another block.

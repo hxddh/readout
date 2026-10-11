@@ -69,6 +69,10 @@ import Testing
         #expect(doc.blocks.map(\.kind) == [.paragraph, .paragraph, .footnotes])
         #expect(doc.blocks.last!.html.contains("continued without indent."))
         #expect(!doc.blocks[1].html.contains("continued"))
+        // Text that merely starts with a bracket or a pipe continues it.
+        let bracket = parse("See[^1].\n\n[^1]: First line\n[continued] text | more\n")
+        #expect(bracket.blocks.last!.html.contains("[continued] text | more"))
+        #expect(bracket.blocks.count == 2)
         // A new block after the definition is not part of it.
         let list = parse("See[^1].\n\n[^1]: Note\n- item\n")
         #expect(list.blocks.contains { $0.kind == .listItem })
