@@ -15,7 +15,7 @@ import { captureAnchor, restoreAnchor, resolveFragment } from './reader/anchor.j
 import { apply } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelHeadingLinks } from './reader/enhance.js';
+import { relabelHeadingLinks, setCodeWrap } from './reader/enhance.js';
 import { rerenderMermaid } from './reader/mermaid.js';
 import { remoteReady, remoteFailed } from './reader/remote.js';
 import { reportActiveHeading } from './reader/heading.js';
@@ -35,7 +35,14 @@ doc.addEventListener('click', ev => {
   ev.preventDefault();
   if (href.startsWith('#')) {
     const target = resolveFragment(href);
-    if (target) target.scrollIntoView({ block: 'start' });
+    if (!target) return;
+    // Footnotes and their back-references land mid-screen and show where.
+    const note = a.matches('[data-footnote-ref], [data-footnote-backref]');
+    target.scrollIntoView({ block: note ? 'center' : 'start' });
+    if (note) {
+      const spot = target.closest('li, sup') || target;
+      spot.classList.remove('landed'); void spot.offsetWidth; spot.classList.add('landed');
+    }
     return;
   }
   post({ type: 'open', href });
@@ -88,6 +95,7 @@ function setAppearance(o) {
     relabelHeadingLinks();
   }
   if (o.changesOnly !== undefined) initChangesOnly(o.changesOnly);
+  if (o.codeWrap !== undefined) setCodeWrap(!!o.codeWrap);
   if (o.mode === 'quicklook') enableQuicklook();
   scheduleRail();
 }

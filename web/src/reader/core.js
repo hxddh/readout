@@ -7,7 +7,7 @@ export const root = document.documentElement;
 export const slots = new Map();          // slot -> element
 export const heights = new WeakMap();    // element -> last observed height
 
-export let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', remoteError: 'Could not load image: %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section', railChange: 'Unread change %d of %d: %@', railAdded: 'added', railEdited: 'edited', railRemoved: 'removed' };
+export let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', remoteError: 'Could not load image: %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section', railChange: 'Unread change %d of %d: %@', railAdded: 'added', railEdited: 'edited', railRemoved: 'removed', wrap: 'Wrap', wrapTitle: 'Wrap long lines in code blocks' };
 export function mergeStrings(s) { strings = { ...strings, ...s }; }
 
 /** Quick Look renders statically: no marks, no rail. */

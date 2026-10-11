@@ -193,7 +193,8 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
     }
 
     func setAppearance(dark: Bool? = nil, accent: NSColor? = nil, width: String? = nil, fontSize: Double? = nil,
-                       strings: [String: String]? = nil, changesOnly: Bool? = nil, mode: String? = nil) {
+                       strings: [String: String]? = nil, changesOnly: Bool? = nil, codeWrap: Bool? = nil,
+                       mode: String? = nil) {
         var o: [String: Any] = [:]
         if let dark { o["dark"] = dark }
         if let accent { o["accent"] = accent.hexString }
@@ -201,6 +202,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         if let fontSize { o["fontSize"] = fontSize }
         if let strings { o["strings"] = strings }
         if let changesOnly { o["changesOnly"] = changesOnly }
+        if let codeWrap { o["codeWrap"] = codeWrap }
         if let mode { o["mode"] = mode }
         guard let data = try? JSONSerialization.data(withJSONObject: o), let json = String(data: data, encoding: .utf8) else { return }
         call("setAppearance", json: json)
@@ -240,6 +242,8 @@ enum ReaderStrings {
             "railAdded": NSLocalizedString("added", comment: "Change kind in rail label"),
             "railEdited": NSLocalizedString("edited", comment: "Change kind in rail label"),
             "railRemoved": NSLocalizedString("removed", comment: "Change kind in rail label"),
+            "wrap": NSLocalizedString("Wrap", comment: "Code block button: wrap long lines"),
+            "wrapTitle": NSLocalizedString("Wrap long lines in code blocks", comment: "Code block wrap button tooltip"),
         ]
     }
 }

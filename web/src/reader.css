@@ -91,10 +91,13 @@ body { margin: 0; }
 /* ---------- Blocks ---------- */
 
 .blk { position: relative; }
-.blk.cjk { line-height: var(--lh-cjk); }
+.blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
+/* CJK: trim the doubled space of adjacent full-width punctuation where WebKit supports it. */
+@supports (text-spacing-trim: space-first) { html { text-spacing-trim: space-first; } }
 
 .blk > p, .blk > ul, .blk > ol, .blk > blockquote, .blk > .table-wrap,
-.blk > .code-block, .blk > .alert, .blk > .math-block, .blk > .mermaid-block, .blk > hr {
+.blk > .code-block, .blk > .alert, .blk > .math-block, .blk > .mermaid-block, .blk > hr,
+.blk > details, .blk > .footnotes {
   margin: 0 0 1.1em;
 }
 
@@ -215,6 +218,11 @@ th:last-child, td:last-child { padding-right: 0; }
 th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; }
 td { font-variant-numeric: tabular-nums; }
 tbody tr:last-child td { border-bottom: 0; }
+/* A table that fits keeps its header in view while you read down it; a wide
+   one scrolls sideways inside its wrapper (which then cannot also pin the
+   header to the page) and keeps its first column in view instead. */
+.table-wrap:not(.scrolls) { overflow-x: visible; }
+.table-wrap:not(.scrolls) thead th { position: sticky; top: 0; background: var(--bg); z-index: 1; }
 .table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child {
   position: sticky; left: 0; background: var(--bg); z-index: 1;
 }
@@ -258,6 +266,48 @@ tbody tr:last-child td { border-bottom: 0; }
 .code-block[data-lang="diff"] .line.add { background: rgba(46, 160, 67, 0.14); display: inline-block; width: 100%; }
 .code-block[data-lang="diff"] .line.del { background: rgba(248, 81, 73, 0.14); display: inline-block; width: 100%; }
 
+/* Long code lines wrap when the reader turns wrapping on (remembered by the app). */
+:root[data-code-wrap="on"] .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.cb-wrap { font: inherit; font-size: 0.72rem; border: 0; background: transparent; color: var(--text-3); cursor: pointer; padding: 0 2px; }
+.cb-wrap:hover, :root[data-code-wrap="on"] .cb-wrap { color: var(--text); }
+
+/* Disclosure (<details>) */
+details {
+  padding: 0.55em 0.95em;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+details > summary { cursor: pointer; font-weight: 600; color: var(--text); }
+details > summary::marker { color: var(--text-3); }
+details[open] > summary { margin-bottom: 0.65em; }
+details > p, details > ul, details > ol, details > blockquote, details > .table-wrap,
+details > .code-block, details > .alert, details > .math-block, details > .mermaid-block, details > hr {
+  margin: 0 0 0.85em;
+}
+details > :last-child { margin-bottom: 0.2em; }
+details ul, details ol { padding-left: 1.5em; }
+
+/* Footnotes */
+.fn-ref { font-size: 0.72em; line-height: 0; vertical-align: super; }
+.fn-ref a { text-decoration: none; padding: 0 0.12em; }
+.footnotes {
+  margin-top: 2.2em;
+  padding-top: 0.9em;
+  border-top: 1px solid var(--rule);
+  font-size: 0.88em;
+  color: var(--text-2);
+}
+.footnotes ol { margin: 0; padding-left: 1.6em; }
+.footnotes li { margin: 0.35em 0; }
+.footnotes li > p { margin: 0; }
+.footnotes li::marker { font-variant-numeric: tabular-nums; }
+.fn-back { text-decoration: none; color: var(--text-3); }
+.fn-back:hover { color: var(--accent); }
+
+/* Where an in-document link landed (footnote or back-reference). */
+@keyframes landed { from { background: var(--accent-soft); } to { background: transparent; } }
+.landed { animation: landed 1.4s ease-out; border-radius: 4px; }
+
 /* Math */
 .math-block { overflow-x: auto; overflow-y: hidden; text-align: center; padding: 0.3em 0; }
 .math-block:not(.done), .math:not(.done) { font-family: var(--mono); font-size: 0.86em; color: var(--text-2); }
@@ -273,7 +323,8 @@ tbody tr:last-child td { border-bottom: 0; }
   white-space: pre-wrap;
 }
 .mermaid-block.done .mermaid-src { display: none; }
-.mermaid-error { font-size: 0.8rem; color: var(--caution); margin-top: 0.4em; text-align: left; }
+.mermaid-error { font-size: 0.8rem; color: var(--text-2); margin-top: 0.5em; text-align: left; }
+.mermaid-error::before { content: "⚠︎ "; color: var(--warning); }
 
 /* Remote images */
 .remote-img button {
@@ -390,7 +441,7 @@ tbody tr:last-child td { border-bottom: 0; }
 :root[data-mode="quicklook"] #ro-doc { padding-top: 28px; padding-bottom: 40px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .blk.flash { animation: none; }
+  .blk.flash, .landed { animation: none; }
   .blk::before, .code-block .cb-tools { transition: none; }
 }
 
@@ -399,5 +450,11 @@ tbody tr:last-child td { border-bottom: 0; }
   .blk::before { display: none; }
   #ro-doc { padding: 0; max-width: none; }
   #ro-doc.cv > .blk { content-visibility: visible; }
-  .code-block pre { white-space: pre-wrap; }
+  .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  /* Never cut a code block, table row, diagram, formula, image or alert across pages. */
+  .code-block, tr, .mermaid-block, .math-block, img, .alert, details, .footnotes li { break-inside: avoid; }
+  h1, h2, h3, h4, h5, h6, .k-heading { break-after: avoid; }
+  thead { display: table-header-group; }
+  .table-wrap, .table-wrap:not(.scrolls) { overflow: visible; }
+  .table-wrap thead th, .table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child { position: static; }
 }

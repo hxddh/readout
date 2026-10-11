@@ -18,14 +18,39 @@ function loadMermaid() {
     });
   }
   return mermaidPromise.then(m => {
-    const theme = root.dataset.theme === 'dark' ? 'dark' : 'neutral';
+    const theme = root.dataset.theme === 'dark' ? 'dark' : 'light';
     if (theme !== mermaidTheme) {
+      // Diagrams take the page's own colors and type, in both themes.
+      const css = getComputedStyle(root);
+      const v = name => css.getPropertyValue(name).trim();
       m.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
-        theme,
-        fontFamily: '-apple-system, "SF Pro Text", "PingFang SC", sans-serif',
-        themeVariables: { fontSize: '13px' },
+        theme: 'base',
+        fontFamily: v('--font') || '-apple-system, "SF Pro Text", "PingFang SC", sans-serif',
+        themeVariables: {
+          darkMode: theme === 'dark',
+          fontSize: '13px',
+          background: v('--bg'),
+          primaryColor: v('--fill'),
+          primaryTextColor: v('--text'),
+          primaryBorderColor: v('--text-3'),
+          secondaryColor: v('--fill-2'),
+          tertiaryColor: v('--bg'),
+          lineColor: v('--text-2'),
+          textColor: v('--text'),
+          noteBkgColor: v('--fill-2'),
+          noteTextColor: v('--text'),
+          noteBorderColor: v('--rule'),
+          clusterBkg: v('--fill'),
+          clusterBorder: v('--rule'),
+          edgeLabelBackground: v('--bg'),
+          actorBkg: v('--fill'),
+          actorBorder: v('--text-3'),
+          actorTextColor: v('--text'),
+          signalColor: v('--text-2'),
+          signalTextColor: v('--text'),
+        },
         flowchart: { htmlLabels: true, curve: 'basis' },
         sequence: { actorFontSize: 13, messageFontSize: 13, noteFontSize: 13, useMaxWidth: true },
       });
@@ -33,6 +58,15 @@ function loadMermaid() {
     }
     return m;
   });
+}
+
+/** A short, readable reason: Mermaid's parser errors run to several lines of grammar tokens. */
+function diagramError(err) {
+  const text = String(err && err.message || err);
+  const line = text.match(/line (\d+)/i);
+  const first = text.split('\n').find(l => l.trim() && !/^-+\^?$/.test(l.trim())) || '';
+  const reason = /Expecting|got '/.test(first) || first.length > 120 ? '' : first.replace(/^Parse error on line \d+:?\s*/i, '');
+  return [line ? `line ${line[1]}` : '', reason].filter(Boolean).join(': ') || 'syntax error';
 }
 
 const mermaidQueue = [];
@@ -61,7 +95,7 @@ async function pumpMermaid() {
           const { svg } = await m.render(`mmd-${++mermaidSeq}`, src);
           out = { svg };
         } catch (err) {
-          out = { error: String(err && err.message || err).split('\n').slice(0, 3).join(' ') };
+          out = { error: diagramError(err) };
           document.querySelectorAll(`#dmmd-${mermaidSeq}, #mmd-${mermaidSeq}`).forEach(e => e.remove());
         }
         mermaidCache.set(key, out);

@@ -22,7 +22,8 @@ let package = Package(
         ),
         .testTarget(
             name: "ReadoutCoreTests",
-            dependencies: ["ReadoutCore"]
+            dependencies: ["ReadoutCore"],
+            exclude: ["Fixtures"]
         ),
     ]
 )

@@ -24,8 +24,17 @@ public enum MarkdownParser {
             }
         }
 
+        // Footnote definitions come out of the flow (their lines blanked, so
+        // line numbers stay true) and are rendered as one block at the end.
+        let definitions = Footnotes.extract(&parseLines)
+
         var math = MathProtector()
+        math.footnoteIDs = Set(definitions.map(\.id))
         let protected = math.protect(parseLines.joined(separator: "\n"))
+        // Definitions are protected with the same protector (after the body,
+        // so numbering follows first reference in the text) before the
+        // renderer copies it.
+        let protectedDefinitions = definitions.map { (def: $0, source: math.protect($0.text)) }
         let document = Document(parsing: protected, options: [.disableSmartOpts])
         var renderer = HTMLRenderer(math: math, resolver: resolver)
         renderer.sourceLines = protected.split(separator: "\n", omittingEmptySubsequences: false)
@@ -44,16 +53,21 @@ public enum MarkdownParser {
             return r.lowerBound.line...max(r.lowerBound.line, r.upperBound.line)
         }
 
+        // Footnote numbers depend on the whole document (order of first
+        // reference), so a block's HTML can change while its source does not.
+        let footnoteKey = definitions.isEmpty ? "" : "|fn:\(XXHash64.hash(math.footnoteOrder.joined(separator: "\u{1F}")))"
+
         func make(_ kind: BlockKind, _ node: Markup?, range: ClosedRange<Int>, html: @autoclosure () -> String,
-                  extra: String = "", heading: (Int, String, String)? = nil) -> Block {
+                  extra: String = "", heading: (Int, String, String)? = nil, taskNodes: [Markup] = []) -> Block {
             let slice = sourceSlice(range)
             let normalized = normalize(slice, kind: kind)
             var tasks: [Bool] = []
             if let node { collectTasks(node, into: &tasks) }
+            for n in taskNodes { collectTasks(n, into: &tasks) }
             // Kind participates in the fingerprint so a paragraph and a heading with the same text differ.
             let fp = XXHash64.hash(kind.rawValue + "\u{1F}" + normalized)
             // The rendered HTML depends on the exact source (incl. task state) plus positional context.
-            let cacheKey = "\(XXHash64.hash(slice.joined(separator: "\n")))|\(kind.rawValue)|\(extra)"
+            let cacheKey = "\(XXHash64.hash(slice.joined(separator: "\n")))|\(kind.rawValue)|\(extra)\(footnoteKey)"
             let rendered: String
             if let cached = cache?.lookup(cacheKey) { rendered = cached }
             else { rendered = html(); cache?.store(cacheKey, rendered) }
@@ -82,8 +96,39 @@ public enum MarkdownParser {
             }
         }
 
-        for node in document.children {
+        let nodes = Array(document.children)
+        var index = 0
+        while index < nodes.count {
+            let node = nodes[index]
+            index += 1
             let range = lineRange(node)
+            // `<details>` and its Markdown content arrive as separate top-level
+            // nodes (an HTML block ends at the first blank line). Gather them
+            // back into one block so the disclosure actually folds.
+            if let h = node as? HTMLBlock, Self.detailsDepth(h.rawHTML) > 0 {
+                var depth = Self.detailsDepth(h.rawHTML)
+                var inner: [Markup] = []
+                var closing = ""
+                var last = range.upperBound
+                while index < nodes.count, depth > 0 {
+                    let next = nodes[index]
+                    index += 1
+                    last = lineRange(next).upperBound
+                    if let nh = next as? HTMLBlock {
+                        depth += Self.detailsDepth(nh.rawHTML)
+                        if depth <= 0 { closing = nh.rawHTML; break }
+                    }
+                    inner.append(next)
+                }
+                func html() -> String {
+                    HTML.sanitize(h.rawHTML) + inner.map { n -> String in
+                        if let nh = n as? HTMLBlock { return HTML.sanitize(nh.rawHTML) }
+                        return renderer.block(n)
+                    }.joined() + HTML.sanitize(closing)
+                }
+                blocks.append(make(.html, h, range: range.lowerBound...last, html: html(), taskNodes: inner))
+                continue
+            }
             switch node {
             case let h as Heading:
                 let titleText = math.restore(plain: h.plainText).trimmingCharacters(in: .whitespaces)
@@ -148,6 +193,24 @@ public enum MarkdownParser {
             }
         }
 
+        // Only referenced definitions are shown, in reference order (as GitHub does).
+        let referenced = math.footnoteOrder.compactMap { id in protectedDefinitions.first { $0.def.id == id } }
+        if !referenced.isEmpty {
+            let lo = referenced.map(\.def.lines.lowerBound).min()!, hi = referenced.map(\.def.lines.upperBound).max()!
+            let items = referenced.enumerated().map { n, entry -> String in
+                let id = HTML.escape(entry.def.id)
+                var body = renderer.children(Document(parsing: entry.source, options: [.disableSmartOpts]))
+                let back = "<a href=\"#user-content-fnref-\(id)\" class=\"fn-back\" data-footnote-backref aria-label=\"Back to reference \(n + 1)\">↩</a>"
+                if body.hasSuffix("</p>") { body = String(body.dropLast(4)) + " " + back + "</p>" } else { body += back }
+                return "<li id=\"user-content-fn-\(id)\">\(body)</li>"
+            }
+            let html = "<section class=\"footnotes\" data-footnotes><ol>\(items.joined())</ol></section>"
+            let text = referenced.map { "[^\($0.def.id)]: \($0.def.text)" }.joined(separator: "\n")
+            blocks.append(Block(kind: .footnotes, headingPath: [], lines: lo...hi,
+                                fingerprint: XXHash64.hash("footnotes\u{1F}" + text),
+                                taskState: [], html: html, text: text))
+        }
+
         return ParsedDocument(blocks: blocks, title: title)
     }
 
@@ -171,6 +234,13 @@ public enum MarkdownParser {
             lock.lock(); current = next; next = [:]; lock.unlock()
         }
         public func clear() { lock.lock(); current = [:]; next = [:]; lock.unlock() }
+    }
+
+    /// Net `<details>` opened by a raw HTML fragment (opens minus closes).
+    static func detailsDepth(_ html: String) -> Int {
+        let lower = html.lowercased()
+        func count(_ needle: String) -> Int { lower.components(separatedBy: needle).count - 1 }
+        return count("<details") - count("</details")
     }
 
     static func mathHTML(_ tex: String) -> String {

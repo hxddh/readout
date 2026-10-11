@@ -77,12 +77,20 @@ struct HTMLRenderer {
         return "<img src=\"\(HTML.escape(r.url))\" alt=\"\(alt)\"\(dims) loading=\"lazy\" decoding=\"async\">"
     }
 
+    /// GFM extended autolinks: http(s) URLs, `www.` hosts and email addresses.
+    /// Trailing punctuation (ASCII and CJK) is left out of the link.
     private static let urlRegex = try! NSRegularExpression(
-        pattern: #"\bhttps?://[^\s<>"'`]+[^\s<>"'`.,;:!?)\]}，。；：！？）】]"#)
+        pattern: #"\b(?:https?|ftp)://[^\s<>"'`]+[^\s<>"'`.,;:!?)\]}，。；：！？）】]"#
+            + #"|(?<![\w.@/:-])www\.[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?:[/?#][^\s<>"'`]*[^\s<>"'`.,;:!?)\]}，。；：！？）】])?"#
+            + #"|(?<![\w.+-])[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9_-]+)*\.[A-Za-z0-9_-]*[A-Za-z0-9](?![-_\w])"#)
 
-    /// Escapes text and links bare URLs (GFM autolink extension equivalent).
+    /// `&amp;` followed by letters and digits just before a `;` reads as an entity reference: GFM leaves it out of the link.
+    private static let trailingEntity = try! NSRegularExpression(pattern: #"&[A-Za-z0-9]+$"#)
+
+    /// Escapes text and links bare URLs, `www.` hosts and emails (GFM autolink extension).
     private func autolink(_ text: String) -> String {
-        guard text.utf8.contains(0x3A) /* ":" */ else { return HTML.escape(text) }
+        guard text.utf8.contains(0x3A) /* ":" */ || text.utf8.contains(0x40) /* "@" */ || text.contains("www.")
+        else { return HTML.escape(text) }
         let ns = text as NSString
         let fullLength = ns.length
         var out = ""
@@ -103,7 +111,14 @@ struct HTMLRenderer {
                 end += 1
                 open -= 1
             }
-            out += "<a href=\"\(HTML.escape(url))\">\(HTML.escape(url))</a>"
+            if end < fullLength, ns.character(at: end) == 0x3B /* ";" */,
+               let e = HTMLRenderer.trailingEntity.firstMatch(in: url, range: NSRange(location: 0, length: (url as NSString).length)) {
+                end -= e.range.length
+                url = (url as NSString).substring(to: e.range.location)
+            }
+            let href = url.hasPrefix("www.") ? "http://" + url
+                : (url.contains("@") && !url.contains("://") ? "mailto:" + url : url)
+            out += "<a href=\"\(HTML.escape(href))\">\(HTML.escape(url))</a>"
             last = end
         }
         out += HTML.escape(ns.substring(from: last))
