@@ -9,6 +9,17 @@ import Testing
         #expect(!ReleaseCheck.isNewer("v3.0.1", than: "3.0.1"))
         #expect(!ReleaseCheck.isNewer("3.0.0", than: "3.0.1"))
         #expect(!ReleaseCheck.isNewer("v3.1.0-beta", than: "3.1.0"))
+        #expect(!ReleaseCheck.isNewer("v3.1", than: "3.1.0"))
+    }
+
+    @Test func preReleasesRankBelowTheRelease() {
+        #expect(!ReleaseCheck.isNewer("3.1.0-rc.2", than: "3.1.0"))
+        #expect(ReleaseCheck.isNewer("v3.1.0", than: "3.1.0-beta"))
+        #expect(ReleaseCheck.isNewer("3.1.0-rc.10", than: "3.1.0-rc.2"))
+        #expect(ReleaseCheck.isNewer("3.1.0-rc", than: "3.1.0-beta.9"))
+        #expect(ReleaseCheck.isNewer("3.1.0-rc.1", than: "3.1.0-rc"))
+        #expect(ReleaseCheck.isNewer("3.1.1-alpha", than: "3.1.0"))
+        #expect(!ReleaseCheck.isNewer("3.1.0+build.7", than: "3.1.0"))
     }
 
     @Test func plainNotesStripsMarkdown() {

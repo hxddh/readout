@@ -218,7 +218,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 // MARK: - Welcome
 
 struct WelcomeView: View {
-    /// Fixed size: open, open latest and drop a file. Recent files live in File ▸ Open Recent and the Dock menu.
+    /// Fixed size: open, open latest and drop a file. Recent files live in File ▸ Open Recent.
     static let height: CGFloat = 400
 
     let onOpen: () -> Void

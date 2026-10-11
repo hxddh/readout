@@ -2,21 +2,44 @@ import Foundation
 
 /// The pure parts of the GitHub Releases update check (App/UpdateChecker.swift).
 public enum ReleaseCheck {
-    /// Compares dotted version tags numerically ("v1.0.10" is newer than "1.0.9").
-    /// A leading "v" and any pre-release suffix ("-beta") are ignored.
+    /// Compares version tags the semantic-versioning way: dotted numbers
+    /// first ("v1.0.10" is newer than "1.0.9", "3.1" equals "3.1.0"); with
+    /// equal numbers a release is newer than its pre-releases ("3.1.0" over
+    /// "3.1.0-rc.2"), and pre-releases compare identifier by identifier
+    /// ("rc.10" over "rc.2", "rc" over "beta"). Build metadata is ignored.
     public static func isNewer(_ tag: String, than current: String) -> Bool {
-        func parts(_ s: String) -> [Int] {
-            s.trimmingCharacters(in: .whitespaces)
-                .trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
-                .split(separator: ".")
-                .map { Int($0.split(separator: "-").first ?? $0) ?? 0 }
+        compare(tag, current) > 0
+    }
+
+    static func compare(_ a: String, _ b: String) -> Int {
+        func split(_ s: String) -> (core: [Int], pre: [Substring]) {
+            var t = s.trimmingCharacters(in: .whitespaces)[...]
+            if t.first == "v" || t.first == "V" { t = t.dropFirst() }
+            if let plus = t.firstIndex(of: "+") { t = t[..<plus] }
+            let dash = t.firstIndex(of: "-")
+            let core = (dash.map { t[..<$0] } ?? t).split(separator: ".").map { Int($0) ?? 0 }
+            let pre = dash.map { t[t.index(after: $0)...].split(separator: ".") } ?? []
+            return (core, pre)
         }
-        let a = parts(tag), b = parts(current)
-        for i in 0..<max(a.count, b.count) {
-            let x = i < a.count ? a[i] : 0, y = i < b.count ? b[i] : 0
-            if x != y { return x > y }
+        let x = split(a), y = split(b)
+        for i in 0..<max(x.core.count, y.core.count) {
+            let p = i < x.core.count ? x.core[i] : 0, q = i < y.core.count ? y.core[i] : 0
+            if p != q { return p > q ? 1 : -1 }
         }
-        return false
+        // A release outranks any pre-release of the same version.
+        if x.pre.isEmpty != y.pre.isEmpty { return x.pre.isEmpty ? 1 : -1 }
+        for i in 0..<max(x.pre.count, y.pre.count) {
+            guard i < x.pre.count else { return -1 }   // fewer identifiers: lower
+            guard i < y.pre.count else { return 1 }
+            let p = x.pre[i], q = y.pre[i]
+            switch (Int(p), Int(q)) {
+            case let (m?, n?): if m != n { return m > n ? 1 : -1 }
+            case (.some, nil): return -1                // numbers rank below words
+            case (nil, .some): return 1
+            case (nil, nil): if p != q { return p > q ? 1 : -1 }
+            }
+        }
+        return 0
     }
 
     /// Strips Markdown formatting for alert text: links keep their text,
