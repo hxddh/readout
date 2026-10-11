@@ -21,7 +21,7 @@ import Testing
         "1. first", "2) second", "    indented code", "> quote", "> [!NOTE]", "| a | b |", "|---|---|",
         "```", "```js", "~~~", "````", "<details>", "</details>", "<summary>More</summary>", "<!--", "-->",
         "<pre>", "</pre>", "<div>", "$$", "x = $a$ and $$b$$", "---", "***", "===", "Setext", "- [ ] task",
-        "- [x] done", "text with <details> inline", "  - nested", "\tTabbed", "<script>", "</script>",
+        "- [x] done", "text with <details> inline", "  - nested", "\tTabbed", "<script>", "</script>", "<br>", "<span class=\"x\">", "  <div>",
     ]
 
     static func mutate(_ lines: inout [String], rng: inout SplitMix64) {
@@ -40,6 +40,7 @@ import Testing
         #expect(inc.title == full.title, "\(note())")
         #expect(inc.blocks.count == full.blocks.count, "\(note())")
         if inc.blocks != full.blocks {
+            if let dump = ProcessInfo.processInfo.environment["INC_DUMP"] { try? text.write(toFile: dump, atomically: true, encoding: .utf8) }
             let i = zip(inc.blocks, full.blocks).enumerated().first { $0.element.0 != $0.element.1 }?.offset ?? min(inc.blocks.count, full.blocks.count)
             Issue.record("\(note()): first difference at block \(i)\nincremental: \(i < inc.blocks.count ? String(describing: inc.blocks[i]) : "-")\nfull: \(i < full.blocks.count ? String(describing: full.blocks[i]) : "-")")
         }
@@ -73,10 +74,7 @@ import Testing
     @Test func documentWideSyntaxParsesInFull() {
         #expect(IncrementalParser.needsFullParse(["See [x].", "", "[x]: https://example.com"]))
         #expect(IncrementalParser.needsFullParse(["Note[^1].", "", "[^1]: Footnote"]))
-        #expect(IncrementalParser.needsFullParse(["<details>", "<summary>More</summary>"]))
-        #expect(IncrementalParser.needsFullParse(["Text", "<div>", "```js"]))
-        #expect(!IncrementalParser.needsFullParse(["```html", "<div>", "```", "<!-- note -->", "text <b>inline</b>"]))
-        #expect(IncrementalParser.needsFullParse(["<pre>", "x", "</pre>"]))
+        #expect(!IncrementalParser.needsFullParse(["<!--", "[x]: inside a comment", "-->", "```", "[^1]: in code", "```"]))
         #expect(!IncrementalParser.needsFullParse(["A [link](https://x.y) and a: colon.", "- [ ] task"]))
         let parser = IncrementalParser()
         _ = parser.parse("Note[^1].\n\n[^1]: Footnote\n")
@@ -84,11 +82,11 @@ import Testing
     }
 
     @Test func fragmentsCoverEveryLineOnce() {
-        let lines = ["# A", "", "text", "", "```", "", "code", "", "```", "", "- a", "", "  b", "", "c", "", "<!--", "", "x", "", "-->", "", "d"]
+        let lines = ["# A", "", "text", "", "```", "", "code", "", "```", "", "- a", "", "  b", "", "c", "", "<details>", "", "x", "", "</details>", "", "d"]
         let parts = IncrementalParser.fragments(lines)
         #expect(parts.first?.lowerBound == 0 && parts.last?.upperBound == lines.count)
         #expect(zip(parts, parts.dropFirst()).allSatisfy { $0.upperBound == $1.lowerBound })
-        // No cut inside the fence, the list item's continuation, or the comment.
+        // No cut inside the fence, the list item's continuation, or <details>.
         let cuts = Set(parts.map(\.lowerBound))
         #expect(!cuts.contains(6) && !cuts.contains(12) && !cuts.contains(18))
         #expect(cuts.contains(2) && cuts.contains(14) && cuts.contains(22))

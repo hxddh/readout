@@ -70,8 +70,8 @@ public enum MarkdownParser {
 
         // Front matter.
         var parseLines = lines
-        if atDocumentStart && lines.first == "---" {
-            if let end = lines.indices.dropFirst().prefix(300).first(where: { lines[$0] == "---" || lines[$0] == "..." }) {
+        if atDocumentStart, let end = frontMatterEnd(lines) {
+            do {
                 let body = Array(lines[1..<end])
                 blocks.append(frontMatterBlock(body, lines: 1...(end + 1)))
                 for i in 0...end { parseLines[i] = "" }
@@ -316,6 +316,12 @@ public enum MarkdownParser {
 
     static func looksLikeDisplayMath(_ code: String) -> Bool {
         !code.contains("\\documentclass") && !code.contains("\\begin{document}")
+    }
+
+    /// Index of the line closing YAML front matter, if the document opens with it.
+    static func frontMatterEnd(_ lines: [String]) -> Int? {
+        guard lines.first == "---" else { return nil }
+        return lines.indices.dropFirst().prefix(300).first(where: { lines[$0] == "---" || lines[$0] == "..." })
     }
 
     static func frontMatterBlock(_ body: [String], lines: ClosedRange<Int>) -> Block {

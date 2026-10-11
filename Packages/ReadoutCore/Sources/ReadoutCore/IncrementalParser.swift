@@ -3,8 +3,8 @@ import Foundation
 /// Re-parses only what changed between versions of one document.
 ///
 /// The source is cut into fragments at blank lines where the Markdown parser
-/// is in a neutral state: not inside fenced code, an HTML block that spans
-/// blank lines, a list or a block quote. Each fragment
+/// is in a neutral state: not inside fenced code, raw HTML, a `<details>`
+/// the parser joins, a list or a block quote. Each fragment
 /// is parsed on its own (`MarkdownParser.parseFragment`) and kept by content
 /// hash; on the next version, fragments whose text is unchanged are reused
 /// wherever they now sit, and only new text is parsed. `assemble` then adds
@@ -12,7 +12,7 @@ import Foundation
 ///
 /// The result is identical to `MarkdownParser.parse` (property-tested on the
 /// real-agent corpus). Documents that use syntax with document-wide effects
-/// (link reference definitions, footnotes, `<details>`) are parsed in full.
+/// (link reference definitions, footnotes) are parsed in full.
 ///
 /// Not thread-safe: use one instance per document, from one queue.
 public final class IncrementalParser: @unchecked Sendable {
@@ -88,23 +88,14 @@ public final class IncrementalParser: @unchecked Sendable {
         pattern: #"^ {0,3}\[(?:\^[^\]]+|[^\]]+)\]:"#)
 
     /// Link reference definitions and footnotes reach across the whole
-    /// document. Raw HTML blocks (a line opening with a tag) are parsed in
-    /// full too: whether a tag line starts an HTML block, which then hides
-    /// fences until it ends, depends on the paragraph state around it, and
-    /// `<details>` joins every block up to its closing tag. HTML comments
-    /// are tracked exactly.
+    /// document (outside code and raw HTML).
     static func needsFullParse(_ lines: [String]) -> Bool {
         var fences = FenceTracker()
-        for line in lines {
+        for line in lines.dropFirst(MarkdownParser.frontMatterEnd(lines).map { $0 + 1 } ?? 0) {
             if fences.consume(line) { continue }
             if line.contains("]:") {
                 let ns = line as NSString
                 if documentWide.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) != nil { return true }
-            }
-            let trimmed = line.drop(while: { $0 == " " })
-            if line.count - trimmed.count < 4, trimmed.hasPrefix("<") {
-                let rest = trimmed.dropFirst().drop(while: { $0 == "/" })
-                if let c = rest.first, c.isASCII, c.isLetter { return true }
             }
         }
         return false
@@ -134,22 +125,17 @@ public final class IncrementalParser: @unchecked Sendable {
         var out: [Range<Int>] = []
         var start = 0
         var fences = FenceTracker()
-        var frontMatter = lines.first == "---"
-        var i = 0
+        // Front matter is never cut (and never read as Markdown).
+        var i = MarkdownParser.frontMatterEnd(lines).map { $0 + 1 } ?? 0
         while i < lines.count {
             let line = lines[i]
-            if frontMatter {
-                if i > 0 && (line == "---" || line == "...") { frontMatter = false }
-                i += 1
-                continue
-            }
             if fences.consume(line) {
                 i += 1
                 continue
             }
             // A neutral boundary: this line is blank, the next non-blank line
-            // starts fresh, and nothing is open.
-            if line.allSatisfy({ $0 == " " || $0 == "\t" }) {
+            // starts fresh, and nothing is open (code, raw HTML, <details>).
+            if line.allSatisfy({ $0 == " " || $0 == "\t" }) && !fences.isOpen {
                 var j = i + 1
                 while j < lines.count && lines[j].allSatisfy({ $0 == " " || $0 == "\t" }) { j += 1 }
                 if j < lines.count && startsFresh(lines[j]) && j > start {

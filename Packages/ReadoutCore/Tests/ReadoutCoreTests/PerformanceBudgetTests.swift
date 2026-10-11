@@ -50,16 +50,19 @@ import Testing
     static func measureUpdate(original: String, edited: String, runs: Int = 9) -> Double {
         var samples: [Double] = []
         for _ in 0..<runs {
+            // The app's path: one incremental parser per document (DocumentLoader).
             let cache = MarkdownParser.RenderCache()
             let session = DocumentSession()
+            let parser = IncrementalParser()
+            let resolver = FileResolver(baseDirectory: nil)
             cache.beginGeneration()
-            _ = session.load(MarkdownParser.parse(original, resolver: FileResolver(baseDirectory: nil), cache: cache))
+            _ = session.load(parser.parse(original, resolver: resolver, cache: cache))
             let data = Data(edited.utf8)
             let start = DispatchTime.now().uptimeNanoseconds
             _ = XXHash64.hash(data)
             let text = FileContent.decode(data).text
             cache.beginGeneration()
-            let doc = MarkdownParser.parse(text, resolver: FileResolver(baseDirectory: nil), cache: cache)
+            let doc = parser.parse(text, resolver: resolver, cache: cache)
             let patch = session.update(doc)
             let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
             precondition(patch != nil, "edit produced no patch")
