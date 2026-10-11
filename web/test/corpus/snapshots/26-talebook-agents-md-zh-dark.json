@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "8e850a13",
+   "style": "ad8fb128",
    "text": "CLAUDE.md§"
   },
   {
@@ -22,7 +22,7 @@
    "kind": "heading",
    "top": 167,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "项目概述§"
   },
   {
@@ -30,7 +30,7 @@
    "kind": "paragraph",
    "top": 209,
    "h": 26,
-   "style": "85b98c76",
+   "style": "26cc7bdf",
    "text": "Talebook 是基于 Calibre 的个人电子书管理系统："
   },
   {
@@ -38,7 +38,7 @@
    "kind": "listItem",
    "top": 253,
    "h": 26,
-   "style": "82a275d5",
+   "style": "9c6fd149",
    "text": "webserver/ — Python 后端（Tornado + Calibre），详见 web"
   },
   {
@@ -46,7 +46,7 @@
    "kind": "listItem",
    "top": 281,
    "h": 26,
-   "style": "054fee4a",
+   "style": "0dd5728a",
    "text": "app/ — 前端（Nuxt 4 + Vue 3 + Vuetify），详见 app/CLAUD"
   },
   {
@@ -62,7 +62,7 @@
    "kind": "heading",
    "top": 422,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "常用命令§"
   },
   {
@@ -70,7 +70,7 @@
    "kind": "code",
    "top": 464,
    "h": 264,
-   "style": "6e10b1dd",
+   "style": "6bf28826",
    "text": "# 后端依赖 make init # 后端测试与检查 make pytest make lint"
   },
   {
@@ -86,7 +86,7 @@
    "kind": "heading",
    "top": 811,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "开发规范§"
   },
   {
@@ -94,7 +94,7 @@
    "kind": "heading",
    "top": 868,
    "h": 23,
-   "style": "cd7f8be6",
+   "style": "a223e567",
    "text": "领域规格文档§"
   },
   {
@@ -102,7 +102,7 @@
    "kind": "paragraph",
    "top": 900,
    "h": 56,
-   "style": "cafca5d2",
+   "style": "cd7f05e6",
    "text": "spec/ 是 Talebook 的领域规格文档，描述产品是什么、按什么规则运转。它与 desi"
   },
   {
@@ -110,7 +110,7 @@
    "kind": "listItem",
    "top": 973,
    "h": 29,
-   "style": "19341378",
+   "style": "674baf9a",
    "text": "spec/ 回答「是什么」：当前的产品应然，唯一一份，总是最新，无时态。"
   },
   {
@@ -118,7 +118,7 @@
    "kind": "listItem",
    "top": 1004,
    "h": 57,
-   "style": "fbcf7d51",
+   "style": "dfe357dc",
    "text": "design/ 回答「怎么做」：某次改动的论证与验证记录，有时态，带 WIP/ACTIVE/SU"
   },
   {
@@ -142,7 +142,7 @@
    "kind": "listItem",
    "top": 1155,
    "h": 57,
-   "style": "8922001e",
+   "style": "1bc6cffa",
    "text": "不写未实现、不写已废弃、不写变更历史。设计已定但代码未落地的功能不进入 spec/ ，它留在对应"
   },
   {
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1214,
    "h": 57,
-   "style": "244c3131",
+   "style": "3d606f61",
    "text": "目录与文件名使用中文；协议、格式与外部产品的专名保留原写法（OPDS、WebDAV、BRS、TX"
   },
   {
@@ -174,7 +174,7 @@
    "kind": "listItem",
    "top": 1362,
    "h": 113,
-   "style": "abb4e84d",
+   "style": "1c3c6143",
    "text": "正文（第 1–6 节）解释产品行为与规则，第 7 节回答「在代码里的什么位置」。不要在正文里写概"
   },
   {
@@ -182,7 +182,7 @@
    "kind": "listItem",
    "top": 1476,
    "h": 85,
-   "style": "bbdc8a48",
+   "style": "0f6acb9c",
    "text": "第 7 节拆为数据存储、API 接口、关键定义、代码落点、界面文案五张子表，按需缺省：不适用时整"
   },
   {
@@ -206,7 +206,7 @@
    "kind": "paragraph",
    "top": 1668,
    "h": 84,
-   "style": "12dcd7da",
+   "style": "37613124",
    "text": "改变产品行为的改动，必须在同一个 PR 内更新 spec/ 对应篇目；内部方案的「影响范围」需注"
   },
   {
@@ -214,7 +214,7 @@
    "kind": "paragraph",
    "top": 1770,
    "h": 140,
-   "style": "bf772062",
+   "style": "8b7c678b",
    "text": "运行 make check-spec 校验：章节结构与顺序、一级标题与文件名一致、定义一节含「不"
   },
   {
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 1937,
    "h": 23,
-   "style": "e1ce7b74",
+   "style": "897d77e3",
    "text": "开发流程与内部方案§"
   },
   {
@@ -286,7 +286,7 @@
    "kind": "heading",
    "top": 2317,
    "h": 20,
-   "style": "fb9b5ae0",
+   "style": "7c539813",
    "text": "大型功能的本地界面审查§"
   },
   {
@@ -302,7 +302,7 @@
    "kind": "paragraph",
    "top": 2473,
    "h": 112,
-   "style": "25a191a4",
+   "style": "29a606b8",
    "text": "审查出现 HIGH 或 MEDIUM 问题时不得转为 ACTIVE；修复后必须重新执行 inte"
   },
   {
@@ -390,7 +390,7 @@
    "kind": "code",
    "top": 3345,
    "h": 44,
-   "style": "386f3026",
+   "style": "01dc8f33",
    "text": "cp design/TEMPLATE.html design/<module>/yyyymmdd"
   },
   {
@@ -430,7 +430,7 @@
    "kind": "heading",
    "top": 3820,
    "h": 23,
-   "style": "d77f9ba4",
+   "style": "9823d5a9",
    "text": "API 设计规范§"
   },
   {
@@ -446,7 +446,7 @@
    "kind": "heading",
    "top": 4186,
    "h": 23,
-   "style": "715388a7",
+   "style": "95d7661c",
    "text": "Pull Request 提交规范§"
   },
   {
@@ -494,7 +494,7 @@
    "kind": "listItem",
    "top": 4484,
    "h": 91,
-   "style": "4ab0b0bc",
+   "style": "98d17b77",
    "text": "固定链接按以下格式转换： https://github.com/<owner>/<repo>/b"
   },
   {
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 4791,
    "h": 23,
-   "style": "d17f9232",
+   "style": "9e23df1b",
    "text": "测试§"
   },
   {
@@ -518,7 +518,7 @@
    "kind": "listItem",
    "top": 4823,
    "h": 29,
-   "style": "4a5c6552",
+   "style": "2e329412",
    "text": "每次新增或修改功能，必须附带对应的测试用例，不允许只改业务代码不写测试。"
   },
   {
@@ -542,7 +542,7 @@
    "kind": "heading",
    "top": 4941,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "前端验收§"
   },
   {
@@ -614,7 +614,7 @@
    "kind": "listItem",
    "top": 5639,
    "h": 231,
-   "style": "2a6ae56a",
+   "style": "fe9f8197",
    "text": "前端本地体验默认使用两个终端启动： # 终端 1：Docker 后端 make dev # 确认"
   },
   {
@@ -630,7 +630,7 @@
    "kind": "heading",
    "top": 5955,
    "h": 23,
-   "style": "ce7f8d79",
+   "style": "a123e3d4",
    "text": "提交前检查§"
   },
   {
@@ -638,7 +638,7 @@
    "kind": "code",
    "top": 5987,
    "h": 144,
-   "style": "c900b437",
+   "style": "e8820b60",
    "text": "make lint-py-fix # 后端：用 black + isort 自动修复格式，开发完"
   },
   {
@@ -646,7 +646,7 @@
    "kind": "heading",
    "top": 6159,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "代码风格§"
   },
   {
@@ -678,7 +678,7 @@
    "kind": "listItem",
    "top": 6365,
    "h": 169,
-   "style": "b346be22",
+   "style": "c4cf9941",
    "text": "前端 i18n 文案（app/i18n/locales/*.json ）中禁止出现字面量 @ 和"
   },
   {
@@ -686,7 +686,7 @@
    "kind": "heading",
    "top": 6561,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "目录规范§"
   },
   {

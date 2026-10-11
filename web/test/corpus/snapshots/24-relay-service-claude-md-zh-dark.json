@@ -1,12 +1,12 @@
 {
- "height": 5268,
+ "height": 5294,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "8e850a13",
+   "style": "ad8fb128",
    "text": "CLAUDE.md§"
   },
   {
@@ -22,7 +22,7 @@
    "kind": "heading",
    "top": 191,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "项目概述§"
   },
   {
@@ -38,7 +38,7 @@
    "kind": "heading",
    "top": 386,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "架构原则§"
   },
   {
@@ -46,7 +46,7 @@
    "kind": "heading",
    "top": 442,
    "h": 23,
-   "style": "f34c0688",
+   "style": "0bdedba3",
    "text": "Clean Architecture 分层映射§"
   },
   {
@@ -54,7 +54,7 @@
    "kind": "table",
    "top": 474,
    "h": 282,
-   "style": "224346fb",
+   "style": "16146f02",
    "text": "层级目录职责框架层src/routes/, src/middleware/HTTP 路由、请求验"
   },
   {
@@ -62,7 +62,7 @@
    "kind": "heading",
    "top": 784,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "开发原则§"
   },
   {
@@ -70,7 +70,7 @@
    "kind": "listItem",
    "top": 816,
    "h": 29,
-   "style": "3127f9ba",
+   "style": "b8217a76",
    "text": "依赖方向: 外层 → 内层，内层不知道外层存在"
   },
   {
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 847,
    "h": 29,
-   "style": "5c14455e",
+   "style": "59fecfae",
    "text": "新增路由: 只做参数提取和响应格式化，业务逻辑放 service"
   },
   {
@@ -86,7 +86,7 @@
    "kind": "listItem",
    "top": 877,
    "h": 29,
-   "style": "5d168588",
+   "style": "5b010fd8",
    "text": "新增服务: 先确定属于哪一层，遵循该层职责边界"
   },
   {
@@ -94,7 +94,7 @@
    "kind": "listItem",
    "top": 908,
    "h": 29,
-   "style": "60144baa",
+   "style": "5dfed5fa",
    "text": "格式转换: 不同 API 格式的转换放 handlers 或专用转换服务"
   },
   {
@@ -102,7 +102,7 @@
    "kind": "listItem",
    "top": 939,
    "h": 29,
-   "style": "ffaf00c6",
+   "style": "e35f5612",
    "text": "数据访问: 通过 src/models/redis.js 统一访问"
   },
   {
@@ -110,7 +110,7 @@
    "kind": "heading",
    "top": 995,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "安全约束§"
   },
   {
@@ -158,7 +158,7 @@
    "kind": "heading",
    "top": 1243,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "项目结构§"
   },
   {
@@ -166,7 +166,7 @@
    "kind": "code",
    "top": 1285,
    "h": 504,
-   "style": "2cdf754e",
+   "style": "8a89baf6",
    "text": "src/ ├── routes/ # HTTP 路由 │ ├── api.js # Claude"
   },
   {
@@ -174,7 +174,7 @@
    "kind": "heading",
    "top": 1830,
    "h": 29,
-   "style": "add88ab8",
+   "style": "e8dd1d3d",
    "text": "核心请求流程§"
   },
   {
@@ -182,7 +182,7 @@
    "kind": "code",
    "top": 1872,
    "h": 104,
-   "style": "f45b76f5",
+   "style": "a21e0d8d",
    "text": "客户端(cr_前缀Key) → 路由 → auth中间件(验证/权限/限流/模型黑名单) → 统"
   },
   {
@@ -198,7 +198,7 @@
    "kind": "listItem",
    "top": 2037,
    "h": 29,
-   "style": "2825acf8",
+   "style": "4f1e9694",
    "text": "粘性会话: 基于请求内容 hash 绑定账户，同一会话用同一账户"
   },
   {
@@ -206,7 +206,7 @@
    "kind": "listItem",
    "top": 2067,
    "h": 29,
-   "style": "63259984",
+   "style": "611023d4",
    "text": "并发控制: Redis Sorted Set 实现，支持排队等待（非直接 429）"
   },
   {
@@ -214,7 +214,7 @@
    "kind": "listItem",
    "top": 2098,
    "h": 29,
-   "style": "ef6f1ed7",
+   "style": "86e03293",
    "text": "529 处理: 自动标记过载账户，配置时长内排除"
   },
   {
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2129,
    "h": 26,
-   "style": "30779a4b",
+   "style": "2bc9828b",
    "text": "加密存储: 敏感数据（OAuth token、credentials）AES 加密存于 Redi"
   },
   {
@@ -230,7 +230,7 @@
    "kind": "listItem",
    "top": 2157,
    "h": 29,
-   "style": "51ec7657",
+   "style": "01d64e7b",
    "text": "流式响应: SSE 传输，实时捕获 usage，客户端断开时 AbortController 清"
   },
   {
@@ -238,7 +238,7 @@
    "kind": "heading",
    "top": 2226,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "开发规范§"
   },
   {
@@ -246,7 +246,7 @@
    "kind": "heading",
    "top": 2282,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "代码风格§"
   },
   {
@@ -254,7 +254,7 @@
    "kind": "listItem",
    "top": 2315,
    "h": 29,
-   "style": "d069ecf8",
+   "style": "78ee8ab0",
    "text": "无分号、单引号、100字符行宽、尾逗号 none、箭头函数始终加括号"
   },
   {
@@ -278,7 +278,7 @@
    "kind": "listItem",
    "top": 2404,
    "h": 26,
-   "style": "5c4b0eb7",
+   "style": "a4d0a7d0",
    "text": "必须使用 Prettier: npx prettier --write <file>"
   },
   {
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 2486,
    "h": 23,
-   "style": "ce7f8d79",
+   "style": "a123e3d4",
    "text": "开发工作流§"
   },
   {
@@ -302,7 +302,7 @@
    "kind": "listItem",
    "top": 2518,
    "h": 29,
-   "style": "8a9a5f91",
+   "style": "628b6d01",
    "text": "理解现有代码 → 读相关文件，了解现有模式"
   },
   {
@@ -310,7 +310,7 @@
    "kind": "listItem",
    "top": 2549,
    "h": 29,
-   "style": "9fc3fd98",
+   "style": "ed0a07a4",
    "text": "编写代码 → 重用已有服务和工具函数"
   },
   {
@@ -318,7 +318,7 @@
    "kind": "listItem",
    "top": 2580,
    "h": 29,
-   "style": "06301118",
+   "style": "97d3e4c8",
    "text": "格式化 → npx prettier --write <修改的文件>"
   },
   {
@@ -326,7 +326,7 @@
    "kind": "listItem",
    "top": 2611,
    "h": 26,
-   "style": "1801b39c",
+   "style": "a66525dc",
    "text": "检查 → npm run lint"
   },
   {
@@ -334,7 +334,7 @@
    "kind": "listItem",
    "top": 2639,
    "h": 26,
-   "style": "66a91a05",
+   "style": "8792f3c5",
    "text": "测试 → npm test"
   },
   {
@@ -342,7 +342,7 @@
    "kind": "listItem",
    "top": 2667,
    "h": 29,
-   "style": "c08976f1",
+   "style": "0711868d",
    "text": "验证 → npm run cli status 确认服务正常"
   },
   {
@@ -350,7 +350,7 @@
    "kind": "heading",
    "top": 2723,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "测试规范§"
   },
   {
@@ -382,7 +382,7 @@
    "kind": "heading",
    "top": 2868,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "前端要求§"
   },
   {
@@ -438,7 +438,7 @@
    "kind": "table",
    "top": 3110,
    "h": 180,
-   "style": "c10c81a6",
+   "style": "4f457e73",
    "text": "元素明亮模式暗黑模式文本text-gray-700dark:text-gray-200背景bg-"
   },
   {
@@ -446,7 +446,7 @@
    "kind": "heading",
    "top": 3318,
    "h": 23,
-   "style": "cd7f8be6",
+   "style": "a223e567",
    "text": "代码修改原则§"
   },
   {
@@ -478,7 +478,7 @@
    "kind": "heading",
    "top": 3480,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "常用命令§"
   },
   {
@@ -486,7 +486,7 @@
    "kind": "code",
    "top": 3523,
    "h": 284,
-   "style": "3fb93473",
+   "style": "3a7ea998",
    "text": "npm install && npm run setup # 初始化 npm run dev #"
   },
   {
@@ -494,7 +494,7 @@
    "kind": "heading",
    "top": 3834,
    "h": 23,
-   "style": "cb7f88c0",
+   "style": "a423e88d",
    "text": "前端命令§"
   },
   {
@@ -502,7 +502,7 @@
    "kind": "code",
    "top": 3866,
    "h": 84,
-   "style": "b887aa63",
+   "style": "a6c7bdf0",
    "text": "npm run install:web # 安装前端依赖 npm run build:web #"
   },
   {
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 3991,
    "h": 29,
-   "style": "abd88792",
+   "style": "dadd0733",
    "text": "环境变量（必须）§"
   },
   {
@@ -550,7 +550,7 @@
    "kind": "heading",
    "top": 4205,
    "h": 29,
-   "style": "afd88dde",
+   "style": "e6dd1a17",
    "text": "故障排除§"
   },
   {
@@ -558,7 +558,7 @@
    "kind": "table",
    "top": 4247,
    "h": 507,
-   "style": "fd46aa68",
+   "style": "85dd94ea",
    "text": "问题排查方向Redis 连接失败检查 REDIS_HOST/PORT/PASSWORD管理员登录"
   },
   {
@@ -574,15 +574,15 @@
    "kind": "heading",
    "top": 4818,
    "h": 38,
-   "style": "a080a93b",
+   "style": "b7943e14",
    "text": "important-instruction-reminders§"
   },
   {
    "slot": 73,
    "kind": "paragraph",
    "top": 4876,
-   "h": 104,
-   "style": "e8ff0d5f",
+   "h": 130,
+   "style": "4e6e11cf",
    "text": "Do what has been asked; nothing more, nothing le"
   }
  ]

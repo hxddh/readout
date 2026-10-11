@@ -1,12 +1,12 @@
 {
- "height": 12521,
+ "height": 12625,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 40,
    "h": 76,
-   "style": "1d29eebc",
+   "style": "6fd30c07",
    "text": "Bootstrap 5.3.x Sample-App Migration — Implement"
   },
   {
@@ -14,7 +14,7 @@
    "kind": "quote",
    "top": 137,
    "h": 78,
-   "style": "13c919d7",
+   "style": "6814ec80",
    "text": "For agentic workers: REQUIRED SUB-SKILL: Use sup"
   },
   {
@@ -22,53 +22,53 @@
    "kind": "paragraph",
    "top": 232,
    "h": 78,
-   "style": "53e462bb",
+   "style": "e4951d6d",
    "text": "Goal: Migrate apps/showcase and apps/rest-showca"
   },
   {
    "slot": 4,
    "kind": "paragraph",
    "top": 328,
-   "h": 104,
-   "style": "dd8282d1",
+   "h": 130,
+   "style": "35b0ee22",
    "text": "Architecture: Bootstrap CSS/JS, Bootstrap Icons,"
   },
   {
    "slot": 5,
    "kind": "paragraph",
-   "top": 450,
+   "top": 476,
    "h": 52,
-   "style": "91fa5ed1",
+   "style": "052b8046",
    "text": "Tech Stack: Maven, JSP + Struts UI tags, Bootstr"
   },
   {
    "slot": 6,
    "kind": "heading",
-   "top": 542,
+   "top": 568,
    "h": 29,
-   "style": "6c788446",
+   "style": "05c7703d",
    "text": "Global Constraints§"
   },
   {
    "slot": 7,
    "kind": "listItem",
-   "top": 584,
+   "top": 610,
    "h": 52,
-   "style": "54d7bfbf",
+   "style": "560906b3",
    "text": "Pinned versions: bootstrap 5.3.7 (org.webjars), "
   },
   {
    "slot": 8,
    "kind": "listItem",
-   "top": 639,
+   "top": 665,
    "h": 78,
-   "style": "ddacd14f",
+   "style": "8be9a969",
    "text": "The shared webjars-jquery.version property is 4."
   },
   {
    "slot": 9,
    "kind": "listItem",
-   "top": 719,
+   "top": 745,
    "h": 166,
    "style": "1079bebc",
    "text": "Exact <s:webjar> (version-less) paths: bootstrap"
@@ -76,71 +76,71 @@
   {
    "slot": 10,
    "kind": "listItem",
-   "top": 887,
+   "top": 913,
    "h": 78,
-   "style": "e3fca228",
+   "style": "c6dbfa70",
    "text": "WebJar allowlist per app: struts.webjars.allowli"
   },
   {
    "slot": 11,
    "kind": "listItem",
-   "top": 968,
+   "top": 994,
    "h": 52,
-   "style": "3110fd5e",
+   "style": "9426402f",
    "text": "Commit convention: prefix every commit WW-5653 <"
   },
   {
    "slot": 12,
    "kind": "listItem",
-   "top": 1022,
+   "top": 1048,
    "h": 26,
-   "style": "8f479421",
+   "style": "c2e23b66",
    "text": "Work on branch WW-5653-bootstrap5-sample-apps. F"
   },
   {
    "slot": 13,
    "kind": "listItem",
-   "top": 1050,
+   "top": 1076,
    "h": 104,
-   "style": "b750ae87",
+   "style": "9c6d6198",
    "text": "No automated UI tests exist for these apps. Per-"
   },
   {
    "slot": 14,
    "kind": "heading",
-   "top": 1182,
+   "top": 1208,
    "h": 23,
-   "style": "ea477b2f",
+   "style": "08cfcc60",
    "text": "Icon mapping (glyphicon → Bootstrap Icons)§"
   },
   {
    "slot": 15,
    "kind": "table",
-   "top": 1214,
+   "top": 1240,
    "h": 397,
-   "style": "2229effb",
+   "style": "9e86f28c",
    "text": "Bootstrap 3Bootstrap 5 (bi bi-*)glyphicon-homebi"
   },
   {
    "slot": 16,
    "kind": "paragraph",
-   "top": 1629,
+   "top": 1655,
    "h": 52,
-   "style": "22e2916f",
+   "style": "58db838f",
    "text": "Markup form: <span class=\"glyphicon glyphicon-ho"
   },
   {
    "slot": 17,
    "kind": "heading",
-   "top": 1708,
+   "top": 1734,
    "h": 23,
-   "style": "e7477676",
+   "style": "0fcfd765",
    "text": "Class / attribute mapping (Bootstrap 3 → 5)§"
   },
   {
    "slot": 18,
    "kind": "table",
-   "top": 1741,
+   "top": 1767,
    "h": 601,
    "style": "678bdbdf",
    "text": "Bootstrap 3Bootstrap 5panel panel-defaultcardpan"
@@ -148,7 +148,7 @@
   {
    "slot": 19,
    "kind": "rule",
-   "top": 2359,
+   "top": 2385,
    "h": 1,
    "style": "8718f1c2",
    "text": ""
@@ -156,23 +156,23 @@
   {
    "slot": 20,
    "kind": "heading",
-   "top": 2387,
+   "top": 2413,
    "h": 23,
-   "style": "fb4e51b7",
+   "style": "87dbcd40",
    "text": "Task 1: POM / dependency wiring§"
   },
   {
    "slot": 21,
    "kind": "paragraph",
-   "top": 2419,
+   "top": 2445,
    "h": 26,
-   "style": "c411f818",
+   "style": "706af559",
    "text": "Files:"
   },
   {
    "slot": 22,
    "kind": "listItem",
-   "top": 2463,
+   "top": 2489,
    "h": 26,
    "style": "febb39ad",
    "text": "Modify: pom.xml (properties block, ~line 131)"
@@ -180,7 +180,7 @@
   {
    "slot": 23,
    "kind": "listItem",
-   "top": 2491,
+   "top": 2517,
    "h": 26,
    "style": "fbe757ed",
    "text": "Modify: parent/pom.xml (dependencyManagement, ~l"
@@ -188,15 +188,15 @@
   {
    "slot": 24,
    "kind": "listItem",
-   "top": 2519,
-   "h": 26,
-   "style": "04febc2e",
+   "top": 2545,
+   "h": 52,
+   "style": "8724d401",
    "text": "Modify: apps/showcase/pom.xml (<dependencies>, b"
   },
   {
    "slot": 25,
    "kind": "listItem",
-   "top": 2548,
+   "top": 2600,
    "h": 26,
    "style": "c079826d",
    "text": "Modify: apps/rest-showcase/pom.xml (<dependencie"
@@ -204,15 +204,15 @@
   {
    "slot": 26,
    "kind": "paragraph",
-   "top": 2592,
+   "top": 2644,
    "h": 26,
-   "style": "00c62173",
+   "style": "902f4595",
    "text": "Interfaces:"
   },
   {
    "slot": 27,
    "kind": "listItem",
-   "top": 2635,
+   "top": 2687,
    "h": 52,
    "style": "69292b18",
    "text": "Produces: managed webjar dependencies + version "
@@ -220,15 +220,15 @@
   {
    "slot": 28,
    "kind": "listItem",
-   "top": 2696,
+   "top": 2748,
    "h": 26,
-   "style": "1eb61e25",
+   "style": "cae7b56c",
    "text": "Step 1: Add version properties to root pom.xml"
   },
   {
    "slot": 29,
    "kind": "paragraph",
-   "top": 2739,
+   "top": 2791,
    "h": 26,
    "style": "aa3b28c8",
    "text": "In the properties block (next to webjars-jquery."
@@ -236,15 +236,15 @@
   {
    "slot": 30,
    "kind": "code",
-   "top": 2783,
+   "top": 2835,
    "h": 84,
-   "style": "7cc84c30",
+   "style": "6da50050",
    "text": "<webjars-bootstrap.version>5.3.7</webjars-bootst"
   },
   {
    "slot": 31,
    "kind": "paragraph",
-   "top": 2882,
+   "top": 2934,
    "h": 52,
    "style": "194f1cf6",
    "text": "Leave the existing <webjars-jquery.version>4.0.0"
@@ -252,15 +252,15 @@
   {
    "slot": 32,
    "kind": "listItem",
-   "top": 2951,
+   "top": 3003,
    "h": 26,
-   "style": "26839e93",
+   "style": "367416e6",
    "text": "Step 2: Add managed dependencies to parent/pom.x"
   },
   {
    "slot": 33,
    "kind": "paragraph",
-   "top": 2995,
+   "top": 3047,
    "h": 26,
    "style": "add64565",
    "text": "After the existing org.webjars:jquery managed de"
@@ -268,15 +268,15 @@
   {
    "slot": 34,
    "kind": "code",
-   "top": 3038,
+   "top": 3090,
    "h": 244,
-   "style": "c24b5d50",
+   "style": "f911d444",
    "text": "<dependency> <groupId>org.webjars</groupId> <art"
   },
   {
    "slot": 35,
    "kind": "paragraph",
-   "top": 3297,
+   "top": 3349,
    "h": 78,
    "style": "303c69f8",
    "text": "Note: bootstrap-icons is under group org.webjars"
@@ -284,15 +284,15 @@
   {
    "slot": 36,
    "kind": "listItem",
-   "top": 3393,
+   "top": 3445,
    "h": 26,
-   "style": "56429868",
+   "style": "95fbbc4a",
    "text": "Step 3: Add dependencies to apps/showcase/pom.xm"
   },
   {
    "slot": 37,
    "kind": "paragraph",
-   "top": 3437,
+   "top": 3489,
    "h": 26,
    "style": "afab3463",
    "text": "Immediately before </dependencies> (line ~175), "
@@ -300,15 +300,15 @@
   {
    "slot": 38,
    "kind": "code",
-   "top": 3480,
+   "top": 3532,
    "h": 284,
-   "style": "78d820b1",
+   "style": "31bba341",
    "text": "<dependency> <groupId>org.webjars</groupId> <art"
   },
   {
    "slot": 39,
    "kind": "paragraph",
-   "top": 3779,
+   "top": 3831,
    "h": 26,
    "style": "4f05679b",
    "text": "The explicit <version> overrides the 4.0.0 manag"
@@ -316,15 +316,15 @@
   {
    "slot": 40,
    "kind": "listItem",
-   "top": 3823,
+   "top": 3875,
    "h": 26,
-   "style": "576fb864",
+   "style": "5fe1859d",
    "text": "Step 4: Add dependencies to apps/rest-showcase/p"
   },
   {
    "slot": 41,
    "kind": "paragraph",
-   "top": 3866,
+   "top": 3918,
    "h": 26,
    "style": "5664e790",
    "text": "Inside <dependencies>, add (no jQuery — rest-sho"
@@ -332,31 +332,31 @@
   {
    "slot": 42,
    "kind": "code",
-   "top": 3910,
+   "top": 3962,
    "h": 184,
-   "style": "ca547170",
+   "style": "479bbe7c",
    "text": "<dependency> <groupId>org.webjars</groupId> <art"
   },
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 4109,
+   "top": 4161,
    "h": 26,
-   "style": "3eea2193",
+   "style": "1d9dffae",
    "text": "Step 5: Verify dependency resolution"
   },
   {
    "slot": 44,
    "kind": "paragraph",
-   "top": 4153,
+   "top": 4205,
    "h": 104,
-   "style": "3f35d855",
+   "style": "889b0c26",
    "text": "Run: mvn -q -pl apps/showcase,apps/rest-showcase"
   },
   {
    "slot": 45,
    "kind": "paragraph",
-   "top": 4274,
+   "top": 4326,
    "h": 78,
    "style": "ada024bf",
    "text": "Confirm the showcase jQuery is 3.7.1, not 4.0.0:"
@@ -364,23 +364,23 @@
   {
    "slot": 46,
    "kind": "listItem",
-   "top": 4370,
+   "top": 4422,
    "h": 26,
-   "style": "2db2bf39",
+   "style": "d859923b",
    "text": "Step 6: Commit"
   },
   {
    "slot": 47,
    "kind": "code",
-   "top": 4413,
+   "top": 4465,
    "h": 104,
-   "style": "35b1f4f7",
+   "style": "97de6c78",
    "text": "git add pom.xml parent/pom.xml apps/showcase/pom"
   },
   {
    "slot": 48,
    "kind": "rule",
-   "top": 4532,
+   "top": 4584,
    "h": 1,
    "style": "8718f1c2",
    "text": ""
@@ -388,23 +388,23 @@
   {
    "slot": 49,
    "kind": "heading",
-   "top": 4561,
+   "top": 4613,
    "h": 23,
-   "style": "f347895a",
+   "style": "13cfddb1",
    "text": "Task 2: Showcase asset delivery + alert dismiss§"
   },
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 4593,
+   "top": 4645,
    "h": 26,
-   "style": "c411f818",
+   "style": "706af559",
    "text": "Files:"
   },
   {
    "slot": 51,
    "kind": "listItem",
-   "top": 4636,
+   "top": 4688,
    "h": 26,
    "style": "6c4536e3",
    "text": "Modify: apps/showcase/src/main/webapp/WEB-INF/de"
@@ -412,7 +412,7 @@
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 4665,
+   "top": 4717,
    "h": 26,
    "style": "1adc5729",
    "text": "Modify: apps/showcase/src/main/resources/struts."
@@ -420,15 +420,15 @@
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 4693,
+   "top": 4745,
    "h": 78,
-   "style": "d9512259",
+   "style": "1eeaab96",
    "text": "Delete: apps/showcase/src/main/webapp/styles/boo"
   },
   {
    "slot": 54,
    "kind": "listItem",
-   "top": 4773,
+   "top": 4825,
    "h": 52,
    "style": "8ea2fb2e",
    "text": "Delete: apps/showcase/src/main/webapp/js/bootstr"
@@ -436,15 +436,15 @@
   {
    "slot": 55,
    "kind": "paragraph",
-   "top": 4843,
+   "top": 4895,
    "h": 26,
-   "style": "00c62173",
+   "style": "902f4595",
    "text": "Interfaces:"
   },
   {
    "slot": 56,
    "kind": "listItem",
-   "top": 4887,
+   "top": 4939,
    "h": 26,
    "style": "d3b47bf4",
    "text": "Consumes: webjar deps from Task 1."
@@ -452,7 +452,7 @@
   {
    "slot": 57,
    "kind": "listItem",
-   "top": 4921,
+   "top": 4973,
    "h": 26,
    "style": "d444f9aa",
    "text": "Produces: <s:webjar>-served assets used by all s"
@@ -460,15 +460,15 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 4956,
+   "top": 5008,
    "h": 26,
-   "style": "62cf813c",
+   "style": "2bdb5668",
    "text": "Step 1: Replace the CSS/JS head references in ma"
   },
   {
    "slot": 59,
    "kind": "paragraph",
-   "top": 4999,
+   "top": 5051,
    "h": 52,
    "style": "d7bc064d",
    "text": "Replace lines 64-79 (from the bootstrapCss block"
@@ -476,15 +476,15 @@
   {
    "slot": 60,
    "kind": "code",
-   "top": 5069,
+   "top": 5121,
    "h": 344,
-   "style": "76042565",
+   "style": "3e6fd4d5",
    "text": "<link rel=\"stylesheet\" type=\"text/css\" media=\"al"
   },
   {
    "slot": 61,
    "kind": "paragraph",
-   "top": 5428,
+   "top": 5480,
    "h": 78,
    "style": "516ceb3a",
    "text": "Guard note: <s:webjar> writes the resolved URL i"
@@ -492,15 +492,15 @@
   {
    "slot": 62,
    "kind": "listItem",
-   "top": 5523,
+   "top": 5575,
    "h": 26,
-   "style": "8d326372",
+   "style": "cf0bf755",
    "text": "Step 2: Verify the prettyPrint ready-handler is "
   },
   {
    "slot": 63,
    "kind": "paragraph",
-   "top": 5567,
+   "top": 5619,
    "h": 26,
    "style": "bbd15b82",
    "text": "Confirm the later block (around old line 91) sti"
@@ -508,15 +508,15 @@
   {
    "slot": 64,
    "kind": "code",
-   "top": 5611,
+   "top": 5663,
    "h": 84,
-   "style": "74417429",
+   "style": "212f4369",
    "text": "<s:script> jQuery(document).ready(function() { p"
   },
   {
    "slot": 65,
    "kind": "paragraph",
-   "top": 5710,
+   "top": 5762,
    "h": 26,
    "style": "4cce6e2e",
    "text": "Leave it unchanged — jQuery is still served."
@@ -524,15 +524,15 @@
   {
    "slot": 66,
    "kind": "listItem",
-   "top": 5753,
+   "top": 5805,
    "h": 26,
-   "style": "e6b0440a",
+   "style": "ea898d1d",
    "text": "Step 3: Add the webjar allowlist constant to sho"
   },
   {
    "slot": 67,
    "kind": "paragraph",
-   "top": 5797,
+   "top": 5849,
    "h": 26,
    "style": "657afa34",
    "text": "After the struts.allowlist.packageNames constant"
@@ -540,79 +540,79 @@
   {
    "slot": 68,
    "kind": "code",
-   "top": 5840,
+   "top": 5892,
    "h": 44,
-   "style": "f689d242",
+   "style": "487cce4e",
    "text": "<constant name=\"struts.webjars.allowlist\" value="
   },
   {
    "slot": 69,
    "kind": "listItem",
-   "top": 5899,
+   "top": 5951,
    "h": 26,
-   "style": "19e9818d",
+   "style": "f11e1f4a",
    "text": "Step 4: Delete vendored static assets"
   },
   {
    "slot": 70,
    "kind": "code",
-   "top": 5943,
+   "top": 5995,
    "h": 184,
-   "style": "447c1de1",
+   "style": "da707326",
    "text": "git rm apps/showcase/src/main/webapp/styles/boot"
   },
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 6142,
+   "top": 6194,
    "h": 26,
-   "style": "d9eefcbf",
+   "style": "55cff363",
    "text": "Step 5: Verify no lingering references to delete"
   },
   {
    "slot": 72,
    "kind": "paragraph",
-   "top": 6185,
+   "top": 6237,
    "h": 52,
-   "style": "9d4b9523",
+   "style": "706bcf6e",
    "text": "Run: grep -rn \"bootstrap.css\\|bootstrap.min.js\\|"
   },
   {
    "slot": 73,
    "kind": "listItem",
-   "top": 6255,
+   "top": 6307,
    "h": 26,
-   "style": "75760fd3",
+   "style": "5ff39b7f",
    "text": "Step 6: Build the showcase WAR"
   },
   {
    "slot": 74,
    "kind": "paragraph",
-   "top": 6299,
+   "top": 6351,
    "h": 52,
-   "style": "02b1901e",
+   "style": "c041b8f7",
    "text": "Run: mvn -q -pl apps/showcase -am package -Dskip"
   },
   {
    "slot": 75,
    "kind": "listItem",
-   "top": 6368,
+   "top": 6420,
    "h": 26,
-   "style": "a25c8079",
+   "style": "d859923b",
    "text": "Step 7: Commit"
   },
   {
    "slot": 76,
    "kind": "code",
-   "top": 6412,
+   "top": 6464,
    "h": 104,
-   "style": "93f0f2d1",
+   "style": "bdb6863a",
    "text": "git add apps/showcase/src/main/webapp/WEB-INF/de"
   },
   {
    "slot": 77,
    "kind": "rule",
-   "top": 6531,
+   "top": 6583,
    "h": 1,
    "style": "8718f1c2",
    "text": ""
@@ -620,39 +620,39 @@
   {
    "slot": 78,
    "kind": "heading",
-   "top": 6559,
+   "top": 6611,
    "h": 23,
-   "style": "f94e4e91",
+   "style": "8ddbd6b2",
    "text": "Task 3: Showcase markup migration§"
   },
   {
    "slot": 79,
    "kind": "paragraph",
-   "top": 6591,
+   "top": 6643,
    "h": 26,
-   "style": "c411f818",
+   "style": "706af559",
    "text": "Files:"
   },
   {
    "slot": 80,
    "kind": "listItem",
-   "top": 6635,
+   "top": 6687,
    "h": 78,
-   "style": "ce4191a0",
+   "style": "1bb6dd72",
    "text": "Modify: showcase JSPs under apps/showcase/src/ma"
   },
   {
    "slot": 81,
    "kind": "paragraph",
-   "top": 6731,
+   "top": 6783,
    "h": 26,
-   "style": "00c62173",
+   "style": "902f4595",
    "text": "Interfaces:"
   },
   {
    "slot": 82,
    "kind": "listItem",
-   "top": 6774,
+   "top": 6826,
    "h": 26,
    "style": "d8c5ccf4",
    "text": "Consumes: Bootstrap 5 assets from Task 2."
@@ -660,7 +660,7 @@
   {
    "slot": 83,
    "kind": "listItem",
-   "top": 6809,
+   "top": 6861,
    "h": 26,
    "style": "90e610d9",
    "text": "Produces: fully BS5-compatible markup (final app"
@@ -668,15 +668,15 @@
   {
    "slot": 84,
    "kind": "listItem",
-   "top": 6843,
+   "top": 6895,
    "h": 26,
-   "style": "8b2074a3",
+   "style": "25160a40",
    "text": "Step 1: Inventory every occurrence to migrate"
   },
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 6887,
+   "top": 6939,
    "h": 26,
    "style": "bed39ed2",
    "text": "Run and save the list:"
@@ -684,15 +684,15 @@
   {
    "slot": 86,
    "kind": "code",
-   "top": 6930,
+   "top": 6982,
    "h": 44,
-   "style": "1858c80b",
+   "style": "903fdb90",
    "text": "grep -rInE \"glyphicon|panel(-default|-heading|-t"
   },
   {
    "slot": 87,
    "kind": "paragraph",
-   "top": 6989,
+   "top": 7041,
    "h": 26,
    "style": "bbd15b82",
    "text": "Expected: a non-empty list. Work through it file"
@@ -700,111 +700,111 @@
   {
    "slot": 88,
    "kind": "listItem",
-   "top": 7033,
+   "top": 7085,
    "h": 26,
-   "style": "b849f53e",
+   "style": "2aa86a3e",
    "text": "Step 2: Migrate glyphicons"
   },
   {
    "slot": 89,
    "kind": "paragraph",
-   "top": 7077,
-   "h": 52,
-   "style": "f0143031",
+   "top": 7129,
+   "h": 78,
+   "style": "5dbcc871",
    "text": "For every <span class=\"glyphicon glyphicon-X\">.."
   },
   {
    "slot": 90,
    "kind": "code",
-   "top": 7146,
+   "top": 7224,
    "h": 44,
-   "style": "f43e9d77",
+   "style": "774d7a8f",
    "text": "<li><s:a value=\"%{home}\"><i class=\"bi bi-house\">"
   },
   {
    "slot": 91,
    "kind": "listItem",
-   "top": 7205,
+   "top": 7283,
    "h": 26,
-   "style": "def2fcbc",
+   "style": "486f0a12",
    "text": "Step 3: Migrate panels → cards"
   },
   {
    "slot": 92,
    "kind": "paragraph",
-   "top": 7249,
+   "top": 7327,
    "h": 78,
-   "style": "c5827d35",
+   "style": "82501e6b",
    "text": "For each panel block, apply: panel panel-default"
   },
   {
    "slot": 93,
    "kind": "code",
-   "top": 7344,
+   "top": 7422,
    "h": 104,
-   "style": "556c7ee7",
+   "style": "b40b147a",
    "text": "<div class=\"card\"> <div class=\"card-header\"><h3 "
   },
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 7463,
+   "top": 7541,
    "h": 26,
-   "style": "f3ecdb47",
+   "style": "2138ce6d",
    "text": "Step 4: Migrate buttons, grid, utilities, data h"
   },
   {
    "slot": 95,
    "kind": "paragraph",
-   "top": 7507,
+   "top": 7585,
    "h": 78,
-   "style": "7df85fc1",
+   "style": "9c296add",
    "text": "Apply the class/attribute mapping table: btn-def"
   },
   {
    "slot": 96,
    "kind": "listItem",
-   "top": 7602,
+   "top": 7680,
    "h": 26,
-   "style": "ebe6f881",
+   "style": "72cb5872",
    "text": "Step 5: Migrate the navbar in main.jsp"
   },
   {
    "slot": 97,
    "kind": "paragraph",
-   "top": 7646,
+   "top": 7724,
    "h": 52,
-   "style": "e257966b",
+   "style": "81e5792f",
    "text": "Update the BS3 navbar to BS5 structure. Replace "
   },
   {
    "slot": 98,
    "kind": "code",
-   "top": 7716,
+   "top": 7794,
    "h": 84,
-   "style": "4246f787",
+   "style": "a41b3666",
    "text": "<button class=\"navbar-toggler\" type=\"button\" dat"
   },
   {
    "slot": 99,
    "kind": "paragraph",
-   "top": 7815,
+   "top": 7893,
    "h": 104,
-   "style": "47f7d6af",
+   "style": "8216a764",
    "text": "Convert dropdown triggers to class=\"nav-link dro"
   },
   {
    "slot": 100,
    "kind": "listItem",
-   "top": 7936,
+   "top": 8014,
    "h": 26,
-   "style": "6901cc5a",
+   "style": "595a9b41",
    "text": "Step 6: Verify no Bootstrap 3 markup remains"
   },
   {
    "slot": 101,
    "kind": "paragraph",
-   "top": 7980,
+   "top": 8058,
    "h": 104,
    "style": "9d21a367",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
@@ -812,39 +812,39 @@
   {
    "slot": 102,
    "kind": "listItem",
-   "top": 8101,
+   "top": 8179,
    "h": 26,
-   "style": "8cc8f4f2",
+   "style": "e5ddb68c",
    "text": "Step 7: Rebuild showcase"
   },
   {
    "slot": 103,
    "kind": "paragraph",
-   "top": 8145,
+   "top": 8223,
    "h": 52,
-   "style": "02b1901e",
+   "style": "c041b8f7",
    "text": "Run: mvn -q -pl apps/showcase -am package -Dskip"
   },
   {
    "slot": 104,
    "kind": "listItem",
-   "top": 8215,
+   "top": 8293,
    "h": 26,
-   "style": "2db2bf39",
+   "style": "d859923b",
    "text": "Step 8: Commit"
   },
   {
    "slot": 105,
    "kind": "code",
-   "top": 8258,
+   "top": 8336,
    "h": 104,
-   "style": "3eaf4648",
+   "style": "f20c4a93",
    "text": "git add apps/showcase/src/main/webapp git commit"
   },
   {
    "slot": 106,
    "kind": "rule",
-   "top": 8377,
+   "top": 8455,
    "h": 1,
    "style": "8718f1c2",
    "text": ""
@@ -852,31 +852,31 @@
   {
    "slot": 107,
    "kind": "heading",
-   "top": 8405,
+   "top": 8483,
    "h": 23,
-   "style": "f64e49d8",
+   "style": "8cdbd51f",
    "text": "Task 4: rest-showcase asset delivery§"
   },
   {
    "slot": 108,
    "kind": "paragraph",
-   "top": 8438,
+   "top": 8516,
    "h": 26,
-   "style": "c411f818",
+   "style": "706af559",
    "text": "Files:"
   },
   {
    "slot": 109,
    "kind": "listItem",
-   "top": 8481,
+   "top": 8559,
    "h": 104,
-   "style": "fb543616",
+   "style": "1b9cc77b",
    "text": "Modify: the 5 order JSPs under apps/rest-showcas"
   },
   {
    "slot": 110,
    "kind": "listItem",
-   "top": 8587,
+   "top": 8665,
    "h": 26,
    "style": "fa778fea",
    "text": "Modify: apps/rest-showcase/src/main/resources/st"
@@ -884,23 +884,23 @@
   {
    "slot": 111,
    "kind": "listItem",
-   "top": 8616,
+   "top": 8694,
    "h": 78,
-   "style": "72a3c234",
+   "style": "73c8018d",
    "text": "Delete: apps/rest-showcase/src/main/webapp/css/b"
   },
   {
    "slot": 112,
    "kind": "paragraph",
-   "top": 8712,
+   "top": 8790,
    "h": 26,
-   "style": "00c62173",
+   "style": "902f4595",
    "text": "Interfaces:"
   },
   {
    "slot": 113,
    "kind": "listItem",
-   "top": 8755,
+   "top": 8833,
    "h": 26,
    "style": "d3b47bf4",
    "text": "Consumes: webjar deps from Task 1."
@@ -908,7 +908,7 @@
   {
    "slot": 114,
    "kind": "listItem",
-   "top": 8790,
+   "top": 8868,
    "h": 26,
    "style": "c842a82f",
    "text": "Produces: <s:webjar>-served CSS used by rest-sho"
@@ -916,31 +916,31 @@
   {
    "slot": 115,
    "kind": "listItem",
-   "top": 8824,
+   "top": 8902,
    "h": 26,
-   "style": "b0c2313a",
+   "style": "e52d7b3e",
    "text": "Step 1: Replace the bootstrap CSS reference in e"
   },
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 8868,
+   "top": 8946,
    "h": 52,
-   "style": "2baa1d5e",
+   "style": "6df39ac5",
    "text": "Change the line <s:link href=\"%{#pageContextPath"
   },
   {
    "slot": 117,
    "kind": "code",
-   "top": 8937,
+   "top": 9015,
    "h": 64,
-   "style": "2a9e4ef1",
+   "style": "9a656461",
    "text": "<link rel=\"stylesheet\" href=\"<s:webjar path='boo"
   },
   {
    "slot": 118,
    "kind": "paragraph",
-   "top": 9016,
+   "top": 9094,
    "h": 26,
    "style": "f84c9f69",
    "text": "Leave the adjacent app.css <s:link> untouched."
@@ -948,15 +948,15 @@
   {
    "slot": 119,
    "kind": "listItem",
-   "top": 9060,
+   "top": 9138,
    "h": 26,
-   "style": "357b4bc7",
+   "style": "df6b2744",
    "text": "Step 2: Add the webjar allowlist constant to res"
   },
   {
    "slot": 120,
    "kind": "paragraph",
-   "top": 9103,
+   "top": 9181,
    "h": 26,
    "style": "a9f25e7e",
    "text": "Inside <struts>, alongside the other constants ("
@@ -964,63 +964,63 @@
   {
    "slot": 121,
    "kind": "code",
-   "top": 9147,
+   "top": 9225,
    "h": 44,
-   "style": "42b6e6f7",
+   "style": "a4b72377",
    "text": "<constant name=\"struts.webjars.allowlist\" value="
   },
   {
    "slot": 122,
    "kind": "listItem",
-   "top": 9206,
+   "top": 9284,
    "h": 26,
-   "style": "986f13cd",
+   "style": "bf488c42",
    "text": "Step 3: Delete vendored static CSS"
   },
   {
    "slot": 123,
    "kind": "code",
-   "top": 9250,
+   "top": 9328,
    "h": 144,
-   "style": "0caa1535",
+   "style": "4c6a3542",
    "text": "git rm apps/rest-showcase/src/main/webapp/css/bo"
   },
   {
    "slot": 124,
    "kind": "listItem",
-   "top": 9409,
+   "top": 9487,
    "h": 26,
-   "style": "486e94d7",
+   "style": "e41e0ad3",
    "text": "Step 4: Verify no lingering references"
   },
   {
    "slot": 125,
    "kind": "paragraph",
-   "top": 9452,
+   "top": 9530,
    "h": 52,
-   "style": "2f30dc3a",
+   "style": "2b051c71",
    "text": "Run: grep -rn \"css/bootstrap\\|bootstrap-theme\" a"
   },
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 9522,
+   "top": 9600,
    "h": 26,
-   "style": "2db2bf39",
+   "style": "d859923b",
    "text": "Step 5: Commit"
   },
   {
    "slot": 127,
    "kind": "code",
-   "top": 9565,
+   "top": 9643,
    "h": 104,
-   "style": "bf412672",
+   "style": "47c190e1",
    "text": "git add apps/rest-showcase/src/main/webapp apps/"
   },
   {
    "slot": 128,
    "kind": "rule",
-   "top": 9684,
+   "top": 9762,
    "h": 1,
    "style": "8718f1c2",
    "text": ""
@@ -1028,39 +1028,39 @@
   {
    "slot": 129,
    "kind": "heading",
-   "top": 9713,
+   "top": 9791,
    "h": 23,
-   "style": "f44e46b2",
+   "style": "92dbde91",
    "text": "Task 5: rest-showcase markup migration§"
   },
   {
    "slot": 130,
    "kind": "paragraph",
-   "top": 9745,
+   "top": 9823,
    "h": 26,
-   "style": "c411f818",
+   "style": "706af559",
    "text": "Files:"
   },
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 9788,
+   "top": 9866,
    "h": 52,
-   "style": "3e785cd4",
+   "style": "473c5a4f",
    "text": "Modify: the 5 order JSPs under apps/rest-showcas"
   },
   {
    "slot": 132,
    "kind": "paragraph",
-   "top": 9858,
+   "top": 9936,
    "h": 26,
-   "style": "00c62173",
+   "style": "902f4595",
    "text": "Interfaces:"
   },
   {
    "slot": 133,
    "kind": "listItem",
-   "top": 9902,
+   "top": 9980,
    "h": 26,
    "style": "c7b46910",
    "text": "Consumes: Bootstrap 5 CSS from Task 4."
@@ -1068,7 +1068,7 @@
   {
    "slot": 134,
    "kind": "listItem",
-   "top": 9936,
+   "top": 10014,
    "h": 26,
    "style": "98e61d71",
    "text": "Produces: BS5-compatible rest-showcase markup (f"
@@ -1076,15 +1076,15 @@
   {
    "slot": 135,
    "kind": "listItem",
-   "top": 9971,
+   "top": 10049,
    "h": 26,
-   "style": "bb160a40",
+   "style": "44a8507d",
    "text": "Step 1: Inventory occurrences"
   },
   {
    "slot": 136,
    "kind": "paragraph",
-   "top": 10014,
+   "top": 10092,
    "h": 78,
    "style": "64ffebe3",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
@@ -1092,15 +1092,15 @@
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 10110,
+   "top": 10188,
    "h": 26,
-   "style": "93f5cde1",
+   "style": "dc286a2f",
    "text": "Step 2: Migrate glyphicons and classes"
   },
   {
    "slot": 138,
    "kind": "paragraph",
-   "top": 10154,
+   "top": 10232,
    "h": 26,
    "style": "703b4e5d",
    "text": "Apply the icon and class mapping tables. Example"
@@ -1108,15 +1108,15 @@
   {
    "slot": 139,
    "kind": "code",
-   "top": 10197,
+   "top": 10275,
    "h": 84,
-   "style": "bf98753d",
+   "style": "e4b0a745",
    "text": "<a href=\"orders/${id}\" class=\"btn btn-secondary\""
   },
   {
    "slot": 140,
    "kind": "paragraph",
-   "top": 10296,
+   "top": 10374,
    "h": 26,
    "style": "d24fe6bd",
    "text": "And the \"Back to Orders\" links: <i class=\"bi bi-"
@@ -1124,39 +1124,39 @@
   {
    "slot": 141,
    "kind": "listItem",
-   "top": 10340,
+   "top": 10418,
    "h": 26,
-   "style": "3dea2000",
+   "style": "2d897d0b",
    "text": "Step 3: Fix the malformed closing tag"
   },
   {
    "slot": 142,
    "kind": "paragraph",
-   "top": 10383,
-   "h": 52,
-   "style": "bf679a43",
+   "top": 10461,
+   "h": 78,
+   "style": "d489076a",
    "text": "In orders-editNew.jsp:79, change </apan> to </sp"
   },
   {
    "slot": 143,
    "kind": "code",
-   "top": 10453,
+   "top": 10557,
    "h": 44,
-   "style": "27f59f72",
+   "style": "09752ea2",
    "text": "<i class=\"bi bi-arrow-left\"></i> Back to Ordersj"
   },
   {
    "slot": 144,
    "kind": "listItem",
-   "top": 10512,
+   "top": 10616,
    "h": 26,
-   "style": "b527ad16",
+   "style": "e857346e",
    "text": "Step 4: Verify no Bootstrap 3 markup or typo rem"
   },
   {
    "slot": 145,
    "kind": "paragraph",
-   "top": 10555,
+   "top": 10659,
    "h": 78,
    "style": "bb827333",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
@@ -1164,39 +1164,39 @@
   {
    "slot": 146,
    "kind": "listItem",
-   "top": 10651,
+   "top": 10755,
    "h": 26,
-   "style": "cac42234",
+   "style": "0d0804bb",
    "text": "Step 5: Build rest-showcase"
   },
   {
    "slot": 147,
    "kind": "paragraph",
-   "top": 10695,
+   "top": 10799,
    "h": 52,
-   "style": "01b3cd22",
+   "style": "b13f62c3",
    "text": "Run: mvn -q -pl apps/rest-showcase -am package -"
   },
   {
    "slot": 148,
    "kind": "listItem",
-   "top": 10764,
+   "top": 10868,
    "h": 26,
-   "style": "2db2bf39",
+   "style": "d859923b",
    "text": "Step 6: Commit"
   },
   {
    "slot": 149,
    "kind": "code",
-   "top": 10808,
+   "top": 10912,
    "h": 104,
-   "style": "bf7782e2",
+   "style": "9bc5b7a9",
    "text": "git add apps/rest-showcase/src/main/webapp git c"
   },
   {
    "slot": 150,
    "kind": "rule",
-   "top": 10927,
+   "top": 11031,
    "h": 1,
    "style": "8718f1c2",
    "text": ""
@@ -1204,31 +1204,31 @@
   {
    "slot": 151,
    "kind": "heading",
-   "top": 10955,
+   "top": 11059,
    "h": 23,
-   "style": "f149c4cb",
+   "style": "05cd8910",
    "text": "Task 6: Full build, manual verification, draft P"
   },
   {
    "slot": 152,
    "kind": "paragraph",
-   "top": 10987,
+   "top": 11091,
    "h": 26,
-   "style": "4c55a31f",
+   "style": "d167c060",
    "text": "Files: none (verification + PR)."
   },
   {
    "slot": 153,
    "kind": "paragraph",
-   "top": 11031,
+   "top": 11135,
    "h": 26,
-   "style": "00c62173",
+   "style": "902f4595",
    "text": "Interfaces:"
   },
   {
    "slot": 154,
    "kind": "listItem",
-   "top": 11074,
+   "top": 11178,
    "h": 26,
    "style": "d7b6c0d7",
    "text": "Consumes: all prior tasks."
@@ -1236,15 +1236,15 @@
   {
    "slot": 155,
    "kind": "listItem",
-   "top": 11109,
+   "top": 11213,
    "h": 26,
-   "style": "500dbd65",
+   "style": "12d57b41",
    "text": "Step 1: Full build"
   },
   {
    "slot": 156,
    "kind": "paragraph",
-   "top": 11152,
+   "top": 11256,
    "h": 78,
    "style": "c11acabb",
    "text": "Run: mvn clean install -DskipAssembly 2>&1 | tai"
@@ -1252,23 +1252,23 @@
   {
    "slot": 157,
    "kind": "listItem",
-   "top": 11248,
+   "top": 11352,
    "h": 26,
-   "style": "f064b34d",
+   "style": "8a4660ec",
    "text": "Step 2: Run the showcase and smoke-test in a bro"
   },
   {
    "slot": 158,
    "kind": "paragraph",
-   "top": 11292,
+   "top": 11396,
    "h": 52,
-   "style": "26af6a21",
+   "style": "3ea3dcbc",
    "text": "Run: mvn -pl apps/showcase jetty:run -DskipAssem"
   },
   {
    "slot": 159,
    "kind": "listItem",
-   "top": 11361,
+   "top": 11465,
    "h": 52,
    "style": "6629265f",
    "text": "Navbar renders; the collapse toggle and dropdown"
@@ -1276,7 +1276,7 @@
   {
    "slot": 160,
    "kind": "listItem",
-   "top": 11422,
+   "top": 11526,
    "h": 26,
    "style": "93ea92c0",
    "text": "Icons render (home, gear, file, question-circle)"
@@ -1284,7 +1284,7 @@
   {
    "slot": 161,
    "kind": "listItem",
-   "top": 11456,
+   "top": 11560,
    "h": 26,
    "style": "1beda76f",
    "text": "Alerts show a working close (×) button."
@@ -1292,7 +1292,7 @@
   {
    "slot": 162,
    "kind": "listItem",
-   "top": 11490,
+   "top": 11594,
    "h": 26,
    "style": "92e613ff",
    "text": "Prettify code blocks are highlighted (jQuery rea"
@@ -1300,7 +1300,7 @@
   {
    "slot": 163,
    "kind": "listItem",
-   "top": 11525,
+   "top": 11629,
    "h": 52,
    "style": "e568651c",
    "text": "The AJAX validation form (/validation/ajaxFormSu"
@@ -1308,7 +1308,7 @@
   {
    "slot": 164,
    "kind": "listItem",
-   "top": 11585,
+   "top": 11689,
    "h": 52,
    "style": "a47c996a",
    "text": "No 404s for /static/webjars/bootstrap/..., .../b"
@@ -1316,15 +1316,15 @@
   {
    "slot": 165,
    "kind": "listItem",
-   "top": 11646,
+   "top": 11750,
    "h": 26,
-   "style": "46c19dca",
+   "style": "f8252af1",
    "text": "Step 3: Run the rest-showcase and smoke-test"
   },
   {
    "slot": 166,
    "kind": "paragraph",
-   "top": 11689,
+   "top": 11793,
    "h": 78,
    "style": "528059ee",
    "text": "Run: mvn -pl apps/rest-showcase jetty:run -Dskip"
@@ -1332,25 +1332,25 @@
   {
    "slot": 167,
    "kind": "listItem",
-   "top": 11785,
+   "top": 11889,
    "h": 26,
-   "style": "88d001d5",
+   "style": "c41574ab",
    "text": "Step 4: Push branch and open a DRAFT PR"
   },
   {
    "slot": 168,
    "kind": "code",
-   "top": 11828,
+   "top": 11932,
    "h": 364,
-   "style": "830ce99c",
+   "style": "496c63df",
    "text": "git push -u origin WW-5653-bootstrap5-sample-app"
   },
   {
    "slot": 169,
    "kind": "paragraph",
-   "top": 12207,
+   "top": 12311,
    "h": 26,
-   "style": "c8d6459c",
+   "style": "653f144b",
    "text": "Expected: PR created in draft state. Report the "
   }
  ]

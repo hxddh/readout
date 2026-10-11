@@ -1,26 +1,26 @@
 {
- "height": 3388,
+ "height": 3492,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "7e40c78b",
+   "style": "1bdc0536",
    "text": "rou3§"
   },
   {
    "slot": 2,
    "kind": "paragraph",
    "top": 99,
-   "h": 78,
-   "style": "1fddb717",
+   "h": 104,
+   "style": "1c0d6257",
    "text": "Lightweight, high-performance HTTP router for JS"
   },
   {
    "slot": 3,
    "kind": "paragraph",
-   "top": 194,
+   "top": 220,
    "h": 130,
    "style": "d4a29fe3",
    "text": "Layout: src/operations/ (add, find, find-all, re"
@@ -28,7 +28,7 @@
   {
    "slot": 4,
    "kind": "alert",
-   "top": 342,
+   "top": 368,
    "h": 103,
    "style": "7182f1da",
    "text": "ImportantKeep AGENTS.md and .agents/*.md updated"
@@ -36,15 +36,15 @@
   {
    "slot": 5,
    "kind": "heading",
-   "top": 485,
+   "top": 511,
    "h": 29,
-   "style": "0a8ef991",
+   "style": "6170f998",
    "text": "Docs§"
   },
   {
    "slot": 6,
    "kind": "paragraph",
-   "top": 528,
+   "top": 554,
    "h": 26,
    "style": "53c96a5e",
    "text": "Read the relevant doc before changing that area:"
@@ -52,63 +52,63 @@
   {
    "slot": 7,
    "kind": "listItem",
-   "top": 571,
+   "top": 597,
    "h": 78,
-   "style": "c0960378",
+   "style": "6d5ff6fc",
    "text": ".agents/matching.md: tree, lookup, same-node sib"
   },
   {
    "slot": 8,
    "kind": "listItem",
-   "top": 651,
+   "top": 677,
    "h": 52,
-   "style": "4d14706f",
+   "style": "bd21b40b",
    "text": ".agents/syntax.md: pattern pipeline, escapes, {}"
   },
   {
    "slot": 9,
    "kind": "listItem",
-   "top": 706,
+   "top": 732,
    "h": 52,
-   "style": "d5179078",
+   "style": "386c5bec",
    "text": ".agents/compiler.md: compileRouter / compileRout"
   },
   {
    "slot": 10,
    "kind": "listItem",
-   "top": 760,
+   "top": 786,
    "h": 26,
-   "style": "1b63110a",
+   "style": "95ebc84a",
    "text": ".agents/regexp.md: routeToRegExp (regex ≡ router"
   },
   {
    "slot": 11,
    "kind": "listItem",
-   "top": 788,
+   "top": 814,
    "h": 52,
-   "style": "861dce2d",
+   "style": "3bb297d1",
    "text": ".agents/overlap.md: routesOverlap / compareRoute"
   },
   {
    "slot": 12,
    "kind": "listItem",
-   "top": 843,
+   "top": 869,
    "h": 52,
-   "style": "8a81a0a8",
+   "style": "54027b68",
    "text": ".agents/testing.md: suites, fixture conventions,"
   },
   {
    "slot": 13,
    "kind": "heading",
-   "top": 935,
+   "top": 961,
    "h": 29,
-   "style": "d61cdef1",
+   "style": "82e2b796",
    "text": "Core invariants§"
   },
   {
    "slot": 14,
    "kind": "listItem",
-   "top": 978,
+   "top": 1004,
    "h": 52,
    "style": "da41ec23",
    "text": "Interpreter (findRoute / findAllRoutes) and comp"
@@ -116,15 +116,15 @@
   {
    "slot": 15,
    "kind": "listItem",
-   "top": 1032,
-   "h": 104,
-   "style": "baf92e25",
+   "top": 1058,
+   "h": 130,
+   "style": "bf9f2394",
    "text": "findAllRoutes order (least → most specific) is a"
   },
   {
    "slot": 16,
    "kind": "listItem",
-   "top": 1138,
+   "top": 1190,
    "h": 130,
    "style": "47106c75",
    "text": "routeToRegExp(p) matches exactly the paths findR"
@@ -132,15 +132,15 @@
   {
    "slot": 17,
    "kind": "listItem",
-   "top": 1271,
-   "h": 78,
-   "style": "0fb8a7a8",
+   "top": 1323,
+   "h": 104,
+   "style": "19fb889f",
    "text": "routeToRegExp output must not backtrack polynomi"
   },
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 1351,
+   "top": 1429,
    "h": 78,
    "style": "b5750e94",
    "text": "Never write a second pattern parser: derived API"
@@ -148,63 +148,63 @@
   {
    "slot": 19,
    "kind": "listItem",
-   "top": 1431,
-   "h": 78,
-   "style": "c5a4a28b",
+   "top": 1509,
+   "h": 104,
+   "style": "0482cba5",
    "text": "Lookup ignores at most one trailing slash; middl"
   },
   {
    "slot": 20,
    "kind": "listItem",
-   "top": 1512,
+   "top": 1616,
    "h": 130,
-   "style": "05a2dc87",
+   "style": "b0bbb507",
    "text": "* is URLPattern's greedy catch-all ((.*), also i"
   },
   {
    "slot": 21,
    "kind": "listItem",
-   "top": 1644,
+   "top": 1748,
    "h": 78,
-   "style": "84db146c",
+   "style": "c7ed3198",
    "text": "Literal pattern text is percent-encoded once, at"
   },
   {
    "slot": 22,
    "kind": "listItem",
-   "top": 1724,
+   "top": 1828,
    "h": 104,
-   "style": "b840a370",
+   "style": "d789e7a5",
    "text": ". / .. pattern segments (%2e too) are resolved a"
   },
   {
    "slot": 23,
    "kind": "listItem",
-   "top": 1830,
+   "top": 1934,
    "h": 104,
-   "style": "2c1cdeea",
+   "style": "f33a39b8",
    "text": "A :name never captures \"\", and no segment a :nam"
   },
   {
    "slot": 24,
    "kind": "listItem",
-   "top": 1937,
+   "top": 2041,
    "h": 130,
-   "style": "450772c1",
+   "style": "d322a32d",
    "text": "Unnamed captures (*, a bare **, unnamed groups) "
   },
   {
    "slot": 25,
    "kind": "listItem",
-   "top": 2069,
+   "top": 2173,
    "h": 78,
-   "style": "23e59b1a",
+   "style": "7b0de47d",
    "text": "Matching a dynamic segment is linear in its leng"
   },
   {
    "slot": 26,
    "kind": "listItem",
-   "top": 2149,
+   "top": 2253,
    "h": 52,
    "style": "86f76ac7",
    "text": "Optional features (overlap, regexp, routeNodeKey"
@@ -212,7 +212,7 @@
   {
    "slot": 27,
    "kind": "listItem",
-   "top": 2204,
+   "top": 2308,
    "h": 52,
    "style": "85108197",
    "text": "addRoute preprocessing helpers bail early when t"
@@ -220,23 +220,23 @@
   {
    "slot": 28,
    "kind": "listItem",
-   "top": 2258,
+   "top": 2362,
    "h": 52,
-   "style": "7ee4d754",
+   "style": "87b849a2",
    "text": "Every thrown error starts with rou3:; pattern er"
   },
   {
    "slot": 29,
    "kind": "heading",
-   "top": 2351,
+   "top": 2455,
    "h": 29,
-   "style": "d51cdd5e",
+   "style": "83e2b929",
    "text": "Code conventions§"
   },
   {
    "slot": 30,
    "kind": "listItem",
-   "top": 2393,
+   "top": 2497,
    "h": 52,
    "style": "5035edfa",
    "text": "Performance-first: charCodeAt() over .startsWith"
@@ -244,7 +244,7 @@
   {
    "slot": 31,
    "kind": "listItem",
-   "top": 2447,
+   "top": 2551,
    "h": 26,
    "style": "9210a699",
    "text": "Hot-path var names: m (method), p (path), s (seg"
@@ -252,7 +252,7 @@
   {
    "slot": 32,
    "kind": "listItem",
-   "top": 2476,
+   "top": 2580,
    "h": 26,
    "style": "a3f39d29",
    "text": "Internal files are prefixed _; internal helpers "
@@ -260,7 +260,7 @@
   {
    "slot": 33,
    "kind": "listItem",
-   "top": 2504,
+   "top": 2608,
    "h": 156,
    "style": "c51dd4d5",
    "text": "Split modules by concept and consumer, not line "
@@ -268,7 +268,7 @@
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 2662,
+   "top": 2766,
    "h": 52,
    "style": "6abbfaa0",
    "text": "ESM only, explicit .ts import extensions, with {"
@@ -276,7 +276,7 @@
   {
    "slot": 35,
    "kind": "listItem",
-   "top": 2717,
+   "top": 2821,
    "h": 26,
    "style": "6fd5997b",
    "text": "Multi-arg functions take an options object as th"
@@ -284,15 +284,15 @@
   {
    "slot": 36,
    "kind": "heading",
-   "top": 2783,
+   "top": 2887,
    "h": 29,
-   "style": "46177f13",
+   "style": "12e81774",
    "text": "Bug fix workflow (regression-first)§"
   },
   {
    "slot": 37,
    "kind": "listItem",
-   "top": 2826,
+   "top": 2930,
    "h": 26,
    "style": "20a99698",
    "text": "Write the regression test reproducing the bug."
@@ -300,15 +300,15 @@
   {
    "slot": 38,
    "kind": "listItem",
-   "top": 2854,
+   "top": 2958,
    "h": 26,
-   "style": "f2fa4489",
+   "style": "93583c42",
    "text": "Run it and confirm it fails (never skip)."
   },
   {
    "slot": 39,
    "kind": "listItem",
-   "top": 2882,
+   "top": 2986,
    "h": 26,
    "style": "853c2991",
    "text": "Make the minimal fix."
@@ -316,7 +316,7 @@
   {
    "slot": 40,
    "kind": "listItem",
-   "top": 2911,
+   "top": 3015,
    "h": 26,
    "style": "edebee0d",
    "text": "Confirm the test passes, then run the broader su"
@@ -324,15 +324,15 @@
   {
    "slot": 41,
    "kind": "heading",
-   "top": 2977,
+   "top": 3081,
    "h": 29,
-   "style": "098ef7fe",
+   "style": "6270fb2b",
    "text": "Git§"
   },
   {
    "slot": 42,
    "kind": "listItem",
-   "top": 3020,
+   "top": 3124,
    "h": 52,
    "style": "8e765565",
    "text": "Semantic, lower-case commits with scope (fix(com"
@@ -340,7 +340,7 @@
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 3074,
+   "top": 3178,
    "h": 26,
    "style": "ea42add2",
    "text": "If not on main, git push after committing. Use g"

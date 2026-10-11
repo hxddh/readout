@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "39c1d59a",
+   "style": "edd9d9cd",
    "text": "项目级别提示词存储功能设计§"
   },
   {
@@ -14,7 +14,7 @@
    "kind": "heading",
    "top": 118,
    "h": 29,
-   "style": "2dd9cec6",
+   "style": "11ddd5af",
    "text": "概述§"
   },
   {
@@ -30,7 +30,7 @@
    "kind": "heading",
    "top": 285,
    "h": 29,
-   "style": "2fd9d1ec",
+   "style": "0fddd289",
    "text": "需求分析§"
   },
   {
@@ -38,7 +38,7 @@
    "kind": "heading",
    "top": 341,
    "h": 23,
-   "style": "83418ef6",
+   "style": "1897876f",
    "text": "核心需求§"
   },
   {
@@ -46,7 +46,7 @@
    "kind": "listItem",
    "top": 374,
    "h": 29,
-   "style": "812f789b",
+   "style": "ce7582a7",
    "text": "双层存储：支持全局提示词和项目提示词并存"
   },
   {
@@ -54,7 +54,7 @@
    "kind": "listItem",
    "top": 404,
    "h": 29,
-   "style": "b74ae899",
+   "style": "20c428c5",
    "text": "独立管理：全局和项目提示词完全独立，各自拥有完整的增删改查功能"
   },
   {
@@ -62,7 +62,7 @@
    "kind": "listItem",
    "top": 435,
    "h": 29,
-   "style": "641825db",
+   "style": "e0c0e672",
    "text": "UI 分离展示：Settings 页面中分两个区域展示全局和项目提示词"
   },
   {
@@ -70,7 +70,7 @@
    "kind": "listItem",
    "top": 466,
    "h": 29,
-   "style": "c34d3a14",
+   "style": "9cc72a90",
    "text": "聊天集成：聊天输入框自动补全同时显示两种提示词，带标签区分"
   },
   {
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 496,
    "h": 29,
-   "style": "ca72e45b",
+   "style": "0916c7a7",
    "text": "多项目支持：只显示当前活动项目的提示词"
   },
   {
@@ -86,7 +86,7 @@
    "kind": "heading",
    "top": 553,
    "h": 23,
-   "style": "83418ef6",
+   "style": "1897876f",
    "text": "用户场景§"
   },
   {
@@ -94,7 +94,7 @@
    "kind": "listItem",
    "top": 585,
    "h": 29,
-   "style": "fa509d7f",
+   "style": "4b320983",
    "text": "全局提示词：用户个人常用的提示词，跨所有项目使用"
   },
   {
@@ -102,7 +102,7 @@
    "kind": "listItem",
    "top": 615,
    "h": 29,
-   "style": "7b2bd195",
+   "style": "167a0665",
    "text": "项目提示词：项目特定的提示词，可通过 Git 与团队共享"
   },
   {
@@ -110,7 +110,7 @@
    "kind": "heading",
    "top": 684,
    "h": 29,
-   "style": "2fd9d1ec",
+   "style": "0fddd289",
    "text": "技术方案§"
   },
   {
@@ -118,7 +118,7 @@
    "kind": "heading",
    "top": 741,
    "h": 23,
-   "style": "5c3e3f50",
+   "style": "7b802dc3",
    "text": "方案选择：抽象基类设计§"
   },
   {
@@ -134,7 +134,7 @@
    "kind": "paragraph",
    "top": 818,
    "h": 28,
-   "style": "f201e7b3",
+   "style": "6a5f3eff",
    "text": "优势："
   },
   {
@@ -174,7 +174,7 @@
    "kind": "heading",
    "top": 1025,
    "h": 29,
-   "style": "2fd9d1ec",
+   "style": "0fddd289",
    "text": "架构设计§"
   },
   {
@@ -182,7 +182,7 @@
    "kind": "heading",
    "top": 1082,
    "h": 23,
-   "style": "82418d63",
+   "style": "19978902",
    "text": "类层次结构§"
   },
   {
@@ -190,7 +190,7 @@
    "kind": "code",
    "top": 1114,
    "h": 204,
-   "style": "ebe056b2",
+   "style": "106408dc",
    "text": "AbstractPromptManager (抽象基类) ├── GlobalPromptMan"
   },
   {
@@ -198,7 +198,7 @@
    "kind": "heading",
    "top": 1345,
    "h": 23,
-   "style": "82418d63",
+   "style": "19978902",
    "text": "核心类职责§"
   },
   {
@@ -206,7 +206,7 @@
    "kind": "heading",
    "top": 1389,
    "h": 20,
-   "style": "b3d3f898",
+   "style": "edc362b7",
    "text": "AbstractPromptManager§"
   },
   {
@@ -222,7 +222,7 @@
    "kind": "paragraph",
    "top": 1461,
    "h": 28,
-   "style": "f201e7b3",
+   "style": "6a5f3eff",
    "text": "职责："
   },
   {
@@ -254,7 +254,7 @@
    "kind": "paragraph",
    "top": 1612,
    "h": 28,
-   "style": "cd9ee30a",
+   "style": "73729d9a",
    "text": "关键方法："
   },
   {
@@ -262,7 +262,7 @@
    "kind": "code",
    "top": 1658,
    "h": 224,
-   "style": "ee7d125f",
+   "style": "c6bfd449",
    "text": "// 抽象方法（子类实现） protected abstract Path getStorage"
   },
   {
@@ -270,7 +270,7 @@
    "kind": "heading",
    "top": 1903,
    "h": 20,
-   "style": "b5d3fbbe",
+   "style": "efc365dd",
    "text": "GlobalPromptManager§"
   },
   {
@@ -286,7 +286,7 @@
    "kind": "paragraph",
    "top": 1975,
    "h": 28,
-   "style": "f201e7b3",
+   "style": "6a5f3eff",
    "text": "实现："
   },
   {
@@ -294,7 +294,7 @@
    "kind": "code",
    "top": 2020,
    "h": 204,
-   "style": "b23f3632",
+   "style": "90ace1d4",
    "text": "@Override protected Path getStoragePath() { retu"
   },
   {
@@ -302,7 +302,7 @@
    "kind": "heading",
    "top": 2245,
    "h": 20,
-   "style": "b6d3fd51",
+   "style": "eec3644a",
    "text": "ProjectPromptManager§"
   },
   {
@@ -318,7 +318,7 @@
    "kind": "paragraph",
    "top": 2317,
    "h": 28,
-   "style": "f201e7b3",
+   "style": "6a5f3eff",
    "text": "实现："
   },
   {
@@ -326,7 +326,7 @@
    "kind": "code",
    "top": 2363,
    "h": 364,
-   "style": "05645472",
+   "style": "aeb37378",
    "text": "private final Project project; @Override protect"
   },
   {
@@ -334,7 +334,7 @@
    "kind": "heading",
    "top": 2748,
    "h": 20,
-   "style": "aad1abd6",
+   "style": "5ac64ce5",
    "text": "PromptScope 枚举§"
   },
   {
@@ -342,7 +342,7 @@
    "kind": "code",
    "top": 2774,
    "h": 484,
-   "style": "00a2dc2c",
+   "style": "2b941192",
    "text": "public enum PromptScope { GLOBAL(\"global\"), PROJ"
   },
   {
@@ -350,7 +350,7 @@
    "kind": "heading",
    "top": 3279,
    "h": 20,
-   "style": "bad4039d",
+   "style": "eac35dfe",
    "text": "PromptManagerFactory 工厂类§"
   },
   {
@@ -358,7 +358,7 @@
    "kind": "code",
    "top": 3306,
    "h": 424,
-   "style": "61670b2b",
+   "style": "85f52aa9",
    "text": "public class PromptManagerFactory { public stati"
   },
   {
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 3757,
    "h": 23,
-   "style": "81418bd0",
+   "style": "1a978a95",
    "text": "代码重构计划§"
   },
   {
@@ -374,7 +374,7 @@
    "kind": "heading",
    "top": 3801,
    "h": 20,
-   "style": "b5d3fbbe",
+   "style": "efc365dd",
    "text": "1. PromptManager 重构§"
   },
   {
@@ -382,7 +382,7 @@
    "kind": "paragraph",
    "top": 3827,
    "h": 28,
-   "style": "f201e7b3",
+   "style": "6a5f3eff",
    "text": "现有："
   },
   {
@@ -398,7 +398,7 @@
    "kind": "paragraph",
    "top": 3919,
    "h": 28,
-   "style": "379e1787",
+   "style": "f85e4d43",
    "text": "重构后："
   },
   {
@@ -430,7 +430,7 @@
    "kind": "heading",
    "top": 4073,
    "h": 20,
-   "style": "3bd70d47",
+   "style": "e9c11dd4",
    "text": "2. CodemossSettingsService 重构§"
   },
   {
@@ -438,7 +438,7 @@
    "kind": "paragraph",
    "top": 4100,
    "h": 28,
-   "style": "f201e7b3",
+   "style": "6a5f3eff",
    "text": "现有："
   },
   {
@@ -446,7 +446,7 @@
    "kind": "code",
    "top": 4145,
    "h": 124,
-   "style": "87dda933",
+   "style": "31e5d671",
    "text": "private final PromptManager promptManager; publi"
   },
   {
@@ -454,7 +454,7 @@
    "kind": "paragraph",
    "top": 4284,
    "h": 28,
-   "style": "379e1787",
+   "style": "f85e4d43",
    "text": "重构后："
   },
   {
@@ -462,7 +462,7 @@
    "kind": "code",
    "top": 4330,
    "h": 244,
-   "style": "16f834a5",
+   "style": "e852da77",
    "text": "private final Gson gson; private final ConfigPat"
   },
   {
@@ -470,7 +470,7 @@
    "kind": "heading",
    "top": 4615,
    "h": 29,
-   "style": "32d9d6a5",
+   "style": "0cddcdd0",
    "text": "UI 设计§"
   },
   {
@@ -478,7 +478,7 @@
    "kind": "heading",
    "top": 4671,
    "h": 23,
-   "style": "623e48c2",
+   "style": "81803735",
    "text": "Settings 页面布局§"
   },
   {
@@ -486,7 +486,7 @@
    "kind": "paragraph",
    "top": 4703,
    "h": 28,
-   "style": "cd9ee30a",
+   "style": "73729d9a",
    "text": "当前结构："
   },
   {
@@ -494,7 +494,7 @@
    "kind": "code",
    "top": 4749,
    "h": 104,
-   "style": "3d575b92",
+   "style": "fbe04b44",
    "text": "提示词库 ├── 描述文字 ├── 操作按钮（导出、导入、创建） └── 自定义提示词列表Cop"
   },
   {
@@ -502,7 +502,7 @@
    "kind": "paragraph",
    "top": 4868,
    "h": 28,
-   "style": "379e1787",
+   "style": "f85e4d43",
    "text": "新结构："
   },
   {
@@ -510,7 +510,7 @@
    "kind": "code",
    "top": 4913,
    "h": 224,
-   "style": "f14bbadf",
+   "style": "48c3c7e9",
    "text": "提示词库 ├── 描述文字 ├── 全局提示词区域 │ ├── 标题：\"全局提示词\" │ ├──"
   },
   {
@@ -518,7 +518,7 @@
    "kind": "heading",
    "top": 5165,
    "h": 23,
-   "style": "83418ef6",
+   "style": "1897876f",
    "text": "组件设计§"
   },
   {
@@ -526,7 +526,7 @@
    "kind": "heading",
    "top": 5208,
    "h": 20,
-   "style": "b6d1beba",
+   "style": "5ec65331",
    "text": "PromptSection 组件重构§"
   },
   {
@@ -534,7 +534,7 @@
    "kind": "paragraph",
    "top": 5235,
    "h": 26,
-   "style": "835df3ad",
+   "style": "270ba541",
    "text": "Props 扩展："
   },
   {
@@ -542,7 +542,7 @@
    "kind": "code",
    "top": 5278,
    "h": 264,
-   "style": "355e3003",
+   "style": "2898da8a",
    "text": "interface PromptSectionProps { globalPrompts: Pr"
   },
   {
@@ -550,7 +550,7 @@
    "kind": "heading",
    "top": 5563,
    "h": 20,
-   "style": "b9d4020a",
+   "style": "ebc35f91",
    "text": "新增组件：PromptScopeSection§"
   },
   {
@@ -566,7 +566,7 @@
    "kind": "code",
    "top": 5635,
    "h": 284,
-   "style": "e1da41b6",
+   "style": "70930007",
    "text": "interface PromptScopeSectionProps { title: strin"
   },
   {
@@ -574,7 +574,7 @@
    "kind": "heading",
    "top": 5947,
    "h": 23,
-   "style": "5c3e3f50",
+   "style": "7b802dc3",
    "text": "聊天输入框自动补全增强§"
   },
   {
@@ -582,7 +582,7 @@
    "kind": "heading",
    "top": 5991,
    "h": 20,
-   "style": "29679e20",
+   "style": "ef4a4b25",
    "text": "数据模型扩展§"
   },
   {
@@ -590,7 +590,7 @@
    "kind": "code",
    "top": 6017,
    "h": 184,
-   "style": "e5092bdc",
+   "style": "b2cdc4ed",
    "text": "interface PromptItem { id: string; name: string;"
   },
   {
@@ -598,7 +598,7 @@
    "kind": "heading",
    "top": 6222,
    "h": 20,
-   "style": "2b67a146",
+   "style": "ed4a47ff",
    "text": "显示格式§"
   },
   {
@@ -606,7 +606,7 @@
    "kind": "code",
    "top": 6249,
    "h": 64,
-   "style": "caec5d69",
+   "style": "824649e7",
    "text": "提示词名称 [全局] 提示词名称 [项目]Copy"
   },
   {
@@ -614,7 +614,7 @@
    "kind": "heading",
    "top": 6334,
    "h": 20,
-   "style": "b7d1c04d",
+   "style": "5dc6519e",
    "text": "promptProvider 重构§"
   },
   {
@@ -622,7 +622,7 @@
    "kind": "code",
    "top": 6360,
    "h": 324,
-   "style": "e61313ce",
+   "style": "8627a4fb",
    "text": "class PromptProvider { async fetchPrompts(): Pro"
   },
   {
@@ -630,7 +630,7 @@
    "kind": "heading",
    "top": 6724,
    "h": 29,
-   "style": "31d9d512",
+   "style": "0dddcf63",
    "text": "后端消息处理§"
   },
   {
@@ -638,7 +638,7 @@
    "kind": "heading",
    "top": 6781,
    "h": 23,
-   "style": "f73b61ba",
+   "style": "84827a85",
    "text": "PromptHandler 消息协议扩展§"
   },
   {
@@ -646,7 +646,7 @@
    "kind": "heading",
    "top": 6825,
    "h": 20,
-   "style": "29679e20",
+   "style": "ef4a4b25",
    "text": "现有消息类型§"
   },
   {
@@ -654,7 +654,7 @@
    "kind": "code",
    "top": 6851,
    "h": 164,
-   "style": "2d4831d7",
+   "style": "d79d5fad",
    "text": "get_prompts add_prompt update_prompt delete_prom"
   },
   {
@@ -662,7 +662,7 @@
    "kind": "heading",
    "top": 7036,
    "h": 20,
-   "style": "29679e20",
+   "style": "ef4a4b25",
    "text": "扩展消息格式§"
   },
   {
@@ -678,7 +678,7 @@
    "kind": "code",
    "top": 7108,
    "h": 304,
-   "style": "170eeb92",
+   "style": "bde030ba",
    "text": "{ \"type\": \"get_prompts\", \"scope\": \"global\" } { \""
   },
   {
@@ -686,7 +686,7 @@
    "kind": "heading",
    "top": 7433,
    "h": 20,
-   "style": "29679e20",
+   "style": "ef4a4b25",
    "text": "新增消息类型§"
   },
   {
@@ -694,7 +694,7 @@
    "kind": "code",
    "top": 7459,
    "h": 224,
-   "style": "336cda40",
+   "style": "12df7240",
    "text": "// 将项目提示词复制到全局 { \"type\": \"copy_prompt_to_global\""
   },
   {
@@ -702,7 +702,7 @@
    "kind": "heading",
    "top": 7711,
    "h": 23,
-   "style": "82418d63",
+   "style": "19978902",
    "text": "数据流设计§"
   },
   {
@@ -710,7 +710,7 @@
    "kind": "heading",
    "top": 7755,
    "h": 20,
-   "style": "3867b5bd",
+   "style": "f04a4cb8",
    "text": "获取提示词流程§"
   },
   {
@@ -718,7 +718,7 @@
    "kind": "code",
    "top": 7781,
    "h": 324,
-   "style": "ab7cd61c",
+   "style": "51d750a6",
    "text": "前端加载 Settings ↓ 并行发送两个请求 ├─ sendToJava({ type: '"
   },
   {
@@ -726,7 +726,7 @@
    "kind": "heading",
    "top": 8126,
    "h": 20,
-   "style": "3767b42a",
+   "style": "f14a4e4b",
    "text": "聊天自动补全流程§"
   },
   {
@@ -734,7 +734,7 @@
    "kind": "code",
    "top": 8152,
    "h": 204,
-   "style": "0715399c",
+   "style": "b198f452",
    "text": "promptProvider.fetchPrompts() ↓ 并行请求 ├─ sendToJa"
   },
   {
@@ -742,7 +742,7 @@
    "kind": "heading",
    "top": 8397,
    "h": 29,
-   "style": "30d9d37f",
+   "style": "0eddd0f6",
    "text": "国际化§"
   },
   {
@@ -750,7 +750,7 @@
    "kind": "heading",
    "top": 8453,
    "h": 23,
-   "style": "8f41a1da",
+   "style": "1c978dbb",
    "text": "新增翻译 Key§"
   },
   {
@@ -758,7 +758,7 @@
    "kind": "code",
    "top": 8485,
    "h": 204,
-   "style": "fefb6a87",
+   "style": "13f39f13",
    "text": "{ \"settings.prompt.global\": \"全局提示词\", \"settings.p"
   },
   {
@@ -766,7 +766,7 @@
    "kind": "heading",
    "top": 8730,
    "h": 29,
-   "style": "31d9d512",
+   "style": "0dddcf63",
    "text": "边界情况处理§"
   },
   {
@@ -774,7 +774,7 @@
    "kind": "heading",
    "top": 8786,
    "h": 23,
-   "style": "8f41a1da",
+   "style": "1c978dbb",
    "text": "1. 无活动项目§"
   },
   {
@@ -798,7 +798,7 @@
    "kind": "heading",
    "top": 8905,
    "h": 23,
-   "style": "5f3e4409",
+   "style": "7c802f56",
    "text": "2. 项目路径不存在§"
   },
   {
@@ -822,7 +822,7 @@
    "kind": "heading",
    "top": 9022,
    "h": 23,
-   "style": "8f41a1da",
+   "style": "1c978dbb",
    "text": "3. 多项目场景§"
   },
   {
@@ -846,7 +846,7 @@
    "kind": "heading",
    "top": 9141,
    "h": 23,
-   "style": "9041a36d",
+   "style": "1b978c28",
    "text": "4. 权限问题§"
   },
   {
@@ -870,7 +870,7 @@
    "kind": "heading",
    "top": 9260,
    "h": 23,
-   "style": "8f41a1da",
+   "style": "1c978dbb",
    "text": "5. ID 冲突§"
   },
   {
@@ -894,7 +894,7 @@
    "kind": "heading",
    "top": 9392,
    "h": 29,
-   "style": "2fd9d1ec",
+   "style": "0fddd289",
    "text": "测试策略§"
   },
   {
@@ -902,7 +902,7 @@
    "kind": "heading",
    "top": 9448,
    "h": 23,
-   "style": "83418ef6",
+   "style": "1897876f",
    "text": "单元测试§"
   },
   {
@@ -950,7 +950,7 @@
    "kind": "heading",
    "top": 9649,
    "h": 23,
-   "style": "83418ef6",
+   "style": "1897876f",
    "text": "集成测试§"
   },
   {
@@ -990,7 +990,7 @@
    "kind": "heading",
    "top": 9830,
    "h": 23,
-   "style": "81418bd0",
+   "style": "1a978a95",
    "text": "E2E 测试§"
   },
   {
@@ -1030,7 +1030,7 @@
    "kind": "heading",
    "top": 10023,
    "h": 29,
-   "style": "2fd9d1ec",
+   "style": "0fddd289",
    "text": "实施计划§"
   },
   {
@@ -1038,7 +1038,7 @@
    "kind": "heading",
    "top": 10080,
    "h": 23,
-   "style": "663e4f0e",
+   "style": "85803d81",
    "text": "Phase 1：后端重构（2 天）§"
   },
   {
@@ -1094,7 +1094,7 @@
    "kind": "heading",
    "top": 10309,
    "h": 23,
-   "style": "f83b634d",
+   "style": "838278f2",
    "text": "Phase 2：前端实现（1.5 天）§"
   },
   {
@@ -1150,7 +1150,7 @@
    "kind": "heading",
    "top": 10541,
    "h": 23,
-   "style": "673e50a1",
+   "style": "84803bee",
    "text": "Phase 3：测试和优化（1 天）§"
   },
   {
@@ -1198,7 +1198,7 @@
    "kind": "heading",
    "top": 10752,
    "h": 23,
-   "style": "f73b61ba",
+   "style": "84827a85",
    "text": "Phase 4：文档和发布（0.5 天）§"
   },
   {
@@ -1230,7 +1230,7 @@
    "kind": "paragraph",
    "top": 10890,
    "h": 28,
-   "style": "ee4d1258",
+   "style": "f19141c9",
    "text": "总计：约 5 个工作日"
   },
   {
@@ -1238,7 +1238,7 @@
    "kind": "heading",
    "top": 10958,
    "h": 29,
-   "style": "2fd9d1ec",
+   "style": "0fddd289",
    "text": "风险评估§"
   },
   {
@@ -1254,7 +1254,7 @@
    "kind": "heading",
    "top": 11221,
    "h": 29,
-   "style": "2fd9d1ec",
+   "style": "0fddd289",
    "text": "未来扩展§"
   },
   {
@@ -1262,7 +1262,7 @@
    "kind": "listItem",
    "top": 11264,
    "h": 29,
-   "style": "083865c8",
+   "style": "de514e8c",
    "text": "团队级提示词：支持团队共享的提示词存储"
   },
   {
@@ -1270,7 +1270,7 @@
    "kind": "listItem",
    "top": 11294,
    "h": 29,
-   "style": "4845bcae",
+   "style": "19bfa092",
    "text": "云端同步：将提示词同步到云端账号"
   },
   {
@@ -1278,7 +1278,7 @@
    "kind": "listItem",
    "top": 11325,
    "h": 29,
-   "style": "e39eda4e",
+   "style": "34f73c1e",
    "text": "提示词模板市场：社区共享的提示词模板"
   },
   {
@@ -1286,7 +1286,7 @@
    "kind": "listItem",
    "top": 11356,
    "h": 29,
-   "style": "4245b33c",
+   "style": "1bbfa3b8",
    "text": "智能推荐：基于项目类型推荐相关提示词"
   },
   {
@@ -1294,7 +1294,7 @@
    "kind": "listItem",
    "top": 11386,
    "h": 29,
-   "style": "d5eec915",
+   "style": "27472ae5",
    "text": "版本控制：提示词的历史版本管理"
   },
   {
@@ -1302,7 +1302,7 @@
    "kind": "heading",
    "top": 11456,
    "h": 29,
-   "style": "2fd9d1ec",
+   "style": "0fddd289",
    "text": "参考资料§"
   },
   {

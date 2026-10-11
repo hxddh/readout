@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 29,
-   "style": "bfc2a030",
+   "style": "88bd3701",
    "text": "Summary§"
   },
   {
@@ -14,7 +14,7 @@
    "kind": "paragraph",
    "top": 82,
    "h": 130,
-   "style": "28ebafe5",
+   "style": "3af11aa5",
    "text": "修复 Binance OHLC 在 USE_HTTP_PROXY=true 场景下因缺失 req"
   },
   {
@@ -22,7 +22,7 @@
    "kind": "paragraph",
    "top": 230,
    "h": 84,
-   "style": "5d4339f9",
+   "style": "69fa2547",
    "text": "同时补充了 Futures Kline 按 limit 分段权重、Spot/Margin 使用统"
   },
   {
@@ -30,7 +30,7 @@
    "kind": "heading",
    "top": 354,
    "h": 29,
-   "style": "747890de",
+   "style": "fdc763a5",
    "text": "Validation§"
   },
   {
@@ -54,7 +54,7 @@
    "kind": "heading",
    "top": 518,
    "h": 29,
-   "style": "cdc2b63a",
+   "style": "82bd2d8f",
    "text": "Risks§"
   },
   {
@@ -78,7 +78,7 @@
    "kind": "heading",
    "top": 660,
    "h": 29,
-   "style": "c0c2a1c3",
+   "style": "87bd356e",
    "text": "Rollback§"
   },
   {

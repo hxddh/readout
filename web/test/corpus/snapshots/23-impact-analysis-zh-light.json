@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "39c1d59a",
+   "style": "edd9d9cd",
    "text": "📊 代码变更影响分析报告§"
   },
   {
@@ -14,7 +14,7 @@
    "kind": "paragraph",
    "top": 99,
    "h": 56,
-   "style": "4dd9328b",
+   "style": "c793f45b",
    "text": "生成时间: 2026-01-15 16:09:47 分析者: Claude Code - 代码变"
   },
   {
@@ -30,7 +30,7 @@
    "kind": "heading",
    "top": 214,
    "h": 29,
-   "style": "97db73b0",
+   "style": "2b3c707f",
    "text": "📁 变更文件统计§"
   },
   {
@@ -38,7 +38,7 @@
    "kind": "table",
    "top": 256,
    "h": 210,
-   "style": "e063a0b9",
+   "style": "abef719d",
    "text": "变更类型文件数量文件列表✅ 已完成修改9FloatingWindowService.kt (移动"
   },
   {
@@ -46,7 +46,7 @@
    "kind": "paragraph",
    "top": 484,
    "h": 28,
-   "style": "7bff7339",
+   "style": "42efdfdd",
    "text": "总计: 10个文件变更 (+3,791行, -3,791行)"
   },
   {
@@ -62,7 +62,7 @@
    "kind": "heading",
    "top": 570,
    "h": 29,
-   "style": "33d9d838",
+   "style": "1bdde56d",
    "text": "🔍 影响域分析§"
   },
   {
@@ -70,7 +70,7 @@
    "kind": "heading",
    "top": 627,
    "h": 23,
-   "style": "623e48c2",
+   "style": "81803735",
    "text": "直接影响 (需要同步修改)§"
   },
   {
@@ -78,7 +78,7 @@
    "kind": "heading",
    "top": 671,
    "h": 20,
-   "style": "442ce72c",
+   "style": "c4e5245f",
    "text": "1. 核心服务迁移 ✅ 已完成§"
   },
   {
@@ -86,7 +86,7 @@
    "kind": "listItem",
    "top": 697,
    "h": 26,
-   "style": "bc63091c",
+   "style": "869f105c",
    "text": "文件: app/src/main/java/com/empathy/ai/service/Flo"
   },
   {
@@ -94,7 +94,7 @@
    "kind": "listItem",
    "top": 725,
    "h": 26,
-   "style": "d0b57fc8",
+   "style": "1f9cbb64",
    "text": "变更: 从 com.empathy.ai.domain.service 迁移到 com.empa"
   },
   {
@@ -102,7 +102,7 @@
    "kind": "listItem",
    "top": 754,
    "h": 29,
-   "style": "505ecb41",
+   "style": "fe56a715",
    "text": "原因: BUG-00073 OPPO真机悬浮球不显示问题修复"
   },
   {
@@ -110,7 +110,7 @@
    "kind": "listItem",
    "top": 784,
    "h": 29,
-   "style": "11a52ccc",
+   "style": "39d1240c",
    "text": "影响: 前台服务启动策略调整，绕过某些厂商的系统拦截"
   },
   {
@@ -118,7 +118,7 @@
    "kind": "heading",
    "top": 834,
    "h": 20,
-   "style": "442ce72c",
+   "style": "c4e5245f",
    "text": "2. 清单文件更新 ✅ 已完成§"
   },
   {
@@ -126,7 +126,7 @@
    "kind": "listItem",
    "top": 860,
    "h": 26,
-   "style": "326c7de7",
+   "style": "545dbe27",
    "text": "文件: app/src/main/AndroidManifest.xml"
   },
   {
@@ -134,7 +134,7 @@
    "kind": "listItem",
    "top": 889,
    "h": 52,
-   "style": "df5c55aa",
+   "style": "fbb8e15a",
    "text": "变更: 服务声明路径从 .domain.service.FloatingWindowServic"
   },
   {
@@ -142,7 +142,7 @@
    "kind": "listItem",
    "top": 943,
    "h": 29,
-   "style": "26a30f44",
+   "style": "4ecf0684",
    "text": "原因: 反映新的包路径结构"
   },
   {
@@ -150,7 +150,7 @@
    "kind": "heading",
    "top": 992,
    "h": 20,
-   "style": "442ce72c",
+   "style": "c4e5245f",
    "text": "3. 导入语句更新 ✅ 已完成§"
   },
   {
@@ -190,7 +190,7 @@
    "kind": "paragraph",
    "top": 1165,
    "h": 28,
-   "style": "cd9ee30a",
+   "style": "73729d9a",
    "text": "变更详情:"
   },
   {
@@ -198,7 +198,7 @@
    "kind": "code",
    "top": 1211,
    "h": 124,
-   "style": "85d2d4b9",
+   "style": "ea79893d",
    "text": "// 变更前 import com.empathy.ai.domain.service.Floa"
   },
   {
@@ -206,7 +206,7 @@
    "kind": "heading",
    "top": 1362,
    "h": 23,
-   "style": "5d3e40e3",
+   "style": "7a802c30",
    "text": "间接影响 (可能受影响)§"
   },
   {
@@ -214,7 +214,7 @@
    "kind": "heading",
    "top": 1406,
    "h": 20,
-   "style": "452ce8bf",
+   "style": "c3e522cc",
    "text": "1. 测试文件检查 ✅ 无需修改§"
   },
   {
@@ -254,7 +254,7 @@
    "kind": "paragraph",
    "top": 1579,
    "h": 28,
-   "style": "7e0e80e9",
+   "style": "3ceb593d",
    "text": "原因: 这些测试文件通过 Intent 或类引用方式使用 FloatingWindowServi"
   },
   {
@@ -262,7 +262,7 @@
    "kind": "heading",
    "top": 1627,
    "h": 20,
-   "style": "4a2cf09e",
+   "style": "cae52dd1",
    "text": "2. 应用初始化检查 ✅ 无需修改§"
   },
   {
@@ -286,7 +286,7 @@
    "kind": "paragraph",
    "top": 1726,
    "h": 28,
-   "style": "75fd2b30",
+   "style": "3ced97d4",
    "text": "原因: 使用反射或字符串引用，未直接导入"
   },
   {
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 1781,
    "h": 23,
-   "style": "9041a36d",
+   "style": "1b978c28",
    "text": "配置与文档影响§"
   },
   {
@@ -302,7 +302,7 @@
    "kind": "heading",
    "top": 1825,
    "h": 20,
-   "style": "472cebe5",
+   "style": "c5e525f2",
    "text": "1. 版本号更新 ✅ 已完成§"
   },
   {
@@ -310,7 +310,7 @@
    "kind": "listItem",
    "top": 1852,
    "h": 26,
-   "style": "93a3764e",
+   "style": "3a47508e",
    "text": "文件: gradle.properties"
   },
   {
@@ -318,7 +318,7 @@
    "kind": "listItem",
    "top": 1880,
    "h": 26,
-   "style": "c309bc6e",
+   "style": "2d425dda",
    "text": "变更: APP_VERSION_CODE 从 10100 递增到 10101"
   },
   {
@@ -326,7 +326,7 @@
    "kind": "listItem",
    "top": 1908,
    "h": 29,
-   "style": "12a52e5f",
+   "style": "3ad1259f",
    "text": "原因: 符合规则5：每次修改代码并编译时自动更新版本号"
   },
   {
@@ -334,7 +334,7 @@
    "kind": "heading",
    "top": 1958,
    "h": 20,
-   "style": "442ce72c",
+   "style": "c4e5245f",
    "text": "2. 开发规则更新 ✅ 已完成§"
   },
   {
@@ -342,7 +342,7 @@
    "kind": "listItem",
    "top": 1984,
    "h": 26,
-   "style": "187e719f",
+   "style": "6dd281df",
    "text": "文件: Rules/RulesReadMe.md"
   },
   {
@@ -350,7 +350,7 @@
    "kind": "listItem",
    "top": 2012,
    "h": 152,
-   "style": "75c92fb7",
+   "style": "e4d69277",
    "text": "变更: 规则编号修正（1. → 1、）新增规则4：用户口语化输入理解新增规则5：版本号自动更新重"
   },
   {
@@ -358,7 +358,7 @@
    "kind": "heading",
    "top": 2185,
    "h": 20,
-   "style": "442ce72c",
+   "style": "c4e5245f",
    "text": "3. 工作空间更新 ✅ 已完成§"
   },
   {
@@ -366,7 +366,7 @@
    "kind": "listItem",
    "top": 2212,
    "h": 26,
-   "style": "326e1727",
+   "style": "05510267",
    "text": "文件: WORKSPACE.md"
   },
   {
@@ -374,7 +374,7 @@
    "kind": "listItem",
    "top": 2240,
    "h": 121,
-   "style": "115a581f",
+   "style": "b305e40f",
    "text": "更新内容: 记录 BUG-00073 修复完成更新任务状态更新变更日志"
   },
   {
@@ -390,7 +390,7 @@
    "kind": "heading",
    "top": 2420,
    "h": 29,
-   "style": "34d9d9cb",
+   "style": "1adde3da",
    "text": "⚠️ 风险评估§"
   },
   {
@@ -398,7 +398,7 @@
    "kind": "heading",
    "top": 2477,
    "h": 23,
-   "style": "5d3e40e3",
+   "style": "7a802c30",
    "text": "风险等级: 🟢 低风险§"
   },
   {
@@ -406,7 +406,7 @@
    "kind": "paragraph",
    "top": 2509,
    "h": 28,
-   "style": "cd9ee30a",
+   "style": "73729d9a",
    "text": "评估依据:"
   },
   {
@@ -414,7 +414,7 @@
    "kind": "listItem",
    "top": 2554,
    "h": 29,
-   "style": "0974828f",
+   "style": "8beb904f",
    "text": "纯迁移变更: 仅改变服务位置，不修改业务逻辑"
   },
   {
@@ -422,7 +422,7 @@
    "kind": "listItem",
    "top": 2585,
    "h": 29,
-   "style": "4945be41",
+   "style": "1abfa225",
    "text": "依赖完整: 所有导入路径已正确更新"
   },
   {
@@ -430,7 +430,7 @@
    "kind": "listItem",
    "top": 2616,
    "h": 29,
-   "style": "4245b33c",
+   "style": "1bbfa3b8",
    "text": "测试兼容: 现有测试无需修改即可运行"
   },
   {
@@ -438,7 +438,7 @@
    "kind": "listItem",
    "top": 2646,
    "h": 29,
-   "style": "66ebdbc1",
+   "style": "b8443d91",
    "text": "配置同步: Manifest 和版本号已同步更新"
   },
   {
@@ -446,7 +446,7 @@
    "kind": "heading",
    "top": 2703,
    "h": 23,
-   "style": "82418d63",
+   "style": "19978902",
    "text": "潜在关注点§"
   },
   {
@@ -454,7 +454,7 @@
    "kind": "listItem",
    "top": 2735,
    "h": 127,
-   "style": "ce39edc2",
+   "style": "8fffe5a5",
    "text": "Clean Architecture 合规性✅ 确认: domain 层不应依赖 Android"
   },
   {
@@ -462,7 +462,7 @@
    "kind": "listItem",
    "top": 2870,
    "h": 127,
-   "style": "04e4dfaf",
+   "style": "f3885a23",
    "text": "服务启动机制ℹ️ 变化: 服务在前台启动时的系统识别方式改变预期: 绕过 OPPO 等厂商对 d"
   },
   {
@@ -478,7 +478,7 @@
    "kind": "heading",
    "top": 3056,
    "h": 29,
-   "style": "97db73b0",
+   "style": "2b3c707f",
    "text": "🧪 测试覆盖分析§"
   },
   {
@@ -486,7 +486,7 @@
    "kind": "heading",
    "top": 3112,
    "h": 23,
-   "style": "81418bd0",
+   "style": "1a978a95",
    "text": "现有测试覆盖§"
   },
   {
@@ -494,7 +494,7 @@
    "kind": "paragraph",
    "top": 3144,
    "h": 28,
-   "style": "f1153064",
+   "style": "ed647834",
    "text": "单元测试 (3个文件):"
   },
   {
@@ -526,7 +526,7 @@
    "kind": "paragraph",
    "top": 3290,
    "h": 28,
-   "style": "ae66dd68",
+   "style": "14adc0eb",
    "text": "Android 测试 (需运行验证):"
   },
   {
@@ -558,7 +558,7 @@
    "kind": "heading",
    "top": 3453,
    "h": 23,
-   "style": "81418bd0",
+   "style": "1a978a95",
    "text": "建议测试场景§"
   },
   {
@@ -566,7 +566,7 @@
    "kind": "listItem",
    "top": 3486,
    "h": 155,
-   "style": "6c543dd2",
+   "style": "311eb702",
    "text": "基础功能验证悬浮球在各种应用内显示截图权限申请和持久化AI 结果通知显示前台服务正常启动"
   },
   {
@@ -574,7 +574,7 @@
    "kind": "listItem",
    "top": 3648,
    "h": 125,
-   "style": "f9ee2a3c",
+   "style": "36172cfd",
    "text": "兼容性测试 (重点)OPPO 设备悬浮球显示 (BUG-00073)小米/华为等其他厂商设备An"
   },
   {
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 3781,
    "h": 155,
-   "style": "06787d49",
+   "style": "c290b50d",
    "text": "回归测试悬浮球点击交互截图覆盖层显示AI 分析结果展示服务异常恢复"
   },
   {
@@ -598,7 +598,7 @@
    "kind": "heading",
    "top": 3994,
    "h": 29,
-   "style": "34d9d9cb",
+   "style": "1adde3da",
    "text": "💡 建议操作§"
   },
   {
@@ -606,7 +606,7 @@
    "kind": "heading",
    "top": 4050,
    "h": 23,
-   "style": "83418ef6",
+   "style": "1897876f",
    "text": "立即执行§"
   },
   {
@@ -614,7 +614,7 @@
    "kind": "listItem",
    "top": 4083,
    "h": 29,
-   "style": "35eb55e2",
+   "style": "33dd14ee",
    "text": "✅ 编译验证: 运行 ./gradlew.bat clean assembleDebug 确认无"
   },
   {
@@ -622,7 +622,7 @@
    "kind": "listItem",
    "top": 4113,
    "h": 29,
-   "style": "c44d3ba7",
+   "style": "9dc72c23",
    "text": "✅ 测试运行: 执行相关单元测试和 Android 测试"
   },
   {
@@ -630,7 +630,7 @@
    "kind": "listItem",
    "top": 4144,
    "h": 29,
-   "style": "63e99871",
+   "style": "b541fa41",
    "text": "✅ 真机验证: 在 OPPO 设备上测试悬浮球显示 (BUG-00073)"
   },
   {
@@ -638,7 +638,7 @@
    "kind": "heading",
    "top": 4200,
    "h": 23,
-   "style": "83418ef6",
+   "style": "1897876f",
    "text": "后续跟进§"
   },
   {
@@ -646,7 +646,7 @@
    "kind": "listItem",
    "top": 4232,
    "h": 29,
-   "style": "852f7ee7",
+   "style": "ca757c5b",
    "text": "监控日志: 观察新版本在生产环境中的服务启动情况"
   },
   {
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 4263,
    "h": 29,
-   "style": "bc4d2f0f",
+   "style": "a5c738bb",
    "text": "用户反馈: 收集关于悬浮球显示的用户反馈"
   },
   {
@@ -662,7 +662,7 @@
    "kind": "listItem",
    "top": 4294,
    "h": 29,
-   "style": "69ebe07a",
+   "style": "bb44424a",
    "text": "扩展测试: 在更多厂商设备上进行兼容性测试"
   },
   {
@@ -678,7 +678,7 @@
    "kind": "heading",
    "top": 4381,
    "h": 29,
-   "style": "34d9d9cb",
+   "style": "1adde3da",
    "text": "📋 验证清单§"
   },
   {
@@ -766,7 +766,7 @@
    "kind": "paragraph",
    "top": 4725,
    "h": 28,
-   "style": "ee10ae7d",
+   "style": "6a5f2ccd",
    "text": "报告生成: Claude Code - 代码变更自动化分析流水线 v1.0"
   }
  ]
