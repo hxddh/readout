@@ -1,7 +1,7 @@
 import Foundation
 
 public enum BlockKind: String, Codable, Sendable {
-    case heading, paragraph, quote, alert, code, mermaid, math, listItem, table, rule, html, frontMatter
+    case heading, paragraph, quote, alert, code, mermaid, math, listItem, table, rule, html, frontMatter, footnotes
 }
 
 /// One renderable unit of a document. Identity across versions is the `slot`,

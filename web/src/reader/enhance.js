@@ -2,20 +2,32 @@
 // highlighting, table overflow, remote-image placeholders, heading links,
 // math. Expensive work (highlighting, diagrams) runs lazily near the viewport.
 import * as hl from '../highlight.js';
-import { doc, strings, post, inViewport } from './core.js';
+import { doc, root, strings, post, inViewport } from './core.js';
+import { captureAnchor, restoreAnchor } from './anchor.js';
 import { setupRemoteImage } from './remote.js';
 import { renderMath } from './math.js';
 import { renderMermaid } from './mermaid.js';
 
 export function enhance(el) {
   for (const cb of el.querySelectorAll('.code-block')) setupCode(cb);
-  for (const t of el.querySelectorAll('.table-wrap')) {
-    requestAnimationFrame(() => t.classList.toggle('scrolls', t.scrollWidth > t.clientWidth + 1));
-  }
+  for (const t of el.querySelectorAll('.table-wrap')) requestAnimationFrame(() => measureTable(t));
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
   for (const h of el.classList.contains('k-heading') ? [el] : []) setupHeadingLink(h);
   if (el.querySelector('.math, .math-block')) renderMath(el);
 }
+
+/** A table wider than the column scrolls sideways (and pins its first column). */
+function measureTable(t) {
+  t.classList.toggle('scrolls', t.scrollWidth > t.clientWidth + 1);
+}
+
+// The window width decides which tables scroll.
+let tablesQueued = false;
+window.addEventListener('resize', () => {
+  if (tablesQueued) return;
+  tablesQueued = true;
+  requestAnimationFrame(() => { tablesQueued = false; doc.querySelectorAll('.table-wrap').forEach(measureTable); });
+});
 
 /** Hover link button on headings: copies a `#anchor` link for the section. */
 function setupHeadingLink(h) {
@@ -37,11 +49,32 @@ function setupHeadingLink(h) {
   h.appendChild(btn);
 }
 
+/**
+ * Code wrapping is one choice for every code block, remembered by the app.
+ * Wrapping reflows the page, so the reading position is kept.
+ */
+export function setCodeWrap(on) {
+  if ((root.dataset.codeWrap === 'on') === on) return;
+  const anchor = captureAnchor();
+  root.dataset.codeWrap = on ? 'on' : 'off';
+  restoreAnchor(anchor, new Set());
+}
+
+function toggleCodeWrap() {
+  const on = root.dataset.codeWrap !== 'on';
+  setCodeWrap(on);
+  post({ type: 'setCodeWrap', on });
+}
+
 /** Re-labels heading link buttons after the strings change. */
 export function relabelHeadingLinks() {
   for (const h of doc.querySelectorAll('.k-heading .h-link')) {
     h.title = strings.copyLink || h.title;
     h.setAttribute('aria-label', h.title);
+  }
+  for (const w of doc.querySelectorAll('.cb-wrap')) {
+    w.textContent = strings.wrap || w.textContent;
+    w.title = strings.wrapTitle || w.title;
   }
 }
 
@@ -55,6 +88,16 @@ function setupCode(cb) {
     lang.textContent = cb.dataset.lang;
     tools.appendChild(lang);
   }
+  const wrap = document.createElement('button');
+  wrap.className = 'cb-wrap';
+  wrap.type = 'button';
+  wrap.textContent = strings.wrap || 'Wrap';
+  wrap.title = strings.wrapTitle || 'Wrap long lines in code blocks';
+  wrap.addEventListener('click', ev => {
+    ev.stopPropagation();
+    toggleCodeWrap();
+  });
+  tools.appendChild(wrap);
   const btn = document.createElement('button');
   btn.className = 'cb-copy';
   btn.type = 'button';

@@ -24,6 +24,9 @@ enum HTML {
     private static let deniedTags = ["title", "textarea", "style", "xmp", "iframe", "noembed", "noframes",
                                      "script", "plaintext", "object", "embed", "base", "meta", "link", "form"]
 
+    private static let deniedTagPattern = try! NSRegularExpression(
+        pattern: "<(/?(?:" + deniedTags.joined(separator: "|") + ")(?=[\\s/>]|$))", options: .caseInsensitive)
+
     private static let remoteMediaSrc = try! NSRegularExpression(
         pattern: #"<(img|video|audio|source|track)\b[^>]*?\s(src|srcset)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)[^>]*>?"#,
         options: .caseInsensitive)
@@ -34,10 +37,9 @@ enum HTML {
     /// gate Markdown images go through.
     static func sanitize(_ raw: String) -> String {
         var s = raw
-        for tag in deniedTags {
-            s = s.replacingOccurrences(of: "<\(tag)", with: "&lt;\(tag)", options: [.caseInsensitive])
-            s = s.replacingOccurrences(of: "</\(tag)", with: "&lt;/\(tag)", options: [.caseInsensitive])
-        }
+        // GFM tagfilter: neutralize the opening "<" and keep the tag as written (<XMP stays XMP).
+        s = deniedTagPattern.stringByReplacingMatches(in: s, range: NSRange(location: 0, length: (s as NSString).length),
+                                                      withTemplate: "&lt;$1")
         s = s.replacingOccurrences(of: #"\son[a-zA-Z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, with: "",
                                    options: .regularExpression)
         s = s.replacingOccurrences(of: "javascript:", with: "blocked:", options: .caseInsensitive)

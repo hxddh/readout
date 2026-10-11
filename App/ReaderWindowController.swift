@@ -200,6 +200,24 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             .dropFirst()
             .sink { [weak self] _ in self?.applyAppearance() }
             .store(in: &cancellables)
+        // The page scrolls under the toolbar; sticky table headers stop below it.
+        for name in [NSWindow.didResizeNotification, NSWindow.didEnterFullScreenNotification, NSWindow.didExitFullScreenNotification] {
+            NotificationCenter.default.publisher(for: name, object: window)
+                .sink { [weak self] _ in self?.updateTopInset() }
+                .store(in: &cancellables)
+        }
+    }
+
+    private var lastTopInset: Double = -1
+
+    /// How much of the web view's top the window toolbar covers, in points.
+    private func updateTopInset() {
+        guard let window else { return }
+        let web = webView.convert(webView.bounds, to: nil)
+        let inset = max(0, Double(web.maxY - window.contentLayoutRect.maxY)).rounded()
+        guard inset != lastTopInset else { return }
+        lastTopInset = inset
+        webView.whenReady { [weak self] in self?.webView.setAppearance(topInset: inset) }
     }
 
     private func applyAppearance() {
@@ -211,14 +229,18 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         webView.whenReady { [weak self] in
             self?.webView.setAppearance(dark: dark, accent: .controlAccentColor, width: settings.wide ? "wide" : "narrow",
                                         fontSize: settings.fontSize, strings: ReaderStrings.all,
-                                        changesOnly: self?.changesOnly)
+                                        changesOnly: self?.changesOnly, codeWrap: settings.codeWrap)
         }
+        lastTopInset = -1
+        DispatchQueue.main.async { [weak self] in self?.updateTopInset() }
     }
 
     private func observeSettings() {
         let s = AppSettings.shared
         s.$fontSize.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         s.$wide.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
+        // A wrap toggled in one window applies to every open window.
+        s.$codeWrap.dropFirst().removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         model.$unread.sink { [weak self] n in self?.updateChangeItem(n) }.store(in: &cancellables)
     }
 
@@ -379,6 +401,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             loadRemote(remote, id: id)
         case .openPath(let path, let line, let column):
             EditorOpener.open(path: path, line: line, column: column)
+        case .setCodeWrap(let on):
+            if AppSettings.shared.codeWrap != on { AppSettings.shared.codeWrap = on }
         case .ready, .error:
             break   // handled by ReaderWebView
         }

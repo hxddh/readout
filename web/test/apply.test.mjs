@@ -189,7 +189,9 @@ const idCheck = await page.evaluate(() => {
   const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
   const heads = [...document.querySelectorAll('.k-heading')];
   const para = document.querySelector('.blk[data-slot="506"]');
-  const paraLeft = para ? para.getBoundingClientRect().left : -1;
+  // The text, not the block: a block extends over the side gutters.
+  const paraText = para ? (para.querySelector('p') || para.firstElementChild) : null;
+  const paraLeft = paraText ? paraText.getBoundingClientRect().left : -1;
   return {
     dupes,
     heads: heads.map(h => {
@@ -205,6 +207,27 @@ const idCheck = await page.evaluate(() => {
   };
 });
 check('no duplicate ids with clashing headings', idCheck.dupes.length === 0, JSON.stringify(idCheck.dupes));
+// Large documents use content-visibility, whose containment clips each block:
+// what sits in the gutter (change marks, heading links) must be inside it,
+// and the layout must not change with the mode.
+const contained = await page.evaluate(() => {
+  const doc = document.getElementById('ro-doc');
+  const b = document.querySelector('.blk[data-slot="506"]');
+  const h = document.querySelector('.k-heading');
+  const before = parseFloat(getComputedStyle(b, '::before').left);
+  const link = h.querySelector('.h-link');
+  const linkLeft = link ? link.getBoundingClientRect().left - h.getBoundingClientRect().left : 0;
+  const heights = () => [...doc.querySelectorAll('.blk')].slice(0, 40).map(e => Math.round(e.getBoundingClientRect().height));
+  const withCV = heights();
+  doc.classList.remove('cv');
+  const without = heights();
+  doc.classList.add('cv');
+  return { cv: doc.classList.contains('cv'), before, linkLeft, same: JSON.stringify(withCV) === JSON.stringify(without) };
+});
+check('large document uses content-visibility', contained.cv);
+check('change mark sits inside its block', contained.before >= 0, `left=${contained.before}`);
+check('heading link sits inside its block', contained.linkLeft >= 0, `left=${contained.linkLeft}`);
+check('blocks lay out the same with and without content-visibility', contained.same);
 for (const h of idCheck.heads) {
   check(`heading ${h.id} is static-positioned`, h.position === 'static', `${h.id}: ${h.position}`);
   check(`heading ${h.id} keeps full width`, h.width > 100, `${h.id}: ${h.width}`);
@@ -401,6 +424,70 @@ check('rail labels use the localized template',
   });
   check('slow cold-grammar highlight is redone once and settles', r.sawRecheck && r.coldFinal === 'done' && r.coldPres === 2 && r.colored, JSON.stringify(r));
   check('slow warm-grammar highlight is not redone', r.warmFirst === 'done' && r.warmFinal === 'done' && r.warmPres === 0 && r.colored, JSON.stringify(r));
+}
+// Footnotes: a reference lands on its note mid-screen and marks where; the
+// back link returns to the reference.
+{
+  const ops = [];
+  for (let i = 1; i <= 40; i++) ops.push({ op: 'insert', slot: 1000 + i, after: i === 1 ? 0 : 999 + i, kind: 'paragraph', html: `<p>filler ${i}</p>` });
+  ops.splice(1, 0, { op: 'insert', slot: 1100, after: 1001, kind: 'paragraph',
+    html: '<p>Claim<sup class="fn-ref"><a href="#user-content-fn-1" id="user-content-fnref-1" data-footnote-ref>1</a></sup>.</p>' });
+  ops[2].after = 1100;
+  ops.push({ op: 'insert', slot: 1200, after: 1040, kind: 'footnotes',
+    html: '<section class="footnotes" data-footnotes><ol><li id="user-content-fn-1"><p>Source. <a href="#user-content-fnref-1" class="fn-back" data-footnote-backref>↩</a></p></li></ol></section>' });
+  await page.evaluate(p => window.readout.apply(p), { version: 95, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const r = await page.evaluate(async () => {
+    document.querySelector('[data-footnote-ref]').click();
+    await new Promise(r => setTimeout(r, 50));
+    const note = document.getElementById('user-content-fn-1');
+    const nr = note.getBoundingClientRect();
+    const landed = note.classList.contains('landed');
+    note.querySelector('.fn-back').click();
+    await new Promise(r => setTimeout(r, 50));
+    const ref = document.getElementById('user-content-fnref-1').getBoundingClientRect();
+    return { noteMid: nr.top + nr.height / 2, h: innerHeight, landed, refVisible: ref.top >= 0 && ref.bottom <= innerHeight };
+  });
+  check('footnote reference lands on its note mid-screen and marks it', Math.abs(r.noteMid - r.h / 2) < r.h * 0.2 && r.landed, JSON.stringify(r));
+  check('footnote back link returns to the reference', r.refVisible, JSON.stringify(r));
+}
+
+// Code wrap: toggling from a code block posts the choice and keeps the reading position.
+{
+  const ops = [];
+  for (let i = 1; i <= 30; i++) ops.push({ op: 'insert', slot: 1300 + i, after: i === 1 ? 0 : 1299 + i, kind: 'code',
+    html: `<div class="code-block" data-lang="text"><pre><code>${'long line '.repeat(40)} ${i}</code></pre></div>` });
+  await page.evaluate(p => window.readout.apply(p), { version: 96, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  const r = await page.evaluate(async () => {
+    const target = document.querySelector('.blk[data-slot="1320"]');
+    window.scrollBy(0, target.getBoundingClientRect().top);
+    const before = target.getBoundingClientRect().top;
+    window.__msgs.length = 0;
+    target.querySelector('.cb-wrap').click();
+    const after = target.getBoundingClientRect().top;
+    const wrapped = getComputedStyle(target.querySelector('pre')).whiteSpace;
+    const msg = window.__msgs.find(m => m.type === 'setCodeWrap');
+    window.readout.setAppearance({ codeWrap: false });
+    return { shift: after - before, wrapped, msg, unwrapped: getComputedStyle(target.querySelector('pre')).whiteSpace };
+  });
+  check('code wrap toggle wraps, posts the choice and keeps position', r.wrapped === 'pre-wrap' && r.msg && r.msg.on === true && Math.abs(r.shift) <= 2, JSON.stringify(r));
+  check('code wrap set from the app turns it off again', r.unwrapped === 'pre', JSON.stringify(r));
+}
+
+// Tables: a table that stops fitting when the window narrows starts scrolling.
+{
+  const cells = Array.from({ length: 4 }, (_, i) => `<td>column ${i} value</td>`).join('');
+  await page.evaluate(p => window.readout.apply(p), { version: 97, reset: true, rewrite: false,
+    ops: [{ op: 'insert', slot: 1401, after: 0, kind: 'table', html: `<div class="table-wrap"><table><thead><tr>${cells.replace(/td/g, 'th')}</tr></thead><tbody><tr>${cells}</tr></tbody></table></div>` }],
+    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await page.waitForTimeout(100);
+  const wide = await page.evaluate(() => document.querySelector('.table-wrap').classList.contains('scrolls'));
+  await page.setViewportSize({ width: 420, height: 700 });
+  await page.waitForTimeout(200);
+  const narrow = await page.evaluate(() => ({ scrolls: document.querySelector('.table-wrap').classList.contains('scrolls'),
+    pageScroll: document.scrollingElement.scrollWidth > innerWidth + 1 }));
+  await page.setViewportSize({ width: 900, height: 700 });
+  check('table starts scrolling when the window narrows', !wide && narrow.scrolls && !narrow.pageScroll, JSON.stringify({ wide, narrow }));
 }
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
