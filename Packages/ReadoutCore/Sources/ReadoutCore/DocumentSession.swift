@@ -207,7 +207,9 @@ public final class DocumentSession {
                         // but a checkbox that differs from what was read is still news.
                         let readState = readTasks[slot] ?? (oldBlocks.isEmpty ? nil : oldBlocks[o].taskState)
                         marks[slot] = readState.map { $0 != blocks[n].taskState } == true ? .state : nil
-                        readText[slot] = nil; readKey[slot] = nil; readTasks[slot] = nil; diffs[slot] = nil
+                        readText[slot] = nil; readKey[slot] = nil; diffs[slot] = nil
+                        // A state mark keeps the checkboxes as read, so unticking clears it.
+                        readTasks[slot] = marks[slot] == .state ? readState : nil
                     } else if let read = readText[slot] ?? nil {
                         marks[slot] = .modified
                         diffs[slot] = WordDiff.html(old: read, new: blocks[n].text, budget: &budget)

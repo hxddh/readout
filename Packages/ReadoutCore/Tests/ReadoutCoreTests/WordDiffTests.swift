@@ -245,6 +245,29 @@ import Testing
         #expect(diffs.last.map { !$0.contains("<ins>changed</ins>") } == true)
     }
 
+    @Test func aTaskEditedRevertedAndUntickedIsNotMarked() throws {
+        let session = DocumentSession()
+        _ = session.load(doc("- [ ] write the test\n- [ ] ship\n"))
+        _ = try #require(session.update(doc("- [x] write the test\n- [ ] ship\n")))
+        _ = try #require(session.update(doc("- [x] write the tests\n- [ ] ship\n")))
+        let back = try #require(session.update(doc("- [x] write the test\n- [ ] ship\n")))
+        #expect(back.marks.map(\.kind) == [.state])
+        let unticked = try #require(session.update(doc("- [ ] write the test\n- [ ] ship\n")))
+        #expect(unticked.marks.isEmpty)
+    }
+
+    @Test func aLargeLoneChangeIsNotSlid() {
+        // A big deletion whose end matches the text before it is left where the
+        // comparison put it (sliding it would cost time in proportion to its size).
+        #expect(WordDiff.slide([.equal("a -+"), .deleted(String(repeating: "-+", count: 3000)), .equal(" b")])
+                == [.equal("a -+"), .deleted(String(repeating: "-+", count: 3000)), .equal(" b")])
+        let big = String(repeating: "-+", count: 400_000)
+        let a = "start -+" + big + " end", b = "start -+ end"
+        let segs = WordDiff.segments(old: a, new: b)
+        let o = segs.map { if case let .equal(x) = $0 { x } else if case let .deleted(x) = $0 { x } else { "" } }.joined()
+        #expect(o == a)
+    }
+
     @Test func aTaskTickedAndUntickedBeforeReadingIsNotMarked() throws {
         let session = DocumentSession()
         _ = session.load(doc("- [ ] write the test\n- [ ] ship\n"))

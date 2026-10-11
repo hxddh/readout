@@ -270,6 +270,8 @@ public enum WordDiff {
     /// A lone insertion or deletion between two equal runs can often sit in
     /// several places ("33| |\n|…| 27|" vs "33 |\n|… 27 |"). Put it where it
     /// reads best: starting a line, else at a word boundary.
+    static let slideLimit = 4000
+
     static func slide(_ segs: [Segment]) -> [Segment] {
         var segs = segs
         var k = 1
@@ -282,6 +284,8 @@ public enum WordDiff {
             case let .inserted(t): isDel = false; text = t
             case .equal: k += 1; continue
             }
+            // A large change reads the same wherever it sits; moving it costs time in proportion to its size.
+            if text.utf8.count > slideLimit { k += 1; continue }
             // Only the neighbourhood can matter; long runs keep their far ends as they are.
             let cut1 = before.index(before.endIndex, offsetBy: -200, limitedBy: before.startIndex) ?? before.startIndex
             let cut2 = after.index(after.startIndex, offsetBy: 200, limitedBy: after.endIndex) ?? after.endIndex
