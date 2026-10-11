@@ -501,13 +501,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // baseline payload: skip the write when nothing changed at all.
         if didSaveOnce, baseline == lastSavedBaseline, excerpt == lastSavedAnchorExcerpt,
            index == lastSavedAnchorIndex, offset == lastSavedAnchorOffset { return }
+        let baselineChanged = !didSaveOnce || baseline != lastSavedBaseline
         didSaveOnce = true
         lastSavedBaseline = baseline
         lastSavedAnchorExcerpt = excerpt
         lastSavedAnchorIndex = index
         lastSavedAnchorOffset = offset
         BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset,
-                                 topExcerpt: excerpt, savedAt: Date()), for: url)
+                                 topExcerpt: excerpt, savedAt: Date()), for: url, baselineChanged: baselineChanged)
     }
 
     // MARK: Actions
