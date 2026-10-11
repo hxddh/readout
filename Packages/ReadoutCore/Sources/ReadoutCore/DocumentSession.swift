@@ -173,7 +173,8 @@ public final class DocumentSession {
                     // Compared with the text as last read: the first change since then keeps it.
                     if marks[slot] != .modified {
                         readText[slot] = oldTexts[o]
-                        if !oldBlocks.isEmpty { readTasks[slot] = oldBlocks[o].taskState }
+                        // Unless a checkbox change since reading already recorded them.
+                        if readTasks[slot] == nil, !oldBlocks.isEmpty { readTasks[slot] = oldBlocks[o].taskState }
                     }
                     if let read = readText[slot] ?? nil, read == blocks[n].text {
                         // Changed back to the text that was read: no comparison to show,
@@ -192,6 +193,7 @@ public final class DocumentSession {
             case let .equal(o):
                 if !oldBlocks.isEmpty, oldBlocks[o].taskState != blocks[n].taskState, marks[slot] == nil {
                     marks[slot] = .state
+                    readTasks[slot] = oldBlocks[o].taskState   // the checkboxes as read
                 }
             }
         }
@@ -250,7 +252,7 @@ public final class DocumentSession {
         deletions = reanchored
         marks = marks.filter { newSlots.contains($0.key) }
         readText = readText.filter { marks[$0.key] == .modified }
-        readTasks = readTasks.filter { marks[$0.key] == .modified }
+        readTasks = readTasks.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
         diffs = diffs.filter { marks[$0.key] == .modified }
     }
 

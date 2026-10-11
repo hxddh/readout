@@ -153,6 +153,13 @@ import Testing
         _ = session.update(doc("- [ ] write the test EDITED\n"))
         let p = try #require(session.update(doc("- [x] write the test\n")))
         #expect(p.marks.map(\.kind) == [.state])
+        // Ticked first, then edited and changed back: still the tick to read.
+        let s2 = DocumentSession()
+        _ = s2.load(doc("- [ ] write the test\n"))
+        _ = s2.update(doc("- [x] write the test\n"))
+        _ = s2.update(doc("- [x] write the test EDITED\n"))
+        let p2 = try #require(s2.update(doc("- [x] write the test\n")))
+        #expect(p2.marks.map(\.kind) == [.state])
     }
 
     @Test func persistedBaselineWithoutWholeTextSaysSo() throws {

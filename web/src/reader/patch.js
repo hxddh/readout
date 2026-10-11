@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport } from './core.js';
 import { captureAnchor, restoreAnchor, atBottom, resizeObserver } from './anchor.js';
-import { renderMarks, applyChangesOnly } from './marks.js';
+import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy } from './enhance.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
@@ -82,6 +82,7 @@ export function apply(p) {
       if (!el) continue;
       const wasMarked = el.className.match(/m-(inserted|modified|state)/)?.[0];
       fillBlock(el, op);
+      if (op.change === 'content') forgetDiff(op.slot);
       if (wasMarked && op.change === 'silent') el.classList.add(wasMarked);
       if (op.change !== 'silent') { changed.add(op.slot); if (!p.reset && inViewport(el)) visibleChanged.push(el); }
       else rerendered.push(el);

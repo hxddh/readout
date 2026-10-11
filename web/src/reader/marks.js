@@ -99,6 +99,9 @@ function closeDiff(slot) {
   el.classList.remove('wd-open');
 }
 
+/** A block's content was replaced: its old comparison no longer applies (the patch's marks bring a new one). */
+export function forgetDiff(slot) { diffOf.delete(slot); }
+
 /** The comparison of the first edited block in view (keyboard: D). */
 export function toggleDiffInView() {
   for (const [slot] of diffOf) {
