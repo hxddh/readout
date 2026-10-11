@@ -326,8 +326,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         model.tasks = patch.tasks
         model.unread = session.unreadCount
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
-        model.words = ReadingStats.words(in: session.blocks)
-        model.minutes = ReadingStats.minutes(forBlocks: session.blocks)
         if let enc = decoded.fallbackEncoding {
             model.status = String(format: NSLocalizedString("Decoded as %@", comment: "Status: non-UTF-8 file"), enc)
         } else {
@@ -337,14 +335,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         updateSubtitle()
     }
 
+    /// The subtitle shows task progress when the document has tasks, and nothing otherwise.
     private func updateSubtitle() {
         let t = model.tasks
-        if t.total > 0 {
-            window?.subtitle = String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
-        } else {
-            window?.subtitle = String(format: NSLocalizedString("%d words · %d min read", comment: "Window subtitle when no tasks"), model.words,
-                                       model.minutes)
-        }
+        window?.subtitle = t.total > 0
+            ? String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
+            : ""
     }
 
     private func updateChangeItem(_ n: Int) {

@@ -1,14 +1,22 @@
 import Foundation
 
-/// Update-check presentation policy. The decision of what the user sees is a
-/// pure function so it is unit-tested on Linux; the AppKit alert/menu code in
-/// App/UpdateChecker.swift stays a thin caller.
-public enum UpdatePolicy {
-    /// Only user-invoked checks may show a modal alert. Background checks
-    /// surface through the application menu instead and never steal focus —
-    /// whether or not they found an update.
-    public static func shouldAlert(interactive: Bool, hasUpdate: Bool) -> Bool {
-        interactive
+/// The pure parts of the GitHub Releases update check (App/UpdateChecker.swift).
+public enum ReleaseCheck {
+    /// Compares dotted version tags numerically ("v1.0.10" is newer than "1.0.9").
+    /// A leading "v" and any pre-release suffix ("-beta") are ignored.
+    public static func isNewer(_ tag: String, than current: String) -> Bool {
+        func parts(_ s: String) -> [Int] {
+            s.trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
+                .split(separator: ".")
+                .map { Int($0.split(separator: "-").first ?? $0) ?? 0 }
+        }
+        let a = parts(tag), b = parts(current)
+        for i in 0..<max(a.count, b.count) {
+            let x = i < a.count ? a[i] : 0, y = i < b.count ? b[i] : 0
+            if x != y { return x > y }
+        }
+        return false
     }
 
     /// Strips Markdown formatting for alert text: links keep their text,

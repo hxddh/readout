@@ -9,8 +9,6 @@ final class ReaderModel: ObservableObject {
     @Published var tasks = TaskStats()
     @Published var unread = 0
     @Published var title = ""
-    @Published var words = 0
-    @Published var minutes = 1
     @Published var status: String? = nil
     var onSelectHeading: ((Int) -> Void)?
 }
@@ -51,12 +49,6 @@ struct TOCView: View {
                     Text(status)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                }
-                if model.words > 0 {
-                    Text(String(format: NSLocalizedString("%d words · %d min read", comment: "Sidebar footer"),
-                                model.words, model.minutes))
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
                 }
             }
             .padding(.horizontal, 14)
