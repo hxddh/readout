@@ -1,4 +1,9 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 /// Policy for natively proxied remote images. The page itself can never fetch
 /// (its CSP allows no http:/https: sources), so when the reader clicks a
@@ -15,6 +20,8 @@ public enum RemoteLoad {
     public enum Rejection: Equatable, Sendable {
         case scheme
         case privateAddress
+        /// The host name did not resolve, so it could not be checked.
+        case unresolved
         case contentType
         case tooLarge
     }
@@ -42,23 +49,29 @@ public enum RemoteLoad {
     /// Literal loopback, link-local, private and unique-local addresses are
     /// refused, as are local host names and numeric host spellings that
     /// resolvers may read as IPv4 (`2130706433`, `0x7f.1`, `0177.0.0.1`).
-    /// Names are not resolved here: a public name that resolves to a private
-    /// address (DNS rebinding) is out of scope for a click-to-load image.
+    /// Single-label names (`intranet`, `router`) are refused too. Names are
+    /// checked again after resolution (`checkResolved`), which catches public
+    /// names pointing at private addresses (`127.0.0.1.nip.io`).
     public static func checkHost(_ rawHost: String) -> Rejection? {
         var host = rawHost.lowercased()
         if host.hasPrefix("[") && host.hasSuffix("]") { host = String(host.dropFirst().dropLast()) }
-        if host.hasSuffix(".") { host.removeLast() }
+        while host.hasSuffix(".") { host.removeLast() }
         if host.isEmpty { return .privateAddress }
-
-        if host == "localhost" || host.hasSuffix(".localhost") || host.hasSuffix(".local")
-            || host.hasSuffix(".internal") || host.hasSuffix(".home.arpa") {
-            return .privateAddress
-        }
 
         if host.contains(":") {
             let bare = host.split(separator: "%", maxSplits: 1).first.map(String.init) ?? host  // drop zone id
             guard let bytes = parseIPv6(bare) else { return .privateAddress }
             return isPublicIPv6(bytes) ? nil : .privateAddress
+        }
+
+        // Control characters, spaces and percent-escapes never belong in a
+        // host name; a NUL could truncate it further down the stack.
+        if host.unicodeScalars.contains(where: { $0.value <= 0x20 || $0 == "%" || $0 == "\u{7f}" }) {
+            return .privateAddress
+        }
+        if host == "localhost" || host.hasSuffix(".localhost") || host.hasSuffix(".local") || host.hasSuffix(".lan")
+            || host.hasSuffix(".internal") || host.hasSuffix(".home.arpa") {
+            return .privateAddress
         }
 
         // A host that starts with a digit and uses only digits, dots and hex
@@ -74,7 +87,49 @@ public enum RemoteLoad {
             guard parts.count == 4, octets.count == 4 else { return .privateAddress }
             return isPublicIPv4(octets) ? nil : .privateAddress
         }
+        // Single-label names only resolve on local networks (search domains, mDNS, hosts files).
+        if !host.contains(".") { return .privateAddress }
         return nil
+    }
+
+    /// True when `host` is an address literal (no name resolution needed).
+    public static func isAddressLiteral(_ rawHost: String) -> Bool {
+        var host = rawHost
+        if host.hasPrefix("[") && host.hasSuffix("]") { host = String(host.dropFirst().dropLast()) }
+        if host.contains(":") { return true }
+        return host.first?.isNumber == true && host.allSatisfy { "0123456789abcdefx.".contains($0.lowercased()) }
+    }
+
+    /// Checks the addresses a name resolved to: every one must be public, and
+    /// a name that resolves to nothing is refused (it could not be checked).
+    public static func checkResolved(_ addresses: [String]) -> Rejection? {
+        guard !addresses.isEmpty else { return .unresolved }
+        return addresses.contains(where: { checkHost($0) != nil }) ? .privateAddress : nil
+    }
+
+    /// Numeric addresses for `host` from the system resolver (empty on failure).
+    public static func systemResolve(_ host: String) -> [String] {
+        var hints = addrinfo()
+        hints.ai_family = AF_UNSPEC
+        #if canImport(Glibc)
+        hints.ai_socktype = Int32(SOCK_STREAM.rawValue)
+        #else
+        hints.ai_socktype = SOCK_STREAM
+        #endif
+        var list: UnsafeMutablePointer<addrinfo>?
+        guard getaddrinfo(host, nil, &hints, &list) == 0, let first = list else { return [] }
+        defer { freeaddrinfo(first) }
+        var out: [String] = []
+        var node: UnsafeMutablePointer<addrinfo>? = first
+        while let ai = node {
+            var buf = [CChar](repeating: 0, count: 1025)  // NI_MAXHOST
+            if let addr = ai.pointee.ai_addr,
+               getnameinfo(addr, ai.pointee.ai_addrlen, &buf, socklen_t(buf.count), nil, 0, NI_NUMERICHOST) == 0 {
+                out.append(String(cString: buf))
+            }
+            node = ai.pointee.ai_next
+        }
+        return out
     }
 
     static func isPublicIPv4(_ o: [Int]) -> Bool {
@@ -97,6 +152,12 @@ public enum RemoteLoad {
         if b[0] == 0xfe && b[1] & 0xc0 == 0x80 { return false }              // fe80::/10 link-local
         if b[0] == 0xfe && b[1] & 0xc0 == 0xc0 { return false }              // fec0::/10 site-local
         if b[0] == 0xff { return false }                                     // multicast
+        if Array(b[0..<8]) == [1, 0, 0, 0, 0, 0, 0, 0] { return false }      // 100::/64 discard
+        if Array(b[0..<6]) == [0, 0x64, 0xff, 0x9b, 0, 1] { return false }   // 64:ff9b:1::/48 local NAT64
+        if b[0] == 0x20 && b[1] == 0x02 { return isPublicIPv4(b[2..<6].map(Int.init)) }  // 2002::/16 6to4
+        if b[0..<8].allSatisfy({ $0 == 0 }) && b[8] == 0xff && b[9] == 0xff && b[10] == 0 && b[11] == 0 {
+            return isPublicIPv4(b[12..<16].map(Int.init))                   // ::ffff:0:a.b.c.d translated
+        }
         let v4 = b[12..<16].map(Int.init)
         if first10Zero && b[10] == 0xff && b[11] == 0xff { return isPublicIPv4(v4) }   // ::ffff:a.b.c.d
         if first10Zero && b[10] == 0 && b[11] == 0 { return isPublicIPv4(v4) }         // ::a.b.c.d (compat)

@@ -71,11 +71,22 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
     }
 }
 
+/// Test DNS: *.test names are public unless listed here.
+let stubDNS: RemoteFetcher.Resolver = { host in
+    switch host {
+    case "intranet.test": return ["10.0.0.5"]
+    case "rebind.test": return ["93.184.216.34", "127.0.0.1"]
+    case "v6local.test": return ["fe80::1%en0"]
+    case "nxdomain.test": return []
+    default: return ["93.184.216.34", "2606:2800:220:1:248:1893:25c8:1946"]
+    }
+}
+
 @Suite(.serialized) struct RemoteFetcherTests {
     func fetch(_ url: String) async -> Result<RemoteFetcher.Image, RemoteFetcher.Failure> {
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [StubProtocol.self]
-        let fetcher = RemoteFetcher(configuration: config)
+        let fetcher = RemoteFetcher(configuration: config, resolve: stubDNS)
         defer { fetcher.invalidate() }
         return await withCheckedContinuation { cont in
             fetcher.fetch(url) { cont.resume(returning: $0) }
@@ -131,7 +142,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
     /// swift-corelibs-foundation cannot deliver URLProtocol redirects, so the
     /// redirect decision is exercised through the delegate method directly.
     @Test func refusesRedirectsToPrivateHosts() {
-        let fetcher = RemoteFetcher()
+        let fetcher = RemoteFetcher(resolve: stubDNS)
         defer { fetcher.invalidate() }
         let task = fetcher.session.dataTask(with: URL(string: "https://example.com/a.png")!)
         let response = HTTPURLResponse(url: task.originalRequest!.url!, statusCode: 302, httpVersion: nil, headerFields: nil)!
@@ -145,6 +156,21 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
         #expect(follow("http://127.0.0.1/secret.png") == nil)
         #expect(follow("http://169.254.169.254/latest") == nil)
         #expect(follow("file:///etc/passwd") == nil)
+        #expect(follow("https://intranet.test/a.png") == nil)
+    }
+
+    @Test func refusesNamesThatResolvePrivately() async {
+        for host in ["intranet.test", "rebind.test", "v6local.test"] {
+            let result = await fetch("https://\(host)/a.png")
+            #expect(result == .failure(.rejected(.privateAddress)), "\(host)")
+            #expect(!StubProtocol.didStart(host), "\(host)")
+        }
+    }
+
+    @Test func refusesNamesThatDoNotResolve() async {
+        let result = await fetch("https://nxdomain.test/a.png")
+        #expect(result == .failure(.rejected(.unresolved)))
+        #expect(!StubProtocol.didStart("nxdomain.test"))
     }
 }
 

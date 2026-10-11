@@ -18,6 +18,11 @@ export function post(msg) {
   try { window.webkit.messageHandlers.readout.postMessage(msg); } catch { /* not hosted */ }
 }
 
+// Registered here, in the first module to run, so errors thrown while the
+// other modules set up still reach the native log.
+window.addEventListener('error', e => post({ type: 'error', message: `${e.message} (${e.filename}:${e.lineno})` }));
+window.addEventListener('unhandledrejection', e => post({ type: 'error', message: `unhandled: ${e.reason && (e.reason.stack || e.reason.message) || e.reason}` }));
+
 export function inViewport(el, margin = 0) {
   const r = el.getBoundingClientRect();
   return r.bottom > -margin && r.top < window.innerHeight + margin;

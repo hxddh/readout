@@ -7,7 +7,7 @@ import ReadoutCore
 /// `readout://remote/<token>`.
 ///
 /// Policy lives in ReadoutCore (`RemoteLoad`, `RemoteFetcher`): public hosts
-/// only, ephemeral session, 15 s timeout, `image/*` only, 20 MB cap enforced
+/// only (checked again after name resolution), ephemeral session, 15 s timeout, `image/*` only, 20 MB cap enforced
 /// while streaming. Downloads are kept in a 100 MB least-recently-used cache.
 @MainActor
 final class RemoteImageLoader {
@@ -49,6 +49,8 @@ final class RemoteImageLoader {
             return NSLocalizedString("unsupported address", comment: "Remote image failure reason")
         case .rejected(.privateAddress):
             return NSLocalizedString("local and private network addresses are not loaded", comment: "Remote image failure reason")
+        case .rejected(.unresolved):
+            return NSLocalizedString("could not be reached", comment: "Remote image failure reason")
         case .rejected(.contentType):
             return NSLocalizedString("not an image", comment: "Remote image failure reason")
         case .rejected(.tooLarge):
