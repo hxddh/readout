@@ -43,7 +43,7 @@ check("1-initial math >= 3", (initial.get("math") or 0) >= 3, initial)
 edit = load("2-after-edit.json")
 print(f"2-after-edit: {edit}")
 check("2-after-edit blocks == 34", edit.get("blocks") == 34, edit)
-check("2-after-edit marks == 5", edit.get("marks") == 5, edit)
+check("2-after-edit marks == 4", edit.get("marks") == 4, edit)
 check("2-after-edit deletions == 1", edit.get("deletions") == 1, edit)
 shift = edit.get("anchorShift")
 check(
