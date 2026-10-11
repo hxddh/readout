@@ -76,7 +76,7 @@ body { margin: 0; }
 
 ::selection { background: var(--accent-soft); }
 
-#doc {
+#ro-doc {
   max-width: calc(var(--measure) + var(--gutter) * 2);
   margin: 0 auto;
   padding: 40px var(--gutter) 30vh;
@@ -84,7 +84,7 @@ body { margin: 0; }
 }
 
 /* Large documents: let WebKit skip layout for off-screen blocks. */
-#doc.cv > .blk {
+#ro-doc.cv > .blk {
   content-visibility: auto;
 }
 
@@ -112,7 +112,7 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading h3 { font-size: 1.14rem; margin: 1.5em 0 0.5em; }
 .k-heading h4 { font-size: 1rem; margin: 1.3em 0 0.4em; }
 .k-heading h5, .k-heading h6 { font-size: 0.94rem; margin: 1.2em 0 0.4em; color: var(--text-2); }
-#doc > .k-heading:first-child h1, #doc > .k-heading:first-child h2 { margin-top: 0; }
+#ro-doc > .k-heading:first-child h1, #ro-doc > .k-heading:first-child h2 { margin-top: 0; }
 
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 2px; }
@@ -342,19 +342,19 @@ tbody tr:last-child td { border-bottom: 0; }
 .blk.flash { animation: arrive 1.2s ease-out; border-radius: 4px; }
 
 /* The rail: a thin track on the right edge that maps unread changes onto the document. */
-#rail {
+#ro-rail {
   position: fixed; top: 0; right: 0; bottom: 0; width: 8px;
   pointer-events: none; z-index: 10;
 }
-#rail > button {
+#ro-rail > button {
   position: absolute; right: 2px; width: 4px; height: 3px; border-radius: 2px;
   border: 0; padding: 0;
   background: var(--accent); pointer-events: auto; cursor: pointer;
 }
-#rail > button.mod { opacity: 0.55; }
+#ro-rail > button.mod { opacity: 0.55; }
 
 /* Rewrite notice */
-#notice {
+#ro-notice {
   position: sticky; top: 10px; z-index: 20;
   margin: 0 auto 1.4em; width: max-content; max-width: 100%;
   font-size: 0.8rem; color: var(--text-2);
@@ -362,14 +362,14 @@ tbody tr:last-child td { border-bottom: 0; }
   box-shadow: 0 0 0 1px var(--rule);
   transition: opacity 400ms;
 }
-#notice[hidden] { display: none; }
+#ro-notice[hidden] { display: none; }
 
 /* Changes-only empty state */
-#caughtup {
+#ro-caughtup {
   margin: 18vh auto 0; width: max-content; max-width: 100%;
   font-size: 0.9rem; color: var(--text-3);
 }
-#caughtup[hidden] { display: none; }
+#ro-caughtup[hidden] { display: none; }
 
 /* Heading section links */
 .k-heading { position: relative; }
@@ -383,11 +383,11 @@ tbody tr:last-child td { border-bottom: 0; }
 .h-link:hover { color: var(--accent); }
 
 /* Empty state */
-#empty { color: var(--text-3); font-size: 0.95rem; padding-top: 18vh; text-align: center; }
+#ro-empty { color: var(--text-3); font-size: 0.95rem; padding-top: 18vh; text-align: center; }
 
 /* QuickLook: no change UI */
-:root[data-mode="quicklook"] #rail, :root[data-mode="quicklook"] .blk::before { display: none; }
-:root[data-mode="quicklook"] #doc { padding-top: 28px; padding-bottom: 40px; }
+:root[data-mode="quicklook"] #ro-rail, :root[data-mode="quicklook"] .blk::before { display: none; }
+:root[data-mode="quicklook"] #ro-doc { padding-top: 28px; padding-bottom: 40px; }
 
 @media (prefers-reduced-motion: reduce) {
   .blk.flash { animation: none; }
@@ -395,9 +395,9 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 @media print {
-  #rail, #notice, #caughtup, .cb-tools, .del-mark, .h-link { display: none !important; }
+  #ro-rail, #ro-notice, #ro-caughtup, .cb-tools, .del-mark, .h-link { display: none !important; }
   .blk::before { display: none; }
-  #doc { padding: 0; max-width: none; }
-  #doc.cv > .blk { content-visibility: visible; }
+  #ro-doc { padding: 0; max-width: none; }
+  #ro-doc.cv > .blk { content-visibility: visible; }
   .code-block pre { white-space: pre-wrap; }
 }

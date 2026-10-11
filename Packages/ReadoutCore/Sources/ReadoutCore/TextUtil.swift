@@ -94,7 +94,11 @@ public struct Slugger {
     }
 
     public mutating func next(_ text: String) -> String {
-        let base = Slugger.slug(text)
+        var base = Slugger.slug(text)
+        // Reader chrome ids live under the ro-* namespace (see docs/design.md):
+        // a document slug starting with ro- would collide with them, so keep
+        // GitHub-compatible slugs otherwise and escape only this case.
+        if base.hasPrefix("ro-") { base = "h-" + base }
         // An explicit "Notes-1" heading followed by a repeated "Notes" would
         // otherwise both claim "notes-1": keep probing until the candidate is
         // actually unused.

@@ -19,6 +19,8 @@ Marks are relative to what you have read, not to the previous write. A block cou
 
 The page is a single WKWebView served from a custom `readout://` scheme. Shiki (JavaScript regex engine) highlights code lazily; KaTeX and Mermaid load only when a document needs them. A spare, fully initialised web view is kept warm so a new window renders immediately.
 
+Reader chrome element ids always use the `ro-` prefix (`ro-doc`, `ro-rail`, `ro-notice`, `ro-caughtup`, `ro-empty`); document content must never create ids in that namespace. `Slugger` escapes any slug starting with `ro-` to `h-ro-…`, and fragment/link resolution is scoped to the document container so it can never land on chrome.
+
 ## Privacy
 
 Remote images and media — whether written as Markdown (`![](https://…)`) or as raw HTML (`<img>`, `<video>`, `<audio>`) — never load on their own. They render as a placeholder button naming the host; the request goes out only when the reader clicks it. Local images are served from disk through the `readout://file/` scheme, which only serves image file types.
