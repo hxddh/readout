@@ -88,7 +88,9 @@ export function init() {
       langs: [],
       engine: createJavaScriptRegexEngine({ forgiving: true }),
     });
-    for (const id of PRELOAD) await ensureLang(id);
+    // Fetch every preloaded grammar at once; ensureLang registers them one
+    // at a time, in this order.
+    await Promise.all(PRELOAD.map(id => ensureLang(id)));
     initialized = true;
   })();
   return ready;
