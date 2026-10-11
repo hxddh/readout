@@ -365,36 +365,42 @@ const railLabels = await page.evaluate(() => [...document.querySelectorAll('#ro-
 check('rail labels use the localized template',
   JSON.stringify(railLabels) === JSON.stringify(['未读变更 1 / 2：新增', '未读变更 2 / 2：修改']), JSON.stringify(railLabels));
 
-// A highlight that took suspiciously long (Shiki's 500 ms per-line guard may
-// have cut it short while compiling patterns) is redone once, shortly after.
+// The first highlight with a grammar pays for compiling its patterns, and
+// Shiki's 500 ms per-line guard may cut it short. If that cold highlight was
+// slow it is redone once; highlights with a warm grammar never are.
 {
-  await page.evaluate(() => window.readout.apply({
-    version: 90, reset: true, rewrite: false,
-    ops: [{ op: 'insert', slot: 901, after: 0, kind: 'code', html: '<div class="code-block" data-lang="js"><pre><code>// note\nconst x = 1;</code></pre></div>' }],
-    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-  }));
-  // Wait until the grammar is loaded and the block highlighted once.
-  for (let i = 0; i < 100; i++) {
-    if (await page.evaluate(() => document.querySelector('.blk[data-slot="901"] .code-block').dataset.hl === 'done')) break;
-    await page.waitForTimeout(100);
-  }
   const r = await page.evaluate(async () => {
-    const cb = document.querySelector('.blk[data-slot="901"] .code-block');
-    let replaced = 0;
-    new MutationObserver(m => { replaced += m.filter(x => [...x.addedNodes].some(n => n.tagName === 'PRE')).length; }).observe(cb, { childList: true });
-    // Make the next highlight look slow: the clock jumps 300 ms across it.
+    // Every performance.now() reading jumps 300 ms: every highlight looks slow.
     const real = performance.now.bind(performance);
-    let skew = 0, calls = 0;
-    performance.now = () => { calls++; if (calls === 2) skew = 300; return real() + skew; };
-    cb.dataset.hl = 'pending';
-    window.readout.apply({ version: 91, reset: false, rewrite: false, ops: [], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
-    const afterFirst = cb.dataset.hl;
+    let skew = 0;
+    performance.now = () => (skew += 300) + real();
+    const pres = new Map();
+    const watch = slot => {
+      const cb = document.querySelector(`.blk[data-slot="${slot}"] .code-block`);
+      pres.set(slot, 0);
+      new MutationObserver(m => pres.set(slot, pres.get(slot) + m.filter(x => [...x.addedNodes].some(n => n.tagName === 'PRE')).length))
+        .observe(cb, { childList: true });
+      return cb;
+    };
+    const block = (slot, after) => ({ op: 'insert', slot, after, kind: 'code',
+      html: '<div class="code-block" data-lang="ruby"><pre><code># note\nx = 1</code></pre></div>' });
+    // Ruby is not preloaded, so this block is the grammar's first, cold, highlight.
+    window.readout.apply({ version: 90, reset: true, rewrite: false, ops: [block(901, 0)], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+    const cold = watch(901);
+    const states = [];
+    for (let i = 0; i < 200 && cold.dataset.hl !== 'done'; i++) { states.push(cold.dataset.hl); await new Promise(r => setTimeout(r, 25)); }
+    // A second Ruby block: the grammar is warm now.
+    window.readout.apply({ version: 91, reset: false, rewrite: false, ops: [block(902, 901)], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+    const warm = watch(902);
+    const warmFirst = warm.dataset.hl;
     await new Promise(r => setTimeout(r, 300));
     performance.now = real;
-    return { afterFirst, final: cb.dataset.hl, replaced, colored: !!cb.querySelector('pre.shiki span[style]') };
+    return { sawRecheck: states.includes('recheck'), coldFinal: cold.dataset.hl, coldPres: pres.get(901),
+      warmFirst, warmFinal: warm.dataset.hl, warmPres: pres.get(902),
+      colored: !!cold.querySelector('pre.shiki span[style]') && !!warm.querySelector('pre.shiki span[style]') };
   });
-  check('slow highlight is marked for a recheck', r.afterFirst === 'recheck', JSON.stringify(r));
-  check('slow highlight is redone once and settles', r.final === 'done' && r.replaced === 2 && r.colored, JSON.stringify(r));
+  check('slow cold-grammar highlight is redone once and settles', r.sawRecheck && r.coldFinal === 'done' && r.coldPres === 2 && r.colored, JSON.stringify(r));
+  check('slow warm-grammar highlight is not redone', r.warmFirst === 'done' && r.warmFinal === 'done' && r.warmPres === 0 && r.colored, JSON.stringify(r));
 }
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
