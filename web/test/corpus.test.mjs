@@ -107,8 +107,9 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   // the observer see it before the next.
   for (let round = 0; round < 400; round++) {
     const waiting = await page.evaluate(() => {
+      // Content of a closed <details> renders when it is opened, not before.
       const next = [...document.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block:not(.done):not(.busy)')]
-        .find(e => !e.querySelector('.mermaid-error'));
+        .find(e => !e.querySelector('.mermaid-error') && !e.closest('details:not([open])'));
       next?.scrollIntoView({ block: 'center' });
       return !!next;
     });
@@ -116,8 +117,9 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
     await page.waitForTimeout(50);
   }
   await page.waitForFunction(() =>
-    !document.querySelector('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"], .mermaid-block.busy')
-    && [...document.querySelectorAll('.mermaid-block')].every(b => b.classList.contains('done') || b.querySelector('.mermaid-error'))
+    ![...document.querySelectorAll('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"], .mermaid-block.busy')]
+      .some(e => !e.closest('details:not([open])'))
+    && [...document.querySelectorAll('.mermaid-block')].every(b => b.classList.contains('done') || b.querySelector('.mermaid-error') || b.closest('details:not([open])'))
     && !document.querySelector('.math:not(.done), .math-block:not(.done)'),
   null, { timeout: 30000 }).catch(async () => {
     const left = await page.evaluate(() => [...document.querySelectorAll('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .mermaid-block:not(.done), .math:not(.done), .math-block:not(.done)')]

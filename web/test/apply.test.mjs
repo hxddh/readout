@@ -489,6 +489,21 @@ check('rail labels use the localized template',
   await page.setViewportSize({ width: 900, height: 700 });
   check('table starts scrolling when the window narrows', !wide && narrow.scrolls && !narrow.pageScroll, JSON.stringify({ wide, narrow }));
 }
+// Code inside a closed <details> is highlighted when it is opened.
+{
+  await page.evaluate(p => window.readout.apply(p), { version: 120, reset: true, rewrite: false,
+    ops: [{ op: 'insert', slot: 1601, after: 0, kind: 'html', html: '<details><summary>More</summary><div class="code-block" data-lang="js"><pre><code>const answer = 42;</code></pre></div></details>' }],
+    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => document.querySelector('.blk[data-slot="1601"] .code-block').dataset.hl);
+  await page.evaluate(() => { document.querySelector('.blk[data-slot="1601"] details').open = true; });
+  let after = '';
+  for (let i = 0; i < 60 && after !== 'done'; i++) {
+    await page.waitForTimeout(50);
+    after = await page.evaluate(() => document.querySelector('.blk[data-slot="1601"] .code-block').dataset.hl);
+  }
+  check('code in a closed <details> is highlighted when opened', after === 'done', JSON.stringify({ before, after }));
+}
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
