@@ -212,6 +212,11 @@ function compareTop(name, png) {
   return `top ${TOP}px differs in ${changed} px (${(changed / (got.width * got.height) * 100).toFixed(3)}%)`;
 }
 
+// The browser's first page meets cold caches (fonts, compiled code) and has
+// rendered the first document's code blocks differently from every later
+// run; render one page and throw it away before measuring anything.
+if (docs.length) await render(JSON.parse(readFileSync(`${CORPUS}/patches/${docs[0]}`, 'utf8')), false);
+
 for (const file of docs) {
   const doc = file.replace(/\.json$/, '');
   const patch = JSON.parse(readFileSync(`${CORPUS}/patches/${file}`, 'utf8'));

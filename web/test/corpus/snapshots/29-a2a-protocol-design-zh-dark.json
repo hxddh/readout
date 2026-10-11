@@ -150,7 +150,7 @@
    "kind": "mermaid",
    "top": 945,
    "h": 818,
-   "style": "2b66f266",
+   "style": "6cef95b4",
    "content": "cdb3613f",
    "text": "graph TB subgraph \"共享类型层 (shared/)\" Proto[\"share"
   },
@@ -177,7 +177,7 @@
    "kind": "mermaid",
    "top": 1861,
    "h": 332,
-   "style": "45970cc3",
+   "style": "8e394e55",
    "content": "d9f9cf6c",
    "text": "sequenceDiagram participant WF as Workflow Engin"
   },
@@ -195,7 +195,7 @@
    "kind": "mermaid",
    "top": 2240,
    "h": 326,
-   "style": "96505833",
+   "style": "0d3c1c36",
    "content": "f2721977",
    "text": "sequenceDiagram participant EA as External Agent"
   },
@@ -555,7 +555,7 @@
    "kind": "mermaid",
    "top": 9501,
    "h": 691,
-   "style": "aa60d439",
+   "style": "7468f389",
    "content": "31d373d6",
    "text": "stateDiagram-v2 [*] --> pending: 创建请求 pending --"
   },
@@ -573,7 +573,7 @@
    "kind": "mermaid",
    "top": 10251,
    "h": 1154,
-   "style": "f6357714",
+   "style": "8bfbf624",
    "content": "5ee59061",
    "text": "classDiagram WorkflowOrganizationNode <|-- Guest"
   },
