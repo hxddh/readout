@@ -153,6 +153,14 @@ import Testing
         #expect(doc.blocks.map { $0.anchor } == ["notes", "notes-1", "实现-细节"])
     }
 
+    @Test func reservedNamespaceEscapesWithHPrefix() {
+        // UI element ids live under ro-*: document slugs must never enter it.
+        var s = Slugger()
+        #expect(s.next("RO Doc") == "h-ro-doc")
+        #expect(s.next("Notice") == "notice")
+        #expect(s.next("RO Doc") == "h-ro-doc-1")
+    }
+
     @Test func explicitSlugCollisionStaysUnique() {
         let doc = parse("## Notes\n\n## Notes-1\n\n## Notes\n")
         let anchors = doc.blocks.map { $0.anchor }

@@ -162,6 +162,49 @@ await page.evaluate(() => window.readout.setChangesOnly(false));
 const restored = await page.evaluate(() => !document.querySelector('.blk[data-slot="402"]').hidden);
 check('leaving changes-only restores blocks', restored);
 
+// 7. Heading ids never collide with reader chrome ids.
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.evaluate(p => window.readout.apply(p), {
+  version: 10, reset: true, rewrite: false,
+  ops: [
+    { op: 'insert', slot: 501, after: 0, html: '<h2 id="notice">Notice</h2>', kind: 'heading', anchor: 'notice' },
+    { op: 'insert', slot: 502, after: 501, html: '<h2 id="doc">Doc</h2>', kind: 'heading', anchor: 'doc' },
+    { op: 'insert', slot: 503, after: 502, html: '<h2 id="rail">Rail</h2>', kind: 'heading', anchor: 'rail' },
+    { op: 'insert', slot: 504, after: 503, html: '<h2 id="empty">Empty</h2>', kind: 'heading', anchor: 'empty' },
+    { op: 'insert', slot: 505, after: 504, html: '<h2 id="caughtup">Caughtup</h2>', kind: 'heading', anchor: 'caughtup' },
+    { op: 'insert', slot: 506, after: 505, html: '<p>body paragraph for alignment reference</p>', kind: 'paragraph' },
+  ],
+  marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+});
+const idCheck = await page.evaluate(() => {
+  const ids = [...document.querySelectorAll('[id]')].map(e => e.id);
+  const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
+  const heads = [...document.querySelectorAll('.k-heading')];
+  const para = document.querySelector('.blk[data-slot="506"]');
+  const paraLeft = para ? para.getBoundingClientRect().left : -1;
+  return {
+    dupes,
+    heads: heads.map(h => {
+      const cs = getComputedStyle(h);
+      const r = h.getBoundingClientRect();
+      return { id: h.querySelector('h2')?.id, position: cs.position, width: r.width, left: r.left };
+    }),
+    paraLeft,
+  };
+});
+check('no duplicate ids with clashing headings', idCheck.dupes.length === 0, JSON.stringify(idCheck.dupes));
+for (const h of idCheck.heads) {
+  check(`heading ${h.id} is static-positioned`, h.position === 'static', `${h.id}: ${h.position}`);
+  check(`heading ${h.id} keeps full width`, h.width > 100, `${h.id}: ${h.width}`);
+  check(`heading ${h.id} aligns with body text`, Math.abs(h.left - idCheck.paraLeft) <= 2, `${h.id}: ${h.left} vs ${idCheck.paraLeft}`);
+}
+await page.evaluate(() => window.readout.scrollToFragment({ fragment: 'notice' }));
+const noticeTop = await page.evaluate(() => {
+  const h = [...document.querySelectorAll('.k-heading')].find(e => e.querySelector('h2')?.textContent === 'Notice');
+  return h ? h.getBoundingClientRect().top : -999;
+});
+check('scrollToFragment lands on heading, not chrome', noticeTop >= 0 && noticeTop <= 40, `top=${noticeTop}`);
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
