@@ -78,6 +78,7 @@ import Testing
         #expect(IncrementalParser.needsFullParse(["See [x].", "", "- [x]: https://example.com"]))
         #expect(IncrementalParser.needsFullParse(["See [x].", "", ">[x]: https://example.com"]))
         #expect(IncrementalParser.needsFullParse(["See [x].", "", "> 1. [x]: https://example.com"]))
+        #expect(IncrementalParser.needsFullParse(["See [a\\]].", "", "[a\\]]: /target"]))
         #expect(!IncrementalParser.needsFullParse(["<!--", "[x]: inside a comment", "-->", "```", "[y]: in code", "```"]))
         #expect(!IncrementalParser.needsFullParse(["A [link](https://x.y) and a: colon.", "- [ ] task"]))
         let parser = IncrementalParser()
