@@ -43,7 +43,11 @@ public enum WordDiff {
             }
         }
         if !prefix.isEmpty { append(.equal(prefix)) }
-        if oldMid.utf8.count + newMid.utf8.count > lineFirst {
+        if budget <= 0 {
+            // The budget is spent: the changed middle is shown replaced whole.
+            if !oldMid.isEmpty { append(.deleted(oldMid)) }
+            if !newMid.isEmpty { append(.inserted(newMid)) }
+        } else if oldMid.utf8.count + newMid.utf8.count > lineFirst {
             // A long middle (edits far apart): lines first, then words inside
             // each changed run of lines that is not too long.
             let a = lines(oldMid), b = lines(newMid)
