@@ -82,10 +82,11 @@ struct HTMLRenderer {
     }
 
     /// GFM extended autolinks: http(s) URLs, `www.` hosts and email addresses.
-    /// Trailing punctuation (ASCII and CJK) is left out of the link.
+    /// Trailing punctuation (ASCII and CJK) is left out of the link, and so
+    /// are the private-use tokens standing for math and footnote references.
     private static let urlRegex = try! NSRegularExpression(
-        pattern: #"\b(?:https?|ftp)://[^\s<>"'`]+[^\s<>"'`.,;:!?)\]}，。；：！？）】]"#
-            + #"|(?<![\w.@/:-])www\.[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?:[/?#][^\s<>"'`]*[^\s<>"'`.,;:!?)\]}，。；：！？）】])?"#
+        pattern: #"\b(?:https?|ftp)://[^\s<>"'`\x{E000}-\x{E003}]+[^\s<>"'`\x{E000}-\x{E003}.,;:!?)\]}，。；：！？）】]"#
+            + #"|(?<![\w.@/:-])www\.[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?:[/?#][^\s<>"'`\x{E000}-\x{E003}]*[^\s<>"'`\x{E000}-\x{E003}.,;:!?)\]}，。；：！？）】])?"#
             + #"|(?<![\w.+-])[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9_-]+)*\.[A-Za-z0-9_-]*[A-Za-z0-9](?![-_\w])"#)
 
     /// `&amp;` followed by letters and digits just before a `;` reads as an entity reference: GFM leaves it out of the link.

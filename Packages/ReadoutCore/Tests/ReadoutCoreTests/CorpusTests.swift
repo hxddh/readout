@@ -7,7 +7,7 @@ import Testing
 /// with the parser: any parser change that alters output fails until the
 /// patches (and therefore the screenshots) are regenerated and reviewed.
 ///
-/// Regenerate: READOUT_UPDATE_CORPUS=1 swift test --filter CorpusTests
+/// Regenerate: READOUT_UPDATE_CORPUS=1 swift test --package-path Packages/ReadoutCore --filter CorpusTests
 @Suite struct CorpusTests {
     static let corpus = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -46,7 +46,7 @@ import Testing
             if update { try fresh.write(to: target); continue }
             if (try? Data(contentsOf: target)) != fresh { stale.append(name) }
         }
-        #expect(stale.isEmpty, "Parser output changed for \(stale). Regenerate with READOUT_UPDATE_CORPUS=1 swift test --filter CorpusTests, then update screenshots (web: npm run corpus -- --update) and review the diffs.")
+        #expect(stale.isEmpty, "Parser output changed for \(stale). Regenerate with READOUT_UPDATE_CORPUS=1 swift test --package-path Packages/ReadoutCore --filter CorpusTests, then update screenshots (web: npm run corpus -- --update) and review the diffs.")
     }
 
     @Test func parsingIsDeterministic() throws {

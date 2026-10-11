@@ -5,9 +5,10 @@
 // renderer (code highlighting, KaTeX, Mermaid) settled. Two baselines per
 // document and theme:
 //
-//   snapshots/<doc>-<theme>.json  the whole document: every block's position,
-//                                 height and a fingerprint of the computed
-//                                 styles and sizes of everything inside it.
+//   snapshots/<doc>-<theme>.json  the whole document: every block's slot,
+//                                 position, height, a hash of its text, and a
+//                                 fingerprint of the computed styles and sizes
+//                                 of everything inside it.
 //                                 Small, exact and diffable in review.
 //   screenshots/<doc>-<theme>.png pixels of the first 1200 px, compared
 //                                 with a small anti-aliasing tolerance.
@@ -62,22 +63,36 @@ const docs = readdirSync(`${CORPUS}/patches`).filter(f => f.endsWith('.json') &&
 let failures = 0;
 const summary = [];
 
-async function render(patch, dark) {
+async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   const page = await browser.newPage({ viewport: { width: WIDTH, height: 900 }, deviceScaleFactor: 1 });
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   await page.addInitScript(dbg => {
     window.__debugParts = dbg;
+    // Deterministic highlighting on a busy CI machine (see highlight.js).
+    window.READOUT_TOKENIZE_LIMIT = 60000;
+    // Mermaid draws some straight lines as curves with random control points
+    // (same pixels, different markup): a seeded generator makes it repeatable.
+    let seed = 0x2545f491;
+    Math.random = () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
-  }, process.env.CORPUS_DEBUG === '1');
+  }, debug);
   await page.goto(`${base}/reader.html`);
   await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
   await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), dark);
   await page.evaluate(p => window.readout.apply(p), patch);
   // Large documents use content-visibility, so blocks never scrolled into
-  // view keep estimated heights. Render everything for a deterministic page.
-  await page.evaluate(() => document.getElementById('ro-doc').classList.remove('cv'));
+  // view keep estimated heights. Lay every block out, with the containment
+  // the app gives each one on screen (margins stay inside a block), for a
+  // page that is the same on every run. (Removing the class instead left
+  // some blocks contained and others not, depending on timing.)
+  await page.addStyleTag({ content: '#ro-doc.cv > .blk { content-visibility: visible !important; contain: layout style paint; }' });
   // Walk the page so every lazy renderer fires, then wait until none is pending.
   const walk = async () => {
     const height = await page.evaluate(() => document.scrollingElement.scrollHeight);
@@ -87,6 +102,19 @@ async function render(patch, dark) {
     }
   };
   await walk();
+  // A block can be passed before its observer fires (a fast walk on a cold
+  // page): bring each one still waiting into view, one at a time, and let
+  // the observer see it before the next.
+  for (let round = 0; round < 400; round++) {
+    const waiting = await page.evaluate(() => {
+      const next = [...document.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block:not(.done):not(.busy)')]
+        .find(e => !e.querySelector('.mermaid-error'));
+      next?.scrollIntoView({ block: 'center' });
+      return !!next;
+    });
+    if (!waiting) break;
+    await page.waitForTimeout(50);
+  }
   await page.waitForFunction(() =>
     !document.querySelector('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"], .mermaid-block.busy')
     && [...document.querySelectorAll('.mermaid-block')].every(b => b.classList.contains('done') || b.querySelector('.mermaid-error'))
@@ -101,24 +129,67 @@ async function render(patch, dark) {
   await page.waitForTimeout(200);
 
   const snapshot = await page.evaluate(() => {
-    const STYLE = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'color', 'backgroundColor',
-      'borderTopWidth', 'borderTopColor', 'borderLeftWidth', 'borderLeftColor', 'textDecorationLine', 'textAlign', 'display'];
+    // The computed properties that decide how an element looks or behaves
+    // (layout, paint, overflow, interaction), for every element and its
+    // generated content (::before, ::after, list markers). Not all ~350:
+    // highlighted code has thousands of elements and that takes minutes.
+    const PROPS = ['display', 'position', 'z-index', 'float', 'box-sizing', 'width', 'height', 'min-width', 'max-width',
+      'top', 'right', 'bottom', 'left', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+      'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+      'border-top-width', 'border-top-style', 'border-top-color', 'border-right-width', 'border-right-style', 'border-right-color',
+      'border-bottom-width', 'border-bottom-style', 'border-bottom-color', 'border-left-width', 'border-left-style', 'border-left-color',
+      'border-top-left-radius', 'border-top-right-radius', 'border-bottom-left-radius', 'border-bottom-right-radius',
+      'outline-style', 'outline-width', 'outline-color', 'box-shadow',
+      'overflow-x', 'overflow-y', 'text-overflow', 'clip-path', 'visibility', 'opacity', 'transform', 'filter', 'mix-blend-mode',
+      'background-color', 'background-image', 'background-clip', 'color',
+      'font-family', 'font-size', 'font-weight', 'font-style', 'font-variant-numeric', 'line-height', 'letter-spacing', 'word-spacing',
+      'text-align', 'text-indent', 'text-transform', 'text-decoration-line', 'text-decoration-color', 'vertical-align',
+      'white-space', 'word-break', 'overflow-wrap', 'line-break', 'direction', 'writing-mode',
+      'list-style-type', 'list-style-position', 'table-layout', 'border-collapse', 'object-fit',
+      'cursor', 'pointer-events', 'user-select', 'content'];
+    const props = cs => PROPS.map(k => cs.getPropertyValue(k)).join(';');
+    // A block's own element is described by every computed property: what it
+    // inherits from the page (text rendering, kerning, smoothing, …) reaches
+    // all of its content, and it is one element per block, so it is cheap.
+    const allProps = cs => { let out = ''; for (let i = 0; i < cs.length; i++) out += `${cs[i]}:${cs.getPropertyValue(cs[i])};`; return out; };
     const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); };
+    let origin = null;   // the block being described: positions are relative to it
     const describe = el => {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
-      return `${el.tagName}.${el.getAttribute('class') || ''}|${STYLE.map(k => cs[k]).join('|')}|${Math.round(r.width)}x${Math.round(r.height)}`;
+      const at = origin ? `@${Math.round(r.left - origin.left)},${Math.round(r.top - origin.top)}` : '';
+      let out = `${el.tagName}.${el.getAttribute('class') || ''}|${origin ? props(cs) : allProps(cs)}|${Math.round(r.width)}x${Math.round(r.height)}${at}`;
+      for (const pseudo of ['::before', '::after', ...(el.tagName === 'LI' ? ['::marker'] : [])]) {
+        const ps = getComputedStyle(el, pseudo);
+        if (ps.content && ps.content !== 'none' && ps.content !== 'normal' || pseudo === '::marker') out += `|${pseudo}:${props(ps)}`;
+      }
+      return out;
     };
     const top0 = document.getElementById('ro-doc').getBoundingClientRect().top + window.scrollY;
     const blocks = [...document.querySelectorAll('#ro-doc > .blk, #ro-doc > .del-mark')].map(b => {
+      origin = null;
       const parts = [describe(b)];
-      // Mermaid SVG internals carry generated ids; the SVG's box is enough.
+      origin = b.getBoundingClientRect();
       for (const el of b.querySelectorAll('*')) if (!el.closest('svg') || el.tagName === 'svg') parts.push(describe(el));
+      // Diagrams: the whole SVG markup, with Mermaid's generated ids numbered
+      // in order of appearance and coordinates to 0.1 px, so the nodes, edges
+      // and fills of every diagram are compared, not just its box.
+      for (const svg of b.querySelectorAll('svg')) {
+        const ids = new Map();
+        for (const el of svg.querySelectorAll('[id]')) if (!ids.has(el.id)) ids.set(el.id, `id${ids.size}`);
+        if (svg.id && !ids.has(svg.id)) ids.set(svg.id, `id${ids.size}`);
+        let markup = svg.outerHTML;
+        // Longest first, so an id that prefixes another is not replaced inside it.
+        for (const [id, n] of [...ids].sort((a, b) => b[0].length - a[0].length)) markup = markup.split(id).join(n);
+        parts.push(markup.replace(/-?\d+\.\d+/g, x => (Math.round(parseFloat(x) * 10) / 10).toString()));
+      }
       const r = b.getBoundingClientRect();
       return {
         slot: +b.dataset.slot || 0, kind: (b.className.match(/k-(\w+)/) || [, 'del'])[1],
         top: Math.round(r.top + window.scrollY - top0), h: Math.round(r.height),
-        style: fnv(parts.join('\n') + `|text:${b.textContent.length}`), ...(window.__debugParts ? { parts } : {}),
+        style: fnv(parts.join('\n')),
+        content: fnv(b.textContent),
+        ...(window.__debugParts ? { parts } : {}),
         text: b.textContent.replace(/\s+/g, ' ').trim().slice(0, 48),
       };
     });
@@ -154,6 +225,8 @@ function compareSnapshot(name, got) {
     if (a.h !== b.h) what.push(`height ${a.h} -> ${b.h}`);
     if (a.style !== b.style) what.push('styles/inner layout');
     if (a.kind !== b.kind) what.push(`kind ${a.kind} -> ${b.kind}`);
+    if (a.slot !== b.slot) what.push(`slot ${a.slot} -> ${b.slot}`);
+    if (a.content !== b.content) what.push(`text "${a.text}" -> "${b.text}"`);
     // A moved block whose own height and styles are unchanged only follows an earlier change.
     if (!what.length && a.top !== b.top && changes.length === 0) what.push(`top ${a.top} -> ${b.top}`);
     if (what.length) { shown++; changes.push(`#${i} ${b.kind} "${b.text}": ${what.join(', ')}`); }
@@ -180,6 +253,11 @@ function compareTop(name, png) {
   return `top ${TOP}px differs in ${changed} px (${(changed / (got.width * got.height) * 100).toFixed(3)}%)`;
 }
 
+// The browser's first page meets cold caches (fonts, compiled code) and has
+// rendered the first document's code blocks differently from every later
+// run; render one page and throw it away before measuring anything.
+if (docs.length) await render(JSON.parse(readFileSync(`${CORPUS}/patches/${docs[0]}`, 'utf8')), false);
+
 for (const file of docs) {
   const doc = file.replace(/\.json$/, '');
   const patch = JSON.parse(readFileSync(`${CORPUS}/patches/${file}`, 'utf8'));
@@ -196,6 +274,14 @@ for (const file of docs) {
       failures++;
       summary.push(name);
       console.log(`FAIL: ${name}\n      ${problems.join('\n      ')}`);
+      if (s && !update) {
+        // Render it again, with every element's description, so a failure
+        // says whether it repeats and what exactly differs (still a failure).
+        const again = await render(patch, theme === 'dark', true);
+        const repeats = JSON.stringify(again.snapshot.blocks.map(b => b.style)) === JSON.stringify(snapshot.blocks.map(b => b.style));
+        console.log(`      second render ${repeats ? 'gives the same result' : 'differs from the first: the page is not deterministic'}`);
+        writeFileSync(`${OUT}/${name}.parts.json`, JSON.stringify(again.snapshot, null, 1));
+      }
     } else {
       console.log(`${update ? 'updated' : 'ok'}: ${name} (${snapshot.blocks.length} blocks, ${snapshot.height} px)`);
     }

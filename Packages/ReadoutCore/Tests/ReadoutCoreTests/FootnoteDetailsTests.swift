@@ -17,6 +17,12 @@ import Testing
         #expect(notes.contains(##"href="#user-content-fnref-b" class="fn-back""##))
     }
 
+    @Test func aReferenceRightAfterAURLStaysOutOfTheLink() {
+        let html = parse("See https://example.com/a[^n] and $x$https://b.org.\n\n[^n]: Note.\n").blocks[0].html
+        #expect(html.contains(##"<a href="https://example.com/a">https://example.com/a</a><sup class="fn-ref">"##))
+        #expect(!html.contains("\u{E000}") && !html.contains("\u{E002}"))
+    }
+
     @Test func repeatedReferencesGetDistinctIDs() {
         let html = parse("x[^n] y[^n]\n\n[^n]: Note.\n").blocks[0].html
         #expect(html.contains(##"id="user-content-fnref-n""##))
