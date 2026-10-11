@@ -23,7 +23,9 @@ if (!engines[engineName]) {
   process.exit(2);
 }
 console.log(`engine: ${engineName}`);
-const browser = await engines[engineName].launch();
+// CHROME_PATH overrides the browser binary (local dev only; CI uses stock Playwright browsers).
+const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : {};
+const browser = await engines[engineName].launch(launchOpts);
 const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
 const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
@@ -185,9 +187,10 @@ const idCheck = await page.evaluate(() => {
   return {
     dupes,
     heads: heads.map(h => {
-      const cs = getComputedStyle(h);
-      const r = h.getBoundingClientRect();
-      return { id: h.querySelector('h2')?.id, position: cs.position, width: r.width, left: r.left };
+      const inner = h.querySelector('h1,h2,h3,h4,h5,h6') || h;
+      const cs = getComputedStyle(inner);
+      const r = inner.getBoundingClientRect();
+      return { id: inner.id, position: cs.position, width: r.width, left: r.left };
     }),
     paraLeft,
   };
