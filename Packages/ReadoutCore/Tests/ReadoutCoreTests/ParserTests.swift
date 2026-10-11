@@ -117,6 +117,19 @@ import Testing
         #expect(!html.contains("<script"))
     }
 
+    @Test func neutralizesNavigationTags() {
+        // Task G probe: <meta http-equiv=refresh> navigates out when injected
+        // raw. The product pipeline never executes it — sanitize escapes
+        // every navigation-capable tag, and WKWebView cancels non-readout
+        // navigations — but pin the sanitize behavior so it cannot regress.
+        let doc = parse("<meta http-equiv=\"refresh\" content=\"0;url=https://evil.example/\">\n\n<base href=\"https://evil.example/\">\n\n<form action=\"https://evil.example/\"><input type=\"text\"></form>\n\n<link rel=\"stylesheet\" href=\"https://evil.example/x.css\">\n")
+        let html = doc.blocks.map(\.html).joined()
+        #expect(!html.contains("<meta"))
+        #expect(!html.contains("<base"))
+        #expect(!html.contains("<form"))
+        #expect(!html.contains("<link"))
+    }
+
     @Test func remoteMediaRequiresConsent() {
         let doc = parse("<img src=\"https://evil.example/x.png\" alt=\"x\">\n\n<video src=\"https://evil.example/v.mp4\"></video>\n\n<img src=\"local/pic.png\">\n")
         let html = doc.blocks.map(\.html).joined()
