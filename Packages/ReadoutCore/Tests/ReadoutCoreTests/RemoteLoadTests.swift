@@ -71,6 +71,8 @@ import Testing
             "http://8.8.8.8/a.png", "http://172.32.0.1/a.png", "http://192.169.0.1/a.png",
             "http://[2606:4700:4700::1111]/a.png", "http://[::ffff:8.8.8.8]/a.png",
             "http://[64:ff9b::8.8.8.8]/a.png",
+            // Digit-leading names made of hex letters are names, not numbers.
+            "https://1a.de/a.png", "https://1feed.cafe/a.png", "https://0xdead.beef.com/a.png",
         ]
         for url in allowed {
             #expect(RemoteLoad.check(url) == nil, "\(url)")
@@ -106,6 +108,10 @@ import Testing
         #expect(RemoteLoad.isAddressLiteral("0x7f.1"))
         #expect(!RemoteLoad.isAddressLiteral("example.com"))
         #expect(!RemoteLoad.isAddressLiteral("1e100.net"))
+        #expect(!RemoteLoad.isAddressLiteral("1a.de"))
+        #expect(RemoteLoad.isAddressLiteral("2130706433"))
+        #expect(RemoteLoad.isAddressLiteral("1.2.3.0x10"))
+        #expect(RemoteLoad.isAddressLiteral("127.0.0.1."))
     }
 
     @Test func checkRejectsSchemeFirst() {

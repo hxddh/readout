@@ -167,6 +167,18 @@ let stubDNS: RemoteFetcher.Resolver = { host in
         }
     }
 
+    @Test func boundsASlowResolver() async {
+        let fetcher = RemoteFetcher(resolve: { _ in Thread.sleep(forTimeInterval: 3); return ["93.184.216.34"] },
+                                    resolveTimeout: 0.2)
+        defer { fetcher.invalidate() }
+        let start = Date()
+        let result = await withCheckedContinuation { cont in
+            fetcher.fetch("https://slow.test/a.png") { cont.resume(returning: $0) }
+        }
+        #expect(result == .failure(.rejected(.unresolved)))
+        #expect(Date().timeIntervalSince(start) < 2)
+    }
+
     @Test func refusesNamesThatDoNotResolve() async {
         let result = await fetch("https://nxdomain.test/a.png")
         #expect(result == .failure(.rejected(.unresolved)))

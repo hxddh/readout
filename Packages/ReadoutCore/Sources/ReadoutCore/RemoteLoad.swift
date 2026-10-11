@@ -74,10 +74,11 @@ public enum RemoteLoad {
             return .privateAddress
         }
 
-        // A host that starts with a digit and uses only digits, dots and hex
-        // spelling is an address literal. Only canonical dotted-quad decimal is
-        // evaluated; every other numeric spelling is refused outright.
-        if host.first?.isNumber == true, host.allSatisfy({ "0123456789abcdefx.".contains($0) }) {
+        // A host whose last label is a number is an IPv4 literal (the WHATWG
+        // URL "ends in a number" rule, which browsers and resolvers follow).
+        // Only canonical dotted-quad decimal is evaluated; every other numeric
+        // spelling is refused outright. `1a.de` or `1feed.cafe` are names.
+        if endsInNumber(host) {
             let parts = host.split(separator: ".", omittingEmptySubsequences: false)
             let octets = parts.compactMap { p -> Int? in
                 guard !p.isEmpty, p.count <= 3, p.allSatisfy(\.isASCII), p.allSatisfy(\.isNumber),
@@ -97,7 +98,18 @@ public enum RemoteLoad {
         var host = rawHost
         if host.hasPrefix("[") && host.hasSuffix("]") { host = String(host.dropFirst().dropLast()) }
         if host.contains(":") { return true }
-        return host.first?.isNumber == true && host.allSatisfy { "0123456789abcdefx.".contains($0.lowercased()) }
+        return endsInNumber(host.lowercased())
+    }
+
+    /// WHATWG URL: the last label (ignoring one trailing dot) is decimal
+    /// digits or `0x` followed by hex digits.
+    static func endsInNumber(_ host: String) -> Bool {
+        var labels = host.split(separator: ".", omittingEmptySubsequences: false)
+        if labels.last?.isEmpty == true, labels.count > 1 { labels.removeLast() }
+        guard let last = labels.last, !last.isEmpty else { return false }
+        if last.allSatisfy({ $0.isASCII && $0.isNumber }) { return true }
+        let l = last.lowercased()
+        return l.hasPrefix("0x") && l.dropFirst(2).allSatisfy { "0123456789abcdef".contains($0) }
     }
 
     /// Checks the addresses a name resolved to: every one must be public, and

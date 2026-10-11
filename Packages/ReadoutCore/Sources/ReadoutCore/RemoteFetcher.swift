@@ -38,6 +38,7 @@ public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked S
 
     private let maxBytes: Int
     private let resolve: Resolver
+    private let resolveTimeout: TimeInterval
     private let lock = NSLock()
     private var pending: [Int: Pending] = [:]
     private(set) var session: URLSession!
@@ -45,9 +46,11 @@ public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked S
     /// `configuration` is copied; tests pass one with stub `protocolClasses`.
     /// `resolve` maps a host name to numeric addresses (tests inject one).
     public init(configuration: URLSessionConfiguration = .ephemeral, maxBytes: Int = RemoteLoad.maxBytes,
-                resolve: @escaping Resolver = RemoteLoad.systemResolve) {
+                resolve: @escaping Resolver = RemoteLoad.systemResolve,
+                resolveTimeout: TimeInterval = RemoteLoad.timeoutSeconds) {
         self.maxBytes = maxBytes
         self.resolve = resolve
+        self.resolveTimeout = resolveTimeout
         super.init()
         let configuration = configuration.copy() as! URLSessionConfiguration
         configuration.timeoutIntervalForRequest = RemoteLoad.timeoutSeconds
@@ -89,7 +92,28 @@ public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked S
     /// image that narrow window is accepted.
     private func checkResolution(_ url: URL) -> RemoteLoad.Rejection? {
         guard let host = url.host, !RemoteLoad.isAddressLiteral(host) else { return nil }
-        return RemoteLoad.checkResolved(resolve(host))
+        guard let addresses = resolveWithDeadline(host) else { return .unresolved }
+        return RemoteLoad.checkResolved(addresses)
+    }
+
+    /// `getaddrinfo` has no timeout of its own and runs before the
+    /// URLSession task (whose timeouts don't cover it), so bound it here.
+    /// A late answer is ignored. Nil on timeout.
+    private func resolveWithDeadline(_ host: String) -> [String]? {
+        final class Box: @unchecked Sendable {
+            let lock = NSLock()
+            var value: [String]?
+        }
+        let box = Box()
+        let done = DispatchSemaphore(value: 0)
+        let resolve = self.resolve
+        DispatchQueue.global(qos: .userInitiated).async {
+            let addresses = resolve(host)
+            box.lock.withLock { box.value = addresses }
+            done.signal()
+        }
+        guard done.wait(timeout: .now() + resolveTimeout) == .success else { return nil }
+        return box.lock.withLock { box.value }
     }
 
     private func entry(_ task: URLSessionTask) -> Pending? {
