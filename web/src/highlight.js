@@ -107,6 +107,13 @@ export function highlightSync(code, id) {
       lang: id,
       themes: { light: 'github-light-default', dark: 'github-dark-default' },
       defaultColor: false,
+      // Shiki stops tokenizing a line after 500 ms by default and colors the
+      // rest with whatever scope it was in. The first line a grammar sees
+      // also pays for compiling its patterns, which on a busy machine took
+      // longer than that: whole blocks came out comment-gray on some runs
+      // and correct on others. Keep a bound against runaway patterns, but
+      // one no real line reaches.
+      tokenizeTimeLimit: 5000,
     });
     return html;
   } catch {
