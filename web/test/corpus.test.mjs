@@ -88,7 +88,7 @@ async function render(patch, dark) {
   };
   await walk();
   await page.waitForFunction(() =>
-    !document.querySelector('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .mermaid-block.busy')
+    !document.querySelector('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"], .mermaid-block.busy')
     && [...document.querySelectorAll('.mermaid-block')].every(b => b.classList.contains('done') || b.querySelector('.mermaid-error'))
     && !document.querySelector('.math:not(.done), .math-block:not(.done)'),
   null, { timeout: 30000 }).catch(async () => {
