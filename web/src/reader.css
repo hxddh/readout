@@ -91,6 +91,16 @@ body { margin: 0; }
 /* ---------- Blocks ---------- */
 
 .blk { position: relative; }
+/* A block lays out the same with or without content-visibility (which large
+   documents use): its margins stay inside it, as containment keeps them, and
+   it extends over the side gutters, so containment never clips what sits
+   there (change marks, heading links, list numbers). Spacing below is set
+   for margins that do not collapse between blocks. */
+#ro-doc > .blk {
+  display: flow-root;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+}
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
 /* CJK: trim the doubled space of adjacent full-width punctuation where WebKit supports it. */
 @supports (text-spacing-trim: space-first) { html { text-spacing-trim: space-first; } }
@@ -110,11 +120,12 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
   scroll-margin-top: 24px;
 }
-.k-heading h1 { font-size: 1.85rem; letter-spacing: -0.015em; margin: 0.2em 0 0.7em; font-weight: 700; }
-.k-heading h2 { font-size: 1.4rem; letter-spacing: -0.01em; margin: 1.8em 0 0.6em; }
-.k-heading h3 { font-size: 1.14rem; margin: 1.5em 0 0.5em; }
-.k-heading h4 { font-size: 1rem; margin: 1.3em 0 0.4em; }
-.k-heading h5, .k-heading h6 { font-size: 0.94rem; margin: 1.2em 0 0.4em; color: var(--text-2); }
+/* Top margins less the 1.1rem the block above ends with (margins between blocks add up). */
+.k-heading h1 { font-size: 1.85rem; letter-spacing: -0.015em; margin: 0 0 0.7em; font-weight: 700; }
+.k-heading h2 { font-size: 1.4rem; letter-spacing: -0.01em; margin: calc(1.8em - 1.1rem) 0 0.6em; }
+.k-heading h3 { font-size: 1.14rem; margin: calc(1.5em - 1.1rem) 0 0.5em; }
+.k-heading h4 { font-size: 1rem; margin: calc(1.3em - 1.1rem) 0 0.4em; }
+.k-heading h5, .k-heading h6 { font-size: 0.94rem; margin: 0 0 0.4em; color: var(--text-2); }
 #ro-doc > .k-heading:first-child h1, #ro-doc > .k-heading:first-child h2 { margin-top: 0; }
 
 a { color: var(--link); text-decoration: none; }
@@ -150,6 +161,9 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: 1.1em; }
 .li-block li > ul, .li-block li > ol { padding-left: 1.4em; margin: 0.15em 0; }
 .li-block li > p { margin: 0 0 0.5em; }
 li { margin: 0.12em 0; }
+/* Each item is a block of its own: half the gap on each side of it. */
+#ro-doc > .blk > .li-block > li { margin-top: 0.06em; }
+#ro-doc > .blk > .li-block:not(.li-loose) > li { margin-bottom: 0.06em; }
 li::marker { color: var(--text-3); }
 ol.li-block > li::marker { font-variant-numeric: tabular-nums; }
 
@@ -339,7 +353,7 @@ details ul, details ol { padding-left: 1.5em; }
 .blk::before {
   content: "";
   position: absolute;
-  left: calc(-1 * var(--gutter) + 10px);
+  left: 10px;   /* in the gutter the block extends over */
   top: 0.25em;
   bottom: 1.1em;
   width: 3px;
@@ -348,10 +362,12 @@ details ul, details ol { padding-left: 1.5em; }
   transition: background-color 600ms ease, opacity 600ms ease;
 }
 .k-heading::before { top: 0.6em; bottom: 0.2em; }
+.k-listItem::before { bottom: 0.3em; }
+.k-listItem:has(> .li-last)::before { bottom: 1.1em; }
 .blk.m-inserted::before { background: var(--accent); }
 .blk.m-modified::before { background: var(--accent); opacity: 0.55; }
 .blk.m-read::before { background: var(--mark-read); opacity: 1; }
-.blk.m-state::before { background: var(--accent); width: 5px; height: 5px; bottom: auto; top: 0.7em; left: calc(-1 * var(--gutter) + 9px); border-radius: 50%; }
+.blk.m-state::before { background: var(--accent); width: 5px; height: 5px; bottom: auto; top: 0.7em; left: 9px; border-radius: 50%; }
 .blk.m-state.m-read::before { background: var(--mark-read); }
 
 .del-mark {
@@ -390,7 +406,15 @@ details ul, details ol { padding-left: 1.5em; }
 
 /* Flash for blocks that just changed while visible */
 @keyframes arrive { from { background: var(--accent-soft); } to { background: transparent; } }
-.blk.flash { animation: arrive 1.2s ease-out; border-radius: 4px; }
+/* Over the text column only, not the gutters the block extends over. */
+.blk.flash { isolation: isolate; }
+.blk.flash::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  left: var(--gutter); right: var(--gutter); top: 0; bottom: 1.1em;
+  border-radius: 4px;
+  animation: arrive 1.2s ease-out forwards;
+}
+.k-heading.flash::after { bottom: 0.2em; }
 
 /* The rail: a thin track on the right edge that maps unread changes onto the document. */
 #ro-rail {
@@ -425,7 +449,7 @@ details ul, details ol { padding-left: 1.5em; }
 /* Heading section links */
 .k-heading { position: relative; }
 .h-link {
-  position: absolute; left: calc(-1 * var(--gutter) + 8px); top: 0.55em;
+  position: absolute; left: 8px; top: 0.55em;
   border: 0; padding: 0 4px; background: transparent; cursor: pointer;
   font: inherit; font-size: 0.85em; color: var(--text-3);
   opacity: 0; transition: opacity 120ms;
@@ -441,7 +465,7 @@ details ul, details ol { padding-left: 1.5em; }
 :root[data-mode="quicklook"] #ro-doc { padding-top: 28px; padding-bottom: 40px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .blk.flash, .landed { animation: none; }
+  .blk.flash::after, .landed { animation: none; }
   .blk::before, .code-block .cb-tools { transition: none; }
 }
 
