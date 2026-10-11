@@ -31,6 +31,10 @@ function applyChangesOnly() {
       || el.classList.contains('m-inserted') || el.classList.contains('m-modified')
       || el.classList.contains('m-state') || el.nextElementSibling?.classList.contains('del-mark');
     el.hidden = changesOnly && !keep;
+    // Hiding/showing is a filter, not a content change: re-baseline the
+    // height so the resize compensator does not "correct" the reflow that
+    // anchor restore already accounts for (double compensation scrolls away).
+    heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
   }
   for (const m of doc.querySelectorAll('.del-mark')) m.hidden = false;
   if (caughtup) {

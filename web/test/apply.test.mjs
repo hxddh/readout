@@ -228,28 +228,33 @@ await page.evaluate(() => {
 const captured = await page.evaluate(() => window.readout.captureAnchor());
 check('changes-only capture sees slot 65', captured && captured.slot === 65, JSON.stringify(captured));
 // Insert a long unread paragraph after slot 20: slot 65 must not move.
+// Marks are a full snapshot (DocumentSession.payload sends currentMarks), so
+// the patch keeps every existing mark alongside the new one — a patch that
+// dropped them would hide 65 itself and the assertion would prove nothing.
 const top65Before = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
-await page.evaluate(() => window.readout.apply({
+await page.evaluate((extra) => window.readout.apply({
   version: 21, reset: false, rewrite: false,
   ops: [{ op: 'insert', slot: 1001, after: 20, html: `<p>${'inserted long paragraph. '.repeat(30)}</p>`, kind: 'paragraph' }],
-  marks: [{ slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-}));
+  marks: [...extra, { slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+}), Array.from({ length: 12 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' })));
 const top65After = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
 check('slot 65 does not jump after patch above', Math.abs(top65After - top65Before) < 2, `shift=${top65After - top65Before}`);
 
 // 9. Anchor block hidden by the filter: restore falls back to the nearest
 // visible block. Slot 65 sits at the viewport top; a patch that drops its
 // mark hides it, so restore must land on 55 (nearest visible before it).
+// The patch keeps every other mark (full-snapshot semantics): only 65's mark
+// is dropped, so 55 stays visible and the fallback has a real target.
 await page.evaluate(() => window.readout.setChangesOnly(false));
 await page.evaluate(() => {
   const el = document.querySelector('.blk[data-slot="65"]');
   window.scrollBy(0, el.getBoundingClientRect().top);
 });
 await page.evaluate(() => window.readout.setChangesOnly(true));
-await page.evaluate(() => window.readout.apply({
+await page.evaluate((extra) => window.readout.apply({
   version: 22, reset: false, rewrite: false, ops: [],
-  marks: [{ slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-}));
+  marks: [...extra, { slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+}), Array.from({ length: 12 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' })).filter(m => m.slot !== 65));
 const fallback = await page.evaluate(() => ({
   top55: document.querySelector('.blk[data-slot="55"]').getBoundingClientRect().top,
   hidden65: document.querySelector('.blk[data-slot="65"]').hidden,
