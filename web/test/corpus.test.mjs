@@ -79,8 +79,11 @@ async function render(patch, dark) {
   await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), dark);
   await page.evaluate(p => window.readout.apply(p), patch);
   // Large documents use content-visibility, so blocks never scrolled into
-  // view keep estimated heights. Render everything for a deterministic page.
-  await page.evaluate(() => document.getElementById('ro-doc').classList.remove('cv'));
+  // view keep estimated heights. Lay every block out, with the containment
+  // the app gives each one on screen (margins stay inside a block), for a
+  // page that is the same on every run. (Removing the class instead left
+  // some blocks contained and others not, depending on timing.)
+  await page.addStyleTag({ content: '#ro-doc.cv > .blk { content-visibility: visible !important; contain: layout style paint; }' });
   // Walk the page so every lazy renderer fires, then wait until none is pending.
   const walk = async () => {
     const height = await page.evaluate(() => document.scrollingElement.scrollHeight);
@@ -104,8 +107,10 @@ async function render(patch, dark) {
   await page.waitForTimeout(200);
 
   const snapshot = await page.evaluate(() => {
+    // Paint matters too: content can be laid out yet invisible.
     const STYLE = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'color', 'backgroundColor',
-      'borderTopWidth', 'borderTopColor', 'borderLeftWidth', 'borderLeftColor', 'textDecorationLine', 'textAlign', 'display'];
+      'borderTopWidth', 'borderTopColor', 'borderLeftWidth', 'borderLeftColor', 'textDecorationLine', 'textAlign', 'display',
+      'visibility', 'opacity', 'clipPath', 'transform', 'filter', 'mixBlendMode'];
     const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); };
     const describe = el => {
       const cs = getComputedStyle(el);
