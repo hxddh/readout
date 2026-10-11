@@ -118,6 +118,14 @@ jobs:
           qlmanage -t -s 512 -o smoke-out "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlthumb.log 2>&1 || true
           cat smoke-out/qlthumb.log
 
+      - name: Core speed (release build, this runner)
+        run: |
+          READOUT_PERF_OUT="$PWD/smoke-out/perf-core.json" \
+            swift test --package-path Packages/ReadoutCore -c release --filter PerformanceBudgetTests
+
+      - name: Speed budgets
+        run: python3 tools/perf-assert.py mac smoke-out/perf-core.json smoke-out/timings.json
+
       - name: Print smoke values
         run: |
           for f in smoke-out/*.json; do echo "== $f"; cat "$f"; echo; done
