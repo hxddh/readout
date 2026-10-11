@@ -6,14 +6,17 @@
     "as tracked until the work that brings it in lands, then the guard drops to",
     "the target. Never raise a guard to make CI pass: lower it when you improve",
     "a metric, and explain any increase in the PR.",
-    "where: mac = macOS CI runner (release build, signed app); linux-webkit = CI WebKit."
+    "where: mac = macOS CI runner (release build, signed app); linux-webkit = CI WebKit.",
+    "Guards set 2026-10-11 from the first CI run, ~1.3-1.5x the measurement:",
+    "update_100kb 17.9, update_1mb 227.6, warm_open 1239, cold_start 5060,",
+    "write_to_update 423, web_first_apply_1mb 1351, web_update_20 197, long frames 417/600."
   ],
-  "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": null },
-  "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": null },
-  "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": null },
-  "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": null },
-  "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": null },
-  "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
-  "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": null },
-  "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null }
+  "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": 25 },
+  "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 300 },
+  "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 1600 },
+  "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 7500 },
+  "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 600 },
+  "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": 1800 },
+  "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 260 },
+  "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": 500 }
 }
