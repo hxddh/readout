@@ -5,9 +5,10 @@
 // renderer (code highlighting, KaTeX, Mermaid) settled. Two baselines per
 // document and theme:
 //
-//   snapshots/<doc>-<theme>.json  the whole document: every block's position,
-//                                 height and a fingerprint of the computed
-//                                 styles and sizes of everything inside it.
+//   snapshots/<doc>-<theme>.json  the whole document: every block's slot,
+//                                 position, height, a hash of its text, and a
+//                                 fingerprint of the computed styles and sizes
+//                                 of everything inside it.
 //                                 Small, exact and diffable in review.
 //   screenshots/<doc>-<theme>.png pixels of the first 1200 px, compared
 //                                 with a small anti-aliasing tolerance.
@@ -68,6 +69,8 @@ async function render(patch, dark) {
   page.on('pageerror', e => errors.push(String(e)));
   await page.addInitScript(dbg => {
     window.__debugParts = dbg;
+    // Deterministic highlighting on a busy CI machine (see highlight.js).
+    window.READOUT_TOKENIZE_LIMIT = 60000;
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
   }, process.env.CORPUS_DEBUG === '1');
@@ -118,7 +121,9 @@ async function render(patch, dark) {
       return {
         slot: +b.dataset.slot || 0, kind: (b.className.match(/k-(\w+)/) || [, 'del'])[1],
         top: Math.round(r.top + window.scrollY - top0), h: Math.round(r.height),
-        style: fnv(parts.join('\n') + `|text:${b.textContent.length}`), ...(window.__debugParts ? { parts } : {}),
+        style: fnv(parts.join('\n')),
+        content: fnv(b.textContent),
+        ...(window.__debugParts ? { parts } : {}),
         text: b.textContent.replace(/\s+/g, ' ').trim().slice(0, 48),
       };
     });
@@ -154,6 +159,8 @@ function compareSnapshot(name, got) {
     if (a.h !== b.h) what.push(`height ${a.h} -> ${b.h}`);
     if (a.style !== b.style) what.push('styles/inner layout');
     if (a.kind !== b.kind) what.push(`kind ${a.kind} -> ${b.kind}`);
+    if (a.slot !== b.slot) what.push(`slot ${a.slot} -> ${b.slot}`);
+    if (a.content !== b.content) what.push(`text "${a.text}" -> "${b.text}"`);
     // A moved block whose own height and styles are unchanged only follows an earlier change.
     if (!what.length && a.top !== b.top && changes.length === 0) what.push(`top ${a.top} -> ${b.top}`);
     if (what.length) { shown++; changes.push(`#${i} ${b.kind} "${b.text}": ${what.join(', ')}`); }

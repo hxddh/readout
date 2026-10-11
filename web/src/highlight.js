@@ -107,6 +107,10 @@ export function highlightSync(code, id) {
       lang: id,
       themes: { light: 'github-light-default', dark: 'github-dark-default' },
       defaultColor: false,
+      // Shiki's per-line guard. The rendering-baseline tests raise it
+      // (READOUT_TOKENIZE_LIMIT) so a starved CI machine cannot cut lines
+      // short and make the same page render differently between runs.
+      tokenizeTimeLimit: globalThis.READOUT_TOKENIZE_LIMIT ?? 500,
     });
     return html;
   } catch {

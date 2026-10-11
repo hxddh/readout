@@ -65,9 +65,9 @@ licensed repository. `SOURCES.md` lists source, license and agent evidence.
   `READOUT_UPDATE_CORPUS=1 swift test --filter CorpusTests`.
 - `npm run corpus` (web, CI job "Rendering baselines (WebKit)") renders each
   patch light and dark with code, math and diagrams settled, and compares:
-  - `corpus/snapshots/<doc>-<theme>.json`: every block's position, height and
-    a fingerprint of the computed styles and sizes of everything inside it.
-    Exact; a failure names the changed blocks.
+  - `corpus/snapshots/<doc>-<theme>.json`: every block's slot, position,
+    height, a hash of its text, and a fingerprint of the computed styles and
+    sizes of everything inside it. Exact; a failure names the changed blocks.
   - `corpus/screenshots/<doc>-<theme>.png`: pixels of the first 1200 px,
     with a small anti-aliasing tolerance. Full-page pixel baselines would
     add ~100 MB per rendering change, so the snapshot covers the rest.
@@ -75,6 +75,8 @@ licensed repository. `SOURCES.md` lists source, license and agent evidence.
   full-page screenshots of every document.
 
 Baselines come from CI's WebKit, not a developer machine (fonts differ).
+The test raises Shiki's per-line tokenizing guard so a starved CI machine
+cannot cut highlighting short and render the same page two ways.
 To accept an intended rendering change: download `corpus-actual`, copy
 `actual/snapshots` and `actual/screenshots` over `web/test/corpus/`, review
 each changed image, and say why in the PR.
