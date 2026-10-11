@@ -410,6 +410,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             ReaderPerf.signposter.emitEvent("applied")
             SmokeTest.noteApplied()
         case .painted:
+            SmokeTest.notePainted()
             if !painted {
                 // First patch presented on screen: the open is done.
                 painted = true

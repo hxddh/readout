@@ -52,7 +52,8 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
     except (OSError, ValueError) as e:
         print(f"harness: no app timings ({e})")
         return
-    applied = sorted(app.get("applied_at", []))
+    # On-screen times: the frames that showed a patch (fall back to the apply).
+    applied = sorted(app.get("painted_at") or app.get("applied_at", []))
     after = lambda t: next((a for a in applied if a >= t), None)
     first = applied[0] if applied else None
     update = after(clock["edit"]) if "edit" in clock else None
