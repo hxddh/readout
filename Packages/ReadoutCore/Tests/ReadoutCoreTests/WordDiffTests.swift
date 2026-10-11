@@ -103,6 +103,34 @@ import Testing
         #expect(reordered.filter { if case .equal = $0 { false } else { true } }.count <= 2)
     }
 
+    @Test func oneWorkBudgetCoversTheWholeBlock() {
+        // Many rewritten lines between unchanged ones: each run is compared within
+        // what is left of one budget for the block, so the later runs are shown
+        // replaced whole instead of each getting a full allowance of its own.
+        var seed: UInt64 = 7
+        func punct(_ n: Int) -> String {
+            let chars = Array("!#$%&*+,-./:;<=>?@^~|")
+            return String((0..<n).map { _ in seed = seed &* 6364136223846793005 &+ 1442695040888963407; return chars[Int(seed >> 33) % chars.count] })
+        }
+        var old: [String] = [], new: [String] = []
+        for i in 0..<50 {
+            // Each rewrite on its own is within reach (about 630 differences of 3,800 tokens).
+            let line = punct(1900)
+            let edited = String(line.enumerated().map { $0.offset % 6 == 0 ? "a" : $0.element })
+            old.append("same line \(i)"); new.append("same line \(i)"); old.append(line); new.append(edited)
+        }
+        let segs = WordDiff.segments(old: old.joined(separator: "\n"), new: new.joined(separator: "\n"))
+        let lastOld = old[old.count - 1], lastNew = new[new.count - 1]
+        #expect(segs.contains { if case let .deleted(t) = $0 { t.contains(lastOld.prefix(1800)) } else { false } })
+        #expect(segs.contains { if case let .inserted(t) = $0 { t.contains(lastNew.prefix(1800)) } else { false } })
+        // The first run was compared token by token.
+        #expect(segs.contains { if case .inserted("a") = $0 { true } else { false } })
+        // Still a faithful comparison of the two texts.
+        let o = segs.map { if case let .equal(t) = $0 { t } else if case let .deleted(t) = $0 { t } else { "" } }.joined()
+        let n = segs.map { if case let .equal(t) = $0 { t } else if case let .inserted(t) = $0 { t } else { "" } }.joined()
+        #expect(o == old.joined(separator: "\n") && n == new.joined(separator: "\n"))
+    }
+
     @Test func myersIsMinimalAndConsistent() {
         var rng = SystemRandomNumberGenerator()
         for _ in 0..<300 {
@@ -187,6 +215,11 @@ import Testing
         let session = DocumentSession()
         let patch = session.load(doc("Intro.\n\n" + long + "delta\n"), baseline: oldFormat)
         #expect(patch.marks.first { $0.kind == .modified }?.diff == "")
+        // Changed back to what was read: recognised by the block's fingerprint.
+        let revert = DocumentSession()
+        _ = revert.load(doc("Intro.\n\n" + long + "delta\n"), baseline: oldFormat)
+        let back = try #require(revert.update(v1))
+        #expect(back.marks.isEmpty)
         // Removed before it was read: the preview is the start that was read, marked
         // as cut, never the unread edit.
         let removed = try #require(session.update(doc("Intro.\n")))

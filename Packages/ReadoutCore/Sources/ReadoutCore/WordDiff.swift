@@ -36,6 +36,8 @@ public enum WordDiff {
             }
         }
         if !prefix.isEmpty { append(.equal(prefix)) }
+        // One work budget for the whole block, shared by every comparison in it.
+        var budget = maxWork
         if oldMid.utf8.count + newMid.utf8.count > lineFirst {
             // A long middle (edits far apart): lines first, then words inside
             // each changed run of lines that is not too long.
@@ -43,14 +45,14 @@ public enum WordDiff {
             var del = "", ins = ""
             func flushRun() {
                 if del.utf8.count + ins.utf8.count <= lineFirst {
-                    for seg in wordSegments(del, ins) { append(seg) }
+                    for seg in wordSegments(del, ins, budget: &budget) { append(seg) }
                 } else {
                     if !del.isEmpty { append(.deleted(del)) }
                     if !ins.isEmpty { append(.inserted(ins)) }
                 }
                 del = ""; ins = ""
             }
-            for op in align(a, b) {
+            for op in align(a, b, budget: &budget) {
                 switch op {
                 case let .deleted(t): del += t
                 case let .inserted(t): ins += t
@@ -59,7 +61,7 @@ public enum WordDiff {
             }
             flushRun()
         } else {
-            for seg in wordSegments(oldMid, newMid) { append(seg) }
+            for seg in wordSegments(oldMid, newMid, budget: &budget) { append(seg) }
         }
         if !suffix.isEmpty { append(.equal(suffix)) }
         return cleanup(out)
@@ -68,10 +70,10 @@ public enum WordDiff {
     /// Middles longer than this (bytes) are compared line by line first.
     static let lineFirst = 4000
 
-    static func wordSegments(_ old: String, _ new: String) -> [Segment] {
+    static func wordSegments(_ old: String, _ new: String, budget: inout Int) -> [Segment] {
         var a = tokens(old), b = tokens(new)
         if a.count > maxTokens || b.count > maxTokens { a = lines(old); b = lines(new) }
-        return align(a, b)
+        return align(a, b, budget: &budget)
     }
 
     /// Myers (the standard library's CollectionDifference) over token ids:
@@ -81,11 +83,21 @@ public enum WordDiff {
     /// reads no better compared token by token, and the window must not stall.
     static let maxWork = 8_000_000
 
-    static func align(_ a: [Substring], _ b: [Substring]) -> [Segment] {
+    /// `budget` is what is left of the block's work allowance; each comparison
+    /// spends what it used (differences × length), or its whole allowance when it gives up.
+    static func align(_ a: [Substring], _ b: [Substring], budget: inout Int) -> [Segment] {
         var ids: [Substring: Int] = [:]
         let ia = a.map { t in ids[t] ?? { ids[t] = ids.count; return ids.count - 1 }() }
         let ib = b.map { t in ids[t] ?? { ids[t] = ids.count; return ids.count - 1 }() }
-        guard !ia.isEmpty, !ib.isEmpty, let script = myers(ia, ib, maxD: min(1000, maxWork / max(1, ia.count + ib.count))) else {
+        let size = max(1, ia.count + ib.count)
+        let maxD = min(1000, max(0, budget) / size)
+        let script = ia.isEmpty || ib.isEmpty ? nil : myers(ia, ib, maxD: maxD)
+        if let (removed, added) = script {
+            budget -= (removed.lazy.filter { $0 }.count + added.lazy.filter { $0 }.count + 1) * size
+        } else if !ia.isEmpty && !ib.isEmpty {
+            budget -= (maxD + 1) * size
+        }
+        guard let script else {
             var out: [Segment] = []
             if !a.isEmpty { out.append(.deleted(a.joined())) }
             if !b.isEmpty { out.append(.inserted(b.joined())) }

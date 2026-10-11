@@ -72,8 +72,9 @@ public final class DocumentSession {
     public private(set) var baseline: [BlockKey] = []
     /// For each block marked modified: its text when last read (nil: not kept), and the comparison.
     private var readText: [Int: String?] = [:]
-    /// The start of the text as read, when an older baseline kept only that.
-    private var readPrefix: [Int: String] = [:]
+    /// What is known of the read block when an older baseline kept only the
+    /// start of its text: that start and the block's fingerprint.
+    private var readKey: [Int: BlockKey] = [:]
     /// Task states of those blocks when last read (known after a live update, not after a relaunch).
     private var readTasks: [Int: [Bool]] = [:]
     private var diffs: [Int: String] = [:]
@@ -89,7 +90,7 @@ public final class DocumentSession {
         blocks = doc.blocks
         title = doc.title
         for i in blocks.indices { blocks[i].slot = allocSlot() }
-        marks = [:]; deletions = []; readText = [:]; readPrefix = [:]; readTasks = [:]; diffs = [:]
+        marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]
         let keys = blocks.map(BlockKey.init)
         if let persisted, persisted != keys {
             let d = Differ.diff(old: persisted, new: keys)
@@ -128,7 +129,7 @@ public final class DocumentSession {
         if d.rewrite {
             for i in newBlocks.indices { newBlocks[i].slot = allocSlot() }
             blocks = newBlocks
-            marks = [:]; deletions = []; readText = [:]; readPrefix = [:]; readTasks = [:]; diffs = [:]
+            marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]
             baseline = newKeys
             return fullPayload(rewrite: true)
         }
@@ -186,16 +187,18 @@ public final class DocumentSession {
                     // Compared with the text as last read: the first change since then keeps it.
                     if marks[slot] != .modified {
                         readText[slot] = oldTexts[o]
-                        if oldTexts[o] == nil { readPrefix[slot] = oldKeys[o].text }
+                        if oldTexts[o] == nil { readKey[slot] = oldKeys[o] }
                         // Unless a checkbox change since reading already recorded them.
                         if readTasks[slot] == nil, !oldBlocks.isEmpty { readTasks[slot] = oldBlocks[o].taskState }
                     }
-                    if let read = readText[slot] ?? nil, read == blocks[n].text {
+                    let reverted = (readText[slot] ?? nil).map { $0 == blocks[n].text }
+                        ?? (readKey[slot].map { $0.fingerprint == blocks[n].fingerprint } ?? false)
+                    if reverted {
                         // Changed back to the text that was read: no comparison to show,
                         // but a checkbox that differs from what was read is still news.
                         let readState = readTasks[slot] ?? (oldBlocks.isEmpty ? nil : oldBlocks[o].taskState)
                         marks[slot] = readState.map { $0 != blocks[n].taskState } == true ? .state : nil
-                        readText[slot] = nil; readPrefix[slot] = nil; readTasks[slot] = nil; diffs[slot] = nil
+                        readText[slot] = nil; readKey[slot] = nil; readTasks[slot] = nil; diffs[slot] = nil
                     } else if let read = readText[slot] ?? nil {
                         marks[slot] = .modified
                         diffs[slot] = WordDiff.html(old: read, new: blocks[n].text)
@@ -239,7 +242,7 @@ public final class DocumentSession {
             let lastRead: String? = oldSlotForIndex(o).flatMap { slot -> String? in
                 guard marks[slot] == .modified else { return nil }
                 if let text = readText[slot] ?? nil { return text }
-                return readPrefix[slot].map { $0 + " …" }
+                return readKey[slot].map { $0.text + " …" }
             }
             if let s = oldSlotForIndex(o) { marks[s] = nil }
             let after = anchorBefore(o)
@@ -278,7 +281,7 @@ public final class DocumentSession {
         deletions = reanchored
         marks = marks.filter { newSlots.contains($0.key) }
         readText = readText.filter { marks[$0.key] == .modified }
-        readPrefix = readPrefix.filter { marks[$0.key] == .modified }
+        readKey = readKey.filter { marks[$0.key] == .modified }
         readTasks = readTasks.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
         diffs = diffs.filter { marks[$0.key] == .modified }
     }
@@ -286,14 +289,14 @@ public final class DocumentSession {
     // MARK: Reading
 
     public func markRead(slots: [Int], deletionIDs: [Int]) {
-        for s in slots { marks[s] = nil; readText[s] = nil; readPrefix[s] = nil; readTasks[s] = nil; diffs[s] = nil }
+        for s in slots { marks[s] = nil; readText[s] = nil; readKey[s] = nil; readTasks[s] = nil; diffs[s] = nil }
         let ids = Set(deletionIDs)
         deletions.removeAll { ids.contains($0.id) }
         if marks.isEmpty && deletions.isEmpty { baseline = blocks.map(BlockKey.init) }
     }
 
     public func markAllRead() {
-        marks = [:]; deletions = []; readText = [:]; readPrefix = [:]; readTasks = [:]; diffs = [:]
+        marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]
         baseline = blocks.map(BlockKey.init)
     }
 
