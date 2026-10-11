@@ -79,6 +79,33 @@ jobs:
           path: web/test/out/corpus
           retention-days: 14
 
+  corpus:
+    name: Rendering baselines (WebKit)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build web renderer
+        working-directory: web
+        run: npm ci && npm run build
+      - name: Install WebKit
+        working-directory: web
+        run: npx playwright install --with-deps webkit
+      - name: Corpus snapshots and screenshots
+        working-directory: web
+        run: npm run corpus
+      - name: Upload actual renderings, diffs and full pages
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: corpus-actual
+          path: web/test/out/corpus
+          retention-days: 14
+
   verify:
     name: Verify signed product
     needs: [core, webkit]

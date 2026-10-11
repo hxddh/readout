@@ -31,39 +31,13 @@ enum UpdateChecker {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
 
-    /// Compares dotted version strings numerically ("1.0.0" < "1.0.10").
-    static func isNewer(_ tag: String, than current: String) -> Bool {
-        func parts(_ s: String) -> [Int] {
-            s.trimmingCharacters(in: .whitespaces)
-                .trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
-                .split(separator: ".")
-                .map { Int($0.split(separator: "-").first ?? $0) ?? 0 }
-        }
-        let a = parts(tag), b = parts(current)
-        for i in 0..<max(a.count, b.count) {
-            let x = i < a.count ? a[i] : 0, y = i < b.count ? b[i] : 0
-            if x != y { return x > y }
-        }
-        return false
-    }
-
-    /// Whether a check result may show a modal alert — UpdatePolicy.shouldAlert.
-    /// Only interactive (user-invoked) checks pop up; background checks surface
-    /// through the application menu instead, never stealing focus.
-    static func shouldAlert(interactive: Bool, hasUpdate: Bool) -> Bool {
-        UpdatePolicy.shouldAlert(interactive: interactive, hasUpdate: hasUpdate)
-    }
-
-    /// Strips Markdown formatting for alert text — UpdatePolicy.plainNotes.
-    static func plainNotes(_ markdown: String, limit: Int = 600) -> String {
-        UpdatePolicy.plainNotes(markdown, limit: limit)
-    }
-
     /// Called on the main thread when a background check finds an update.
     /// The host installs this to add an application-menu item; default nil.
     static var onBackgroundUpdate: ((String, URL) -> Void)?
 
-    /// Runs one check. When `interactive` is false, stays silent unless an update is found.
+    /// Runs one check. A user-invoked (interactive) check always answers with an
+    /// alert; a background check never alerts and reports an update only
+    /// through `onBackgroundUpdate` (the application menu).
     static func check(interactive: Bool) {
         var request = URLRequest(url: latestURL, timeoutInterval: 20)
         request.setValue("Readout/\(currentVersion)", forHTTPHeaderField: "User-Agent")
@@ -87,11 +61,11 @@ enum UpdateChecker {
                     return
                 }
                 AppSettings.shared.lastUpdateCheck = Date()
-                if isNewer(release.tag, than: currentVersion) {
+                if ReleaseCheck.isNewer(release.tag, than: currentVersion) {
                     let updateURL = release.htmlURL ?? releasesURL
                     if interactive {
                         alert(titleKey: "A New Version Is Available",
-                              body: "\(release.name ?? release.tag)\n\n\(plainNotes(release.body ?? ""))",
+                              body: "\(release.name ?? release.tag)\n\n\(ReleaseCheck.plainNotes(release.body ?? ""))",
                               updateURL: updateURL)
                     } else {
                         onBackgroundUpdate?(release.name ?? release.tag, updateURL)
