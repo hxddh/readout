@@ -53,7 +53,10 @@ edit.marks = edit.ops.map(o => ({ slot: o.slot, kind: 'modified' }));
 const browser = await webkit.launch();
 const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
 const errors = [];
-page.on('pageerror', e => errors.push(String(e)));
+// WebKit reports a ResizeObserver loop when observed blocks change size again
+// while it delivers (here: content-visibility blocks laid out by the forced
+// layout this test adds after each apply). It is a notice, not a failure.
+page.on('pageerror', e => { if (!/ResizeObserver loop/.test(String(e))) errors.push(String(e)); });
 await page.addInitScript(() => {
   window.__msgs = [];
   window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
