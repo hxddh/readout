@@ -85,16 +85,25 @@ export function init() {
       langs: [],
       engine: createJavaScriptRegexEngine({ forgiving: true }),
     });
-    await Promise.all(PRELOAD.map(ensureLang));
+    for (const id of PRELOAD) await ensureLang(id);
   })();
   return ready;
 }
+
+// Grammars are registered one at a time, in request order. Several modules
+// carry their own copies of embedded grammars (markdown embeds shell, for
+// one), so concurrent loads registered them in whatever order the imports
+// resolved and the same block could highlight differently between loads.
+let registry = Promise.resolve();
 
 export function ensureLang(id) {
   if (!highlighter) return init().then(() => ensureLang(id));
   if (highlighter.getLoadedLanguages().includes(id)) return Promise.resolve();
   if (!loading.has(id)) {
-    loading.set(id, LANGS[id]().then(m => highlighter.loadLanguage(m.default)).catch(() => {}));
+    const load = LANGS[id]();   // fetch in parallel, register in order
+    const done = registry.then(() => load).then(m => highlighter.loadLanguage(m.default)).catch(() => {});
+    registry = done;
+    loading.set(id, done);
   }
   return loading.get(id);
 }
