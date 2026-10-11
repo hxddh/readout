@@ -140,17 +140,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             w.titleVisibility = .hidden
             w.isMovableByWindowBackground = true
             w.isReleasedWhenClosed = false
-            w.setContentSize(NSSize(width: 460, height: WelcomeView.height(forRecentCount: 0)))
+            w.setContentSize(NSSize(width: 460, height: WelcomeView.height))
             w.center()
             welcome = w
-        }
-        // Recents change between visits: resize to the adaptive height every time.
-        if let w = welcome {
-            let count = NSDocumentController.shared.recentDocumentURLs.filter {
-                WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
-                    && FileManager.default.fileExists(atPath: $0.path)
-            }.prefix(5).count
-            w.setContentSize(NSSize(width: 460, height: WelcomeView.height(forRecentCount: count)))
         }
         welcome?.makeKeyAndOrderFront(nil)
         NSApp.activate()
@@ -226,6 +218,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 // MARK: - Welcome
 
 struct WelcomeView: View {
+    /// Fixed size: open, open latest and drop a file. Recent files live in File ▸ Open Recent.
+    static let height: CGFloat = 400
+
     let onOpen: () -> Void
     let onOpenLatest: () -> Void
     let onOpenURL: (URL) -> Void
@@ -286,53 +281,9 @@ struct WelcomeView: View {
             .controlSize(.large)
             .padding(.top, 20)
 
-            if !recentURLs.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(NSLocalizedString("Recent", comment: "Welcome section"))
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 32)
-                    ForEach(recentURLs, id: \.self) { url in
-                        Button {
-                            onOpenURL(url)
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                                    .resizable()
-                                    .frame(width: 16, height: 16)
-                                Text(url.lastPathComponent)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                Spacer(minLength: 4)
-                                Text(url.deletingLastPathComponent().lastPathComponent)
-                                    .foregroundStyle(.tertiary)
-                                    .lineLimit(1)
-                            }
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 3)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .help(url.path)
-                    }
-                }
-                .padding(.top, 14)
-            }
             Spacer(minLength: 24)
         }
-        .frame(width: 460, height: Self.height(forRecentCount: recentURLs.count))
+        .frame(width: 460, height: Self.height)
     }
 
-    /// Window height follows the recent count instead of jumping between two
-    /// fixed sizes: the base layout plus one row per recent (capped at 5).
-    static func height(forRecentCount count: Int) -> CGFloat {
-        CGFloat(WelcomeHeight.height(forRecentCount: count))
-    }
-
-    private var recentURLs: [URL] {
-        Array(NSDocumentController.shared.recentDocumentURLs.filter {
-            WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
-                && FileManager.default.fileExists(atPath: $0.path)
-        }.prefix(5))
-    }
 }
