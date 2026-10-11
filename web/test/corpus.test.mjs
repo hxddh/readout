@@ -5,9 +5,10 @@
 // renderer (code highlighting, KaTeX, Mermaid) settled. Two baselines per
 // document and theme:
 //
-//   snapshots/<doc>-<theme>.json  the whole document: every block's position,
-//                                 height and a fingerprint of the computed
-//                                 styles and sizes of everything inside it.
+//   snapshots/<doc>-<theme>.json  the whole document: every block's slot,
+//                                 position, height, a hash of its text, and a
+//                                 fingerprint of the computed styles and sizes
+//                                 of everything inside it.
 //                                 Small, exact and diffable in review.
 //   screenshots/<doc>-<theme>.png pixels of the first 1200 px, compared
 //                                 with a small anti-aliasing tolerance.
@@ -68,6 +69,17 @@ async function render(patch, dark) {
   page.on('pageerror', e => errors.push(String(e)));
   await page.addInitScript(dbg => {
     window.__debugParts = dbg;
+    // Deterministic highlighting on a busy CI machine (see highlight.js).
+    window.READOUT_TOKENIZE_LIMIT = 60000;
+    // Mermaid draws some straight lines as curves with random control points
+    // (same pixels, different markup): a seeded generator makes it repeatable.
+    let seed = 0x2545f491;
+    Math.random = () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
   }, process.env.CORPUS_DEBUG === '1');
@@ -76,8 +88,11 @@ async function render(patch, dark) {
   await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), dark);
   await page.evaluate(p => window.readout.apply(p), patch);
   // Large documents use content-visibility, so blocks never scrolled into
-  // view keep estimated heights. Render everything for a deterministic page.
-  await page.evaluate(() => document.getElementById('ro-doc').classList.remove('cv'));
+  // view keep estimated heights. Lay every block out, with the containment
+  // the app gives each one on screen (margins stay inside a block), for a
+  // page that is the same on every run. (Removing the class instead left
+  // some blocks contained and others not, depending on timing.)
+  await page.addStyleTag({ content: '#ro-doc.cv > .blk { content-visibility: visible !important; contain: layout style paint; }' });
   // Walk the page so every lazy renderer fires, then wait until none is pending.
   const walk = async () => {
     const height = await page.evaluate(() => document.scrollingElement.scrollHeight);
@@ -101,8 +116,10 @@ async function render(patch, dark) {
   await page.waitForTimeout(200);
 
   const snapshot = await page.evaluate(() => {
+    // Paint matters too: content can be laid out yet invisible.
     const STYLE = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'color', 'backgroundColor',
-      'borderTopWidth', 'borderTopColor', 'borderLeftWidth', 'borderLeftColor', 'textDecorationLine', 'textAlign', 'display'];
+      'borderTopWidth', 'borderTopColor', 'borderLeftWidth', 'borderLeftColor', 'textDecorationLine', 'textAlign', 'display',
+      'visibility', 'opacity', 'clipPath', 'transform', 'filter', 'mixBlendMode'];
     const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); };
     const describe = el => {
       const cs = getComputedStyle(el);
@@ -112,13 +129,26 @@ async function render(patch, dark) {
     const top0 = document.getElementById('ro-doc').getBoundingClientRect().top + window.scrollY;
     const blocks = [...document.querySelectorAll('#ro-doc > .blk, #ro-doc > .del-mark')].map(b => {
       const parts = [describe(b)];
-      // Mermaid SVG internals carry generated ids; the SVG's box is enough.
       for (const el of b.querySelectorAll('*')) if (!el.closest('svg') || el.tagName === 'svg') parts.push(describe(el));
+      // Diagrams: the whole SVG markup, with Mermaid's generated ids numbered
+      // in order of appearance and coordinates to 0.1 px, so the nodes, edges
+      // and fills of every diagram are compared, not just its box.
+      for (const svg of b.querySelectorAll('svg')) {
+        const ids = new Map();
+        for (const el of svg.querySelectorAll('[id]')) if (!ids.has(el.id)) ids.set(el.id, `id${ids.size}`);
+        if (svg.id && !ids.has(svg.id)) ids.set(svg.id, `id${ids.size}`);
+        let markup = svg.outerHTML;
+        // Longest first, so an id that prefixes another is not replaced inside it.
+        for (const [id, n] of [...ids].sort((a, b) => b[0].length - a[0].length)) markup = markup.split(id).join(n);
+        parts.push(markup.replace(/-?\d+\.\d+/g, x => (Math.round(parseFloat(x) * 10) / 10).toString()));
+      }
       const r = b.getBoundingClientRect();
       return {
         slot: +b.dataset.slot || 0, kind: (b.className.match(/k-(\w+)/) || [, 'del'])[1],
         top: Math.round(r.top + window.scrollY - top0), h: Math.round(r.height),
-        style: fnv(parts.join('\n') + `|text:${b.textContent.length}`), ...(window.__debugParts ? { parts } : {}),
+        style: fnv(parts.join('\n')),
+        content: fnv(b.textContent),
+        ...(window.__debugParts ? { parts } : {}),
         text: b.textContent.replace(/\s+/g, ' ').trim().slice(0, 48),
       };
     });
@@ -154,6 +184,8 @@ function compareSnapshot(name, got) {
     if (a.h !== b.h) what.push(`height ${a.h} -> ${b.h}`);
     if (a.style !== b.style) what.push('styles/inner layout');
     if (a.kind !== b.kind) what.push(`kind ${a.kind} -> ${b.kind}`);
+    if (a.slot !== b.slot) what.push(`slot ${a.slot} -> ${b.slot}`);
+    if (a.content !== b.content) what.push(`text "${a.text}" -> "${b.text}"`);
     // A moved block whose own height and styles are unchanged only follows an earlier change.
     if (!what.length && a.top !== b.top && changes.length === 0) what.push(`top ${a.top} -> ${b.top}`);
     if (what.length) { shown++; changes.push(`#${i} ${b.kind} "${b.text}": ${what.join(', ')}`); }
@@ -179,6 +211,11 @@ function compareTop(name, png) {
   writeFileSync(`${OUT}/${name}.diff.png`, PNG.sync.write(diff));
   return `top ${TOP}px differs in ${changed} px (${(changed / (got.width * got.height) * 100).toFixed(3)}%)`;
 }
+
+// The browser's first page meets cold caches (fonts, compiled code) and has
+// rendered the first document's code blocks differently from every later
+// run; render one page and throw it away before measuring anything.
+if (docs.length) await render(JSON.parse(readFileSync(`${CORPUS}/patches/${docs[0]}`, 'utf8')), false);
 
 for (const file of docs) {
   const doc = file.replace(/\.json$/, '');
