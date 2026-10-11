@@ -212,7 +212,9 @@ check('scrollToFragment lands on heading, not chrome', noticeTop >= 0 && noticeT
 await page.evaluate(() => window.scrollTo(0, 0));
 {
   const ops = [];
-  for (let i = 1; i <= 120; i++) ops.push({ op: 'insert', slot: i, after: i - 1, html: `<p>body ${i} with enough text to take vertical space in the viewport</p>`, kind: 'paragraph' });
+  // Tall blocks: with the filter hiding 9 of 10 blocks, the survivors must
+  // still fill more than a viewport so a middle block can reach the top.
+  for (let i = 1; i <= 120; i++) ops.push({ op: 'insert', slot: i, after: i - 1, html: `<p style="min-height:170px">body ${i} with enough text to take vertical space in the viewport</p>`, kind: 'paragraph' });
   const marks = [];
   for (let s = 5; s <= 120; s += 10) marks.push({ slot: s, kind: 'inserted' });
   await page.evaluate(p => window.readout.apply(p), { version: 20, reset: true, rewrite: false, ops, marks, deletions: [], toc: [], tasks: { done: 0, total: 0 } });
@@ -221,7 +223,7 @@ await page.evaluate(() => window.readout.setChangesOnly(true));
 // Put slot 65 at the top of the viewport; hidden blocks above must not confuse capture.
 await page.evaluate(() => {
   const el = document.querySelector('.blk[data-slot="65"]');
-  window.scrollBy(0, el.getBoundingClientRect().top - 30);
+  window.scrollBy(0, el.getBoundingClientRect().top);
 });
 const captured = await page.evaluate(() => window.readout.captureAnchor());
 check('changes-only capture sees slot 65', captured && captured.slot === 65, JSON.stringify(captured));
@@ -235,22 +237,40 @@ await page.evaluate(() => window.readout.apply({
 const top65After = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
 check('slot 65 does not jump after patch above', Math.abs(top65After - top65Before) < 2, `shift=${top65After - top65Before}`);
 
-// 9. Anchor block hidden by the filter: fall back to the nearest visible block.
-// Slot 41 is read (no mark); the nearest visible block before it is 35.
-await page.evaluate(() => window.readout.setChangesOnly(false));
-await page.evaluate(() => {
-  const el = document.querySelector('.blk[data-slot="41"]');  // read block, will hide
-  window.scrollBy(0, el.getBoundingClientRect().top);
-});
-await page.evaluate(() => window.readout.setChangesOnly(true));
-const fallback = await page.evaluate(() => window.readout.captureAnchor());
-check('hidden anchor falls back to previous visible block', fallback && fallback.slot === 35, JSON.stringify(fallback));
-
-// 10. Toggling the filter itself keeps position.
+// 9. Anchor block hidden by the filter: restore falls back to the nearest
+// visible block. Slot 65 sits at the viewport top; a patch that drops its
+// mark hides it, so restore must land on 55 (nearest visible before it).
 await page.evaluate(() => window.readout.setChangesOnly(false));
 await page.evaluate(() => {
   const el = document.querySelector('.blk[data-slot="65"]');
-  window.scrollBy(0, el.getBoundingClientRect().top - 30);
+  window.scrollBy(0, el.getBoundingClientRect().top);
+});
+await page.evaluate(() => window.readout.setChangesOnly(true));
+await page.evaluate(() => window.readout.apply({
+  version: 22, reset: false, rewrite: false, ops: [],
+  marks: [{ slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+}));
+const fallback = await page.evaluate(() => ({
+  top55: document.querySelector('.blk[data-slot="55"]').getBoundingClientRect().top,
+  hidden65: document.querySelector('.blk[data-slot="65"]').hidden,
+}));
+// Restore must land on 55 (nearest visible before the hidden anchor 65);
+// captureAnchor itself still reports the first block below the viewport top.
+check('hidden anchor falls back to previous visible block',
+  fallback.hidden65 && Math.abs(fallback.top55) < 2, JSON.stringify(fallback));
+
+// 10. Toggling the filter itself keeps position (the anchor block keeps its
+// mark, so it stays visible under the filter; hiding it is section 9's case).
+// Restore the full mark set: with only two visible blocks left, the document
+// is shorter than the viewport and no scroll position can survive a toggle.
+await page.evaluate(() => window.readout.setChangesOnly(false));
+await page.evaluate((extra) => window.readout.apply({
+  version: 23, reset: false, rewrite: false, ops: [],
+  marks: [...extra, { slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+}), Array.from({ length: 12 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' })));
+await page.evaluate(() => {
+  const el = document.querySelector('.blk[data-slot="65"]');
+  window.scrollBy(0, el.getBoundingClientRect().top);
 });
 const vis65Before = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
 await page.evaluate(() => window.readout.setChangesOnly(true));
@@ -263,17 +283,17 @@ check('filter toggle preserves position', Math.abs(vis65After - vis65Before) < 2
 // a patch that keeps its mark, and hide once a patch drops the mark.
 await page.evaluate(() => window.readout.setChangesOnly(false));
 await page.evaluate(() => window.readout.apply({
-  version: 22, reset: false, rewrite: false, ops: [],
+  version: 24, reset: false, rewrite: false, ops: [],
   marks: [{ slot: 41, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
 }));
 await page.evaluate(() => window.readout.setChangesOnly(true));
 const keptVisible = await page.evaluate(() => {
-  window.readout.apply({ version: 23, reset: false, rewrite: false, ops: [], marks: [{ slot: 41, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  window.readout.apply({ version: 25, reset: false, rewrite: false, ops: [], marks: [{ slot: 41, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   return !document.querySelector('.blk[data-slot="41"]').hidden;
 });
 check('marked block survives a patch that keeps its mark', keptVisible);
 const hiddenNext = await page.evaluate(() => {
-  window.readout.apply({ version: 24, reset: false, rewrite: false, ops: [], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  window.readout.apply({ version: 26, reset: false, rewrite: false, ops: [], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   return document.querySelector('.blk[data-slot="41"]').hidden;
 });
 check('block hides once a later patch drops its mark', hiddenNext);
