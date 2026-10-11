@@ -189,7 +189,9 @@ const idCheck = await page.evaluate(() => {
   const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
   const heads = [...document.querySelectorAll('.k-heading')];
   const para = document.querySelector('.blk[data-slot="506"]');
-  const paraLeft = para ? para.getBoundingClientRect().left : -1;
+  // The text, not the block: a block extends over the side gutters.
+  const paraText = para ? (para.querySelector('p') || para.firstElementChild) : null;
+  const paraLeft = paraText ? paraText.getBoundingClientRect().left : -1;
   return {
     dupes,
     heads: heads.map(h => {
@@ -205,6 +207,27 @@ const idCheck = await page.evaluate(() => {
   };
 });
 check('no duplicate ids with clashing headings', idCheck.dupes.length === 0, JSON.stringify(idCheck.dupes));
+// Large documents use content-visibility, whose containment clips each block:
+// what sits in the gutter (change marks, heading links) must be inside it,
+// and the layout must not change with the mode.
+const contained = await page.evaluate(() => {
+  const doc = document.getElementById('ro-doc');
+  const b = document.querySelector('.blk[data-slot="506"]');
+  const h = document.querySelector('.k-heading');
+  const before = parseFloat(getComputedStyle(b, '::before').left);
+  const link = h.querySelector('.h-link');
+  const linkLeft = link ? link.getBoundingClientRect().left - h.getBoundingClientRect().left : 0;
+  const heights = () => [...doc.querySelectorAll('.blk')].slice(0, 40).map(e => Math.round(e.getBoundingClientRect().height));
+  const withCV = heights();
+  doc.classList.remove('cv');
+  const without = heights();
+  doc.classList.add('cv');
+  return { cv: doc.classList.contains('cv'), before, linkLeft, same: JSON.stringify(withCV) === JSON.stringify(without) };
+});
+check('large document uses content-visibility', contained.cv);
+check('change mark sits inside its block', contained.before >= 0, `left=${contained.before}`);
+check('heading link sits inside its block', contained.linkLeft >= 0, `left=${contained.linkLeft}`);
+check('blocks lay out the same with and without content-visibility', contained.same);
 for (const h of idCheck.heads) {
   check(`heading ${h.id} is static-positioned`, h.position === 'static', `${h.id}: ${h.position}`);
   check(`heading ${h.id} keeps full width`, h.width > 100, `${h.id}: ${h.width}`);
