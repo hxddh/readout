@@ -175,6 +175,12 @@ await page.evaluate(p => window.readout.apply(p), {
     { op: 'insert', slot: 504, after: 503, html: '<h2 id="empty">Empty</h2>', kind: 'heading', anchor: 'empty' },
     { op: 'insert', slot: 505, after: 504, html: '<h2 id="caughtup">Caughtup</h2>', kind: 'heading', anchor: 'caughtup' },
     { op: 'insert', slot: 506, after: 505, html: '<p>body paragraph for alignment reference</p>', kind: 'paragraph' },
+    // Filler so the page scrolls: the fragment test starts at the bottom and
+    // only a real navigation brings the target back to the top (Codex P3).
+    ...Array.from({ length: 30 }, (_, i) => ({
+      op: 'insert', slot: 510 + i, after: 509 + i,
+      html: `<p style="min-height:170px">filler ${i} to make the page scrollable</p>`, kind: 'paragraph',
+    })),
   ],
   marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
 });
@@ -190,7 +196,10 @@ const idCheck = await page.evaluate(() => {
       const inner = h.querySelector('h1,h2,h3,h4,h5,h6') || h;
       const cs = getComputedStyle(inner);
       const r = inner.getBoundingClientRect();
-      return { id: inner.id, position: cs.position, width: r.width, left: r.left };
+      // textAlign/paddingTop: the old #empty rule changed these without
+      // touching position/width/left, so assert them explicitly (Codex P2).
+      return { id: inner.id, position: cs.position, width: r.width, left: r.left,
+               align: cs.textAlign, padTop: cs.paddingTop };
     }),
     paraLeft,
   };
@@ -200,7 +209,14 @@ for (const h of idCheck.heads) {
   check(`heading ${h.id} is static-positioned`, h.position === 'static', `${h.id}: ${h.position}`);
   check(`heading ${h.id} keeps full width`, h.width > 100, `${h.id}: ${h.width}`);
   check(`heading ${h.id} aligns with body text`, Math.abs(h.left - idCheck.paraLeft) <= 2, `${h.id}: ${h.left} vs ${idCheck.paraLeft}`);
+  check(`heading ${h.id} is not center-aligned`, h.align !== 'center', `${h.id}: text-align=${h.align}`);
+  check(`heading ${h.id} has no empty-state padding`, parseFloat(h.padTop) < 20, `${h.id}: padding-top=${h.padTop}`);
 }
+// Start scrolled to the bottom: with the page at scroll 0 the target already
+// sits near the top, so even a broken lookup that scrolls nowhere would pass
+// (Codex P3). From the bottom, only a real navigation lands it at the top.
+await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+await page.waitForTimeout(200);
 await page.evaluate(() => window.readout.scrollToFragment({ fragment: 'notice' }));
 const noticeTop = await page.evaluate(() => {
   const h = [...document.querySelectorAll('.k-heading')].find(e => e.querySelector('h2')?.textContent === 'Notice');
