@@ -223,6 +223,31 @@ const noticeTop = await page.evaluate(() => {
   return h ? h.getBoundingClientRect().top : -999;
 });
 check('scrollToFragment lands on heading, not chrome', noticeTop >= 0 && noticeTop <= 40, `top=${noticeTop}`);
+// In-document links go through the same fragment resolver: same target, and a
+// malformed escape is ignored instead of throwing.
+await page.evaluate(() => {
+  const host = document.querySelector('#ro-doc .blk');
+  for (const href of ['#Notice', '#%E0%A4%A']) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.textContent = href;
+    a.className = 'frag-test';
+    host.appendChild(a);
+  }
+});
+await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+await page.waitForTimeout(200);
+await page.evaluate(() => document.querySelector('a.frag-test[href="#Notice"]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+const linkTop = await page.evaluate(() => {
+  const h = [...document.querySelectorAll('.k-heading')].find(e => e.querySelector('h2')?.textContent === 'Notice');
+  return h ? h.getBoundingClientRect().top : -999;
+});
+check('in-document #link lands on the same heading', linkTop >= -2 && linkTop <= 40, `top=${linkTop}`);
+const beforeBad = await page.evaluate(() => document.scrollingElement.scrollTop);
+await page.evaluate(() => document.querySelector('a.frag-test[href="#%E0%A4%A"]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+const afterBad = await page.evaluate(() => document.scrollingElement.scrollTop);
+check('malformed #link is ignored without moving', afterBad === beforeBad, `${beforeBad} -> ${afterBad}`);
+await page.evaluate(() => document.querySelectorAll('a.frag-test').forEach(a => a.remove()));
 
 // 8. Changes-only anchor stability: hidden blocks must not break capture/restore.
 await page.evaluate(() => window.scrollTo(0, 0));
