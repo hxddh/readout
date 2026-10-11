@@ -255,7 +255,8 @@ struct FenceTracker {
         if lower.hasPrefix("<!--") { return .some("-->") }
         if lower.hasPrefix("<?") { return .some("?>") }
         if lower.hasPrefix("<![cdata[") { return .some("]]>") }
-        if lower.hasPrefix("<!"), lower.dropFirst(2).first?.isLetter == true { return .some(">") }
+        // Kind 4 (declarations): <! and an uppercase ASCII letter, as in the bundled cmark-gfm.
+        if lower.hasPrefix("<!"), let c = trimmed.dropFirst(2).first, c >= "A" && c <= "Z" { return .some(">") }
         let afterBracket = lower.dropFirst()
         let closing = afterBracket.hasPrefix("/")
         let name = String(afterBracket.drop(while: { $0 == "/" }).prefix(while: { $0.isLetter || $0.isNumber || $0 == "-" }))
