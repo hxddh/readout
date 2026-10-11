@@ -427,10 +427,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     private func updateSubtitle() {
         let t = model.tasks
-        window?.subtitle = t.total > 0
-            ? String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
-            : String(format: NSLocalizedString("%d words · %d min read", comment: "Window subtitle when no tasks"), model.words,
-                     model.minutes))
+        if t.total > 0 {
+            window?.subtitle = String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
+        } else {
+            window?.subtitle = String(format: NSLocalizedString("%d words · %d min read", comment: "Window subtitle when no tasks"), model.words,
+                                       model.minutes)
+        }
     }
 
     private func updateChangeItem(_ n: Int) {
