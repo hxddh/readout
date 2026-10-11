@@ -50,9 +50,17 @@ public struct RenderPatch: Codable, Sendable {
 
 /// Per-open-file state: slot identities, unread change marks and the reading baseline.
 public final class DocumentSession {
-    /// How much text one grouped deletion marker carries before it notes the rest.
-    static let groupedPreviewBytes = 200_000
+    /// How much removed text one deletion marker carries before it notes the rest.
+    static let previewBytes = 200_000
     static let previewMore = "\n\n…"
+
+    /// `text` cut to the preview bound on a character boundary, ending with the ellipsis when cut.
+    static func bounded(_ text: String) -> String {
+        guard text.utf8.count > previewBytes else { return text }
+        var end = text.utf8.index(text.utf8.startIndex, offsetBy: previewBytes - previewMore.utf8.count)
+        while String.Index(end, within: text) == nil { end = text.utf8.index(before: end) }
+        return String(text[..<end]) + previewMore
+    }
     public private(set) var blocks: [Block] = []
     public private(set) var version = 0
     public private(set) var title: String?
@@ -64,6 +72,8 @@ public final class DocumentSession {
     public private(set) var baseline: [BlockKey] = []
     /// For each block marked modified: its text when last read (nil: not kept), and the comparison.
     private var readText: [Int: String?] = [:]
+    /// The start of the text as read, when an older baseline kept only that.
+    private var readPrefix: [Int: String] = [:]
     /// Task states of those blocks when last read (known after a live update, not after a relaunch).
     private var readTasks: [Int: [Bool]] = [:]
     private var diffs: [Int: String] = [:]
@@ -79,7 +89,7 @@ public final class DocumentSession {
         blocks = doc.blocks
         title = doc.title
         for i in blocks.indices { blocks[i].slot = allocSlot() }
-        marks = [:]; deletions = []; readText = [:]; readTasks = [:]; diffs = [:]
+        marks = [:]; deletions = []; readText = [:]; readPrefix = [:]; readTasks = [:]; diffs = [:]
         let keys = blocks.map(BlockKey.init)
         if let persisted, persisted != keys {
             let d = Differ.diff(old: persisted, new: keys)
@@ -118,7 +128,7 @@ public final class DocumentSession {
         if d.rewrite {
             for i in newBlocks.indices { newBlocks[i].slot = allocSlot() }
             blocks = newBlocks
-            marks = [:]; deletions = []; readText = [:]; readTasks = [:]; diffs = [:]
+            marks = [:]; deletions = []; readText = [:]; readPrefix = [:]; readTasks = [:]; diffs = [:]
             baseline = newKeys
             return fullPayload(rewrite: true)
         }
@@ -176,6 +186,7 @@ public final class DocumentSession {
                     // Compared with the text as last read: the first change since then keeps it.
                     if marks[slot] != .modified {
                         readText[slot] = oldTexts[o]
+                        if oldTexts[o] == nil { readPrefix[slot] = oldKeys[o].text }
                         // Unless a checkbox change since reading already recorded them.
                         if readTasks[slot] == nil, !oldBlocks.isEmpty { readTasks[slot] = oldBlocks[o].taskState }
                     }
@@ -184,7 +195,7 @@ public final class DocumentSession {
                         // but a checkbox that differs from what was read is still news.
                         let readState = readTasks[slot] ?? (oldBlocks.isEmpty ? nil : oldBlocks[o].taskState)
                         marks[slot] = readState.map { $0 != blocks[n].taskState } == true ? .state : nil
-                        readText[slot] = nil; readTasks[slot] = nil; diffs[slot] = nil
+                        readText[slot] = nil; readPrefix[slot] = nil; readTasks[slot] = nil; diffs[slot] = nil
                     } else if let read = readText[slot] ?? nil {
                         marks[slot] = .modified
                         diffs[slot] = WordDiff.html(old: read, new: blocks[n].text)
@@ -223,15 +234,21 @@ public final class DocumentSession {
                 continue
             }
             // The whole removed text as last read (what is kept of it, for an older baseline).
-            let lastRead = oldSlotForIndex(o).flatMap { marks[$0] == .modified ? readText[$0] : nil } ?? nil
+            // An unread edit is never shown as what was removed: when only the start of
+            // the read text is known (an older baseline), that start is shown, marked as cut.
+            let lastRead: String? = oldSlotForIndex(o).flatMap { slot -> String? in
+                guard marks[slot] == .modified else { return nil }
+                if let text = readText[slot] ?? nil { return text }
+                return readPrefix[slot].map { $0 + " …" }
+            }
             if let s = oldSlotForIndex(o) { marks[s] = nil }
             let after = anchorBefore(o)
-            let preview = lastRead ?? oldTexts[o] ?? oldKeys[o].text
+            let preview = Self.bounded(lastRead ?? oldTexts[o] ?? oldKeys[o].text)
             if var existing = newDeletions[after] {
                 existing.count += 1
                 // Grouped removals keep every block up to a bound; past it the
                 // preview says that more was removed instead of dropping blocks silently.
-                if existing.preview.utf8.count + preview.utf8.count + 2 <= Self.groupedPreviewBytes {
+                if existing.preview.utf8.count + preview.utf8.count + 2 <= Self.previewBytes {
                     existing.preview += "\n\n" + preview
                 } else if !existing.preview.hasSuffix(Self.previewMore) {
                     existing.preview += Self.previewMore
@@ -261,6 +278,7 @@ public final class DocumentSession {
         deletions = reanchored
         marks = marks.filter { newSlots.contains($0.key) }
         readText = readText.filter { marks[$0.key] == .modified }
+        readPrefix = readPrefix.filter { marks[$0.key] == .modified }
         readTasks = readTasks.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
         diffs = diffs.filter { marks[$0.key] == .modified }
     }
@@ -268,14 +286,14 @@ public final class DocumentSession {
     // MARK: Reading
 
     public func markRead(slots: [Int], deletionIDs: [Int]) {
-        for s in slots { marks[s] = nil; readText[s] = nil; readTasks[s] = nil; diffs[s] = nil }
+        for s in slots { marks[s] = nil; readText[s] = nil; readPrefix[s] = nil; readTasks[s] = nil; diffs[s] = nil }
         let ids = Set(deletionIDs)
         deletions.removeAll { ids.contains($0.id) }
         if marks.isEmpty && deletions.isEmpty { baseline = blocks.map(BlockKey.init) }
     }
 
     public func markAllRead() {
-        marks = [:]; deletions = []; readText = [:]; readTasks = [:]; diffs = [:]
+        marks = [:]; deletions = []; readText = [:]; readPrefix = [:]; readTasks = [:]; diffs = [:]
         baseline = blocks.map(BlockKey.init)
     }
 

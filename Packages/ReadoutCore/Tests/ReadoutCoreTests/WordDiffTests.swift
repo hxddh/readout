@@ -187,6 +187,13 @@ import Testing
         let session = DocumentSession()
         let patch = session.load(doc("Intro.\n\n" + long + "delta\n"), baseline: oldFormat)
         #expect(patch.marks.first { $0.kind == .modified }?.diff == "")
+        // Removed before it was read: the preview is the start that was read, marked
+        // as cut, never the unread edit.
+        let removed = try #require(session.update(doc("Intro.\n")))
+        let preview = try #require(removed.deletions.first?.preview)
+        #expect(!preview.contains("delta"))
+        #expect(preview.hasSuffix(" …"))
+        #expect(preview.hasPrefix("alpha beta gamma"))
         // With a current baseline the comparison is there.
         let session2 = DocumentSession()
         let patch2 = session2.load(doc("Intro.\n\n" + long + "delta\n"), baseline: v1.blocks.map(BlockKey.init))
@@ -222,7 +229,7 @@ import Testing
         #expect(p2.deletions.first?.count == 5)
         #expect(preview2.hasSuffix("\n\n…"))
         #expect(preview2.components(separatedBy: "\n\n…").count == 2)
-        #expect(preview2.utf8.count <= DocumentSession.groupedPreviewBytes + 5)
+        #expect(preview2.utf8.count <= DocumentSession.previewBytes + 5)
 
         // A huge block after a small one is not appended past the bound either.
         let s3 = DocumentSession()
@@ -230,6 +237,14 @@ import Testing
         _ = s3.load(doc(kept + "\n\nSmall removed.\n\n" + huge + "\n\nEnd.\n"))
         let p3 = try #require(s3.update(doc(kept + "\n\nEnd.\n")))
         #expect(p3.deletions.first?.preview == "Small removed.\n\n…")
+
+        // A huge first block is cut to the bound too, whatever follows it.
+        let s4 = DocumentSession()
+        _ = s4.load(doc(kept + "\n\n" + huge + "\n\nSmall removed.\n\nEnd.\n"))
+        let p4 = try #require(s4.update(doc(kept + "\n\nEnd.\n")))
+        let preview4 = try #require(p4.deletions.first?.preview)
+        #expect(preview4.utf8.count <= DocumentSession.previewBytes)
+        #expect(preview4.hasSuffix("\n\n…"))
     }
 }
 
