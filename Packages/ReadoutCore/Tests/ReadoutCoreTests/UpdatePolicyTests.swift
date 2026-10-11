@@ -33,3 +33,13 @@ import Testing
         #expect(UpdatePolicy.plainNotes("short").hasSuffix("short"))
     }
 }
+
+@Suite struct WelcomeHeightTests {
+    @Test func growsWithRecentsAndCapsAtFive() {
+        #expect(WelcomeHeight.height(forRecentCount: 0) == 400)
+        #expect(WelcomeHeight.height(forRecentCount: 1) == 454)
+        #expect(WelcomeHeight.height(forRecentCount: 3) == 502)
+        #expect(WelcomeHeight.height(forRecentCount: 5) == 550)
+        #expect(WelcomeHeight.height(forRecentCount: 9) == 550)
+    }
+}

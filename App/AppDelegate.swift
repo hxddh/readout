@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Combine
 import UniformTypeIdentifiers
+import ReadoutCore
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
@@ -151,9 +152,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             w.titleVisibility = .hidden
             w.isMovableByWindowBackground = true
             w.isReleasedWhenClosed = false
-            w.setContentSize(NSSize(width: 460, height: 400))
+            w.setContentSize(NSSize(width: 460, height: WelcomeView.height(forRecentCount: 0)))
             w.center()
             welcome = w
+        }
+        // Recents change between visits: resize to the adaptive height every time.
+        if let w = welcome {
+            let count = NSDocumentController.shared.recentDocumentURLs.filter {
+                WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
+                    && FileManager.default.fileExists(atPath: $0.path)
+            }.prefix(5).count
+            w.setContentSize(NSSize(width: 460, height: WelcomeView.height(forRecentCount: count)))
         }
         welcome?.makeKeyAndOrderFront(nil)
         NSApp.activate()
@@ -289,10 +298,7 @@ struct WelcomeView: View {
             .controlSize(.large)
             .padding(.top, 20)
 
-            let recents = NSDocumentController.shared.recentDocumentURLs.filter {
-                WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
-                    && FileManager.default.fileExists(atPath: $0.path)
-            }.prefix(5)
+            let recents = recentURLs
             if !recents.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(NSLocalizedString("Recent", comment: "Welcome section"))
@@ -327,13 +333,19 @@ struct WelcomeView: View {
             }
             Spacer(minLength: 24)
         }
-        .frame(width: 460, height: hasRecents ? 520 : 400)
+        .frame(width: 460, height: Self.height(forRecentCount: recents.count))
     }
 
-    private var hasRecents: Bool {
-        NSDocumentController.shared.recentDocumentURLs.contains {
+    /// Window height follows the recent count instead of jumping between two
+    /// fixed sizes: the base layout plus one row per recent (capped at 5).
+    static func height(forRecentCount count: Int) -> CGFloat {
+        CGFloat(WelcomeHeight.height(forRecentCount: count))
+    }
+
+    private var recentURLs: [URL] {
+        Array(NSDocumentController.shared.recentDocumentURLs.filter {
             WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
                 && FileManager.default.fileExists(atPath: $0.path)
-        }
+        }.prefix(5))
     }
 }
