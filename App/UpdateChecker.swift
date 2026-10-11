@@ -1,4 +1,5 @@
 import AppKit
+import ReadoutCore
 
 /// Lightweight update checker backed by GitHub Releases.
 ///
@@ -46,6 +47,22 @@ enum UpdateChecker {
         return false
     }
 
+    /// Whether a check result may show a modal alert — UpdatePolicy.shouldAlert.
+    /// Only interactive (user-invoked) checks pop up; background checks surface
+    /// through the application menu instead, never stealing focus.
+    static func shouldAlert(interactive: Bool, hasUpdate: Bool) -> Bool {
+        UpdatePolicy.shouldAlert(interactive: interactive, hasUpdate: hasUpdate)
+    }
+
+    /// Strips Markdown formatting for alert text — UpdatePolicy.plainNotes.
+    static func plainNotes(_ markdown: String, limit: Int = 600) -> String {
+        UpdatePolicy.plainNotes(markdown, limit: limit)
+    }
+
+    /// Called on the main thread when a background check finds an update.
+    /// The host installs this to add an application-menu item; default nil.
+    static var onBackgroundUpdate: ((String, URL) -> Void)?
+
     /// Runs one check. When `interactive` is false, stays silent unless an update is found.
     static func check(interactive: Bool) {
         var request = URLRequest(url: latestURL, timeoutInterval: 20)
@@ -71,9 +88,14 @@ enum UpdateChecker {
                 }
                 AppSettings.shared.lastUpdateCheck = Date()
                 if isNewer(release.tag, than: currentVersion) {
-                    alert(titleKey: "A New Version Is Available",
-                          body: "\(release.name ?? release.tag)\n\n\((release.body ?? "").prefix(1200))",
-                          updateURL: release.htmlURL ?? releasesURL)
+                    let updateURL = release.htmlURL ?? releasesURL
+                    if interactive {
+                        alert(titleKey: "A New Version Is Available",
+                              body: "\(release.name ?? release.tag)\n\n\(plainNotes(release.body ?? ""))",
+                              updateURL: updateURL)
+                    } else {
+                        onBackgroundUpdate?(release.name ?? release.tag, updateURL)
+                    }
                 } else if interactive {
                     alert(titleKey: "You're Up to Date",
                           body: String(format: NSLocalizedString("Readout %@ is the latest version.", comment: "Update alert body"), currentVersion),
@@ -100,7 +122,7 @@ enum UpdateChecker {
         alert.messageText = NSLocalizedString(titleKey, comment: "Update alert title")
         alert.informativeText = body
         if let updateURL {
-            alert.addButton(withTitle: NSLocalizedString("Download Update", comment: "Button"))
+            alert.addButton(withTitle: NSLocalizedString("View Full Release Notes", comment: "Button"))
             alert.addButton(withTitle: NSLocalizedString("Later", comment: "Button"))
             NSApp.activate()
             if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(updateURL) }

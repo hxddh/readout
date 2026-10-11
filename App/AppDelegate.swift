@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func applicationDidFinishLaunching(_ notification: Notification) {
         WebViewPool.shared.prewarm()
         BaselineStore.prune()
+        UpdateChecker.onBackgroundUpdate = { [weak self] name, url in self?.showUpdateMenuItem(name: name, url: url) }
         UpdateChecker.scheduleAutomaticCheck()
 
         let settings = AppSettings.shared
@@ -166,6 +167,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     @objc func actualSizeText(_ sender: Any?) { AppSettings.shared.fontSize = 16 }
 
     @objc func checkForUpdates(_ sender: Any?) { UpdateChecker.check(interactive: true) }
+
+    /// Background check found an update: surface it as an application-menu
+    /// item that opens the release page. Never pops up, never activates —
+    /// the reader keeps reading undisturbed.
+    private var pendingUpdateURL: URL?
+    private func showUpdateMenuItem(name: String, url: URL) {
+        pendingUpdateURL = url
+        guard let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu,
+              appMenu.item(withTag: 901) == nil else { return }
+        let title = String(format: NSLocalizedString("%@ Is Available…", comment: "Menu: background update found; %@ is like 'Readout 3.0.2'"), name)
+        let item = NSMenuItem(title: title, action: #selector(openPendingUpdate(_:)), keyEquivalent: "")
+        item.tag = 901
+        // Insert right after "Check for Updates…" (index 1), before the separator.
+        appMenu.insertItem(item, at: min(2, appMenu.numberOfItems))
+    }
+
+    @objc private func openPendingUpdate(_ sender: Any?) {
+        if let url = pendingUpdateURL { NSWorkspace.shared.open(url) }
+    }
 
     // MARK: Command line tool
 
