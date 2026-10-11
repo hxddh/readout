@@ -90,7 +90,7 @@ over its guard; metrics with `"guard": null` are printed but not gated.
 
 | Where | Measured by | Metrics |
 | --- | --- | --- |
-| mac (Verify signed product) | `PerformanceBudgetTests` in a release build, written to the file named by `READOUT_PERF_OUT`; `tools/smoke-run.py` timings from the signed app | update_100kb, update_1mb; cold_start_ms, warm_open_ms, write_to_update_ms |
+| mac (Verify signed product) | `PerformanceBudgetTests` in a release build, written to the file named by `READOUT_PERF_OUT`; `tools/smoke-run.py` timings from the signed app | update_100kb, update_1mb, word_diff_100kb (the word-level comparison of 20 edited blocks); cold_start_ms, warm_open_ms, write_to_update_ms |
 | linux-webkit (Web tests) | `node web/test/perf.test.mjs` → `web/test/out/perf-web.json` | web_first_apply_1mb_ms, web_update_20_blocks_1mb_ms (each including the layout it causes), scroll frame pacing (reported) |
 
 Run locally:
