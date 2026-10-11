@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 97,
-   "style": "3411e277",
+   "style": "0b9993d6",
    "content": "b994d45d",
    "text": "DataAgent TDD Test Comprehensive Design v2§"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 137,
    "h": 70,
-   "style": "489faff3",
+   "style": "5a0c2e01",
    "content": "2892f8eb",
    "text": "Date: 2026-04-02 Supersedes: 2026-03-28-tdd-test"
   },
@@ -24,7 +24,7 @@
    "kind": "rule",
    "top": 206,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 225,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "8fec1361",
    "text": "Context§"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 308,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "9ea5465b",
    "text": "The DataAgent project's test suite is in critica"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 351,
    "h": 56,
-   "style": "36dac3e7",
+   "style": "824b3bed",
    "content": "6d59188f",
    "text": "56% of test methods are fake -- 41 of 73 methods"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 407,
    "h": 56,
-   "style": "41e2d92a",
+   "style": "186c5472",
    "content": "c46cd5ec",
    "text": "~120 real tests were deleted from main branch in"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 464,
    "h": 56,
-   "style": "84791016",
+   "style": "6166cb1e",
    "content": "a4f8702d",
    "text": "0/11 dispatchers tested, 0/15 controllers tested"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 520,
    "h": 30,
-   "style": "729f869a",
+   "style": "16d957de",
    "content": "19481697",
    "text": "Only 6 of 16 workflow nodes have any meaningful "
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 550,
    "h": 46,
-   "style": "0d68e111",
+   "style": "f22b428a",
    "content": "4a1fd16c",
    "text": "Estimated real coverage: ~10-15%"
   },
@@ -96,7 +96,7 @@
    "kind": "paragraph",
    "top": 596,
    "h": 70,
-   "style": "44d854c9",
+   "style": "cbef79a7",
    "content": "25216a97",
    "text": "This spec defines a bottom-up, phased approach t"
   },
@@ -105,7 +105,7 @@
    "kind": "paragraph",
    "top": 666,
    "h": 70,
-   "style": "88388d94",
+   "style": "cbd87efe",
    "content": "d8981ac1",
    "text": "Why: Production stability, regression prevention"
   },
@@ -114,7 +114,7 @@
    "kind": "paragraph",
    "top": 735,
    "h": 70,
-   "style": "363f29ae",
+   "style": "0497dbf4",
    "content": "5a844a30",
    "text": "How to apply: Execute phases 0-6 sequentially. E"
   },
@@ -123,7 +123,7 @@
    "kind": "rule",
    "top": 805,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 823,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "6fb14444",
    "text": "Scope§"
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 906,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "573d658b",
    "text": "In Scope§"
   },
@@ -150,7 +150,7 @@
    "kind": "table",
    "top": 966,
    "h": 445,
-   "style": "9cc164b8",
+   "style": "12eea61b",
    "content": "7e851fab",
    "text": "LayerCountCurrent TestsTarget CoverageFake test "
   },
@@ -159,7 +159,7 @@
    "kind": "heading",
    "top": 1410,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "648de399",
    "text": "Out of Scope§"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1470,
    "h": 30,
-   "style": "9ea833be",
+   "style": "c43722ea",
    "content": "73c07bfe",
    "text": "Frontend tests (Vue 3) -- separate spec"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1500,
    "h": 30,
-   "style": "729f869a",
+   "style": "16d957de",
    "content": "37050946",
    "text": "Performance/load testing"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 1530,
    "h": 46,
-   "style": "0d68e111",
+   "style": "f22b428a",
    "content": "7082adb6",
    "text": "Security penetration testing"
   },
@@ -195,7 +195,7 @@
    "kind": "rule",
    "top": 1576,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 1595,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "6495e2e4",
    "text": "Test Directory Structure§"
   },
@@ -213,7 +213,7 @@
    "kind": "code",
    "top": 1677,
    "h": 1679,
-   "style": "8f217098",
+   "style": "82412ad7",
    "content": "0c55a2d0",
    "text": "data-agent-management/src/test/java/com/alibaba/"
   },
@@ -222,7 +222,7 @@
    "kind": "rule",
    "top": 3356,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -231,7 +231,7 @@
    "kind": "heading",
    "top": 3375,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "61594151",
    "text": "Test Infrastructure§"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 3458,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "bde91213",
    "text": "Standard Test Annotations§"
   },
@@ -249,7 +249,7 @@
    "kind": "code",
    "top": 3517,
    "h": 79,
-   "style": "ab6fe3b3",
+   "style": "534460a5",
    "content": "ef33bf1e",
    "text": "@ExtendWith(MockitoExtension.class) @MockitoSett"
   },
@@ -258,7 +258,7 @@
    "kind": "heading",
    "top": 3596,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "f2084792",
    "text": "State Setup Pattern§"
   },
@@ -267,7 +267,7 @@
    "kind": "code",
    "top": 3656,
    "h": 179,
-   "style": "502653d6",
+   "style": "e5344ff7",
    "content": "31f6e86a",
    "text": "private OverAllState createTestState(String... k"
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 3835,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "a6fc249d",
    "text": "Mock Strategy by Layer§"
   },
@@ -285,7 +285,7 @@
    "kind": "table",
    "top": 3894,
    "h": 372,
-   "style": "d4d6753b",
+   "style": "a00d4dbd",
    "content": "927e78f2",
    "text": "LayerMock ApproachToolUtilitiesNo mocks (pure fu"
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 4266,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "9310556a",
    "text": "Shared Test Fixtures (TestFixtures.java)§"
   },
@@ -303,7 +303,7 @@
    "kind": "code",
    "top": 4326,
    "h": 1339,
-   "style": "916699b6",
+   "style": "9e7207a2",
    "content": "de6a724c",
    "text": "public final class TestFixtures { // Schema fixt"
   },
@@ -312,7 +312,7 @@
    "kind": "heading",
    "top": 5665,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "9581eb0b",
    "text": "Dependencies (already in POM)§"
   },
@@ -321,7 +321,7 @@
    "kind": "code",
    "top": 5724,
    "h": 439,
-   "style": "18c68fb9",
+   "style": "a3f62651",
    "content": "1dfb4f1f",
    "text": "<dependency> <groupId>org.mockito</groupId> <art"
   },
@@ -330,7 +330,7 @@
    "kind": "rule",
    "top": 6163,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 6182,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "e65f6a58",
    "text": "Phase 0: Cleanup & Infrastructure§"
   },
@@ -348,7 +348,7 @@
    "kind": "heading",
    "top": 6265,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "481ca923",
    "text": "Goal§"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 6324,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "80a9fdac",
    "content": "14642832",
    "text": "Remove all fake tests, restore deleted real test"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 6368,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "34e1bcda",
    "text": "Files to DELETE (12 files, 41 fake methods)§"
   },
@@ -375,7 +375,7 @@
    "kind": "table",
    "top": 6427,
    "h": 509,
-   "style": "a6a9e3cd",
+   "style": "22b04b98",
    "content": "c84e7bab",
    "text": "FileReasonSqlGenerateNodeErrorTest.javaAll asser"
   },
@@ -384,7 +384,7 @@
    "kind": "heading",
    "top": 6937,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "41b4befe",
    "text": "Files to KEEP (5 files)§"
   },
@@ -393,7 +393,7 @@
    "kind": "table",
    "top": 6996,
    "h": 234,
-   "style": "37d6848d",
+   "style": "8e2805bd",
    "content": "74a37cb0",
    "text": "FileMethodsActionStateUtilSimpleTest.java7Expand"
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 7230,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "3a862479",
    "text": "Files to RESTORE from main (~20 files)§"
   },
@@ -411,7 +411,7 @@
    "kind": "table",
    "top": 7289,
    "h": 771,
-   "style": "42a6b138",
+   "style": "2549de1c",
    "content": "6aaba8af",
    "text": "FileOriginal MethodsAdaptation NeededMySqlContai"
   },
@@ -420,7 +420,7 @@
    "kind": "heading",
    "top": 8060,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "833509fb",
    "text": "New Files in Phase 0§"
   },
@@ -429,7 +429,7 @@
    "kind": "table",
    "top": 8120,
    "h": 89,
-   "style": "57900b57",
+   "style": "7481d3c1",
    "content": "215c8562",
    "text": "FilePurposeTestFixtures.javaShared test data fac"
   },
@@ -438,7 +438,7 @@
    "kind": "heading",
    "top": 8209,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "fd22491b",
    "text": "Verification§"
   },
@@ -447,7 +447,7 @@
    "kind": "code",
    "top": 8268,
    "h": 79,
-   "style": "a1e6e749",
+   "style": "e4dc1143",
    "content": "2f0b3beb",
    "text": "./mvnw test # All tests pass ./mvnw test jacoco:"
   },
@@ -456,7 +456,7 @@
    "kind": "heading",
    "top": 8347,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "c3d3f634",
    "text": "Target: ~25-30% coverage baseline§"
   },
@@ -465,7 +465,7 @@
    "kind": "rule",
    "top": 8407,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -474,7 +474,7 @@
    "kind": "heading",
    "top": 8425,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "4564d9cf",
    "text": "Phase 1: Utilities (Foundation Layer)§"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 8508,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "481ca923",
    "text": "Goal§"
   },
@@ -492,7 +492,7 @@
    "kind": "paragraph",
    "top": 8567,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "39f21877",
    "text": "Test all utility classes that are dependencies o"
   },
@@ -501,7 +501,7 @@
    "kind": "heading",
    "top": 8611,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "73089cbd",
    "text": "1.1 StateUtilTest.java (expand from StateUtilSim"
   },
@@ -510,7 +510,7 @@
    "kind": "paragraph",
    "top": 8671,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "4a168c8a",
    "text": "Constructor: N/A (static utility)"
   },
@@ -519,7 +519,7 @@
    "kind": "paragraph",
    "top": 8714,
    "h": 70,
-   "style": "fcb099e6",
+   "style": "6d73b464",
    "content": "87bfb639",
    "text": "Existing tests (7): getStringValue, hasValue, ge"
   },
@@ -528,7 +528,7 @@
    "kind": "paragraph",
    "top": 8784,
    "h": 44,
-   "style": "a082681c",
+   "style": "45330268",
    "content": "0ccd9e28",
    "text": "New tests to add:"
   },
@@ -537,7 +537,7 @@
    "kind": "code",
    "top": 8827,
    "h": 379,
-   "style": "e95e385d",
+   "style": "864b7b46",
    "content": "1ce961bb",
    "text": "// List operations @Test void getListValue_withV"
   },
@@ -546,7 +546,7 @@
    "kind": "heading",
    "top": 9206,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "88aafb64",
    "text": "1.2 PlanProcessUtilTest.java (NEW)§"
   },
@@ -555,7 +555,7 @@
    "kind": "paragraph",
    "top": 9266,
    "h": 44,
-   "style": "d7651093",
+   "style": "f3290145",
    "content": "9f9a7688",
    "text": "Constructor: N/A (static utility, uses BeanOutpu"
   },
@@ -564,7 +564,7 @@
    "kind": "code",
    "top": 9309,
    "h": 419,
-   "style": "f72a8d7b",
+   "style": "afbc3c33",
    "content": "92882ad9",
    "text": "// Plan parsing @Test void getPlan_withValidJson"
   },
@@ -573,7 +573,7 @@
    "kind": "heading",
    "top": 9728,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "83c393da",
    "text": "1.3 JsonParseUtilTest.java (NEW)§"
   },
@@ -582,7 +582,7 @@
    "kind": "paragraph",
    "top": 9788,
    "h": 44,
-   "style": "09918515",
+   "style": "a8a68687",
    "content": "fff37c41",
    "text": "Constructor: JsonParseUtil(LlmService llmService"
   },
@@ -591,7 +591,7 @@
    "kind": "code",
    "top": 9831,
    "h": 379,
-   "style": "fbb79618",
+   "style": "f0a9eb27",
    "content": "1dd6f275",
    "text": "// Successful parsing @Test void tryConvertToObj"
   },
@@ -600,7 +600,7 @@
    "kind": "heading",
    "top": 10210,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "61f9345a",
    "text": "1.4 SqlUtilTest.java (NEW)§"
   },
@@ -609,7 +609,7 @@
    "kind": "paragraph",
    "top": 10270,
    "h": 44,
-   "style": "bb9db28c",
+   "style": "91d1849e",
    "content": "2229e84c",
    "text": "Constructor: N/A (Lombok @UtilityClass)"
   },
@@ -618,7 +618,7 @@
    "kind": "code",
    "top": 10313,
    "h": 359,
-   "style": "bde434a2",
+   "style": "5a3039dd",
    "content": "74a777aa",
    "text": "// MySQL dialect @Test void buildSelectSql_mysql"
   },
@@ -627,7 +627,7 @@
    "kind": "heading",
    "top": 10672,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "c9ded4e6",
    "text": "1.5 DateTimeUtilTest.java (restore from main + e"
   },
@@ -636,7 +636,7 @@
    "kind": "paragraph",
    "top": 10732,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "4a168c8a",
    "text": "Constructor: N/A (static utility)"
   },
@@ -645,7 +645,7 @@
    "kind": "paragraph",
    "top": 10775,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "cdf523d4",
    "text": "Restore ~15 tests from main. Add:"
   },
@@ -654,7 +654,7 @@
    "kind": "code",
    "top": 10819,
    "h": 519,
-   "style": "3b87718d",
+   "style": "20ba405c",
    "content": "06aa17dd",
    "text": "// Chinese relative date expressions @Test void "
   },
@@ -663,7 +663,7 @@
    "kind": "heading",
    "top": 11338,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "0fe8abf3",
    "text": "1.6 FluxUtilTest.java (NEW)§"
   },
@@ -672,7 +672,7 @@
    "kind": "paragraph",
    "top": 11397,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "4a168c8a",
    "text": "Constructor: N/A (static utility)"
   },
@@ -681,7 +681,7 @@
    "kind": "code",
    "top": 11441,
    "h": 279,
-   "style": "6f321706",
+   "style": "ad1259be",
    "content": "0258d165",
    "text": "// Cascade flux @Test void cascadeFlux_withPreMi"
   },
@@ -690,7 +690,7 @@
    "kind": "heading",
    "top": 11720,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "f32eba45",
    "text": "1.7 Other Utilities (NEW)§"
   },
@@ -699,7 +699,7 @@
    "kind": "paragraph",
    "top": 11779,
    "h": 44,
-   "style": "c3492a03",
+   "style": "8a4343e9",
    "content": "995d6f06",
    "text": "MarkdownParserUtilTest.java (restore from main ~"
   },
@@ -708,7 +708,7 @@
    "kind": "paragraph",
    "top": 11823,
    "h": 44,
-   "style": "6a8d699c",
+   "style": "f46d4388",
    "content": "9fc9af45",
    "text": "MdTableGeneratorUtilTest.java:"
   },
@@ -717,7 +717,7 @@
    "kind": "code",
    "top": 11867,
    "h": 99,
-   "style": "5b2a2d9b",
+   "style": "8932352f",
    "content": "5a2b944e",
    "text": "@Test void generateTable_withData_returnsMarkdow"
   },
@@ -726,7 +726,7 @@
    "kind": "paragraph",
    "top": 11966,
    "h": 44,
-   "style": "f77eb367",
+   "style": "00b1758b",
    "content": "b5a826da",
    "text": "ApiKeyUtilTest.java:"
   },
@@ -735,7 +735,7 @@
    "kind": "code",
    "top": 12009,
    "h": 119,
-   "style": "254ac2c9",
+   "style": "e3cf6ec8",
    "content": "84b27b84",
    "text": "@Test void generateApiKey_returnsValidFormat() @"
   },
@@ -744,7 +744,7 @@
    "kind": "heading",
    "top": 12128,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "457295ed",
    "text": "Phase 1 Target: ~40% overall coverage§"
   },
@@ -753,7 +753,7 @@
    "kind": "rule",
    "top": 12188,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -762,7 +762,7 @@
    "kind": "heading",
    "top": 12206,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "8b08fcb9",
    "text": "Phase 2: Dispatchers (Routing Layer)§"
   },
@@ -771,7 +771,7 @@
    "kind": "heading",
    "top": 12289,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "481ca923",
    "text": "Goal§"
   },
@@ -780,7 +780,7 @@
    "kind": "paragraph",
    "top": 12348,
    "h": 70,
-   "style": "44d854c9",
+   "style": "cbef79a7",
    "content": "ec8bd640",
    "text": "Test all 11 dispatchers. These are pure routing "
   },
@@ -789,7 +789,7 @@
    "kind": "heading",
    "top": 12418,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "cd59a4f2",
    "text": "2.1 FeasibilityAssessmentDispatcherTest.java (NE"
   },
@@ -798,7 +798,7 @@
    "kind": "paragraph",
    "top": 12478,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "8b538ea3",
    "text": "Constructor: none"
   },
@@ -807,7 +807,7 @@
    "kind": "code",
    "top": 12521,
    "h": 119,
-   "style": "ba1ee398",
+   "style": "686631d9",
    "content": "af5e125a",
    "text": "@Test void apply_dataAnalysisOutput_routesToPlan"
   },
@@ -816,7 +816,7 @@
    "kind": "heading",
    "top": 12640,
    "h": 82,
-   "style": "ae73a05a",
+   "style": "fb271202",
    "content": "051402a2",
    "text": "2.2 HumanFeedbackDispatcherTest.java (restore fr"
   },
@@ -825,7 +825,7 @@
    "kind": "paragraph",
    "top": 12723,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "8b538ea3",
    "text": "Constructor: none"
   },
@@ -834,7 +834,7 @@
    "kind": "paragraph",
    "top": 12766,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "c013bbad",
    "text": "Restore 4 tests from main:"
   },
@@ -843,7 +843,7 @@
    "kind": "code",
    "top": 12810,
    "h": 119,
-   "style": "392f9027",
+   "style": "7c45900e",
    "content": "3470d315",
    "text": "@Test void apply_waitForFeedback_routesToEnd() @"
   },
@@ -852,7 +852,7 @@
    "kind": "heading",
    "top": 12929,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "f6d23996",
    "text": "2.3 IntentRecognitionDispatcherTest.java (NEW)§"
   },
@@ -861,7 +861,7 @@
    "kind": "paragraph",
    "top": 12988,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "8b538ea3",
    "text": "Constructor: none"
   },
@@ -870,7 +870,7 @@
    "kind": "code",
    "top": 13032,
    "h": 119,
-   "style": "6ac9b7f6",
+   "style": "68075873",
    "content": "4fc84bbd",
    "text": "@Test void apply_dataQueryIntent_routesToEvidenc"
   },
@@ -879,7 +879,7 @@
    "kind": "heading",
    "top": 13151,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "f920a12a",
    "text": "2.4 PlanExecutorDispatcherTest.java (NEW)§"
   },
@@ -888,7 +888,7 @@
    "kind": "paragraph",
    "top": 13210,
    "h": 44,
-   "style": "3c3a296e",
+   "style": "42a4ea08",
    "content": "c80efa18",
    "text": "Constructor: none (uses constant MAX_REPAIR_ATTE"
   },
@@ -897,7 +897,7 @@
    "kind": "code",
    "top": 13254,
    "h": 139,
-   "style": "da509399",
+   "style": "63509c5c",
    "content": "01601073",
    "text": "@Test void apply_validationPassed_routesToPlanNe"
   },
@@ -906,7 +906,7 @@
    "kind": "heading",
    "top": 13393,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "162a23ae",
    "text": "2.5 PythonExecutorDispatcherTest.java (NEW)§"
   },
@@ -915,7 +915,7 @@
    "kind": "paragraph",
    "top": 13452,
    "h": 70,
-   "style": "d5684210",
+   "style": "e8748666",
    "content": "1be24adc",
    "text": "Constructor: PythonExecutorDispatcher(CodeExecut"
   },
@@ -924,7 +924,7 @@
    "kind": "code",
    "top": 13522,
    "h": 139,
-   "style": "80a11c2d",
+   "style": "68a6ad74",
    "content": "305df8d5",
    "text": "@Test void apply_successTrue_routesToPythonAnaly"
   },
@@ -933,7 +933,7 @@
    "kind": "heading",
    "top": 13661,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "e4d797d8",
    "text": "2.6 QueryEnhanceDispatcherTest.java (NEW)§"
   },
@@ -942,7 +942,7 @@
    "kind": "paragraph",
    "top": 13720,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "8b538ea3",
    "text": "Constructor: none"
   },
@@ -951,7 +951,7 @@
    "kind": "code",
    "top": 13764,
    "h": 119,
-   "style": "59f09720",
+   "style": "a64c7e05",
    "content": "000005fe",
    "text": "@Test void apply_validCanonicalQuery_routesToSch"
   },
@@ -960,7 +960,7 @@
    "kind": "heading",
    "top": 13883,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "231712f2",
    "text": "2.7 SQLExecutorDispatcherTest.java (NEW)§"
   },
@@ -969,7 +969,7 @@
    "kind": "paragraph",
    "top": 13942,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "8b538ea3",
    "text": "Constructor: none"
   },
@@ -978,7 +978,7 @@
    "kind": "code",
    "top": 13986,
    "h": 99,
-   "style": "ba8867bf",
+   "style": "4c933bf3",
    "content": "8ba47b27",
    "text": "@Test void apply_retryReasonPresent_routesToSqlG"
   },
@@ -987,7 +987,7 @@
    "kind": "heading",
    "top": 14085,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "036c323e",
    "text": "2.8 SchemaRecallDispatcherTest.java (NEW)§"
   },
@@ -996,7 +996,7 @@
    "kind": "paragraph",
    "top": 14144,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "8b538ea3",
    "text": "Constructor: none"
   },
@@ -1005,7 +1005,7 @@
    "kind": "code",
    "top": 14188,
    "h": 99,
-   "style": "baadc3d0",
+   "style": "88b01544",
    "content": "fe104839",
    "text": "@Test void apply_tablesExist_routesToTableRelati"
   },
@@ -1014,7 +1014,7 @@
    "kind": "heading",
    "top": 14287,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "7bba664d",
    "text": "2.9 SemanticConsistenceDispatcherTest.java (NEW)"
   },
@@ -1023,7 +1023,7 @@
    "kind": "paragraph",
    "top": 14346,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "8b538ea3",
    "text": "Constructor: none"
   },
@@ -1032,7 +1032,7 @@
    "kind": "code",
    "top": 14390,
    "h": 99,
-   "style": "50bfc165",
+   "style": "0f42fa19",
    "content": "9f0db5f4",
    "text": "@Test void apply_consistencyPassed_routesToSqlEx"
   },
@@ -1041,7 +1041,7 @@
    "kind": "heading",
    "top": 14489,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "5460b85a",
    "text": "2.10 SqlGenerateDispatcherTest.java (NEW)§"
   },
@@ -1050,7 +1050,7 @@
    "kind": "paragraph",
    "top": 14548,
    "h": 44,
-   "style": "2d1c39fb",
+   "style": "2e1a5e11",
    "content": "1f924451",
    "text": "Constructor: SqlGenerateDispatcher(DataAgentProp"
   },
@@ -1059,7 +1059,7 @@
    "kind": "code",
    "top": 14592,
    "h": 139,
-   "style": "0345c8a8",
+   "style": "ff7892e9",
    "content": "841ee4c8",
    "text": "@Test void apply_validSqlOutput_routesToSemantic"
   },
@@ -1068,7 +1068,7 @@
    "kind": "heading",
    "top": 14731,
    "h": 82,
-   "style": "ae73a05a",
+   "style": "fb271202",
    "content": "2b0ede36",
    "text": "2.11 TableRelationDispatcherTest.java (restore f"
   },
@@ -1077,7 +1077,7 @@
    "kind": "paragraph",
    "top": 14813,
    "h": 44,
-   "style": "cab86ed0",
+   "style": "b1ebd6de",
    "content": "747344a3",
    "text": "Constructor: none (uses constant MAX_RETRY_COUNT"
   },
@@ -1086,7 +1086,7 @@
    "kind": "paragraph",
    "top": 14857,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "2538051c",
    "text": "Restore 10 tests from main:"
   },
@@ -1095,7 +1095,7 @@
    "kind": "code",
    "top": 14901,
    "h": 239,
-   "style": "effde1f3",
+   "style": "4c66f623",
    "content": "9255603f",
    "text": "@Test void apply_noError_routesToFeasibilityAsse"
   },
@@ -1104,7 +1104,7 @@
    "kind": "heading",
    "top": 15140,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "4beb9121",
    "text": "Phase 2 Target: ~50% overall coverage§"
   },
@@ -1113,7 +1113,7 @@
    "kind": "rule",
    "top": 15199,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1122,7 +1122,7 @@
    "kind": "heading",
    "top": 15218,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "daf2952a",
    "text": "Phase 3: Workflow Nodes (Business Logic Layer)§"
   },
@@ -1131,7 +1131,7 @@
    "kind": "heading",
    "top": 15300,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "481ca923",
    "text": "Goal§"
   },
@@ -1140,7 +1140,7 @@
    "kind": "paragraph",
    "top": 15360,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "80a9fdac",
    "content": "567dcffd",
    "text": "Add tests for all 16 workflow nodes. Replace all"
   },
@@ -1149,7 +1149,7 @@
    "kind": "heading",
    "top": 15403,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "5aa10930",
    "text": "3a: New Node Tests (7 nodes with zero coverage)§"
   },
@@ -1158,7 +1158,7 @@
    "kind": "heading",
    "top": 15463,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "cb67758e",
    "text": "3a.1 QueryEnhanceNodeTest.java (NEW)§"
   },
@@ -1167,7 +1167,7 @@
    "kind": "paragraph",
    "top": 15510,
    "h": 70,
-   "style": "3ae5bb19",
+   "style": "89f8490b",
    "content": "388356a4",
    "text": "Constructor: QueryEnhanceNode(LlmService llmServ"
   },
@@ -1176,7 +1176,7 @@
    "kind": "code",
    "top": 15580,
    "h": 259,
-   "style": "72533745",
+   "style": "e113cdc5",
    "content": "b65501e0",
    "text": "// Happy paths @Test void apply_validQuery_retur"
   },
@@ -1185,7 +1185,7 @@
    "kind": "heading",
    "top": 15839,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "6fe94699",
    "text": "3a.2 SchemaRecallNodeTest.java (NEW)§"
   },
@@ -1194,7 +1194,7 @@
    "kind": "paragraph",
    "top": 15886,
    "h": 70,
-   "style": "70a38f83",
+   "style": "fad1ca05",
    "content": "c5ef3718",
    "text": "Constructor: SchemaRecallNode(SchemaService sche"
   },
@@ -1203,7 +1203,7 @@
    "kind": "code",
    "top": 15955,
    "h": 279,
-   "style": "2b852865",
+   "style": "cc62b02d",
    "content": "304c5d9c",
    "text": "// Happy paths @Test void apply_withDatasource_r"
   },
@@ -1212,7 +1212,7 @@
    "kind": "heading",
    "top": 16234,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "8f98db1e",
    "text": "3a.3 TableRelationNodeTest.java (NEW)§"
   },
@@ -1221,7 +1221,7 @@
    "kind": "paragraph",
    "top": 16282,
    "h": 96,
-   "style": "be864de0",
+   "style": "432effe3",
    "content": "238e73e6",
    "text": "Constructor: TableRelationNode(SchemaService, Nl"
   },
@@ -1230,7 +1230,7 @@
    "kind": "code",
    "top": 16377,
    "h": 299,
-   "style": "f8369ded",
+   "style": "abe9e413",
    "content": "b6aeae01",
    "text": "// Happy paths @Test void apply_validSchema_buil"
   },
@@ -1239,7 +1239,7 @@
    "kind": "heading",
    "top": 16676,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "a0ad3cfc",
    "text": "3a.4 FeasibilityAssessmentNodeTest.java (NEW)§"
   },
@@ -1248,7 +1248,7 @@
    "kind": "paragraph",
    "top": 16723,
    "h": 44,
-   "style": "5c5c84b5",
+   "style": "d2f514c7",
    "content": "78c1433f",
    "text": "Constructor: FeasibilityAssessmentNode(LlmServic"
   },
@@ -1257,7 +1257,7 @@
    "kind": "code",
    "top": 16767,
    "h": 239,
-   "style": "4c737b7e",
+   "style": "b1de8f2e",
    "content": "58e2d43d",
    "text": "// Happy paths @Test void apply_feasibleQuery_re"
   },
@@ -1266,7 +1266,7 @@
    "kind": "heading",
    "top": 17006,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "7f4a440e",
    "text": "3a.5 HumanFeedbackNodeTest.java (restore from ma"
   },
@@ -1275,7 +1275,7 @@
    "kind": "paragraph",
    "top": 17053,
    "h": 44,
-   "style": "f3ac20a6",
+   "style": "c168170a",
    "content": "8b538ea3",
    "text": "Constructor: none"
   },
@@ -1284,7 +1284,7 @@
    "kind": "paragraph",
    "top": 17097,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "362756c7",
    "text": "Restore 6 tests from main:"
   },
@@ -1293,7 +1293,7 @@
    "kind": "code",
    "top": 17140,
    "h": 159,
-   "style": "732117b0",
+   "style": "741a0567",
    "content": "3e80d084",
    "text": "@Test void apply_approvedFeedback_setsApprovalSt"
   },
@@ -1302,7 +1302,7 @@
    "kind": "heading",
    "top": 17299,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "88b815f1",
    "text": "3a.6 SemanticConsistencyNodeTest.java (NEW)§"
   },
@@ -1311,7 +1311,7 @@
    "kind": "paragraph",
    "top": 17346,
    "h": 44,
-   "style": "91c8a7b2",
+   "style": "f226ada0",
    "content": "ae4cac6e",
    "text": "Constructor: SemanticConsistencyNode(Nl2SqlServi"
   },
@@ -1320,7 +1320,7 @@
    "kind": "code",
    "top": 17390,
    "h": 279,
-   "style": "60b1cdc5",
+   "style": "daaf298d",
    "content": "5238a203",
    "text": "// Happy paths @Test void apply_validSql_passesV"
   },
@@ -1329,7 +1329,7 @@
    "kind": "heading",
    "top": 17669,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "304b7231",
    "text": "3a.7 ReportGeneratorNodeTest.java (NEW)§"
   },
@@ -1338,7 +1338,7 @@
    "kind": "paragraph",
    "top": 17716,
    "h": 70,
-   "style": "d9786c04",
+   "style": "3573c3be",
    "content": "d9804a7e",
    "text": "Constructor: ReportGeneratorNode(LlmService llmS"
   },
@@ -1347,7 +1347,7 @@
    "kind": "code",
    "top": 17786,
    "h": 299,
-   "style": "f436bd9b",
+   "style": "387d75bd",
    "content": "3e6abdf0",
    "text": "// Happy paths @Test void apply_validData_genera"
   },
@@ -1356,7 +1356,7 @@
    "kind": "heading",
    "top": 18085,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "a54d8430",
    "text": "3b: Expand/Replace Existing Node Tests§"
   },
@@ -1365,7 +1365,7 @@
    "kind": "heading",
    "top": 18144,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "ff48e2c4",
    "text": "3b.1 SqlGenerateNodeTest.java (expand)§"
   },
@@ -1374,7 +1374,7 @@
    "kind": "paragraph",
    "top": 18191,
    "h": 44,
-   "style": "2c804841",
+   "style": "5ec255cb",
    "content": "a4f6006d",
    "text": "Existing (4 tests): simple SELECT, WHERE, JOIN, "
   },
@@ -1383,7 +1383,7 @@
    "kind": "paragraph",
    "top": 18235,
    "h": 44,
-   "style": "f6047d11",
+   "style": "b3c6bb65",
    "content": "8904e66a",
    "text": "Add:"
   },
@@ -1392,7 +1392,7 @@
    "kind": "code",
    "top": 18279,
    "h": 279,
-   "style": "6026dd9d",
+   "style": "eb7ed3e5",
    "content": "d8b8ce64",
    "text": "// Error paths @Test void apply_nl2SqlServiceFai"
   },
@@ -1401,7 +1401,7 @@
    "kind": "heading",
    "top": 18558,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "2ccb6ec3",
    "text": "3b.2 SqlExecuteNodeTest.java (expand)§"
   },
@@ -1410,7 +1410,7 @@
    "kind": "paragraph",
    "top": 18605,
    "h": 44,
-   "style": "2c804841",
+   "style": "4f9650ad",
    "content": "b6f1e878",
    "text": "Existing (2 tests): valid SELECT, multi-column"
   },
@@ -1419,7 +1419,7 @@
    "kind": "paragraph",
    "top": 18648,
    "h": 44,
-   "style": "f6047d11",
+   "style": "b3c6bb65",
    "content": "8904e66a",
    "text": "Add:"
   },
@@ -1428,7 +1428,7 @@
    "kind": "code",
    "top": 18692,
    "h": 299,
-   "style": "f75a8338",
+   "style": "3a6e5742",
    "content": "9a5ffa00",
    "text": "// Error paths @Test void apply_sqlExecutionErro"
   },
@@ -1437,7 +1437,7 @@
    "kind": "heading",
    "top": 18991,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "88eb47f0",
    "text": "3b.3 PlannerNodeTest.java (NEW -- replaces stub)"
   },
@@ -1446,7 +1446,7 @@
    "kind": "paragraph",
    "top": 19038,
    "h": 44,
-   "style": "c2efecf6",
+   "style": "230bacc0",
    "content": "c66b1b1e",
    "text": "Constructor: PlannerNode(LlmService llmService)"
   },
@@ -1455,7 +1455,7 @@
    "kind": "code",
    "top": 19082,
    "h": 359,
-   "style": "209eb7a7",
+   "style": "825bc8ac",
    "content": "95a49330",
    "text": "// Happy paths @Test void apply_validQuery_gener"
   },
@@ -1464,7 +1464,7 @@
    "kind": "heading",
    "top": 19441,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "1494da63",
    "text": "3b.4 EvidenceRecallNodeTest.java (NEW -- replace"
   },
@@ -1473,7 +1473,7 @@
    "kind": "paragraph",
    "top": 19488,
    "h": 70,
-   "style": "16e68a78",
+   "style": "0fecfb96",
    "content": "63aa168b",
    "text": "Constructor: EvidenceRecallNode(LlmService, Agen"
   },
@@ -1482,7 +1482,7 @@
    "kind": "code",
    "top": 19557,
    "h": 319,
-   "style": "59aed660",
+   "style": "65850a2d",
    "content": "1b588a45",
    "text": "// Happy paths @Test void apply_validQuery_retur"
   },
@@ -1491,7 +1491,7 @@
    "kind": "heading",
    "top": 19876,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "7a0cbfef",
    "text": "3b.5 PythonGenerateNodeTest.java (NEW -- replace"
   },
@@ -1500,7 +1500,7 @@
    "kind": "paragraph",
    "top": 19924,
    "h": 44,
-   "style": "e7c1149e",
+   "style": "5a117c90",
    "content": "4c74239a",
    "text": "Constructor: PythonGenerateNode(CodeExecutorProp"
   },
@@ -1509,7 +1509,7 @@
    "kind": "code",
    "top": 19967,
    "h": 319,
-   "style": "5ef5f959",
+   "style": "106b0212",
    "content": "d1db8ed3",
    "text": "// Happy paths @Test void apply_validRequest_gen"
   },
@@ -1518,7 +1518,7 @@
    "kind": "heading",
    "top": 20286,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "6ad6f132",
    "text": "3b.6 PythonExecuteNodeTest.java (NEW -- replaces"
   },
@@ -1527,7 +1527,7 @@
    "kind": "paragraph",
    "top": 20333,
    "h": 70,
-   "style": "4d82dc2b",
+   "style": "c1811af5",
    "content": "de40d7a8",
    "text": "Constructor: PythonExecuteNode(CodePoolExecutorS"
   },
@@ -1536,7 +1536,7 @@
    "kind": "code",
    "top": 20403,
    "h": 299,
-   "style": "4d379342",
+   "style": "c2991244",
    "content": "b88b7ee7",
    "text": "// Happy paths @Test void apply_validCode_execut"
   },
@@ -1545,7 +1545,7 @@
    "kind": "heading",
    "top": 20702,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "f6eb1dce",
    "text": "3b.7 PythonAnalyzeNodeTest.java (NEW -- replaces"
   },
@@ -1554,7 +1554,7 @@
    "kind": "paragraph",
    "top": 20749,
    "h": 44,
-   "style": "6de8a638",
+   "style": "07f10ca2",
    "content": "97026cb0",
    "text": "Constructor: PythonAnalyzeNode(LlmService llmSer"
   },
@@ -1563,7 +1563,7 @@
    "kind": "code",
    "top": 20793,
    "h": 279,
-   "style": "989dbdc5",
+   "style": "1835870d",
    "content": "e7c680c9",
    "text": "// Happy paths @Test void apply_validOutput_retu"
   },
@@ -1572,7 +1572,7 @@
    "kind": "heading",
    "top": 21072,
    "h": 47,
-   "style": "e1d77eb1",
+   "style": "55d43413",
    "content": "86e5f732",
    "text": "3b.8 IntentRecognitionNodeTest.java (FIX)§"
   },
@@ -1581,7 +1581,7 @@
    "kind": "paragraph",
    "top": 21119,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "bb4926fd",
    "text": "Fix compilation issues:"
   },
@@ -1590,7 +1590,7 @@
    "kind": "listItem",
    "top": 21162,
    "h": 30,
-   "style": "a14f2303",
+   "style": "18d16577",
    "content": "7dd7053b",
    "text": "Add missing imports for @Mock, when(), any(), ve"
   },
@@ -1599,7 +1599,7 @@
    "kind": "listItem",
    "top": 21193,
    "h": 30,
-   "style": "9f365556",
+   "style": "ed606762",
    "content": "81f40d9b",
    "text": "Verify TextType and ChatResponseUtil references "
   },
@@ -1608,7 +1608,7 @@
    "kind": "listItem",
    "top": 21223,
    "h": 46,
-   "style": "0d68e111",
+   "style": "f22b428a",
    "content": "2a9633dc",
    "text": "Run and verify all 7 tests pass"
   },
@@ -1617,7 +1617,7 @@
    "kind": "heading",
    "top": 21269,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "3a1cbe08",
    "text": "Phase 3 Target: ~65% overall coverage§"
   },
@@ -1626,7 +1626,7 @@
    "kind": "rule",
    "top": 21328,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1635,7 +1635,7 @@
    "kind": "heading",
    "top": 21347,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "c5020148",
    "text": "Phase 4: Core Services§"
   },
@@ -1644,7 +1644,7 @@
    "kind": "heading",
    "top": 21430,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "481ca923",
    "text": "Goal§"
   },
@@ -1653,7 +1653,7 @@
    "kind": "paragraph",
    "top": 21489,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "e4c82388",
    "text": "Test critical service implementations."
   },
@@ -1662,7 +1662,7 @@
    "kind": "heading",
    "top": 21533,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "4ac26f2f",
    "text": "4.1 Nl2SqlServiceImplTest.java (NEW)§"
   },
@@ -1671,7 +1671,7 @@
    "kind": "paragraph",
    "top": 21592,
    "h": 70,
-   "style": "d1301340",
+   "style": "3f34386e",
    "content": "4b0067d1",
    "text": "Constructor: Nl2SqlServiceImpl(LlmService llmSer"
   },
@@ -1680,7 +1680,7 @@
    "kind": "code",
    "top": 21662,
    "h": 359,
-   "style": "d18a3816",
+   "style": "23c8a695",
    "content": "bd23535c",
    "text": "// SQL generation @Test void generateSql_validDt"
   },
@@ -1689,7 +1689,7 @@
    "kind": "heading",
    "top": 22021,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "a37568f7",
    "text": "4.2 AgentVectorStoreServiceImplTest.java (NEW)§"
   },
@@ -1698,7 +1698,7 @@
    "kind": "paragraph",
    "top": 22080,
    "h": 70,
-   "style": "dde64f0c",
+   "style": "1ce90eda",
    "content": "bbf72eeb",
    "text": "Constructor: AgentVectorStoreServiceImpl(VectorS"
   },
@@ -1707,7 +1707,7 @@
    "kind": "code",
    "top": 22150,
    "h": 339,
-   "style": "a5768ddc",
+   "style": "de8da983",
    "content": "b6835ec9",
    "text": "// Search @Test void search_validRequest_returns"
   },
@@ -1716,7 +1716,7 @@
    "kind": "heading",
    "top": 22489,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "f56aa10a",
    "text": "4.3 DynamicFilterServiceTest.java (NEW)§"
   },
@@ -1725,7 +1725,7 @@
    "kind": "paragraph",
    "top": 22548,
    "h": 70,
-   "style": "e77af4b8",
+   "style": "acfd7836",
    "content": "7b060ff1",
    "text": "Constructor: DynamicFilterService(AgentKnowledge"
   },
@@ -1734,7 +1734,7 @@
    "kind": "code",
    "top": 22618,
    "h": 319,
-   "style": "9057e8ff",
+   "style": "9d8a3b96",
    "content": "d6485e26",
    "text": "// Filter building @Test void buildDynamicFilter"
   },
@@ -1743,7 +1743,7 @@
    "kind": "heading",
    "top": 22937,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "fa6ee86d",
    "text": "4.4 MultiTurnContextManagerTest.java (NEW)§"
   },
@@ -1752,7 +1752,7 @@
    "kind": "paragraph",
    "top": 22996,
    "h": 44,
-   "style": "fe900d21",
+   "style": "e7e3e9bb",
    "content": "41e2da3b",
    "text": "Constructor: MultiTurnContextManager(DataAgentPr"
   },
@@ -1761,7 +1761,7 @@
    "kind": "code",
    "top": 23040,
    "h": 379,
-   "style": "0e3a26c3",
+   "style": "36d5b46e",
    "content": "fe907dc4",
    "text": "// Turn management @Test void beginTurn_newThrea"
   },
@@ -1770,7 +1770,7 @@
    "kind": "heading",
    "top": 23419,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "7a75a20b",
    "text": "4.5 GraphServiceImplTest.java (NEW)§"
   },
@@ -1779,7 +1779,7 @@
    "kind": "paragraph",
    "top": 23478,
    "h": 70,
-   "style": "baa28a4d",
+   "style": "6791245b",
    "content": "fa5b0730",
    "text": "Constructor: GraphServiceImpl(StateGraph, Execut"
   },
@@ -1788,7 +1788,7 @@
    "kind": "code",
    "top": 23548,
    "h": 319,
-   "style": "38f0da0d",
+   "style": "6a85bcb2",
    "content": "b9b00849",
    "text": "// NL2SQL @Test void nl2sql_validQuery_returnsRe"
   },
@@ -1797,7 +1797,7 @@
    "kind": "heading",
    "top": 23867,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "3f53e4aa",
    "text": "4.6 LlmService Impls (NEW)§"
   },
@@ -1806,7 +1806,7 @@
    "kind": "paragraph",
    "top": 23926,
    "h": 44,
-   "style": "3fc07820",
+   "style": "de35966c",
    "content": "34a36a98",
    "text": "BlockLlmServiceTest.java:"
   },
@@ -1815,7 +1815,7 @@
    "kind": "code",
    "top": 23970,
    "h": 99,
-   "style": "2f0f9799",
+   "style": "10a5cb2d",
    "content": "0d92dad9",
    "text": "@Test void callUser_validPrompt_returnsChatRespo"
   },
@@ -1824,7 +1824,7 @@
    "kind": "paragraph",
    "top": 24069,
    "h": 44,
-   "style": "6750b74f",
+   "style": "d8198d5b",
    "content": "13a24e73",
    "text": "StreamLlmServiceTest.java:"
   },
@@ -1833,7 +1833,7 @@
    "kind": "code",
    "top": 24112,
    "h": 99,
-   "style": "d6b5953d",
+   "style": "dd5e9c01",
    "content": "eefcdeb8",
    "text": "@Test void callUser_validPrompt_returnsStreamFlu"
   },
@@ -1842,7 +1842,7 @@
    "kind": "heading",
    "top": 24211,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "bf4b6c58",
    "text": "4.7 Restore from main§"
   },
@@ -1851,7 +1851,7 @@
    "kind": "listItem",
    "top": 24271,
    "h": 30,
-   "style": "13cc234c",
+   "style": "1be05fb0",
    "content": "09453fe3",
    "text": "DockerCodePoolExecutorServiceTest.java (~5 tests"
   },
@@ -1860,7 +1860,7 @@
    "kind": "listItem",
    "top": 24301,
    "h": 30,
-   "style": "2cbc0615",
+   "style": "dc4cd9d1",
    "content": "49871aac",
    "text": "LocalCodePoolExecutorServiceTest.java (~5 tests)"
   },
@@ -1869,7 +1869,7 @@
    "kind": "listItem",
    "top": 24331,
    "h": 30,
-   "style": "18a8e8b4",
+   "style": "70c54010",
    "content": "9e385e0c",
    "text": "RrfFusionStrategyTest.java (~8 tests)"
   },
@@ -1878,7 +1878,7 @@
    "kind": "listItem",
    "top": 24361,
    "h": 46,
-   "style": "47305a18",
+   "style": "77d7139d",
    "content": "a424e5bf",
    "text": "AbstractHybridRetrievalStrategyTest.java (~5 tes"
   },
@@ -1887,7 +1887,7 @@
    "kind": "heading",
    "top": 24407,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "887939f4",
    "text": "Phase 4 Target: ~75% overall coverage§"
   },
@@ -1896,7 +1896,7 @@
    "kind": "rule",
    "top": 24467,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1905,7 +1905,7 @@
    "kind": "heading",
    "top": 24485,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "f632ab61",
    "text": "Phase 5: Controllers & Connectors§"
   },
@@ -1914,7 +1914,7 @@
    "kind": "heading",
    "top": 24568,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "481ca923",
    "text": "Goal§"
   },
@@ -1923,7 +1923,7 @@
    "kind": "paragraph",
    "top": 24628,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "1901f749",
    "text": "Add tests for key REST endpoints and database co"
   },
@@ -1932,7 +1932,7 @@
    "kind": "heading",
    "top": 24671,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "f9e86731",
    "text": "5.1 Controllers (WebFluxTest)§"
   },
@@ -1941,7 +1941,7 @@
    "kind": "paragraph",
    "top": 24731,
    "h": 44,
-   "style": "88e1163e",
+   "style": "24cedaa2",
    "content": "50f51f83",
    "text": "GraphControllerTest.java:"
   },
@@ -1950,7 +1950,7 @@
    "kind": "code",
    "top": 24774,
    "h": 139,
-   "style": "1574ecc2",
+   "style": "d31ca56f",
    "content": "cdf2eb31",
    "text": "@WebFluxTest(GraphController.class) // Uses @Moc"
   },
@@ -1959,7 +1959,7 @@
    "kind": "paragraph",
    "top": 24913,
    "h": 44,
-   "style": "5bf0ba91",
+   "style": "62466ac5",
    "content": "75f14dbe",
    "text": "AgentControllerTest.java:"
   },
@@ -1968,7 +1968,7 @@
    "kind": "code",
    "top": 24957,
    "h": 159,
-   "style": "adca0ef2",
+   "style": "c1a7668f",
    "content": "aca26be6",
    "text": "@WebFluxTest(AgentController.class) @Test void c"
   },
@@ -1977,7 +1977,7 @@
    "kind": "paragraph",
    "top": 25116,
    "h": 44,
-   "style": "c1a38535",
+   "style": "a045ac19",
    "content": "c05c7024",
    "text": "DatasourceControllerTest.java:"
   },
@@ -1986,7 +1986,7 @@
    "kind": "code",
    "top": 25159,
    "h": 139,
-   "style": "2969b62d",
+   "style": "efbb8d92",
    "content": "a5973cd3",
    "text": "@WebFluxTest(DatasourceController.class) @Test v"
   },
@@ -1995,7 +1995,7 @@
    "kind": "paragraph",
    "top": 25298,
    "h": 44,
-   "style": "cff2c09b",
+   "style": "eaf238df",
    "content": "276b3d87",
    "text": "ChatControllerTest.java:"
   },
@@ -2004,7 +2004,7 @@
    "kind": "code",
    "top": 25342,
    "h": 139,
-   "style": "d51160af",
+   "style": "8942359c",
    "content": "f9ac206b",
    "text": "@WebFluxTest(ChatController.class) @Test void cr"
   },
@@ -2013,7 +2013,7 @@
    "kind": "paragraph",
    "top": 25481,
    "h": 44,
-   "style": "80bbf938",
+   "style": "c81f2b6c",
    "content": "c9f64990",
    "text": "ModelConfigControllerTest.java:"
   },
@@ -2022,7 +2022,7 @@
    "kind": "code",
    "top": 25525,
    "h": 139,
-   "style": "cdf871cf",
+   "style": "cdf7ba60",
    "content": "93d665ee",
    "text": "@WebFluxTest(ModelConfigController.class) @Test "
   },
@@ -2031,7 +2031,7 @@
    "kind": "heading",
    "top": 25664,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "055f1ff5",
    "text": "5.2 Connectors§"
   },
@@ -2040,7 +2040,7 @@
    "kind": "paragraph",
    "top": 25723,
    "h": 44,
-   "style": "0d5c1cee",
+   "style": "e67146dc",
    "content": "32c5c121",
    "text": "H2AccessorIntegrationTest.java (restore from mai"
   },
@@ -2049,7 +2049,7 @@
    "kind": "code",
    "top": 25767,
    "h": 59,
-   "style": "1e6de251",
+   "style": "6d452189",
    "content": "8883c26e",
    "text": "// Restore 6 tests: showTables, fetchTables, sho"
   },
@@ -2058,7 +2058,7 @@
    "kind": "paragraph",
    "top": 25826,
    "h": 44,
-   "style": "28b77fb1",
+   "style": "0910e1f5",
    "content": "465045d1",
    "text": "SqlExecutorTest.java (NEW):"
   },
@@ -2067,7 +2067,7 @@
    "kind": "code",
    "top": 25869,
    "h": 99,
-   "style": "a6eed516",
+   "style": "2113d222",
    "content": "864c3098",
    "text": "@Test void executeSql_validSelect_returnsResults"
   },
@@ -2076,7 +2076,7 @@
    "kind": "paragraph",
    "top": 25968,
    "h": 44,
-   "style": "d9c1ba9e",
+   "style": "24a561ea",
    "content": "081deb5b",
    "text": "AbstractAccessorTest.java (NEW):"
   },
@@ -2085,7 +2085,7 @@
    "kind": "code",
    "top": 26012,
    "h": 79,
-   "style": "1f996641",
+   "style": "9cf06d1b",
    "content": "139c0352",
    "text": "@Test void executeSqlAndReturnObject_validQuery_"
   },
@@ -2094,7 +2094,7 @@
    "kind": "heading",
    "top": 26091,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "8a4f0447",
    "text": "5.3 Restore Mapper Tests from main§"
   },
@@ -2103,7 +2103,7 @@
    "kind": "listItem",
    "top": 26150,
    "h": 30,
-   "style": "a08b8038",
+   "style": "127d63cc",
    "content": "193f35b0",
    "text": "AgentDatasourceMapperTest.java (8 tests)"
   },
@@ -2112,7 +2112,7 @@
    "kind": "listItem",
    "top": 26180,
    "h": 30,
-   "style": "8ecf54e9",
+   "style": "8dc2d795",
    "content": "d36b7a45",
    "text": "DatasourceMapperTest.java (8 tests)"
   },
@@ -2121,7 +2121,7 @@
    "kind": "listItem",
    "top": 26211,
    "h": 30,
-   "style": "f7955aea",
+   "style": "6b4e6a56",
    "content": "af41856c",
    "text": "MappersTest.java (5 tests)"
   },
@@ -2130,7 +2130,7 @@
    "kind": "listItem",
    "top": 26241,
    "h": 46,
-   "style": "d1bbc8f7",
+   "style": "a3700aca",
    "content": "13c352c6",
    "text": "UserPromptConfigMapperTest.java (10 tests)"
   },
@@ -2139,7 +2139,7 @@
    "kind": "heading",
    "top": 26287,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "e2246e74",
    "text": "Phase 5 Target: ~78% overall coverage§"
   },
@@ -2148,7 +2148,7 @@
    "kind": "rule",
    "top": 26346,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2157,7 +2157,7 @@
    "kind": "heading",
    "top": 26365,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "b1a701b5",
    "text": "Phase 6: Integration & Finalization§"
   },
@@ -2166,7 +2166,7 @@
    "kind": "heading",
    "top": 26447,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "481ca923",
    "text": "Goal§"
   },
@@ -2175,7 +2175,7 @@
    "kind": "paragraph",
    "top": 26507,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "c4730ec9",
    "text": "End-to-end workflow tests with Testcontainers My"
   },
@@ -2184,7 +2184,7 @@
    "kind": "heading",
    "top": 26551,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "795b472c",
    "text": "6.1 TextToSqlWorkflowIntegrationTest.java (NEW -"
   },
@@ -2193,7 +2193,7 @@
    "kind": "code",
    "top": 26610,
    "h": 239,
-   "style": "614925de",
+   "style": "d711ce0e",
    "content": "076c361b",
    "text": "@SpringBootTest @Testcontainers class TextToSqlW"
   },
@@ -2202,7 +2202,7 @@
    "kind": "heading",
    "top": 26849,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "6224d94b",
    "text": "6.2 PythonWorkflowIntegrationTest.java (NEW -- r"
   },
@@ -2211,7 +2211,7 @@
    "kind": "code",
    "top": 26908,
    "h": 199,
-   "style": "dbd065e2",
+   "style": "03099c07",
    "content": "3a82d96c",
    "text": "@SpringBootTest @Testcontainers class PythonWork"
   },
@@ -2220,7 +2220,7 @@
    "kind": "heading",
    "top": 27107,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "a6cca086",
    "text": "6.3 HumanFeedbackIntegrationTest.java (NEW)§"
   },
@@ -2229,7 +2229,7 @@
    "kind": "code",
    "top": 27167,
    "h": 179,
-   "style": "b44c28c6",
+   "style": "063452b9",
    "content": "8d0fcc83",
    "text": "@SpringBootTest @Testcontainers class HumanFeedb"
   },
@@ -2238,7 +2238,7 @@
    "kind": "heading",
    "top": 27346,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "3c8ea467",
    "text": "Phase 6 Target: 80%+ overall coverage§"
   },
@@ -2247,7 +2247,7 @@
    "kind": "rule",
    "top": 27405,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2256,7 +2256,7 @@
    "kind": "heading",
    "top": 27424,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "039d5324",
    "text": "Coverage Goals§"
   },
@@ -2265,7 +2265,7 @@
    "kind": "table",
    "top": 27507,
    "h": 459,
-   "style": "83fec369",
+   "style": "23af79db",
    "content": "842480c9",
    "text": "ComponentTargetPhase 0Phase 1Phase 2Phase 3Phase"
   },
@@ -2274,7 +2274,7 @@
    "kind": "rule",
    "top": 27966,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2283,7 +2283,7 @@
    "kind": "heading",
    "top": 27984,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "25523d2c",
    "text": "Test Execution & CI§"
   },
@@ -2292,7 +2292,7 @@
    "kind": "heading",
    "top": 28067,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "b12ca20a",
    "text": "Running Tests§"
   },
@@ -2301,7 +2301,7 @@
    "kind": "code",
    "top": 28126,
    "h": 319,
-   "style": "6ae036f0",
+   "style": "8bbd82df",
    "content": "87275e98",
    "text": "# All tests ./mvnw test # Specific phase by pack"
   },
@@ -2310,7 +2310,7 @@
    "kind": "heading",
    "top": 28445,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "0c7e37a7",
    "text": "JaCoCo Configuration§"
   },
@@ -2319,7 +2319,7 @@
    "kind": "paragraph",
    "top": 28505,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "2b006132",
    "text": "Already configured in POM:"
   },
@@ -2328,7 +2328,7 @@
    "kind": "listItem",
    "top": 28548,
    "h": 30,
-   "style": "9ea833be",
+   "style": "c43722ea",
    "content": "39255b54",
    "text": "Line coverage threshold: 80% at PACKAGE level"
   },
@@ -2337,7 +2337,7 @@
    "kind": "listItem",
    "top": 28579,
    "h": 30,
-   "style": "01fa334d",
+   "style": "d2691a99",
    "content": "bc4c4446",
    "text": "Excludes: **/excel/**/*.class"
   },
@@ -2346,7 +2346,7 @@
    "kind": "listItem",
    "top": 28609,
    "h": 46,
-   "style": "1dcda817",
+   "style": "367e1b90",
    "content": "777846d7",
    "text": "Report generated to target/site/jacoco/"
   },
@@ -2355,7 +2355,7 @@
    "kind": "heading",
    "top": 28655,
    "h": 59,
-   "style": "70b994ca",
+   "style": "0cc8a012",
    "content": "a5d037eb",
    "text": "CI Integration (GitHub Actions)§"
   },
@@ -2364,7 +2364,7 @@
    "kind": "paragraph",
    "top": 28714,
    "h": 44,
-   "style": "a3c3c8ed",
+   "style": "f3637ff9",
    "content": "3bc09f7b",
    "text": "Existing build-and-test.yml pipeline:"
   },
@@ -2373,7 +2373,7 @@
    "kind": "code",
    "top": 28758,
    "h": 199,
-   "style": "9467798f",
+   "style": "76b70744",
    "content": "61cec86c",
    "text": "- name: Format check run: ./mvnw spring-javaform"
   },
@@ -2382,7 +2382,7 @@
    "kind": "paragraph",
    "top": 28957,
    "h": 44,
-   "style": "967b6b4a",
+   "style": "0619ab1e",
    "content": "9fe482bb",
    "text": "Add after tests:"
   },
@@ -2391,7 +2391,7 @@
    "kind": "code",
    "top": 29000,
    "h": 79,
-   "style": "8edce859",
+   "style": "4821b137",
    "content": "83bed131",
    "text": "- name: Coverage check run: ./mvnw jacoco:check "
   },
@@ -2400,7 +2400,7 @@
    "kind": "rule",
    "top": 29079,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2409,7 +2409,7 @@
    "kind": "heading",
    "top": 29098,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "febc123e",
    "text": "Estimated Test Counts§"
   },
@@ -2418,7 +2418,7 @@
    "kind": "table",
    "top": 29181,
    "h": 343,
-   "style": "03ea2b73",
+   "style": "6330b22e",
    "content": "132c0283",
    "text": "PhaseNew TestsRestored TestsTotal MethodsPhase 0"
   },
@@ -2427,7 +2427,7 @@
    "kind": "rule",
    "top": 29523,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2436,7 +2436,7 @@
    "kind": "heading",
    "top": 29542,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "d481ceee",
    "text": "Success Criteria§"
   },
@@ -2445,7 +2445,7 @@
    "kind": "listItem",
    "top": 29625,
    "h": 30,
-   "style": "80c7a059",
+   "style": "77fa19a5",
    "content": "054a9c98",
    "text": "All tests pass consistently in CI"
   },
@@ -2454,7 +2454,7 @@
    "kind": "listItem",
    "top": 29655,
    "h": 30,
-   "style": "8e6c2b55",
+   "style": "cddc8139",
    "content": "09d56111",
    "text": "Overall line coverage reaches 80%+ (JaCoCo verif"
   },
@@ -2463,7 +2463,7 @@
    "kind": "listItem",
    "top": 29685,
    "h": 30,
-   "style": "f4cbcac3",
+   "style": "687764af",
    "content": "46d16bf0",
    "text": "Zero fake/stub tests remain (assertTrue(true) is"
   },
@@ -2472,7 +2472,7 @@
    "kind": "listItem",
    "top": 29715,
    "h": 30,
-   "style": "8e6c2b55",
+   "style": "cddc8139",
    "content": "e6ae6be5",
    "text": "All 11 dispatchers have routing tests"
   },
@@ -2481,7 +2481,7 @@
    "kind": "listItem",
    "top": 29745,
    "h": 30,
-   "style": "8e6c2b55",
+   "style": "cddc8139",
    "content": "affbbe7b",
    "text": "All 16 workflow nodes have happy-path + error-pa"
   },
@@ -2490,7 +2490,7 @@
    "kind": "listItem",
    "top": 29776,
    "h": 30,
-   "style": "8e6c2b55",
+   "style": "cddc8139",
    "content": "99c3b13b",
    "text": "Critical services (GraphService, Nl2SqlService, "
   },
@@ -2499,7 +2499,7 @@
    "kind": "listItem",
    "top": 29806,
    "h": 30,
-   "style": "8e6c2b55",
+   "style": "cddc8139",
    "content": "29b00695",
    "text": "Integration tests cover Text-to-SQL and Python w"
   },
@@ -2508,7 +2508,7 @@
    "kind": "listItem",
    "top": 29836,
    "h": 46,
-   "style": "8b559a56",
+   "style": "a357386d",
    "content": "3d39e356",
    "text": "Test execution time < 5 minutes for unit tests, "
   },
@@ -2517,7 +2517,7 @@
    "kind": "rule",
    "top": 29882,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2526,7 +2526,7 @@
    "kind": "heading",
    "top": 29901,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "0263c08c",
    "text": "Implementation Order Summary§"
   },
@@ -2535,7 +2535,7 @@
    "kind": "table",
    "top": 29983,
    "h": 372,
-   "style": "acbcdee0",
+   "style": "29d1be46",
    "content": "70ad85d3",
    "text": "PhaseFocusDeliverableCoverage Target0Cleanup & R"
   },
@@ -2544,7 +2544,7 @@
    "kind": "rule",
    "top": 30356,
    "h": 19,
-   "style": "b9ff8fbf",
+   "style": "0fe2e029",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2553,7 +2553,7 @@
    "kind": "heading",
    "top": 30374,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "6d5a55aa",
    "text": "Appendix: Node Dependency Quick Reference§"
   },
@@ -2562,7 +2562,7 @@
    "kind": "table",
    "top": 30457,
    "h": 742,
-   "style": "e707e4c8",
+   "style": "a21b03ec",
    "content": "93904ccc",
    "text": "NodeConstructor DependenciesMock CountIntentReco"
   },
@@ -2571,7 +2571,7 @@
    "kind": "heading",
    "top": 31199,
    "h": 83,
-   "style": "fc9732cb",
+   "style": "81612d35",
    "content": "fd51be7e",
    "text": "Appendix: Dispatcher Quick Reference§"
   },
@@ -2580,7 +2580,7 @@
    "kind": "table",
    "top": 31282,
    "h": 583,
-   "style": "b299c494",
+   "style": "447ce177",
    "content": "4c060e9e",
    "text": "DispatcherConstructor DependenciesRouting Decisi"
   }
