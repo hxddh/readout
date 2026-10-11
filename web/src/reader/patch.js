@@ -130,6 +130,9 @@ export function apply(p) {
   if (p.reset || p.ops.length) headingsChanged();
   reportActiveHeading();
   post({ type: 'applied', version: p.version });
+  // After the frame that shows it: rAF runs before the paint, the task it
+  // queues runs after.
+  requestAnimationFrame(() => setTimeout(() => post({ type: 'painted', version: p.version }), 0));
 }
 
 function showNotice(text) {

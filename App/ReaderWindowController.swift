@@ -407,14 +407,16 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString("\(url.lastPathComponent)#\(anchor)", forType: .string)
         case .applied:
+            ReaderPerf.signposter.emitEvent("applied")
+            SmokeTest.noteApplied()
+        case .painted:
+            SmokeTest.notePainted()
             if !painted {
-                // First patch on screen: the open is done.
+                // First patch presented on screen: the open is done.
                 painted = true
                 ReaderPerf.signposter.endInterval("open", openSignpost)
                 SmokeTest.noteFirstPaint(url, seconds: Date().timeIntervalSince(openedAt))
             }
-            ReaderPerf.signposter.emitEvent("applied")
-            SmokeTest.noteApplied()
         case .open(let href):
             openLink(href)
         case .loadRemote(let remote, let id):

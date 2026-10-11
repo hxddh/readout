@@ -18,8 +18,10 @@ enum SmokeTest {
 
     /// Patches the page reported as applied (any document).
     private static var appliedCount = 0
-    /// Wall-clock time of every applied patch, for the harness's write-to-update measurement.
+    /// Wall-clock time of every applied patch, and of the frame that showed it,
+    /// for the harness's cold-start and write-to-update measurements.
     private static var appliedAt: [Double] = []
+    private static var paintedAt: [Double] = []
     /// Window request to first patch on screen, per file.
     private static var firstPaint: [String: Double] = [:]
     private static var started = false
@@ -29,6 +31,10 @@ enum SmokeTest {
         if outputDirectory != nil { appliedAt.append(Date().timeIntervalSince1970) }
     }
 
+    static func notePainted() {
+        if outputDirectory != nil { paintedAt.append(Date().timeIntervalSince1970) }
+    }
+
     static func noteFirstPaint(_ url: URL, seconds: Double) {
         guard outputDirectory != nil else { return }
         firstPaint[url.path] = seconds
@@ -36,7 +42,7 @@ enum SmokeTest {
 
     /// Timings for tools/smoke-run.py, which adds its own clock readings.
     private static func writeTimings(_ dir: URL) {
-        let json: [String: Any] = ["applied_at": appliedAt, "first_paint_s": firstPaint]
+        let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: dir.appendingPathComponent("timings-app.json"))
         }
@@ -83,8 +89,13 @@ enum SmokeTest {
             let app = NSApp.delegate as? AppDelegate
             // Open a second file while running: the warm open-to-first-paint path.
             if let second = ProcessInfo.processInfo.environment["READOUT_SMOKE_SECOND"] {
-                app?.open(URL(fileURLWithPath: second))
-                try? await Task.sleep(for: .seconds(2))
+                let secondURL = URL(fileURLWithPath: second)
+                app?.open(secondURL)
+                // Keep it open until its first frame is on screen (or well past the guard).
+                let deadline = Date().addingTimeInterval(10)
+                while firstPaint[secondURL.path] == nil && Date() < deadline {
+                    try? await Task.sleep(for: .milliseconds(50))
+                }
                 NSApp.keyWindow?.close()
             }
             app?.showSettings(nil)
