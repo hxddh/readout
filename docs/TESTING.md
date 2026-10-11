@@ -81,6 +81,30 @@ To accept an intended rendering change: download `corpus-actual`, copy
 `actual/snapshots` and `actual/screenshots` over `web/test/corpus/`, review
 each changed image, and say why in the PR.
 
+## 5. Speed budgets
+
+`tools/perf-budgets.json` lists each measured metric with a `target` (the
+goal from the release plan) and a `guard` (the regression limit CI enforces).
+`tools/perf-assert.py WHERE FILE...` fails when a gated metric is missing or
+over its guard; metrics with `"guard": null` are printed but not gated.
+
+| Where | Measured by | Metrics |
+| --- | --- | --- |
+| mac (Verify signed product) | `PerformanceBudgetTests` in a release build, written to the file named by `READOUT_PERF_OUT`; `tools/smoke-run.py` timings from the signed app | update_100kb, update_1mb, word_diff_100kb; cold_start_ms, warm_open_ms, write_to_update_ms |
+| linux-webkit (Web tests) | `node web/test/perf.test.mjs` → `web/test/out/perf-web.json` | web_first_apply_1mb_ms, web_update_20_blocks_1mb_ms (each including the layout it causes), scroll frame pacing (reported) |
+
+Run locally:
+
+```sh
+READOUT_PERF_OUT=/tmp/perf-core.json swift test -c release --package-path Packages/ReadoutCore --filter PerformanceBudgetTests
+cd web && npm run build && node test/perf.test.mjs
+tools/perf-assert.py linux-webkit web/test/out/perf-web.json
+```
+
+Local numbers are not comparable with CI's machines; the guards apply to CI.
+Lower a guard when a metric improves; never raise one to make CI pass, and
+explain any change in `_comment` and the PR.
+
 ## The one rule
 
 **Never edit, delete or relax a test assertion to make CI green.** If you

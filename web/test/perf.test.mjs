@@ -64,26 +64,37 @@ await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#
 
 const median = xs => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
-// First apply of the whole document, timed in the page, through to the next frame.
-const firstApply = await page.evaluate(p => new Promise(resolve => {
+// First apply of the whole document, timed in the page: the apply, then
+// style and layout of the page (forced by reading its height), which the
+// browser would otherwise do before the first paint.
+const firstApply = await page.evaluate(p => {
   const t0 = performance.now();
   window.readout.apply(p);
   const sync = performance.now() - t0;
-  requestAnimationFrame(() => resolve({ sync, toFrame: performance.now() - t0 }));
-}), big);
+  void document.scrollingElement.scrollHeight;
+  return { sync, laidOut: performance.now() - t0 };
+}, big);
 await page.waitForTimeout(1500);
 
-// A 20-block update in the middle of reading, three times.
+// A 20-block update in the middle of reading, three times, each with new
+// text: the apply plus the layout it causes.
 const updates = [];
 for (let i = 0; i < 3; i++) {
   await page.evaluate(y => window.scrollTo(0, y), 20000 + i * 5000);
-  updates.push(await page.evaluate(p => { const t0 = performance.now(); window.readout.apply(p); return performance.now() - t0; },
-    { ...edit, version: 2 + i }));
+  const patch = { ...edit, version: 2 + i, ops: edit.ops.map(o => ({ ...o, html: o.html.replace('(revised)', `(revised ${i + 1})`) })) };
+  updates.push(await page.evaluate(p => {
+    const t0 = performance.now();
+    window.readout.apply(p);
+    void document.scrollingElement.scrollHeight;
+    return performance.now() - t0;
+  }, patch));
   await page.waitForTimeout(300);
 }
 
 // Scroll through the whole page in 600 even steps, one per frame, and record
-// frame gaps (each step lands on content not yet laid out).
+// frame gaps (each step lands on content not yet laid out). Headless WebKit
+// on a shared CI machine paces frames unevenly, so these are reported, not
+// gated (tools/perf-budgets.json).
 await page.evaluate(() => window.scrollTo(0, 0));
 await page.waitForTimeout(500);
 const scroll = await page.evaluate(() => new Promise(resolve => {
@@ -106,7 +117,7 @@ const sorted = gaps.slice().sort((a, b) => a - b);
 const result = {
   web_doc_bytes: bytes,
   web_doc_blocks: ops.length,
-  web_first_apply_1mb_ms: Math.round(firstApply.toFrame),
+  web_first_apply_1mb_ms: Math.round(firstApply.laidOut),
   web_first_apply_1mb_sync_ms: Math.round(firstApply.sync),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
   web_scroll_frames: gaps.length,
