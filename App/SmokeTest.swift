@@ -18,7 +18,29 @@ enum SmokeTest {
 
     /// Patches the page reported as applied (any document).
     private static var appliedCount = 0
-    static func noteApplied() { appliedCount += 1 }
+    /// Wall-clock time of every applied patch, for the harness's write-to-update measurement.
+    private static var appliedAt: [Double] = []
+    /// Window request to first patch on screen, per file.
+    private static var firstPaint: [String: Double] = [:]
+    private static var started = false
+
+    static func noteApplied() {
+        appliedCount += 1
+        if outputDirectory != nil { appliedAt.append(Date().timeIntervalSince1970) }
+    }
+
+    static func noteFirstPaint(_ url: URL, seconds: Double) {
+        guard outputDirectory != nil else { return }
+        firstPaint[url.path] = seconds
+    }
+
+    /// Timings for tools/smoke-run.py, which adds its own clock readings.
+    private static func writeTimings(_ dir: URL) {
+        let json: [String: Any] = ["applied_at": appliedAt, "first_paint_s": firstPaint]
+        if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: dir.appendingPathComponent("timings-app.json"))
+        }
+    }
 
     static func didOpen() {
         guard let out = outputDirectory else { return }
@@ -27,7 +49,8 @@ enum SmokeTest {
     }
 
     static func run(controller: ReaderWindowController, webView: WKWebView) {
-        guard let out = outputDirectory else { return }
+        guard let out = outputDirectory, !started else { return }
+        started = true
         try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
 
         NSApp.activate()
@@ -58,6 +81,12 @@ enum SmokeTest {
             await capture(webView, window: controller.window, to: out, name: "4-dark")
             NSApp.appearance = nil
             let app = NSApp.delegate as? AppDelegate
+            // Open a second file while running: the warm open-to-first-paint path.
+            if let second = ProcessInfo.processInfo.environment["READOUT_SMOKE_SECOND"] {
+                app?.open(URL(fileURLWithPath: second))
+                try? await Task.sleep(for: .seconds(2))
+                NSApp.keyWindow?.close()
+            }
             app?.showSettings(nil)
             try? await Task.sleep(for: .seconds(1.5))
             screen(out, "5-settings")
@@ -65,6 +94,7 @@ enum SmokeTest {
             app?.showWelcome(nil)
             try? await Task.sleep(for: .seconds(1.5))
             screen(out, "6-welcome")
+            writeTimings(out)
             NSApp.terminate(nil)
         }
     }

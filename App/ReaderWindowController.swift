@@ -3,6 +3,7 @@ import SwiftUI
 import WebKit
 import Combine
 import ReadoutCore
+import os
 
 /// Keeps one reader page loaded and initialised in the background so a new window opens instantly.
 @MainActor
@@ -29,6 +30,12 @@ extension NSToolbarItem.Identifier {
     static let nextChange = NSToolbarItem.Identifier("readout.nextChange")
     static let width = NSToolbarItem.Identifier("readout.width")
     static let search = NSToolbarItem.Identifier("readout.search")
+}
+
+/// Performance signposts (visible in Instruments): "open" spans a window
+/// request to its first patch on screen; "applied" marks every patch.
+enum ReaderPerf {
+    static let signposter = OSSignposter(subsystem: "io.github.hxddh.readout", category: "perf")
 }
 
 /// One window per file: sidebar outline + reader web view, live-updated from disk.
@@ -61,7 +68,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// Fragment from a cross-file link (other.md#section), scrolled to after load.
     private var pendingAnchor: String?
 
+    /// When the window was asked for, for the open-to-first-paint measurement.
+    private let openedAt = Date()
+    private var painted = false
+    private let openSignpost: OSSignpostIntervalState
+
     init(url: URL, pendingAnchor: String? = nil) {
+        openSignpost = ReaderPerf.signposter.beginInterval("open")
         self.url = url.standardizedFileURL
         let base = self.url.deletingLastPathComponent()
         self.loader = DocumentLoader(url: self.url) {
@@ -378,6 +391,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString("\(url.lastPathComponent)#\(anchor)", forType: .string)
         case .applied:
+            if !painted {
+                // First patch on screen: the open is done.
+                painted = true
+                ReaderPerf.signposter.endInterval("open", openSignpost)
+                SmokeTest.noteFirstPaint(url, seconds: Date().timeIntervalSince(openedAt))
+            }
+            ReaderPerf.signposter.emitEvent("applied")
             SmokeTest.noteApplied()
         case .open(let href):
             openLink(href)
