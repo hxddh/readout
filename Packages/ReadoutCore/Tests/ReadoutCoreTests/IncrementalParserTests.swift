@@ -22,6 +22,7 @@ import Testing
         "```", "```js", "~~~", "````", "<details>", "</details>", "<summary>More</summary>", "<!--", "-->",
         "<pre>", "</pre>", "<div>", "$$", "x = $a$ and $$b$$", "---", "***", "===", "Setext", "- [ ] task",
         "- [x] done", "text with <details> inline", "  - nested", "\tTabbed", "<script>", "</script>", "<br>", "<span class=\"x\">", "  <div>",
+        "<source>",
         "See note[^n].", "Again[^m] and[^n].", "[^n]: The note.", "[^m]: Another, citing[^n].", "    continued note",
     ]
 
@@ -74,6 +75,9 @@ import Testing
 
     @Test func linkReferenceDefinitionsParseInFull() {
         #expect(IncrementalParser.needsFullParse(["See [x].", "", "[x]: https://example.com"]))
+        #expect(IncrementalParser.needsFullParse(["See [x].", "", "- [x]: https://example.com"]))
+        #expect(IncrementalParser.needsFullParse(["See [x].", "", ">[x]: https://example.com"]))
+        #expect(IncrementalParser.needsFullParse(["See [x].", "", "> 1. [x]: https://example.com"]))
         #expect(!IncrementalParser.needsFullParse(["<!--", "[x]: inside a comment", "-->", "```", "[y]: in code", "```"]))
         #expect(!IncrementalParser.needsFullParse(["A [link](https://x.y) and a: colon.", "- [ ] task"]))
         let parser = IncrementalParser()
@@ -94,6 +98,20 @@ import Testing
         #expect((parser.lastParsed ?? 99) <= 2)
         let later = doc.blocks.first { $0.text.hasPrefix("Later") }!
         #expect(later.html.contains(">1</a>") && later.html.contains("user-content-fnref-a-2"))
+    }
+
+    /// Cases found by review: each version must equal a full parse.
+    @Test func reviewedCases() {
+        let versions = [
+            ["See [x].\n\n- [x]: https://e.com\n\nz\n", "See [x].\n\nedited\n\n- [x]: https://e.com\n\nz\n"],
+            ["para\n<source>\n```\n\na\n```\n\nb\n\nc\n```\n\nend\n"],
+            ["para\n<search>\n```\n\na\n```\n\nb\n\nc\n```\n\nend\n"],
+            ["- <!--\n\nx\n\ny -->\n\nz\n"],
+        ]
+        for sequence in versions {
+            let parser = IncrementalParser()
+            for text in sequence { expectSame(text, parser, text) }
+        }
     }
 
     @Test func fragmentsCoverEveryLineOnce() {
