@@ -22,7 +22,7 @@ import Testing
         "```", "```js", "~~~", "````", "<details>", "</details>", "<summary>More</summary>", "<!--", "-->",
         "<pre>", "</pre>", "<div>", "$$", "x = $a$ and $$b$$", "---", "***", "===", "Setext", "- [ ] task",
         "- [x] done", "text with <details> inline", "  - nested", "\tTabbed", "<script>", "</script>", "<br>", "<span class=\"x\">", "  <div>",
-        "<source>", "<!doctype", "<!DOCTYPE note", ">",
+        "<source>", "####### seven", "<!doctype", "<!DOCTYPE note", ">",
         "See note[^n].", "Again[^m] and[^n].", "[^n]: The note.", "[^m]: Another, citing[^n].", "    continued note",
     ]
 
@@ -110,6 +110,7 @@ import Testing
             ["- <!--\n\nx\n\ny -->\n\nz\n"],
             ["<!doctype\ntext $x$\n\n```\n\ncode\n```\n>\n"],
             ["<!DOCTYPE\ntext\n\n```\n\ncode\n```\n>\n"],
+            ["####### text\n<span>\n$x$\n\nafter\n"],
         ]
         for sequence in versions {
             let parser = IncrementalParser()

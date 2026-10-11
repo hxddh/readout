@@ -160,7 +160,8 @@ struct FenceTracker {
         if relative < 4 && first == 0x23 {   // #
             var k = indent
             while k < n && u[k] == 0x23 { k += 1 }
-            isHeading = k == n || u[k] == Self.space || u[k] == Self.tab
+            // 1 to 6 # and then a space, a tab or the end of the line.
+            isHeading = k - indent <= 6 && (k == n || u[k] == Self.space || u[k] == Self.tab)
         }
         let isBreak = relative < 4 && Self.isBreak(u, from: indent)
         if outdented && (isHeading || isBreak || first == 0x3E) { itemContent = nil }
