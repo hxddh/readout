@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node test/apply.test.mjs && node test/privacy.test.mjs"
+    "test": "node test/apply.test.mjs && node test/privacy.test.mjs",
+    "corpus": "node test/corpus.test.mjs"
   },
   "dependencies": {
     "esbuild": "0.28.2",
@@ -13,6 +14,8 @@
     "shiki": "4.5.0"
   },
   "devDependencies": {
-    "playwright": "1.49.1"
+    "pixelmatch": "7.1.0",
+    "playwright": "1.49.1",
+    "pngjs": "7.0.0"
   }
 }

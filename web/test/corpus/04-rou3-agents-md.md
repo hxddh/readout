@@ -1,0 +1,58 @@
+# rou3
+
+Lightweight, high-performance HTTP router for JS/TS: a segment trie (one node per path segment, no prefix compression) plus a map of static paths. Zero runtime dependencies. Entry points: `rou3` (`src/index.ts`) and `rou3/compiler` (`src/compiler.ts`).
+
+Layout: `src/operations/` (add, find, find-all, remove), `src/regexp/` (`routeToRegExp`, `regExpToRoute`), `src/overlap/`, `src/route-node-keys.ts`. Shared internals sit in `src/`: `_pattern.ts` (pattern preprocessing, insert time), `_match.ts` (lookup helpers, also used by the compiler), `_segment-regexp.ts` (a dynamic segment's regex and its linear form), `_group-delimiters.ts`, `_group-names.ts`.
+
+> [!IMPORTANT]
+> Keep `AGENTS.md` and `.agents/*.md` updated when behavior or contracts change. Document current rules and why they hold, not history.
+
+## Docs
+
+Read the relevant doc before changing that area:
+
+- [`.agents/matching.md`](.agents/matching.md): tree, lookup, same-node siblings, `""` method entries, `findAllRoutes` ordering, the greedy `*`, segments after a catch-all, removal, empty segments.
+- [`.agents/syntax.md`](.agents/syntax.md): pattern pipeline, escapes, `{}` groups, reserved syntax, param/capture-group names.
+- [`.agents/compiler.md`](.agents/compiler.md): `compileRouter` / `compileRouterToString` contract and codegen invariants.
+- [`.agents/regexp.md`](.agents/regexp.md): `routeToRegExp` (regex ≡ router) and `regExpToRoute`.
+- [`.agents/overlap.md`](.agents/overlap.md): `routesOverlap` / `compareRoutes` / `findOverlappingRoutes` and `routeNodeKeys`.
+- [`.agents/testing.md`](.agents/testing.md): suites, fixture conventions, sweeps, JSON scenarios (`test/scenarios/`), cross-engine and Node 22 checks.
+
+## Core invariants
+
+- Interpreter (`findRoute` / `findAllRoutes`) and compiled matchers (JIT and AOT) return identical results; tests compare them.
+- `findAllRoutes` order (least → most specific) is a public contract (README "Result ordering", full rules in `docs/reference.md`), with documented carve-outs (see [matching.md](.agents/matching.md#findallroutes-ordering-public-contract)). It lists each `addRoute` call once, by the variant `findRoute` picks (a shared `variants` token, never data equality); a pattern registered twice is two routes.
+- `routeToRegExp(p)` matches exactly the paths `findRoute` matches on a router holding only `p` (consumers use it as a security guard). The one exception: a constraint that can match `/` (`(.+)`, `(.*?)`, `([^x]*)`) also matches across segments in the regex, so it over-matches, never under-matches. A `(.*)` group is no such constraint: it is a `*` (below), exact.
+- `routeToRegExp` output must not backtrack polynomially where a look-around-free form exists: `determinize` pins in-segment lazy params to their forced split (see [regexp.md](.agents/regexp.md#perf-and-backtracking)); residual shapes are documented in `docs/reference.md` ("Backtracking").
+- Never write a second pattern parser: derived APIs (`routeToRegExp` validation and dynamic segments, overlap, `routeNodeKeys`) run the real `addRoute` (or `getParamRegexp`) on a throwaway router.
+- Lookup ignores at most one trailing slash; middle empty segments are meaningful. The one reader of that slash is a trailing `*` over zero segments, for its capture only: `/a/*` matches `/a` (no key; optional, as in 0.11, unlike URLPattern) and `/a/` (`""`).
+- `*` is URLPattern's greedy catch-all (`(.*)`, also inside a segment), `**` the same plus zero segments; one catch-all per route (`*`, `**`, `:x+`, `:x*`, `(.*)`, `:x(.*)`). A written `(.*)` group is that `*` and a `:name(.*)` a `*` keyed by `name` (`starGroups`, before anything else reads the pattern). On a shared node `**` < `*` < `**:name` (containment). See [matching.md](.agents/matching.md#greedy-).
+- Literal pattern text is percent-encoded once, at insert, like URLPattern (`encodeLiteral`, see [syntax.md](.agents/syntax.md#percent-encoding)); lookup paths are never decoded or encoded (callers pass `new URL().pathname`). Encode only after syntax is parsed.
+- `.` / `..` pattern segments (`%2e` too) are resolved at insert like `new URL()` resolves a path (`dotSegments`, see [syntax.md](.agents/syntax.md#dot-segments)), as URLPattern does; an escaped one is literal, and next to a param, catch-all or group they throw. Lookup paths are resolved only with `normalize`.
+- A `:name` never captures `""`, and no segment a `:name+`, `:name*` or `**:name` takes is empty (URLPattern's `[^/]+(?:/[^/]+)*`; a user-written `**:name` is the same catch-all as `:name+`); `*`, `**`, `:name(.*)` (a `*` keyed by name) and constraints may take empty segments (see [matching.md](.agents/matching.md#empty-segments-and-normalization)).
+- Unnamed captures (`*`, a bare `**`, unnamed groups) are keyed `"0"`, `"1"`, … in pattern order over the whole pattern, as in URLPattern (the pieces a `*` inside a segment is split into share one key); a bare `**` over zero segments leaves its key out. The router also reports a bare `**` as `_` (deprecated alias, no regex group; see [matching.md](.agents/matching.md#unnamed-captures)).
+- Matching a dynamic segment is linear in its length for the regexes rou3 generates: the tree stores `linearRegExp`'s form of `getParamRegexp`'s regex (same matches and captures; see [syntax.md](.agents/syntax.md#params-sharing-a-segment)). Only user constraints may backtrack.
+- Optional features (overlap, regexp, `routeNodeKeys`, `regExpToRoute`) must stay tree-shakeable; `test/bench/bundle.test.ts` budgets the core bundle.
+- `addRoute` preprocessing helpers bail early when their trigger char is absent; keep those guards.
+- Every thrown error starts with `rou3:`; pattern errors (via `invalidSyntax()`) are `rou3: <what> (<route as written>)`.
+
+## Code conventions
+
+- Performance-first: `charCodeAt()` over `.startsWith()`, plain `for` loops, null-prototype objects (`NullProtoObj`), `.concat()` over spread.
+- Hot-path var names: `m` (method), `p` (path), `s` (segments), `l` (length).
+- Internal files are prefixed `_`; internal helpers go at the end of the file.
+- Split modules by concept and consumer, not line count: one concept per module, no import cycles. A helper file needs two or more consumers, or a self-contained algorithm documented on its own. A feature's private helpers live in its folder (`regexp/`, `overlap/`); helpers shared across features live in `src/`. Past ~500 LoC, look for a natural split point, but a cohesive large file is fine (the compiler's codegen, the `regExpToRoute` parser).
+- ESM only, explicit `.ts` import extensions, `with { type: "json" }` for JSON; import from specific modules, not barrels.
+- Multi-arg functions take an options object as the second parameter.
+
+## Bug fix workflow (regression-first)
+
+1. Write the regression test reproducing the bug.
+2. Run it and confirm it **fails** (never skip).
+3. Make the minimal fix.
+4. Confirm the test passes, then run the broader suite.
+
+## Git
+
+- Semantic, lower-case commits with scope (`fix(compiler): ...`), short description on the second line.
+- If not on `main`, `git push` after committing. Use `gh` for GitHub.

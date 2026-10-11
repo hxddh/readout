@@ -1,0 +1,1341 @@
+{
+ "height": 17665,
+ "blocks": [
+  {
+   "slot": 1,
+   "kind": "heading",
+   "top": 40,
+   "h": 38,
+   "style": "916df81e",
+   "text": "A2A 协议 设计文档§"
+  },
+  {
+   "slot": 2,
+   "kind": "heading",
+   "top": 118,
+   "h": 29,
+   "style": "b1d89104",
+   "text": "概述§"
+  },
+  {
+   "slot": 3,
+   "kind": "paragraph",
+   "top": 161,
+   "h": 112,
+   "style": "38f61d55",
+   "text": "A2A 协议在 SlideRule 现有的 MessageBus、动态组织生成、Mission "
+  },
+  {
+   "slot": 4,
+   "kind": "paragraph",
+   "top": 290,
+   "h": 28,
+   "style": "77bd5e3d",
+   "text": "核心设计原则："
+  },
+  {
+   "slot": 5,
+   "kind": "listItem",
+   "top": 336,
+   "h": 29,
+   "style": "2f18ec0a",
+   "text": "协议优先：基于 JSON-RPC 2.0 定义统一信封格式，所有框架适配器基于同一协议工作"
+  },
+  {
+   "slot": 6,
+   "kind": "listItem",
+   "top": 367,
+   "h": 57,
+   "style": "eeaa2878",
+   "text": "复用 Guest Agent 基础设施：ExternalAgentNode 继承 GuestAg"
+  },
+  {
+   "slot": 7,
+   "kind": "listItem",
+   "top": 425,
+   "h": 29,
+   "style": "602594cb",
+   "text": "最小侵入：通过 MessageBus 元数据标记和路由扩展集成，不修改现有消息流核心逻辑"
+  },
+  {
+   "slot": 8,
+   "kind": "listItem",
+   "top": 456,
+   "h": 29,
+   "style": "4a1f0b56",
+   "text": "适配器模式：新增外部框架只需实现一个 FrameworkAdapter，无需修改协议层"
+  },
+  {
+   "slot": 9,
+   "kind": "heading",
+   "top": 512,
+   "h": 23,
+   "style": "cb7f88c0",
+   "text": "设计决策§"
+  },
+  {
+   "slot": 10,
+   "kind": "listItem",
+   "top": 544,
+   "h": 57,
+   "style": "68ccadba",
+   "text": "JSON-RPC 2.0 作为协议基础：成熟标准，轻量级，与 MCP 协议风格一致，便于外部框架"
+  },
+  {
+   "slot": 11,
+   "kind": "listItem",
+   "top": 603,
+   "h": 57,
+   "style": "7dfd3071",
+   "text": "HTTP POST + SSE 双模式：同步调用用 HTTP POST，流式响应用 SSE，避免"
+  },
+  {
+   "slot": 12,
+   "kind": "listItem",
+   "top": 662,
+   "h": 52,
+   "style": "0ed46fea",
+   "text": "复用 GuestAgentNode：ExternalAgentNode 继承 GuestAgen"
+  },
+  {
+   "slot": 13,
+   "kind": "listItem",
+   "top": 716,
+   "h": 57,
+   "style": "153b7d1e",
+   "text": "API Key 简单认证：本轮不实现联邦身份，使用环境变量配置的 API Key 列表，满足基本"
+  },
+  {
+   "slot": 14,
+   "kind": "listItem",
+   "top": 775,
+   "h": 57,
+   "style": "307a3f79",
+   "text": "上下文摘要传递：跨框架调用传递上下文摘要（最大 2000 字符）而非完整上下文，降低带宽和隐私风"
+  },
+  {
+   "slot": 15,
+   "kind": "listItem",
+   "top": 833,
+   "h": 29,
+   "style": "7eecce22",
+   "text": "框架适配器为纯函数：每个适配器将 A2A 参数转换为框架特定格式，无副作用，便于测试"
+  },
+  {
+   "slot": 16,
+   "kind": "heading",
+   "top": 903,
+   "h": 29,
+   "style": "b1d89104",
+   "text": "架构§"
+  },
+  {
+   "slot": 17,
+   "kind": "mermaid",
+   "top": 945,
+   "h": 821,
+   "style": "6f9a988c",
+   "text": "graph TB subgraph \"共享类型层 (shared/)\" Proto[\"share"
+  },
+  {
+   "slot": 18,
+   "kind": "heading",
+   "top": 1793,
+   "h": 23,
+   "style": "cc7f8a53",
+   "text": "数据流§"
+  },
+  {
+   "slot": 19,
+   "kind": "heading",
+   "top": 1837,
+   "h": 20,
+   "style": "ff9b612c",
+   "text": "Cube 调用外部 Agent§"
+  },
+  {
+   "slot": 20,
+   "kind": "mermaid",
+   "top": 1864,
+   "h": 352,
+   "style": "9cd5e7b4",
+   "text": "sequenceDiagram participant WF as Workflow Engin"
+  },
+  {
+   "slot": 21,
+   "kind": "heading",
+   "top": 2236,
+   "h": 20,
+   "style": "4d17fe67",
+   "text": "外部 Agent 调用 Cube Agent§"
+  },
+  {
+   "slot": 22,
+   "kind": "mermaid",
+   "top": 2263,
+   "h": 344,
+   "style": "60f17f00",
+   "text": "sequenceDiagram participant EA as External Agent"
+  },
+  {
+   "slot": 23,
+   "kind": "heading",
+   "top": 2647,
+   "h": 29,
+   "style": "aed88c4b",
+   "text": "组件与接口§"
+  },
+  {
+   "slot": 24,
+   "kind": "heading",
+   "top": 2703,
+   "h": 23,
+   "style": "c7d4a246",
+   "text": "1. A2A 协议类型定义 (shared/a2a-protocol.ts)§"
+  },
+  {
+   "slot": 25,
+   "kind": "paragraph",
+   "top": 2735,
+   "h": 28,
+   "style": "0f0f10bd",
+   "text": "新建文件，定义所有 A2A 协议相关类型："
+  },
+  {
+   "slot": 26,
+   "kind": "code",
+   "top": 2781,
+   "h": 2484,
+   "style": "a3a9093d",
+   "text": "/** 支持的外部框架类型 */ export type A2AFrameworkType = "
+  },
+  {
+   "slot": 27,
+   "kind": "heading",
+   "top": 5293,
+   "h": 23,
+   "style": "a1573bf6",
+   "text": "2. ExternalAgentNode 类型扩展 (shared/organization-s"
+  },
+  {
+   "slot": 28,
+   "kind": "paragraph",
+   "top": 5325,
+   "h": 28,
+   "style": "69bd4833",
+   "text": "在现有文件中新增："
+  },
+  {
+   "slot": 29,
+   "kind": "code",
+   "top": 5370,
+   "h": 144,
+   "style": "ea0337ec",
+   "text": "/** 外部框架 Agent 节点（继承 GuestAgentNode） */ export i"
+  },
+  {
+   "slot": 30,
+   "kind": "heading",
+   "top": 5542,
+   "h": 23,
+   "style": "47bab4e7",
+   "text": "3. A2A Client (server/core/a2a-client.ts)§"
+  },
+  {
+   "slot": 31,
+   "kind": "code",
+   "top": 5574,
+   "h": 564,
+   "style": "07f8e3a3",
+   "text": "export class A2AClient { constructor(options: A2"
+  },
+  {
+   "slot": 32,
+   "kind": "heading",
+   "top": 6166,
+   "h": 23,
+   "style": "47bab4e7",
+   "text": "4. A2A Server (server/core/a2a-server.ts)§"
+  },
+  {
+   "slot": 33,
+   "kind": "code",
+   "top": 6198,
+   "h": 724,
+   "style": "7d337581",
+   "text": "export class A2AServer { constructor(options: A2"
+  },
+  {
+   "slot": 34,
+   "kind": "heading",
+   "top": 6949,
+   "h": 23,
+   "style": "b2b30e93",
+   "text": "5. 框架适配器 (server/core/a2a-adapters/)§"
+  },
+  {
+   "slot": 35,
+   "kind": "paragraph",
+   "top": 6981,
+   "h": 28,
+   "style": "060cc3fb",
+   "text": "每个适配器实现统一接口："
+  },
+  {
+   "slot": 36,
+   "kind": "code",
+   "top": 7027,
+   "h": 304,
+   "style": "06228e0d",
+   "text": "/** 框架适配器接口 */ export interface FrameworkAdapter"
+  },
+  {
+   "slot": 37,
+   "kind": "paragraph",
+   "top": 7346,
+   "h": 28,
+   "style": "68bd46a0",
+   "text": "三个适配器文件："
+  },
+  {
+   "slot": 38,
+   "kind": "listItem",
+   "top": 7391,
+   "h": 26,
+   "style": "ec4db2a7",
+   "text": "server/core/a2a-adapters/crewai.ts — CrewAI task"
+  },
+  {
+   "slot": 39,
+   "kind": "listItem",
+   "top": 7420,
+   "h": 26,
+   "style": "9cd88625",
+   "text": "server/core/a2a-adapters/langgraph.ts — LangGrap"
+  },
+  {
+   "slot": 40,
+   "kind": "listItem",
+   "top": 7448,
+   "h": 26,
+   "style": "a673b38a",
+   "text": "server/core/a2a-adapters/claude.ts — Claude Mess"
+  },
+  {
+   "slot": 41,
+   "kind": "code",
+   "top": 7492,
+   "h": 424,
+   "style": "679664c4",
+   "text": "// crewai.ts export class CrewAIAdapter implemen"
+  },
+  {
+   "slot": 42,
+   "kind": "heading",
+   "top": 7944,
+   "h": 23,
+   "style": "fd572fbf",
+   "text": "6. MessageBus A2A 路由扩展 (server/core/message-bus."
+  },
+  {
+   "slot": 43,
+   "kind": "paragraph",
+   "top": 7976,
+   "h": 28,
+   "style": "0c0f0c04",
+   "text": "在现有 MessageBus 类上新增方法："
+  },
+  {
+   "slot": 44,
+   "kind": "code",
+   "top": 8021,
+   "h": 544,
+   "style": "69a92ab4",
+   "text": "class MessageBus { // 现有方法保持不变... /** 发送 A2A 消息（"
+  },
+  {
+   "slot": 45,
+   "kind": "heading",
+   "top": 8593,
+   "h": 23,
+   "style": "77a9d35e",
+   "text": "7. A2A API 路由 (server/routes/a2a.ts)§"
+  },
+  {
+   "slot": 46,
+   "kind": "code",
+   "top": 8625,
+   "h": 124,
+   "style": "f1daa28e",
+   "text": "POST /api/a2a/invoke — 外部 Agent 调用 Cube Agent（同步"
+  },
+  {
+   "slot": 47,
+   "kind": "heading",
+   "top": 8776,
+   "h": 23,
+   "style": "e3ce7e9a",
+   "text": "8. 3D 可视化组件§"
+  },
+  {
+   "slot": 48,
+   "kind": "heading",
+   "top": 8820,
+   "h": 20,
+   "style": "bd8dac5c",
+   "text": "Zustand Store (client/src/lib/a2a-store.ts)§"
+  },
+  {
+   "slot": 49,
+   "kind": "code",
+   "top": 8847,
+   "h": 184,
+   "style": "0e586542",
+   "text": "interface A2AState { activeSessions: A2ASession["
+  },
+  {
+   "slot": 50,
+   "kind": "heading",
+   "top": 9052,
+   "h": 20,
+   "style": "c1986c7e",
+   "text": "跨框架粒子流组件 (client/src/components/three/CrossFrame"
+  },
+  {
+   "slot": 51,
+   "kind": "code",
+   "top": 9078,
+   "h": 64,
+   "style": "e9c117a9",
+   "text": "/** 渲染跨框架 A2A 调用粒子流动画 */ export function CrossFr"
+  },
+  {
+   "slot": 52,
+   "kind": "paragraph",
+   "top": 9157,
+   "h": 28,
+   "style": "75bd5b17",
+   "text": "视觉规则："
+  },
+  {
+   "slot": 53,
+   "kind": "listItem",
+   "top": 9203,
+   "h": 29,
+   "style": "e8c4964e",
+   "text": "菱形粒子 + 渐变色轨迹（区别于跨 Pod 的圆形粒子）"
+  },
+  {
+   "slot": 54,
+   "kind": "listItem",
+   "top": 9233,
+   "h": 29,
+   "style": "116a6dfb",
+   "text": "CrewAI 调用：蓝色（#3B82F6）"
+  },
+  {
+   "slot": 55,
+   "kind": "listItem",
+   "top": 9264,
+   "h": 26,
+   "style": "6ef0ff47",
+   "text": "LangGraph 调用：紫色（#8B5CF6）"
+  },
+  {
+   "slot": 56,
+   "kind": "listItem",
+   "top": 9292,
+   "h": 29,
+   "style": "116a6dfb",
+   "text": "Claude 调用：橙色（#F59E0B）"
+  },
+  {
+   "slot": 57,
+   "kind": "listItem",
+   "top": 9323,
+   "h": 29,
+   "style": "116a6dfb",
+   "text": "Custom 调用：灰色（#6B7280）"
+  },
+  {
+   "slot": 58,
+   "kind": "listItem",
+   "top": 9354,
+   "h": 29,
+   "style": "156a7447",
+   "text": "活跃会话在外部 Agent 节点上显示框架类型标签"
+  },
+  {
+   "slot": 59,
+   "kind": "listItem",
+   "top": 9384,
+   "h": 29,
+   "style": "d54d728a",
+   "text": "完成时绿色脉冲，失败时红色脉冲"
+  },
+  {
+   "slot": 60,
+   "kind": "heading",
+   "top": 9454,
+   "h": 29,
+   "style": "afd88dde",
+   "text": "数据模型§"
+  },
+  {
+   "slot": 61,
+   "kind": "heading",
+   "top": 9510,
+   "h": 23,
+   "style": "64537430",
+   "text": "A2ASession 状态机§"
+  },
+  {
+   "slot": 62,
+   "kind": "mermaid",
+   "top": 9542,
+   "h": 690,
+   "style": "03eac9fd",
+   "text": "stateDiagram-v2 [*] --> pending: 创建请求 pending --"
+  },
+  {
+   "slot": 63,
+   "kind": "heading",
+   "top": 10259,
+   "h": 23,
+   "style": "fa4c118d",
+   "text": "ExternalAgentNode 继承关系§"
+  },
+  {
+   "slot": 64,
+   "kind": "mermaid",
+   "top": 10291,
+   "h": 1222,
+   "style": "1edec314",
+   "text": "classDiagram WorkflowOrganizationNode <|-- Guest"
+  },
+  {
+   "slot": 65,
+   "kind": "heading",
+   "top": 11541,
+   "h": 23,
+   "style": "d87f9d37",
+   "text": "消息元数据扩展§"
+  },
+  {
+   "slot": 66,
+   "kind": "paragraph",
+   "top": 11573,
+   "h": 28,
+   "style": "0b0f0a71",
+   "text": "A2A 消息在 MessageBus 中的元数据："
+  },
+  {
+   "slot": 67,
+   "kind": "code",
+   "top": 11619,
+   "h": 144,
+   "style": "2c60c256",
+   "text": "{ a2a: true, frameworkType: \"crewai\" | \"langgrap"
+  },
+  {
+   "slot": 68,
+   "kind": "heading",
+   "top": 11790,
+   "h": 23,
+   "style": "d77f9ba4",
+   "text": "速率限制数据结构§"
+  },
+  {
+   "slot": 69,
+   "kind": "paragraph",
+   "top": 11822,
+   "h": 28,
+   "style": "0a0cca47",
+   "text": "内存中维护，使用滑动窗口计数器："
+  },
+  {
+   "slot": 70,
+   "kind": "code",
+   "top": 11868,
+   "h": 164,
+   "style": "a15955ff",
+   "text": "interface RateLimitEntry { apiKey: string; windo"
+  },
+  {
+   "slot": 71,
+   "kind": "heading",
+   "top": 12059,
+   "h": 23,
+   "style": "cb7f88c0",
+   "text": "环境变量§"
+  },
+  {
+   "slot": 72,
+   "kind": "table",
+   "top": 12091,
+   "h": 216,
+   "style": "e3fcd217",
+   "text": "变量名默认值说明A2A_API_KEYS\"\"允许的 API Key 列表（逗号分隔）A2A_RA"
+  },
+  {
+   "slot": 73,
+   "kind": "heading",
+   "top": 12348,
+   "h": 29,
+   "style": "aed88c4b",
+   "text": "正确性属性§"
+  },
+  {
+   "slot": 74,
+   "kind": "paragraph",
+   "top": 12391,
+   "h": 56,
+   "style": "184979b1",
+   "text": "正确性属性是系统在所有有效执行中都应保持为真的特征或行为——本质上是关于系统应该做什么的形式化陈"
+  },
+  {
+   "slot": 75,
+   "kind": "heading",
+   "top": 12474,
+   "h": 23,
+   "style": "ccd2d793",
+   "text": "Property 1: A2AEnvelope 序列化往返一致性§"
+  },
+  {
+   "slot": 76,
+   "kind": "paragraph",
+   "top": 12506,
+   "h": 56,
+   "style": "4e2d9fff",
+   "text": "For any 合法的 A2AEnvelope 对象，调用 serializeEnvelope "
+  },
+  {
+   "slot": 77,
+   "kind": "paragraph",
+   "top": 12580,
+   "h": 26,
+   "style": "b3c560e6",
+   "text": "Validates: Requirements 1.6"
+  },
+  {
+   "slot": 78,
+   "kind": "heading",
+   "top": 12633,
+   "h": 23,
+   "style": "cbd2d600",
+   "text": "Property 2: A2ASession 序列化往返一致性§"
+  },
+  {
+   "slot": 79,
+   "kind": "paragraph",
+   "top": 12665,
+   "h": 56,
+   "style": "60b24299",
+   "text": "For any 合法的 A2ASession 对象，调用 serializeSession 后再"
+  },
+  {
+   "slot": 80,
+   "kind": "paragraph",
+   "top": 12739,
+   "h": 26,
+   "style": "560461bd",
+   "text": "Validates: Requirements 9.5"
+  },
+  {
+   "slot": 81,
+   "kind": "heading",
+   "top": 12792,
+   "h": 23,
+   "style": "53d5eaaf",
+   "text": "Property 3: 上下文长度验证§"
+  },
+  {
+   "slot": 82,
+   "kind": "paragraph",
+   "top": 12824,
+   "h": 56,
+   "style": "22c71b12",
+   "text": "For any 字符串，validateContext 应在字符串长度不超过 2000 时返回 "
+  },
+  {
+   "slot": 83,
+   "kind": "paragraph",
+   "top": 12898,
+   "h": 26,
+   "style": "cf6a597b",
+   "text": "Validates: Requirements 1.2, 9.1"
+  },
+  {
+   "slot": 84,
+   "kind": "heading",
+   "top": 12951,
+   "h": 23,
+   "style": "52d5e91c",
+   "text": "Property 4: 会话失败状态标记§"
+  },
+  {
+   "slot": 85,
+   "kind": "paragraph",
+   "top": 12983,
+   "h": 84,
+   "style": "623d18bc",
+   "text": "For any A2ASession，当调用超时或收到错误响应时，terminateTimedO"
+  },
+  {
+   "slot": 86,
+   "kind": "paragraph",
+   "top": 13085,
+   "h": 26,
+   "style": "9659a18e",
+   "text": "Validates: Requirements 2.5, 9.4"
+  },
+  {
+   "slot": 87,
+   "kind": "heading",
+   "top": 13138,
+   "h": 23,
+   "style": "52d5e91c",
+   "text": "Property 5: 并发会话数量限制§"
+  },
+  {
+   "slot": 88,
+   "kind": "paragraph",
+   "top": 13170,
+   "h": 56,
+   "style": "3434fe8d",
+   "text": "For any 正整数 N 作为 maxConcurrentSessions 配置值，A2A_C"
+  },
+  {
+   "slot": 89,
+   "kind": "paragraph",
+   "top": 13244,
+   "h": 26,
+   "style": "02977211",
+   "text": "Validates: Requirements 2.6"
+  },
+  {
+   "slot": 90,
+   "kind": "heading",
+   "top": 13297,
+   "h": 23,
+   "style": "52d5e91c",
+   "text": "Property 6: 无效认证令牌拒绝§"
+  },
+  {
+   "slot": 91,
+   "kind": "paragraph",
+   "top": 13329,
+   "h": 56,
+   "style": "b738ff7f",
+   "text": "For any 不在已配置 API Key 列表中的字符串（包括空字符串），validateAp"
+  },
+  {
+   "slot": 92,
+   "kind": "paragraph",
+   "top": 13403,
+   "h": 26,
+   "style": "d2f59065",
+   "text": "Validates: Requirements 3.6, 5.1"
+  },
+  {
+   "slot": 93,
+   "kind": "heading",
+   "top": 13456,
+   "h": 23,
+   "style": "5bd5f747",
+   "text": "Property 7: 不存在的 Agent 返回错误§"
+  },
+  {
+   "slot": 94,
+   "kind": "paragraph",
+   "top": 13488,
+   "h": 52,
+   "style": "d8518e05",
+   "text": "For any 不在 AgentDirectory 中注册的 Agent ID，A2A_Serv"
+  },
+  {
+   "slot": 95,
+   "kind": "paragraph",
+   "top": 13558,
+   "h": 26,
+   "style": "34fd57ec",
+   "text": "Validates: Requirements 3.7"
+  },
+  {
+   "slot": 96,
+   "kind": "heading",
+   "top": 13611,
+   "h": 23,
+   "style": "dace706f",
+   "text": "Property 8: 速率限制执行§"
+  },
+  {
+   "slot": 97,
+   "kind": "paragraph",
+   "top": 13643,
+   "h": 78,
+   "style": "53970069",
+   "text": "For any API Key 和正整数 R 作为 rateLimitPerMinute 配置值"
+  },
+  {
+   "slot": 98,
+   "kind": "paragraph",
+   "top": 13739,
+   "h": 26,
+   "style": "9659a18e",
+   "text": "Validates: Requirements 5.4, 5.5"
+  },
+  {
+   "slot": 99,
+   "kind": "heading",
+   "top": 13792,
+   "h": 23,
+   "style": "4ed5e2d0",
+   "text": "Property 9: 框架适配器请求格式正确性§"
+  },
+  {
+   "slot": 100,
+   "kind": "paragraph",
+   "top": 13824,
+   "h": 104,
+   "style": "7f019dfb",
+   "text": "For any 合法的 A2AInvokeParams 和支持的框架类型（crewai / la"
+  },
+  {
+   "slot": 101,
+   "kind": "paragraph",
+   "top": 13946,
+   "h": 26,
+   "style": "09b4810e",
+   "text": "Validates: Requirements 4.1, 4.2, 4.3"
+  },
+  {
+   "slot": 102,
+   "kind": "heading",
+   "top": 13999,
+   "h": 23,
+   "style": "4fd5e463",
+   "text": "Property 10: 框架适配器响应归一化§"
+  },
+  {
+   "slot": 103,
+   "kind": "paragraph",
+   "top": 14032,
+   "h": 56,
+   "style": "7c7f7078",
+   "text": "For any 框架适配器和合法的框架特定响应对象，adaptResponse 应返回包含 ou"
+  },
+  {
+   "slot": 104,
+   "kind": "paragraph",
+   "top": 14105,
+   "h": 26,
+   "style": "83291ed8",
+   "text": "Validates: Requirements 4.4"
+  },
+  {
+   "slot": 105,
+   "kind": "heading",
+   "top": 14158,
+   "h": 23,
+   "style": "4fd5e463",
+   "text": "Property 11: 不支持的框架类型拒绝§"
+  },
+  {
+   "slot": 106,
+   "kind": "paragraph",
+   "top": 14191,
+   "h": 56,
+   "style": "3034f841",
+   "text": "For any 不在 [\"crewai\", \"langgraph\", \"claude\", \"cu"
+  },
+  {
+   "slot": 107,
+   "kind": "paragraph",
+   "top": 14264,
+   "h": 26,
+   "style": "560461bd",
+   "text": "Validates: Requirements 4.5"
+  },
+  {
+   "slot": 108,
+   "kind": "heading",
+   "top": 14318,
+   "h": 23,
+   "style": "4fd5e463",
+   "text": "Property 12: 出站信封包含认证令牌§"
+  },
+  {
+   "slot": 109,
+   "kind": "paragraph",
+   "top": 14350,
+   "h": 56,
+   "style": "2b25e5d8",
+   "text": "For any 配置了认证令牌的外部 Agent 调用，A2A_Client 构建的 A2AEn"
+  },
+  {
+   "slot": 110,
+   "kind": "paragraph",
+   "top": 14423,
+   "h": 26,
+   "style": "02977211",
+   "text": "Validates: Requirements 5.3"
+  },
+  {
+   "slot": 111,
+   "kind": "heading",
+   "top": 14477,
+   "h": 23,
+   "style": "f64e49d8",
+   "text": "Property 13: ExternalAgentNode 快照兼容性§"
+  },
+  {
+   "slot": 112,
+   "kind": "paragraph",
+   "top": 14509,
+   "h": 56,
+   "style": "027ee0c1",
+   "text": "For any 合法的 ExternalAgentNode，将其加入 WorkflowOrgan"
+  },
+  {
+   "slot": 113,
+   "kind": "paragraph",
+   "top": 14582,
+   "h": 26,
+   "style": "02977211",
+   "text": "Validates: Requirements 6.3"
+  },
+  {
+   "slot": 114,
+   "kind": "heading",
+   "top": 14636,
+   "h": 23,
+   "style": "5ad5f5b4",
+   "text": "Property 14: A2A 消息路由与元数据正确性§"
+  },
+  {
+   "slot": 115,
+   "kind": "paragraph",
+   "top": 14668,
+   "h": 52,
+   "style": "ba902c5c",
+   "text": "For any 发送给 ExternalAgentNode 的消息，MessageBus 应将其"
+  },
+  {
+   "slot": 116,
+   "kind": "paragraph",
+   "top": 14737,
+   "h": 26,
+   "style": "cb9e2666",
+   "text": "Validates: Requirements 7.1, 7.3"
+  },
+  {
+   "slot": 117,
+   "kind": "heading",
+   "top": 14791,
+   "h": 23,
+   "style": "5ad5f5b4",
+   "text": "Property 15: 可调用 Agent 列表完整性§"
+  },
+  {
+   "slot": 118,
+   "kind": "paragraph",
+   "top": 14823,
+   "h": 56,
+   "style": "0f19ef15",
+   "text": "For any AgentDirectory 中标记为可外部调用的 Agent 集合，listE"
+  },
+  {
+   "slot": 119,
+   "kind": "paragraph",
+   "top": 14896,
+   "h": 26,
+   "style": "560461bd",
+   "text": "Validates: Requirements 3.5"
+  },
+  {
+   "slot": 120,
+   "kind": "heading",
+   "top": 14963,
+   "h": 29,
+   "style": "afd88dde",
+   "text": "错误处理§"
+  },
+  {
+   "slot": 121,
+   "kind": "table",
+   "top": 15005,
+   "h": 733,
+   "style": "fad20e2f",
+   "text": "场景错误码处理方式A2A 请求 JSON 解析失败-32700 (PARSE_ERROR)返回 "
+  },
+  {
+   "slot": 122,
+   "kind": "heading",
+   "top": 15778,
+   "h": 29,
+   "style": "afd88dde",
+   "text": "测试策略§"
+  },
+  {
+   "slot": 123,
+   "kind": "heading",
+   "top": 15834,
+   "h": 23,
+   "style": "f04c01cf",
+   "text": "属性测试（Property-Based Testing）§"
+  },
+  {
+   "slot": 124,
+   "kind": "paragraph",
+   "top": 15866,
+   "h": 28,
+   "style": "b14c5d18",
+   "text": "使用 fast-check 库进行属性测试，每个属性至少运行 100 次迭代。"
+  },
+  {
+   "slot": 125,
+   "kind": "paragraph",
+   "top": 15912,
+   "h": 28,
+   "style": "69bd4833",
+   "text": "需要实现的生成器："
+  },
+  {
+   "slot": 126,
+   "kind": "listItem",
+   "top": 15958,
+   "h": 52,
+   "style": "c10ce7d4",
+   "text": "arbitraryA2AInvokeParams: 生成随机的 A2A 调用参数（随机 targ"
+  },
+  {
+   "slot": 127,
+   "kind": "listItem",
+   "top": 16012,
+   "h": 26,
+   "style": "42a7aac0",
+   "text": "arbitraryA2AEnvelope: 生成随机的 A2A 信封（基于 arbitraryA"
+  },
+  {
+   "slot": 128,
+   "kind": "listItem",
+   "top": 16040,
+   "h": 26,
+   "style": "caaabf6f",
+   "text": "arbitraryA2AResponse: 生成随机的 A2A 响应（包含 result 或 e"
+  },
+  {
+   "slot": 129,
+   "kind": "listItem",
+   "top": 16069,
+   "h": 29,
+   "style": "1d139406",
+   "text": "arbitraryA2ASession: 生成随机的 A2A 会话（随机状态、时间戳、请求和响应"
+  },
+  {
+   "slot": 130,
+   "kind": "listItem",
+   "top": 16099,
+   "h": 29,
+   "style": "c66ab5cf",
+   "text": "arbitraryA2AStreamChunk: 生成随机的流式响应块"
+  },
+  {
+   "slot": 131,
+   "kind": "listItem",
+   "top": 16130,
+   "h": 26,
+   "style": "b1cd08a7",
+   "text": "arbitraryExternalAgentNode: 生成随机的外部 Agent 节点"
+  },
+  {
+   "slot": 132,
+   "kind": "listItem",
+   "top": 16158,
+   "h": 29,
+   "style": "1b97d241",
+   "text": "arbitraryFrameworkType: 从支持的框架类型中随机选择"
+  },
+  {
+   "slot": 133,
+   "kind": "paragraph",
+   "top": 16205,
+   "h": 28,
+   "style": "77bd5e3d",
+   "text": "属性测试覆盖："
+  },
+  {
+   "slot": 134,
+   "kind": "listItem",
+   "top": 16250,
+   "h": 26,
+   "style": "c4ed3093",
+   "text": "Feature: a2a-protocol, Property 1: A2AEnvelope 序"
+  },
+  {
+   "slot": 135,
+   "kind": "listItem",
+   "top": 16279,
+   "h": 26,
+   "style": "abd4f7e4",
+   "text": "Feature: a2a-protocol, Property 2: A2ASession 序列"
+  },
+  {
+   "slot": 136,
+   "kind": "listItem",
+   "top": 16307,
+   "h": 26,
+   "style": "2bd7fffb",
+   "text": "Feature: a2a-protocol, Property 3: 上下文长度验证"
+  },
+  {
+   "slot": 137,
+   "kind": "listItem",
+   "top": 16335,
+   "h": 26,
+   "style": "422d6ccb",
+   "text": "Feature: a2a-protocol, Property 4: 会话失败状态标记"
+  },
+  {
+   "slot": 138,
+   "kind": "listItem",
+   "top": 16363,
+   "h": 26,
+   "style": "2ad7fe68",
+   "text": "Feature: a2a-protocol, Property 5: 并发会话数量限制"
+  },
+  {
+   "slot": 139,
+   "kind": "listItem",
+   "top": 16392,
+   "h": 26,
+   "style": "2ad7fe68",
+   "text": "Feature: a2a-protocol, Property 6: 无效认证令牌拒绝"
+  },
+  {
+   "slot": 140,
+   "kind": "listItem",
+   "top": 16420,
+   "h": 26,
+   "style": "ae3dabdd",
+   "text": "Feature: a2a-protocol, Property 7: 不存在的 Agent 返回"
+  },
+  {
+   "slot": 141,
+   "kind": "listItem",
+   "top": 16448,
+   "h": 26,
+   "style": "2cd8018e",
+   "text": "Feature: a2a-protocol, Property 8: 速率限制执行"
+  },
+  {
+   "slot": 142,
+   "kind": "listItem",
+   "top": 16477,
+   "h": 29,
+   "style": "3ac35281",
+   "text": "Feature: a2a-protocol, Property 9: 框架适配器请求格式正确性"
+  },
+  {
+   "slot": 143,
+   "kind": "listItem",
+   "top": 16507,
+   "h": 26,
+   "style": "11c72b56",
+   "text": "Feature: a2a-protocol, Property 10: 框架适配器响应归一化"
+  },
+  {
+   "slot": 144,
+   "kind": "listItem",
+   "top": 16536,
+   "h": 26,
+   "style": "dc672243",
+   "text": "Feature: a2a-protocol, Property 11: 不支持的框架类型拒绝"
+  },
+  {
+   "slot": 145,
+   "kind": "listItem",
+   "top": 16564,
+   "h": 26,
+   "style": "11c72b56",
+   "text": "Feature: a2a-protocol, Property 12: 出站信封包含认证令牌"
+  },
+  {
+   "slot": 146,
+   "kind": "listItem",
+   "top": 16592,
+   "h": 26,
+   "style": "20c9818a",
+   "text": "Feature: a2a-protocol, Property 13: ExternalAgen"
+  },
+  {
+   "slot": 147,
+   "kind": "listItem",
+   "top": 16621,
+   "h": 26,
+   "style": "3ceb6573",
+   "text": "Feature: a2a-protocol, Property 14: A2A 消息路由与元数据"
+  },
+  {
+   "slot": 148,
+   "kind": "listItem",
+   "top": 16649,
+   "h": 26,
+   "style": "bf9dbb10",
+   "text": "Feature: a2a-protocol, Property 15: 可调用 Agent 列表"
+  },
+  {
+   "slot": 149,
+   "kind": "heading",
+   "top": 16703,
+   "h": 23,
+   "style": "cb7f88c0",
+   "text": "单元测试§"
+  },
+  {
+   "slot": 150,
+   "kind": "paragraph",
+   "top": 16735,
+   "h": 28,
+   "style": "090cc8b4",
+   "text": "单元测试聚焦于具体示例和边界情况："
+  },
+  {
+   "slot": 151,
+   "kind": "listItem",
+   "top": 16780,
+   "h": 29,
+   "style": "74c1a11b",
+   "text": "各框架适配器对最小参数的输出验证"
+  },
+  {
+   "slot": 152,
+   "kind": "listItem",
+   "top": 16811,
+   "h": 29,
+   "style": "146cb14b",
+   "text": "API 路由的 400/401/404/429/500 错误响应"
+  },
+  {
+   "slot": 153,
+   "kind": "listItem",
+   "top": 16842,
+   "h": 29,
+   "style": "8571e05c",
+   "text": "流式响应的 SSE 格式正确性"
+  },
+  {
+   "slot": 154,
+   "kind": "listItem",
+   "top": 16872,
+   "h": 29,
+   "style": "136cafb8",
+   "text": "空 capabilities 列表、空 context 的边界情况"
+  },
+  {
+   "slot": 155,
+   "kind": "listItem",
+   "top": 16903,
+   "h": 29,
+   "style": "8471dec9",
+   "text": "会话状态机转换的具体示例"
+  },
+  {
+   "slot": 156,
+   "kind": "listItem",
+   "top": 16934,
+   "h": 29,
+   "style": "d44d70f7",
+   "text": "Socket.IO 事件发射验证"
+  },
+  {
+   "slot": 157,
+   "kind": "heading",
+   "top": 16990,
+   "h": 23,
+   "style": "d77f9ba4",
+   "text": "测试不覆盖的范围§"
+  },
+  {
+   "slot": 158,
+   "kind": "listItem",
+   "top": 17022,
+   "h": 29,
+   "style": "e8c4964e",
+   "text": "3D 渲染效果（需求 8.1-8.5）：需要手动视觉验证"
+  },
+  {
+   "slot": 159,
+   "kind": "listItem",
+   "top": 17053,
+   "h": 29,
+   "style": "166cb471",
+   "text": "外部框架的实际 HTTP 调用：使用 mock 测试调用流程"
+  },
+  {
+   "slot": 160,
+   "kind": "listItem",
+   "top": 17083,
+   "h": 29,
+   "style": "9378b22b",
+   "text": "Socket.IO 实时性能（需求 8.4 的 200ms 要求）：需要端到端性能测试"
+  },
+  {
+   "slot": 161,
+   "kind": "listItem",
+   "top": 17114,
+   "h": 57,
+   "style": "fdccc305",
+   "text": "动态组织生成器的 LLM 解析质量（需求 6.2）：LLM 输出非确定性，通过 mock 测试调"
+  },
+  {
+   "slot": 162,
+   "kind": "heading",
+   "top": 17198,
+   "h": 23,
+   "style": "cb7f88c0",
+   "text": "测试配置§"
+  },
+  {
+   "slot": 163,
+   "kind": "listItem",
+   "top": 17230,
+   "h": 29,
+   "style": "b883bd83",
+   "text": "属性测试库：fast-check（项目已使用 vitest，fast-check 与 vites"
+  },
+  {
+   "slot": 164,
+   "kind": "listItem",
+   "top": 17261,
+   "h": 29,
+   "style": "8871e515",
+   "text": "每个属性测试最少 100 次迭代"
+  },
+  {
+   "slot": 165,
+   "kind": "listItem",
+   "top": 17292,
+   "h": 29,
+   "style": "126a6f8e",
+   "text": "每个属性测试必须以注释标注对应的设计属性编号"
+  },
+  {
+   "slot": 166,
+   "kind": "listItem",
+   "top": 17323,
+   "h": 26,
+   "style": "6b6ff406",
+   "text": "标注格式：// Feature: a2a-protocol, Property N: {prop"
+  },
+  {
+   "slot": 167,
+   "kind": "listItem",
+   "top": 17351,
+   "h": 26,
+   "style": "2ede16ba",
+   "text": "测试文件：server/tests/a2a-protocol.test.ts"
+  }
+ ]
+}

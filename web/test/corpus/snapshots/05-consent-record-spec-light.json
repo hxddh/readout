@@ -1,0 +1,741 @@
+{
+ "height": 8883,
+ "blocks": [
+  {
+   "slot": 1,
+   "kind": "frontMatter",
+   "top": 40,
+   "h": 0,
+   "style": "c75bbe1f",
+   "text": ""
+  },
+  {
+   "slot": 2,
+   "kind": "heading",
+   "top": 46,
+   "h": 38,
+   "style": "fc066f67",
+   "text": "The pattern's proper names§"
+  },
+  {
+   "slot": 3,
+   "kind": "paragraph",
+   "top": 105,
+   "h": 52,
+   "style": "d8711029",
+   "text": "A consent/acknowledgment record, a well-establis"
+  },
+  {
+   "slot": 4,
+   "kind": "listItem",
+   "top": 174,
+   "h": 182,
+   "style": "713a46dc",
+   "text": "Terms-of-service acceptance records — the closes"
+  },
+  {
+   "slot": 5,
+   "kind": "listItem",
+   "top": 359,
+   "h": 130,
+   "style": "abb3fc47",
+   "text": "Policy acknowledgment systems — in HR/IT (e.g., "
+  },
+  {
+   "slot": 6,
+   "kind": "listItem",
+   "top": 491,
+   "h": 104,
+   "style": "08be80b7",
+   "text": "GDPR consent records — the same shape. Art. 7(1)"
+  },
+  {
+   "slot": 7,
+   "kind": "listItem",
+   "top": 597,
+   "h": 234,
+   "style": "2448adb5",
+   "text": "Fair use policies (FUP/AUP) — the commercial fra"
+  },
+  {
+   "slot": 8,
+   "kind": "heading",
+   "top": 872,
+   "h": 29,
+   "style": "4112fa06",
+   "text": "What the prior art says your design should get r"
+  },
+  {
+   "slot": 9,
+   "kind": "listItem",
+   "top": 914,
+   "h": 104,
+   "style": "d6b8895d",
+   "text": "It's a legal artifact, not an application artifa"
+  },
+  {
+   "slot": 10,
+   "kind": "listItem",
+   "top": 1027,
+   "h": 130,
+   "style": "58bf9b14",
+   "text": "Immutability. The record should be append-only. "
+  },
+  {
+   "slot": 11,
+   "kind": "listItem",
+   "top": 1165,
+   "h": 130,
+   "style": "19ee25aa",
+   "text": "Record the rendered text, or its exact version, "
+  },
+  {
+   "slot": 12,
+   "kind": "listItem",
+   "top": 1303,
+   "h": 130,
+   "style": "a344c5cb",
+   "text": "One confirmation per org per policy is standard "
+  },
+  {
+   "slot": 13,
+   "kind": "listItem",
+   "top": 1442,
+   "h": 104,
+   "style": "d3e82ef3",
+   "text": "Precedence over approval. Acknowledgment must no"
+  },
+  {
+   "slot": 14,
+   "kind": "heading",
+   "top": 1587,
+   "h": 29,
+   "style": "44153d56",
+   "text": "What you might be missing§"
+  },
+  {
+   "slot": 15,
+   "kind": "listItem",
+   "top": 1629,
+   "h": 130,
+   "style": "79ac0967",
+   "text": "Legal review of the acknowledgment text itself. "
+  },
+  {
+   "slot": 16,
+   "kind": "listItem",
+   "top": 1761,
+   "h": 156,
+   "style": "30bc0a94",
+   "text": "Onboarding vs. threshold semantics. Prior art su"
+  },
+  {
+   "slot": 17,
+   "kind": "listItem",
+   "top": 1920,
+   "h": 78,
+   "style": "faee12d8",
+   "text": "Export/discovery. Support and legal need to answ"
+  },
+  {
+   "slot": 18,
+   "kind": "listItem",
+   "top": 2000,
+   "h": 104,
+   "style": "662e533d",
+   "text": "Don't overengineer. Your note rejecting a generi"
+  },
+  {
+   "slot": 19,
+   "kind": "paragraph",
+   "top": 2122,
+   "h": 104,
+   "style": "d1112ec9",
+   "text": "Sources: [^a] Stripe ToS acceptance — https://do"
+  },
+  {
+   "slot": 20,
+   "kind": "paragraph",
+   "top": 2243,
+   "h": 26,
+   "style": "d30e1047",
+   "text": "References"
+  },
+  {
+   "slot": 21,
+   "kind": "paragraph",
+   "top": 2287,
+   "h": 26,
+   "style": "d70e530e",
+   "text": "[^1]: SOC 2 Compliance: The Complete Introductio"
+  },
+  {
+   "slot": 22,
+   "kind": "paragraph",
+   "top": 2331,
+   "h": 26,
+   "style": "f469686b",
+   "text": "[^2]: SOC 2 Consent Management: Best Practices a"
+  },
+  {
+   "slot": 23,
+   "kind": "paragraph",
+   "top": 2374,
+   "h": 26,
+   "style": "8dc70421",
+   "text": "[^3]: Fair Usage Policies in SaaS: A Practical G"
+  },
+  {
+   "slot": 24,
+   "kind": "paragraph",
+   "top": 2418,
+   "h": 26,
+   "style": "cde18b5f",
+   "text": "[^4]: Why “Unlimited Users” Isn’t Unlimited Cost"
+  },
+  {
+   "slot": 25,
+   "kind": "rule",
+   "top": 2461,
+   "h": 1,
+   "style": "514d6df8",
+   "text": ""
+  },
+  {
+   "slot": 26,
+   "kind": "heading",
+   "top": 2480,
+   "h": 38,
+   "style": "ef041c59",
+   "text": "What to avoid§"
+  },
+  {
+   "slot": 27,
+   "kind": "paragraph",
+   "top": 2539,
+   "h": 78,
+   "style": "ec3a4d2f",
+   "text": "It means a \"fair use\" threshold set at a level t"
+  },
+  {
+   "slot": 28,
+   "kind": "heading",
+   "top": 2657,
+   "h": 29,
+   "style": "d41cdbcb",
+   "text": "The mechanics§"
+  },
+  {
+   "slot": 29,
+   "kind": "paragraph",
+   "top": 2699,
+   "h": 26,
+   "style": "55bca191",
+   "text": "The tell-tale pattern works like this:"
+  },
+  {
+   "slot": 30,
+   "kind": "listItem",
+   "top": 2743,
+   "h": 52,
+   "style": "33bc0763",
+   "text": "The plan is advertised as \"unlimited.\" That's th"
+  },
+  {
+   "slot": 31,
+   "kind": "listItem",
+   "top": 2797,
+   "h": 104,
+   "style": "26314996",
+   "text": "The threshold is set at or below typical healthy"
+  },
+  {
+   "slot": 32,
+   "kind": "listItem",
+   "top": 2904,
+   "h": 78,
+   "style": "59a1a8bb",
+   "text": "Crossing it triggers a commercial event, not a c"
+  },
+  {
+   "slot": 33,
+   "kind": "paragraph",
+   "top": 3000,
+   "h": 52,
+   "style": "14612776",
+   "text": "So the \"limit\" isn't calibrated to what the infr"
+  },
+  {
+   "slot": 34,
+   "kind": "heading",
+   "top": 3092,
+   "h": 29,
+   "style": "cf1cd3ec",
+   "text": "Why it's a problem§"
+  },
+  {
+   "slot": 35,
+   "kind": "listItem",
+   "top": 3134,
+   "h": 104,
+   "style": "09d6151f",
+   "text": "It's a bait-and-switch on the decision variable."
+  },
+  {
+   "slot": 36,
+   "kind": "listItem",
+   "top": 3241,
+   "h": 78,
+   "style": "052ccdf9",
+   "text": "It taxes success. Growth is exactly what you wan"
+  },
+  {
+   "slot": 37,
+   "kind": "listItem",
+   "top": 3321,
+   "h": 78,
+   "style": "e0f48b85",
+   "text": "The asymmetry is dishonest. Genuine abuse protec"
+  },
+  {
+   "slot": 38,
+   "kind": "listItem",
+   "top": 3401,
+   "h": 104,
+   "style": "0015adc5",
+   "text": "Legal/UX exposure. \"Unlimited\" with an undisclos"
+  },
+  {
+   "slot": 39,
+   "kind": "heading",
+   "top": 3546,
+   "h": 29,
+   "style": "d8101624",
+   "text": "How to tell them apart in your own design§"
+  },
+  {
+   "slot": 40,
+   "kind": "table",
+   "top": 3588,
+   "h": 326,
+   "style": "cbf81b79",
+   "text": "SignalGenuine fair useDisguised revenue triggerT"
+  },
+  {
+   "slot": 41,
+   "kind": "paragraph",
+   "top": 3932,
+   "h": 156,
+   "style": "3c2abfb7",
+   "text": "This is why your design choice matters: your sel"
+  },
+  {
+   "slot": 42,
+   "kind": "rule",
+   "top": 4106,
+   "h": 1,
+   "style": "514d6df8",
+   "text": ""
+  },
+  {
+   "slot": 43,
+   "kind": "heading",
+   "top": 4125,
+   "h": 38,
+   "style": "f9066aae",
+   "text": "Technical landscape§"
+  },
+  {
+   "slot": 44,
+   "kind": "paragraph",
+   "top": 4183,
+   "h": 26,
+   "style": "58cbb0d4",
+   "text": "Here's the conventional landscape, mapped onto y"
+  },
+  {
+   "slot": 45,
+   "kind": "heading",
+   "top": 4250,
+   "h": 29,
+   "style": "42153a30",
+   "text": "The canonical structure§"
+  },
+  {
+   "slot": 46,
+   "kind": "paragraph",
+   "top": 4292,
+   "h": 78,
+   "style": "4cdbdb39",
+   "text": "The mature pattern across GDPR-driven systems is"
+  },
+  {
+   "slot": 47,
+   "kind": "code",
+   "top": 4388,
+   "h": 524,
+   "style": "ead9952a",
+   "text": "-- Versioned text: the source of truth for what "
+  },
+  {
+   "slot": 48,
+   "kind": "paragraph",
+   "top": 4927,
+   "h": 26,
+   "style": "e3c67b77",
+   "text": "Three properties define this shape everywhere it"
+  },
+  {
+   "slot": 49,
+   "kind": "listItem",
+   "top": 4970,
+   "h": 104,
+   "style": "d1e865ba",
+   "text": "Append-only events. \"Never update a consent reco"
+  },
+  {
+   "slot": 50,
+   "kind": "listItem",
+   "top": 5076,
+   "h": 104,
+   "style": "dc81f0ee",
+   "text": "Text versioning is a separate entity. The acknow"
+  },
+  {
+   "slot": 51,
+   "kind": "listItem",
+   "top": 5183,
+   "h": 52,
+   "style": "f93fc008",
+   "text": "Current state is a view/projection. Regulators a"
+  },
+  {
+   "slot": 52,
+   "kind": "paragraph",
+   "top": 5253,
+   "h": 104,
+   "style": "51c47b5a",
+   "text": "The conventional field set (who, when, what text"
+  },
+  {
+   "slot": 53,
+   "kind": "paragraph",
+   "top": 5374,
+   "h": 130,
+   "style": "5abd71ac",
+   "text": "One design note from the prior art that applies "
+  },
+  {
+   "slot": 54,
+   "kind": "heading",
+   "top": 5545,
+   "h": 29,
+   "style": "4615407c",
+   "text": "Model relationships§"
+  },
+  {
+   "slot": 55,
+   "kind": "paragraph",
+   "top": 5587,
+   "h": 26,
+   "style": "b5d115fc",
+   "text": "The relationship pattern is deliberately loose:"
+  },
+  {
+   "slot": 56,
+   "kind": "listItem",
+   "top": 5631,
+   "h": 52,
+   "style": "816cff9d",
+   "text": "acknowledgment → policy_text (many-to-one, FK to"
+  },
+  {
+   "slot": 57,
+   "kind": "listItem",
+   "top": 5685,
+   "h": 26,
+   "style": "30f938fa",
+   "text": "acknowledgment → org (many-to-one) — the scope"
+  },
+  {
+   "slot": 58,
+   "kind": "listItem",
+   "top": 5713,
+   "h": 78,
+   "style": "75fca4af",
+   "text": "acknowledgment → actor (many-to-one, or pseudony"
+  },
+  {
+   "slot": 59,
+   "kind": "listItem",
+   "top": 5794,
+   "h": 52,
+   "style": "6af0f275",
+   "text": "No FK to subscription/entitlement tables at all."
+  },
+  {
+   "slot": 60,
+   "kind": "paragraph",
+   "top": 5864,
+   "h": 156,
+   "style": "d771dce5",
+   "text": "There's a standard conceptual model for this: th"
+  },
+  {
+   "slot": 61,
+   "kind": "heading",
+   "top": 6060,
+   "h": 29,
+   "style": "4f154ea7",
+   "text": "Evolution, roughly 2008–2026§"
+  },
+  {
+   "slot": 62,
+   "kind": "listItem",
+   "top": 6102,
+   "h": 104,
+   "style": "0dcd0381",
+   "text": "~2008–2015 — ToS checkbox era. A tos_accepted_at"
+  },
+  {
+   "slot": 63,
+   "kind": "listItem",
+   "top": 6209,
+   "h": 104,
+   "style": "512a41c3",
+   "text": "2016–2018 — GDPR forces event-grade records. Art"
+  },
+  {
+   "slot": 64,
+   "kind": "listItem",
+   "top": 6315,
+   "h": 78,
+   "style": "58a6ec6b",
+   "text": "2019–2022 — Standardization and semantics. ISO/I"
+  },
+  {
+   "slot": 65,
+   "kind": "listItem",
+   "top": 6395,
+   "h": 156,
+   "style": "87b16d6f",
+   "text": "2020–present — Developer-first and enforcement-a"
+  },
+  {
+   "slot": 66,
+   "kind": "listItem",
+   "top": 6553,
+   "h": 130,
+   "style": "74570db8",
+   "text": "2025–present — API-first and domain proliferatio"
+  },
+  {
+   "slot": 67,
+   "kind": "heading",
+   "top": 6724,
+   "h": 29,
+   "style": "45130052",
+   "text": "Modern tooling worth knowing (and probably not a"
+  },
+  {
+   "slot": 68,
+   "kind": "table",
+   "top": 6767,
+   "h": 575,
+   "style": "968baa4b",
+   "text": "OptionWhat it isFit for youOneTrust CMPEnterpris"
+  },
+  {
+   "slot": 69,
+   "kind": "paragraph",
+   "top": 7359,
+   "h": 208,
+   "style": "0b862532",
+   "text": "For your scope — one policy, org-scoped, confirm"
+  },
+  {
+   "slot": 70,
+   "kind": "paragraph",
+   "top": 7585,
+   "h": 26,
+   "style": "d30e1047",
+   "text": "References"
+  },
+  {
+   "slot": 71,
+   "kind": "paragraph",
+   "top": 7628,
+   "h": 52,
+   "style": "be82ff4d",
+   "text": "[^1]: Consent management: building a compliant a"
+  },
+  {
+   "slot": 72,
+   "kind": "paragraph",
+   "top": 7698,
+   "h": 26,
+   "style": "fc7de791",
+   "text": "[^2]: Article 7 — Conditions for Consent · Compl"
+  },
+  {
+   "slot": 73,
+   "kind": "paragraph",
+   "top": 7741,
+   "h": 26,
+   "style": "5f568701",
+   "text": "[^3]: DPDP Consent Manager: Architecture & Datab"
+  },
+  {
+   "slot": 74,
+   "kind": "paragraph",
+   "top": 7785,
+   "h": 26,
+   "style": "298c5093",
+   "text": "[^4]: GDPR Consent Records Requirements: What to"
+  },
+  {
+   "slot": 75,
+   "kind": "paragraph",
+   "top": 7829,
+   "h": 26,
+   "style": "218525ee",
+   "text": "[^5]: SMS Opt-In/Opt-Out Consent Record Architec"
+  },
+  {
+   "slot": 76,
+   "kind": "paragraph",
+   "top": 7872,
+   "h": 26,
+   "style": "8920b7a7",
+   "text": "[^6]: Consent Architecture | Knowledge Hub | AYA"
+  },
+  {
+   "slot": 77,
+   "kind": "paragraph",
+   "top": 7916,
+   "h": 26,
+   "style": "976eeaa6",
+   "text": "[^7]: Datafund Consent Receipt Suite - datafund."
+  },
+  {
+   "slot": 78,
+   "kind": "paragraph",
+   "top": 7959,
+   "h": 26,
+   "style": "102847f1",
+   "text": "[^8]: Art. 7 GDPR – Conditions for consent - Gen"
+  },
+  {
+   "slot": 79,
+   "kind": "paragraph",
+   "top": 8003,
+   "h": 26,
+   "style": "3805b17f",
+   "text": "[^9]: How to Prove GDPR Consent: Audit Evidence."
+  },
+  {
+   "slot": 80,
+   "kind": "paragraph",
+   "top": 8046,
+   "h": 26,
+   "style": "34e0b132",
+   "text": "[^10]: What is a Consent Management Platform (CM"
+  },
+  {
+   "slot": 81,
+   "kind": "paragraph",
+   "top": 8090,
+   "h": 26,
+   "style": "5f60dbde",
+   "text": "[^11]: Article 7 GDPR. Conditions for consent | "
+  },
+  {
+   "slot": 82,
+   "kind": "paragraph",
+   "top": 8134,
+   "h": 26,
+   "style": "863731b7",
+   "text": "[^12]: Consent & Preference Management | Transce"
+  },
+  {
+   "slot": 83,
+   "kind": "paragraph",
+   "top": 8177,
+   "h": 26,
+   "style": "86b1c8cb",
+   "text": "[^13]: OneTrust vs Transcend: Best Choice in 202"
+  },
+  {
+   "slot": 84,
+   "kind": "paragraph",
+   "top": 8221,
+   "h": 26,
+   "style": "69c54b52",
+   "text": "[^14]: OneTrust vs Ketch: Which Is the Best Choi"
+  },
+  {
+   "slot": 85,
+   "kind": "paragraph",
+   "top": 8264,
+   "h": 26,
+   "style": "a4ee6661",
+   "text": "[^16]: OConsent: consent infrastructure for AI p"
+  },
+  {
+   "slot": 86,
+   "kind": "paragraph",
+   "top": 8308,
+   "h": 26,
+   "style": "c5e8bb57",
+   "text": "[^17]: Hashes for Consent Management: A Web3 Gui"
+  },
+  {
+   "slot": 87,
+   "kind": "paragraph",
+   "top": 8352,
+   "h": 26,
+   "style": "e3f23c67",
+   "text": "[^18]: Consent Management Platform | Products | "
+  },
+  {
+   "slot": 88,
+   "kind": "paragraph",
+   "top": 8395,
+   "h": 26,
+   "style": "6dc25526",
+   "text": "[^19]: Open Source Consent Package (4%)"
+  },
+  {
+   "slot": 89,
+   "kind": "paragraph",
+   "top": 8439,
+   "h": 26,
+   "style": "38106a1c",
+   "text": "[^20]: Consent Management Demo (5%)"
+  },
+  {
+   "slot": 90,
+   "kind": "paragraph",
+   "top": 8482,
+   "h": 26,
+   "style": "623903e5",
+   "text": "[^21]: selli/laravel-gdpr-consent-database - Pac"
+  },
+  {
+   "slot": 91,
+   "kind": "paragraph",
+   "top": 8526,
+   "h": 26,
+   "style": "5a28ad7f",
+   "text": "[^22]: Klaro! A Simple Consent Manager (2%)"
+  },
+  {
+   "slot": 92,
+   "kind": "paragraph",
+   "top": 8570,
+   "h": 26,
+   "style": "05250c8d",
+   "text": "[^23]: Consent Management Platform (CMP) (2%)"
+  }
+ ]
+}

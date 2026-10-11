@@ -1,0 +1,93 @@
+{
+ "height": 1068,
+ "blocks": [
+  {
+   "slot": 1,
+   "kind": "heading",
+   "top": 40,
+   "h": 29,
+   "style": "bfc2a030",
+   "text": "Summary§"
+  },
+  {
+   "slot": 2,
+   "kind": "paragraph",
+   "top": 82,
+   "h": 130,
+   "style": "28ebafe5",
+   "text": "修复 Binance OHLC 在 USE_HTTP_PROXY=true 场景下因缺失 req"
+  },
+  {
+   "slot": 3,
+   "kind": "paragraph",
+   "top": 230,
+   "h": 84,
+   "style": "5d4339f9",
+   "text": "同时补充了 Futures Kline 按 limit 分段权重、Spot/Margin 使用统"
+  },
+  {
+   "slot": 4,
+   "kind": "heading",
+   "top": 354,
+   "h": 29,
+   "style": "747890de",
+   "text": "Validation§"
+  },
+  {
+   "slot": 5,
+   "kind": "listItem",
+   "top": 397,
+   "h": 52,
+   "style": "7dd3e4cc",
+   "text": "./node_modules/typescript/bin/tsc --noEmit --pro"
+  },
+  {
+   "slot": 6,
+   "kind": "listItem",
+   "top": 451,
+   "h": 26,
+   "style": "da5fcb7f",
+   "text": "rush build --to @yuants/vendor-binance（workdir: "
+  },
+  {
+   "slot": 7,
+   "kind": "heading",
+   "top": 518,
+   "h": 29,
+   "style": "cdc2b63a",
+   "text": "Risks§"
+  },
+  {
+   "slot": 8,
+   "kind": "listItem",
+   "top": 560,
+   "h": 29,
+   "style": "e6c6d1bf",
+   "text": "当前缺少代理场景的集成测试，真实代理链路仍建议补充端到端验证"
+  },
+  {
+   "slot": 9,
+   "kind": "listItem",
+   "top": 591,
+   "h": 29,
+   "style": "090400c3",
+   "text": "public-api 中其他 endpoint 仍有模板重复，后续可继续收敛统一"
+  },
+  {
+   "slot": 10,
+   "kind": "heading",
+   "top": 660,
+   "h": 29,
+   "style": "c0c2a1c3",
+   "text": "Rollback§"
+  },
+  {
+   "slot": 11,
+   "kind": "paragraph",
+   "top": 702,
+   "h": 78,
+   "style": "9413b502",
+   "text": "回滚 apps/vendor-binance/src/api/public-api.ts 中新增"
+  }
+ ]
+}

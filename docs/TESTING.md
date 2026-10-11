@@ -53,6 +53,32 @@ Release app copied to /Applications** — the exact bytes users install — and
 CI prints the actual values before asserting. The thresholds come from the
 `plan.md` fixtures; **a mismatch means the product regressed**.
 
+## 4. Rendering baselines (real agent corpus)
+
+`web/test/corpus/` holds 30 real documents written by coding agents (plans,
+specs, reports, AGENTS.md / CLAUDE.md files; 20 English, 10 Chinese or
+mixed), each a byte-for-byte copy pinned to a commit of a permissively
+licensed repository. `SOURCES.md` lists source, license and agent evidence.
+
+- `CorpusTests` (Core) renders every document to patch JSON
+  (`corpus/patches/`) and fails when parser output changes. Regenerate with
+  `READOUT_UPDATE_CORPUS=1 swift test --filter CorpusTests`.
+- `npm run corpus` (web, CI job "Rendering baselines (WebKit)") renders each
+  patch light and dark with code, math and diagrams settled, and compares:
+  - `corpus/snapshots/<doc>-<theme>.json`: every block's position, height and
+    a fingerprint of the computed styles and sizes of everything inside it.
+    Exact; a failure names the changed blocks.
+  - `corpus/screenshots/<doc>-<theme>.png`: pixels of the first 1200 px,
+    with a small anti-aliasing tolerance. Full-page pixel baselines would
+    add ~100 MB per rendering change, so the snapshot covers the rest.
+- On failure CI uploads `corpus-actual`: actual baselines, diff images and
+  full-page screenshots of every document.
+
+Baselines come from CI's WebKit, not a developer machine (fonts differ).
+To accept an intended rendering change: download `corpus-actual`, copy
+`actual/snapshots` and `actual/screenshots` over `web/test/corpus/`, review
+each changed image, and say why in the PR.
+
 ## The one rule
 
 **Never edit, delete or relax a test assertion to make CI green.** If you
