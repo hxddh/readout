@@ -28,17 +28,10 @@ struct MathProtector {
 
     mutating func protect(_ source: String) -> String {
         var out: [Substring] = []
-        var inFence: String? = nil
+        var fences = FenceTracker()
         var result = ""
         for line in source.split(separator: "\n", omittingEmptySubsequences: false) {
-            let trimmed = line.drop(while: { $0 == " " })
-            if let fence = inFence {
-                if trimmed.hasPrefix(fence) { inFence = nil }
-                out.append(line)
-                continue
-            }
-            if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") {
-                inFence = String(trimmed.prefix(3))
+            if fences.consume(line) {
                 out.append(line)
                 continue
             }

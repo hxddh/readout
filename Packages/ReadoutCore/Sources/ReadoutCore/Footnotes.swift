@@ -20,18 +20,11 @@ enum Footnotes {
         guard lines.contains(where: { $0.contains("[^") }) else { return [] }
         var out: [Definition] = []
         var seen = Set<String>()
-        var fence: String? = nil
+        var fences = FenceTracker()
         var i = 0
         while i < lines.count {
             let line = lines[i]
-            let trimmed = line.drop(while: { $0 == " " })
-            if let f = fence {
-                if trimmed.hasPrefix(f) { fence = nil }
-                i += 1
-                continue
-            }
-            if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") {
-                fence = String(trimmed.prefix(3))
+            if fences.consume(line) {
                 i += 1
                 continue
             }

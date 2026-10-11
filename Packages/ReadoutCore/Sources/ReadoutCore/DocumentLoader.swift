@@ -25,6 +25,8 @@ public final class DocumentLoader {
     public let url: URL
     private let resolver: @MainActor () -> FileResolver
     private let cache = MarkdownParser.RenderCache()
+    /// Re-parses only the parts of the file that changed (used on `parseQueue` only).
+    private let parser = IncrementalParser()
     private let parseQueue = DispatchQueue(label: "readout.parse", qos: .userInitiated)
     /// Delay before re-reading a write that looks half-finished.
     private let retryDelay: TimeInterval
@@ -101,12 +103,13 @@ public final class DocumentLoader {
         let url = self.url
         let resolver = self.resolver()
         let cache = self.cache
+        let parser = self.parser
         parseQueue.async {
             var result: ReadResult?
             if let data = try? Data(contentsOf: url) {
                 let decoded = FileContent.decode(data)
                 cache.beginGeneration()
-                let doc = MarkdownParser.parse(decoded.text, resolver: resolver, cache: cache)
+                let doc = parser.parse(decoded.text, resolver: resolver, cache: cache)
                 result = ReadResult(doc: doc, hash: XXHash64.hash(data), size: data.count, decoded: decoded)
             }
             let finished = result
