@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 2720,
    "h": 2144,
-   "style": "a541eeb0",
+   "style": "7e32e640",
    "content": "19872c9a",
    "text": "# Scoped Re-Review Prompt Template Use this temp"
   },
@@ -384,7 +384,7 @@
    "kind": "code",
    "top": 5131,
    "h": 64,
-   "style": "6284d23c",
+   "style": "78cc7818",
    "content": "6266a49b",
    "text": "git add skills/subagent-driven-development/re-re"
   },
@@ -492,7 +492,7 @@
    "kind": "code",
    "top": 5767,
    "h": 124,
-   "style": "f3561965",
+   "style": "8d56bf0e",
    "content": "83213488",
    "text": "## After Review Findings If a reviewer finds iss"
   },
@@ -510,7 +510,7 @@
    "kind": "code",
    "top": 5950,
    "h": 184,
-   "style": "926db502",
+   "style": "41ae97bd",
    "content": "9b150741",
    "text": "## After Review Findings If the task review find"
   },
