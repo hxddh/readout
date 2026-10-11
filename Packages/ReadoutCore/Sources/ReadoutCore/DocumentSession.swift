@@ -262,7 +262,8 @@ public final class DocumentSession {
             }
             if let s = oldSlotForIndex(o) { marks[s] = nil }
             let after = anchorBefore(o)
-            let preview = Self.bounded(lastRead ?? oldTexts[o] ?? oldKeys[o].text)
+            // Only the start is known for a long block in an older baseline: marked as cut.
+            let preview = Self.bounded(lastRead ?? oldTexts[o] ?? (oldKeys[o].text + " …"))
             if var existing = newDeletions[after] {
                 existing.count += 1
                 // Grouped removals keep every block up to a bound; past it the

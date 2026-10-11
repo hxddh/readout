@@ -287,6 +287,9 @@ import Testing
         let session = DocumentSession()
         let patch = session.load(doc("Intro.\n\n" + long + "delta\n"), baseline: oldFormat)
         #expect(patch.marks.first { $0.kind == .modified }?.diff == "")
+        // Removed before opening: the start that was kept, marked as cut.
+        let opened = DocumentSession().load(doc("Intro.\n"), baseline: oldFormat)
+        #expect(opened.deletions.first?.preview?.hasSuffix(" …") == true)
         // Changed back to what was read: recognised by the block's fingerprint.
         let revert = DocumentSession()
         _ = revert.load(doc("Intro.\n\n" + long + "delta\n"), baseline: oldFormat)
