@@ -99,6 +99,13 @@ import Testing
         #expect(html("参见 www.example.cn。").contains(##"<a href="http://www.example.cn">www.example.cn</a>。"##))
     }
 
+    @Test func linkTextIsNotLinkedAgain() {
+        let h = html("[www.example.com](https://www.example.com/docs) and [mail a@b.com](mailto:x@y.org)")
+        #expect(h.components(separatedBy: "<a ").count == 3)
+        #expect(h.contains(##"<a href="https://www.example.com/docs">www.example.com</a>"##))
+        #expect(h.contains(##"<a href="mailto:x@y.org">mail a@b.com</a>"##))
+    }
+
     @Test func notLinked() {
         #expect(!html("user@localhost").contains("<a"))
         #expect(!html("a@b.c_").contains("<a"))

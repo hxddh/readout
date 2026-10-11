@@ -96,6 +96,7 @@ function setAppearance(o) {
   }
   if (o.changesOnly !== undefined) initChangesOnly(o.changesOnly);
   if (o.codeWrap !== undefined) setCodeWrap(!!o.codeWrap);
+  if (o.topInset !== undefined) root.style.setProperty('--top-inset', `${Math.max(0, +o.topInset || 0)}px`);
   if (o.mode === 'quicklook') enableQuicklook();
   scheduleRail();
 }
@@ -133,3 +134,14 @@ window.readout = {
 
 hl.init();
 post({ type: 'ready' });
+
+// Printing shows folded <details> open (and folds them back afterwards).
+let printOpened = [];
+window.addEventListener('beforeprint', () => {
+  printOpened = [...document.querySelectorAll('#ro-doc details:not([open])')];
+  printOpened.forEach(d => { d.open = true; });
+});
+window.addEventListener('afterprint', () => {
+  printOpened.forEach(d => { d.open = false; });
+  printOpened = [];
+});
