@@ -43,17 +43,19 @@ public final class IncrementalParser: @unchecked Sendable {
     /// a different one (other search folders) is reused, neither fragments
     /// nor the rendered HTML in `cache`.
     public func parse(_ rawSource: String, resolver: ResourceResolver?, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
+        self.resolver = resolver
+        return parse(rawSource, cache: cache)
+    }
+
+    /// Parses with the current resolver, whose identity is checked on every
+    /// call (a resolver may change its configuration).
+    public func parse(_ rawSource: String, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
         let id = resolver.map { "resolver:" + $0.identity } ?? "none"
         if id != resolverID {
             previous = [:]
             cache?.clear()
             resolverID = id
         }
-        self.resolver = resolver
-        return parse(rawSource, cache: cache)
-    }
-
-    public func parse(_ rawSource: String, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
         let lines = MarkdownParser.sourceLines(rawSource)
         // Footnote definitions leave the flow (as in `parseFragment`); the
         // fragmenter reads the lines the Markdown parser will see.
