@@ -16,6 +16,8 @@ import Testing
         #expect(PageMessage(["type": "loadRemote", "url": "https://x/a.png", "id": "r1"]) == .loadRemote(url: "https://x/a.png", id: "r1"))
         #expect(PageMessage(["type": "applied", "version": NSNumber(value: 1)]) == .applied)
         #expect(PageMessage(["type": "painted", "version": NSNumber(value: 1)]) == .painted)
+        #expect(PageMessage(["type": "setCodeWrap", "on": NSNumber(value: true)]) == .setCodeWrap(on: true))
+        #expect(PageMessage(["type": "setCodeWrap"]) == nil)
     }
 
     @Test func rejectsMalformedMessages() {

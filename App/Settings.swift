@@ -41,6 +41,8 @@ final class AppSettings: ObservableObject {
     @Published var hotKey: HotKeyChoice { didSet { d.set(hotKey.rawValue, forKey: "hotKey") } }
     @Published var fontSize: Double { didSet { d.set(fontSize, forKey: "fontSize") } }
     @Published var wide: Bool { didSet { d.set(wide, forKey: "wide") } }
+    /// Wrap long lines in code blocks (toggled from any code block, remembered).
+    @Published var codeWrap: Bool { didSet { d.set(codeWrap, forKey: "codeWrap") } }
     @Published var showSidebar: Bool { didSet { d.set(showSidebar, forKey: "showSidebar") } }
     @Published var checkForUpdatesAutomatically: Bool { didSet { d.set(checkForUpdatesAutomatically, forKey: "checkForUpdatesAutomatically") } }
     @Published var lastUpdateCheck: Date? { didSet { d.set(lastUpdateCheck, forKey: "lastUpdateCheck") } }
@@ -58,6 +60,7 @@ final class AppSettings: ObservableObject {
         let fs = d.double(forKey: "fontSize")
         fontSize = fs == 0 ? 16 : fs
         wide = d.bool(forKey: "wide")
+        codeWrap = d.bool(forKey: "codeWrap")
         showSidebar = d.object(forKey: "showSidebar") as? Bool ?? true
         checkForUpdatesAutomatically = d.object(forKey: "checkForUpdatesAutomatically") as? Bool ?? true
         lastUpdateCheck = d.object(forKey: "lastUpdateCheck") as? Date

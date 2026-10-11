@@ -22,6 +22,8 @@ public enum PageMessage: Equatable, Sendable {
     case loadRemote(url: String, id: String)
     case openPath(path: String, line: Int, column: Int)
     case error(message: String)
+    /// The reader turned code wrapping on or off (remembered for all windows).
+    case setCodeWrap(on: Bool)
 
     public init?(_ msg: [String: Any]) {
         func int(_ v: Any?) -> Int? { (v as? NSNumber)?.intValue ?? (v as? Int) }
@@ -53,6 +55,9 @@ public enum PageMessage: Equatable, Sendable {
         case "openPath":
             guard let path = msg["path"] as? String else { return nil }
             self = .openPath(path: path, line: int(msg["line"]) ?? 0, column: int(msg["column"]) ?? 0)
+        case "setCodeWrap":
+            guard let on = (msg["on"] as? NSNumber)?.boolValue ?? (msg["on"] as? Bool) else { return nil }
+            self = .setCodeWrap(on: on)
         case "error":
             self = .error(message: msg["message"] as? String ?? "")
         default:

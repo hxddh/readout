@@ -106,3 +106,5 @@
 "could not be reached" = "无法连接";
 "the secure connection failed" = "安全连接失败";
 "could not be loaded" = "无法加载";
+"Wrap" = "换行";
+"Wrap long lines in code blocks" = "代码块长行自动换行";

@@ -2,8 +2,24 @@ import Foundation
 
 /// Replaces inline math spans with opaque tokens before Markdown parsing so that
 /// `_`, `*` and `\` inside TeX are not interpreted as Markdown. Line structure is preserved.
+/// Footnote references (`[^id]` with a definition) are tokenized the same way,
+/// so emphasis or link parsing never sees them.
 struct MathProtector {
-    struct Span { let tex: String; let display: Bool }
+    struct Span {
+        let tex: String
+        let display: Bool
+        var footnote: Footnote? = nil
+    }
+
+    /// A footnote reference: its definition id, number (order of first
+    /// reference) and which occurrence of that footnote this is (1-based).
+    struct Footnote { let id: String; let number: Int; let occurrence: Int }
+
+    /// Ids with a definition; only these turn `[^id]` into a reference.
+    var footnoteIDs: Set<String> = []
+    /// Referenced footnote ids in number order.
+    private(set) var footnoteOrder: [String] = []
+    private var footnoteUses: [String: Int] = [:]
 
     static let open: Character = "\u{E000}"
     static let close: Character = "\u{E001}"
@@ -39,13 +55,24 @@ struct MathProtector {
         return "\(MathProtector.open)\(spans.count - 1)\(MathProtector.close)"
     }
 
+    private mutating func footnoteToken(_ id: String) -> String {
+        if !footnoteOrder.contains(id) { footnoteOrder.append(id) }
+        let n = footnoteOrder.firstIndex(of: id)! + 1
+        let k = (footnoteUses[id] ?? 0) + 1
+        footnoteUses[id] = k
+        spans.append(Span(tex: "", display: false, footnote: Footnote(id: id, number: n, occurrence: k)))
+        return "\(MathProtector.open)\(spans.count - 1)\(MathProtector.close)"
+    }
+
     private mutating func protectLine(_ line: String) -> String {
-        // Fast path: nothing that could start math.
-        if !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
+        let mayHaveFootnote = !footnoteIDs.isEmpty && line.contains("[^")
+        // Fast path: nothing that could start math or a footnote reference.
+        if !mayHaveFootnote && !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
         let chars = Array(line)
         // A line that is only `$$...$$` is display math handled at block level.
         let t = line.trimmingCharacters(in: .whitespaces)
-        if t.hasPrefix("$$") { return line }
+        if t.hasPrefix("$$") && !mayHaveFootnote { return line }
+        let displayLine = t.hasPrefix("$$")
         var out = ""
         var i = 0
         while i < chars.count {
@@ -74,6 +101,17 @@ struct MathProtector {
                 }
                 continue
             }
+            // Footnote reference: [^id] whose definition exists.
+            if mayHaveFootnote && c == "[" && i + 1 < chars.count && chars[i + 1] == "^",
+               let end = chars[(i + 2)...].firstIndex(of: "]"), end > i + 2 {
+                let id = String(chars[(i + 2)..<end])
+                if footnoteIDs.contains(id) && !id.contains(where: \.isWhitespace) {
+                    out += footnoteToken(id)
+                    i = end + 1
+                    continue
+                }
+            }
+            if displayLine { out.append(c); i += 1; continue }
             // Escaped dollar.
             if c == "\\" && i + 1 < chars.count {
                 if chars[i + 1] == "(" , let end = find(chars, from: i + 2, seq: ["\\", ")"]) {
@@ -148,8 +186,14 @@ struct MathProtector {
             if c == MathProtector.open, let closeIdx = text[i...].firstIndex(of: MathProtector.close),
                let n = Int(text[text.index(after: i)..<closeIdx]), n < spans.count {
                 let span = spans[n]
-                let cls = span.display ? "math math-display" : "math math-inline"
-                out += "<span class=\"\(cls)\" data-tex=\"\(HTML.escape(span.tex))\">\(HTML.escape(span.tex))</span>"
+                if let fn = span.footnote {
+                    let id = HTML.escape(fn.id)
+                    let ref = fn.occurrence == 1 ? "user-content-fnref-\(id)" : "user-content-fnref-\(id)-\(fn.occurrence)"
+                    out += "<sup class=\"fn-ref\"><a href=\"#user-content-fn-\(id)\" id=\"\(ref)\" data-footnote-ref>\(fn.number)</a></sup>"
+                } else {
+                    let cls = span.display ? "math math-display" : "math math-inline"
+                    out += "<span class=\"\(cls)\" data-tex=\"\(HTML.escape(span.tex))\">\(HTML.escape(span.tex))</span>"
+                }
                 i = text.index(after: closeIdx)
                 continue
             }
@@ -168,7 +212,7 @@ struct MathProtector {
             let c = text[i]
             if c == MathProtector.open, let closeIdx = text[i...].firstIndex(of: MathProtector.close),
                let n = Int(text[text.index(after: i)..<closeIdx]), n < spans.count {
-                out += spans[n].tex
+                out += spans[n].footnote == nil ? spans[n].tex : ""
                 i = text.index(after: closeIdx)
                 continue
             }
