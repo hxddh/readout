@@ -39,21 +39,16 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     var onClose: ((ReaderWindowController) -> Void)?
 
     private let session = DocumentSession()
-    private let cache = MarkdownParser.RenderCache()
+    private let loader: DocumentLoader
     private let webView: ReaderWebView
     private var watcher: FileWatcher?
-    private let parseQueue = DispatchQueue(label: "readout.parse", qos: .userInitiated)
     private let splitController = NSSplitViewController()
     private var sidebarItem: NSSplitViewItem!
     private var searchItem: NSSearchToolbarItem?
     private var changeItem: NSToolbarItem?
     private var cancellables: Set<AnyCancellable> = []
 
-    // File state
-    private var lastHash: UInt64?
-    private var lastSize: Int?
-    private var lastChangeAt: Date?
-    private var halfWriteRetries = 0
+    // File state (content tracking lives in `loader`)
     private var loaded = false
     /// A change that arrived while the first load was still parsing. Applied
     /// right after the initial patch so early agent writes are never lost.
@@ -63,17 +58,16 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var saveWork: DispatchWorkItem?
     /// Hides every block without an unread mark; headings stay visible as context.
     private var changesOnly = false
-    // Parse coalescing: rapid successive writes share one in-flight parse;
-    // completions carry a generation and stale ones are dropped.
-    private var readGeneration = 0
-    private var readInFlight = false
-    private var readAgain = false
-    private var pendingCompletions: [(ReadResult?) -> Void] = []
     /// Fragment from a cross-file link (other.md#section), scrolled to after load.
     private var pendingAnchor: String?
 
     init(url: URL, pendingAnchor: String? = nil) {
         self.url = url.standardizedFileURL
+        let base = self.url.deletingLastPathComponent()
+        self.loader = DocumentLoader(url: self.url) {
+            FileResolver(baseDirectory: base,
+                         searchRoots: AppSettings.shared.workspaces.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) })
+        }
         self.webView = WebViewPool.shared.take()
         self.pendingAnchor = pendingAnchor
 
@@ -249,76 +243,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // MARK: Loading
 
-    private var resolver: FileResolver {
-        FileResolver(baseDirectory: url.deletingLastPathComponent(),
-                     searchRoots: AppSettings.shared.workspaces.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) })
-    }
-
-    private struct ReadResult {
-        let doc: ParsedDocument
-        let hash: UInt64
-        let size: Int
-        let decoded: FileContent.Decoded
-    }
-
-    private func read(_ completion: @escaping (ReadResult?) -> Void) {
-        // Coalesce: if a parse is already running, queue the completion for
-        // the follow-up read instead of queueing another full parse behind it.
-        if readInFlight {
-            readAgain = true
-            pendingCompletions.append(completion)
-            return
-        }
-        readInFlight = true
-        readGeneration += 1
-        let generation = readGeneration
-        let url = self.url
-        let resolver = self.resolver
-        let cache = self.cache
-        parseQueue.async {
-            guard let data = try? Data(contentsOf: url) else {
-                DispatchQueue.main.async { [weak self] in
-                    self?.finishRead(generation: generation, result: nil)
-                }
-                return
-            }
-            let hash = XXHash64.hash(data)
-            let decoded = FileContent.decode(data)
-            cache.beginGeneration()
-            let doc = MarkdownParser.parse(decoded.text, resolver: resolver, cache: cache)
-            let result = ReadResult(doc: doc, hash: hash, size: data.count, decoded: decoded)
-            DispatchQueue.main.async { [weak self] in
-                self?.finishRead(generation: generation, result: result)
-            }
-        }
-        // The initiating completion waits for this read like any other.
-        pendingCompletions.append(completion)
-    }
-
-    private func finishRead(generation: Int, result: ReadResult?) {
-        guard generation == readGeneration else { return }  // superseded by a newer read
-        if readAgain {
-            // The file changed while we were parsing: re-read from disk, and
-            // queued completions wait for that fresher result.
-            readAgain = false
-            readInFlight = false
-            read { [weak self] result in self?.drainCompletions(with: result) }
-            return
-        }
-        readInFlight = false
-        let completions = pendingCompletions
-        pendingCompletions = []
-        for c in completions { c(result) }
-    }
-
-    private func drainCompletions(with result: ReadResult?) {
-        let completions = pendingCompletions
-        pendingCompletions = []
-        for c in completions { c(result) }
-    }
-
     private func load() {
-        read { [weak self] result in
+        loader.loadInitial { [weak self] result in
             guard let self else { return }
             guard let result else {
                 self.model.status = NSLocalizedString("The file could not be read.", comment: "Status")
@@ -326,8 +252,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             }
             let record = BaselineStore.load(self.url)
             let patch = self.session.load(result.doc, baseline: record?.baseline)
-            self.lastHash = result.hash
-            self.lastSize = result.size
             self.loaded = true
             self.updateModel(patch, decoded: result.decoded)
             self.webView.whenReady { [weak self] in
@@ -380,25 +304,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             model.status = NSLocalizedString("The file was deleted.", comment: "Status")
             return
         }
-        read { [weak self] result in
-            guard let self, let result else { return }
-            if result.hash == self.lastHash {
+        loader.readChange { [weak self] change in
+            guard let self else { return }
+            guard case .content(let result) = change else {
                 if self.deleted { self.deleted = false; self.model.status = nil }
                 return
             }
-            let verdict = FileContent.verdict(newSize: result.size, previousSize: self.lastSize,
-                                              secondsSincePreviousWrite: self.lastChangeAt.map { Date().timeIntervalSince($0) },
-                                              truncatedTail: result.decoded.truncatedTail, retriesSoFar: self.halfWriteRetries)
-            if verdict == .waitForMore {
-                self.halfWriteRetries += 1
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in self?.fileChanged(.modified) }
-                return
-            }
-            self.halfWriteRetries = 0
             self.deleted = false
-            self.lastHash = result.hash
-            self.lastSize = result.size
-            self.lastChangeAt = Date()
             guard let patch = self.session.update(result.doc) else {
                 self.model.status = nil
                 return
@@ -444,92 +356,60 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // MARK: Messages from the page
 
-    private func handle(_ msg: [String: Any]) {
-        switch msg["type"] as? String {
-        case "read":
-            let slots = (msg["slots"] as? [Any])?.compactMap { ($0 as? NSNumber)?.intValue } ?? []
-            let dels = (msg["deletions"] as? [Any])?.compactMap { ($0 as? NSNumber)?.intValue } ?? []
-            session.markRead(slots: slots, deletionIDs: dels)
+    private func handle(_ raw: [String: Any]) {
+        guard let msg = PageMessage(raw) else { return }
+        switch msg {
+        case .read(let slots, let deletions):
+            session.markRead(slots: slots, deletionIDs: deletions)
             model.unread = session.unreadCount
             scheduleSave()
-        case "activeHeading":
-            if let slot = (msg["slot"] as? NSNumber)?.intValue, slot != model.activeSlot { model.activeSlot = slot }
-        case "anchor":
-            if let a = msg["anchor"] as? [String: Any], let slot = (a["slot"] as? NSNumber)?.intValue {
-                lastAnchor = (slot, (a["offset"] as? NSNumber)?.doubleValue ?? 0)
-                scheduleSave()
-            }
-        case "copy":
-            if let text = msg["text"] as? String {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(text, forType: .string)
-            }
-        case "copyLink":
+        case .activeHeading(let slot):
+            if slot != model.activeSlot { model.activeSlot = slot }
+        case .anchor(let slot, let offset):
+            lastAnchor = (slot, offset)
+            scheduleSave()
+        case .copy(let text):
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        case .copyLink(let anchor):
             // Section link: "<filename>#<anchor>" on the clipboard.
-            if let anchor = msg["anchor"] as? String, !anchor.isEmpty {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString("\(url.lastPathComponent)#\(anchor)", forType: .string)
-            }
-        case "applied":
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString("\(url.lastPathComponent)#\(anchor)", forType: .string)
+        case .applied:
             SmokeTest.noteApplied()
-        case "open":
-            if let href = msg["href"] as? String { openLink(href) }
-        case "loadRemote":
-            if let url = msg["url"] as? String, let id = msg["id"] as? String {
-                RemoteImageLoader.shared.load(url) { [weak self] result in
-                    switch result {
-                    case .success(let local):
-                        self?.webView.call("remoteReady", ["id": id, "url": local])
-                    case .failure(let error):
-                        let reason: String
-                        if case RemoteImageLoader.LoadError.rejected(let r) = error { reason = r }
-                        else { reason = "could not be loaded" }
-                        self?.webView.call("remoteFailed", ["id": id, "error": reason])
-                    }
-                }
+        case .open(let href):
+            openLink(href)
+        case .loadRemote(let remote, let id):
+            loadRemote(remote, id: id)
+        case .openPath(let path, let line, let column):
+            EditorOpener.open(path: path, line: line, column: column)
+        case .ready, .error:
+            break   // handled by ReaderWebView
+        }
+    }
+
+    private func loadRemote(_ remote: String, id: String) {
+        RemoteImageLoader.shared.load(remote) { [weak self] result in
+            switch result {
+            case .success(let local):
+                self?.webView.call("remoteReady", ["id": id, "url": local])
+            case .failure(let error):
+                let reason: String
+                if case RemoteImageLoader.LoadError.rejected(let r) = error { reason = r }
+                else { reason = "could not be loaded" }
+                self?.webView.call("remoteFailed", ["id": id, "error": reason])
             }
-        case "openPath":
-            if let path = msg["path"] as? String {
-                EditorOpener.open(path: path, line: (msg["line"] as? NSNumber)?.intValue ?? 0,
-                                  column: (msg["column"] as? NSNumber)?.intValue ?? 0)
-            }
-        default:
-            break
         }
     }
 
     private func openLink(_ href: String) {
-        if let u = URL(string: href), let scheme = u.scheme?.lowercased(), scheme != "file" {
-            NSWorkspace.shared.open(u)
-            return
-        }
-        // Split off the fragment first: other.md#section should open the file
-        // AND scroll to the section.
-        var fragment: String? = nil
-        var path = href
-        if let hash = path.firstIndex(of: "#") {
-            fragment = String(path[path.index(after: hash)...])
-            path = String(path[..<hash])
-        }
-        if path.lowercased().hasPrefix("file://"), let u = URL(string: path) {
-            fragment = fragment ?? u.fragment
-            path = u.path
-        }
-        path = path.removingPercentEncoding ?? path
-        if fragment?.isEmpty == true { fragment = nil }
-        guard !path.isEmpty else {
-            // Same-document anchor: scroll in place.
-            if let fragment { scrollToAnchor(fragment: fragment) }
-            return
-        }
-        let target = path.hasPrefix("/") ? URL(fileURLWithPath: path)
-            : url.deletingLastPathComponent().appendingPathComponent(path).standardizedFileURL
-        if WorkspaceIndex.markdownExtensions.contains(target.pathExtension.lowercased()) {
-            (NSApp.delegate as? AppDelegate)?.open(target, anchor: fragment)
-        } else if FileManager.default.fileExists(atPath: target.path) {
-            NSWorkspace.shared.open(target)
-        } else {
-            NSSound.beep()
+        guard let target = LinkTarget.resolve(href, from: url, markdownExtensions: WorkspaceIndex.markdownExtensions,
+                                              fileExists: { FileManager.default.fileExists(atPath: $0.path) }) else { return }
+        switch target {
+        case .external(let u), .file(let u): NSWorkspace.shared.open(u)
+        case .sameDocument(let fragment): scrollToAnchor(fragment: fragment)
+        case .markdown(let u, let fragment): (NSApp.delegate as? AppDelegate)?.open(u, anchor: fragment)
+        case .missing: NSSound.beep()
         }
     }
 
