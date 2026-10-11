@@ -47,7 +47,8 @@ a user can see, feel or rely on, in their words:
 ## What CI and preflight block
 
 - `ci.yml` (every PR and `main` push): Core tests (Linux),
-  Web tests (WebKit — the production engine), and the full
+  Web tests (WebKit — the production engine), Rendering baselines (WebKit:
+  the real-agent corpus against its snapshots and screenshots), and the full
   Verify-signed-product run (Release build + ad-hoc sign + boot the signed
   app from /Applications + `tools/smoke-assert.py` + Quick Look check).
   A red Core tests run blocks every release — this is what let v1.0.1 ship
@@ -73,6 +74,7 @@ a user can see, feel or rely on, in their words:
 
 ## Branch and tag protection (owner: set once on GitHub)
 
-- `main`: require PRs, require the Core / WebKit / Verify checks, no force
+- `main`: require PRs, require the Core tests (Linux), Web tests (WebKit),
+  Rendering baselines (WebKit) and Verify signed product checks, no force
   pushes.
 - Tags `v*`: restrict creation to the repository owner (Rulesets).

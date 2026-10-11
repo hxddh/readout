@@ -147,13 +147,17 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
       'list-style-type', 'list-style-position', 'table-layout', 'border-collapse', 'object-fit',
       'cursor', 'pointer-events', 'user-select', 'content'];
     const props = cs => PROPS.map(k => cs.getPropertyValue(k)).join(';');
+    // A block's own element is described by every computed property: what it
+    // inherits from the page (text rendering, kerning, smoothing, …) reaches
+    // all of its content, and it is one element per block, so it is cheap.
+    const allProps = cs => { let out = ''; for (let i = 0; i < cs.length; i++) out += `${cs[i]}:${cs.getPropertyValue(cs[i])};`; return out; };
     const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); };
     let origin = null;   // the block being described: positions are relative to it
     const describe = el => {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
       const at = origin ? `@${Math.round(r.left - origin.left)},${Math.round(r.top - origin.top)}` : '';
-      let out = `${el.tagName}.${el.getAttribute('class') || ''}|${props(cs)}|${Math.round(r.width)}x${Math.round(r.height)}${at}`;
+      let out = `${el.tagName}.${el.getAttribute('class') || ''}|${origin ? props(cs) : allProps(cs)}|${Math.round(r.width)}x${Math.round(r.height)}${at}`;
       for (const pseudo of ['::before', '::after', ...(el.tagName === 'LI' ? ['::marker'] : [])]) {
         const ps = getComputedStyle(el, pseudo);
         if (ps.content && ps.content !== 'none' && ps.content !== 'normal' || pseudo === '::marker') out += `|${pseudo}:${props(ps)}`;
