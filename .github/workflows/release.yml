@@ -43,7 +43,10 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-          ref: ${{ github.event_name == 'push' && github.ref || format('refs/tags/{0}', inputs.tag) }}
+          # Dispatch runs on main: the tag's existence is checked in the next
+          # step with a clear error (checking out a missing tag's ref here
+          # would fail cryptically inside the checkout action).
+          ref: ${{ github.event_name == 'push' && github.ref || 'main' }}
 
       - name: Resolve tag and dry_run
         id: tag
@@ -72,6 +75,9 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "build=$(git rev-list --count "$SHA")" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG version=$VERSION sha=$SHA dry_run=$DRY"
+          # Dispatch checked out main above: move the working tree onto the
+          # tag so the file checks below read the tagged commit.
+          if [ "${{ github.event_name }}" != "push" ]; then git checkout "$SHA"; fi
 
       - name: Version must exceed the latest published Release
         env:
