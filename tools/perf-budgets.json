@@ -12,7 +12,7 @@
     "write_to_update 423, web_first_apply_1mb 1351, web_update_20 197, long frames 417/600.",
     "Revised 2026-10-11 after repeat runs showed run-to-run noise on shared runners:",
     "warm_open 1239 and 1730 -> guard 2600; web_first_apply_1mb 1351 and 2096 -> 3000;",
-    "web_update_20 now includes the layout it causes (provisional guard until two CI runs);",
+    "web_update_20 now includes the layout it causes: 225 and 459 ms in two runs -> guard 700;",
     "scroll frame pacing in headless WebKit varied 417-528 long frames of 600 with no code",
     "change, so scroll metrics are reported, not gated (guard null).",
     "The macOS runner varies as much: update_100kb 17.9 and 26.6, update_1mb 227.6 and 355.7,",
@@ -25,6 +25,6 @@
   "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 9700 },
   "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 700 },
   "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": 3000 },
-  "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 400 },
+  "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 700 },
   "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null }
 }
