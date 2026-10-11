@@ -71,13 +71,31 @@ function setupCode(cb) {
   cb.dataset.hl = 'pending';
 }
 
+// Shiki gives up on a line after 500 ms and colors the rest of it, and the
+// lines after, with whatever scope it was in. The first lines a grammar sees
+// also pay for compiling its patterns, which on a busy machine can cross that
+// limit: a block then comes out wrong (e.g. all comment-gray). So the first
+// block highlighted with a grammar, if it took suspiciously long, is redone
+// once shortly after, when the patterns are compiled. Blocks highlighted
+// with a warm grammar are never redone, however long they take (many fast
+// lines add up; that is not a cut-short line). The 500 ms guard stays.
+const SLOW_HIGHLIGHT_MS = 200;
+const sourceOf = new WeakMap();   // code block -> original code text
+const warmGrammars = new Set();   // grammar ids that have highlighted a block
+
 function highlightBlock(cb) {
-  if (cb.dataset.hl !== 'pending') return;
+  const recheck = cb.dataset.hl === 'recheck';
+  if (cb.dataset.hl !== 'pending' && !recheck) return;
   const id = hl.resolveLang(cb.dataset.lang);
   if (!id) { cb.dataset.hl = 'none'; return; }
   const pre = cb.querySelector('pre');
-  const code = pre.textContent;
+  if (!sourceOf.has(cb)) sourceOf.set(cb, pre.textContent);
+  const code = sourceOf.get(cb);
+  const started = performance.now();
   const html = hl.highlightSync(code, id);
+  const cold = !warmGrammars.has(id);
+  const slow = !recheck && cold && performance.now() - started > SLOW_HIGHLIGHT_MS;
+  if (html) warmGrammars.add(id);
   if (html) {
     const tpl = document.createElement('template');
     tpl.innerHTML = html;
@@ -90,7 +108,8 @@ function highlightBlock(cb) {
       }
     }
     pre.replaceWith(newPre);
-    cb.dataset.hl = 'done';
+    cb.dataset.hl = slow ? 'recheck' : 'done';
+    if (slow) setTimeout(() => { if (cb.isConnected) highlightBlock(cb); else cb.dataset.hl = 'done'; }, 50);
   } else {
     cb.dataset.hl = 'loading';
     hl.ensureLang(id).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) highlightBlock(cb); });
