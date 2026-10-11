@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "282e1cc9",
+   "style": "ca2015e4",
    "content": "b57aa150",
    "text": "Code Review: Tasks 7–11 (Python Host)§"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 99,
    "h": 104,
-   "style": "760ae985",
+   "style": "b53d6bd9",
    "content": "35ec9a8a",
    "text": "Date: 2026-03-11 Reviewer: code-reviewer agent S"
   },
@@ -24,7 +24,7 @@
    "kind": "rule",
    "top": 220,
    "h": 1,
-   "style": "56813a8d",
+   "style": "e349766d",
    "content": "811c9dc5",
    "text": ""
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 262,
    "h": 29,
-   "style": "e98a8853",
+   "style": "e30c92f5",
    "content": "1b0aefed",
    "text": "Code Review Summary§"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 304,
    "h": 104,
-   "style": "ae3b29d1",
+   "style": "67186de4",
    "content": "b745175e",
    "text": "The Python host is well-structured with clear mo"
   },
@@ -51,7 +51,7 @@
    "kind": "rule",
    "top": 426,
    "h": 1,
-   "style": "56813a8d",
+   "style": "e349766d",
    "content": "811c9dc5",
    "text": ""
   },
@@ -60,7 +60,7 @@
    "kind": "heading",
    "top": 467,
    "h": 29,
-   "style": "e98a8853",
+   "style": "e30c92f5",
    "content": "c575624e",
    "text": "Critical Issues ⚠️§"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 523,
    "h": 23,
-   "style": "9495d941",
+   "style": "768400cb",
    "content": "f987c6d4",
    "text": "1. Dict mutation during iteration in _replay_act"
   },
@@ -78,7 +78,7 @@
    "kind": "code",
    "top": 555,
    "h": 124,
-   "style": "9afda4a6",
+   "style": "4cc396ad",
    "content": "27086d95",
    "text": "async def _replay_active(self) -> None: for msg "
   },
@@ -87,7 +87,7 @@
    "kind": "paragraph",
    "top": 694,
    "h": 130,
-   "style": "7d169020",
+   "style": "e20a76db",
    "content": "6242da42",
    "text": "asyncio.sleep(0.05) yields the event loop. While"
   },
@@ -96,7 +96,7 @@
    "kind": "paragraph",
    "top": 842,
    "h": 26,
-   "style": "60734335",
+   "style": "80f0c403",
    "content": "f59328a1",
    "text": "Fix: Snapshot the values before iterating:"
   },
@@ -105,7 +105,7 @@
    "kind": "code",
    "top": 886,
    "h": 44,
-   "style": "015f1dcf",
+   "style": "d67fc210",
    "content": "eb0d9fd3",
    "text": "for msg in list(self._active_notifications.value"
   },
@@ -114,7 +114,7 @@
    "kind": "rule",
    "top": 945,
    "h": 1,
-   "style": "56813a8d",
+   "style": "e349766d",
    "content": "811c9dc5",
    "text": ""
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 986,
    "h": 29,
-   "style": "e98a8853",
+   "style": "e30c92f5",
    "content": "c344aa57",
    "text": "High Priority Issues 🔴§"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 1042,
    "h": 46,
-   "style": "83074f1c",
+   "style": "ca4ac6b9",
    "content": "79b170bc",
    "text": "2. _on_disconnect mutates asyncio.Event from a n"
   },
@@ -141,7 +141,7 @@
    "kind": "code",
    "top": 1097,
    "h": 84,
-   "style": "70ef1400",
+   "style": "f0e40ce7",
    "content": "92ea214a",
    "text": "def _on_disconnect(self, client: BleakClient) ->"
   },
@@ -150,7 +150,7 @@
    "kind": "paragraph",
    "top": 1196,
    "h": 78,
-   "style": "f45fc28c",
+   "style": "fef2cdd4",
    "content": "360b7b00",
    "text": "Bleak calls disconnect callbacks from its intern"
   },
@@ -159,7 +159,7 @@
    "kind": "code",
    "top": 1292,
    "h": 64,
-   "style": "1da6fa5b",
+   "style": "ffa9d7d2",
    "content": "88b47368",
    "text": "loop = asyncio.get_event_loop() loop.call_soon_t"
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 1371,
    "h": 52,
-   "style": "20f1d83a",
+   "style": "280d1394",
    "content": "59e90773",
    "text": "Setting self._client = None from a non-loop cont"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1450,
    "h": 23,
-   "style": "05ace2b4",
+   "style": "9dcc7542",
    "content": "bf41c9a9",
    "text": "3. _shutdown_event not in __init__ — daemon.py:5"
   },
@@ -186,7 +186,7 @@
    "kind": "code",
    "top": 1482,
    "h": 124,
-   "style": "bee7568c",
+   "style": "842ff5c3",
    "content": "4e8534f5",
    "text": "async def _shutdown(self) -> None: self._shutdow"
   },
@@ -195,7 +195,7 @@
    "kind": "paragraph",
    "top": 1621,
    "h": 78,
-   "style": "ac2d5773",
+   "style": "8c5761cc",
    "content": "78183b2f",
    "text": "If _shutdown() is called before run() (e.g., a s"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 1727,
    "h": 23,
-   "style": "75473368",
+   "style": "56b06133",
    "content": "c0c99ebd",
    "text": "4. asyncio.get_event_loop() deprecated — daemon."
   },
@@ -213,7 +213,7 @@
    "kind": "code",
    "top": 1759,
    "h": 44,
-   "style": "96a013aa",
+   "style": "4efdea0f",
    "content": "a42bc828",
    "text": "loop = asyncio.get_event_loop()pythonCopy"
   },
@@ -222,7 +222,7 @@
    "kind": "paragraph",
    "top": 1818,
    "h": 78,
-   "style": "4d0c4693",
+   "style": "748e9d72",
    "content": "56d1de9b",
    "text": "Deprecated since Python 3.10; inside asyncio.run"
   },
@@ -231,7 +231,7 @@
    "kind": "heading",
    "top": 1923,
    "h": 23,
-   "style": "4980f343",
+   "style": "110fa02c",
    "content": "47d6ece9",
    "text": "5. session_id accessed with [] not .get() — prot"
   },
@@ -240,7 +240,7 @@
    "kind": "code",
    "top": 1955,
    "h": 44,
-   "style": "10d975b0",
+   "style": "53800852",
    "content": "f4cf4574",
    "text": "\"id\": msg[\"session_id\"], # KeyError if key missi"
   },
@@ -249,7 +249,7 @@
    "kind": "paragraph",
    "top": 2014,
    "h": 78,
-   "style": "d1b66c10",
+   "style": "37367e7b",
    "content": "26dc4141",
    "text": "project and message use .get() with defaults, bu"
   },
@@ -258,7 +258,7 @@
    "kind": "heading",
    "top": 2120,
    "h": 23,
-   "style": "99438a2e",
+   "style": "517eb862",
    "content": "f50d0101",
    "text": "6. Socket not closed on send failure — clawd-not"
   },
@@ -267,7 +267,7 @@
    "kind": "code",
    "top": 2152,
    "h": 124,
-   "style": "b7f44815",
+   "style": "80ab6dfa",
    "content": "c0acb586",
    "text": "sock = socket.socket(socket.AF_UNIX, socket.SOCK"
   },
@@ -276,7 +276,7 @@
    "kind": "paragraph",
    "top": 2291,
    "h": 26,
-   "style": "e8b01141",
+   "style": "9ca1ead0",
    "content": "8bdbc196",
    "text": "If sendall raises, the socket is leaked. Use try"
   },
@@ -285,7 +285,7 @@
    "kind": "rule",
    "top": 2334,
    "h": 1,
-   "style": "56813a8d",
+   "style": "e349766d",
    "content": "811c9dc5",
    "text": ""
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 2376,
    "h": 29,
-   "style": "e98a8853",
+   "style": "e30c92f5",
    "content": "f10b0f89",
    "text": "Medium Priority Issues 🟡§"
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 2432,
    "h": 46,
-   "style": "5bb6e860",
+   "style": "533af4d4",
    "content": "673942f3",
    "text": "7. socket_server reads without length framing — "
   },
@@ -312,7 +312,7 @@
    "kind": "code",
    "top": 2487,
    "h": 44,
-   "style": "09b4b129",
+   "style": "54c4d927",
    "content": "6d07d307",
    "text": "data = await asyncio.wait_for(reader.read(4096),"
   },
@@ -321,7 +321,7 @@
    "kind": "paragraph",
    "top": 2546,
    "h": 130,
-   "style": "d19e5950",
+   "style": "02cb102d",
    "content": "0272c3a9",
    "text": "reader.read(4096) reads up to 4096 bytes. A JSON"
   },
@@ -330,7 +330,7 @@
    "kind": "heading",
    "top": 2703,
    "h": 23,
-   "style": "e9f63707",
+   "style": "225e8ec8",
    "content": "7f90e13a",
    "text": "8. Failed BLE write drops the message — daemon.p"
   },
@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 2735,
    "h": 104,
-   "style": "c74eae59",
+   "style": "48fb1993",
    "content": "e5cb0f7c",
    "text": "success = await self._ble.write_notification(pay"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 2854,
    "h": 104,
-   "style": "729be57f",
+   "style": "e106fce3",
    "content": "d4b069f3",
    "text": "On write failure the current message is not retr"
   },
@@ -357,7 +357,7 @@
    "kind": "heading",
    "top": 2986,
    "h": 23,
-   "style": "7d64a5c5",
+   "style": "f7c28192",
    "content": "b77f0498",
    "text": "9. _ble_sender dies silently on ValueError — dae"
   },
@@ -366,7 +366,7 @@
    "kind": "code",
    "top": 3018,
    "h": 44,
-   "style": "f3161755",
+   "style": "dc7380d9",
    "content": "ebb00434",
    "text": "payload = daemon_message_to_ble_payload(msg) # r"
   },
@@ -375,7 +375,7 @@
    "kind": "paragraph",
    "top": 3077,
    "h": 78,
-   "style": "52a669c9",
+   "style": "8f4bd8d8",
    "content": "ac7d0791",
    "text": "If an unknown event is dequeued, daemon_message_"
   },
@@ -384,7 +384,7 @@
    "kind": "heading",
    "top": 3182,
    "h": 23,
-   "style": "c2b3a85a",
+   "style": "14f2df54",
    "content": "a148fed3",
    "text": "10. Double _remove_pid() call — daemon.py:65,115"
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 3214,
    "h": 78,
-   "style": "5073c9e7",
+   "style": "1c41ee3a",
    "content": "35b5ecbe",
    "text": "_remove_pid() is called at the end of _shutdown("
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 3320,
    "h": 23,
-   "style": "d816f536",
+   "style": "f1195335",
    "content": "4517184d",
    "text": "11. Dead code: DAEMON_MODULE — clawd-notify:24§"
   },
@@ -411,7 +411,7 @@
    "kind": "code",
    "top": 3352,
    "h": 44,
-   "style": "bba2cfac",
+   "style": "8f35e78a",
    "content": "43f6bd93",
    "text": "DAEMON_MODULE = Path(__file__).parent / \"clawd_d"
   },
@@ -420,7 +420,7 @@
    "kind": "paragraph",
    "top": 3411,
    "h": 52,
-   "style": "16ef65cd",
+   "style": "a733939e",
    "content": "2a028e71",
    "text": "Defined but never used. The daemon is launched v"
   },
@@ -429,7 +429,7 @@
    "kind": "heading",
    "top": 3490,
    "h": 46,
-   "style": "1eaab7ed",
+   "style": "67927c36",
    "content": "1d2c0fa2",
    "text": "12. _connected Event in ClawdBleClient is never "
   },
@@ -438,7 +438,7 @@
    "kind": "paragraph",
    "top": 3545,
    "h": 78,
-   "style": "84d90a9d",
+   "style": "423d0b99",
    "content": "860321a3",
    "text": "self._connected = asyncio.Event() is set/cleared"
   },
@@ -447,7 +447,7 @@
    "kind": "rule",
    "top": 3641,
    "h": 1,
-   "style": "56813a8d",
+   "style": "e349766d",
    "content": "811c9dc5",
    "text": ""
   },
@@ -456,7 +456,7 @@
    "kind": "heading",
    "top": 3682,
    "h": 29,
-   "style": "e98a8853",
+   "style": "e30c92f5",
    "content": "25cd1a5d",
    "text": "Low Priority Suggestions 🔵§"
   },
@@ -465,7 +465,7 @@
    "kind": "heading",
    "top": 3738,
    "h": 23,
-   "style": "2e655d71",
+   "style": "abf2a231",
    "content": "ec33a1f5",
    "text": "13. sys.exit(1) in hook may be too loud — clawd-"
   },
@@ -474,7 +474,7 @@
    "kind": "paragraph",
    "top": 3771,
    "h": 78,
-   "style": "b919e445",
+   "style": "f67dc0c5",
    "content": "9aa4b60a",
    "text": "Claude Code hooks that exit non-zero may surface"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 3876,
    "h": 46,
-   "style": "d0d4b006",
+   "style": "a1e19805",
    "content": "ac05cdce",
    "text": "14. start_daemon() opens log file without try/fi"
   },
@@ -492,7 +492,7 @@
    "kind": "code",
    "top": 3931,
    "h": 84,
-   "style": "c99d2744",
+   "style": "5f075f72",
    "content": "465b4cc5",
    "text": "log_file = open(CLAWD_DIR / \"daemon.log\", \"a\") s"
   },
@@ -501,7 +501,7 @@
    "kind": "paragraph",
    "top": 4030,
    "h": 52,
-   "style": "400a35ca",
+   "style": "f1ea598f",
    "content": "c753fc30",
    "text": "If Popen raises, log_file is leaked. Use with op"
   },
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 4109,
    "h": 46,
-   "style": "6e2d8225",
+   "style": "007d4fc1",
    "content": "fa738654",
    "text": "15. Broad except Exception in socket_server._han"
   },
@@ -519,7 +519,7 @@
    "kind": "paragraph",
    "top": 4165,
    "h": 104,
-   "style": "cdee7d3a",
+   "style": "75f5abc5",
    "content": "e2cfffb3",
    "text": "All errors — JSONDecodeError, RuntimeError, asyn"
   },
@@ -528,7 +528,7 @@
    "kind": "heading",
    "top": 4296,
    "h": 23,
-   "style": "c9b40452",
+   "style": "a6f84fa1",
    "content": "8f534e3b",
    "text": "16. Missing tests in test_protocol.py§"
   },
@@ -537,7 +537,7 @@
    "kind": "listItem",
    "top": 4328,
    "h": 52,
-   "style": "f962df33",
+   "style": "100fd2be",
    "content": "f8075506",
    "text": "clear event path in daemon_message_to_ble_payloa"
   },
@@ -546,7 +546,7 @@
    "kind": "listItem",
    "top": 4382,
    "h": 26,
-   "style": "df3d45f7",
+   "style": "d11650a8",
    "content": "08eaa457",
    "text": "Unknown event raises ValueError"
   },
@@ -555,7 +555,7 @@
    "kind": "listItem",
    "top": 4411,
    "h": 26,
-   "style": "9c91b699",
+   "style": "cff94b87",
    "content": "2950cf80",
    "text": "cwd=\"\" yields project=\"unknown\""
   },
@@ -564,7 +564,7 @@
    "kind": "listItem",
    "top": 4439,
    "h": 26,
-   "style": "925d2f9e",
+   "style": "0a664ca0",
    "content": "c54c6987",
    "text": "Missing session_id field (defaults to \"\")"
   },
@@ -573,7 +573,7 @@
    "kind": "heading",
    "top": 4493,
    "h": 23,
-   "style": "a28e8577",
+   "style": "18e1bbd6",
    "content": "2e68ea30",
    "text": "17. Missing tests in test_daemon.py§"
   },
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 4525,
    "h": 26,
-   "style": "fbcd8684",
+   "style": "0448faa1",
    "content": "14f5765e",
    "text": "_replay_active behavior (especially that it send"
   },
@@ -591,7 +591,7 @@
    "kind": "listItem",
    "top": 4553,
    "h": 26,
-   "style": "93c69e56",
+   "style": "695ed191",
    "content": "dd216518",
    "text": "BLE write failure → reconnect → replay path"
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 4581,
    "h": 52,
-   "style": "8d77279b",
+   "style": "e7b8dd9f",
    "content": "b7db1b00",
    "text": "Snapshot behavior: new add arriving during repla"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 4661,
    "h": 23,
-   "style": "5d49c21c",
+   "style": "80c73a0a",
    "content": "09e3862d",
    "text": "18. install-hooks.sh missing set -u and executab"
   },
@@ -618,7 +618,7 @@
    "kind": "code",
    "top": 4693,
    "h": 64,
-   "style": "1e2c166e",
+   "style": "fd1f603e",
    "content": "dc7b5bf0",
    "text": "set -e # already present set -u # missing — unbo"
   },
@@ -627,7 +627,7 @@
    "kind": "paragraph",
    "top": 4772,
    "h": 52,
-   "style": "91745dbf",
+   "style": "041fc09e",
    "content": "25a3eac1",
    "text": "Also: no check that clawd-notify is executable ("
   },
@@ -636,7 +636,7 @@
    "kind": "rule",
    "top": 4842,
    "h": 1,
-   "style": "56813a8d",
+   "style": "e349766d",
    "content": "811c9dc5",
    "text": ""
   },
@@ -645,7 +645,7 @@
    "kind": "heading",
    "top": 4883,
    "h": 29,
-   "style": "e98a8853",
+   "style": "e30c92f5",
    "content": "f26b2f7c",
    "text": "Positive Highlights ✨§"
   },
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 4925,
    "h": 78,
-   "style": "4fc6a11f",
+   "style": "db1a3ae7",
    "content": "3f4156bb",
    "text": "protocol.py is a clean pure-function module. No "
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 5006,
    "h": 52,
-   "style": "684d7d03",
+   "style": "d979b022",
    "content": "c3a11975",
    "text": "ble_client.py lock usage is correct. asyncio.Loc"
   },
@@ -672,7 +672,7 @@
    "kind": "listItem",
    "top": 5060,
    "h": 78,
-   "style": "04cdb289",
+   "style": "4505ba68",
    "content": "fd2fbba4",
    "text": "is_daemon_running() handles stale PID files grac"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 5140,
    "h": 52,
-   "style": "55b4c0b3",
+   "style": "018e5e02",
    "content": "659fd1fd",
    "text": "socket_server.py sets 0o600 on the Unix socket. "
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 5195,
    "h": 52,
-   "style": "4c8bf3a0",
+   "style": "f5f92cdf",
    "content": "1e45bef3",
    "text": "socket_server.py unlinks the socket on both star"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 5249,
    "h": 78,
-   "style": "74af0756",
+   "style": "202e48a1",
    "content": "83344575",
    "text": "daemon.py replay-on-reconnect design is solid. T"
   },
@@ -708,7 +708,7 @@
    "kind": "listItem",
    "top": 5329,
    "h": 52,
-   "style": "cc7010d7",
+   "style": "202d7c6f",
    "content": "08d8ab44",
    "text": "Signal handling for SIGTERM/SIGINT is correct. U"
   },
@@ -717,7 +717,7 @@
    "kind": "listItem",
    "top": 5384,
    "h": 52,
-   "style": "a086e928",
+   "style": "ed20edbb",
    "content": "a1f83dcf",
    "text": "clawd-notify lazy-start pattern is clean. Check "
   },
@@ -726,7 +726,7 @@
    "kind": "listItem",
    "top": 5438,
    "h": 78,
-   "style": "0246ea0e",
+   "style": "ef833846",
    "content": "988cfd01",
    "text": "test_daemon.py tests behavior, not mocks. Callin"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 5518,
    "h": 52,
-   "style": "6dbe766b",
+   "style": "504bb16a",
    "content": "f109c954",
    "text": "install-hooks.sh is correctly conservative — out"
   },
@@ -744,7 +744,7 @@
    "kind": "rule",
    "top": 5588,
    "h": 1,
-   "style": "56813a8d",
+   "style": "e349766d",
    "content": "811c9dc5",
    "text": ""
   },
@@ -753,7 +753,7 @@
    "kind": "heading",
    "top": 5629,
    "h": 29,
-   "style": "e98a8853",
+   "style": "e30c92f5",
    "content": "f5cfaae0",
    "text": "Recommendations§"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 5672,
    "h": 52,
-   "style": "b5f19f00",
+   "style": "1a6f1fc1",
    "content": "5c27049c",
    "text": "Fix the _replay_active dict mutation bug (issue "
   },
@@ -771,7 +771,7 @@
    "kind": "listItem",
    "top": 5726,
    "h": 26,
-   "style": "63c38b09",
+   "style": "a857ed70",
    "content": "93e2c9d7",
    "text": "Fix _on_disconnect thread safety (issue #2) — us"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 5754,
    "h": 26,
-   "style": "29a53823",
+   "style": "96c76a85",
    "content": "747969a8",
    "text": "Move _shutdown_event to __init__ (issue #3) — st"
   },
@@ -789,7 +789,7 @@
    "kind": "listItem",
    "top": 5783,
    "h": 26,
-   "style": "3f13d742",
+   "style": "be45588a",
    "content": "aebc3c7d",
    "text": "Replace get_event_loop() with get_running_loop()"
   },
@@ -798,7 +798,7 @@
    "kind": "listItem",
    "top": 5811,
    "h": 26,
-   "style": "9b965165",
+   "style": "e74209ea",
    "content": "11774b2e",
    "text": "Fix the session_id KeyError (issue #5) — use .ge"
   },
@@ -807,7 +807,7 @@
    "kind": "listItem",
    "top": 5839,
    "h": 26,
-   "style": "35b02260",
+   "style": "e9583a13",
    "content": "53c23967",
    "text": "Fix socket leak in clawd-notify (issue #6) — try"
   },
@@ -816,7 +816,7 @@
    "kind": "listItem",
    "top": 5868,
    "h": 52,
-   "style": "79510676",
+   "style": "6019151c",
    "content": "9b2d3d36",
    "text": "Add length framing to socket protocol (issue #7)"
   },
@@ -825,7 +825,7 @@
    "kind": "listItem",
    "top": 5922,
    "h": 52,
-   "style": "cfd78b50",
+   "style": "f59a5607",
    "content": "930e5837",
    "text": "Add the list() snapshot and regression test imme"
   }
