@@ -7,10 +7,13 @@ import { scheduleRail } from './rail.js';
 let marked = new Map();   // slot -> kind (unread)
 const diffOf = new Map();   // slot -> word-level comparison HTML of an edited block ("" = no earlier text)
 const openDiffs = new Set(); // slots whose comparison is shown
+const previewOf = new Map(); // deletion id -> removed text (each patch sends it once)
 const readTimers = new Map();
 let changesOnly = false;
 
-export function renderMarks(marks, deletions) {
+export function renderMarks(marks, deletions, reset = false) {
+  // Comparisons and removed texts arrive once; later patches leave them out.
+  if (reset) { diffOf.clear(); previewOf.clear(); }
   for (const el of doc.querySelectorAll('.m-inserted, .m-modified, .m-state')) {
     el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
   }
@@ -37,6 +40,9 @@ export function renderMarks(marks, deletions) {
     showDiff(el, diffOf.get(slot));
   }
   for (const slot of [...diffOf.keys()]) if (!slots.has(slot)) diffOf.delete(slot);
+  for (const d of deletions) if (typeof d.preview === 'string') previewOf.set(d.id, d.preview);
+  const live = new Set(deletions.map(d => d.id));
+  for (const id of [...previewOf.keys()]) if (!live.has(id)) previewOf.delete(id);
   for (const d of deletions) {
     const mark = document.createElement('div');
     mark.className = 'del-mark';
@@ -51,7 +57,7 @@ export function renderMarks(marks, deletions) {
       if (open) return;
       const pop = document.createElement('pre');
       pop.className = 'del-pop';
-      pop.textContent = d.preview;
+      pop.textContent = previewOf.get(d.id) ?? '';
       mark.appendChild(pop);
     });
     mark.appendChild(btn);

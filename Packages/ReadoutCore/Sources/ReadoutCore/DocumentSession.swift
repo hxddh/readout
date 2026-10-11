@@ -34,7 +34,9 @@ public struct RenderPatch: Codable, Sendable {
         /// Slot of the block the deletion sits after; 0 = top of the document.
         public var after: Int
         public var count: Int
-        public var preview: String
+        /// The removed text; sent once per deletion (nil in later patches, which
+        /// the page fills from what it was sent before).
+        public var preview: String?
     }
 
     public var version: Int
@@ -78,6 +80,10 @@ public final class DocumentSession {
     /// Task states of those blocks when last read (known after a live update, not after a relaunch).
     private var readTasks: [Int: [Bool]] = [:]
     private var diffs: [Int: String] = [:]
+    /// Comparisons and deletion texts the page already has: a patch carries
+    /// each one once, not again with every later patch.
+    private var sentDiffs: Set<Int> = []
+    private var sentDeletions: Set<Int> = []
 
     public init() {}
 
@@ -90,7 +96,7 @@ public final class DocumentSession {
         blocks = doc.blocks
         title = doc.title
         for i in blocks.indices { blocks[i].slot = allocSlot() }
-        marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]
+        marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]; sentDiffs = []; sentDeletions = []
         let keys = blocks.map(BlockKey.init)
         if let persisted, persisted != keys {
             let d = Differ.diff(old: persisted, new: keys)
@@ -129,7 +135,7 @@ public final class DocumentSession {
         if d.rewrite {
             for i in newBlocks.indices { newBlocks[i].slot = allocSlot() }
             blocks = newBlocks
-            marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]
+            marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]; sentDiffs = []; sentDeletions = []
             baseline = newKeys
             return fullPayload(rewrite: true)
         }
@@ -177,6 +183,9 @@ public final class DocumentSession {
     private func applyMarks(_ d: DiffResult, oldKeys: [BlockKey], oldSlotForIndex: (Int) -> Int?,
                             oldBlocks: [Block] = [], oldTexts: [String?]) {
         let newSlots = Set(blocks.map(\.slot))
+        // One comparison budget for the update: many large edited blocks cost
+        // what one does, and those past it are shown replaced whole.
+        var budget = WordDiff.maxWork
         for (n, c) in d.changes.enumerated() {
             let slot = blocks[n].slot
             switch c {
@@ -201,16 +210,21 @@ public final class DocumentSession {
                         readText[slot] = nil; readKey[slot] = nil; readTasks[slot] = nil; diffs[slot] = nil
                     } else if let read = readText[slot] ?? nil {
                         marks[slot] = .modified
-                        diffs[slot] = WordDiff.html(old: read, new: blocks[n].text)
+                        diffs[slot] = WordDiff.html(old: read, new: blocks[n].text, budget: &budget)
+                        sentDiffs.remove(slot)
                     } else {
                         marks[slot] = .modified
                         diffs[slot] = ""
+                        sentDiffs.remove(slot)
                     }
                 }
             case let .equal(o):
                 if !oldBlocks.isEmpty, oldBlocks[o].taskState != blocks[n].taskState, marks[slot] == nil {
                     marks[slot] = .state
                     readTasks[slot] = oldBlocks[o].taskState   // the checkboxes as read
+                } else if marks[slot] == .state, let read = readTasks[slot], read == blocks[n].taskState {
+                    // Ticked and unticked again before it was read: nothing new.
+                    marks[slot] = nil; readTasks[slot] = nil
                 }
             }
         }
@@ -251,11 +265,13 @@ public final class DocumentSession {
                 existing.count += 1
                 // Grouped removals keep every block up to a bound; past it the
                 // preview says that more was removed instead of dropping blocks silently.
-                if existing.preview.utf8.count + preview.utf8.count + 2 <= Self.previewBytes {
-                    existing.preview += "\n\n" + preview
-                } else if !existing.preview.hasSuffix(Self.previewMore) {
-                    existing.preview += Self.previewMore
+                var text = existing.preview ?? ""
+                if text.utf8.count + preview.utf8.count + 2 <= Self.previewBytes {
+                    text += "\n\n" + preview
+                } else if !text.hasSuffix(Self.previewMore) {
+                    text += Self.previewMore
                 }
+                existing.preview = text
                 newDeletions[after] = existing
             } else {
                 newDeletions[after] = .init(id: 0, after: after, count: 1, preview: preview)
@@ -296,13 +312,27 @@ public final class DocumentSession {
     }
 
     public func markAllRead() {
-        marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]
+        marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]; sentDiffs = []; sentDeletions = []
         baseline = blocks.map(BlockKey.init)
     }
 
     public var currentMarks: [RenderPatch.Mark] {
         marks.map { .init(slot: $0.key, kind: $0.value, diff: $0.value == .modified ? diffs[$0.key] : nil) }
             .sorted { $0.slot < $1.slot }
+    }
+
+    /// Marks and deletions for a patch: everything for a full payload, otherwise
+    /// only the comparisons and deletion texts the page has not been sent.
+    private func outgoing(reset: Bool) -> ([RenderPatch.Mark], [RenderPatch.Deletion]) {
+        var outMarks = currentMarks, outDeletions = deletions
+        if !reset {
+            for i in outMarks.indices where sentDiffs.contains(outMarks[i].slot) { outMarks[i].diff = nil }
+            for i in outDeletions.indices where sentDeletions.contains(outDeletions[i].id) { outDeletions[i].preview = nil }
+        }
+        sentDiffs = Set(outMarks.lazy.filter { $0.kind == .modified }.map(\.slot)).union(reset ? [] : sentDiffs)
+            .filter { marks[$0] == .modified }
+        sentDeletions = Set(deletions.map(\.id))
+        return (outMarks, outDeletions)
     }
 
     // MARK: Helpers
@@ -313,8 +343,9 @@ public final class DocumentSession {
     private func payload(ops: [RenderPatch.Op], reset: Bool, rewrite: Bool) -> RenderPatch {
         if !reset { version += 1 }
         let doc = ParsedDocument(blocks: blocks, title: title)
+        let (outMarks, outDeletions) = outgoing(reset: reset)
         return RenderPatch(version: version, reset: reset, rewrite: rewrite, ops: ops,
-                           marks: currentMarks, deletions: deletions,
+                           marks: outMarks, deletions: outDeletions,
                            toc: doc.toc(), tasks: doc.tasks, title: title)
     }
 }

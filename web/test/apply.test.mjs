@@ -560,6 +560,28 @@ check('rail labels use the localized template',
   }
   check('code in a closed <details> is highlighted when opened', after === 'done', JSON.stringify({ before, after }));
 }
+// Comparisons and removed texts arrive once; later patches leave them out.
+{
+  const base = { rewrite: false, toc: [], tasks: { done: 0, total: 0 } };
+  await page.evaluate(p => window.readout.apply(p), { ...base, version: 130, reset: true,
+    ops: [{ op: 'insert', slot: 1701, after: 0, kind: 'paragraph', html: '<p>The plan uses Postgres.</p>' },
+          { op: 'insert', slot: 1702, after: 1701, kind: 'paragraph', html: '<p>End.</p>' }],
+    marks: [{ slot: 1701, kind: 'modified', diff: 'The plan uses <del>Redis</del><ins>Postgres</ins>.' }],
+    deletions: [{ id: 91, after: 1701, count: 1, preview: 'Removed words.' }] });
+  await page.evaluate(p => window.readout.apply(p), { ...base, version: 131, reset: false,
+    ops: [{ op: 'replace', slot: 1702, change: 'content', kind: 'paragraph', html: '<p>End, changed.</p>' }],
+    marks: [{ slot: 1701, kind: 'modified' }, { slot: 1702, kind: 'modified', diff: '<del>End</del><ins>End, changed</ins>.' }],
+    deletions: [{ id: 91, after: 1701, count: 1 }] });
+  const r = await page.evaluate(() => {
+    const has = document.querySelector('.blk[data-slot="1701"]').classList.contains('wd-has');
+    document.querySelector('.del-mark[data-del="91"] button').click();
+    const text = document.querySelector('.del-mark[data-del="91"] .del-pop')?.textContent;
+    document.body.click();
+    return { has, text };
+  });
+  check('a comparison sent earlier stays available', r.has, JSON.stringify(r));
+  check('a removed text sent earlier still opens', r.text === 'Removed words.', JSON.stringify(r));
+}
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();

@@ -21,6 +21,13 @@ public enum WordDiff {
     static let keepEqual = 60
 
     public static func segments(old: String, new: String) -> [Segment] {
+        var budget = maxWork
+        return segments(old: old, new: new, budget: &budget)
+    }
+
+    /// `budget` is shared by every comparison drawing on it (one update's
+    /// edited blocks); once it is spent, changed runs are shown replaced whole.
+    public static func segments(old: String, new: String, budget: inout Int) -> [Segment] {
         if old == new { return old.isEmpty ? [] : [.equal(old)] }
         // An edit is usually local: the shared start and end are cut off on
         // the bytes first (at character and word boundaries), so only the
@@ -36,8 +43,6 @@ public enum WordDiff {
             }
         }
         if !prefix.isEmpty { append(.equal(prefix)) }
-        // One work budget for the whole block, shared by every comparison in it.
-        var budget = maxWork
         if oldMid.utf8.count + newMid.utf8.count > lineFirst {
             // A long middle (edits far apart): lines first, then words inside
             // each changed run of lines that is not too long.
@@ -314,7 +319,12 @@ public enum WordDiff {
     /// The comparison as HTML: `<del>` and `<ins>` around changes, text
     /// escaped, long unchanged runs shortened with an ellipsis.
     public static func html(old: String, new: String) -> String {
-        let segs = segments(old: old, new: new)
+        var budget = maxWork
+        return html(old: old, new: new, budget: &budget)
+    }
+
+    public static func html(old: String, new: String, budget: inout Int) -> String {
+        let segs = segments(old: old, new: new, budget: &budget)
         var out = ""
         for (n, s) in segs.enumerated() {
             switch s {
@@ -358,7 +368,10 @@ public enum WordDiff {
             let v = s.value
             let word = (v >= 0x61 && v <= 0x7A) || (v >= 0x41 && v <= 0x5A) || (v >= 0x30 && v <= 0x39) || v == 0x5F
                 || (v >= 0x80 && !CJK.isCJK(s) && (s.properties.isAlphabetic || s.properties.numericType != nil))
-            if word {
+            if v >= 0x80 && i > scalars.startIndex && String.Index(i, within: text) == nil {
+                // Inside a character (a vowel sign after a space, conjoining jamo):
+                // it stays with the token it continues.
+            } else if word {
                 if kind != 1 { flush(i); kind = 1 }
             } else if v == 0x20 || v == 0x09 {
                 if kind != 2 { flush(i); kind = 2 }

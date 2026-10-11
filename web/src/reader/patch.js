@@ -106,7 +106,7 @@ export function apply(p) {
     doc.appendChild(empty);
   }
 
-  renderMarks(p.marks || [], p.deletions || []);
+  renderMarks(p.marks || [], p.deletions || [], !!p.reset);
 
   // A silent re-render (checkbox HTML, CJK class) must not disturb the filter.
   applyChangesOnly();

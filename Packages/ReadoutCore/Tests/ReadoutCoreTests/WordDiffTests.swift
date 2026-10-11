@@ -61,7 +61,8 @@ import Testing
                        ("cafe\u{301} au lait", "cafe\u{300} au lait"), ("今日は良い天気", "今日は悪い天気"),
                        ("→\u{1AB0} x", "→\u{1AB1} x"), ("a→\u{1AB0}", "a→\u{1AB1}"),
                        ("xa\u{1AB0}y", "xa\u{1AB1}y"), ("say xa\u{1AB0} now", "say xa\u{1AB1} now"),
-                       ("a\u{20DD} b", "a\u{20DE} b"), ("नमस्ते दुनिया", "नमस्ता दुनिया")] {
+                       ("a\u{20DD} b", "a\u{20DE} b"), ("नमस्ते दुनिया", "नमस्ता दुनिया"),
+                       ("  ", "  \u{093F}"), ("\u{1100}가", "가"), ("x \u{1100}\u{1161}\u{11A8} y", "x \u{1100}\u{1161} y")] {
             let segs = WordDiff.segments(old: a, new: b)
             let old = segs.map { if case let .equal(t) = $0 { t } else if case let .deleted(t) = $0 { t } else { "" } }.joined()
             let new = segs.map { if case let .equal(t) = $0 { t } else if case let .inserted(t) = $0 { t } else { "" } }.joined()
@@ -203,6 +204,54 @@ import Testing
         _ = s2.update(doc("- [x] write the test EDITED\n"))
         let p2 = try #require(s2.update(doc("- [x] write the test\n")))
         #expect(p2.marks.map(\.kind) == [.state])
+    }
+
+    @Test func comparisonsAndRemovedTextsAreSentOnce() throws {
+        let session = DocumentSession()
+        _ = session.load(doc("# T\n\nThe plan uses Redis.\n\nDrop me.\n\nOther text.\n\nMore.\n\nEnd.\n"))
+        let p1 = try #require(session.update(doc("# T\n\nThe plan uses Postgres.\n\nOther text.\n\nMore.\n\nEnd.\n")))
+        #expect(p1.marks.first { $0.kind == .modified }?.diff?.contains("<ins>Postgres</ins>") == true)
+        #expect(p1.deletions.first?.preview == "Drop me.")
+        // A later patch that leaves them alone does not carry them again.
+        let p2 = try #require(session.update(doc("# T\n\nThe plan uses Postgres.\n\nOther text.\n\nMore.\n\nEnd, changed.\n")))
+        let kept = try #require(p2.marks.first { $0.slot == p1.marks.first { $0.kind == .modified }?.slot })
+        #expect(kept.kind == .modified && kept.diff == nil)
+        #expect(p2.deletions.count == 1 && p2.deletions[0].preview == nil)
+        // A block edited again carries its new comparison.
+        let p3 = try #require(session.update(doc("# T\n\nThe plan uses Postgres 16.\n\nOther text.\n\nMore.\n\nEnd, changed.\n")))
+        #expect(p3.marks.first { $0.slot == kept.slot }?.diff?.contains("<ins>Postgres 16</ins>") == true)
+        // A full payload (a reloaded page) carries everything.
+        let full = session.fullPayload(rewrite: false)
+        #expect(full.marks.first { $0.slot == kept.slot }?.diff != nil)
+        #expect(full.deletions.first?.preview == "Drop me.")
+    }
+
+    @Test func oneUpdateSharesOneComparisonBudget() throws {
+        // Twenty large code blocks, every third line edited: the first are compared
+        // word by word, the rest are shown replaced whole, so the update stays quick.
+        func block(_ b: Int, edited: Bool) -> String {
+            "```\n" + (0..<1200).map { i in "let v\(b)_\(i) = compute(\(i), \(edited && i % 3 == 0 ? "changed" : "same"))" }
+                .joined(separator: "\n") + "\n```"
+        }
+        let pad = (1...60).map { "Paragraph \($0)." }.joined(separator: "\n\n")
+        let v1 = pad + "\n\n" + (0..<20).map { block($0, edited: false) }.joined(separator: "\n\n")
+        let v2 = pad + "\n\n" + (0..<20).map { block($0, edited: true) }.joined(separator: "\n\n")
+        let session = DocumentSession()
+        _ = session.load(doc(v1))
+        let p = try #require(session.update(doc(v2)))
+        let diffs = p.marks.compactMap(\.diff)
+        #expect(diffs.count == 20)
+        #expect(diffs.contains { $0.contains("<ins>changed</ins>") })
+        #expect(diffs.last.map { !$0.contains("<ins>changed</ins>") } == true)
+    }
+
+    @Test func aTaskTickedAndUntickedBeforeReadingIsNotMarked() throws {
+        let session = DocumentSession()
+        _ = session.load(doc("- [ ] write the test\n- [ ] ship\n"))
+        let p1 = try #require(session.update(doc("- [x] write the test\n- [ ] ship\n")))
+        #expect(p1.marks.map(\.kind) == [.state])
+        let p2 = try #require(session.update(doc("- [ ] write the test\n- [ ] ship\n")))
+        #expect(p2.marks.isEmpty)
     }
 
     @Test func persistedBaselineWithoutWholeTextSaysSo() throws {
