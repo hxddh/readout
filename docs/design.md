@@ -23,7 +23,9 @@ Reader chrome element ids always use the `ro-` prefix (`ro-doc`, `ro-rail`, `ro-
 
 ## Privacy
 
-Remote images and media — whether written as Markdown (`![](https://…)`) or as raw HTML (`<img>`, `<video>`, `<audio>`) — never load on their own. They render as a placeholder button naming the host; the request goes out only when the reader clicks it. Local images are served from disk through the `readout://file/` scheme, which only serves image file types.
+The page's Content-Security-Policy is the security boundary: it allows no `http:`/`https:` sources at all (`img-src`/`media-src`/`connect-src` cover only `readout:`, `self`, `data:`, `blob:`), so rendering a document can never send a network request no matter what markup it contains. `HTML.sanitize`/`gateRemoteMedia` is UX only — it turns common remote `<img>`/Markdown images into click-to-load placeholders.
+
+Clicking an image placeholder posts `loadRemote`; the App downloads it with an ephemeral, cookie-free `URLSession` (15 s timeout, 20 MB cap, `image/*` only, redirects re-validated) and serves the bytes back over `readout://remote/<token>`. Video/audio placeholders open externally instead of proxying. Quick Look never enables remote loading and shows placeholders only.
 
 ## Focus and resume
 

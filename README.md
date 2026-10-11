@@ -28,6 +28,10 @@ If the build you downloaded is not notarized, macOS will refuse to open it the f
 
 Readout checks GitHub Releases for new versions (**Readout → Check for Updates…**).
 
+## Privacy
+
+Rendering a document sends no network requests at all: remote images and media render as placeholder buttons naming the host. Only when you click does Readout itself download the image — without cookies — and show it; video and audio open in your browser instead. The only automatic network access is the weekly update check, which you can turn off in settings.
+
 ## Command line and agent hooks
 
 Choose **Readout → Install Command Line Tool…** to get `readout`:

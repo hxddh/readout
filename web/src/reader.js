@@ -12,7 +12,8 @@ const slots = new Map();          // slot -> element
 const heights = new WeakMap();    // element -> last observed height
 const mermaidCache = new Map();   // source+theme -> svg
 const mathCache = new Map();      // tex+display -> html
-let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section' };
+let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', remoteError: 'Could not load image: %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section' };
+let remoteSeq = 0;
 let first = true;
 let quicklook = false;
 let followAnchor = null;
@@ -540,12 +541,41 @@ function setupRemoteImage(span) {
   btn.type = 'button';
   btn.textContent = strings.loadImage.replace('%@', host);
   btn.addEventListener('click', () => {
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = span.dataset.alt || '';
-    span.replaceChildren(img);
+    const tag = (span.dataset.tag || 'img').toLowerCase();
+    if (tag !== 'img' && tag !== 'source' && tag !== 'track') {
+      // Video and audio are never proxied: open externally.
+      const abs = src.startsWith('//') ? `https:${src}` : src;
+      post({ type: 'open', href: abs });
+      return;
+    }
+    // The page itself cannot fetch (CSP): the native side downloads with an
+    // ephemeral, cookie-free session and serves the bytes back over readout:.
+    const id = `r${++remoteSeq}`;
+    span.dataset.remoteId = id;
+    btn.disabled = true;
+    post({ type: 'loadRemote', url: src, id });
   });
   span.appendChild(btn);
+}
+
+// Called by the native side with {id, url} once bytes are cached.
+function remoteReady(o) {
+  const span = document.querySelector(`.remote-img[data-remote-id="${o.id}"]`);
+  if (!span) return;
+  const img = document.createElement('img');
+  img.src = o.url;
+  img.alt = span.dataset.alt || '';
+  span.replaceChildren(img);
+}
+
+// Called by the native side with {id, error} when the download fails.
+function remoteFailed(o) {
+  const span = document.querySelector(`.remote-img[data-remote-id="${o.id}"]`);
+  if (!span) return;
+  const btn = span.querySelector('button');
+  const msg = (strings.remoteError || 'Could not load image: %@').replace('%@', o.error || 'failed');
+  if (btn) { btn.disabled = false; btn.textContent = msg; }
+  else span.textContent = msg;
 }
 
 // ---------------------------------------------------------------- Math (KaTeX, loaded on demand)
@@ -805,6 +835,8 @@ window.readout = {
   nextChange: () => jump(1),
   previousChange: () => jump(-1),
   markAllRead,
+  remoteReady,
+  remoteFailed,
   warm: () => hl.init(),
 };
 
