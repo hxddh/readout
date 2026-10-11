@@ -15,6 +15,7 @@ import Testing
         #expect(PageMessage(["type": "openPath", "path": "a.swift", "line": NSNumber(value: 4)]) == .openPath(path: "a.swift", line: 4, column: 0))
         #expect(PageMessage(["type": "loadRemote", "url": "https://x/a.png", "id": "r1"]) == .loadRemote(url: "https://x/a.png", id: "r1"))
         #expect(PageMessage(["type": "applied", "version": NSNumber(value: 1)]) == .applied)
+        #expect(PageMessage(["type": "painted", "version": NSNumber(value: 1)]) == .painted)
     }
 
     @Test func rejectsMalformedMessages() {

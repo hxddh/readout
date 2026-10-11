@@ -8,6 +8,8 @@ public enum PageMessage: Equatable, Sendable {
     case ready
     /// A patch was applied.
     case applied
+    /// The first frame after a patch has been presented.
+    case painted
     /// Changes the reader has now seen.
     case read(slots: [Int], deletions: [Int])
     /// The heading at the top of the viewport (TOC sync).
@@ -27,6 +29,7 @@ public enum PageMessage: Equatable, Sendable {
         switch msg["type"] as? String {
         case "ready": self = .ready
         case "applied": self = .applied
+        case "painted": self = .painted
         case "read":
             self = .read(slots: ints(msg["slots"]), deletions: ints(msg["deletions"]))
         case "activeHeading":

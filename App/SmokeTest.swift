@@ -83,8 +83,13 @@ enum SmokeTest {
             let app = NSApp.delegate as? AppDelegate
             // Open a second file while running: the warm open-to-first-paint path.
             if let second = ProcessInfo.processInfo.environment["READOUT_SMOKE_SECOND"] {
-                app?.open(URL(fileURLWithPath: second))
-                try? await Task.sleep(for: .seconds(2))
+                let secondURL = URL(fileURLWithPath: second)
+                app?.open(secondURL)
+                // Keep it open until its first frame is on screen (or well past the guard).
+                let deadline = Date().addingTimeInterval(10)
+                while firstPaint[secondURL.path] == nil && Date() < deadline {
+                    try? await Task.sleep(for: .milliseconds(50))
+                }
                 NSApp.keyWindow?.close()
             }
             app?.showSettings(nil)
