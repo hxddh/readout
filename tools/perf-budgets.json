@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "Speed budgets. 'target' is the goal from the release plan; 'guard' is the",
+    "regression limit CI enforces today (measured baseline plus headroom).",
+    "A metric over its guard fails CI. Over target but within guard is reported",
+    "as tracked until the work that brings it in lands, then the guard drops to",
+    "the target. Never raise a guard to make CI pass: lower it when you improve",
+    "a metric, and explain any increase in the PR.",
+    "where: mac = macOS CI runner (release build, signed app); linux-webkit = CI WebKit."
+  ],
+  "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": null },
+  "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": null },
+  "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": null },
+  "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": null },
+  "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": null },
+  "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
+  "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": null },
+  "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null }
+}

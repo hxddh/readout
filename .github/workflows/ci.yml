@@ -41,6 +41,16 @@ jobs:
         run: npm test
         env:
           BROWSER: webkit
+      - name: Page speed (1 MB document)
+        working-directory: web
+        run: node test/perf.test.mjs && python3 ../tools/perf-assert.py linux-webkit test/out/perf-web.json
+      - name: Upload page speed
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: perf-web
+          path: web/test/out/perf-web.json
+          retention-days: 30
 
   corpus:
     name: Rendering baselines (WebKit)

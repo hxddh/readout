@@ -11,8 +11,12 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
   2. 50 ms after the app reports `opened`, replaces it with plan-early.md
      (an agent write racing the first load: the first capture must show it)
   3. when the app reports `await-edit`, replaces it with plan-v2.md
-  4. waits for the app to exit on its own (90 s), with its log in OUT_DIR/smoke-out.log
+  4. opens a second document while running (warm open)
+  5. waits for the app to exit on its own (90 s), with its log in OUT_DIR/smoke-out.log
+  6. writes OUT_DIR/timings.json: cold start, warm open and write-to-update
+     times, from its own clock readings and the app's (timings-app.json)
 """
+import json
 import os
 import shutil
 import subprocess
@@ -41,6 +45,35 @@ def wait_for(path: Path, proc: subprocess.Popen, timeout: float, poll: float = 0
     return False
 
 
+def write_timings(out: Path, clock: dict, second: Path) -> None:
+    """Combines the harness's clock with the app's into milliseconds."""
+    try:
+        app = json.loads((out / "timings-app.json").read_text())
+    except (OSError, ValueError) as e:
+        print(f"harness: no app timings ({e})")
+        return
+    applied = sorted(app.get("applied_at", []))
+    after = lambda t: next((a for a in applied if a >= t), None)
+    first = applied[0] if applied else None
+    update = after(clock["edit"]) if "edit" in clock else None
+    timings = {
+        # Process launch to the first patch on screen.
+        "cold_start_ms": round((first - clock["spawn"]) * 1000, 1) if first else None,
+        # Agent write (rename) to the patch on screen: FSEvents, debounce, parse, diff, apply.
+        "write_to_update_ms": round((update - clock["edit"]) * 1000, 1) if update else None,
+        # App already running: window request to first patch, for a 77 KB document.
+        "warm_open_ms": None,
+    }
+    paints = app.get("first_paint_s", {})
+    warm = paints.get(str(second.resolve()), paints.get(str(second)))
+    if warm is None:  # the app reports the standardized path; match by name
+        warm = next((v for k, v in paints.items() if k.endswith("/second.md")), None)
+    if warm is not None:
+        timings["warm_open_ms"] = round(warm * 1000, 1)
+    (out / "timings.json").write_text(json.dumps(timings, indent=1, sort_keys=True) + "\n")
+    print(f"harness: timings {timings}")
+
+
 def main() -> int:
     app, work, out = (Path(a) for a in sys.argv[1:4])
     work.mkdir(parents=True, exist_ok=True)
@@ -48,9 +81,14 @@ def main() -> int:
     target = work / "plan.md"
     shutil.copyfile(FIXTURES / "plan.md", target)
     shutil.copyfile(FIXTURES / "missing-diagram.png", work / "missing-diagram.png")
+    second = work / "second.md"
+    shutil.copyfile(ROOT / "web" / "test" / "corpus" / "01-sdd-fix-loop-plan.md", second)
 
-    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out))
+    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
+               READOUT_SMOKE_SECOND=str(second))
+    clock = {}
     with open(out / "smoke-out.log", "wb") as log:
+        clock["spawn"] = time.time()
         proc = subprocess.Popen([str(app)], env=env, stdout=log, stderr=subprocess.STDOUT)
         try:
             if not wait_for(out / "opened", proc, 30):
@@ -64,6 +102,7 @@ def main() -> int:
                 print("FAIL: the app never reported `await-edit`")
                 return 1
             agent_write(target, FIXTURES / "plan-v2.md")
+            clock["edit"] = time.time()
             print("harness: edit written")
 
             try:
@@ -72,6 +111,7 @@ def main() -> int:
                 print("FAIL: the signed app did not exit on its own within 90 seconds")
                 return 1
             print(f"signed app exited with code {code}")
+            write_timings(out, clock, second)
             return code
         finally:
             if proc.poll() is None:
