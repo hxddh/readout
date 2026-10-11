@@ -43,6 +43,28 @@ import Testing
         #expect(doc.blocks.last!.lines == 3...6)
     }
 
+    @Test func wrappedDefinitionLinesStayInTheNote() {
+        let doc = parse("See[^1].\n\n[^1]: First line of the note\ncontinued without indent.\n\nBody again.\n")
+        #expect(doc.blocks.map(\.kind) == [.paragraph, .paragraph, .footnotes])
+        #expect(doc.blocks.last!.html.contains("continued without indent."))
+        #expect(!doc.blocks[1].html.contains("continued"))
+        // A new block after the definition is not part of it.
+        let list = parse("See[^1].\n\n[^1]: Note\n- item\n")
+        #expect(list.blocks.contains { $0.kind == .listItem })
+    }
+
+    @Test func labelsMatchWithoutCase() {
+        let doc = parse("See[^Note].\n\n[^note]: Found.\n")
+        #expect(doc.blocks[0].html.contains("data-footnote-ref>1</a>"))
+        #expect(doc.blocks.last!.html.contains("Found."))
+    }
+
+    @Test func everyReferenceGetsAWayBack() {
+        let notes = parse("a[^n] b[^n]\n\n[^n]: Note.\n").blocks.last!.html
+        #expect(notes.contains(##"href="#user-content-fnref-n""##))
+        #expect(notes.contains(##"href="#user-content-fnref-n-2""##))
+    }
+
     @Test func lineNumbersOfOtherBlocksAreUnchanged() {
         let doc = parse("One[^a].\n\n[^a]: Note.\n\nTwo.\n")
         #expect(doc.blocks.map(\.lines) == [1...1, 5...5, 3...3])

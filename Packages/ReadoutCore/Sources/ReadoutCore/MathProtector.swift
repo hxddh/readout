@@ -92,8 +92,8 @@ struct MathProtector {
             if mayHaveFootnote && c == "[" && i + 1 < chars.count && chars[i + 1] == "^",
                let end = chars[(i + 2)...].firstIndex(of: "]"), end > i + 2 {
                 let id = String(chars[(i + 2)..<end])
-                if footnoteIDs.contains(id) && !id.contains(where: \.isWhitespace) {
-                    out += footnoteToken(id)
+                if footnoteIDs.contains(id.lowercased()) && !id.contains(where: \.isWhitespace) {
+                    out += footnoteToken(id.lowercased())
                     i = end + 1
                     continue
                 }
