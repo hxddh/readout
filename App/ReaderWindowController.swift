@@ -401,6 +401,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         model.unread = session.unreadCount
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
         model.words = ReadingStats.words(in: session.blocks)
+        model.minutes = ReadingStats.minutes(forBlocks: session.blocks)
         if let enc = decoded.fallbackEncoding {
             model.status = String(format: NSLocalizedString("Decoded as %@", comment: "Status: non-UTF-8 file"), enc)
         } else {
@@ -415,7 +416,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         window?.subtitle = t.total > 0
             ? String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
             : String(format: NSLocalizedString("%d words · %d min read", comment: "Window subtitle when no tasks"), model.words,
-                     ReadingStats.minutes(forWords: model.words))
+                     model.minutes))
     }
 
     private func updateChangeItem(_ n: Int) {

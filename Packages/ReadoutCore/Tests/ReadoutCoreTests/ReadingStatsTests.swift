@@ -6,9 +6,10 @@ import Testing
         #expect(ReadingStats.words(in: "") == 0)
         #expect(ReadingStats.words(in: "hello world") == 2)
         #expect(ReadingStats.words(in: "  one   two\tthree\nfour  ") == 4)
-        // Apostrophes split words ("don't" -> "don", "t"); matches the
-        // whitespace-words estimate used for reading time.
-        #expect(ReadingStats.words(in: "don't stop") == 3)
+        // "don't" is one word: the apostrophe joins, it does not split.
+        // (Corrects the earlier expectation of 3, which encoded the bug.)
+        #expect(ReadingStats.words(in: "don't stop") == 2)
+        #expect(ReadingStats.words(in: "it’s ’tis") == 2)
     }
 
     @Test func countsCJKCharactersIndividually() {
@@ -22,11 +23,28 @@ import Testing
         #expect(ReadingStats.words(in: doc.blocks) == 5)
     }
 
+    @Test func excludesNonProseBlocks() {
+        let doc = MarkdownParser.parse("# Title\n\nhello world\n\n```swift\nlet aaaaa = bbbbbbbb\nlet ccccc = dddddddd\n```\n\n$$x + y$$\n\n<div>raw html words here yes</div>\n")
+        // Only the heading and paragraph count (1 + 2); code, math and raw
+        // HTML are scanning material, not reading material.
+        #expect(ReadingStats.words(in: doc.blocks) == 3)
+    }
+
     @Test func minutesAreAtLeastOne() {
         #expect(ReadingStats.minutes(forWords: 0) == 1)
-        #expect(ReadingStats.minutes(forWords: 400) == 1)
-        #expect(ReadingStats.minutes(forWords: 600) == 2)
-        #expect(ReadingStats.minutes(forWords: 4000) == 10)
+        #expect(ReadingStats.minutes(forWords: 230) == 1)
+        #expect(ReadingStats.minutes(forWords: 345) == 2)
+        #expect(ReadingStats.minutes(forWords: 2300) == 10)
+    }
+
+    @Test func mixedPaceMinutes() {
+        // 230 Latin words read in a minute; 450 CJK characters in a minute.
+        let latin = String(repeating: "word ", count: 230)
+        let cjk = String(repeating: "字", count: 450)
+        let doc = MarkdownParser.parse("\(latin)\n\n\(cjk)\n")
+        #expect(ReadingStats.minutes(forBlocks: doc.blocks) == 2)
+        let tiny = MarkdownParser.parse("hi\n")
+        #expect(ReadingStats.minutes(forBlocks: tiny.blocks) == 1)
     }
 }
 
