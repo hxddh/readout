@@ -298,14 +298,13 @@ struct WelcomeView: View {
             .controlSize(.large)
             .padding(.top, 20)
 
-            let recents = recentURLs
-            if !recents.isEmpty {
+            if !recentURLs.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(NSLocalizedString("Recent", comment: "Welcome section"))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .padding(.horizontal, 32)
-                    ForEach(Array(recents), id: \.self) { url in
+                    ForEach(recentURLs, id: \.self) { url in
                         Button {
                             onOpenURL(url)
                         } label: {
@@ -333,7 +332,7 @@ struct WelcomeView: View {
             }
             Spacer(minLength: 24)
         }
-        .frame(width: 460, height: Self.height(forRecentCount: recents.count))
+        .frame(width: 460, height: Self.height(forRecentCount: recentURLs.count))
     }
 
     /// Window height follows the recent count instead of jumping between two
