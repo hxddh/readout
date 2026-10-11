@@ -147,6 +147,14 @@ import Testing
         #expect(p6.deletions.last?.preview == "The plan uses Postgres 16.")
     }
 
+    @Test func aTickedTaskBackToItsReadTextIsAStateChange() throws {
+        let session = DocumentSession()
+        _ = session.load(doc("- [ ] write the test\n"))
+        _ = session.update(doc("- [ ] write the test EDITED\n"))
+        let p = try #require(session.update(doc("- [x] write the test\n")))
+        #expect(p.marks.map(\.kind) == [.state])
+    }
+
     @Test func persistedBaselineWithoutWholeTextSaysSo() throws {
         let long = String(repeating: "alpha beta gamma ", count: 40)   // over 500 characters
         let v1 = doc("Intro.\n\n" + long + "\n")
