@@ -6,95 +6,69 @@ import ReadoutCore
 /// in as `loadRemote` messages and the bytes are served back to the page over
 /// `readout://remote/<token>`.
 ///
-/// Privacy properties: ephemeral URLSession (no cookies, no shared cache),
-/// 15 s timeout, 20 MB cap, `image/*` responses only. Redirect targets are
-/// re-validated through the same scheme/content-type checks.
+/// Policy lives in ReadoutCore (`RemoteLoad`, `RemoteFetcher`): public hosts
+/// only, ephemeral session, 15 s timeout, `image/*` only, 20 MB cap enforced
+/// while streaming. Downloads are kept in a 100 MB least-recently-used cache.
 @MainActor
-final class RemoteImageLoader: NSObject, URLSessionTaskDelegate {
-    struct Entry {
-        let data: Data
-        let contentType: String
-    }
-
-    private lazy var session: URLSession = {
-        let config = URLSessionConfiguration.ephemeral
-        config.timeoutIntervalForRequest = RemoteLoad.timeoutSeconds
-        config.timeoutIntervalForResource = RemoteLoad.timeoutSeconds
-        return URLSession(configuration: config, delegate: self, delegateQueue: nil)
-    }()
-
-    /// token -> cached bytes. Tokens are random UUIDs, unguessable across documents.
-    private var cache: [String: Entry] = [:]
-
+final class RemoteImageLoader {
     static let shared = RemoteImageLoader()
 
-    /// Validates `urlString`, downloads, caches, and completes with the
-    /// `readout://remote/<token>` URL string (or an Error with a readable message).
-    func load(_ urlString: String, completion: @escaping (Result<String, Error>) -> Void) {
-        // Protocol-relative URLs inherit https.
-        let urlString = urlString.hasPrefix("//") ? "https:" + urlString : urlString
-        if RemoteLoad.checkScheme(urlString) != nil {
-            completion(.failure(LoadError.rejected("unsupported address")))
-            return
-        }
-        let task = session.dataTask(with: URL(string: urlString)!) { [weak self] data, response, error in
-            Task { @MainActor in self?.finish(urlString: urlString, data: data, response: response, error: error, completion: completion) }
-        }
-        task.resume()
-    }
-
-    private func finish(urlString: String, data: Data?, response: URLResponse?, error: Error?,
-                        completion: (Result<String, Error>) -> Void) {
-        if let error {
-            completion(.failure(LoadError.rejected(shortError(error))))
-            return
-        }
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            completion(.failure(LoadError.rejected("the server answered with an error")))
-            return
-        }
-        if RemoteLoad.checkContentType(http.value(forHTTPHeaderField: "Content-Type")) != nil {
-            completion(.failure(LoadError.rejected("not an image")))
-            return
-        }
-        guard let data, RemoteLoad.checkLength(data.count) == nil else {
-            completion(.failure(LoadError.rejected("image is too large")))
-            return
-        }
-        let token = UUID().uuidString
-        let ct = http.value(forHTTPHeaderField: "Content-Type") ?? "image/png"
-        cache[token] = Entry(data: data, contentType: ct)
-        completion(.success("readout://remote/\(token)"))
-    }
-
-    private func shortError(_ error: Error) -> String {
-        let ns = error as NSError
-        if ns.domain == NSURLErrorDomain {
-            switch ns.code {
-            case NSURLErrorTimedOut: return "timed out"
-            case NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost, NSURLErrorNetworkConnectionLost:
-                return "could not be reached"
-            case NSURLErrorUserCancelledAuthentication, NSURLErrorSecureConnectionFailed:
-                return "the secure connection failed"
-            default: break
-            }
-        }
-        return "could not be loaded"
-    }
+    private let fetcher = RemoteFetcher()
+    private var cache = RemoteImageCache()
 
     enum LoadError: Error {
         case rejected(String)
     }
 
-    /// Looks up cached bytes for a `readout://remote/<token>` path.
-    func entry(for token: String) -> Entry? { cache[token] }
+    /// Downloads `urlString` and completes on the main actor with the
+    /// `readout://remote/<token>` URL string, or a `LoadError` whose message
+    /// is shown in the placeholder.
+    func load(_ urlString: String, completion: @escaping @MainActor (Result<String, Error>) -> Void) {
+        fetcher.fetch(urlString) { [self] result in
+            Task { @MainActor in
+                switch result {
+                case .success(let image):
+                    if let token = cache.insert(image) {
+                        completion(.success("readout://remote/\(token)"))
+                    } else {
+                        completion(.failure(LoadError.rejected(Self.reason(.rejected(.tooLarge)))))
+                    }
+                case .failure(let failure):
+                    completion(.failure(LoadError.rejected(Self.reason(failure))))
+                }
+            }
+        }
+    }
 
-    /// Redirects re-enter validation: only http/https targets are followed.
-    nonisolated func urlSession(_ session: URLSession, task: URLSessionTask,
-                                willPerformHTTPRedirection response: HTTPURLResponse,
-                                newRequest request: URLRequest,
-                                completionHandler: @escaping (URLRequest?) -> Void) {
-        let target = request.url?.absoluteString ?? ""
-        completionHandler(RemoteLoad.checkScheme(target) == nil ? request : nil)
+    /// Cached bytes for a `readout://remote/<token>` path.
+    func entry(for token: String) -> RemoteFetcher.Image? { cache.image(for: token) }
+
+    private static func reason(_ failure: RemoteFetcher.Failure) -> String {
+        switch failure {
+        case .rejected(.scheme):
+            return NSLocalizedString("unsupported address", comment: "Remote image failure reason")
+        case .rejected(.privateAddress):
+            return NSLocalizedString("local and private network addresses are not loaded", comment: "Remote image failure reason")
+        case .rejected(.contentType):
+            return NSLocalizedString("not an image", comment: "Remote image failure reason")
+        case .rejected(.tooLarge):
+            return NSLocalizedString("image is larger than 20 MB", comment: "Remote image failure reason")
+        case .httpStatus:
+            return NSLocalizedString("the server answered with an error", comment: "Remote image failure reason")
+        case .network(let code):
+            switch code {
+            case NSURLErrorTimedOut:
+                return NSLocalizedString("timed out", comment: "Remote image failure reason")
+            case NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost, NSURLErrorNetworkConnectionLost,
+                 NSURLErrorNotConnectedToInternet, NSURLErrorDNSLookupFailed:
+                return NSLocalizedString("could not be reached", comment: "Remote image failure reason")
+            case NSURLErrorSecureConnectionFailed, NSURLErrorServerCertificateUntrusted,
+                 NSURLErrorServerCertificateHasBadDate, NSURLErrorServerCertificateNotYetValid,
+                 NSURLErrorServerCertificateHasUnknownRoot:
+                return NSLocalizedString("the secure connection failed", comment: "Remote image failure reason")
+            default:
+                return NSLocalizedString("could not be loaded", comment: "Remote image failure reason")
+            }
+        }
     }
 }

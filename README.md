@@ -30,7 +30,7 @@ Readout checks GitHub Releases for new versions (**Readout → Check for Updates
 
 ## Privacy
 
-Rendering a document sends no network requests at all: remote images and media render as placeholder buttons naming the host. Only when you click does Readout itself download the image — without cookies — and show it; video and audio open in your browser instead. The only automatic network access is the weekly update check, which you can turn off in settings.
+Rendering a document sends no network requests at all: remote images and media render as placeholder buttons naming the host. Only when you click does Readout itself download the image — without cookies, and never from your own machine or local network — and show it; video and audio open in your browser instead. The only automatic network access is the weekly update check, which you can turn off in settings.
 
 ## Command line and agent hooks
 
