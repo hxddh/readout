@@ -1,0 +1,176 @@
+import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
+/// Downloads one remote image under `RemoteLoad` policy, streaming:
+/// the URL (and every redirect target) is checked before a request goes out,
+/// status, `Content-Type` and `Content-Length` are checked on the response
+/// headers before any body is accepted, and the body is counted as it arrives
+/// so an oversized or lying server is cancelled as soon as it passes the cap.
+///
+/// The session is ephemeral (no cookies, no shared cache). Completion runs on
+/// the session's delegate queue; callers hop to their own actor.
+public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    public struct Image: Sendable, Equatable {
+        public let data: Data
+        public let contentType: String
+    }
+
+    public enum Failure: Error, Equatable, Sendable {
+        case rejected(RemoteLoad.Rejection)
+        case httpStatus(Int)
+        case network(code: Int)
+    }
+
+    public typealias Completion = @Sendable (Result<Image, Failure>) -> Void
+
+    private final class Pending {
+        let completion: Completion
+        var data = Data()
+        var contentType = ""
+        var failure: Failure?
+        init(_ completion: @escaping Completion) { self.completion = completion }
+    }
+
+    private let maxBytes: Int
+    private let lock = NSLock()
+    private var pending: [Int: Pending] = [:]
+    private(set) var session: URLSession!
+
+    /// `configuration` is copied; tests pass one with stub `protocolClasses`.
+    public init(configuration: URLSessionConfiguration = .ephemeral, maxBytes: Int = RemoteLoad.maxBytes) {
+        self.maxBytes = maxBytes
+        super.init()
+        let configuration = configuration.copy() as! URLSessionConfiguration
+        configuration.timeoutIntervalForRequest = RemoteLoad.timeoutSeconds
+        configuration.timeoutIntervalForResource = RemoteLoad.timeoutSeconds
+        configuration.httpCookieStorage = nil
+        configuration.urlCache = nil
+        session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+    }
+
+    /// Stops accepting work and lets in-flight downloads finish (the session
+    /// retains its delegate until then).
+    public func invalidate() { session.finishTasksAndInvalidate() }
+
+    public func fetch(_ urlString: String, completion: @escaping Completion) {
+        // Protocol-relative URLs inherit https.
+        let urlString = urlString.hasPrefix("//") ? "https:" + urlString : urlString
+        if let r = RemoteLoad.check(urlString) {
+            completion(.failure(.rejected(r)))
+            return
+        }
+        let task = session.dataTask(with: URL(string: urlString)!)
+        lock.withLock { pending[task.taskIdentifier] = Pending(completion) }
+        task.resume()
+    }
+
+    private func entry(_ task: URLSessionTask) -> Pending? {
+        lock.withLock { pending[task.taskIdentifier] }
+    }
+
+    // MARK: URLSessionDataDelegate
+
+    public func urlSession(_ session: URLSession, task: URLSessionTask,
+                           willPerformHTTPRedirection response: HTTPURLResponse,
+                           newRequest request: URLRequest,
+                           completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
+        if let r = RemoteLoad.check(request.url?.absoluteString ?? "") {
+            entry(task)?.failure = .rejected(r)
+            completionHandler(nil)
+            task.cancel()
+            return
+        }
+        completionHandler(request)
+    }
+
+    public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask,
+                           didReceive response: URLResponse,
+                           completionHandler: @escaping @Sendable (URLSession.ResponseDisposition) -> Void) {
+        guard let p = entry(dataTask) else { completionHandler(.cancel); return }
+        let http = response as? HTTPURLResponse
+        let status = http?.statusCode ?? 0
+        let contentType = http?.value(forHTTPHeaderField: "Content-Type")
+        if !(200..<300).contains(status) {
+            p.failure = .httpStatus(status)
+        } else if let r = RemoteLoad.checkContentType(contentType) {
+            p.failure = .rejected(r)
+        } else if response.expectedContentLength > Int64(maxBytes) {
+            p.failure = .rejected(.tooLarge)
+        }
+        if p.failure != nil {
+            completionHandler(.cancel)
+            dataTask.cancel()   // explicit: not every Foundation stops the transfer on `.cancel` alone
+            return
+        }
+        p.contentType = contentType ?? "image/png"
+        if response.expectedContentLength > 0 { p.data.reserveCapacity(Int(response.expectedContentLength)) }
+        completionHandler(.allow)
+    }
+
+    public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        guard let p = entry(dataTask), p.failure == nil else { return }
+        if p.data.count + data.count > maxBytes {
+            p.failure = .rejected(.tooLarge)
+            p.data = Data()
+            dataTask.cancel()
+            return
+        }
+        p.data.append(data)
+    }
+
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        guard let p = lock.withLock({ pending.removeValue(forKey: task.taskIdentifier) }) else { return }
+        if let failure = p.failure {
+            p.completion(.failure(failure))
+        } else if let error {
+            p.completion(.failure(.network(code: (error as NSError).code)))
+        } else {
+            p.completion(.success(Image(data: p.data, contentType: p.contentType)))
+        }
+    }
+}
+
+/// Proxied images keyed by unguessable token, bounded by total bytes and
+/// evicting the least recently used entry first.
+public struct RemoteImageCache {
+    public static let defaultCapacity = 100 * 1024 * 1024
+
+    public let capacity: Int
+    public private(set) var totalBytes = 0
+    private var entries: [String: RemoteFetcher.Image] = [:]
+    private var order: [String] = []   // least recent first
+
+    public init(capacity: Int = RemoteImageCache.defaultCapacity) {
+        self.capacity = capacity
+    }
+
+    public var count: Int { entries.count }
+
+    /// Stores `image` and returns its new token. An image larger than the
+    /// whole cache is not kept (returns nil).
+    public mutating func insert(_ image: RemoteFetcher.Image) -> String? {
+        let size = image.data.count
+        guard size <= capacity else { return nil }
+        while totalBytes + size > capacity, let oldest = order.first {
+            order.removeFirst()
+            totalBytes -= entries.removeValue(forKey: oldest)?.data.count ?? 0
+        }
+        let token = UUID().uuidString
+        entries[token] = image
+        order.append(token)
+        totalBytes += size
+        return token
+    }
+
+    /// Looks up a token and marks it most recently used.
+    public mutating func image(for token: String) -> RemoteFetcher.Image? {
+        guard let image = entries[token] else { return nil }
+        if let i = order.firstIndex(of: token) {
+            order.remove(at: i)
+            order.append(token)
+        }
+        return image
+    }
+}

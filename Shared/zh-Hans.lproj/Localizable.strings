@@ -99,3 +99,12 @@
 "added" = "新增";
 "edited" = "修改";
 "removed" = "删除";
+"unsupported address" = "不支持的地址";
+"local and private network addresses are not loaded" = "不加载本机和内网地址";
+"not an image" = "不是图片";
+"image is larger than 20 MB" = "图片超过 20 MB";
+"the server answered with an error" = "服务器返回错误";
+"timed out" = "超时";
+"could not be reached" = "无法连接";
+"the secure connection failed" = "安全连接失败";
+"could not be loaded" = "无法加载";
