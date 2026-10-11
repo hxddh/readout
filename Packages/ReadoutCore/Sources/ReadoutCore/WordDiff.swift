@@ -76,20 +76,22 @@ public enum WordDiff {
 
     /// Myers (the standard library's CollectionDifference) over token ids:
     /// comparing integers, not strings.
+    /// Myers takes time in proportion to (old + new) × differences. Above
+    /// this, a run is shown as replaced whole: a block rewritten throughout
+    /// reads no better compared token by token, and the window must not stall.
+    static let maxWork = 8_000_000
+
     static func align(_ a: [Substring], _ b: [Substring]) -> [Segment] {
         var ids: [Substring: Int] = [:]
         let ia = a.map { t in ids[t] ?? { ids[t] = ids.count; return ids.count - 1 }() }
         let ib = b.map { t in ids[t] ?? { ids[t] = ids.count; return ids.count - 1 }() }
-        var removed = [Bool](repeating: !ib.isEmpty ? false : true, count: a.count)
-        var added = [Bool](repeating: !ia.isEmpty ? false : true, count: b.count)
-        if !ia.isEmpty && !ib.isEmpty {
-            for change in ib.difference(from: ia) {
-                switch change {
-                case let .remove(offset, _, _): removed[offset] = true
-                case let .insert(offset, _, _): added[offset] = true
-                }
-            }
+        guard !ia.isEmpty, !ib.isEmpty, let script = myers(ia, ib, maxD: min(1000, maxWork / max(1, ia.count + ib.count))) else {
+            var out: [Segment] = []
+            if !a.isEmpty { out.append(.deleted(a.joined())) }
+            if !b.isEmpty { out.append(.inserted(b.joined())) }
+            return out
         }
+        let (removed, added) = script
         var out: [Segment] = []
         var i = 0, j = 0
         while i < a.count || j < b.count {
@@ -98,6 +100,43 @@ public enum WordDiff {
             out.append(.equal(String(a[i]))); i += 1; j += 1
         }
         return out
+    }
+
+    /// Myers' O((N+M)·D) difference, giving up (nil) beyond `maxD` edits.
+    /// Returns which tokens of `a` are removed and which of `b` are added.
+    static func myers(_ a: [Int], _ b: [Int], maxD: Int) -> (removed: [Bool], added: [Bool])? {
+        let n = a.count, m = b.count
+        let offset = maxD + 1
+        var v = [Int](repeating: 0, count: 2 * maxD + 3)
+        var trace: [[Int]] = []
+        var found = false
+        search: for d in 0...maxD {
+            var row = [Int](repeating: 0, count: 2 * d + 1)
+            for k in stride(from: -d, through: d, by: 2) {
+                var x = (k == -d || (k != d && v[offset + k - 1] < v[offset + k + 1])) ? v[offset + k + 1] : v[offset + k - 1] + 1
+                var y = x - k
+                while x < n && y < m && a[x] == b[y] { x += 1; y += 1 }
+                v[offset + k] = x
+                row[k + d] = x
+                if x >= n && y >= m { trace.append(row); found = true; break search }
+            }
+            trace.append(row)
+        }
+        guard found else { return nil }
+        var removed = [Bool](repeating: false, count: n), added = [Bool](repeating: false, count: m)
+        var x = n, y = m
+        for d in stride(from: trace.count - 1, to: 0, by: -1) {
+            let prev = trace[d - 1]
+            func at(_ k: Int) -> Int { let i = k + (d - 1); return i >= 0 && i < prev.count ? prev[i] : -1 }
+            let k = x - y
+            let down = k == -d || (k != d && at(k - 1) < at(k + 1))
+            let prevK = down ? k + 1 : k - 1
+            let prevX = at(prevK), prevY = prevX - prevK
+            while x > (down ? prevX : prevX + 1) && y > (down ? prevY + 1 : prevY) { x -= 1; y -= 1 }
+            if down { added[prevY] = true } else { removed[prevX] = true }
+            x = prevX; y = prevY
+        }
+        return (removed, added)
     }
 
     /// The longest shared start and end of two texts, cut where a token can
@@ -135,6 +174,11 @@ public enum WordDiff {
             guard wordish(scalar(a, prev)), wordish(scalar(a, p)) || wordish(scalar(b, p)) else { break }
             p = prev
         }
+        // Never inside a character: an emoji with its modifier, a letter with its accent.
+        func boundary(_ text: String, _ offset: Int) -> Bool {
+            String.Index(text.utf8.index(text.utf8.startIndex, offsetBy: offset), within: text) != nil
+        }
+        while p > 0 && !(boundary(old, p) && boundary(new, p)) { p -= 1 }
         var s = 0
         while s < limit - p && a[a.count - 1 - s] == b[b.count - 1 - s] { s += 1 }
         while s > 0 && cont(a[a.count - s]) { s -= 1 }
@@ -145,6 +189,7 @@ public enum WordDiff {
             guard wordish(first), wordish(beforeA) || wordish(beforeB), let (_, len) = first else { break }
             s -= len
         }
+        while s > 0 && !(boundary(old, a.count - s) && boundary(new, b.count - s)) { s -= 1 }
         func str(_ x: ArraySlice<UInt8>) -> String { String(decoding: x, as: UTF8.self) }
         return (str(a[0..<p]), str(a[p..<(a.count - s)]), str(b[p..<(b.count - s)]), str(a[(a.count - s)...]))
     }
@@ -153,27 +198,11 @@ public enum WordDiff {
     /// space or character) is folded into them, so a rewritten phrase reads
     /// as one deletion and one insertion; deletions come before insertions.
     static func cleanup(_ segments: [Segment]) -> [Segment] {
-        var segs = segments
+        var segs = regroup(segments)
         var changed = true
         while changed {
             changed = false
-            // Regroup: within each run of changes, all deletions first.
-            var regrouped: [Segment] = []
-            var del = "", ins = ""
-            func flush() {
-                if !del.isEmpty { regrouped.append(.deleted(del)) }
-                if !ins.isEmpty { regrouped.append(.inserted(ins)) }
-                del = ""; ins = ""
-            }
-            for s in segs {
-                switch s {
-                case let .deleted(t): del += t
-                case let .inserted(t): ins += t
-                case .equal: flush(); regrouped.append(s)
-                }
-            }
-            flush()
-            segs = slide(regrouped)
+            segs = regroup(slide(segs))
             // Fold an equality no longer than the changes on both sides of it.
             var k = 1
             while k + 1 < segs.count {
@@ -189,8 +218,32 @@ public enum WordDiff {
                     k += 1
                 }
             }
+            segs = regroup(segs)
         }
         return segs
+    }
+
+    /// Within each run of changes, one deletion and then one insertion.
+    static func regroup(_ segs: [Segment]) -> [Segment] {
+        var out: [Segment] = []
+        var del = "", ins = ""
+        func flush() {
+            if !del.isEmpty { out.append(.deleted(del)) }
+            if !ins.isEmpty { out.append(.inserted(ins)) }
+            del = ""; ins = ""
+        }
+        for s in segs {
+            switch s {
+            case let .deleted(t): del += t
+            case let .inserted(t): ins += t
+            case let .equal(t):
+                flush()
+                if t.isEmpty { continue }
+                if case let .equal(prev)? = out.last { out[out.count - 1] = .equal(prev + t) } else { out.append(s) }
+            }
+        }
+        flush()
+        return out
     }
 
     /// A lone insertion or deletion between two equal runs can often sit in
@@ -253,13 +306,21 @@ public enum WordDiff {
         var out = ""
         for (n, s) in segs.enumerated() {
             switch s {
-            case let .deleted(t): out += "<del>\(HTML.escape(t))</del>"
-            case let .inserted(t): out += "<ins>\(HTML.escape(t))</ins>"
+            case let .deleted(t): out += "<del>\(HTML.escape(shortenChange(t)))</del>"
+            case let .inserted(t): out += "<ins>\(HTML.escape(shortenChange(t)))</ins>"
             case let .equal(t):
                 out += HTML.escape(shorten(t, first: n == 0, last: n == segs.count - 1))
             }
         }
         return out
+    }
+
+    /// Changes longer than this show their two ends.
+    static let maxChange = 2000
+
+    static func shortenChange(_ t: String) -> String {
+        guard t.utf8.count > maxChange, t.count > maxChange else { return t }
+        return String(t.prefix(maxChange / 2 - 50)) + " … " + String(t.suffix(maxChange / 2 - 50))
     }
 
     static func shorten(_ t: String, first: Bool, last: Bool) -> String {
@@ -289,13 +350,14 @@ public enum WordDiff {
                 if kind != 1 { flush(i); kind = 1 }
             } else if v == 0x20 || v == 0x09 {
                 if kind != 2 { flush(i); kind = 2 }
-            } else if v >= 0x0300 && v <= 0x036F || (v >= 0xFE00 && v <= 0xFE0F) || v == 0x200D {
+            } else if v >= 0x0300 && v <= 0x036F || (v >= 0xFE00 && v <= 0xFE0F) || v == 0x200D || v == 0x20E3 || (v >= 0x1F3FB && v <= 0x1F3FF) {
                 // Combining marks and joiners stay with what they follow.
             } else {
                 flush(i); kind = 0
                 // A CJK character, or any other character, is a token of its own.
-                var end = next
-                while end < scalars.endIndex, isExtender(scalars[end]) { end = scalars.index(after: end) }
+                // The whole character: emoji sequences, keycaps, accents.
+                var end = text.index(after: i)
+                if end <= i { end = next }
                 out.append(text[i..<end]); start = end
                 i = end
                 continue
@@ -306,10 +368,6 @@ public enum WordDiff {
         return out
     }
 
-    private static func isExtender(_ s: Unicode.Scalar) -> Bool {
-        let v = s.value
-        return (v >= 0x0300 && v <= 0x036F) || (v >= 0xFE00 && v <= 0xFE0F) || v == 0x200D || (v >= 0x1F3FB && v <= 0x1F3FF)
-    }
 
     static func lines(_ text: String) -> [Substring] {
         var out: [Substring] = []

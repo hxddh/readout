@@ -505,7 +505,8 @@ check('rail labels use the localized template',
     const el = document.querySelector('.blk[data-slot="1521"]');
     window.scrollTo(0, el.offsetTop - 300);
     await new Promise(r => requestAnimationFrame(r));
-    const ref = document.querySelector('.blk[data-slot="1515"]');
+    // The block at the top of the view: what the reader is looking at.
+    const ref = [...document.querySelectorAll('#ro-doc > .blk')].find(b => b.getBoundingClientRect().top >= 0);
     const top0 = ref.getBoundingClientRect().top;
     const textLeft = el.firstElementChild.getBoundingClientRect().left;
     const y = el.getBoundingClientRect().top + 8;
@@ -524,7 +525,16 @@ check('rail labels use the localized template',
     const closed = !el.querySelector('.wd-panel');
     const closeShift = ref.getBoundingClientRect().top - top0;
     const unknown = window.readout.toggleDiff(1525) && document.querySelector('.blk[data-slot="1525"] .wd-body.wd-none')?.textContent;
-    return { afterTextClick, opened, keptOpen, closed, closeShift, unknown };
+    window.readout.toggleDiff(1525);
+    // Read (the mark is gone) and the gutter still opens it; so does D.
+    el.classList.remove('m-modified', 'm-read');
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: textLeft - 20, clientY: y }));
+    const afterRead = !!el.querySelector('.wd-panel');
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: textLeft - 20, clientY: y }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }));
+    const byKey = !!document.querySelector('.wd-panel');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }));
+    return { afterTextClick, opened, keptOpen, closed, closeShift, unknown, afterRead, byKey, refSlot: ref.dataset.slot };
   });
   check('text click does not open the comparison', r.afterTextClick === false, JSON.stringify(r));
   check('edit mark opens the comparison', r.opened.del === 'Redis <b>' && r.opened.ins === 'Postgres' && r.opened.escaped, JSON.stringify(r.opened));
@@ -532,6 +542,8 @@ check('rail labels use the localized template',
   check('the comparison stays open across a patch', r.keptOpen, JSON.stringify(r));
   check('closing the comparison keeps the position', r.closed && Math.abs(r.closeShift) < 2, JSON.stringify(r));
   check('an unknown earlier text says so', typeof r.unknown === 'string' && r.unknown.length > 10, JSON.stringify(r));
+  check('the comparison opens after the block was read', r.afterRead, JSON.stringify(r));
+  check('D opens the comparison of an edited block in view', r.byKey, JSON.stringify(r));
 }
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 

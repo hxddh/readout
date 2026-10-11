@@ -170,10 +170,14 @@ public final class DocumentSession {
                 if marks[slot] != .inserted {
                     // Compared with the text as last read: the first change since then keeps it.
                     if marks[slot] != .modified { readText[slot] = oldTexts[o] }
-                    marks[slot] = .modified
-                    if let read = readText[slot] ?? nil {
+                    if let read = readText[slot] ?? nil, read == blocks[n].text {
+                        // Changed back to what was read: nothing to show.
+                        marks[slot] = nil; readText[slot] = nil; diffs[slot] = nil
+                    } else if let read = readText[slot] ?? nil {
+                        marks[slot] = .modified
                         diffs[slot] = WordDiff.html(old: read, new: blocks[n].text)
                     } else {
+                        marks[slot] = .modified
                         diffs[slot] = ""
                     }
                 }
@@ -205,10 +209,11 @@ public final class DocumentSession {
                 marks[s] = nil
                 continue
             }
+            // The whole removed text as last read (what is kept of it, for an older baseline).
+            let lastRead = oldSlotForIndex(o).flatMap { marks[$0] == .modified ? readText[$0] : nil } ?? nil
             if let s = oldSlotForIndex(o) { marks[s] = nil }
             let after = anchorBefore(o)
-            // The whole removed text (what is kept of it, for an older baseline).
-            let preview = oldTexts[o] ?? oldKeys[o].text
+            let preview = lastRead ?? oldTexts[o] ?? oldKeys[o].text
             if var existing = newDeletions[after] {
                 existing.count += 1
                 if existing.preview.count < 20_000 { existing.preview += "\n\n" + preview }

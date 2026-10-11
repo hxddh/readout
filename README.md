@@ -63,6 +63,7 @@ To have Claude Code open Markdown files in Readout as soon as it writes them, ad
 | Key | Action |
 | --- | --- |
 | <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change |
+| <kbd>D</kbd> | Show / hide which words changed in the edited block in view |
 | <kbd>⌘K</kbd> | Mark all as read |
 | <kbd>⌘F</kbd>, <kbd>⌘G</kbd> | Find, find next |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Text size |

@@ -56,6 +56,54 @@ import Testing
         #expect(html.contains("<del>old</del><ins>new</ins>"))
     }
 
+    @Test func charactersAreNeverSplit() {
+        for (a, b) in [("hi 👋🏻 there", "hi 👋🏿 there"), ("love ❤️ it", "love ❤ it"), ("key 1️⃣ ok", "key 2️⃣ ok"),
+                       ("cafe\u{301} au lait", "cafe\u{300} au lait"), ("今日は良い天気", "今日は悪い天気")] {
+            let segs = WordDiff.segments(old: a, new: b)
+            let old = segs.map { if case let .equal(t) = $0 { t } else if case let .deleted(t) = $0 { t } else { "" } }.joined()
+            let new = segs.map { if case let .equal(t) = $0 { t } else if case let .inserted(t) = $0 { t } else { "" } }.joined()
+            #expect(old == a && new == b)
+            // Every piece starts on a character boundary of its text.
+            for seg in segs {
+                if case let .equal(t) = seg { #expect(t.unicodeScalars.first.map { $0.properties.generalCategory != .nonspacingMark && $0.value != 0xFE0F && $0.value != 0x20E3 && !(0x1F3FB...0x1F3FF).contains($0.value) } ?? true, "\(a) → \(segs)") }
+            }
+            // Deletions come before insertions.
+            for (x, y) in zip(segs, segs.dropFirst()) {
+                if case .inserted = x, case .deleted = y { Issue.record("insertion before deletion: \(segs)") }
+            }
+        }
+    }
+
+    @Test func wholeRewritesOfLargeBlocksAreShownReplaced() {
+        // Past the edit budget the comparison gives up rather than stall:
+        // checked by its result, not by timing (which depends on the machine).
+        let a = (1...4000).map { "row \($0 % 7) alpha" }.joined(separator: "\n")
+        let b = (1...4000).map { "row \($0 % 5) beta" }.joined(separator: "\n")
+        let segs = WordDiff.segments(old: a, new: b)
+        #expect(segs.filter { if case .equal = $0 { false } else { true } }.count <= 2)
+        #expect(WordDiff.html(old: a, new: b).count < 6000)   // long changes show their two ends
+        // Same lines, another order.
+        let lines = (1...4000).map { "step \($0) done" }
+        let reordered = WordDiff.segments(old: lines.joined(separator: "\n"), new: lines.reversed().joined(separator: "\n"))
+        #expect(reordered.filter { if case .equal = $0 { false } else { true } }.count <= 2)
+    }
+
+    @Test func myersIsMinimalAndConsistent() {
+        var rng = SystemRandomNumberGenerator()
+        for _ in 0..<300 {
+            let a = (0..<Int.random(in: 0...30, using: &rng)).map { _ in Int.random(in: 0...4, using: &rng) }
+            let b = (0..<Int.random(in: 0...30, using: &rng)).map { _ in Int.random(in: 0...4, using: &rng) }
+            guard let (removed, added) = WordDiff.myers(a, b, maxD: 100) else { Issue.record("gave up"); continue }
+            // Kept tokens pair up in order and are equal.
+            let keptA = a.indices.filter { !removed[$0] }.map { a[$0] }
+            let keptB = b.indices.filter { !added[$0] }.map { b[$0] }
+            #expect(keptA == keptB)
+            // As few edits as the standard library's difference.
+            #expect(removed.filter { $0 }.count + added.filter { $0 }.count == b.difference(from: a).count)
+        }
+        #expect(WordDiff.myers([1, 2, 3], [4, 5, 6], maxD: 2) == nil)
+    }
+
     @Test func longBlocksCompareLinesThenWords() {
         let lines = (1...8000).map { "line \($0) of the log" }
         var edited = lines
@@ -90,6 +138,13 @@ import Testing
         // Inserted blocks have no comparison.
         let p4 = try #require(session.update(doc("# T\n\nThe plan uses Postgres 17.\n\nOther text.\n\nNew one.\n")))
         #expect(p4.marks.first { $0.kind == .inserted }?.diff == nil)
+        // Changed back to what was read: no longer marked.
+        let p5 = try #require(session.update(doc("# T\n\nThe plan uses Postgres 16.\n\nOther text.\n\nNew one.\n")))
+        #expect(!p5.marks.contains { $0.kind == .modified })
+        // Edited, then removed before being read: the deletion shows what was read.
+        _ = session.update(doc("# T\n\nThe plan uses Postgres 18.\n\nOther text.\n\nNew one.\n"))
+        let p6 = try #require(session.update(doc("# T\n\nOther text.\n\nNew one.\n")))
+        #expect(p6.deletions.last?.preview == "The plan uses Postgres 16.")
     }
 
     @Test func persistedBaselineWithoutWholeTextSaysSo() throws {

@@ -23,8 +23,12 @@ export function renderMarks(marks, deletions) {
     el.classList.add(`m-${m.kind}`);
     marked.set(m.slot, m.kind);
     if (m.kind === 'modified' && typeof m.diff === 'string') diffOf.set(m.slot, m.diff);
+    else if (m.kind === 'inserted') diffOf.delete(m.slot);
     readObserver.observe(el);
   }
+  // Once read, the mark fades, but the comparison stays one click away in
+  // the same place (the gutter of the block) until the block changes again.
+  for (const [slot] of diffOf) slots.get(slot)?.classList.add('wd-has');
   // An open comparison stays open across patches (reading it marks the
   // block read, which must not take it away); it follows the latest one.
   for (const slot of [...openDiffs]) {
@@ -95,6 +99,15 @@ function closeDiff(slot) {
   el.classList.remove('wd-open');
 }
 
+/** The comparison of the first edited block in view (keyboard: D). */
+export function toggleDiffInView() {
+  for (const [slot] of diffOf) {
+    const el = slots.get(slot);
+    if (el && inViewport(el)) return toggleDiff(slot);
+  }
+  return false;
+}
+
 /** Shows or hides what changed in an edited block, keeping the reader's place. */
 export function toggleDiff(slot) {
   const el = slots.get(slot);
@@ -111,7 +124,7 @@ export function toggleDiff(slot) {
 // The edit mark in the gutter opens the comparison: a click on an edited
 // block left of its text.
 doc.addEventListener('click', ev => {
-  const el = ev.target.closest('#ro-doc > .blk.m-modified, #ro-doc > .blk.wd-open');
+  const el = ev.target.closest('#ro-doc > .blk.wd-has');
   if (!el || ev.target.closest('a, button, .wd-panel')) return;
   const text = el.firstElementChild;
   if (!text || ev.clientX >= text.getBoundingClientRect().left) return;

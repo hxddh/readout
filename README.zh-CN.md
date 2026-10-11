@@ -63,6 +63,7 @@ readout -b plan.md       # 打开但不切换应用
 | 按键 | 作用 |
 | --- | --- |
 | <kbd>N</kbd> / <kbd>⇧N</kbd>（或 <kbd>⌘]</kbd> / <kbd>⌘[</kbd>） | 下一处 / 上一处未读变更 |
+| <kbd>D</kbd> | 显示 / 收起视野内修改段落的具体改动 |
 | <kbd>⌘K</kbd> | 全部标为已读 |
 | <kbd>⌘F</kbd>、<kbd>⌘G</kbd> | 查找、查找下一个 |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | 文字大小 |

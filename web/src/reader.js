@@ -13,7 +13,7 @@ import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment } from './reader/anchor.js';
 import { apply } from './reader/patch.js';
-import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff } from './reader/marks.js';
+import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelHeadingLinks, setCodeWrap } from './reader/enhance.js';
 import { rerenderMermaid } from './reader/mermaid.js';
@@ -56,6 +56,7 @@ document.addEventListener('keydown', ev => {
   else if (ev.key === 'j') { window.scrollBy(0, 60); }
   else if (ev.key === 'k') { window.scrollBy(0, -60); }
   else if (ev.key === 'g') { window.scrollTo(0, 0); }
+  else if (ev.key === 'd') { toggleDiffInView(); }
   else if (ev.key === 'G') { window.scrollTo(0, document.scrollingElement.scrollHeight); }
 });
 

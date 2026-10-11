@@ -30,7 +30,7 @@ function makeBlock(op) {
 }
 
 function fillBlock(el, op) {
-  el.className = `blk k-${op.kind}${op.cjk ? ' cjk' : ''}`;
+  el.className = `blk k-${op.kind}${op.cjk ? ' cjk' : ''}`;   // drops marks and wd-has; renderMarks restores them
   if (op.anchor) el.dataset.anchor = op.anchor; else delete el.dataset.anchor;
   el.style.containIntrinsicSize = `auto ${estimateHeight(op.kind, op.html)}px`;
   el.innerHTML = op.html;

@@ -371,7 +371,7 @@ details ul, details ol { padding-left: 1.5em; }
 .blk.m-state::before { background: var(--accent); width: 5px; height: 5px; bottom: auto; top: 0.7em; left: 9px; border-radius: 50%; }
 .blk.m-state.m-read::before { background: var(--mark-read); }
 /* The edit mark opens the comparison: a wider target than the 3 px bar. */
-.blk.m-modified::before, .blk.wd-open::before {
+.blk.wd-has::before {
   cursor: pointer;
   padding: 0 7px; margin-left: -7px; background-clip: content-box;
 }
