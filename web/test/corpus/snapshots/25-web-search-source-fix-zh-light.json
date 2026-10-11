@@ -6,7 +6,8 @@
    "kind": "heading",
    "top": 40,
    "h": 76,
-   "style": "d2da97aa",
+   "style": "c880ba34",
+   "content": "0fa75b86",
    "text": "Web Search Sources Button Fix Implementation Pla"
   },
   {
@@ -14,7 +15,8 @@
    "kind": "quote",
    "top": 137,
    "h": 52,
-   "style": "e60427d9",
+   "style": "2d06b6d9",
+   "content": "76e9d2a9",
    "text": "For Claude: Use the Skill tool to load superpowe"
   },
   {
@@ -22,7 +24,8 @@
    "kind": "paragraph",
    "top": 206,
    "h": 56,
-   "style": "e27940e5",
+   "style": "636fd68f",
+   "content": "cd357017",
    "text": "Goal: 修复开启联网搜索后聊天消息上方 \"N 页面\" 按钮经常不显示的问题，并避免把普通正文"
   },
   {
@@ -30,7 +33,8 @@
    "kind": "paragraph",
    "top": 280,
    "h": 112,
-   "style": "77ee8771",
+   "style": "f36ec3bb",
+   "content": "72f55b9b",
    "text": "Architecture: 搜索来源统一走 AppStreamEvent.WebSearchRe"
   },
   {
@@ -38,7 +42,8 @@
    "kind": "paragraph",
    "top": 410,
    "h": 26,
-   "style": "654ad688",
+   "style": "ac3d5e9a",
+   "content": "e1d04ffd",
    "text": "Tech Stack: Kotlin 2.2.10、Jetpack Compose、kotlin"
   },
   {
@@ -46,7 +51,8 @@
    "kind": "rule",
    "top": 453,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -54,7 +60,8 @@
    "kind": "heading",
    "top": 494,
    "h": 29,
-   "style": "0cddcdd0",
+   "style": "bec97f09",
+   "content": "0910dcf3",
    "text": "现状与根因§"
   },
   {
@@ -62,7 +69,8 @@
    "kind": "heading",
    "top": 551,
    "h": 23,
-   "style": "1a978a95",
+   "style": "aaf5143f",
+   "content": "8b0e8842",
    "text": "按钮显示条件§"
   },
   {
@@ -70,7 +78,8 @@
    "kind": "paragraph",
    "top": 583,
    "h": 52,
-   "style": "1d1906cc",
+   "style": "aa0eaf33",
+   "content": "172c7d85",
    "text": "app1/app/src/main/java/com/android/everytalk/ui/"
   },
   {
@@ -78,7 +87,8 @@
    "kind": "code",
    "top": 652,
    "h": 164,
-   "style": "11407db5",
+   "style": "9bdc6a1c",
+   "content": "14d144b5",
    "text": "val sourcesExtraction = remember(effectiveConten"
   },
   {
@@ -86,7 +96,8 @@
    "kind": "paragraph",
    "top": 831,
    "h": 28,
-   "style": "071e344a",
+   "style": "2ab9a56d",
+   "content": "b77187e4",
    "text": "数据流："
   },
   {
@@ -94,7 +105,8 @@
    "kind": "code",
    "top": 877,
    "h": 284,
-   "style": "b5c316cf",
+   "style": "2718c985",
+   "content": "4ec2bdec",
    "text": "搜索工具结果 | v AppStreamEvent.WebSearchResults | v A"
   },
   {
@@ -102,7 +114,8 @@
    "kind": "heading",
    "top": 1189,
    "h": 23,
-   "style": "1a978a95",
+   "style": "aaf5143f",
+   "content": "ce261b88",
    "text": "已确认的问题§"
   },
   {
@@ -110,7 +123,8 @@
    "kind": "listItem",
    "top": 1221,
    "h": 52,
-   "style": "63c39f24",
+   "style": "ab0740af",
+   "content": "7da3a943",
    "text": "ApiHandler 收到 WebSearchResults 后会直接覆盖 updatedMes"
   },
   {
@@ -118,7 +132,8 @@
    "kind": "listItem",
    "top": 1275,
    "h": 29,
-   "style": "97790b12",
+   "style": "7e106e91",
+   "content": "6e0f2e00",
    "text": "ApiHandler StreamEnd 阶段当前使用旧的 currentMessage 做最终"
   },
   {
@@ -126,7 +141,8 @@
    "kind": "listItem",
    "top": 1306,
    "h": 78,
-   "style": "56acc9fb",
+   "style": "59a6490d",
+   "content": "02813267",
    "text": "mergeStreamingCompletionMessage() 只合并 text/reaso"
   },
   {
@@ -134,7 +150,8 @@
    "kind": "listItem",
    "top": 1386,
    "h": 52,
-   "style": "6347e2fe",
+   "style": "2cac459b",
+   "content": "257215c4",
    "text": "GeminiDirectClient 从 groundingChunks 构造 WebSearc"
   },
   {
@@ -142,7 +159,8 @@
    "kind": "listItem",
    "top": 1440,
    "h": 57,
-   "style": "4d8fc3dc",
+   "style": "c5dd70bc",
+   "content": "2b3906f4",
    "text": "内置 web_search、MCP 搜索工具执行后，结果只作为 tool result 传回模型"
   },
   {
@@ -150,7 +168,8 @@
    "kind": "listItem",
    "top": 1499,
    "h": 52,
-   "style": "ca1194cb",
+   "style": "154e9758",
+   "content": "ebb5c101",
    "text": "工具循环不只在 OpenAIDirectClient，还存在于 OpenAIResponsesC"
   },
   {
@@ -158,7 +177,8 @@
    "kind": "listItem",
    "top": 1553,
    "h": 57,
-   "style": "e08af18c",
+   "style": "6b10d8e4",
+   "content": "b0baa586",
    "text": "WebMarkdownSourcesExtractor 当前只识别独立 Sources 区块，兜"
   },
   {
@@ -166,7 +186,8 @@
    "kind": "rule",
    "top": 1628,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -174,7 +195,8 @@
    "kind": "heading",
    "top": 1669,
    "h": 29,
-   "style": "11ddd5af",
+   "style": "bec97f09",
+   "content": "b938138f",
    "text": "范围§"
   },
   {
@@ -182,7 +204,8 @@
    "kind": "heading",
    "top": 1725,
    "h": 23,
-   "style": "1897876f",
+   "style": "aaf5143f",
+   "content": "d7ab340d",
    "text": "本次处理§"
   },
   {
@@ -190,7 +213,8 @@
    "kind": "listItem",
    "top": 1757,
    "h": 26,
-   "style": "de79a82b",
+   "style": "0132b49f",
+   "content": "5bcb3d97",
    "text": "保留 StreamEnd 前已经写入的 message.webSearchResults。"
   },
   {
@@ -198,7 +222,8 @@
    "kind": "listItem",
    "top": 1786,
    "h": 29,
-   "style": "213331f9",
+   "style": "70de8bb4",
+   "content": "4f2170ec",
    "text": "多次 WebSearchResults 事件合并去重，避免后一次搜索覆盖前一次搜索。"
   },
   {
@@ -206,7 +231,8 @@
    "kind": "listItem",
    "top": 1816,
    "h": 26,
-   "style": "67ea0ecb",
+   "style": "90d70a7d",
+   "content": "4316acd1",
    "text": "修正 Gemini 直连 grounding 来源 index。"
   },
   {
@@ -214,7 +240,8 @@
    "kind": "listItem",
    "top": 1845,
    "h": 26,
-   "style": "eb3fcda1",
+   "style": "ee1233c9",
+   "content": "a54bea3d",
    "text": "从搜索类工具结果中提取来源并 emit AppStreamEvent.WebSearchResu"
   },
   {
@@ -222,7 +249,8 @@
    "kind": "listItem",
    "top": 1873,
    "h": 52,
-   "style": "0564348e",
+   "style": "bca8c07a",
+   "content": "1460cd61",
    "text": "覆盖 OpenAIDirectClient、OpenAIResponsesClient、Gemi"
   },
   {
@@ -230,7 +258,8 @@
    "kind": "listItem",
    "top": 1927,
    "h": 29,
-   "style": "2ae5db1f",
+   "style": "213af1f6",
+   "content": "efbd992f",
    "text": "放宽正文来源兜底，但只识别明显来源格式。"
   },
   {
@@ -238,7 +267,8 @@
    "kind": "listItem",
    "top": 1958,
    "h": 29,
-   "style": "eff0cb0d",
+   "style": "726a0570",
+   "content": "754377ec",
    "text": "补单元测试和编译验证。"
   },
   {
@@ -246,7 +276,8 @@
    "kind": "heading",
    "top": 2014,
    "h": 23,
-   "style": "19978902",
+   "style": "aaf5143f",
+   "content": "c9628fac",
    "text": "本次不处理§"
   },
   {
@@ -254,7 +285,8 @@
    "kind": "listItem",
    "top": 2046,
    "h": 29,
-   "style": "52e3b24d",
+   "style": "16f86bc2",
+   "content": "57c97025",
    "text": "不尝试恢复代理已经丢弃的 Gemini grounding metadata。"
   },
   {
@@ -262,7 +294,8 @@
    "kind": "listItem",
    "top": 2077,
    "h": 26,
-   "style": "d017227c",
+   "style": "94f3f3b5",
+   "content": "e210f828",
    "text": "不改 PageSourcesButton UI。"
   },
   {
@@ -270,7 +303,8 @@
    "kind": "listItem",
    "top": 2105,
    "h": 29,
-   "style": "b9de6d77",
+   "style": "213af1f6",
+   "content": "aa1b4e8e",
    "text": "不改搜索服务请求参数。"
   },
   {
@@ -278,7 +312,8 @@
    "kind": "listItem",
    "top": 2136,
    "h": 29,
-   "style": "bbde709d",
+   "style": "213af1f6",
+   "content": "8f99a809",
    "text": "不改数据库 schema。"
   },
   {
@@ -286,7 +321,8 @@
    "kind": "listItem",
    "top": 2167,
    "h": 26,
-   "style": "e1dd08b6",
+   "style": "33dd2a7b",
+   "content": "0706ad21",
    "text": "不提交 git commit。"
   },
   {
@@ -294,7 +330,8 @@
    "kind": "rule",
    "top": 2211,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -302,7 +339,8 @@
    "kind": "heading",
    "top": 2252,
    "h": 29,
-   "style": "0fddd289",
+   "style": "bec97f09",
+   "content": "faf2cb2e",
    "text": "关键设计§"
   },
   {
@@ -310,7 +348,8 @@
    "kind": "heading",
    "top": 2308,
    "h": 23,
-   "style": "1a978a95",
+   "style": "aaf5143f",
+   "content": "7486aaaa",
    "text": "搜索工具判定§"
   },
   {
@@ -318,7 +357,8 @@
    "kind": "paragraph",
    "top": 2340,
    "h": 28,
-   "style": "a37d8033",
+   "style": "2ab9a56d",
+   "content": "72b33d65",
    "text": "新增共享 helper，只把明确搜索工具当作来源捕获对象："
   },
   {
@@ -326,7 +366,8 @@
    "kind": "code",
    "top": 2386,
    "h": 144,
-   "style": "467c52f4",
+   "style": "4758c94c",
+   "content": "33ea4b90",
    "text": "toolName == \"web_search\" toolName == \"search\" to"
   },
   {
@@ -334,7 +375,8 @@
    "kind": "paragraph",
    "top": 2545,
    "h": 130,
-   "style": "ffeaf0f9",
+   "style": "d0437f03",
+   "content": "d20682dd",
    "text": "不使用裸的 contains(\"search\")，避免 research、semantic_re"
   },
   {
@@ -342,7 +384,8 @@
    "kind": "heading",
    "top": 2702,
    "h": 23,
-   "style": "1a978a95",
+   "style": "aaf5143f",
+   "content": "2f3e965d",
    "text": "工具结果提取§"
   },
   {
@@ -350,7 +393,8 @@
    "kind": "paragraph",
    "top": 2735,
    "h": 28,
-   "style": "1d84fc06",
+   "style": "2ab9a56d",
+   "content": "788cf7ad",
    "text": "优先解析结构化 JSON："
   },
   {
@@ -358,7 +402,8 @@
    "kind": "code",
    "top": 2780,
    "h": 104,
-   "style": "1b82bde9",
+   "style": "5033c00d",
+   "content": "ef0014ba",
    "text": "JsonObject.results[] -> title, url/href/link, sn"
   },
   {
@@ -366,7 +411,8 @@
    "kind": "paragraph",
    "top": 2899,
    "h": 56,
-   "style": "393f54d6",
+   "style": "1ca7dcdf",
+   "content": "7649f924",
    "text": "结构化解析失败后，只对明确搜索类工具的纯文本结果提取 URL。URL 去重，过滤空 href，i"
   },
   {
@@ -374,7 +420,8 @@
    "kind": "heading",
    "top": 2982,
    "h": 23,
-   "style": "1a978a95",
+   "style": "aaf5143f",
+   "content": "d76d63cb",
    "text": "正文兜底提取§"
   },
   {
@@ -382,7 +429,8 @@
    "kind": "paragraph",
    "top": 3015,
    "h": 28,
-   "style": "af7fd1ae",
+   "style": "2ab9a56d",
+   "content": "4e097af1",
    "text": "继续移除完整 Sources 区块。额外允许以下明显来源格式："
   },
   {
@@ -390,7 +438,8 @@
    "kind": "code",
    "top": 3060,
    "h": 204,
-   "style": "be2ca98f",
+   "style": "5c20cd0f",
+   "content": "45f48c03",
    "text": "## Sources - [Title](https://example.com) 参考来源: "
   },
   {
@@ -398,7 +447,8 @@
    "kind": "paragraph",
    "top": 3279,
    "h": 56,
-   "style": "8e3424c2",
+   "style": "4f339a82",
+   "content": "b7129091",
    "text": "不从普通正文中提取所有 Markdown 链接。比如“官网是 https://example.c"
   },
   {
@@ -406,7 +456,8 @@
    "kind": "rule",
    "top": 3353,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -414,7 +465,8 @@
    "kind": "heading",
    "top": 3394,
    "h": 29,
-   "style": "2b2fa48c",
+   "style": "bec97f09",
+   "content": "e21ea6c2",
    "text": "Task 1: 修复 ApiHandler 来源合并与 StreamEnd 丢来源§"
   },
   {
@@ -422,7 +474,8 @@
    "kind": "paragraph",
    "top": 3436,
    "h": 26,
-   "style": "3ae5ff78",
+   "style": "d334f671",
+   "content": "dcd190be",
    "text": "Files:"
   },
   {
@@ -430,7 +483,8 @@
    "kind": "listItem",
    "top": 3480,
    "h": 78,
-   "style": "2574cbfd",
+   "style": "013a9e46",
+   "content": "0e13428c",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
   {
@@ -438,7 +492,8 @@
    "kind": "listItem",
    "top": 3560,
    "h": 78,
-   "style": "930968a0",
+   "style": "bf0020aa",
+   "content": "7f586e43",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
   {
@@ -446,7 +501,8 @@
    "kind": "listItem",
    "top": 3641,
    "h": 78,
-   "style": "930968a0",
+   "style": "bf0020aa",
+   "content": "710ebb52",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
   {
@@ -454,7 +510,8 @@
    "kind": "listItem",
    "top": 3721,
    "h": 52,
-   "style": "15bbd9eb",
+   "style": "bb8c585e",
+   "content": "de1a6096",
    "text": "Test: app1/app/src/test/java/com/android/everyta"
   },
   {
@@ -462,7 +519,8 @@
    "kind": "paragraph",
    "top": 3791,
    "h": 28,
-   "style": "ef913ea3",
+   "style": "0b49ddec",
+   "content": "eddb894f",
    "text": "Step 1: 写失败测试"
   },
   {
@@ -470,7 +528,8 @@
    "kind": "paragraph",
    "top": 3837,
    "h": 26,
-   "style": "e0f7547e",
+   "style": "ad09c57c",
+   "content": "8df49b6d",
    "text": "在 ApiHandlerStreamCompletionMergeTest 增加测试："
   },
   {
@@ -478,7 +537,8 @@
    "kind": "code",
    "top": 3880,
    "h": 564,
-   "style": "6dfa2e7b",
+   "style": "412c53da",
+   "content": "e9e1454c",
    "text": "@Test fun `merge preserves web search results fr"
   },
   {
@@ -486,7 +546,8 @@
    "kind": "paragraph",
    "top": 4459,
    "h": 52,
-   "style": "ce33e13b",
+   "style": "ed26269f",
+   "content": "b3d2c660",
    "text": "同时补一个反向测试：finalizedMessage.webSearchResults 为空时保"
   },
   {
@@ -494,7 +555,8 @@
    "kind": "paragraph",
    "top": 4529,
    "h": 26,
-   "style": "a4704115",
+   "style": "436bc6d0",
+   "content": "521b97d1",
    "text": "新增多次 WebSearchResults 合并 helper 测试。先抽出一个 interna"
   },
   {
@@ -502,7 +564,8 @@
    "kind": "code",
    "top": 4572,
    "h": 104,
-   "style": "a19a1e5e",
+   "style": "c326db8d",
+   "content": "bd2e3621",
    "text": "internal fun mergeWebSearchResults( existing: Li"
   },
   {
@@ -510,7 +573,8 @@
    "kind": "paragraph",
    "top": 4691,
    "h": 28,
-   "style": "081e35dd",
+   "style": "2ab9a56d",
+   "content": "61210958",
    "text": "测试要求："
   },
   {
@@ -518,7 +582,8 @@
    "kind": "code",
    "top": 4737,
    "h": 324,
-   "style": "14f1f072",
+   "style": "9469a380",
+   "content": "1597da55",
    "text": "@Test fun `merge web search results appends dedu"
   },
   {
@@ -526,7 +591,8 @@
    "kind": "paragraph",
    "top": 5076,
    "h": 28,
-   "style": "e2b930b0",
+   "style": "260ae139",
+   "content": "90b523c2",
    "text": "Step 2: 跑测试确认失败"
   },
   {
@@ -534,7 +600,8 @@
    "kind": "paragraph",
    "top": 5121,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -542,7 +609,8 @@
    "kind": "code",
    "top": 5165,
    "h": 64,
-   "style": "b8975f18",
+   "style": "cd15a360",
+   "content": "3cb0de76",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
   {
@@ -550,7 +618,8 @@
    "kind": "paragraph",
    "top": 5244,
    "h": 52,
-   "style": "3bf7636c",
+   "style": "f29c54f7",
+   "content": "08eebd2f",
    "text": "Expected: 新增测试失败，原因是 webSearchResults 没有被 merge "
   },
   {
@@ -558,7 +627,8 @@
    "kind": "paragraph",
    "top": 5314,
    "h": 28,
-   "style": "0df17852",
+   "style": "3220296e",
+   "content": "a377aa9b",
    "text": "Step 3: 最小实现"
   },
   {
@@ -566,7 +636,8 @@
    "kind": "paragraph",
    "top": 5359,
    "h": 26,
-   "style": "c9709ccb",
+   "style": "65d4e95a",
+   "content": "dd7057ac",
    "text": "修改 mergeStreamingCompletionMessage()："
   },
   {
@@ -574,7 +645,8 @@
    "kind": "code",
    "top": 5403,
    "h": 264,
-   "style": "0da42d0c",
+   "style": "c5964f22",
+   "content": "e8546144",
    "text": "internal fun mergeStreamingCompletionMessage(syn"
   },
   {
@@ -582,7 +654,8 @@
    "kind": "paragraph",
    "top": 5682,
    "h": 26,
-   "style": "d9c1ee8b",
+   "style": "463959f5",
+   "content": "a7e27749",
    "text": "新增 helper："
   },
   {
@@ -590,7 +663,8 @@
    "kind": "code",
    "top": 5725,
    "h": 204,
-   "style": "0f0db5fa",
+   "style": "c301aac8",
+   "content": "eed6e251",
    "text": "internal fun mergeWebSearchResults( existing: Li"
   },
   {
@@ -598,7 +672,8 @@
    "kind": "paragraph",
    "top": 5944,
    "h": 26,
-   "style": "a965bb98",
+   "style": "436bc6d0",
+   "content": "4c6cac83",
    "text": "修改 WebSearchResults 分支："
   },
   {
@@ -606,7 +681,8 @@
    "kind": "code",
    "top": 5988,
    "h": 184,
-   "style": "84543dc3",
+   "style": "0447e482",
+   "content": "4fa94670",
    "text": "is AppStreamEvent.WebSearchResults -> { updatedM"
   },
   {
@@ -614,7 +690,8 @@
    "kind": "paragraph",
    "top": 6187,
    "h": 28,
-   "style": "1d84fc06",
+   "style": "2ab9a56d",
+   "content": "e390cfd8",
    "text": "修改 Finish 分支："
   },
   {
@@ -622,7 +699,8 @@
    "kind": "code",
    "top": 6232,
    "h": 44,
-   "style": "a7aafdb0",
+   "style": "a2f00532",
+   "content": "1331f5ab",
    "text": "val finalizedMessage = currentMessageProcessor.f"
   },
   {
@@ -630,7 +708,8 @@
    "kind": "paragraph",
    "top": 6291,
    "h": 28,
-   "style": "e2b930b0",
+   "style": "260ae139",
+   "content": "6201e311",
    "text": "Step 4: 跑测试确认通过"
   },
   {
@@ -638,7 +717,8 @@
    "kind": "paragraph",
    "top": 6337,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -646,7 +726,8 @@
    "kind": "code",
    "top": 6381,
    "h": 64,
-   "style": "b8975f18",
+   "style": "cd15a360",
+   "content": "3cb0de76",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
   {
@@ -654,7 +735,8 @@
    "kind": "paragraph",
    "top": 6460,
    "h": 26,
-   "style": "dcc1f344",
+   "style": "463959f5",
+   "content": "b7b42634",
    "text": "Expected: PASS。"
   },
   {
@@ -662,7 +744,8 @@
    "kind": "rule",
    "top": 6503,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -670,7 +753,8 @@
    "kind": "heading",
    "top": 6544,
    "h": 29,
-   "style": "13e81907",
+   "style": "7839841e",
+   "content": "0f738518",
    "text": "Task 2: 修复 Gemini 直连 grounding index§"
   },
   {
@@ -678,7 +762,8 @@
    "kind": "paragraph",
    "top": 6587,
    "h": 26,
-   "style": "3ae5ff78",
+   "style": "d334f671",
+   "content": "dcd190be",
    "text": "Files:"
   },
   {
@@ -686,7 +771,8 @@
    "kind": "listItem",
    "top": 6630,
    "h": 78,
-   "style": "45bb9d4a",
+   "style": "2ac85f7f",
+   "content": "f34b8335",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
   {
@@ -694,7 +780,8 @@
    "kind": "paragraph",
    "top": 6726,
    "h": 28,
-   "style": "10167b43",
+   "style": "715bb4e5",
+   "content": "3966b5ce",
    "text": "Step 1: 写失败测试或最小核验"
   },
   {
@@ -702,7 +789,8 @@
    "kind": "paragraph",
    "top": 6772,
    "h": 28,
-   "style": "1a263f60",
+   "style": "4e6c809c",
+   "content": "9499683e",
    "text": "如果 GeminiDirectClient 当前没有易构造的流式测试，至少在实现后用回读核验确认"
   },
   {
@@ -710,7 +798,8 @@
    "kind": "code",
    "top": 6818,
    "h": 164,
-   "style": "46c3ccec",
+   "style": "0805fc5a",
+   "content": "5cb3fa61",
    "text": "chunks.mapIndexedNotNull { index, chunkElement -"
   },
   {
@@ -718,7 +807,8 @@
    "kind": "paragraph",
    "top": 6997,
    "h": 28,
-   "style": "0df17852",
+   "style": "3220296e",
+   "content": "ee182d28",
    "text": "Step 2: 最小实现"
   },
   {
@@ -726,7 +816,8 @@
    "kind": "paragraph",
    "top": 7042,
    "h": 52,
-   "style": "d62ba5a4",
+   "style": "7db5efd5",
+   "content": "edc44a26",
    "text": "把 chunks.mapNotNull 改成 chunks.mapIndexedNotNull，"
   },
   {
@@ -734,7 +825,8 @@
    "kind": "paragraph",
    "top": 7112,
    "h": 28,
-   "style": "0df17852",
+   "style": "3220296e",
+   "content": "035e9aaa",
    "text": "Step 3: 编译验证"
   },
   {
@@ -742,7 +834,8 @@
    "kind": "paragraph",
    "top": 7157,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -750,7 +843,8 @@
    "kind": "code",
    "top": 7201,
    "h": 64,
-   "style": "89acd160",
+   "style": "3520b13c",
+   "content": "44818381",
    "text": "cd app1 & \".\\gradlew.bat\" :app:compileDebugKotli"
   },
   {
@@ -758,7 +852,8 @@
    "kind": "paragraph",
    "top": 7280,
    "h": 26,
-   "style": "4eba57f5",
+   "style": "463959f5",
+   "content": "fcb91fe9",
    "text": "Expected: BUILD SUCCESSFUL。"
   },
   {
@@ -766,7 +861,8 @@
    "kind": "rule",
    "top": 7324,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -774,7 +870,8 @@
    "kind": "heading",
    "top": 7365,
    "h": 29,
-   "style": "b734fe1e",
+   "style": "bec97f09",
+   "content": "5c70a683",
    "text": "Task 3: 新增搜索工具结果提取 helper§"
   },
   {
@@ -782,7 +879,8 @@
    "kind": "paragraph",
    "top": 7407,
    "h": 26,
-   "style": "3ae5ff78",
+   "style": "d334f671",
+   "content": "dcd190be",
    "text": "Files:"
   },
   {
@@ -790,7 +888,8 @@
    "kind": "listItem",
    "top": 7451,
    "h": 52,
-   "style": "3eab46d8",
+   "style": "8a8cb3eb",
+   "content": "0dd3a35c",
    "text": "Create: app1/app/src/main/java/com/android/every"
   },
   {
@@ -798,7 +897,8 @@
    "kind": "listItem",
    "top": 7505,
    "h": 52,
-   "style": "aebc053b",
+   "style": "effcdc3a",
+   "content": "db568d21",
    "text": "Test: app1/app/src/test/java/com/android/everyta"
   },
   {
@@ -806,7 +906,8 @@
    "kind": "paragraph",
    "top": 7575,
    "h": 28,
-   "style": "ef913ea3",
+   "style": "0b49ddec",
+   "content": "eddb894f",
    "text": "Step 1: 写失败测试"
   },
   {
@@ -814,7 +915,8 @@
    "kind": "paragraph",
    "top": 7621,
    "h": 28,
-   "style": "081e35dd",
+   "style": "2ab9a56d",
+   "content": "c26a744d",
    "text": "测试覆盖："
   },
   {
@@ -822,7 +924,8 @@
    "kind": "listItem",
    "top": 7666,
    "h": 26,
-   "style": "e08fe902",
+   "style": "b2877915",
+   "content": "3e629ac8",
    "text": "web_search 的 {ok:true, results:[{title,url,snipp"
   },
   {
@@ -830,7 +933,8 @@
    "kind": "listItem",
    "top": 7695,
    "h": 26,
-   "style": "7ac387e7",
+   "style": "d48cd308",
+   "content": "fe53ba3e",
    "text": "search 的结构化 {results:[{title,url,snippet}]} 可以提取"
   },
   {
@@ -838,7 +942,8 @@
    "kind": "listItem",
    "top": 7723,
    "h": 29,
-   "style": "adab17de",
+   "style": "d0635f8f",
+   "content": "764847c9",
    "text": "search 的纯文本 URL 不提取"
   },
   {
@@ -846,7 +951,8 @@
    "kind": "listItem",
    "top": 7754,
    "h": 26,
-   "style": "7d8dd7b0",
+   "style": "8375ba19",
+   "content": "1c86eee1",
    "text": "web_search_exa 的 {results:[{title,href,text}]}"
   },
   {
@@ -854,7 +960,8 @@
    "kind": "listItem",
    "top": 7782,
    "h": 26,
-   "style": "31c41bdb",
+   "style": "3afdc7f9",
+   "content": "4f012474",
    "text": "firecrawl_search 的纯文本 URL"
   },
   {
@@ -862,7 +969,8 @@
    "kind": "listItem",
    "top": 7810,
    "h": 26,
-   "style": "4804a3aa",
+   "style": "33ad9377",
+   "content": "4cbbbc52",
    "text": "中文标点结尾 URL 会清理，例如 https://example.com。、https://e"
   },
   {
@@ -870,7 +978,8 @@
    "kind": "listItem",
    "top": 7839,
    "h": 26,
-   "style": "9435662e",
+   "style": "d4fa5fd7",
+   "content": "e8cc78cb",
    "text": "data.webPages.value[] 结构"
   },
   {
@@ -878,7 +987,8 @@
    "kind": "listItem",
    "top": 7867,
    "h": 29,
-   "style": "fe43efd4",
+   "style": "213af1f6",
+   "content": "ec5829c2",
    "text": "重复 URL 去重"
   },
   {
@@ -886,7 +996,8 @@
    "kind": "listItem",
    "top": 7898,
    "h": 26,
-   "style": "359cd4d1",
+   "style": "14688415",
+   "content": "283443c2",
    "text": "webfetch 不提取"
   },
   {
@@ -894,7 +1005,8 @@
    "kind": "listItem",
    "top": 7926,
    "h": 29,
-   "style": "eff0cb0d",
+   "style": "726a0570",
+   "content": "58ca478a",
    "text": "空 URL 不返回结果"
   },
   {
@@ -902,7 +1014,8 @@
    "kind": "paragraph",
    "top": 7972,
    "h": 28,
-   "style": "e2b930b0",
+   "style": "260ae139",
+   "content": "90b523c2",
    "text": "Step 2: 跑测试确认失败"
   },
   {
@@ -910,7 +1023,8 @@
    "kind": "paragraph",
    "top": 8018,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -918,7 +1032,8 @@
    "kind": "code",
    "top": 8061,
    "h": 64,
-   "style": "9d49e45d",
+   "style": "afd6d9ad",
+   "content": "b77e66f6",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
   {
@@ -926,7 +1041,8 @@
    "kind": "paragraph",
    "top": 8140,
    "h": 26,
-   "style": "47ba4cf0",
+   "style": "463959f5",
+   "content": "38d5d6d9",
    "text": "Expected: FAIL，类不存在。"
   },
   {
@@ -934,7 +1050,8 @@
    "kind": "paragraph",
    "top": 8184,
    "h": 28,
-   "style": "0df17852",
+   "style": "3220296e",
+   "content": "a377aa9b",
    "text": "Step 3: 最小实现"
   },
   {
@@ -942,7 +1059,8 @@
    "kind": "paragraph",
    "top": 8230,
    "h": 26,
-   "style": "52008d9c",
+   "style": "d5825e55",
+   "content": "c7c17a3a",
    "text": "新增 internal object WebSearchToolResultExtractor，"
   },
   {
@@ -950,7 +1068,8 @@
    "kind": "code",
    "top": 8273,
    "h": 84,
-   "style": "0e05a621",
+   "style": "f04fba86",
+   "content": "de2151d9",
    "text": "internal object WebSearchToolResultExtractor { f"
   },
   {
@@ -958,7 +1077,8 @@
    "kind": "paragraph",
    "top": 8372,
    "h": 28,
-   "style": "081e35dd",
+   "style": "2ab9a56d",
+   "content": "1eefa1e2",
    "text": "实现要求："
   },
   {
@@ -966,7 +1086,8 @@
    "kind": "listItem",
    "top": 8418,
    "h": 26,
-   "style": "f7e1cb64",
+   "style": "da8b4911",
+   "content": "8d315648",
    "text": "isSearchToolName(toolName) 为 false 时返回空列表。"
   },
   {
@@ -974,7 +1095,8 @@
    "kind": "listItem",
    "top": 8446,
    "h": 29,
-   "style": "f99074d6",
+   "style": "1eff3a46",
+   "content": "d0781048",
    "text": "toolName == \"search\" 允许结构化结果提取，但不触发纯文本 URL fallb"
   },
   {
@@ -982,7 +1104,8 @@
    "kind": "listItem",
    "top": 8477,
    "h": 26,
-   "style": "eed95d3d",
+   "style": "b0fafe34",
+   "content": "f494bca2",
    "text": "结构化结果从 results、data.results、data.webPages.value "
   },
   {
@@ -990,7 +1113,8 @@
    "kind": "listItem",
    "top": 8505,
    "h": 26,
-   "style": "421cd837",
+   "style": "b0559e4e",
+   "content": "c3570670",
    "text": "字段兼容 url、href、link。"
   },
   {
@@ -998,7 +1122,8 @@
    "kind": "listItem",
    "top": 8533,
    "h": 26,
-   "style": "c173befc",
+   "style": "32f04fce",
+   "content": "8a58a9c7",
    "text": "title 兼容 title、name，空时用 href。"
   },
   {
@@ -1006,7 +1131,8 @@
    "kind": "listItem",
    "top": 8562,
    "h": 26,
-   "style": "96b30449",
+   "style": "7a4ad276",
+   "content": "137af07d",
    "text": "snippet 兼容 snippet、content、text、summary。"
   },
   {
@@ -1014,7 +1140,8 @@
    "kind": "listItem",
    "top": 8590,
    "h": 26,
-   "style": "6d8025a5",
+   "style": "6906d363",
+   "content": "e2cf6c2f",
    "text": "纯文本 fallback 使用 Regex(\"\"\"https?://[^\\s)>]+\"\"\")。"
   },
   {
@@ -1022,7 +1149,8 @@
    "kind": "listItem",
    "top": 8618,
    "h": 52,
-   "style": "4147c7d1",
+   "style": "20463d62",
+   "content": "cef667cf",
    "text": "URL trimEnd('.', ',', ';', ':', ')', ']', '}', '"
   },
   {
@@ -1030,7 +1158,8 @@
    "kind": "listItem",
    "top": 8673,
    "h": 29,
-   "style": "5069ad74",
+   "style": "08a61172",
+   "content": "14995b55",
    "text": "去重后重新分配 index = size + 1。"
   },
   {
@@ -1038,7 +1167,8 @@
    "kind": "paragraph",
    "top": 8719,
    "h": 28,
-   "style": "e2b930b0",
+   "style": "260ae139",
+   "content": "6201e311",
    "text": "Step 4: 跑测试确认通过"
   },
   {
@@ -1046,7 +1176,8 @@
    "kind": "paragraph",
    "top": 8765,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -1054,7 +1185,8 @@
    "kind": "code",
    "top": 8808,
    "h": 64,
-   "style": "9d49e45d",
+   "style": "afd6d9ad",
+   "content": "b77e66f6",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
   {
@@ -1062,7 +1194,8 @@
    "kind": "paragraph",
    "top": 8887,
    "h": 26,
-   "style": "dcc1f344",
+   "style": "463959f5",
+   "content": "b7b42634",
    "text": "Expected: PASS。"
   },
   {
@@ -1070,7 +1203,8 @@
    "kind": "rule",
    "top": 8931,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -1078,7 +1212,8 @@
    "kind": "heading",
    "top": 8972,
    "h": 29,
-   "style": "13e81907",
+   "style": "7839841e",
+   "content": "16b9ee94",
    "text": "Task 4: 三个工具循环 emit WebSearchResults§"
   },
   {
@@ -1086,7 +1221,8 @@
    "kind": "paragraph",
    "top": 9014,
    "h": 26,
-   "style": "3ae5ff78",
+   "style": "d334f671",
+   "content": "dcd190be",
    "text": "Files:"
   },
   {
@@ -1094,7 +1230,8 @@
    "kind": "listItem",
    "top": 9058,
    "h": 78,
-   "style": "f48696e8",
+   "style": "9fddcf69",
+   "content": "9761ef18",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
   {
@@ -1102,7 +1239,8 @@
    "kind": "listItem",
    "top": 9138,
    "h": 78,
-   "style": "fe6d0084",
+   "style": "48fb41f6",
+   "content": "6f902049",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
   {
@@ -1110,7 +1248,8 @@
    "kind": "listItem",
    "top": 9219,
    "h": 78,
-   "style": "971e8626",
+   "style": "1f9bd273",
+   "content": "ac95f109",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
   {
@@ -1118,7 +1257,8 @@
    "kind": "paragraph",
    "top": 9315,
    "h": 28,
-   "style": "ef913ea3",
+   "style": "0b49ddec",
+   "content": "c960ba28",
    "text": "Step 1: 写或补测试"
   },
   {
@@ -1126,7 +1266,8 @@
    "kind": "paragraph",
    "top": 9360,
    "h": 56,
-   "style": "3b3f57fc",
+   "style": "1ca7dcdf",
+   "content": "64935c68",
    "text": "如果现有客户端流式测试难以直接构造，优先依赖 Task 3 的 helper 单测，并在本 Ta"
   },
   {
@@ -1134,7 +1275,8 @@
    "kind": "code",
    "top": 9434,
    "h": 104,
-   "style": "5ed113b0",
+   "style": "85459a88",
+   "content": "bbbbdb44",
    "text": "val webResults = WebSearchToolResultExtractor.ex"
   },
   {
@@ -1142,7 +1284,8 @@
    "kind": "paragraph",
    "top": 9553,
    "h": 28,
-   "style": "bcab0575",
+   "style": "3a40e26a",
+   "content": "1d0c3835",
    "text": "对应 Gemini 循环变量名为 toolName："
   },
   {
@@ -1150,7 +1293,8 @@
    "kind": "code",
    "top": 9598,
    "h": 104,
-   "style": "75dcdab4",
+   "style": "69c67384",
+   "content": "016f39d8",
    "text": "val webResults = WebSearchToolResultExtractor.ex"
   },
   {
@@ -1158,7 +1302,8 @@
    "kind": "paragraph",
    "top": 9717,
    "h": 28,
-   "style": "061e32b7",
+   "style": "2ab9a56d",
+   "content": "f27cb55e",
    "text": "强制核验标准："
   },
   {
@@ -1166,7 +1311,8 @@
    "kind": "listItem",
    "top": 9763,
    "h": 52,
-   "style": "950dc230",
+   "style": "369384b6",
+   "content": "45e336dd",
    "text": "OpenAIDirectClient.kt 必须出现 WebSearchToolResultEx"
   },
   {
@@ -1174,7 +1320,8 @@
    "kind": "listItem",
    "top": 9817,
    "h": 52,
-   "style": "a31f515a",
+   "style": "d0db5e58",
+   "content": "9c9fff6c",
    "text": "OpenAIResponsesClient.kt 必须出现 WebSearchToolResul"
   },
   {
@@ -1182,7 +1329,8 @@
    "kind": "listItem",
    "top": 9872,
    "h": 52,
-   "style": "1a5a361e",
+   "style": "8ebf5f4f",
+   "content": "4697c55e",
    "text": "GeminiDirectClient.kt 必须出现 WebSearchToolResultEx"
   },
   {
@@ -1190,7 +1338,8 @@
    "kind": "listItem",
    "top": 9926,
    "h": 52,
-   "style": "b19597da",
+   "style": "a6988a7c",
+   "content": "986389ce",
    "text": "三个调用点后都必须有 if (webResults.isNotEmpty()) { send(A"
   },
   {
@@ -1198,7 +1347,8 @@
    "kind": "paragraph",
    "top": 9996,
    "h": 26,
-   "style": "732ff60d",
+   "style": "2112928f",
+   "content": "5d6ba5bf",
    "text": "Step 2: 实现 OpenAIDirectClient"
   },
   {
@@ -1206,7 +1356,8 @@
    "kind": "paragraph",
    "top": 10039,
    "h": 56,
-   "style": "c17b5e94",
+   "style": "65548bdb",
+   "content": "5f1610ac",
    "text": "在工具执行成功并得到 result 后，加入提取和 emit。位置在图片 _images 分支处"
   },
   {
@@ -1214,7 +1365,8 @@
    "kind": "paragraph",
    "top": 10113,
    "h": 26,
-   "style": "8e13a029",
+   "style": "417d2437",
+   "content": "e119bc53",
    "text": "Step 3: 实现 OpenAIResponsesClient"
   },
   {
@@ -1222,7 +1374,8 @@
    "kind": "paragraph",
    "top": 10157,
    "h": 26,
-   "style": "78d856ab",
+   "style": "e7d3bd4e",
+   "content": "2b16a5c8",
    "text": "在 result 写入 conversationInput 前加入提取和 emit。"
   },
   {
@@ -1230,7 +1383,8 @@
    "kind": "paragraph",
    "top": 10200,
    "h": 26,
-   "style": "5ff40a99",
+   "style": "226b477b",
+   "content": "d4c4b250",
    "text": "Step 4: 实现 GeminiDirectClient"
   },
   {
@@ -1238,7 +1392,8 @@
    "kind": "paragraph",
    "top": 10244,
    "h": 26,
-   "style": "6eed5663",
+   "style": "c35f6639",
+   "content": "e96649ca",
    "text": "在 MCP tool result 生成 toolResponses 前加入提取和 emit。"
   },
   {
@@ -1246,7 +1401,8 @@
    "kind": "paragraph",
    "top": 10287,
    "h": 28,
-   "style": "0df17852",
+   "style": "3220296e",
+   "content": "ecdeabf0",
    "text": "Step 5: 编译验证"
   },
   {
@@ -1254,7 +1410,8 @@
    "kind": "paragraph",
    "top": 10333,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -1262,7 +1419,8 @@
    "kind": "code",
    "top": 10377,
    "h": 64,
-   "style": "89acd160",
+   "style": "3520b13c",
+   "content": "44818381",
    "text": "cd app1 & \".\\gradlew.bat\" :app:compileDebugKotli"
   },
   {
@@ -1270,7 +1428,8 @@
    "kind": "paragraph",
    "top": 10456,
    "h": 26,
-   "style": "4eba57f5",
+   "style": "463959f5",
+   "content": "fcb91fe9",
    "text": "Expected: BUILD SUCCESSFUL。"
   },
   {
@@ -1278,7 +1437,8 @@
    "kind": "rule",
    "top": 10499,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -1286,7 +1446,8 @@
    "kind": "heading",
    "top": 10540,
    "h": 29,
-   "style": "b9350144",
+   "style": "bec97f09",
+   "content": "412df3e4",
    "text": "Task 5: 收窄并增强正文来源兜底§"
   },
   {
@@ -1294,7 +1455,8 @@
    "kind": "paragraph",
    "top": 10583,
    "h": 26,
-   "style": "3ae5ff78",
+   "style": "d334f671",
+   "content": "dcd190be",
    "text": "Files:"
   },
   {
@@ -1302,7 +1464,8 @@
    "kind": "listItem",
    "top": 10626,
    "h": 52,
-   "style": "3eab46d8",
+   "style": "8a8cb3eb",
+   "content": "7fa69ba6",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
   {
@@ -1310,7 +1473,8 @@
    "kind": "listItem",
    "top": 10681,
    "h": 52,
-   "style": "aebc053b",
+   "style": "effcdc3a",
+   "content": "bcdaa2e9",
    "text": "Test: app1/app/src/test/java/com/android/everyta"
   },
   {
@@ -1318,7 +1482,8 @@
    "kind": "paragraph",
    "top": 10751,
    "h": 28,
-   "style": "ef913ea3",
+   "style": "0b49ddec",
+   "content": "eddb894f",
    "text": "Step 1: 写失败测试"
   },
   {
@@ -1326,7 +1491,8 @@
    "kind": "paragraph",
    "top": 10796,
    "h": 28,
-   "style": "081e35dd",
+   "style": "2ab9a56d",
+   "content": "90722d77",
    "text": "新增测试："
   },
   {
@@ -1334,7 +1500,8 @@
    "kind": "code",
    "top": 10842,
    "h": 204,
-   "style": "828555d7",
+   "style": "83f39c5f",
+   "content": "2dad884c",
    "text": "@Test fun `does not treat ordinary inline links "
   },
   {
@@ -1342,7 +1509,8 @@
    "kind": "paragraph",
    "top": 11061,
    "h": 28,
-   "style": "b07d94aa",
+   "style": "2ab9a56d",
+   "content": "88f3404e",
    "text": "新增正文中间 citation 反例，防止误删正文："
   },
   {
@@ -1350,7 +1518,8 @@
    "kind": "code",
    "top": 11106,
    "h": 324,
-   "style": "dc1ea122",
+   "style": "19a0f32d",
+   "content": "9c2f6781",
    "text": "@Test fun `does not extract numbered citation ur"
   },
   {
@@ -1358,7 +1527,8 @@
    "kind": "paragraph",
    "top": 11445,
    "h": 28,
-   "style": "1b84f8e0",
+   "style": "2ab9a56d",
+   "content": "1e98ee1f",
    "text": "新增明显来源格式测试："
   },
   {
@@ -1366,7 +1536,8 @@
    "kind": "code",
    "top": 11491,
    "h": 344,
-   "style": "707a0efe",
+   "style": "21107e31",
+   "content": "8d04335d",
    "text": "@Test fun `extracts numbered citation urls witho"
   },
   {
@@ -1374,7 +1545,8 @@
    "kind": "paragraph",
    "top": 11850,
    "h": 28,
-   "style": "228503e5",
+   "style": "2ab9a56d",
+   "content": "0b31206d",
    "text": "新增中文标点 URL 清理测试："
   },
   {
@@ -1382,7 +1554,8 @@
    "kind": "code",
    "top": 11896,
    "h": 304,
-   "style": "1acb7954",
+   "style": "5b4fad9f",
+   "content": "1a73a011",
    "text": "@Test fun `trims chinese punctuation from citati"
   },
   {
@@ -1390,7 +1563,8 @@
    "kind": "paragraph",
    "top": 12215,
    "h": 28,
-   "style": "fc1e22f9",
+   "style": "2ab9a56d",
+   "content": "50037522",
    "text": "新增脚注格式测试："
   },
   {
@@ -1398,7 +1572,8 @@
    "kind": "code",
    "top": 12260,
    "h": 284,
-   "style": "fc969358",
+   "style": "ef9790e7",
+   "content": "67a6b3d8",
    "text": "@Test fun `extracts footnote urls as sources`() "
   },
   {
@@ -1406,7 +1581,8 @@
    "kind": "paragraph",
    "top": 12559,
    "h": 28,
-   "style": "e2b930b0",
+   "style": "260ae139",
+   "content": "90b523c2",
    "text": "Step 2: 跑测试确认失败"
   },
   {
@@ -1414,7 +1590,8 @@
    "kind": "paragraph",
    "top": 12605,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -1422,7 +1599,8 @@
    "kind": "code",
    "top": 12648,
    "h": 64,
-   "style": "9d49e45d",
+   "style": "afd6d9ad",
+   "content": "bf9aa5b4",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
   {
@@ -1430,7 +1608,8 @@
    "kind": "paragraph",
    "top": 12727,
    "h": 28,
-   "style": "21850252",
+   "style": "2ab9a56d",
+   "content": "0e3b252b",
    "text": "Expected: 新增测试失败。"
   },
   {
@@ -1438,7 +1617,8 @@
    "kind": "paragraph",
    "top": 12773,
    "h": 28,
-   "style": "0df17852",
+   "style": "3220296e",
+   "content": "a377aa9b",
    "text": "Step 3: 最小实现"
   },
   {
@@ -1446,7 +1626,8 @@
    "kind": "paragraph",
    "top": 12818,
    "h": 28,
-   "style": "081e35dd",
+   "style": "2ab9a56d",
+   "content": "a625beea",
    "text": "实现规则："
   },
   {
@@ -1454,7 +1635,8 @@
    "kind": "listItem",
    "top": 12864,
    "h": 29,
-   "style": "51e5ef51",
+   "style": "16f86bc2",
+   "content": "65ccc93c",
    "text": "保留原 Sources 区块提取和移除逻辑。"
   },
   {
@@ -1462,7 +1644,8 @@
    "kind": "listItem",
    "top": 12895,
    "h": 29,
-   "style": "26e5d4d3",
+   "style": "213af1f6",
+   "content": "f70e6981",
    "text": "新增从文末连续 citation 行提取的逻辑。"
   },
   {
@@ -1470,7 +1653,8 @@
    "kind": "listItem",
    "top": 12925,
    "h": 52,
-   "style": "c355cdbe",
+   "style": "a47214d1",
+   "content": "1fde3291",
    "text": "citation 行匹配 [1] https://...、[2] Title https://."
   },
   {
@@ -1478,7 +1662,8 @@
    "kind": "listItem",
    "top": 12980,
    "h": 29,
-   "style": "2ce5de45",
+   "style": "213af1f6",
+   "content": "36ada380",
    "text": "只移除被识别为来源的 citation 行。"
   },
   {
@@ -1486,7 +1671,8 @@
    "kind": "listItem",
    "top": 13010,
    "h": 29,
-   "style": "eef0c97a",
+   "style": "726a0570",
+   "content": "8b2dcaa7",
    "text": "普通正文链接不提取。"
   },
   {
@@ -1494,7 +1680,8 @@
    "kind": "paragraph",
    "top": 13057,
    "h": 28,
-   "style": "e2b930b0",
+   "style": "260ae139",
+   "content": "6201e311",
    "text": "Step 4: 跑测试确认通过"
   },
   {
@@ -1502,7 +1689,8 @@
    "kind": "paragraph",
    "top": 13102,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -1510,7 +1698,8 @@
    "kind": "code",
    "top": 13146,
    "h": 64,
-   "style": "9d49e45d",
+   "style": "afd6d9ad",
+   "content": "bf9aa5b4",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
   {
@@ -1518,7 +1707,8 @@
    "kind": "paragraph",
    "top": 13225,
    "h": 26,
-   "style": "dcc1f344",
+   "style": "463959f5",
+   "content": "b7b42634",
    "text": "Expected: PASS。"
   },
   {
@@ -1526,7 +1716,8 @@
    "kind": "rule",
    "top": 13269,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -1534,7 +1725,8 @@
    "kind": "heading",
    "top": 13310,
    "h": 29,
-   "style": "263c68a0",
+   "style": "bec97f09",
+   "content": "13b11048",
    "text": "Task 6: 全量相关验证§"
   },
   {
@@ -1542,7 +1734,8 @@
    "kind": "paragraph",
    "top": 13352,
    "h": 26,
-   "style": "3ae5ff78",
+   "style": "d334f671",
+   "content": "dcd190be",
    "text": "Files:"
   },
   {
@@ -1550,7 +1743,8 @@
    "kind": "listItem",
    "top": 13396,
    "h": 26,
-   "style": "a4e32ab5",
+   "style": "8bea751d",
+   "content": "ea222e40",
    "text": "No code changes."
   },
   {
@@ -1558,7 +1752,8 @@
    "kind": "paragraph",
    "top": 13440,
    "h": 28,
-   "style": "ef913ea3",
+   "style": "0b49ddec",
+   "content": "b6d02888",
    "text": "Step 1: 跑相关单测"
   },
   {
@@ -1566,7 +1761,8 @@
    "kind": "paragraph",
    "top": 13486,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -1574,7 +1770,8 @@
    "kind": "code",
    "top": 13529,
    "h": 64,
-   "style": "58a96662",
+   "style": "62e29ecc",
+   "content": "620c8510",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
   {
@@ -1582,7 +1779,8 @@
    "kind": "paragraph",
    "top": 13608,
    "h": 26,
-   "style": "dcc1f344",
+   "style": "463959f5",
+   "content": "b7b42634",
    "text": "Expected: PASS。"
   },
   {
@@ -1590,7 +1788,8 @@
    "kind": "paragraph",
    "top": 13652,
    "h": 26,
-   "style": "5db20746",
+   "style": "f93030d7",
+   "content": "d0c9afa0",
    "text": "Step 2: 跑 Kotlin 编译"
   },
   {
@@ -1598,7 +1797,8 @@
    "kind": "paragraph",
    "top": 13695,
    "h": 26,
-   "style": "827c5ed2",
+   "style": "463959f5",
+   "content": "d15f8ff0",
    "text": "Run:"
   },
   {
@@ -1606,7 +1806,8 @@
    "kind": "code",
    "top": 13739,
    "h": 64,
-   "style": "89acd160",
+   "style": "3520b13c",
+   "content": "44818381",
    "text": "cd app1 & \".\\gradlew.bat\" :app:compileDebugKotli"
   },
   {
@@ -1614,7 +1815,8 @@
    "kind": "paragraph",
    "top": 13818,
    "h": 26,
-   "style": "4eba57f5",
+   "style": "463959f5",
+   "content": "fcb91fe9",
    "text": "Expected: BUILD SUCCESSFUL。"
   },
   {
@@ -1622,7 +1824,8 @@
    "kind": "paragraph",
    "top": 13861,
    "h": 28,
-   "style": "0df17852",
+   "style": "3220296e",
+   "content": "625d49d7",
    "text": "Step 3: 回读核验"
   },
   {
@@ -1630,7 +1833,8 @@
    "kind": "paragraph",
    "top": 13907,
    "h": 28,
-   "style": "061e32b7",
+   "style": "2ab9a56d",
+   "content": "02edb9c6",
    "text": "检查以下内容："
   },
   {
@@ -1638,7 +1842,8 @@
    "kind": "code",
    "top": 13953,
    "h": 44,
-   "style": "9c3cc20f",
+   "style": "bacda960",
+   "content": "892eb127",
    "text": "rg -n \"WebSearchToolResultExtractor|mergeWebSear"
   },
   {
@@ -1646,7 +1851,8 @@
    "kind": "paragraph",
    "top": 14012,
    "h": 26,
-   "style": "877c66b1",
+   "style": "463959f5",
+   "content": "429795f9",
    "text": "Expected:"
   },
   {
@@ -1654,7 +1860,8 @@
    "kind": "listItem",
    "top": 14055,
    "h": 26,
-   "style": "2978de03",
+   "style": "c2f10b86",
+   "content": "29d3d54b",
    "text": "三个客户端都调用 WebSearchToolResultExtractor.extract(.."
   },
   {
@@ -1662,7 +1869,8 @@
    "kind": "listItem",
    "top": 14083,
    "h": 26,
-   "style": "9fa2f5db",
+   "style": "81bc2098",
+   "content": "255c2b0a",
    "text": "ApiHandler 多次 WebSearchResults 使用 mergeWebSearch"
   },
   {
@@ -1670,7 +1878,8 @@
    "kind": "listItem",
    "top": 14112,
    "h": 26,
-   "style": "da5652e5",
+   "style": "cbc707b3",
+   "content": "87a47e2f",
    "text": "mergeStreamingCompletionMessage() 保留 webSearchRe"
   },
   {
@@ -1678,7 +1887,8 @@
    "kind": "listItem",
    "top": 14140,
    "h": 26,
-   "style": "2494b6a0",
+   "style": "15c22d47",
+   "content": "bdf0b9d8",
    "text": "Finish 分支使用 updatedMessage 最终化。"
   },
   {
@@ -1686,7 +1896,8 @@
    "kind": "listItem",
    "top": 14168,
    "h": 26,
-   "style": "13b6782d",
+   "style": "51e9c025",
+   "content": "0a2657b9",
    "text": "GeminiDirectClient grounding chunks 使用 mapIndexe"
   },
   {
@@ -1694,7 +1905,8 @@
    "kind": "listItem",
    "top": 14197,
    "h": 29,
-   "style": "edf0c7e7",
+   "style": "726a0570",
+   "content": "1c9c714f",
    "text": "测试文件存在并覆盖正反例。"
   },
   {
@@ -1702,7 +1914,8 @@
    "kind": "rule",
    "top": 14243,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -1710,7 +1923,8 @@
    "kind": "heading",
    "top": 14284,
    "h": 29,
-   "style": "0fddd289",
+   "style": "bec97f09",
+   "content": "2d5d7c24",
    "text": "覆盖矩阵§"
   },
   {
@@ -1718,7 +1932,8 @@
    "kind": "table",
    "top": 14327,
    "h": 377,
-   "style": "32f83af6",
+   "style": "74814684",
+   "content": "122bb4c9",
    "text": "路径处理点结果Gemini 直连 groundingindex 从 1 开始，ApiHandle"
   },
   {
@@ -1726,7 +1941,8 @@
    "kind": "rule",
    "top": 14721,
    "h": 1,
-   "style": "514d6df8",
+   "style": "c0405627",
+   "content": "811c9dc5",
    "text": ""
   },
   {
@@ -1734,7 +1950,8 @@
    "kind": "heading",
    "top": 14762,
    "h": 29,
-   "style": "0fddd289",
+   "style": "bec97f09",
+   "content": "53e1f8c1",
    "text": "完成标准§"
   },
   {
@@ -1742,7 +1959,8 @@
    "kind": "listItem",
    "top": 14805,
    "h": 29,
-   "style": "e9cde880",
+   "style": "9b995100",
+   "content": "1d50297a",
    "text": "搜索类工具返回 URL 时，最终消息持有 webSearchResults。"
   },
   {
@@ -1750,7 +1968,8 @@
    "kind": "listItem",
    "top": 14836,
    "h": 26,
-   "style": "37c663e4",
+   "style": "3afdc7f9",
+   "content": "805fb8ec",
    "text": "StreamEnd 后 webSearchResults 不丢失。"
   },
   {
@@ -1758,7 +1977,8 @@
    "kind": "listItem",
    "top": 14864,
    "h": 29,
-   "style": "5cb1b858",
+   "style": "91fb4e8d",
+   "content": "7166a050",
    "text": "普通正文链接不触发 \"N 页面\" 按钮。"
   },
   {
@@ -1766,7 +1986,8 @@
    "kind": "listItem",
    "top": 14895,
    "h": 29,
-   "style": "f443e016",
+   "style": "213af1f6",
+   "content": "c76fc44b",
    "text": "相关单测通过。"
   },
   {
@@ -1774,7 +1995,8 @@
    "kind": "listItem",
    "top": 14925,
    "h": 26,
-   "style": "9242fc3a",
+   "style": "2d509e92",
+   "content": "2d8b7580",
    "text": ":app:compileDebugKotlin 通过。"
   }
  ]
