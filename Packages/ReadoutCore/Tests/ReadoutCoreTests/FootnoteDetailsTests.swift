@@ -35,6 +35,14 @@ import Testing
         #expect(doc.blocks.map(\.kind) == [.code])
     }
 
+    @Test func definitionsInsideLongerFencesAreCode() {
+        // A ``` line inside a ```` fence does not close it.
+        let doc = parse("See[^n].\n\n````md\n```\n[^n]: inside code\n```\n````\n\n[^n]: real\n")
+        #expect(doc.blocks.map(\.kind) == [.paragraph, .code, .footnotes])
+        #expect(doc.blocks[1].html.contains("[^n]: inside code"))
+        #expect(doc.blocks[2].html.contains("real"))
+    }
+
     @Test func multiLineDefinitionsRenderMarkdown() {
         let doc = parse("See[^long].\n\n[^long]: First line with **bold**\n    and a continuation.\n\n    Second paragraph.\n")
         let notes = doc.blocks.last!.html
