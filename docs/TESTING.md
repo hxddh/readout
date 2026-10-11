@@ -62,7 +62,7 @@ licensed repository. `SOURCES.md` lists source, license and agent evidence.
 
 - `CorpusTests` (Core) renders every document to patch JSON
   (`corpus/patches/`) and fails when parser output changes. Regenerate with
-  `READOUT_UPDATE_CORPUS=1 swift test --filter CorpusTests`.
+  `READOUT_UPDATE_CORPUS=1 swift test --package-path Packages/ReadoutCore --filter CorpusTests`.
 - `npm run corpus` (web, CI job "Rendering baselines (WebKit)") renders each
   patch light and dark with code, math and diagrams settled, and compares:
   - `corpus/snapshots/<doc>-<theme>.json`: every block's slot, position,

@@ -71,6 +71,15 @@ async function render(patch, dark) {
     window.__debugParts = dbg;
     // Deterministic highlighting on a busy CI machine (see highlight.js).
     window.READOUT_TOKENIZE_LIMIT = 60000;
+    // Mermaid draws some straight lines as curves with random control points
+    // (same pixels, different markup): a seeded generator makes it repeatable.
+    let seed = 0x2545f491;
+    Math.random = () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
   }, process.env.CORPUS_DEBUG === '1');
@@ -120,8 +129,19 @@ async function render(patch, dark) {
     const top0 = document.getElementById('ro-doc').getBoundingClientRect().top + window.scrollY;
     const blocks = [...document.querySelectorAll('#ro-doc > .blk, #ro-doc > .del-mark')].map(b => {
       const parts = [describe(b)];
-      // Mermaid SVG internals carry generated ids; the SVG's box is enough.
       for (const el of b.querySelectorAll('*')) if (!el.closest('svg') || el.tagName === 'svg') parts.push(describe(el));
+      // Diagrams: the whole SVG markup, with Mermaid's generated ids numbered
+      // in order of appearance and coordinates to 0.1 px, so the nodes, edges
+      // and fills of every diagram are compared, not just its box.
+      for (const svg of b.querySelectorAll('svg')) {
+        const ids = new Map();
+        for (const el of svg.querySelectorAll('[id]')) if (!ids.has(el.id)) ids.set(el.id, `id${ids.size}`);
+        if (svg.id && !ids.has(svg.id)) ids.set(svg.id, `id${ids.size}`);
+        let markup = svg.outerHTML;
+        // Longest first, so an id that prefixes another is not replaced inside it.
+        for (const [id, n] of [...ids].sort((a, b) => b[0].length - a[0].length)) markup = markup.split(id).join(n);
+        parts.push(markup.replace(/-?\d+\.\d+/g, x => (Math.round(parseFloat(x) * 10) / 10).toString()));
+      }
       const r = b.getBoundingClientRect();
       return {
         slot: +b.dataset.slot || 0, kind: (b.className.match(/k-(\w+)/) || [, 'del'])[1],
