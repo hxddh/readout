@@ -18,7 +18,7 @@ import Foundation
 /// Not thread-safe: use one instance per document, from one queue.
 public final class IncrementalParser: @unchecked Sendable {
     private var resolver: ResourceResolver?
-    private var resolverID = ""
+    private var resolverID = "none"
     /// Fragment blocks from the previous version, by fragment key.
     private var previous: [FragmentKey: MarkdownParser.Fragment] = [:]
     /// Fragments reused in the last parse (for tests).
@@ -36,14 +36,14 @@ public final class IncrementalParser: @unchecked Sendable {
 
     public init(resolver: ResourceResolver? = nil) {
         self.resolver = resolver
-        self.resolverID = resolver?.identity ?? ""
+        self.resolverID = resolver.map { "resolver:" + $0.identity } ?? "none"
     }
 
     /// Parses with a (possibly changed) resolver: nothing resolved against
     /// a different one (other search folders) is reused, neither fragments
     /// nor the rendered HTML in `cache`.
     public func parse(_ rawSource: String, resolver: ResourceResolver?, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
-        let id = resolver?.identity ?? ""
+        let id = resolver.map { "resolver:" + $0.identity } ?? "none"
         if id != resolverID {
             previous = [:]
             cache?.clear()
