@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node test/apply.test.mjs"
+    "test": "node test/apply.test.mjs && node test/privacy.test.mjs"
   },
   "dependencies": {
     "esbuild": "0.28.2",
