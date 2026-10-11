@@ -67,14 +67,18 @@ enum Footnotes {
     }
 
     private static let blockStart = try! NSRegularExpression(
-        pattern: #"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|<[A-Za-z/!?]|```|~~~|\[(?:\\.|[^\]\\])+\]:|[-*+](?:[ \t]|$)|\d{1,9}[.)](?:[ \t]|$)|(?:[-*_][ \t]*){3,}$)"#)
+        pattern: #"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|```|~~~|\[(?:\\.|[^\]\\])+\]:|[-*+](?:[ \t]|$)|\d{1,9}[.)](?:[ \t]|$)|(?:[-*_][ \t]*){3,}$)"#)
 
     /// A line that a paragraph can take as its continuation: not blank, not
     /// indented code, and not the start of another block.
     static func continuesParagraph(_ line: String) -> Bool {
         guard !line.allSatisfy({ $0 == " " || $0 == "\t" }), !line.hasPrefix("    "), !line.hasPrefix("\t") else { return false }
         let ns = line as NSString
-        return blockStart.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) == nil
+        if blockStart.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) != nil { return false }
+        // An HTML block that can interrupt a paragraph (not inline HTML like <em>).
+        let trimmed = line.drop(while: { $0 == " " })
+        if trimmed.hasPrefix("<"), FenceTracker.htmlStart(trimmed, continuesParagraph: true) != nil { return false }
+        return true
     }
 
     /// The text contains `[^` (bytes, without Unicode-aware search).

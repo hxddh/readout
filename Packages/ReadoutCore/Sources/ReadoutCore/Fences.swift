@@ -146,7 +146,7 @@ struct FenceTracker {
         // A kind-7 tag line cannot interrupt such a paragraph.
         if relative < 4, first == 0x3C {   // <
             let trimmed = line.drop(while: { $0 == " " })
-            if let until = htmlStart(trimmed, continuesParagraph: continues) {
+            if let until = Self.htmlStart(trimmed, continuesParagraph: continues) {
                 if outdented { itemContent = nil }
                 html = (until, itemContent != nil ? base : nil, String(line))
                 if let until, Self.ends(String(trimmed.lowercased().dropFirst()), until) { endHTML() }
@@ -251,7 +251,7 @@ struct FenceTracker {
 
     /// If `trimmed` starts an HTML block, the marker that ends it
     /// (`.some(nil)`: the next blank line); nil when it starts none.
-    private func htmlStart<S: StringProtocol>(_ trimmed: S, continuesParagraph: Bool) -> String?? {
+    static func htmlStart<S: StringProtocol>(_ trimmed: S, continuesParagraph: Bool) -> String?? {
         let lower = trimmed.lowercased()
         if lower.hasPrefix("<!--") { return .some("-->") }
         if lower.hasPrefix("<?") { return .some("?>") }

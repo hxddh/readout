@@ -73,6 +73,8 @@ import Testing
         let bracket = parse("See[^1].\n\n[^1]: First line\n[continued] text | more\n")
         #expect(bracket.blocks.last!.html.contains("[continued] text | more"))
         #expect(bracket.blocks.count == 2)
+        let inline = parse("See[^1].\n\n[^1]: First line\n<em>continued</em> here\n")
+        #expect(inline.blocks.count == 2 && inline.blocks.last!.html.contains("<em>continued</em>"))
         // A new block after the definition is not part of it.
         let list = parse("See[^1].\n\n[^1]: Note\n- item\n")
         #expect(list.blocks.contains { $0.kind == .listItem })
