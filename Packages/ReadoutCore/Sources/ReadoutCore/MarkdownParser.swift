@@ -6,39 +6,54 @@ import Markdown
 /// Parsing has two stages so that `IncrementalParser` can redo only part of
 /// a document: `parseFragment` turns a run of lines into blocks that depend
 /// on nothing outside it (line numbers relative to the run, headings without
-/// their anchor), and `assemble` adds everything that depends on the whole
-/// document: line offsets, heading paths, de-duplicated heading anchors and
-/// the title. A full parse is one fragment.
+/// their anchor, footnote references as placeholders), and `assemble` adds
+/// everything that depends on the whole document: line offsets, heading
+/// paths, de-duplicated heading anchors, footnote numbers and the footnotes
+/// section, and the title. A full parse is one fragment.
 public enum MarkdownParser {
     public static func parse(_ rawSource: String, resolver: ResourceResolver? = nil,
                              cache: RenderCache? = nil) -> ParsedDocument {
         let lines = sourceLines(rawSource)
-        return assemble([(offset: 0, blocks: parseFragment(lines, atDocumentStart: true, resolver: resolver, cache: cache))])
+        return assemble([(offset: 0, fragment: parseFragment(lines, atDocumentStart: true, resolver: resolver, cache: cache))])
     }
 
     /// Normalized source lines: no BOM, LF line endings.
     static func sourceLines(_ rawSource: String) -> [String] {
         var source = rawSource
-        if source.hasPrefix("\u{FEFF}") { source.removeFirst() }
-        if source.contains("\r") {
+        if source.utf8.starts(with: [0xEF, 0xBB, 0xBF]) { source.removeFirst() }
+        if source.utf8.contains(0x0D) {
             source = source.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         }
-        return source.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        // Split on bytes: Character iteration is several times slower.
+        return source.utf8.split(separator: 0x0A, omittingEmptySubsequences: false).map { String(Substring($0)) }
     }
 
     /// Adds document-wide context to fragments' blocks, in order: absolute
     /// line numbers, heading paths, unique heading anchors (and the heading
     /// HTML that carries them) and the document title.
-    static func assemble(_ fragments: [(offset: Int, blocks: [Block])]) -> ParsedDocument {
+    /// The blocks of a run of lines and the footnote definitions it holds.
+    struct Fragment: Sendable {
+        var blocks: [Block]
+        var notes: [Footnotes.Note] = []
+    }
+
+    static func assemble(_ fragments: [(offset: Int, fragment: Fragment)]) -> ParsedDocument {
         var out: [Block] = []
-        out.reserveCapacity(fragments.reduce(0) { $0 + $1.blocks.count })
+        out.reserveCapacity(fragments.reduce(0) { $0 + $1.fragment.blocks.count } + 1)
+        var numbering = Footnotes.Numbering()
+        var notes: [Footnotes.Note] = []
         var headingStack: [(level: Int, title: String)] = []
+        var currentPath: [String] = []   // headingStack's titles, shared by the blocks under it
         var slugger = Slugger()
         var title: String? = nil
-        for fragment in fragments {
+        for (offset, fragment) in fragments {
+            for var n in fragment.notes {
+                n.lines = (n.lines.lowerBound + offset)...(n.lines.upperBound + offset)
+                notes.append(n)
+            }
             for b in fragment.blocks {
-                let lines = (b.lines.lowerBound + fragment.offset)...(b.lines.upperBound + fragment.offset)
-                var html = b.html
+                let lines = (b.lines.lowerBound + offset)...(b.lines.upperBound + offset)
+                var html = numbering.fill(b.html)
                 var anchor: String? = nil
                 let path: [String]
                 if b.kind == .heading, let level = b.headingLevel, let titleText = b.headingTitle {
@@ -46,11 +61,12 @@ public enum MarkdownParser {
                     path = headingStack.map(\.title)
                     let a = slugger.next(titleText)
                     anchor = a
-                    html = "<h\(level) id=\"\(HTML.escape(a))\">\(b.html)</h\(level)>"
+                    html = "<h\(level) id=\"\(HTML.escape(a))\">\(html)</h\(level)>"
                     headingStack.append((level, titleText))
+                    currentPath = headingStack.map(\.title)
                     if title == nil && level == 1 { title = titleText }
                 } else {
-                    path = b.kind == .footnotes || b.kind == .frontMatter ? [] : headingStack.map(\.title)
+                    path = b.kind == .footnotes || b.kind == .frontMatter ? [] : currentPath
                 }
                 var nb = Block(kind: b.kind, headingPath: path, lines: lines, fingerprint: b.fingerprint,
                                taskState: b.taskState, html: html, text: b.text,
@@ -59,13 +75,16 @@ public enum MarkdownParser {
                 out.append(nb)
             }
         }
+        if let section = numbering.section(notes) { out.append(section) }
         return ParsedDocument(blocks: out, title: title)
     }
 
     /// Blocks of one run of lines, independent of the rest of the document.
     /// Lines are 1-based within the run. Headings carry their inner HTML only.
-    static func parseFragment(_ lines: [String], atDocumentStart: Bool, resolver: ResourceResolver?,
-                              cache: RenderCache?) -> [Block] {
+    /// `footnoteIDs`: the ids defined anywhere in the document (default: in
+    /// this run), which decide what `[^id]` refers to.
+    static func parseFragment(_ lines: [String], atDocumentStart: Bool, footnoteIDs: Set<String>? = nil,
+                              resolver: ResourceResolver?, cache: RenderCache?) -> Fragment {
         var blocks: [Block] = []
 
         // Front matter.
@@ -83,10 +102,10 @@ public enum MarkdownParser {
         let definitions = Footnotes.extract(&parseLines)
 
         var math = MathProtector()
-        math.footnoteIDs = Set(definitions.map(\.id))
+        let ids = footnoteIDs ?? Set(definitions.map(\.id))
+        math.footnoteIDs = ids
         let protected = math.protect(parseLines.joined(separator: "\n"))
-        // Definitions are protected with the same protector (after the body,
-        // so numbering follows first reference in the text) before the
+        // Definitions are protected with the same protector before the
         // renderer copies it.
         let protectedDefinitions = definitions.map { (def: $0, source: math.protect($0.text)) }
         let document = Document(parsing: protected, options: [.disableSmartOpts])
@@ -112,17 +131,17 @@ public enum MarkdownParser {
             return r.lowerBound.line...lastLine
         }
 
-        // Footnote numbers depend on the whole document (order of first
-        // reference), so a block's HTML can change while its source does not.
-        let footnoteKey = definitions.isEmpty ? "" : "|fn:\(XXHash64.hash(math.footnoteOrder.joined(separator: "\u{1F}")))"
+        // Which `[^id]` are references depends on the defined ids.
+        let footnoteKey = ids.isEmpty ? "" : "|fn:\(XXHash64.hash(ids.sorted().joined(separator: "\u{1F}")))"
 
         func make(_ kind: BlockKind, _ node: Markup?, range rawRange: ClosedRange<Int>, html: @autoclosure () -> String,
                   extra: String = "", heading: (Int, String, String)? = nil, taskNodes: [Markup] = []) -> Block {
             // cmark extends some nodes (a list's last item) over the blank
             // line after them, depending on what follows. A block's lines
-            // stop at its last non-blank line, so they never depend on that.
+            // stop at its last non-blank line, so they never depend on that
+            // (blank as the Markdown parser saw it: footnote definitions are blanked).
             var hi = rawRange.upperBound
-            while hi > rawRange.lowerBound, hi - 1 < lines.count, lines[hi - 1].allSatisfy({ $0 == " " || $0 == "\t" }) { hi -= 1 }
+            while hi > rawRange.lowerBound, hi - 1 < parseLines.count, parseLines[hi - 1].allSatisfy({ $0 == " " || $0 == "\t" }) { hi -= 1 }
             let range = rawRange.lowerBound...hi
             let slice = sourceSlice(range)
             let normalized = normalize(slice, kind: kind)
@@ -255,25 +274,12 @@ public enum MarkdownParser {
             }
         }
 
-        // Only referenced definitions are shown, in reference order (as GitHub does).
-        let referenced = math.footnoteOrder.compactMap { id in protectedDefinitions.first { $0.def.id == id } }
-        if !referenced.isEmpty {
-            let lo = referenced.map(\.def.lines.lowerBound).min()!, hi = referenced.map(\.def.lines.upperBound).max()!
-            let items = referenced.enumerated().map { n, entry -> String in
-                let id = HTML.escape(entry.def.id)
-                var body = renderer.children(Document(parsing: entry.source, options: [.disableSmartOpts]))
-                let back = "<a href=\"#user-content-fnref-\(id)\" class=\"fn-back\" data-footnote-backref aria-label=\"Back to reference \(n + 1)\">↩</a>"
-                if body.hasSuffix("</p>") { body = String(body.dropLast(4)) + " " + back + "</p>" } else { body += back }
-                return "<li id=\"user-content-fn-\(id)\">\(body)</li>"
-            }
-            let html = "<section class=\"footnotes\" data-footnotes><ol>\(items.joined())</ol></section>"
-            let text = referenced.map { "[^\($0.def.id)]: \($0.def.text)" }.joined(separator: "\n")
-            blocks.append(Block(kind: .footnotes, headingPath: [], lines: lo...hi,
-                                fingerprint: XXHash64.hash("footnotes\u{1F}" + text),
-                                taskState: [], html: html, text: text))
+        // Definitions are numbered and shown by `assemble`, which sees every reference.
+        let notes = protectedDefinitions.map { entry in
+            Footnotes.Note(id: entry.def.id, lines: entry.def.lines, text: entry.def.text,
+                           html: renderer.children(Document(parsing: entry.source, options: [.disableSmartOpts])))
         }
-
-        return blocks
+        return Fragment(blocks: blocks, notes: notes)
     }
 
     /// Two-generation cache of rendered block HTML, keyed by exact block source and context.

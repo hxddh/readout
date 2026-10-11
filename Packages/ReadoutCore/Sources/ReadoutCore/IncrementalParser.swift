@@ -11,15 +11,16 @@ import Foundation
 /// the document-wide parts (line offsets, heading paths, anchors, title).
 ///
 /// The result is identical to `MarkdownParser.parse` (property-tested on the
-/// real-agent corpus). Documents that use syntax with document-wide effects
-/// (link reference definitions, footnotes) are parsed in full.
+/// real-agent corpus). Footnotes are numbered when the document is assembled;
+/// fragments that may reference one are keyed by the set of defined ids.
+/// Documents with link reference definitions are parsed in full.
 ///
 /// Not thread-safe: use one instance per document, from one queue.
 public final class IncrementalParser: @unchecked Sendable {
     private var resolver: ResourceResolver?
     private var resolverID = ""
     /// Fragment blocks from the previous version, by fragment key.
-    private var previous: [FragmentKey: [Block]] = [:]
+    private var previous: [FragmentKey: MarkdownParser.Fragment] = [:]
     /// Fragments reused in the last parse (for tests).
     private(set) var lastReused = 0
     /// Fragments parsed in the last parse (for tests). Nil after a full parse.
@@ -29,6 +30,8 @@ public final class IncrementalParser: @unchecked Sendable {
         let hash: UInt64
         let lineCount: Int
         let atStart: Bool
+        /// The defined footnote ids, for fragments that may reference one.
+        let footnotes: UInt64
     }
 
     public init(resolver: ResourceResolver? = nil) {
@@ -50,30 +53,38 @@ public final class IncrementalParser: @unchecked Sendable {
 
     public func parse(_ rawSource: String, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
         let lines = MarkdownParser.sourceLines(rawSource)
-        guard !Self.needsFullParse(lines) else {
+        // Footnote definitions leave the flow (as in `parseFragment`); the
+        // fragmenter reads the lines the Markdown parser will see.
+        var flow = lines
+        let definitions = lines.contains(where: Footnotes.mentions) ? Footnotes.extract(&flow) : []
+        guard !Self.needsFullParse(flow) else {
             previous = [:]
             lastReused = 0
             lastParsed = nil
-            return MarkdownParser.assemble([(offset: 0, blocks: MarkdownParser.parseFragment(
+            return MarkdownParser.assemble([(offset: 0, fragment: MarkdownParser.parseFragment(
                 lines, atDocumentStart: true, resolver: resolver, cache: cache))])
         }
-        var next: [FragmentKey: [Block]] = [:]
-        var parts: [(offset: Int, blocks: [Block])] = []
+        let ids = Set(definitions.map(\.id))
+        let idsHash = ids.isEmpty ? 0 : XXHash64.hash(ids.sorted().joined(separator: "\u{1F}"))
+        var next: [FragmentKey: MarkdownParser.Fragment] = [:]
+        var parts: [(offset: Int, fragment: MarkdownParser.Fragment)] = []
         var reused = 0, parsed = 0
-        for range in Self.fragments(lines) {
+        for range in Self.fragments(flow) {
             let slice = Array(lines[range])
-            let key = FragmentKey(hash: XXHash64.hash(slice.joined(separator: "\n")), lineCount: slice.count,
-                                  atStart: range.lowerBound == 0)
-            let blocks: [Block]
+            let text = slice.joined(separator: "\n")
+            let key = FragmentKey(hash: XXHash64.hash(text), lineCount: slice.count, atStart: range.lowerBound == 0,
+                                  footnotes: idsHash != 0 && Footnotes.mentions(text) ? idsHash : 0)
+            let fragment: MarkdownParser.Fragment
             if let known = next[key] ?? previous[key] {
-                blocks = known
+                fragment = known
                 reused += 1
             } else {
-                blocks = MarkdownParser.parseFragment(slice, atDocumentStart: key.atStart, resolver: resolver, cache: cache)
+                fragment = MarkdownParser.parseFragment(slice, atDocumentStart: key.atStart, footnoteIDs: ids,
+                                                        resolver: resolver, cache: cache)
                 parsed += 1
             }
-            next[key] = blocks
-            parts.append((offset: range.lowerBound, blocks: blocks))
+            next[key] = fragment
+            parts.append((offset: range.lowerBound, fragment: fragment))
         }
         previous = next
         lastReused = reused
@@ -83,12 +94,11 @@ public final class IncrementalParser: @unchecked Sendable {
 
     // MARK: Fragmenting
 
-    /// Syntax whose meaning reaches across the whole document.
-    private static let documentWide = try! NSRegularExpression(
-        pattern: #"^ {0,3}\[(?:\^[^\]]+|[^\]]+)\]:"#)
+    /// Link reference definitions reach across the whole document.
+    private static let documentWide = try! NSRegularExpression(pattern: #"^ {0,3}\[[^\]]+\]:"#)
 
-    /// Link reference definitions and footnotes reach across the whole
-    /// document (outside code and raw HTML).
+    /// True when `lines` (footnote definitions taken out) define link
+    /// references outside code and raw HTML.
     static func needsFullParse(_ lines: [String]) -> Bool {
         var fences = FenceTracker()
         for line in lines.dropFirst(MarkdownParser.frontMatterEnd(lines).map { $0 + 1 } ?? 0) {

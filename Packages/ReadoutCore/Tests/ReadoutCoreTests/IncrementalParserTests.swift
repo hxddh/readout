@@ -22,6 +22,7 @@ import Testing
         "```", "```js", "~~~", "````", "<details>", "</details>", "<summary>More</summary>", "<!--", "-->",
         "<pre>", "</pre>", "<div>", "$$", "x = $a$ and $$b$$", "---", "***", "===", "Setext", "- [ ] task",
         "- [x] done", "text with <details> inline", "  - nested", "\tTabbed", "<script>", "</script>", "<br>", "<span class=\"x\">", "  <div>",
+        "See note[^n].", "Again[^m] and[^n].", "[^n]: The note.", "[^m]: Another, citing[^n].", "    continued note",
     ]
 
     static func mutate(_ lines: inout [String], rng: inout SplitMix64) {
@@ -71,14 +72,28 @@ import Testing
         #expect(parser.lastReused > 300)
     }
 
-    @Test func documentWideSyntaxParsesInFull() {
+    @Test func linkReferenceDefinitionsParseInFull() {
         #expect(IncrementalParser.needsFullParse(["See [x].", "", "[x]: https://example.com"]))
-        #expect(IncrementalParser.needsFullParse(["Note[^1].", "", "[^1]: Footnote"]))
-        #expect(!IncrementalParser.needsFullParse(["<!--", "[x]: inside a comment", "-->", "```", "[^1]: in code", "```"]))
+        #expect(!IncrementalParser.needsFullParse(["<!--", "[x]: inside a comment", "-->", "```", "[y]: in code", "```"]))
         #expect(!IncrementalParser.needsFullParse(["A [link](https://x.y) and a: colon.", "- [ ] task"]))
         let parser = IncrementalParser()
-        _ = parser.parse("Note[^1].\n\n[^1]: Footnote\n")
+        _ = parser.parse("See [x].\n\n[x]: https://example.com\n")
         #expect(parser.lastParsed == nil)
+    }
+
+    @Test func footnotesRenumberAcrossFragments() {
+        let parser = IncrementalParser()
+        let tail = (1...30).map { "## Part \($0)\n\nText \($0)." }.joined(separator: "\n\n")
+        let v1 = "# Doc\n\nFirst[^b].\n\n" + tail + "\n\nLater[^a].\n\n[^a]: A\n[^b]: B\n"
+        _ = parser.parse(v1)
+        #expect(parser.lastParsed != nil)
+        // A new earlier reference renumbers a fragment that did not change.
+        let v2 = v1.replacingOccurrences(of: "First[^b].", with: "First[^a][^b].")
+        let doc = parser.parse(v2)
+        #expect(doc.blocks == MarkdownParser.parse(v2).blocks)
+        #expect((parser.lastParsed ?? 99) <= 2)
+        let later = doc.blocks.first { $0.text.hasPrefix("Later") }!
+        #expect(later.html.contains(">1</a>") && later.html.contains("user-content-fnref-a-2"))
     }
 
     @Test func fragmentsCoverEveryLineOnce() {

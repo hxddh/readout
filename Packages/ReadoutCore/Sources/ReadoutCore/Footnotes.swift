@@ -17,7 +17,7 @@ enum Footnotes {
     /// line numbers are preserved) and returns them in source order. Fenced
     /// code is skipped. The first definition of an id wins.
     static func extract(_ lines: inout [String]) -> [Definition] {
-        guard lines.contains(where: { $0.contains("[^") }) else { return [] }
+        guard lines.contains(where: mentions) else { return [] }
         var out: [Definition] = []
         var seen = Set<String>()
         var fences = FenceTracker()
@@ -28,6 +28,7 @@ enum Footnotes {
                 i += 1
                 continue
             }
+            guard startsDefinition(line) else { i += 1; continue }
             let ns = line as NSString
             guard let m = start.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else { i += 1; continue }
             let id = ns.substring(with: m.range(at: 1))
@@ -57,5 +58,99 @@ enum Footnotes {
             i = end + 1
         }
         return out
+    }
+
+    /// The text contains `[^` (bytes, without Unicode-aware search).
+    static func mentions<S: StringProtocol>(_ text: S) -> Bool {
+        var previous: UInt8 = 0
+        for b in text.utf8 {
+            if b == 0x5E && previous == 0x5B { return true }
+            previous = b
+        }
+        return false
+    }
+
+    /// Up to three spaces, then `[^` (a cheap test before the full pattern).
+    private static func startsDefinition(_ line: String) -> Bool {
+        var spaces = 0
+        var it = line.utf8.makeIterator()
+        while let b = it.next() {
+            if b == 0x20 && spaces < 3 { spaces += 1; continue }
+            return b == 0x5B && it.next() == 0x5E
+        }
+        return false
+    }
+
+    // MARK: Document-wide numbering
+
+    /// A definition taken out of a fragment, its body rendered (references
+    /// inside it are placeholders too).
+    struct Note: Equatable, Sendable {
+        let id: String
+        /// Lines the definition occupied, relative to its fragment until `assemble`.
+        var lines: ClosedRange<Int>
+        let text: String
+        let html: String
+    }
+
+    static let open: Character = "\u{E002}"
+    static let close: Character = "\u{E003}"
+
+    /// Stands for a reference to `id` until the document is assembled.
+    static func placeholder(_ id: String) -> String { "\(open)\(HTML.escape(id))\(close)" }
+
+    /// Numbers references in document order (first reference first) and
+    /// gives repeated references distinct anchors, as GitHub does.
+    struct Numbering {
+        private(set) var order: [String] = []
+        private var number: [String: Int] = [:]
+        private var uses: [String: Int] = [:]
+
+        /// Replaces the placeholders in `html` (no-op without any).
+        mutating func fill(_ html: String) -> String {
+            guard html.utf8.contains(0xEE), html.contains(Footnotes.open) else { return html }
+            var out = ""
+            var rest = html[...]
+            while let o = rest.firstIndex(of: Footnotes.open), let c = rest[o...].firstIndex(of: Footnotes.close) {
+                out += rest[..<o]
+                let id = String(rest[rest.index(after: o)..<c])   // already escaped
+                let n: Int
+                if let known = number[id] { n = known } else { order.append(id); n = order.count; number[id] = n }
+                let k = (uses[id] ?? 0) + 1
+                uses[id] = k
+                let ref = k == 1 ? "user-content-fnref-\(id)" : "user-content-fnref-\(id)-\(k)"
+                out += "<sup class=\"fn-ref\"><a href=\"#user-content-fn-\(id)\" id=\"\(ref)\" data-footnote-ref>\(n)</a></sup>"
+                rest = rest[rest.index(after: c)...]
+            }
+            out += rest
+            return out
+        }
+
+        /// The footnotes section: referenced definitions in number order
+        /// (references inside them are numbered as they come). Nil when
+        /// nothing is referenced.
+        mutating func section(_ notes: [Note]) -> Block? {
+            var byID: [String: Note] = [:]
+            for n in notes where byID[HTML.escape(n.id)] == nil { byID[HTML.escape(n.id)] = n }
+            var items: [String] = []
+            var shown: [Note] = []
+            var i = 0
+            while i < order.count {
+                let id = order[i]
+                i += 1
+                guard let note = byID[id] else { continue }
+                var body = fill(note.html)
+                let back = "<a href=\"#user-content-fnref-\(id)\" class=\"fn-back\" data-footnote-backref aria-label=\"Back to reference \(i)\">↩</a>"
+                if body.hasSuffix("</p>") { body = String(body.dropLast(4)) + " " + back + "</p>" } else { body += back }
+                items.append("<li id=\"user-content-fn-\(id)\">\(body)</li>")
+                shown.append(note)
+            }
+            guard !shown.isEmpty else { return nil }
+            let lo = shown.map(\.lines.lowerBound).min()!, hi = shown.map(\.lines.upperBound).max()!
+            let text = shown.map { "[^\($0.id)]: \($0.text)" }.joined(separator: "\n")
+            return Block(kind: .footnotes, headingPath: [], lines: lo...hi,
+                         fingerprint: XXHash64.hash("footnotes\u{1F}" + text), taskState: [],
+                         html: "<section class=\"footnotes\" data-footnotes><ol>\(items.joined())</ol></section>", text: text)
+        }
     }
 }

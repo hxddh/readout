@@ -4,7 +4,7 @@ import { captureAnchor, restoreAnchor, atBottom, resizeObserver } from './anchor
 import { renderMarks, applyChangesOnly } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy } from './enhance.js';
-import { reportActiveHeading } from './heading.js';
+import { reportActiveHeading, headingsChanged } from './heading.js';
 
 const notice = document.getElementById('ro-notice');
 let first = true;
@@ -124,6 +124,7 @@ export function apply(p) {
 
   renderLazy();
   scheduleRail();
+  if (p.reset || p.ops.length) headingsChanged();
   reportActiveHeading();
   post({ type: 'applied', version: p.version });
 }

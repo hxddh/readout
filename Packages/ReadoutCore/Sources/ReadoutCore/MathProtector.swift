@@ -11,15 +11,13 @@ struct MathProtector {
         var footnote: Footnote? = nil
     }
 
-    /// A footnote reference: its definition id, number (order of first
-    /// reference) and which occurrence of that footnote this is (1-based).
-    struct Footnote { let id: String; let number: Int; let occurrence: Int }
+    /// A footnote reference to a defined id. Its number and anchor depend on
+    /// the whole document, so it renders as a placeholder that
+    /// `MarkdownParser.assemble` fills in (`Footnotes.reference`).
+    struct Footnote { let id: String }
 
     /// Ids with a definition; only these turn `[^id]` into a reference.
     var footnoteIDs: Set<String> = []
-    /// Referenced footnote ids in number order.
-    private(set) var footnoteOrder: [String] = []
-    private var footnoteUses: [String: Int] = [:]
 
     static let open: Character = "\u{E000}"
     static let close: Character = "\u{E001}"
@@ -49,16 +47,12 @@ struct MathProtector {
     }
 
     private mutating func footnoteToken(_ id: String) -> String {
-        if !footnoteOrder.contains(id) { footnoteOrder.append(id) }
-        let n = footnoteOrder.firstIndex(of: id)! + 1
-        let k = (footnoteUses[id] ?? 0) + 1
-        footnoteUses[id] = k
-        spans.append(Span(tex: "", display: false, footnote: Footnote(id: id, number: n, occurrence: k)))
+        spans.append(Span(tex: "", display: false, footnote: Footnote(id: id)))
         return "\(MathProtector.open)\(spans.count - 1)\(MathProtector.close)"
     }
 
     private mutating func protectLine(_ line: String) -> String {
-        let mayHaveFootnote = !footnoteIDs.isEmpty && line.contains("[^")
+        let mayHaveFootnote = !footnoteIDs.isEmpty && Footnotes.mentions(line)
         // Fast path: nothing that could start math or a footnote reference.
         if !mayHaveFootnote && !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
         let chars = Array(line)
@@ -180,9 +174,7 @@ struct MathProtector {
                let n = Int(text[text.index(after: i)..<closeIdx]), n < spans.count {
                 let span = spans[n]
                 if let fn = span.footnote {
-                    let id = HTML.escape(fn.id)
-                    let ref = fn.occurrence == 1 ? "user-content-fnref-\(id)" : "user-content-fnref-\(id)-\(fn.occurrence)"
-                    out += "<sup class=\"fn-ref\"><a href=\"#user-content-fn-\(id)\" id=\"\(ref)\" data-footnote-ref>\(fn.number)</a></sup>"
+                    out += Footnotes.placeholder(fn.id)
                 } else {
                     let cls = span.display ? "math math-display" : "math math-inline"
                     out += "<span class=\"\(cls)\" data-tex=\"\(HTML.escape(span.tex))\">\(HTML.escape(span.tex))</span>"
