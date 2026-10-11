@@ -2,10 +2,10 @@
 // stable, shows unread changes, and renders code, math and diagrams lazily.
 import * as hl from './highlight.js';
 
-const doc = document.getElementById('doc');
-const rail = document.getElementById('rail');
-const notice = document.getElementById('notice');
-const caughtup = document.getElementById('caughtup');
+const doc = document.getElementById('ro-doc');
+const rail = document.getElementById('ro-rail');
+const notice = document.getElementById('ro-notice');
+const caughtup = document.getElementById('ro-caughtup');
 const root = document.documentElement;
 
 const slots = new Map();          // slot -> element
@@ -184,7 +184,7 @@ function apply(p) {
   if (p.reset) {
     for (const el of slots.values()) resizeObserver.unobserve(el);
     slots.clear();
-    doc.querySelectorAll('.blk, .del-mark, #empty').forEach(e => e.remove());
+    doc.querySelectorAll('.blk, .del-mark, #ro-empty').forEach(e => e.remove());
   }
 
   for (const op of p.ops) {
@@ -213,7 +213,7 @@ function apply(p) {
   doc.classList.toggle('cv', slots.size > 250);
   if (slots.size === 0) {
     const empty = document.createElement('div');
-    empty.id = 'empty';
+    empty.id = 'ro-empty';
     empty.textContent = strings.empty || 'This file is empty.';
     doc.appendChild(empty);
   }
@@ -670,7 +670,11 @@ doc.addEventListener('click', ev => {
   ev.preventDefault();
   if (href.startsWith('#')) {
     const id = decodeURIComponent(href.slice(1));
-    const target = document.getElementById(id) || document.getElementById(id.toLowerCase());
+    // Scoped to the document container: chrome ids live under ro-* and must
+    // never be a link target. Matches the heading element itself, falling
+    // back to the block wrapper's anchor.
+    const target = doc.querySelector(`[id="${CSS.escape(id)}"], [id="${CSS.escape(id.toLowerCase())}"]`)
+      || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(id.toLowerCase())}"]`);
     if (target) target.scrollIntoView({ block: 'start' });
     return;
   }
@@ -756,8 +760,8 @@ function scrollToFragment(o) {
   if (!frag) return;
   let id = frag;
   try { id = decodeURIComponent(frag); } catch { /* keep raw */ }
-  const target = document.getElementById(id)
-    || document.getElementById(id.toLowerCase())
+  // Scoped to the document container for the same reason: never resolve to chrome.
+  const target = doc.querySelector(`[id="${CSS.escape(id)}"], [id="${CSS.escape(id.toLowerCase())}"]`)
     || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(id.toLowerCase())}"]`);
   if (target) { window.scrollBy(0, target.getBoundingClientRect().top - 16); reportActiveHeading(); }
 }
