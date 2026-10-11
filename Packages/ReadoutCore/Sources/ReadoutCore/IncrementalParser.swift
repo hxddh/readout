@@ -39,12 +39,14 @@ public final class IncrementalParser: @unchecked Sendable {
         self.resolverID = resolver?.identity ?? ""
     }
 
-    /// Parses with a (possibly changed) resolver: fragments resolved against
-    /// a different one (other search folders) are not reused.
+    /// Parses with a (possibly changed) resolver: nothing resolved against
+    /// a different one (other search folders) is reused, neither fragments
+    /// nor the rendered HTML in `cache`.
     public func parse(_ rawSource: String, resolver: ResourceResolver?, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
         let id = resolver?.identity ?? ""
         if id != resolverID {
             previous = [:]
+            cache?.clear()
             resolverID = id
         }
         self.resolver = resolver

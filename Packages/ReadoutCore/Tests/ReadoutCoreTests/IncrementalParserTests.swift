@@ -114,6 +114,22 @@ import Testing
         }
     }
 
+    @Test func aNewResolverReusesNothing() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("inc-resolver-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir.appendingPathComponent("src"), withIntermediateDirectories: true)
+        try "x".write(to: dir.appendingPathComponent("src/main.swift"), atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let text = "See `src/main.swift`.\n\nOther.\n"
+        let parser = IncrementalParser()
+        let cache = MarkdownParser.RenderCache()
+        cache.beginGeneration()
+        let before = parser.parse(text, resolver: FileResolver(baseDirectory: nil), cache: cache)
+        #expect(!before.blocks[0].html.contains("path-link"))
+        cache.beginGeneration()
+        let after = parser.parse(text, resolver: FileResolver(baseDirectory: dir), cache: cache)
+        #expect(after.blocks[0].html.contains("path-link"))
+    }
+
     @Test func fragmentsCoverEveryLineOnce() {
         let lines = ["# A", "", "text", "", "```", "", "code", "", "```", "", "- a", "", "  b", "", "c", "", "<details>", "", "x", "", "</details>", "", "d"]
         let parts = IncrementalParser.fragments(lines)
