@@ -103,16 +103,17 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   };
   await walk();
   // A block can be passed before its observer fires (a fast walk on a cold
-  // page): bring every one still waiting into view until none is.
-  for (let round = 0; round < 20; round++) {
+  // page): bring each one still waiting into view, one at a time, and let
+  // the observer see it before the next.
+  for (let round = 0; round < 400; round++) {
     const waiting = await page.evaluate(() => {
-      const left = [...document.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block:not(.done):not(.busy)')]
-        .filter(e => !e.querySelector('.mermaid-error'));
-      left.forEach(e => e.scrollIntoView({ block: 'center' }));
-      return left.length;
+      const next = [...document.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block:not(.done):not(.busy)')]
+        .find(e => !e.querySelector('.mermaid-error'));
+      next?.scrollIntoView({ block: 'center' });
+      return !!next;
     });
     if (!waiting) break;
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(50);
   }
   await page.waitForFunction(() =>
     !document.querySelector('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"], .mermaid-block.busy')
