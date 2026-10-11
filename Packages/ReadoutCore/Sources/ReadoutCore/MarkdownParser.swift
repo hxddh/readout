@@ -5,6 +5,7 @@ import Markdown
 public enum MarkdownParser {
     public static func parse(_ rawSource: String, resolver: ResourceResolver? = nil,
                              cache: RenderCache? = nil) -> ParsedDocument {
+        usleep(20_000)  // DELIBERATE SLOWDOWN: demonstrates the speed budget fails CI; reverted next commit
         var source = rawSource
         if source.hasPrefix("\u{FEFF}") { source.removeFirst() }
         if source.contains("\r") {
