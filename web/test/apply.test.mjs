@@ -365,6 +365,37 @@ const railLabels = await page.evaluate(() => [...document.querySelectorAll('#ro-
 check('rail labels use the localized template',
   JSON.stringify(railLabels) === JSON.stringify(['未读变更 1 / 2：新增', '未读变更 2 / 2：修改']), JSON.stringify(railLabels));
 
+// A highlight that took suspiciously long (Shiki's 500 ms per-line guard may
+// have cut it short while compiling patterns) is redone once, shortly after.
+{
+  await page.evaluate(() => window.readout.apply({
+    version: 90, reset: true, rewrite: false,
+    ops: [{ op: 'insert', slot: 901, after: 0, kind: 'code', html: '<div class="code-block" data-lang="js"><pre><code>// note\nconst x = 1;</code></pre></div>' }],
+    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+  }));
+  // Wait until the grammar is loaded and the block highlighted once.
+  for (let i = 0; i < 100; i++) {
+    if (await page.evaluate(() => document.querySelector('.blk[data-slot="901"] .code-block').dataset.hl === 'done')) break;
+    await page.waitForTimeout(100);
+  }
+  const r = await page.evaluate(async () => {
+    const cb = document.querySelector('.blk[data-slot="901"] .code-block');
+    let replaced = 0;
+    new MutationObserver(m => { replaced += m.filter(x => [...x.addedNodes].some(n => n.tagName === 'PRE')).length; }).observe(cb, { childList: true });
+    // Make the next highlight look slow: the clock jumps 300 ms across it.
+    const real = performance.now.bind(performance);
+    let skew = 0, calls = 0;
+    performance.now = () => { calls++; if (calls === 2) skew = 300; return real() + skew; };
+    cb.dataset.hl = 'pending';
+    window.readout.apply({ version: 91, reset: false, rewrite: false, ops: [], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+    const afterFirst = cb.dataset.hl;
+    await new Promise(r => setTimeout(r, 300));
+    performance.now = real;
+    return { afterFirst, final: cb.dataset.hl, replaced, colored: !!cb.querySelector('pre.shiki span[style]') };
+  });
+  check('slow highlight is marked for a recheck', r.afterFirst === 'recheck', JSON.stringify(r));
+  check('slow highlight is redone once and settles', r.final === 'done' && r.replaced === 2 && r.colored, JSON.stringify(r));
+}
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
