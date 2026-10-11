@@ -10,7 +10,7 @@ import ReadoutCore
 /// 15 s timeout, 20 MB cap, `image/*` responses only. Redirect targets are
 /// re-validated through the same scheme/content-type checks.
 @MainActor
-final class RemoteImageLoader: NSObject {
+final class RemoteImageLoader: NSObject, URLSessionTaskDelegate {
     struct Entry {
         let data: Data
         let contentType: String
