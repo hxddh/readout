@@ -13,6 +13,6 @@
     "shiki": "4.5.0"
   },
   "devDependencies": {
-    "playwright": "^1.49.1"
+    "playwright": "1.49.1"
   }
 }
