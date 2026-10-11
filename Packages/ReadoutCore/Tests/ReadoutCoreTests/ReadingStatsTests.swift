@@ -85,4 +85,14 @@ import Testing
     @Test func picksFirstOfDuplicates() {
         #expect(ExcerptAnchor.index(of: "same intro text here", in: ["same intro text here", "same intro text here!"]) == 0)
     }
+
+    @Test func nearBreaksTiesTowardSavedPosition() {
+        // Agent plans repeat near-identical list items; without `near` the
+        // resume position jumps to the first copy.
+        let texts = ["- [ ] write the conditional-write case", "filler block here",
+                     "- [ ] write the conditional-write case (done)"]
+        #expect(ExcerptAnchor.index(of: "- [ ] write the conditional-write case", in: texts) == 0)
+        #expect(ExcerptAnchor.index(of: "- [ ] write the conditional-write case", in: texts, near: 2) == 2)
+        #expect(ExcerptAnchor.index(of: "- [ ] write the conditional-write case", in: texts, near: 1) == 0)
+    }
 }

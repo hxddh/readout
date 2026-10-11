@@ -352,7 +352,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         guard let record else { return nil }
         let texts = session.blocks.map(\.text)
         if let excerpt = record.topExcerpt,
-           let i = ExcerptAnchor.index(of: excerpt, in: texts), i < session.blocks.count {
+           let i = ExcerptAnchor.index(of: excerpt, in: texts, near: record.topBlockIndex), i < session.blocks.count {
             return session.blocks[i].slot
         }
         if let idx = record.topBlockIndex, idx < session.blocks.count { return session.blocks[idx].slot }
