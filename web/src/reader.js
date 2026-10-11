@@ -12,7 +12,7 @@ const slots = new Map();          // slot -> element
 const heights = new WeakMap();    // element -> last observed height
 const mermaidCache = new Map();   // source+theme -> svg
 const mathCache = new Map();      // tex+display -> html
-let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', remoteError: 'Could not load image: %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section' };
+let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', remoteError: 'Could not load image: %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section', railChange: 'Unread change %d of %d: %@', railAdded: 'added', railEdited: 'edited', railRemoved: 'removed' };
 let remoteSeq = 0;
 let first = true;
 let quicklook = false;
@@ -423,11 +423,13 @@ function drawRail() {
     const top = el.getBoundingClientRect().top + scrollTop;
     const tick = document.createElement('button');
     tick.type = 'button';
-    const kind = el.classList.contains('m-modified') ? 'edited'
-      : el.classList.contains('del-mark') ? 'removed' : 'added';
+    const kindKey = el.classList.contains('m-modified') ? 'railEdited'
+      : el.classList.contains('del-mark') ? 'railRemoved' : 'railAdded';
+    const kind = strings[kindKey] || kindKey;
     if (el.classList.contains('m-modified')) tick.className = 'mod';
     tick.style.top = `${Math.min(h - 4, (top / total) * h)}px`;
-    tick.setAttribute('aria-label', `Unread change ${i + 1} of ${list.length}: ${kind}`);
+    tick.setAttribute('aria-label', (strings.railChange || 'Unread change %d of %d: %@')
+      .replace('%d', i + 1).replace('%d', list.length).replace('%@', kind));
     tick.addEventListener('click', () => el.scrollIntoView({ block: 'center' }));
     rail.appendChild(tick);
   }

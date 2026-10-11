@@ -303,6 +303,27 @@ const hiddenNext = await page.evaluate(() => {
 });
 check('block hides once a later patch drops its mark', hiddenNext);
 
+// 12. Rail tick aria-labels come from the localized strings template.
+// Tall blocks so the rail renders (it hides on short documents); the
+// changes-only filter must be off, or the document is too short to scroll.
+await page.evaluate(() => window.readout.setChangesOnly(false));
+await page.evaluate(p => window.readout.apply(p), {
+  version: 30, reset: true, rewrite: false,
+  ops: Array.from({ length: 30 }, (_, i) => ({
+    op: 'insert', slot: 2000 + i, after: i === 0 ? 0 : 2000 + i - 1,
+    html: `<p style="min-height:170px">rail label probe ${i} with enough text to fill vertical space</p>`, kind: 'paragraph',
+  })),
+  marks: [{ slot: 2000, kind: 'inserted' }, { slot: 2005, kind: 'modified' }],
+  deletions: [], toc: [], tasks: { done: 0, total: 0 },
+});
+await page.evaluate(() => window.readout.setAppearance({ strings: {
+  railChange: '未读变更 %d / %d：%@', railAdded: '新增', railEdited: '修改', railRemoved: '删除',
+} }));
+await page.waitForTimeout(300);
+const railLabels = await page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => b.getAttribute('aria-label')));
+check('rail labels use the localized template',
+  JSON.stringify(railLabels) === JSON.stringify(['未读变更 1 / 2：新增', '未读变更 2 / 2：修改']), JSON.stringify(railLabels));
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
