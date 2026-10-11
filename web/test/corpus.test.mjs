@@ -128,25 +128,35 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   await page.waitForTimeout(200);
 
   const snapshot = await page.evaluate(() => {
-    // Paint matters too: content can be laid out yet invisible.
-    const STYLE = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'whiteSpace',
-      'color', 'backgroundColor', 'textDecorationLine', 'textAlign', 'display',
-      'borderTopWidth', 'borderTopColor', 'borderRightWidth', 'borderRightColor', 'borderBottomWidth', 'borderBottomColor',
-      'borderLeftWidth', 'borderLeftColor', 'borderRadius', 'boxShadow',
-      'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
-      'visibility', 'opacity', 'clipPath', 'transform', 'filter', 'mixBlendMode'];
-    // Generated content counts too: list markers, task checks, change marks.
-    const PSEUDO = ['content', 'color', 'backgroundColor', 'width', 'height', 'left', 'top', 'borderLeftColor', 'borderTopColor', 'opacity', 'display'];
+    // The computed properties that decide how an element looks or behaves
+    // (layout, paint, overflow, interaction), for every element and its
+    // generated content (::before, ::after, list markers). Not all ~350:
+    // highlighted code has thousands of elements and that takes minutes.
+    const PROPS = ['display', 'position', 'z-index', 'float', 'box-sizing', 'width', 'height', 'min-width', 'max-width',
+      'top', 'right', 'bottom', 'left', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+      'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+      'border-top-width', 'border-top-style', 'border-top-color', 'border-right-width', 'border-right-style', 'border-right-color',
+      'border-bottom-width', 'border-bottom-style', 'border-bottom-color', 'border-left-width', 'border-left-style', 'border-left-color',
+      'border-top-left-radius', 'border-top-right-radius', 'border-bottom-left-radius', 'border-bottom-right-radius',
+      'outline-style', 'outline-width', 'outline-color', 'box-shadow',
+      'overflow-x', 'overflow-y', 'text-overflow', 'clip-path', 'visibility', 'opacity', 'transform', 'filter', 'mix-blend-mode',
+      'background-color', 'background-image', 'background-clip', 'color',
+      'font-family', 'font-size', 'font-weight', 'font-style', 'font-variant-numeric', 'line-height', 'letter-spacing', 'word-spacing',
+      'text-align', 'text-indent', 'text-transform', 'text-decoration-line', 'text-decoration-color', 'vertical-align',
+      'white-space', 'word-break', 'overflow-wrap', 'line-break', 'direction', 'writing-mode',
+      'list-style-type', 'list-style-position', 'table-layout', 'border-collapse', 'object-fit',
+      'cursor', 'pointer-events', 'user-select', 'content'];
+    const props = cs => PROPS.map(k => cs.getPropertyValue(k)).join(';');
     const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); };
     let origin = null;   // the block being described: positions are relative to it
     const describe = el => {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
       const at = origin ? `@${Math.round(r.left - origin.left)},${Math.round(r.top - origin.top)}` : '';
-      let out = `${el.tagName}.${el.getAttribute('class') || ''}|${STYLE.map(k => cs[k]).join('|')}|${Math.round(r.width)}x${Math.round(r.height)}${at}`;
+      let out = `${el.tagName}.${el.getAttribute('class') || ''}|${props(cs)}|${Math.round(r.width)}x${Math.round(r.height)}${at}`;
       for (const pseudo of ['::before', '::after', ...(el.tagName === 'LI' ? ['::marker'] : [])]) {
         const ps = getComputedStyle(el, pseudo);
-        if (ps.content && ps.content !== 'none' && ps.content !== 'normal' || pseudo === '::marker') out += `|${pseudo}:${PSEUDO.map(k => ps[k]).join('|')}`;
+        if (ps.content && ps.content !== 'none' && ps.content !== 'normal' || pseudo === '::marker') out += `|${pseudo}:${props(ps)}`;
       }
       return out;
     };
