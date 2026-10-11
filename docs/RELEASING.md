@@ -18,8 +18,7 @@
 
 1. Open a branch `release/X.Y.Z` from latest `main`:
    - Set `MARKETING_VERSION: "X.Y.Z"` in `project.yml`.
-   - Add `docs/releases/X.Y.Z.md` (non-empty; group user-visible changes
-     under `## Fixed` / `## Privacy` / `## Process` headings as applicable).
+   - Add `docs/releases/X.Y.Z.md` (non-empty). See **Release notes** below.
    - Open a PR, wait for **all** CI checks to be green, merge.
 2. On the merged `main` commit, create and push the tag:
    `git tag -a vX.Y.Z -m "Readout X.Y.Z" && git push origin vX.Y.Z`
@@ -28,6 +27,22 @@
 4. Watch it succeed. On any failure: do NOT retry blindly and do NOT
    bypass a check — read the log, fix forward on `main`, re-tag only if
    preflight tells you the tag itself is wrong.
+
+## Release notes
+
+Release notes are for people who use Readout. Each entry describes something
+a user can see, feel or rely on, in their words:
+
+- **In:** new or changed behavior, fixed bugs as the user saw them
+  ("Remote images over 20 MB are now refused before they download"),
+  privacy and security changes, new system requirements, anything a user
+  must do after updating.
+- **Out:** refactors, file splits, test or CI changes, release-process
+  changes, internal renames, PR and task numbers. Those belong in commit
+  messages and PR descriptions.
+- Group entries under `## New`, `## Improved`, `## Fixed`, `## Privacy` as
+  applicable; leave out empty headings. If a release has no user-visible
+  change, it should not be a release.
 
 ## What CI and preflight block
 
@@ -43,7 +58,11 @@
   - `docs/releases/X.Y.Z.md` is missing or empty;
   - `project.yml` `MARKETING_VERSION` differs from `X.Y.Z`;
   - the tagged commit is not an ancestor of `main`;
-  - any of the three CI checks is not `success` on the tagged commit.
+  - CI on the tagged commit did not succeed. Preflight looks only at the
+    `ci.yml` run triggered by the **push to `main`** for that exact commit
+    (never a PR run or an older run of the same commit), waits up to
+    60 minutes for it to finish if it is still running, and then requires
+    the run and each of Core / WebKit / Verify to be `success`.
 - Verify uploads `readout-app-<version>.zip`; publish downloads that exact
   artifact, checks its SHA-256 against verify's output, and only then makes
   the DMG/ZIP/SHA256SUMS. Rebuilds are forbidden — **what ships is what was

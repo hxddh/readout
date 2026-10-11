@@ -1,38 +1,56 @@
 import AppKit
 import WebKit
 
-/// Scripted run used by CI: opens a file, captures the rendered page, simulates an agent rewrite,
-/// captures again and quits. Enabled only when READOUT_SMOKE_OUT is set.
+/// Read-only state export used by CI (tools/smoke-run.py). Enabled only when
+/// READOUT_SMOKE_OUT is set. The app never modifies the document here: the
+/// external harness performs every file write the way an agent would, and
+/// this side only captures what the reader shows, into READOUT_SMOKE_OUT.
+///
+/// Handshake (marker files in the output directory):
+///   `opened`      the smoke file was opened (harness may race an early edit)
+///   `await-edit`  1-initial was captured and the view scrolled mid-document;
+///                 the harness now replaces the file with the edited version
 @MainActor
 enum SmokeTest {
     static var outputDirectory: URL? {
         ProcessInfo.processInfo.environment["READOUT_SMOKE_OUT"].map { URL(fileURLWithPath: $0, isDirectory: true) }
     }
 
+    /// Patches the page reported as applied (any document).
+    private static var appliedCount = 0
+    static func noteApplied() { appliedCount += 1 }
+
+    static func didOpen() {
+        guard let out = outputDirectory else { return }
+        try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
+        mark(out, "opened")
+    }
+
     static func run(controller: ReaderWindowController, webView: WKWebView) {
         guard let out = outputDirectory else { return }
         try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
-        let env = ProcessInfo.processInfo.environment
 
         NSApp.activate()
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(3))
             await capture(webView, window: controller.window, to: out, name: "1-initial")
 
-            // Scroll into the middle, then apply the edited file the way agents do: write a temp file and rename it.
+            // Scroll into the middle and remember where a block sits, then let
+            // the harness rewrite the file (temp file + rename, like agents).
             _ = try? await webView.evaluateJavaScript("(() => { const b = [...document.querySelectorAll('.blk')]; const t = b[Math.floor(b.length/2)]; window.scrollBy(0, t.getBoundingClientRect().top - 30); window.__smoke = {slot: +t.dataset.slot, top: t.getBoundingClientRect().top}; return 1; })()")
-            if let edit = env["READOUT_SMOKE_EDIT"] {
-                let target = controller.url
-                let tmp = target.deletingLastPathComponent().appendingPathComponent(".readout-smoke.tmp")
-                try? FileManager.default.removeItem(at: tmp)
-                try? FileManager.default.copyItem(at: URL(fileURLWithPath: edit), to: tmp)
-                _ = try? FileManager.default.replaceItemAt(target, withItemAt: tmp)
-                try? await Task.sleep(for: .seconds(2))
-                await capture(webView, window: controller.window, to: out, name: "2-after-edit")
-                _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
-                try? await Task.sleep(for: .seconds(1))
-                await capture(webView, window: controller.window, to: out, name: "3-marks")
+            let before = appliedCount
+            mark(out, "await-edit")
+            let deadline = Date().addingTimeInterval(20)
+            while appliedCount == before && Date() < deadline {
+                try? await Task.sleep(for: .milliseconds(50))
             }
+            // Let lazy renderers (Mermaid, KaTeX) and anchor compensation settle.
+            try? await Task.sleep(for: .seconds(1.5))
+            await capture(webView, window: controller.window, to: out, name: "2-after-edit")
+            _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
+            try? await Task.sleep(for: .seconds(1))
+            await capture(webView, window: controller.window, to: out, name: "3-marks")
+
             // Dark appearance, then the auxiliary windows.
             NSApp.appearance = NSAppearance(named: .darkAqua)
             _ = try? await webView.evaluateJavaScript("(() => { const m = document.querySelector('.mermaid-block'); if (m) m.scrollIntoView({block: 'center'}); return 1; })()")
@@ -49,6 +67,10 @@ enum SmokeTest {
             screen(out, "6-welcome")
             NSApp.terminate(nil)
         }
+    }
+
+    private static func mark(_ dir: URL, _ name: String) {
+        try? Data().write(to: dir.appendingPathComponent(name))
     }
 
     private static func screen(_ dir: URL, _ name: String) {

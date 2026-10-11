@@ -470,6 +470,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString("\(url.lastPathComponent)#\(anchor)", forType: .string)
             }
+        case "applied":
+            SmokeTest.noteApplied()
         case "open":
             if let href = msg["href"] as? String { openLink(href) }
         case "loadRemote":

@@ -44,19 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         if let smoke = ProcessInfo.processInfo.environment["READOUT_SMOKE_FILE"] {
             openedAtLaunch = true
             open(URL(fileURLWithPath: smoke))
-            // Task E4 probe: replace the file 50ms after opening, while the
-            // first load is likely still parsing. The final render must show
-            // the replacement, never the stale first read.
-            if let early = ProcessInfo.processInfo.environment["READOUT_SMOKE_EARLY_EDIT"] {
-                let target = URL(fileURLWithPath: smoke)
-                let source = URL(fileURLWithPath: early)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    let tmp = target.deletingLastPathComponent().appendingPathComponent(".readout-smoke-early.tmp")
-                    try? FileManager.default.removeItem(at: tmp)
-                    try? FileManager.default.copyItem(at: source, to: tmp)
-                    _ = try? FileManager.default.replaceItemAt(target, withItemAt: tmp)
-                }
-            }
+            SmokeTest.didOpen()
         }
 
         // Files passed on launch arrive through application(_:open:) right after this; show the welcome
