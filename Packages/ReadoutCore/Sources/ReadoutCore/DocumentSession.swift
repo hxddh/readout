@@ -50,6 +50,9 @@ public struct RenderPatch: Codable, Sendable {
 
 /// Per-open-file state: slot identities, unread change marks and the reading baseline.
 public final class DocumentSession {
+    /// How much text one grouped deletion marker carries before it notes the rest.
+    static let groupedPreviewBytes = 200_000
+    static let previewMore = "\n\n…"
     public private(set) var blocks: [Block] = []
     public private(set) var version = 0
     public private(set) var title: String?
@@ -226,7 +229,13 @@ public final class DocumentSession {
             let preview = lastRead ?? oldTexts[o] ?? oldKeys[o].text
             if var existing = newDeletions[after] {
                 existing.count += 1
-                if existing.preview.count < 20_000 { existing.preview += "\n\n" + preview }
+                // Grouped removals keep every block up to a bound; past it the
+                // preview says that more was removed instead of dropping blocks silently.
+                if existing.preview.utf8.count < Self.groupedPreviewBytes {
+                    existing.preview += "\n\n" + preview
+                } else if !existing.preview.hasSuffix(Self.previewMore) {
+                    existing.preview += Self.previewMore
+                }
                 newDeletions[after] = existing
             } else {
                 newDeletions[after] = .init(id: 0, after: after, count: 1, preview: preview)

@@ -58,11 +58,24 @@ import Testing
 
     @Test func charactersAreNeverSplit() {
         for (a, b) in [("hi 👋🏻 there", "hi 👋🏿 there"), ("love ❤️ it", "love ❤ it"), ("key 1️⃣ ok", "key 2️⃣ ok"),
-                       ("cafe\u{301} au lait", "cafe\u{300} au lait"), ("今日は良い天気", "今日は悪い天気")] {
+                       ("cafe\u{301} au lait", "cafe\u{300} au lait"), ("今日は良い天気", "今日は悪い天気"),
+                       ("→\u{1AB0} x", "→\u{1AB1} x"), ("a→\u{1AB0}", "a→\u{1AB1}")] {
             let segs = WordDiff.segments(old: a, new: b)
             let old = segs.map { if case let .equal(t) = $0 { t } else if case let .deleted(t) = $0 { t } else { "" } }.joined()
             let new = segs.map { if case let .equal(t) = $0 { t } else if case let .inserted(t) = $0 { t } else { "" } }.joined()
             #expect(old == a && new == b)
+            // Every cut falls on a character boundary of both texts.
+            var oldAt = a.startIndex, newAt = b.startIndex
+            for seg in segs {
+                switch seg {
+                case let .equal(t):
+                    oldAt = a.utf8.index(oldAt, offsetBy: t.utf8.count); newAt = b.utf8.index(newAt, offsetBy: t.utf8.count)
+                case let .deleted(t): oldAt = a.utf8.index(oldAt, offsetBy: t.utf8.count)
+                case let .inserted(t): newAt = b.utf8.index(newAt, offsetBy: t.utf8.count)
+                }
+                #expect(oldAt == a.endIndex || a.indices.contains(oldAt), "\(a) → \(segs)")
+                #expect(newAt == b.endIndex || b.indices.contains(newAt), "\(b) → \(segs)")
+            }
             // Every piece starts on a character boundary of its text.
             for seg in segs {
                 if case let .equal(t) = seg { #expect(t.unicodeScalars.first.map { $0.properties.generalCategory != .nonspacingMark && $0.value != 0xFE0F && $0.value != 0x20E3 && !(0x1F3FB...0x1F3FF).contains($0.value) } ?? true, "\(a) → \(segs)") }
@@ -184,6 +197,29 @@ import Testing
         _ = session.load(doc("Keep.\n\n" + long + "\n\nEnd.\n"))
         let p = try #require(session.update(doc("Keep.\n\nEnd.\n")))
         #expect(p.deletions.first?.preview == long.trimmingCharacters(in: .whitespaces))
+    }
+
+    @Test func groupedDeletionsKeepEveryBlockOrSaySoMoreWasRemoved() throws {
+        // Adjacent removals share one marker: each block's text is in it. Enough
+        // blocks stay that the update is not treated as a rewrite.
+        let kept = (1...20).map { "Kept \($0)." }.joined(separator: "\n\n")
+        let paras = (1...12).map { "Paragraph \($0) " + String(repeating: "text ", count: 50) }
+        let session = DocumentSession()
+        _ = session.load(doc(kept + "\n\n" + paras.joined(separator: "\n\n") + "\n\nEnd.\n"))
+        let p = try #require(session.update(doc(kept + "\n\nEnd.\n")))
+        #expect(p.deletions.count == 1)
+        let preview = try #require(p.deletions.first?.preview)
+        for n in 1...12 { #expect(preview.contains("Paragraph \(n) "), "block \(n)") }
+
+        // Past the bound the marker says more was removed rather than dropping blocks silently.
+        let big = (1...5).map { "Section \($0) " + String(repeating: "x", count: 50_000) }
+        let s2 = DocumentSession()
+        _ = s2.load(doc(kept + "\n\n" + big.joined(separator: "\n\n") + "\n\nEnd.\n"))
+        let p2 = try #require(s2.update(doc(kept + "\n\nEnd.\n")))
+        let preview2 = try #require(p2.deletions.first?.preview)
+        #expect(p2.deletions.first?.count == 5)
+        #expect(preview2.hasSuffix("\n\n…"))
+        #expect(preview2.components(separatedBy: "\n\n…").count == 2)
     }
 }
 
