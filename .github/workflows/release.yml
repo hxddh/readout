@@ -28,6 +28,9 @@ on:
 
 permissions:
   contents: write
+  # Preflight reads ci.yml runs and their jobs; unlisted scopes are "none".
+  actions: read
+  checks: read
 
 jobs:
   preflight:
