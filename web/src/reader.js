@@ -41,8 +41,12 @@ function applyChangesOnly() {
 }
 
 function setChangesOnly(on) {
+  // Toggling the filter reflows the document: capture first, restore after,
+  // so the reader keeps their place (with nearest-visible fallback).
+  const anchor = captureAnchor();
   changesOnly = !!on;
   applyChangesOnly();
+  restoreAnchor(anchor, new Set());
 }
 
 function post(msg) {
@@ -54,7 +58,12 @@ window.addEventListener('unhandledrejection', e => post({ type: 'error', message
 
 // ---------------------------------------------------------------- Anchors
 
-function blockList() { return Array.from(doc.children).filter(e => e.classList.contains('blk')); }
+function isShown(e) { return !e.hidden && e.offsetParent !== null; }
+
+function blockList() { return Array.from(doc.children).filter(e => e.classList.contains('blk') && isShown(e)); }
+
+/** Document-order list including hidden blocks (for fallback searches). */
+function allBlocks() { return Array.from(doc.children).filter(e => e.classList.contains('blk')); }
 
 /** First block whose bottom edge is below the top of the viewport. */
 function topBlock() {
@@ -83,6 +92,10 @@ function captureAnchor() {
 function restoreAnchor(a, changedSlots) {
   if (!a) return;
   let el = slots.get(a.slot);
+  // The anchor block may have been hidden by the changes-only filter (or
+  // removed): fall back to the nearest visible block in document order,
+  // preferring the previous one so the reader stays with what they read.
+  if (el && !isShown(el)) el = nearestVisible(el);
   if (el) {
     const r = el.getBoundingClientRect();
     const want = changedSlots.has(a.slot) ? a.ratio * r.height : a.offset;
@@ -93,6 +106,21 @@ function restoreAnchor(a, changedSlots) {
     const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
     if (h) { window.scrollBy(0, h.getBoundingClientRect().top); return; }
   }
+}
+
+/** Nearest visible block to `el` in document order (previous first, then next). */
+function nearestVisible(el) {
+  let p = el.previousElementSibling;
+  while (p) {
+    if (p.classList.contains('blk') && isShown(p)) return p;
+    p = p.previousElementSibling;
+  }
+  let n = el.nextElementSibling;
+  while (n) {
+    if (n.classList.contains('blk') && isShown(n)) return n;
+    n = n.nextElementSibling;
+  }
+  return null;
 }
 
 function atBottom() {
