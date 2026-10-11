@@ -146,7 +146,7 @@ struct FenceTracker {
         // A kind-7 tag line cannot interrupt such a paragraph.
         if relative < 4, first == 0x3C {   // <
             let trimmed = line.drop(while: { $0 == " " })
-            if let until = htmlStart(trimmed, continuesParagraph: continues) {
+            if let until = Self.htmlStart(trimmed, continuesParagraph: continues) {
                 if outdented { itemContent = nil }
                 html = (until, itemContent != nil ? base : nil, String(line))
                 if let until, Self.ends(String(trimmed.lowercased().dropFirst()), until) { endHTML() }
@@ -160,7 +160,8 @@ struct FenceTracker {
         if relative < 4 && first == 0x23 {   // #
             var k = indent
             while k < n && u[k] == 0x23 { k += 1 }
-            isHeading = k == n || u[k] == Self.space || u[k] == Self.tab
+            // 1 to 6 # and then a space, a tab or the end of the line.
+            isHeading = k - indent <= 6 && (k == n || u[k] == Self.space || u[k] == Self.tab)
         }
         let isBreak = relative < 4 && Self.isBreak(u, from: indent)
         if outdented && (isHeading || isBreak || first == 0x3E) { itemContent = nil }
@@ -250,18 +251,21 @@ struct FenceTracker {
 
     /// If `trimmed` starts an HTML block, the marker that ends it
     /// (`.some(nil)`: the next blank line); nil when it starts none.
-    private func htmlStart<S: StringProtocol>(_ trimmed: S, continuesParagraph: Bool) -> String?? {
+    static func htmlStart<S: StringProtocol>(_ trimmed: S, continuesParagraph: Bool) -> String?? {
         let lower = trimmed.lowercased()
         if lower.hasPrefix("<!--") { return .some("-->") }
         if lower.hasPrefix("<?") { return .some("?>") }
-        if lower.hasPrefix("<![cdata[") { return .some("]]>") }
-        if lower.hasPrefix("<!"), lower.dropFirst(2).first?.isLetter == true { return .some(">") }
+        if trimmed.hasPrefix("<![CDATA[") { return .some("]]>") }   // case-sensitive in CommonMark
+        // Kind 4 (declarations): <! and an uppercase ASCII letter, as in the bundled cmark-gfm.
+        if lower.hasPrefix("<!"), let c = trimmed.dropFirst(2).first, c >= "A" && c <= "Z" { return .some(">") }
         let afterBracket = lower.dropFirst()
         let closing = afterBracket.hasPrefix("/")
-        let name = String(afterBracket.drop(while: { $0 == "/" }).prefix(while: { $0.isLetter || $0.isNumber || $0 == "-" }))
+        let tag = closing ? afterBracket.dropFirst() : afterBracket   // at most one slash: <//div> is text
+        guard tag.first.map({ $0.isASCII && $0.isLetter }) ?? false else { return nil }
+        let name = String(tag.prefix(while: { $0.isLetter || $0.isNumber || $0 == "-" }))
         guard !name.isEmpty else { return nil }
-        let next = afterBracket.drop(while: { $0 == "/" }).dropFirst(name.count).first
-        let ends = next == nil || next == " " || next == "\t" || next == ">" || (next == "/" && afterBracket.drop(while: { $0 == "/" }).dropFirst(name.count + 1).first == ">")
+        let next = tag.dropFirst(name.count).first
+        let ends = next == nil || next == " " || next == "\t" || next == ">" || (next == "/" && tag.dropFirst(name.count + 1).first == ">")
         if !closing, ends, next != "/", Self.rawTags.contains(name) { return .some(Self.rawEnd) }
         if ends && Self.blockTags.contains(name) { return .some(nil) }
         let s = String(trimmed)

@@ -18,7 +18,7 @@ import Foundation
 /// Not thread-safe: use one instance per document, from one queue.
 public final class IncrementalParser: @unchecked Sendable {
     private var resolver: ResourceResolver?
-    private var resolverID = ""
+    private var resolverID = "none"
     /// Fragment blocks from the previous version, by fragment key.
     private var previous: [FragmentKey: MarkdownParser.Fragment] = [:]
     /// Fragments reused in the last parse (for tests).
@@ -36,27 +36,35 @@ public final class IncrementalParser: @unchecked Sendable {
 
     public init(resolver: ResourceResolver? = nil) {
         self.resolver = resolver
-        self.resolverID = resolver?.identity ?? ""
+        self.resolverID = resolver.map { "resolver:" + $0.identity } ?? "none"
     }
 
-    /// Parses with a (possibly changed) resolver: fragments resolved against
-    /// a different one (other search folders) are not reused.
+    /// Parses with a (possibly changed) resolver: nothing resolved against
+    /// a different one (other search folders) is reused, neither fragments
+    /// nor the rendered HTML in `cache`.
     public func parse(_ rawSource: String, resolver: ResourceResolver?, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
-        let id = resolver?.identity ?? ""
-        if id != resolverID {
-            previous = [:]
-            resolverID = id
-        }
         self.resolver = resolver
         return parse(rawSource, cache: cache)
     }
 
+    /// Parses with the current resolver, whose identity is checked on every
+    /// call (a resolver may change its configuration).
     public func parse(_ rawSource: String, cache: MarkdownParser.RenderCache? = nil) -> ParsedDocument {
+        let id = resolver.map { "resolver:" + $0.identity } ?? "none"
+        if id != resolverID {
+            previous = [:]
+            cache?.clear()
+            resolverID = id
+        }
         let lines = MarkdownParser.sourceLines(rawSource)
         // Footnote definitions leave the flow (as in `parseFragment`); the
         // fragmenter reads the lines the Markdown parser will see.
         var flow = lines
-        let definitions = lines.contains(where: Footnotes.mentions) ? Footnotes.extract(&flow) : []
+        // Front matter is not Markdown: no definitions come from it (as in parseFragment).
+        let frontMatter = MarkdownParser.frontMatterEnd(lines)
+        if let end = frontMatter { for i in 0...end { flow[i] = "" } }
+        let definitions = flow.contains(where: Footnotes.mentions) ? Footnotes.extract(&flow) : []
+        if let end = frontMatter { for i in 0...end { flow[i] = lines[i] } }
         guard !Self.needsFullParse(flow) else {
             previous = [:]
             lastReused = 0
@@ -97,7 +105,7 @@ public final class IncrementalParser: @unchecked Sendable {
     /// Link reference definitions reach across the whole document, also
     /// from inside a list item or block quote.
     private static let documentWide = try! NSRegularExpression(
-        pattern: #"^(?:[ \t]*(?:>|(?:[-*+]|\d{1,9}[.)])(?=[ \t]|$)))*[ \t]*\[[^\]]+\]:"#)
+        pattern: #"^(?:[ \t]*(?:>|(?:[-*+]|\d{1,9}[.)])(?=[ \t]|$)))*[ \t]*\[(?:\\.|[^\]\\])+\]:"#)
 
     /// True when `lines` (footnote definitions taken out) define link
     /// references outside code and raw HTML.

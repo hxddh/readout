@@ -22,7 +22,7 @@ import Testing
         "```", "```js", "~~~", "````", "<details>", "</details>", "<summary>More</summary>", "<!--", "-->",
         "<pre>", "</pre>", "<div>", "$$", "x = $a$ and $$b$$", "---", "***", "===", "Setext", "- [ ] task",
         "- [x] done", "text with <details> inline", "  - nested", "\tTabbed", "<script>", "</script>", "<br>", "<span class=\"x\">", "  <div>",
-        "<source>",
+        "<source>", "####### seven", "<!doctype", "<!DOCTYPE note", ">",
         "See note[^n].", "Again[^m] and[^n].", "[^n]: The note.", "[^m]: Another, citing[^n].", "    continued note",
     ]
 
@@ -78,6 +78,7 @@ import Testing
         #expect(IncrementalParser.needsFullParse(["See [x].", "", "- [x]: https://example.com"]))
         #expect(IncrementalParser.needsFullParse(["See [x].", "", ">[x]: https://example.com"]))
         #expect(IncrementalParser.needsFullParse(["See [x].", "", "> 1. [x]: https://example.com"]))
+        #expect(IncrementalParser.needsFullParse(["See [a\\]].", "", "[a\\]]: /target"]))
         #expect(!IncrementalParser.needsFullParse(["<!--", "[x]: inside a comment", "-->", "```", "[y]: in code", "```"]))
         #expect(!IncrementalParser.needsFullParse(["A [link](https://x.y) and a: colon.", "- [ ] task"]))
         let parser = IncrementalParser()
@@ -107,11 +108,33 @@ import Testing
             ["para\n<source>\n```\n\na\n```\n\nb\n\nc\n```\n\nend\n"],
             ["para\n<search>\n```\n\na\n```\n\nb\n\nc\n```\n\nend\n"],
             ["- <!--\n\nx\n\ny -->\n\nz\n"],
+            ["<!doctype\ntext $x$\n\n```\n\ncode\n```\n>\n"],
+            ["<!DOCTYPE\ntext\n\n```\n\ncode\n```\n>\n"],
+            ["####### text\n<span>\n$x$\n\nafter\n"],
+            ["<![cdata[\n$x$\n]]>\n\nz\n", "<![CDATA[\n$x$\n]]>\n\nz\n"],
+            ["<//div>\n$x$\n\nz\n"],
+            ["---\ntitle: t\n[^x]: metadata\n---\n\nbody[^x]\n\nmore\n"],
         ]
         for sequence in versions {
             let parser = IncrementalParser()
             for text in sequence { expectSame(text, parser, text) }
         }
+    }
+
+    @Test func aNewResolverReusesNothing() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("inc-resolver-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir.appendingPathComponent("src"), withIntermediateDirectories: true)
+        try "x".write(to: dir.appendingPathComponent("src/main.swift"), atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let text = "See `src/main.swift`.\n\nOther.\n"
+        let parser = IncrementalParser()
+        let cache = MarkdownParser.RenderCache()
+        cache.beginGeneration()
+        let before = parser.parse(text, resolver: FileResolver(baseDirectory: nil), cache: cache)
+        #expect(!before.blocks[0].html.contains("path-link"))
+        cache.beginGeneration()
+        let after = parser.parse(text, resolver: FileResolver(baseDirectory: dir), cache: cache)
+        #expect(after.blocks[0].html.contains("path-link"))
     }
 
     @Test func fragmentsCoverEveryLineOnce() {
