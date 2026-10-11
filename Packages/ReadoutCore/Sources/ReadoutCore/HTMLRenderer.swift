@@ -7,6 +7,8 @@ struct HTMLRenderer {
     let resolver: ResourceResolver?
     /// Source lines (1-based access via `isBlank`), used to infer list tightness.
     var sourceLines: [Substring] = []
+    /// Bare URLs become links, except inside a link (GFM never nests them).
+    var autolinks = true
 
     func isBlank(_ line: Int) -> Bool {
         guard line >= 1, line <= sourceLines.count else { return false }
@@ -24,7 +26,7 @@ struct HTMLRenderer {
     func inlineNode(_ node: Markup) -> String {
         switch node {
         case let t as Text:
-            return math.restore(inHTML: autolink(t.string))
+            return math.restore(inHTML: autolinks ? autolink(t.string) : HTML.escape(t.string))
         case let e as Emphasis:
             return "<em>\(inline(e))</em>"
         case let s as Strong:
@@ -44,7 +46,9 @@ struct HTMLRenderer {
             let dest = math.restore(plain: l.destination ?? "")
             var title = ""
             if let t = l.title, !t.isEmpty { title = " title=\"\(HTML.escape(t))\"" }
-            return "<a href=\"\(HTML.escape(dest))\"\(title)>\(inline(l))</a>"
+            var inner = self
+            inner.autolinks = false
+            return "<a href=\"\(HTML.escape(dest))\"\(title)>\(inner.inline(l))</a>"
         case let img as Image:
             return image(img)
         case is SoftBreak:
