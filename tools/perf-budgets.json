@@ -17,12 +17,14 @@
     "change, so scroll metrics are reported, not gated (guard null).",
     "The macOS runner varies as much: update_100kb 17.9 and 26.6, update_1mb 227.6 and 355.7,",
     "cold_start 5060 and 6462, write_to_update 423 and 466 with no parser change, so those",
-    "guards are ~1.5x the highest run: 40, 530, 9700, 700."
+    "guards are ~1.5x the highest run: 40, 530, 9700, 700.",
+    "Since the open timings end at the first presented frame (not the synchronous apply), runs",
+    "measured warm_open 2587 and cold_start 8502: guards 3900 and 12800 (1.5x)."
   ],
   "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": 40 },
   "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 530 },
-  "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 2600 },
-  "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 9700 },
+  "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 3900 },
+  "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 12800 },
   "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 700 },
   "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": 3000 },
   "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 700 },
