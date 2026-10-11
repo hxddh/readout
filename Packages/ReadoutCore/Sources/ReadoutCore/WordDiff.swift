@@ -350,8 +350,10 @@ public enum WordDiff {
                 if kind != 1 { flush(i); kind = 1 }
             } else if v == 0x20 || v == 0x09 {
                 if kind != 2 { flush(i); kind = 2 }
-            } else if v >= 0x0300 && v <= 0x036F || (v >= 0xFE00 && v <= 0xFE0F) || v == 0x200D || v == 0x20E3 || (v >= 0x1F3FB && v <= 0x1F3FF) {
-                // Combining marks and joiners stay with what they follow.
+            } else if v >= 0x80 && (s.properties.isGraphemeExtend || s.properties.generalCategory == .spacingMark
+                                    || v == 0x200D || s.properties.isEmojiModifier) {
+                // Combining marks (every kind), variation selectors, joiners and
+                // skin-tone modifiers stay with what they follow.
             } else {
                 flush(i); kind = 0
                 // A CJK character, or any other character, is a token of its own.

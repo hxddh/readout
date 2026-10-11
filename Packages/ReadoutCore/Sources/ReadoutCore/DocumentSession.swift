@@ -231,7 +231,7 @@ public final class DocumentSession {
                 existing.count += 1
                 // Grouped removals keep every block up to a bound; past it the
                 // preview says that more was removed instead of dropping blocks silently.
-                if existing.preview.utf8.count < Self.groupedPreviewBytes {
+                if existing.preview.utf8.count + preview.utf8.count + 2 <= Self.groupedPreviewBytes {
                     existing.preview += "\n\n" + preview
                 } else if !existing.preview.hasSuffix(Self.previewMore) {
                     existing.preview += Self.previewMore

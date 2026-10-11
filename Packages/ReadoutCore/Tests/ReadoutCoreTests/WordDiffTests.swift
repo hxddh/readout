@@ -59,7 +59,9 @@ import Testing
     @Test func charactersAreNeverSplit() {
         for (a, b) in [("hi 👋🏻 there", "hi 👋🏿 there"), ("love ❤️ it", "love ❤ it"), ("key 1️⃣ ok", "key 2️⃣ ok"),
                        ("cafe\u{301} au lait", "cafe\u{300} au lait"), ("今日は良い天気", "今日は悪い天気"),
-                       ("→\u{1AB0} x", "→\u{1AB1} x"), ("a→\u{1AB0}", "a→\u{1AB1}")] {
+                       ("→\u{1AB0} x", "→\u{1AB1} x"), ("a→\u{1AB0}", "a→\u{1AB1}"),
+                       ("xa\u{1AB0}y", "xa\u{1AB1}y"), ("say xa\u{1AB0} now", "say xa\u{1AB1} now"),
+                       ("a\u{20DD} b", "a\u{20DE} b"), ("नमस्ते दुनिया", "नमस्ता दुनिया")] {
             let segs = WordDiff.segments(old: a, new: b)
             let old = segs.map { if case let .equal(t) = $0 { t } else if case let .deleted(t) = $0 { t } else { "" } }.joined()
             let new = segs.map { if case let .equal(t) = $0 { t } else if case let .inserted(t) = $0 { t } else { "" } }.joined()
@@ -220,6 +222,14 @@ import Testing
         #expect(p2.deletions.first?.count == 5)
         #expect(preview2.hasSuffix("\n\n…"))
         #expect(preview2.components(separatedBy: "\n\n…").count == 2)
+        #expect(preview2.utf8.count <= DocumentSession.groupedPreviewBytes + 5)
+
+        // A huge block after a small one is not appended past the bound either.
+        let s3 = DocumentSession()
+        let huge = String(repeating: "y", count: 500_000)
+        _ = s3.load(doc(kept + "\n\nSmall removed.\n\n" + huge + "\n\nEnd.\n"))
+        let p3 = try #require(s3.update(doc(kept + "\n\nEnd.\n")))
+        #expect(p3.deletions.first?.preview == "Small removed.\n\n…")
     }
 }
 
