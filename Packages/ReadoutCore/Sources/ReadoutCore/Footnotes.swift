@@ -31,15 +31,21 @@ enum Footnotes {
             guard startsDefinition(line) else { i += 1; continue }
             let ns = line as NSString
             guard let m = start.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else { i += 1; continue }
-            let id = ns.substring(with: m.range(at: 1))
+            // Labels match without regard to case, as on GitHub.
+            let id = ns.substring(with: m.range(at: 1)).lowercased()
             var body = [ns.substring(with: m.range(at: 2))]
             var end = i
             // Continuation: lines indented by 4+ spaces or a tab; blank lines
-            // only when an indented line follows.
+            // only when an indented line follows; and, right after text, any
+            // line that does not start another block (a wrapped sentence).
             var j = i + 1
             while j < lines.count {
                 let l = lines[j]
-                if l.hasPrefix("    ") || l.hasPrefix("\t") {
+                if !(body.last ?? "").allSatisfy({ $0 == " " || $0 == "\t" }) && continuesParagraph(l) {
+                    body.append(l)
+                    end = j
+                    j += 1
+                } else if l.hasPrefix("    ") || l.hasPrefix("\t") {
                     body.append(l.hasPrefix("\t") ? String(l.dropFirst()) : String(l.dropFirst(4)))
                     end = j
                     j += 1
@@ -58,6 +64,17 @@ enum Footnotes {
             i = end + 1
         }
         return out
+    }
+
+    private static let blockStart = try! NSRegularExpression(
+        pattern: #"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|\||<|```|~~~|\[|[-*+](?:[ \t]|$)|\d{1,9}[.)](?:[ \t]|$)|(?:[-*_][ \t]*){3,}$)"#)
+
+    /// A line that a paragraph can take as its continuation: not blank, not
+    /// indented code, and not the start of another block.
+    static func continuesParagraph(_ line: String) -> Bool {
+        guard !line.allSatisfy({ $0 == " " || $0 == "\t" }), !line.hasPrefix("    "), !line.hasPrefix("\t") else { return false }
+        let ns = line as NSString
+        return blockStart.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) == nil
     }
 
     /// The text contains `[^` (bytes, without Unicode-aware search).
@@ -140,7 +157,12 @@ enum Footnotes {
                 i += 1
                 guard let note = byID[id] else { continue }
                 var body = fill(note.html)
-                let back = "<a href=\"#user-content-fnref-\(id)\" class=\"fn-back\" data-footnote-backref aria-label=\"Back to reference \(i)\">↩</a>"
+                // One way back per reference, as on GitHub: ↩, ↩², …
+                let back = (1...max(1, uses[id] ?? 1)).map { k in
+                    let ref = k == 1 ? "user-content-fnref-\(id)" : "user-content-fnref-\(id)-\(k)"
+                    let label = k == 1 ? "Back to reference \(i)" : "Back to reference \(i)-\(k)"
+                    return "<a href=\"#\(ref)\" class=\"fn-back\" data-footnote-backref aria-label=\"\(label)\">↩\(k == 1 ? "" : "<sup>\(k)</sup>")</a>"
+                }.joined(separator: " ")
                 if body.hasSuffix("</p>") { body = String(body.dropLast(4)) + " " + back + "</p>" } else { body += back }
                 items.append("<li id=\"user-content-fn-\(id)\">\(body)</li>")
                 shown.append(note)

@@ -194,7 +194,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
 
     func setAppearance(dark: Bool? = nil, accent: NSColor? = nil, width: String? = nil, fontSize: Double? = nil,
                        strings: [String: String]? = nil, changesOnly: Bool? = nil, codeWrap: Bool? = nil,
-                       mode: String? = nil) {
+                       mode: String? = nil, topInset: Double? = nil) {
         var o: [String: Any] = [:]
         if let dark { o["dark"] = dark }
         if let accent { o["accent"] = accent.hexString }
@@ -204,6 +204,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         if let changesOnly { o["changesOnly"] = changesOnly }
         if let codeWrap { o["codeWrap"] = codeWrap }
         if let mode { o["mode"] = mode }
+        if let topInset { o["topInset"] = topInset }
         guard let data = try? JSONSerialization.data(withJSONObject: o), let json = String(data: data, encoding: .utf8) else { return }
         call("setAppearance", json: json)
     }

@@ -236,7 +236,8 @@ tbody tr:last-child td { border-bottom: 0; }
    one scrolls sideways inside its wrapper (which then cannot also pin the
    header to the page) and keeps its first column in view instead. */
 .table-wrap:not(.scrolls) { overflow-x: visible; }
-.table-wrap:not(.scrolls) thead th { position: sticky; top: 0; background: var(--bg); z-index: 1; }
+/* --top-inset: the height of the window toolbar the page scrolls under. */
+.table-wrap:not(.scrolls) thead th { position: sticky; top: var(--top-inset, 0px); background: var(--bg); z-index: 1; }
 .table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child {
   position: sticky; left: 0; background: var(--bg); z-index: 1;
 }
@@ -497,6 +498,7 @@ details ul, details ol { padding-left: 1.5em; }
   .blk::before { display: none; }
   #ro-doc { padding: 0; max-width: none; }
   #ro-doc.cv > .blk { content-visibility: visible; }
+  #ro-doc > .blk { margin-inline: 0; padding-inline: 0; }
   .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
   /* Never cut a code block, table row, diagram, formula, image or alert across pages. */
   .code-block, tr, .mermaid-block, .math-block, img, .alert, details, .footnotes li { break-inside: avoid; }
