@@ -311,9 +311,14 @@ public enum MarkdownParser {
         if lower.contains("<!--") {
             lower = lower.replacingOccurrences(of: #"<!--[\s\S]*?(-->|$)"#, with: "", options: .regularExpression)
         }
-        func count(_ needle: String) -> Int { lower.components(separatedBy: needle).count - 1 }
-        return count("<details") - count("</details")
+        // Whole tags only: <details-card> or <detailsx> is another element.
+        func count(_ re: NSRegularExpression) -> Int {
+            re.numberOfMatches(in: lower, range: NSRange(location: 0, length: (lower as NSString).length))
+        }
+        return count(detailsOpen) - count(detailsClose)
     }
+    private static let detailsOpen = try! NSRegularExpression(pattern: #"<details(?=[\s>/])"#)
+    private static let detailsClose = try! NSRegularExpression(pattern: #"</details(?=[\s>])"#)
 
     static func mathHTML(_ tex: String) -> String {
         let t = tex.trimmingCharacters(in: .whitespacesAndNewlines)
