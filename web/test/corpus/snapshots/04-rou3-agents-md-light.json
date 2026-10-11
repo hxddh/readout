@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "c926e6ec",
+   "style": "0f82180f",
    "content": "ff7450e3",
    "text": "rou3§"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 99,
    "h": 104,
-   "style": "bde5a034",
+   "style": "a73a61b4",
    "content": "3dd67512",
    "text": "Lightweight, high-performance HTTP router for JS"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 220,
    "h": 130,
-   "style": "28a97734",
+   "style": "5dd4d0ec",
    "content": "5292fb4b",
    "text": "Layout: src/operations/ (add, find, find-all, re"
   },
@@ -33,7 +33,7 @@
    "kind": "alert",
    "top": 368,
    "h": 103,
-   "style": "9325dcad",
+   "style": "649d2f8d",
    "content": "21245dbf",
    "text": "ImportantKeep AGENTS.md and .agents/*.md updated"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 511,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "b13e16cf",
    "text": "Docs§"
   },
@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 554,
    "h": 26,
-   "style": "463959f5",
+   "style": "8a8e15bd",
    "content": "2b21c915",
    "text": "Read the relevant doc before changing that area:"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 597,
    "h": 78,
-   "style": "8a7d7478",
+   "style": "31ad9554",
    "content": "3956feef",
    "text": ".agents/matching.md: tree, lookup, same-node sib"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 677,
    "h": 52,
-   "style": "d1f963cf",
+   "style": "7a363087",
    "content": "0f39a3ab",
    "text": ".agents/syntax.md: pattern pipeline, escapes, {}"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 732,
    "h": 52,
-   "style": "43814401",
+   "style": "6673c2b1",
    "content": "7faca03e",
    "text": ".agents/compiler.md: compileRouter / compileRout"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 786,
    "h": 26,
-   "style": "dbc0c463",
+   "style": "d976163b",
    "content": "51b3b9cd",
    "text": ".agents/regexp.md: routeToRegExp (regex ≡ router"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 814,
    "h": 52,
-   "style": "3564e42d",
+   "style": "1283d629",
    "content": "757fcb86",
    "text": ".agents/overlap.md: routesOverlap / compareRoute"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 869,
    "h": 52,
-   "style": "76894657",
+   "style": "035749e3",
    "content": "e3015c74",
    "text": ".agents/testing.md: suites, fixture conventions,"
   },
@@ -114,7 +114,7 @@
    "kind": "heading",
    "top": 961,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "3901e078",
    "text": "Core invariants§"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1004,
    "h": 52,
-   "style": "86cf8b7c",
+   "style": "e7050cfc",
    "content": "a2bf1df9",
    "text": "Interpreter (findRoute / findAllRoutes) and comp"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1058,
    "h": 130,
-   "style": "e7ec4c6c",
+   "style": "ade89a04",
    "content": "1779dbf1",
    "text": "findAllRoutes order (least → most specific) is a"
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1190,
    "h": 130,
-   "style": "c8cae776",
+   "style": "ee6105b6",
    "content": "058bf019",
    "text": "routeToRegExp(p) matches exactly the paths findR"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1323,
    "h": 104,
-   "style": "8a2f01a4",
+   "style": "20c2fb0c",
    "content": "8f496b37",
    "text": "routeToRegExp output must not backtrack polynomi"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1429,
    "h": 78,
-   "style": "8573a778",
+   "style": "8a0987ec",
    "content": "c0f511ee",
    "text": "Never write a second pattern parser: derived API"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1509,
    "h": 104,
-   "style": "029dbe71",
+   "style": "49c1a079",
    "content": "7e199e00",
    "text": "Lookup ignores at most one trailing slash; middl"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1616,
    "h": 130,
-   "style": "d73e9319",
+   "style": "e9b66471",
    "content": "bdfa1e02",
    "text": "* is URLPattern's greedy catch-all ((.*), also i"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 1748,
    "h": 78,
-   "style": "447a1fe1",
+   "style": "1097d9e1",
    "content": "c8714f4b",
    "text": "Literal pattern text is percent-encoded once, at"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 1828,
    "h": 104,
-   "style": "73ac462b",
+   "style": "7c01b45f",
    "content": "cbbfaf7d",
    "text": ". / .. pattern segments (%2e too) are resolved a"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1934,
    "h": 104,
-   "style": "c0e760be",
+   "style": "d09d34c2",
    "content": "208ff368",
    "text": "A :name never captures \"\", and no segment a :nam"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2041,
    "h": 130,
-   "style": "0cc9c83f",
+   "style": "38c6e3e3",
    "content": "9d9616ec",
    "text": "Unnamed captures (*, a bare **, unnamed groups) "
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2173,
    "h": 78,
-   "style": "08b89d59",
+   "style": "d5be6d25",
    "content": "e246d9f0",
    "text": "Matching a dynamic segment is linear in its leng"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2253,
    "h": 52,
-   "style": "73576f5d",
+   "style": "18a16d85",
    "content": "4fd18380",
    "text": "Optional features (overlap, regexp, routeNodeKey"
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 2308,
    "h": 52,
-   "style": "24c45902",
+   "style": "6b7400e6",
    "content": "dbda69e3",
    "text": "addRoute preprocessing helpers bail early when t"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2362,
    "h": 52,
-   "style": "af561bf8",
+   "style": "8e4c7828",
    "content": "c77eec9e",
    "text": "Every thrown error starts with rou3:; pattern er"
   },
@@ -258,7 +258,7 @@
    "kind": "heading",
    "top": 2455,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "89c26135",
    "text": "Code conventions§"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 2497,
    "h": 52,
-   "style": "a9c509e5",
+   "style": "326545ad",
    "content": "328ff86a",
    "text": "Performance-first: charCodeAt() over .startsWith"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 2551,
    "h": 26,
-   "style": "9ff4517d",
+   "style": "ae816009",
    "content": "5f6b07d1",
    "text": "Hot-path var names: m (method), p (path), s (seg"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2580,
    "h": 26,
-   "style": "867ddd3d",
+   "style": "84c95885",
    "content": "e4f719cd",
    "text": "Internal files are prefixed _; internal helpers "
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2608,
    "h": 156,
-   "style": "eed4f0d9",
+   "style": "d7bad2cd",
    "content": "ad8228f8",
    "text": "Split modules by concept and consumer, not line "
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 2766,
    "h": 52,
-   "style": "add3b3bf",
+   "style": "9e2e8bc7",
    "content": "857b82a2",
    "text": "ESM only, explicit .ts import extensions, with {"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 2821,
    "h": 26,
-   "style": "33dd2a7b",
+   "style": "edbd59ff",
    "content": "081efd8b",
    "text": "Multi-arg functions take an options object as th"
   },
@@ -321,7 +321,7 @@
    "kind": "heading",
    "top": 2887,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "5ca7cde9",
    "text": "Bug fix workflow (regression-first)§"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 2930,
    "h": 26,
-   "style": "77c06a91",
+   "style": "ac12cf2d",
    "content": "c1caf625",
    "text": "Write the regression test reproducing the bug."
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 2958,
    "h": 26,
-   "style": "b18a9c2a",
+   "style": "3233515a",
    "content": "756d2be8",
    "text": "Run it and confirm it fails (never skip)."
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 2986,
    "h": 26,
-   "style": "0594badb",
+   "style": "7eeed52f",
    "content": "e1d7b70a",
    "text": "Make the minimal fix."
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 3015,
    "h": 26,
-   "style": "5f6d551d",
+   "style": "2243d299",
    "content": "27c7218b",
    "text": "Confirm the test passes, then run the broader su"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 3081,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "4b744ac4",
    "text": "Git§"
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 3124,
    "h": 52,
-   "style": "92312688",
+   "style": "49a4dfd4",
    "content": "1bb9a7f3",
    "text": "Semantic, lower-case commits with scope (fix(com"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 3178,
    "h": 26,
-   "style": "b00a9280",
+   "style": "779c8de4",
    "content": "d97e8550",
    "text": "If not on main, git push after committing. Use g"
   }

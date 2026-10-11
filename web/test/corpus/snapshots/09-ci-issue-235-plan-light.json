@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 76,
-   "style": "c880ba34",
+   "style": "af3e5b1b",
    "content": "76a36952",
    "text": "Fix GitHub issue #235: avoid redundant install+t"
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 156,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "8fec1361",
    "text": "Context§"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 199,
    "h": 182,
-   "style": "aca9312c",
+   "style": "eaa8e12c",
    "content": "4122c1dd",
    "text": "Issue #235 (\"improve the CI workflow\"): the Cryp"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 398,
    "h": 78,
-   "style": "146a8f21",
+   "style": "822c7319",
    "content": "599da992",
    "text": "While in there, also bump every third-party Acti"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 494,
    "h": 26,
-   "style": "463959f5",
+   "style": "8a8e15bd",
    "content": "b9c27303",
    "text": "Confirmed by reading the current workflows:"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 538,
    "h": 52,
-   "style": "ea73d0a9",
+   "style": "cce160d5",
    "content": "e6603b3c",
    "text": "ci.yml test job: checkout → setup-node → yarn &&"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 592,
    "h": 130,
-   "style": "283f6436",
+   "style": "697a6b02",
    "content": "1d055c18",
    "text": "ci.yml deploy job (gated on github.ref == 'refs/"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 724,
    "h": 78,
-   "style": "fc9a99ad",
+   "style": "78bd25ad",
    "content": "612e105a",
    "text": "yarn test:ci = vitest --run --coverage; there's "
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 804,
    "h": 182,
-   "style": "0be61e86",
+   "style": "a2847876",
    "content": "6370fe18",
    "text": "Verified via JS-DevTools/npm-publish's own READM"
   },
@@ -87,7 +87,7 @@
    "kind": "paragraph",
    "top": 1004,
    "h": 52,
-   "style": "a4257ffc",
+   "style": "20ba853c",
    "content": "061b19ef",
    "text": "Latest release versions confirmed live via GitHu"
   },
@@ -96,7 +96,7 @@
    "kind": "table",
    "top": 1074,
    "h": 742,
-   "style": "52b0a78d",
+   "style": "7910b4ed",
    "content": "8894866e",
    "text": "ActionCurrently pinnedLatestBump?actions/checkou"
   },
@@ -105,7 +105,7 @@
    "kind": "heading",
    "top": 1856,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "dcc5e48f",
    "text": "Plan§"
   },
@@ -114,7 +114,7 @@
    "kind": "heading",
    "top": 1912,
    "h": 46,
-   "style": "b96aa31f",
+   "style": "bf935538",
    "content": "69297136",
    "text": "1. .github/workflows/ci.yml — fix the redundant "
   },
@@ -123,7 +123,7 @@
    "kind": "paragraph",
    "top": 1967,
    "h": 104,
-   "style": "5a8921ab",
+   "style": "337067c7",
    "content": "e1020f90",
    "text": "Bump actions/checkout@v6 → @v7 (both jobs) and a"
   },
@@ -132,7 +132,7 @@
    "kind": "paragraph",
    "top": 2089,
    "h": 104,
-   "style": "f3e70abd",
+   "style": "a223a701",
    "content": "41dde217",
    "text": "In the test job, bump actions/setup-node@v6 → @v"
   },
@@ -141,7 +141,7 @@
    "kind": "code",
    "top": 2211,
    "h": 204,
-   "style": "840ca709",
+   "style": "e8a03dc0",
    "content": "dc603e9d",
    "text": "- name: Upload build output if: github.ref == 'r"
   },
@@ -150,7 +150,7 @@
    "kind": "paragraph",
    "top": 2430,
    "h": 78,
-   "style": "d1ea9bfb",
+   "style": "c0258583",
    "content": "db793424",
    "text": "In the deploy job, remove the actions/setup-node"
   },
@@ -159,7 +159,7 @@
    "kind": "code",
    "top": 2525,
    "h": 124,
-   "style": "12ff9e1c",
+   "style": "406ea0d5",
    "content": "1ea41aea",
    "text": "- uses: actions/checkout@v7 - name: Download bui"
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 2664,
    "h": 104,
-   "style": "ac4f6647",
+   "style": "c99e4de3",
    "content": "f0d5f8af",
    "text": "Everything after that (Coveralls, configure-page"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 2795,
    "h": 23,
-   "style": "60faccf3",
+   "style": "cab0fd58",
    "content": "0978c4dd",
    "text": "2. .github/workflows/npm-test.yml — version bump"
   },
@@ -186,7 +186,7 @@
    "kind": "paragraph",
    "top": 2828,
    "h": 52,
-   "style": "953ac24a",
+   "style": "71f1fe06",
    "content": "1fe8b9bc",
    "text": "Bump actions/setup-node@v4 → @v7. No other chang"
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 2907,
    "h": 23,
-   "style": "f9b51ae5",
+   "style": "f9c2df3e",
    "content": "76f6e771",
    "text": "3. .github/workflows/release.yml — version bump "
   },
@@ -204,7 +204,7 @@
    "kind": "paragraph",
    "top": 2939,
    "h": 78,
-   "style": "a014e094",
+   "style": "363ed31c",
    "content": "e223fa11",
    "text": "Bump actions/checkout@v4 → @v7. Leave ncipollo/r"
   },
@@ -213,7 +213,7 @@
    "kind": "heading",
    "top": 3057,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "fd22491b",
    "text": "Verification§"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 3100,
    "h": 52,
-   "style": "b73d9364",
+   "style": "9fa12cf8",
    "content": "dacc130a",
    "text": "Review the edited YAML carefully for indentation"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 3154,
    "h": 78,
-   "style": "33df3294",
+   "style": "ae202aa0",
    "content": "922263ae",
    "text": "Push to a branch / open a PR first: confirm the "
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 3234,
    "h": 130,
-   "style": "b58367df",
+   "style": "24a5ee67",
    "content": "18e74e3d",
    "text": "Merge to master (or use workflow_dispatch) and w"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 3367,
    "h": 52,
-   "style": "d345d0f4",
+   "style": "58da04cc",
    "content": "d8ee382c",
    "text": "Separately trigger npm-test.yml (workflow_dispat"
   },
@@ -258,7 +258,7 @@
    "kind": "heading",
    "top": 3459,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "7c0d6482",
    "text": "Post-approval fixes (found from an actual CI run"
   },
@@ -267,7 +267,7 @@
    "kind": "paragraph",
    "top": 3502,
    "h": 52,
-   "style": "58472ec7",
+   "style": "274d1ceb",
    "content": "c7865619",
    "text": "After the plan above was implemented and pushed,"
   },
@@ -276,7 +276,7 @@
    "kind": "code",
    "top": 3571,
    "h": 64,
-   "style": "40e318ea",
+   "style": "dec08af7",
    "content": "0ac8fd83",
    "text": "error Error: Failed to replace env in config: ${"
   },
@@ -285,7 +285,7 @@
    "kind": "paragraph",
    "top": 3650,
    "h": 182,
-   "style": "376c86c9",
+   "style": "13deed81",
    "content": "0bf71e0f",
    "text": "Root cause: actions/setup-node's registry-url in"
   },
@@ -294,7 +294,7 @@
    "kind": "paragraph",
    "top": 3850,
    "h": 26,
-   "style": "17075ebe",
+   "style": "096e6f42",
    "content": "3ccb452c",
    "text": "Fix 1 — drop the unneeded registry-url:"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 3894,
    "h": 78,
-   "style": "180e85e6",
+   "style": "d6a4aabe",
    "content": "06873a9c",
    "text": "ci.yml's test job: removed registry-url: 'https:"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 3974,
    "h": 52,
-   "style": "b28694b4",
+   "style": "b9d6d0d4",
    "content": "d9ff6610",
    "text": "npm-test.yml: removed the same registry-url line"
   },
@@ -321,7 +321,7 @@
    "kind": "paragraph",
    "top": 4044,
    "h": 260,
-   "style": "bcf5d4f3",
+   "style": "df60816b",
    "content": "f0695dad",
    "text": "Fix 2 — deploy job still needs some pinned Node/"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 4321,
    "h": 78,
-   "style": "f1158b2f",
+   "style": "bf88fdaf",
    "content": "3819e121",
    "text": "The test job's failed run log incidentally prove"
   },
@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 4417,
    "h": 184,
-   "style": "5546f449",
+   "style": "b5f80cec",
    "content": "495b8e3d",
    "text": "- uses: actions/checkout@v7 - uses: actions/setu"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 4616,
    "h": 104,
-   "style": "c09152ff",
+   "style": "4419c6db",
    "content": "e5498838",
    "text": "Deliberately no registry-url (the action manages"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 4738,
    "h": 182,
-   "style": "74fefd95",
+   "style": "b6deef95",
    "content": "c62b5ec4",
    "text": "Fix 3 — Coveralls had \"nothing to report\": confi"
   },
@@ -366,7 +366,7 @@
    "kind": "paragraph",
    "top": 4937,
    "h": 26,
-   "style": "53b20967",
+   "style": "4a68c78f",
    "content": "b9eeb602",
    "text": "Fixed in package.json:"
   },
@@ -375,7 +375,7 @@
    "kind": "code",
    "top": 4981,
    "h": 64,
-   "style": "15ff12a2",
+   "style": "e8e123e7",
    "content": "4b14c3ec",
    "text": "- \"test:ci\": \"yarn test --run --coverage\", + \"te"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 5060,
    "h": 104,
-   "style": "fd1d86d7",
+   "style": "7595c743",
    "content": "d91417b9",
    "text": "(Vitest CLI array options must be repeated per-v"
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 5181,
    "h": 104,
-   "style": "8c3744b5",
+   "style": "c7007175",
    "content": "781dcb20",
    "text": "Also made the coverage provider explicit (--cove"
   },
@@ -402,7 +402,7 @@
    "kind": "paragraph",
    "top": 5303,
    "h": 156,
-   "style": "59afd918",
+   "style": "a9fcfab8",
    "content": "b9b91cb3",
    "text": "Note: per Vitest's own CLI docs, the bare --cove"
   },
@@ -411,7 +411,7 @@
    "kind": "heading",
    "top": 5499,
    "h": 58,
-   "style": "deda85f2",
+   "style": "8d644491",
    "content": "222256b1",
    "text": "Fix 4 (supersedes Fix 3's root-cause theory) — t"
   },
@@ -420,7 +420,7 @@
    "kind": "paragraph",
    "top": 5571,
    "h": 130,
-   "style": "fa979949",
+   "style": "2d2b898d",
    "content": "ded5cd23",
    "text": "Fix 3 turned out to be treating a symptom, not t"
   },
@@ -429,7 +429,7 @@
    "kind": "listItem",
    "top": 5718,
    "h": 52,
-   "style": "b1605078",
+   "style": "4aefc620",
    "content": "411d1cf6",
    "text": "Reproduced locally: yarn vitest -r ./src run src"
   },
@@ -438,7 +438,7 @@
    "kind": "listItem",
    "top": 5773,
    "h": 52,
-   "style": "10d7dd26",
+   "style": "d93769e2",
    "content": "06accc72",
    "text": "The pre-PR (working) CI log literally shows Dete"
   },
@@ -447,7 +447,7 @@
    "kind": "paragraph",
    "top": 5843,
    "h": 286,
-   "style": "82828361",
+   "style": "683eee41",
    "content": "66da2a47",
    "text": "This means Vitest's default reporters (clover in"
   },
@@ -456,7 +456,7 @@
    "kind": "paragraph",
    "top": 6146,
    "h": 26,
-   "style": "e0188f8c",
+   "style": "4fd275f8",
    "content": "44306e49",
    "text": "Fix: in ci.yml's Upload build output step, chang"
   },
@@ -465,7 +465,7 @@
    "kind": "code",
    "top": 6190,
    "h": 104,
-   "style": "03654061",
+   "style": "4981c644",
    "content": "573968b6",
    "text": "path: | dist/ - coverage/ + src/coverage/diffCop"
   },
@@ -474,7 +474,7 @@
    "kind": "paragraph",
    "top": 6309,
    "h": 130,
-   "style": "efc445c3",
+   "style": "028639ef",
    "content": "a6473327",
    "text": "download-artifact preserves the relative structu"
   },
@@ -483,7 +483,7 @@
    "kind": "paragraph",
    "top": 6456,
    "h": 104,
-   "style": "2ba837c9",
+   "style": "a967dde5",
    "content": "11dda0f0",
    "text": "Fix 3's package.json change was reverted (per ex"
   }

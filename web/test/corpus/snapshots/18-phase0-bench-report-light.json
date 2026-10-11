@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "c926e6ec",
+   "style": "0f82180f",
    "content": "b501d144",
    "text": "Phase 0 benchmark: RPS/worker§"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 99,
    "h": 52,
-   "style": "2be39984",
+   "style": "ee7b0544",
    "content": "6b8ca5d1",
    "text": "Status: dev-hardware only. Fly shared-cpu-machin"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 168,
    "h": 182,
-   "style": "704cb5c9",
+   "style": "9cdf15b9",
    "content": "1361ebda",
    "text": "This is Phase 0 work item 7 (docs/superpowers/pl"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 368,
    "h": 260,
-   "style": "f80e5630",
+   "style": "160346dc",
    "content": "7a087901",
    "text": "These numbers gate §3.5 capacity math and §6 pri"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 668,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "7b3a0e07",
    "text": "Environment§"
   },
@@ -51,7 +51,7 @@
    "kind": "table",
    "top": 711,
    "h": 355,
-   "style": "c2d6b7ff",
+   "style": "b152c28f",
    "content": "2a8f966f",
    "text": "Date2026-08-08MachineApple M2 Max, 12 logical CP"
   },
@@ -60,7 +60,7 @@
    "kind": "heading",
    "top": 1106,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "5c4d1735",
    "text": "Methodology§"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 1148,
    "h": 208,
-   "style": "b4e337d8",
+   "style": "470d87b0",
    "content": "e5a85def",
    "text": "Harness: apps/cli/test/loadbench/. loadbench_tes"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 1358,
    "h": 239,
-   "style": "7d9ca5e2",
+   "style": "95f6f46a",
    "content": "e8104434",
    "text": "Configs: (a) single-get - one request node (GET "
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 1600,
    "h": 26,
-   "style": "05e701c5",
+   "style": "4cd1bbd9",
    "content": "2707e2e7",
    "text": "VUs: 1, 10, 50, per the task contract."
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 1629,
    "h": 208,
-   "style": "42e39cae",
+   "style": "7fedd86a",
    "content": "c16f7e0c",
    "text": "Stop condition: Duration, not MaxIterations - si"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1839,
    "h": 156,
-   "style": "34b73bbc",
+   "style": "694fa8ec",
    "content": "05809175",
    "text": "Isolation between cells: each (config, VUs) cell"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 1997,
    "h": 130,
-   "style": "a7813f8f",
+   "style": "396cf1fb",
    "content": "c3180590",
    "text": "What \"RPS\" means here: loadmetrics.Report.Total."
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 2130,
    "h": 234,
-   "style": "c84449c7",
+   "style": "6b524c4f",
    "content": "4b5b3112",
    "text": "Why a header, not the body, carries the chained "
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 2404,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "4ca420b6",
    "text": "Results§"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 2447,
    "h": 78,
-   "style": "146a8f21",
+   "style": "822c7319",
    "content": "8298f811",
    "text": "RPS is requests/sec (attempts, per above). P50/P"
   },
@@ -150,7 +150,7 @@
    "kind": "table",
    "top": 2542,
    "h": 385,
-   "style": "55a21148",
+   "style": "7c0cbf9c",
    "content": "5695e6a8",
    "text": "ConfigVUsRequestsIterationsElapsedRPSError %P50P"
   },
@@ -159,7 +159,7 @@
    "kind": "paragraph",
    "top": 2944,
    "h": 156,
-   "style": "d1309eee",
+   "style": "fb400302",
    "content": "8006fc0b",
    "text": "* Iteration error rate. The chain aborts a step'"
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 3118,
    "h": 234,
-   "style": "f38f48a5",
+   "style": "c2a8e7f5",
    "content": "dab9c16a",
    "text": "This table is from the final run against the lin"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 3379,
    "h": 23,
-   "style": "941bc20c",
+   "style": "f663142f",
    "content": "cdb5a43a",
    "text": "Scaling sanity check (VUs=1 → VUs=10)§"
   },
@@ -186,7 +186,7 @@
    "kind": "paragraph",
    "top": 3411,
    "h": 52,
-   "style": "98954dbb",
+   "style": "152a52fb",
    "content": "7ec0a60e",
    "text": "At a fixed 5ms handler latency the theoretical c"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 3481,
    "h": 26,
-   "style": "10fc36cc",
+   "style": "6b4ec77c",
    "content": "5b9fc61d",
    "text": "single-get: 155.3 → 1,564.1 RPS = x10.1"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 3509,
    "h": 26,
-   "style": "37bb6cac",
+   "style": "536f76ec",
    "content": "fac66209",
    "text": "chained-5-step: 155.5 → 1,569.8 RPS = x10.1"
   },
@@ -213,7 +213,7 @@
    "kind": "paragraph",
    "top": 3553,
    "h": 156,
-   "style": "60b9afd3",
+   "style": "07561b6b",
    "content": "d1a9d641",
    "text": "Both configs scale within noise of perfectly lin"
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 3750,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "be6dcee8",
    "text": "Anomaly investigated: VUs=50 request failures§"
   },
@@ -231,7 +231,7 @@
    "kind": "paragraph",
    "top": 3792,
    "h": 104,
-   "style": "679e0f00",
+   "style": "98f24cdc",
    "content": "b7f86de8",
    "text": "The first full-matrix run showed VUs=50 failing "
   },
@@ -240,7 +240,7 @@
    "kind": "paragraph",
    "top": 3914,
    "h": 364,
-   "style": "1d4134bc",
+   "style": "e3c00324",
    "content": "bd6be930",
    "text": "Root cause: packages/server/pkg/httpclient.New()"
   },
@@ -249,7 +249,7 @@
    "kind": "paragraph",
    "top": 4295,
    "h": 364,
-   "style": "263a8e7b",
+   "style": "0f9b5517",
    "content": "9c61f2e6",
    "text": "Why the first matrix run was worse than that rep"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 4677,
    "h": 234,
-   "style": "a675253f",
+   "style": "db757c23",
    "content": "2a6e0798",
    "text": "Is this a load-engine bug? Not one this task sho"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 4928,
    "h": 182,
-   "style": "77b43cd4",
+   "style": "313e3d54",
    "content": "f88b7d83",
    "text": "It is a rate problem, not strictly a VUs problem"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 5113,
    "h": 234,
-   "style": "b0266232",
+   "style": "3ccdb7e6",
    "content": "445f0888",
    "text": "Effective successful throughput at VUs=50 was st"
   },
@@ -285,7 +285,7 @@
    "kind": "paragraph",
    "top": 5365,
    "h": 104,
-   "style": "9882f917",
+   "style": "dbbe82df",
    "content": "2e93968b",
    "text": "Run-to-run variability: two complete matrix runs"
   },
@@ -294,7 +294,7 @@
    "kind": "table",
    "top": 5486,
    "h": 174,
-   "style": "7855e15a",
+   "style": "b6e1ac4a",
    "content": "eb32daa4",
    "text": "Runsingle-get VUs=50 error%chained-5-step VUs=50"
   },
@@ -303,7 +303,7 @@
    "kind": "paragraph",
    "top": 5678,
    "h": 182,
-   "style": "adf9bf21",
+   "style": "f263567d",
    "content": "a6ab4708",
    "text": "This is expected, not a measurement bug: ephemer"
   },
@@ -312,7 +312,7 @@
    "kind": "paragraph",
    "top": 5877,
    "h": 234,
-   "style": "904ee070",
+   "style": "6e16ad64",
    "content": "cd907b71",
    "text": "Capacity-math implication: do not read \"4,247.6 "
   },
@@ -321,7 +321,7 @@
    "kind": "heading",
    "top": 6151,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "a157c130",
    "text": "What this does and doesn't tell you§"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 6194,
    "h": 234,
-   "style": "135c0865",
+   "style": "71cb7089",
    "content": "44a20038",
    "text": "Tells you: the engine's own per-request overhead"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 6430,
    "h": 156,
-   "style": "8ba8ad86",
+   "style": "460b34a6",
    "content": "43d2ebbd",
    "text": "Does not tell you: what a Fly shared-cpu machine"
   },
@@ -348,7 +348,7 @@
    "kind": "heading",
    "top": 6627,
    "h": 29,
-   "style": "7839841e",
+   "style": "8e9212dd",
    "content": "6003695a",
    "text": "Reproducing this§"
   },
@@ -357,7 +357,7 @@
    "kind": "code",
    "top": 6669,
    "h": 164,
-   "style": "63b854df",
+   "style": "4680aef2",
    "content": "00b47496",
    "text": "# Fixture correctness (fast, runs in the default"
   }
