@@ -544,6 +544,7 @@ check('rail labels use the localized template',
   check('an unknown earlier text says so', typeof r.unknown === 'string' && r.unknown.length > 10, JSON.stringify(r));
   check('the comparison opens after the block was read', r.afterRead, JSON.stringify(r));
   check('D opens the comparison of an edited block in view', r.byKey, JSON.stringify(r));
+}
 // Code inside a closed <details> is highlighted when it is opened.
 {
   await page.evaluate(p => window.readout.apply(p), { version: 120, reset: true, rewrite: false,
