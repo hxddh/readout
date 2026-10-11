@@ -5,6 +5,7 @@ import FoundationNetworking
 
 /// Downloads one remote image under `RemoteLoad` policy, streaming:
 /// the URL (and every redirect target) is checked before a request goes out,
+/// including every address its host name resolves to,
 /// status, `Content-Type` and `Content-Length` are checked on the response
 /// headers before any body is accepted, and the body is counted as it arrives
 /// so an oversized or lying server is cancelled as soon as it passes the cap.
@@ -33,14 +34,20 @@ public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked S
         init(_ completion: @escaping Completion) { self.completion = completion }
     }
 
+    public typealias Resolver = @Sendable (String) -> [String]
+
     private let maxBytes: Int
+    private let resolve: Resolver
     private let lock = NSLock()
     private var pending: [Int: Pending] = [:]
     private(set) var session: URLSession!
 
     /// `configuration` is copied; tests pass one with stub `protocolClasses`.
-    public init(configuration: URLSessionConfiguration = .ephemeral, maxBytes: Int = RemoteLoad.maxBytes) {
+    /// `resolve` maps a host name to numeric addresses (tests inject one).
+    public init(configuration: URLSessionConfiguration = .ephemeral, maxBytes: Int = RemoteLoad.maxBytes,
+                resolve: @escaping Resolver = RemoteLoad.systemResolve) {
         self.maxBytes = maxBytes
+        self.resolve = resolve
         super.init()
         let configuration = configuration.copy() as! URLSessionConfiguration
         configuration.timeoutIntervalForRequest = RemoteLoad.timeoutSeconds
@@ -61,9 +68,28 @@ public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked S
             completion(.failure(.rejected(r)))
             return
         }
-        let task = session.dataTask(with: URL(string: urlString)!)
-        lock.withLock { pending[task.taskIdentifier] = Pending(completion) }
-        task.resume()
+        let url = URL(string: urlString)!
+        // Name resolution blocks: do it off the caller's thread.
+        DispatchQueue.global(qos: .userInitiated).async { [self] in
+            if let r = checkResolution(url) {
+                completion(.failure(.rejected(r)))
+                return
+            }
+            let task = session.dataTask(with: url)
+            lock.withLock { pending[task.taskIdentifier] = Pending(completion) }
+            task.resume()
+        }
+    }
+
+    /// Every address a host name resolves to must be public. Literal
+    /// addresses were already checked by `RemoteLoad.check`.
+    ///
+    /// URLSession resolves again when it connects, so a name that changes its
+    /// answer in between (DNS rebinding) is not covered; for a click-to-load
+    /// image that narrow window is accepted.
+    private func checkResolution(_ url: URL) -> RemoteLoad.Rejection? {
+        guard let host = url.host, !RemoteLoad.isAddressLiteral(host) else { return nil }
+        return RemoteLoad.checkResolved(resolve(host))
     }
 
     private func entry(_ task: URLSessionTask) -> Pending? {
@@ -76,7 +102,7 @@ public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked S
                            willPerformHTTPRedirection response: HTTPURLResponse,
                            newRequest request: URLRequest,
                            completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
-        if let r = RemoteLoad.check(request.url?.absoluteString ?? "") {
+        if let r = RemoteLoad.check(request.url?.absoluteString ?? "") ?? request.url.flatMap(checkResolution) {
             entry(task)?.failure = .rejected(r)
             completionHandler(nil)
             task.cancel()
@@ -88,7 +114,9 @@ public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked S
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask,
                            didReceive response: URLResponse,
                            completionHandler: @escaping @Sendable (URLSession.ResponseDisposition) -> Void) {
-        guard let p = entry(dataTask) else { completionHandler(.cancel); return }
+        // Missing, or already refused (a rejected redirect still delivers its 3xx):
+        // keep the first reason.
+        guard let p = entry(dataTask), p.failure == nil else { completionHandler(.cancel); return }
         let http = response as? HTTPURLResponse
         let status = http?.statusCode ?? 0
         let contentType = http?.value(forHTTPHeaderField: "Content-Type")

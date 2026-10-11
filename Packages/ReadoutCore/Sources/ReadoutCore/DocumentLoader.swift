@@ -41,6 +41,8 @@ public final class DocumentLoader {
     private var readInFlight = false
     private var readAgain = false
     private var pendingCompletions: [(ReadResult?) -> Void] = []
+    /// Parses started (for tests: proves bursts coalesce).
+    private(set) var parseCount = 0
 
     /// `resolver` is evaluated per read so workspace settings changes apply.
     public init(url: URL, retryDelay: TimeInterval = 0.12, resolver: @escaping @MainActor () -> FileResolver) {
@@ -93,6 +95,7 @@ public final class DocumentLoader {
             return
         }
         readInFlight = true
+        parseCount += 1
         readGeneration += 1
         let generation = readGeneration
         let url = self.url

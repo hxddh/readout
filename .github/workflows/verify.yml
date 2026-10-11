@@ -78,8 +78,12 @@ jobs:
       - name: The shipped app never writes the document
         run: |
           # File edits during the smoke test come from tools/smoke-run.py, not the app.
-          if grep -rnE "replaceItemAt|copyItem\(|READOUT_SMOKE_(EDIT|EARLY)" App Shared QuickLook; then
-            echo "FAIL: document-writing smoke code is back in the app sources"; exit 1
+          # Allowlist: the only places the app may write files at all are the
+          # smoke capture export (into READOUT_SMOKE_OUT) and the baseline store
+          # (Application Support). Any other write API anywhere fails the build.
+          WRITES='replaceItemAt|[^a-zA-Z]copyItem\(|[^a-zA-Z]moveItem\(|[^a-zA-Z]linkItem\(|createFile\(|removeItem\(at:|trashItem\(|\.write\(to:|\.write\(toFile:|write\(to: *[a-zA-Z]|forWritingTo|forWritingAtPath|forUpdating|fopen\(|open\(.*O_WRONLY|O_RDWR|NSFileCoordinator'
+          if grep -rnE "$WRITES" App Shared QuickLook | grep -vE '^App/(SmokeTest|Settings)\.swift:'; then
+            echo "FAIL: file-writing code outside App/SmokeTest.swift and App/Settings.swift (baseline store)"; exit 1
           fi
           if strings -a dist/Readout.app/Contents/MacOS/Readout | grep -E "READOUT_SMOKE_(EDIT|EARLY)|readout-smoke"; then
             echo "FAIL: the signed binary still carries smoke edit code"; exit 1

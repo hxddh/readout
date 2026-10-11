@@ -62,23 +62,30 @@ import Testing
         try write("# Plan\n")
         let l = loader()
         _ = await initial(l)
+        #expect(l.parseCount == 1)
         try write("# Plan\n\nv2\n")
         var changes: [DocumentLoader.Change] = []
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
             var left = 3
-            for _ in 0..<3 {
-                l.readChange { c in
-                    changes.append(c)
-                    left -= 1
-                    if left == 0 { cont.resume() }
-                }
+            let done = { (c: DocumentLoader.Change) in
+                changes.append(c)
+                left -= 1
+                if left == 0 { cont.resume() }
             }
+            l.readChange(done)
+            // Lands while the first parse is (likely) running: the burst must
+            // end on this content, never on the stale v2.
+            try? write("# Plan\n\nv3\n")
+            l.readChange(done)
+            l.readChange(done)
         }
-        // Every caller is answered; the content is reported exactly once.
+        // Every caller is answered; the content is reported exactly once; and
+        // the burst cost one parse plus one fresh re-read, not one per write.
         let contents = changes.compactMap { if case .content(let r) = $0 { return r } else { return nil } }
         #expect(changes.count == 3)
         #expect(contents.count == 1)
-        #expect(texts(contents.first) == ["# Plan", "v2"])
+        #expect(texts(contents.first) == ["# Plan", "v3"])
+        #expect(l.parseCount == 3)
     }
 
     @Test func halfWrittenFileIsRetriedUntilComplete() async throws {

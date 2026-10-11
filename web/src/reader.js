@@ -20,9 +20,6 @@ import { rerenderMermaid } from './reader/mermaid.js';
 import { remoteReady, remoteFailed } from './reader/remote.js';
 import { reportActiveHeading } from './reader/heading.js';
 
-window.addEventListener('error', e => post({ type: 'error', message: `${e.message} (${e.filename}:${e.lineno})` }));
-window.addEventListener('unhandledrejection', e => post({ type: 'error', message: `unhandled: ${e.reason && (e.reason.stack || e.reason.message) || e.reason}` }));
-
 // ---------------------------------------------------------------- Links & keys
 
 doc.addEventListener('click', ev => {

@@ -54,6 +54,10 @@ import Testing
             "http://[ff02::1]/a.png", "http://[::ffff:127.0.0.1]/a.png", "http://[::ffff:7f00:1]/a.png",
             "http://[::ffff:10.1.2.3]/a.png", "http://[64:ff9b::192.168.0.1]/a.png", "http://[::127.0.0.1]/a.png",
             "http://[not:an:address]/a.png",
+            // Found in M1 review.
+            "http://intranet/a.png", "http://router/a.png", "http://localhost../a.png", "http://router.lan/a.png",
+            "http://[::ffff:0:127.0.0.1]/a.png", "http://[64:ff9b:1::a00:1]/a.png", "http://[2002:7f00:1::]/a.png",
+            "http://[2002:c0a8:101::1]/a.png", "http://[100::1]/a.png",
         ]
         for url in blocked {
             #expect(RemoteLoad.check(url) == .privateAddress, "\(url)")
@@ -71,6 +75,37 @@ import Testing
         for url in allowed {
             #expect(RemoteLoad.check(url) == nil, "\(url)")
         }
+    }
+
+    @Test func rejectsControlCharactersInHosts() {
+        #expect(RemoteLoad.checkHost("localhost\u{0}.example.com") == .privateAddress)
+        #expect(RemoteLoad.checkHost("example.com\u{0}") == .privateAddress)
+        #expect(RemoteLoad.checkHost("exa mple.com") == .privateAddress)
+        #expect(RemoteLoad.checkHost("localhost%00.example.com") == .privateAddress)
+    }
+
+    @Test func checksResolvedAddresses() {
+        #expect(RemoteLoad.checkResolved(["93.184.216.34"]) == nil)
+        #expect(RemoteLoad.checkResolved(["93.184.216.34", "2606:4700::1111"]) == nil)
+        #expect(RemoteLoad.checkResolved(["93.184.216.34", "10.0.0.1"]) == .privateAddress)
+        #expect(RemoteLoad.checkResolved(["fe80::1%en0"]) == .privateAddress)
+        #expect(RemoteLoad.checkResolved([]) == .unresolved)
+    }
+
+    @Test func systemResolverReturnsNumericAddresses() {
+        // /etc/hosts maps localhost on every supported system; no network needed.
+        let addrs = RemoteLoad.systemResolve("localhost")
+        #expect(addrs.contains("127.0.0.1") || addrs.contains("::1"), "\(addrs)")
+        #expect(RemoteLoad.checkResolved(addrs) == .privateAddress)
+        #expect(RemoteLoad.systemResolve("no-such-host.invalid").isEmpty)
+    }
+
+    @Test func recognizesAddressLiterals() {
+        #expect(RemoteLoad.isAddressLiteral("8.8.8.8"))
+        #expect(RemoteLoad.isAddressLiteral("[::1]"))
+        #expect(RemoteLoad.isAddressLiteral("0x7f.1"))
+        #expect(!RemoteLoad.isAddressLiteral("example.com"))
+        #expect(!RemoteLoad.isAddressLiteral("1e100.net"))
     }
 
     @Test func checkRejectsSchemeFirst() {
