@@ -110,3 +110,5 @@
 "could not be loaded" = "无法加载";
 "Wrap" = "换行";
 "Wrap long lines in code blocks" = "代码块长行自动换行";
+"Changes since you last read" = "自上次阅读以来的改动";
+"The earlier text was not kept, so there is nothing to compare with." = "没有保存更早的原文，无法对比。";

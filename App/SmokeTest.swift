@@ -72,6 +72,9 @@ enum SmokeTest {
             await capture(webView, window: controller.window, to: out, name: "2-after-edit")
             _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
             try? await Task.sleep(for: .seconds(1))
+            // Open what changed in the edited table (the edit mark's action).
+            _ = try? await webView.evaluateJavaScript("(() => { const t = document.querySelector('.blk.k-table.m-modified'); return t ? window.readout.toggleDiff(+t.dataset.slot) : false; })()")
+            try? await Task.sleep(for: .milliseconds(300))
             await capture(webView, window: controller.window, to: out, name: "3-marks")
 
             // Dark appearance, then the auxiliary windows.
@@ -123,7 +126,9 @@ enum SmokeTest {
               anchorShift: window.__smoke ? (document.querySelector('.blk[data-slot="' + window.__smoke.slot + '"]').getBoundingClientRect().top - window.__smoke.top) : null,
               theme: document.documentElement.dataset.theme,
               title: document.title,
-              early: document.body.innerText.includes('EARLY-EDIT-OK')
+              early: document.body.innerText.includes('EARLY-EDIT-OK'),
+              diffDel: [...document.querySelectorAll('.wd-panel del')].map(e => e.textContent),
+              diffIns: [...document.querySelectorAll('.wd-panel ins')].map(e => e.textContent)
             })
             """)
         if let s = stats as? String {

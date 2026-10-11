@@ -24,6 +24,9 @@ public struct RenderPatch: Codable, Sendable {
     public struct Mark: Codable, Sendable, Equatable {
         public let slot: Int
         public let kind: MarkKind
+        /// For a modified block: what changed since it was read, as HTML
+        /// (`WordDiff.html`); "" when the earlier text was not kept.
+        public var diff: String? = nil
     }
 
     public struct Deletion: Codable, Sendable, Equatable {
@@ -56,6 +59,9 @@ public final class DocumentSession {
     public private(set) var deletions: [RenderPatch.Deletion] = []
     /// The version the reader has fully caught up with. Persist this between launches.
     public private(set) var baseline: [BlockKey] = []
+    /// For each block marked modified: its text when last read (nil: not kept), and the comparison.
+    private var readText: [Int: String?] = [:]
+    private var diffs: [Int: String] = [:]
 
     public init() {}
 
@@ -68,11 +74,11 @@ public final class DocumentSession {
         blocks = doc.blocks
         title = doc.title
         for i in blocks.indices { blocks[i].slot = allocSlot() }
-        marks = [:]; deletions = []
+        marks = [:]; deletions = []; readText = [:]; diffs = [:]
         let keys = blocks.map(BlockKey.init)
         if let persisted, persisted != keys {
             let d = Differ.diff(old: persisted, new: keys)
-            if !d.rewrite { applyMarks(d, oldKeys: persisted, oldSlotForIndex: { _ in nil }) }
+            if !d.rewrite { applyMarks(d, oldKeys: persisted, oldSlotForIndex: { _ in nil }, oldTexts: persisted.map(\.wholeText)) }
             baseline = persisted
             if marks.isEmpty && deletions.isEmpty { baseline = keys }
         } else {
@@ -107,7 +113,7 @@ public final class DocumentSession {
         if d.rewrite {
             for i in newBlocks.indices { newBlocks[i].slot = allocSlot() }
             blocks = newBlocks
-            marks = [:]; deletions = []
+            marks = [:]; deletions = []; readText = [:]; diffs = [:]
             baseline = newKeys
             return fullPayload(rewrite: true)
         }
@@ -145,22 +151,32 @@ public final class DocumentSession {
         // Order changes are impossible here (no moves), so inserts by `after` reproduce the order.
         let oldSlotForIndex: (Int) -> Int? = { oldBlocks[$0].slot }
         blocks = newBlocks
-        applyMarks(d, oldKeys: oldKeys, oldSlotForIndex: oldSlotForIndex, oldBlocks: oldBlocks)
+        applyMarks(d, oldKeys: oldKeys, oldSlotForIndex: oldSlotForIndex, oldBlocks: oldBlocks,
+                   oldTexts: oldBlocks.map(\.text))
         if marks.isEmpty && deletions.isEmpty { baseline = newKeys }
         if ops.isEmpty { return nil }
         return payload(ops: ops, reset: false, rewrite: false)
     }
 
     private func applyMarks(_ d: DiffResult, oldKeys: [BlockKey], oldSlotForIndex: (Int) -> Int?,
-                            oldBlocks: [Block] = []) {
+                            oldBlocks: [Block] = [], oldTexts: [String?]) {
         let newSlots = Set(blocks.map(\.slot))
         for (n, c) in d.changes.enumerated() {
             let slot = blocks[n].slot
             switch c {
             case .inserted:
                 marks[slot] = .inserted
-            case .modified:
-                if marks[slot] != .inserted { marks[slot] = .modified }
+            case let .modified(o):
+                if marks[slot] != .inserted {
+                    // Compared with the text as last read: the first change since then keeps it.
+                    if marks[slot] != .modified { readText[slot] = oldTexts[o] }
+                    marks[slot] = .modified
+                    if let read = readText[slot] ?? nil {
+                        diffs[slot] = WordDiff.html(old: read, new: blocks[n].text)
+                    } else {
+                        diffs[slot] = ""
+                    }
+                }
             case let .equal(o):
                 if !oldBlocks.isEmpty, oldBlocks[o].taskState != blocks[n].taskState, marks[slot] == nil {
                     marks[slot] = .state
@@ -191,10 +207,11 @@ public final class DocumentSession {
             }
             if let s = oldSlotForIndex(o) { marks[s] = nil }
             let after = anchorBefore(o)
-            let preview = String(oldKeys[o].text.prefix(280))
+            // The whole removed text (what is kept of it, for an older baseline).
+            let preview = oldTexts[o] ?? oldKeys[o].text
             if var existing = newDeletions[after] {
                 existing.count += 1
-                if existing.preview.count < 280 { existing.preview += "\n" + preview }
+                if existing.preview.count < 20_000 { existing.preview += "\n\n" + preview }
                 newDeletions[after] = existing
             } else {
                 newDeletions[after] = .init(id: 0, after: after, count: 1, preview: preview)
@@ -219,24 +236,27 @@ public final class DocumentSession {
         }
         deletions = reanchored
         marks = marks.filter { newSlots.contains($0.key) }
+        readText = readText.filter { marks[$0.key] == .modified }
+        diffs = diffs.filter { marks[$0.key] == .modified }
     }
 
     // MARK: Reading
 
     public func markRead(slots: [Int], deletionIDs: [Int]) {
-        for s in slots { marks[s] = nil }
+        for s in slots { marks[s] = nil; readText[s] = nil; diffs[s] = nil }
         let ids = Set(deletionIDs)
         deletions.removeAll { ids.contains($0.id) }
         if marks.isEmpty && deletions.isEmpty { baseline = blocks.map(BlockKey.init) }
     }
 
     public func markAllRead() {
-        marks = [:]; deletions = []
+        marks = [:]; deletions = []; readText = [:]; diffs = [:]
         baseline = blocks.map(BlockKey.init)
     }
 
     public var currentMarks: [RenderPatch.Mark] {
-        marks.map { .init(slot: $0.key, kind: $0.value) }.sorted { $0.slot < $1.slot }
+        marks.map { .init(slot: $0.key, kind: $0.value, diff: $0.value == .modified ? diffs[$0.key] : nil) }
+            .sorted { $0.slot < $1.slot }
     }
 
     // MARK: Helpers

@@ -244,6 +244,8 @@ enum ReaderStrings {
             "railRemoved": NSLocalizedString("removed", comment: "Change kind in rail label"),
             "wrap": NSLocalizedString("Wrap", comment: "Code block button: wrap long lines"),
             "wrapTitle": NSLocalizedString("Wrap long lines in code blocks", comment: "Code block wrap button tooltip"),
+            "changesSince": NSLocalizedString("Changes since you last read", comment: "Label of the word-level comparison under an edited block"),
+            "noEarlierText": NSLocalizedString("The earlier text was not kept, so there is nothing to compare with.", comment: "Comparison under an edited block when the old text is unknown"),
         ]
     }
 }

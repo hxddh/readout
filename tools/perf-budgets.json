@@ -12,6 +12,7 @@
     "write_to_update 423, web_first_apply_1mb 1351, web_update_20 197, long frames 417/600."
   ],
   "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": 25 },
+  "word_diff_100kb":            { "where": "mac",          "unit": "ms",     "target": 5,    "guard": 5 },
   "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 300 },
   "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 1600 },
   "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 7500 },

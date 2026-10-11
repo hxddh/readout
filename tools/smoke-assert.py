@@ -56,6 +56,14 @@ check(
 )
 check("2-after-edit mermaid >= 1", (edit.get("mermaid") or 0) >= 1, edit)
 
+marks = load("3-marks.json")
+print(f"3-marks: {marks}")
+# The edited table's comparison: the changed cell reads 未知 -> 不支持.
+ins = "".join(marks.get("diffIns") or [])
+dels = "".join(marks.get("diffDel") or [])
+check("3-marks table comparison shows 不支持 as added", "不支持" in ins, marks)
+check("3-marks table comparison shows 未知 as removed", "未知" in dels, marks)
+
 dark = load("4-dark.json")
 print(f"4-dark: {dark}")
 check("4-dark theme == dark", dark.get("theme") == "dark", dark)

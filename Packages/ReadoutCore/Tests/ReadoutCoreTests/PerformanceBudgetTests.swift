@@ -92,6 +92,24 @@ import Testing
               detail: ["bytes": doc.utf8.count, "edits": 20])
     }
 
+    /// What the word-level comparison adds to a patch: 20 edited blocks of a 100 KB document.
+    @Test func wordDiff100KB() {
+        let doc = Self.document(bytes: 100_000)
+        let old = MarkdownParser.parse(doc).blocks, new = MarkdownParser.parse(Self.edited(doc, count: 20)).blocks
+        let d = Differ.diff(old: old.map(BlockKey.init), new: new.map(BlockKey.init))
+        let pairs = d.changes.enumerated().compactMap { n, c -> (String, String)? in
+            if case let .modified(o) = c { return (old[o].text, new[n].text) } else { return nil }
+        }
+        #expect(pairs.count >= 10)
+        var samples: [Double] = []
+        for _ in 0..<9 {
+            let start = DispatchTime.now().uptimeNanoseconds
+            for (a, b) in pairs { _ = WordDiff.html(old: a, new: b) }
+            samples.append(Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
+        }
+        record("word_diff_100kb", measured: samples.sorted()[samples.count / 2], detail: ["blocks": pairs.count])
+    }
+
     @Test func update1MB() {
         let doc = Self.document(bytes: 1_000_000)
         let ms = Self.measureUpdate(original: doc, edited: Self.edited(doc, count: 20), runs: 5)

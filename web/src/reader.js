@@ -13,7 +13,7 @@ import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment } from './reader/anchor.js';
 import { apply } from './reader/patch.js';
-import { jump, markAllRead, setChangesOnly, initChangesOnly } from './reader/marks.js';
+import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelHeadingLinks, setCodeWrap } from './reader/enhance.js';
 import { rerenderMermaid } from './reader/mermaid.js';
@@ -126,6 +126,7 @@ window.readout = {
   nextChange: () => jump(1),
   previousChange: () => jump(-1),
   markAllRead,
+  toggleDiff,
   remoteReady,
   remoteFailed,
   warm: () => hl.init(),

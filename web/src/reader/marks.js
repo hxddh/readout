@@ -5,6 +5,8 @@ import { captureAnchor, restoreAnchor } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
+const diffOf = new Map();   // slot -> word-level comparison HTML of an edited block ("" = no earlier text)
+const openDiffs = new Set(); // slots whose comparison is shown
 const readTimers = new Map();
 let changesOnly = false;
 
@@ -20,8 +22,17 @@ export function renderMarks(marks, deletions) {
     if (!el) continue;
     el.classList.add(`m-${m.kind}`);
     marked.set(m.slot, m.kind);
+    if (m.kind === 'modified' && typeof m.diff === 'string') diffOf.set(m.slot, m.diff);
     readObserver.observe(el);
   }
+  // An open comparison stays open across patches (reading it marks the
+  // block read, which must not take it away); it follows the latest one.
+  for (const slot of [...openDiffs]) {
+    const el = slots.get(slot);
+    if (!el || !diffOf.has(slot)) { closeDiff(slot); continue; }
+    showDiff(el, diffOf.get(slot));
+  }
+  for (const slot of [...diffOf.keys()]) if (!slots.has(slot)) diffOf.delete(slot);
   for (const d of deletions) {
     const mark = document.createElement('div');
     mark.className = 'del-mark';
@@ -48,6 +59,65 @@ export function renderMarks(marks, deletions) {
 }
 
 document.addEventListener('click', () => document.querySelectorAll('.del-pop').forEach(p => p.remove()));
+
+// ---------------------------------------------------------------- What changed in an edited block
+
+/** The comparison panel at the end of an edited block (shown, or refreshed). */
+function showDiff(el, html) {
+  let panel = el.querySelector(':scope > .wd-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.className = 'wd-panel';
+    panel.setAttribute('role', 'region');
+    const label = document.createElement('div');
+    label.className = 'wd-label';
+    panel.appendChild(label);
+    const body = document.createElement('pre');
+    body.className = 'wd-body';
+    panel.appendChild(body);
+    el.appendChild(panel);
+  }
+  const label = strings.changesSince || 'Changes since you last read';
+  panel.setAttribute('aria-label', label);
+  panel.firstChild.textContent = label;
+  const body = panel.lastChild;
+  if (html) { body.innerHTML = html; body.classList.remove('wd-none'); }
+  else { body.textContent = strings.noEarlierText || 'The earlier text was not kept, so there is nothing to compare with.'; body.classList.add('wd-none'); }
+  el.classList.add('wd-open');
+  openDiffs.add(+el.dataset.slot);
+}
+
+function closeDiff(slot) {
+  openDiffs.delete(slot);
+  const el = slots.get(slot);
+  if (!el) return;
+  el.querySelector(':scope > .wd-panel')?.remove();
+  el.classList.remove('wd-open');
+}
+
+/** Shows or hides what changed in an edited block, keeping the reader's place. */
+export function toggleDiff(slot) {
+  const el = slots.get(slot);
+  if (!el || !diffOf.has(slot)) return false;
+  const anchor = captureAnchor();
+  if (openDiffs.has(slot)) closeDiff(slot); else showDiff(el, diffOf.get(slot));
+  // The panel is part of the block, not new content: keep the height baseline.
+  heights.set(el, el.getBoundingClientRect().height);
+  restoreAnchor(anchor, new Set());
+  scheduleRail();
+  return openDiffs.has(slot);
+}
+
+// The edit mark in the gutter opens the comparison: a click on an edited
+// block left of its text.
+doc.addEventListener('click', ev => {
+  const el = ev.target.closest('#ro-doc > .blk.m-modified, #ro-doc > .blk.wd-open');
+  if (!el || ev.target.closest('a, button, .wd-panel')) return;
+  const text = el.firstElementChild;
+  if (!text || ev.clientX >= text.getBoundingClientRect().left) return;
+  ev.stopPropagation();
+  toggleDiff(+el.dataset.slot);
+});
 
 // A change counts as read once at least half of it has been visible for 800 ms while the window is focused.
 const readObserver = new IntersectionObserver(entries => {

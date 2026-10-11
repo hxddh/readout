@@ -13,7 +13,9 @@ Readout has one job: make long, frequently rewritten Markdown from AI agents com
 
 ## Change marks
 
-Marks are relative to what you have read, not to the previous write. A block counts as read once at least half of it has been visible for 800 ms while the window is focused. When nothing is unread, the current version becomes the new baseline, which is stored per file (fingerprints plus a short similarity excerpt, capped at 500 characters per block) and survives restarts. Scroll-only position saves never rewrite an unchanged baseline.
+Marks are relative to what you have read, not to the previous write. A block counts as read once at least half of it has been visible for 800 ms while the window is focused. When nothing is unread, the current version becomes the new baseline, which is stored per file (fingerprints, a similarity excerpt capped at 500 characters per block, and the whole text of longer blocks) and survives restarts. Scroll-only position saves never rewrite an unchanged baseline.
+
+An edited block carries a word-level comparison with its text as last read (`WordDiff`): the normalized Markdown source of both versions, tokenized as CJK characters, letter and digit runs, white space and single punctuation, compared with Myers after cutting the shared start and end; long middles are compared line by line first, then word by word inside changed lines. A short unchanged run between two changes is folded into them so a rewritten phrase reads as one deletion and one insertion. Clicking the block's edit mark shows it under the block; a baseline saved before whole texts were kept shows that the earlier text is unknown. Removed blocks show their whole text.
 
 ## Rendering
 
