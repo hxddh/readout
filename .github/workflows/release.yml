@@ -164,7 +164,7 @@ jobs:
             sleep 10
           done
           [ -n "$JOBS" ] || { echo "FAIL: could not list the jobs of CI run $ID"; exit 1; }
-          for NAME in "Core tests (Linux)" "Web tests (WebKit)" "Verify signed product"; do
+          for NAME in "Core tests (Linux)" "Web tests (WebKit)" "Rendering baselines (WebKit)" "Verify signed product"; do
             C=$(jq -r "[.jobs[] | select(.name | contains(\"$NAME\"))][0].conclusion // \"\"" <<< "$JOBS")
             echo "$NAME: ${C:-missing}"
             [ "$C" = "success" ] || { echo "FAIL: '$NAME' is not success in run $ID"; exit 1; }

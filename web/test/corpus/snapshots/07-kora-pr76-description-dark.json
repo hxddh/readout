@@ -1,0 +1,302 @@
+{
+ "height": 3350,
+ "blocks": [
+  {
+   "slot": 1,
+   "kind": "heading",
+   "top": 40,
+   "h": 76,
+   "style": "154ac8a5",
+   "content": "d2249bf5",
+   "text": "PR #76: Docker Build and Runtime Healthcheck Con"
+  },
+  {
+   "slot": 2,
+   "kind": "heading",
+   "top": 156,
+   "h": 29,
+   "style": "7ba8fa65",
+   "content": "e2e70e7c",
+   "text": "Summary§"
+  },
+  {
+   "slot": 3,
+   "kind": "paragraph",
+   "top": 199,
+   "h": 130,
+   "style": "2808aaf0",
+   "content": "301aebb3",
+   "text": "This PR adds a HEALTHCHECK instruction to the Do"
+  },
+  {
+   "slot": 4,
+   "kind": "heading",
+   "top": 369,
+   "h": 29,
+   "style": "7ba8fa65",
+   "content": "c3f62cc1",
+   "text": "Problem§"
+  },
+  {
+   "slot": 5,
+   "kind": "paragraph",
+   "top": 412,
+   "h": 78,
+   "style": "e85f8d72",
+   "content": "292729cd",
+   "text": "Before this change, health checking was defined "
+  },
+  {
+   "slot": 6,
+   "kind": "listItem",
+   "top": 507,
+   "h": 78,
+   "style": "a28432ac",
+   "content": "e0867bba",
+   "text": "Running the image with plain docker run (outside"
+  },
+  {
+   "slot": 7,
+   "kind": "listItem",
+   "top": 587,
+   "h": 78,
+   "style": "e5b1bda1",
+   "content": "80ca2109",
+   "text": "The healthcheck contract (which script to call, "
+  },
+  {
+   "slot": 8,
+   "kind": "listItem",
+   "top": 668,
+   "h": 78,
+   "style": "c1b52f35",
+   "content": "a5330a15",
+   "text": "The root .dockerignore did not exclude markdown "
+  },
+  {
+   "slot": 9,
+   "kind": "heading",
+   "top": 786,
+   "h": 29,
+   "style": "7ba8fa65",
+   "content": "63c56ebb",
+   "text": "Solution§"
+  },
+  {
+   "slot": 10,
+   "kind": "heading",
+   "top": 843,
+   "h": 23,
+   "style": "c246fe4b",
+   "content": "1b726266",
+   "text": "Dockerfile HEALTHCHECK§"
+  },
+  {
+   "slot": 11,
+   "kind": "paragraph",
+   "top": 875,
+   "h": 26,
+   "style": "7f4f23df",
+   "content": "bb3fe867",
+   "text": "A HEALTHCHECK instruction was added to the runti"
+  },
+  {
+   "slot": 12,
+   "kind": "code",
+   "top": 918,
+   "h": 64,
+   "style": "e0b36cd2",
+   "content": "0d5f8de4",
+   "text": "HEALTHCHECK --interval=10s --timeout=5s --retrie"
+  },
+  {
+   "slot": 13,
+   "kind": "listItem",
+   "top": 997,
+   "h": 78,
+   "style": "5000afde",
+   "content": "0f41daa3",
+   "text": "The timing parameters (interval, timeout, retrie"
+  },
+  {
+   "slot": 14,
+   "kind": "listItem",
+   "top": 1078,
+   "h": 52,
+   "style": "69a3eed4",
+   "content": "38214950",
+   "text": "The default healthcheck mode is p2p (set inside "
+  },
+  {
+   "slot": 15,
+   "kind": "listItem",
+   "top": 1132,
+   "h": 52,
+   "style": "e6a76371",
+   "content": "87514c48",
+   "text": "Compose services override this to HEALTHCHECK_MO"
+  },
+  {
+   "slot": 16,
+   "kind": "listItem",
+   "top": 1186,
+   "h": 138,
+   "style": "32c5e413",
+   "content": "1551c181",
+   "text": "The HEALTHCHECK_MODE environment variable suppor"
+  },
+  {
+   "slot": 17,
+   "kind": "heading",
+   "top": 1351,
+   "h": 23,
+   "style": "c246fe4b",
+   "content": "5476db1c",
+   "text": ".dockerignore extensions§"
+  },
+  {
+   "slot": 18,
+   "kind": "paragraph",
+   "top": 1384,
+   "h": 52,
+   "style": "87a084f5",
+   "content": "c40ae474",
+   "text": "The root .dockerignore now excludes markdown fil"
+  },
+  {
+   "slot": 19,
+   "kind": "code",
+   "top": 1453,
+   "h": 124,
+   "style": "b381023f",
+   "content": "3ba981b3",
+   "text": "*.md !README.md !bin/**/README.md !crates/**/REA"
+  },
+  {
+   "slot": 20,
+   "kind": "paragraph",
+   "top": 1592,
+   "h": 52,
+   "style": "87e1eb7e",
+   "content": "c1f5183a",
+   "text": "This keeps the build context small without break"
+  },
+  {
+   "slot": 21,
+   "kind": "heading",
+   "top": 1684,
+   "h": 29,
+   "style": "7ba8fa65",
+   "content": "f411d658",
+   "text": "Files Modified§"
+  },
+  {
+   "slot": 22,
+   "kind": "table",
+   "top": 1727,
+   "h": 152,
+   "style": "fbf2f311",
+   "content": "1b5e6fe4",
+   "text": "FileChangedocker/DockerfileAdded HEALTHCHECK ins"
+  },
+  {
+   "slot": 23,
+   "kind": "heading",
+   "top": 1919,
+   "h": 29,
+   "style": "7ba8fa65",
+   "content": "c74cc852",
+   "text": "Breaking Changes§"
+  },
+  {
+   "slot": 24,
+   "kind": "paragraph",
+   "top": 1961,
+   "h": 104,
+   "style": "c65d12f7",
+   "content": "974dbeb9",
+   "text": "None. Existing Compose-based workflows are unaff"
+  },
+  {
+   "slot": 25,
+   "kind": "heading",
+   "top": 2106,
+   "h": 29,
+   "style": "7ba8fa65",
+   "content": "5aedf004",
+   "text": "Migration§"
+  },
+  {
+   "slot": 26,
+   "kind": "paragraph",
+   "top": 2148,
+   "h": 26,
+   "style": "968ba240",
+   "content": "20da0f53",
+   "text": "No migration steps are required. The change is f"
+  },
+  {
+   "slot": 27,
+   "kind": "heading",
+   "top": 2214,
+   "h": 29,
+   "style": "7ba8fa65",
+   "content": "cfc59094",
+   "text": "Testing§"
+  },
+  {
+   "slot": 28,
+   "kind": "listItem",
+   "top": 2257,
+   "h": 105,
+   "style": "5cf028be",
+   "content": "7c444911",
+   "text": "Validate Compose configuration:docker compose -f"
+  },
+  {
+   "slot": 29,
+   "kind": "listItem",
+   "top": 2369,
+   "h": 105,
+   "style": "5c7a9438",
+   "content": "7cf0bfd4",
+   "text": "Check Dockerfile syntax:docker build --check -f "
+  },
+  {
+   "slot": 30,
+   "kind": "listItem",
+   "top": 2482,
+   "h": 131,
+   "style": "de3cfc20",
+   "content": "f5a5d1d4",
+   "text": "Build the image locally:cd docker && just buildb"
+  },
+  {
+   "slot": 31,
+   "kind": "listItem",
+   "top": 2621,
+   "h": 131,
+   "style": "01275be8",
+   "content": "5f6576aa",
+   "text": "Verify the healthcheck is embedded in the image:"
+  },
+  {
+   "slot": 32,
+   "kind": "listItem",
+   "top": 2759,
+   "h": 171,
+   "style": "3f9d66a0",
+   "content": "7de3fd02",
+   "text": "Run a standalone container and observe health st"
+  },
+  {
+   "slot": 33,
+   "kind": "listItem",
+   "top": 2938,
+   "h": 125,
+   "style": "faeaefa2",
+   "content": "d67e354e",
+   "text": "Run the devnet and verify validators become heal"
+  }
+ ]
+}

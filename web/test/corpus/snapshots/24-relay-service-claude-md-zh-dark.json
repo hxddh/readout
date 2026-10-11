@@ -1,0 +1,662 @@
+{
+ "height": 5294,
+ "blocks": [
+  {
+   "slot": 1,
+   "kind": "heading",
+   "top": 40,
+   "h": 38,
+   "style": "2508b447",
+   "content": "3d66bf4f",
+   "text": "CLAUDE.md§"
+  },
+  {
+   "slot": 2,
+   "kind": "paragraph",
+   "top": 99,
+   "h": 52,
+   "style": "04de64dc",
+   "content": "ecb89e4f",
+   "text": "This file provides guidance to Claude Code (clau"
+  },
+  {
+   "slot": 3,
+   "kind": "heading",
+   "top": 191,
+   "h": 29,
+   "style": "dc1864b4",
+   "content": "effe5861",
+   "text": "项目概述§"
+  },
+  {
+   "slot": 4,
+   "kind": "paragraph",
+   "top": 233,
+   "h": 112,
+   "style": "d43b5467",
+   "content": "0a02bc87",
+   "text": "Claude Relay Service — 多平台 AI API 中转服务，作为客户端与上游 "
+  },
+  {
+   "slot": 5,
+   "kind": "heading",
+   "top": 386,
+   "h": 29,
+   "style": "dc1864b4",
+   "content": "42134fbc",
+   "text": "架构原则§"
+  },
+  {
+   "slot": 6,
+   "kind": "heading",
+   "top": 442,
+   "h": 23,
+   "style": "c246fe4b",
+   "content": "5ff42848",
+   "text": "Clean Architecture 分层映射§"
+  },
+  {
+   "slot": 7,
+   "kind": "table",
+   "top": 474,
+   "h": 282,
+   "style": "bd8579b2",
+   "content": "321094fa",
+   "text": "层级目录职责框架层src/routes/, src/middleware/HTTP 路由、请求验"
+  },
+  {
+   "slot": 8,
+   "kind": "heading",
+   "top": 784,
+   "h": 23,
+   "style": "025b03fa",
+   "content": "ff50aa1f",
+   "text": "开发原则§"
+  },
+  {
+   "slot": 9,
+   "kind": "listItem",
+   "top": 816,
+   "h": 29,
+   "style": "653b0b34",
+   "content": "705c13d1",
+   "text": "依赖方向: 外层 → 内层，内层不知道外层存在"
+  },
+  {
+   "slot": 10,
+   "kind": "listItem",
+   "top": 847,
+   "h": 29,
+   "style": "e29e02e8",
+   "content": "0ef35bbd",
+   "text": "新增路由: 只做参数提取和响应格式化，业务逻辑放 service"
+  },
+  {
+   "slot": 11,
+   "kind": "listItem",
+   "top": 877,
+   "h": 29,
+   "style": "e29e02e8",
+   "content": "5a8aa15d",
+   "text": "新增服务: 先确定属于哪一层，遵循该层职责边界"
+  },
+  {
+   "slot": 12,
+   "kind": "listItem",
+   "top": 908,
+   "h": 29,
+   "style": "e29e02e8",
+   "content": "8225b6ca",
+   "text": "格式转换: 不同 API 格式的转换放 handlers 或专用转换服务"
+  },
+  {
+   "slot": 13,
+   "kind": "listItem",
+   "top": 939,
+   "h": 29,
+   "style": "7b6dfb84",
+   "content": "531e5365",
+   "text": "数据访问: 通过 src/models/redis.js 统一访问"
+  },
+  {
+   "slot": 14,
+   "kind": "heading",
+   "top": 995,
+   "h": 23,
+   "style": "025b03fa",
+   "content": "a3af2bd4",
+   "text": "安全约束§"
+  },
+  {
+   "slot": 15,
+   "kind": "listItem",
+   "top": 1027,
+   "h": 52,
+   "style": "03e4fdb2",
+   "content": "1cdf2e1e",
+   "text": "敏感数据（OAuth token、refreshToken、credentials）必须 AES"
+  },
+  {
+   "slot": 16,
+   "kind": "listItem",
+   "top": 1081,
+   "h": 29,
+   "style": "993a4fac",
+   "content": "958e3cfd",
+   "text": "API Key 使用 SHA-256 哈希存储，禁止明文"
+  },
+  {
+   "slot": 17,
+   "kind": "listItem",
+   "top": 1112,
+   "h": 29,
+   "style": "993a4fac",
+   "content": "ecd53c98",
+   "text": "每个请求必须经过完整认证链（API Key → 权限 → 客户端限制 → 模型黑名单）"
+  },
+  {
+   "slot": 18,
+   "kind": "listItem",
+   "top": 1143,
+   "h": 29,
+   "style": "993a4fac",
+   "content": "0fd2c888",
+   "text": "客户端断开时必须通过 AbortController 清理资源和并发计数"
+  },
+  {
+   "slot": 19,
+   "kind": "listItem",
+   "top": 1174,
+   "h": 29,
+   "style": "286fbbac",
+   "content": "c3039208",
+   "text": "日志中禁止输出完整 token，使用 tokenMask.js 脱敏"
+  },
+  {
+   "slot": 20,
+   "kind": "heading",
+   "top": 1243,
+   "h": 29,
+   "style": "dc1864b4",
+   "content": "9cff7fba",
+   "text": "项目结构§"
+  },
+  {
+   "slot": 21,
+   "kind": "code",
+   "top": 1285,
+   "h": 504,
+   "style": "f1e215fc",
+   "content": "7d1743a2",
+   "text": "src/ ├── routes/ # HTTP 路由 │ ├── api.js # Claude"
+  },
+  {
+   "slot": 22,
+   "kind": "heading",
+   "top": 1830,
+   "h": 29,
+   "style": "dc1864b4",
+   "content": "20092a3a",
+   "text": "核心请求流程§"
+  },
+  {
+   "slot": 23,
+   "kind": "code",
+   "top": 1872,
+   "h": 104,
+   "style": "5af996cd",
+   "content": "3dbafb73",
+   "text": "客户端(cr_前缀Key) → 路由 → auth中间件(验证/权限/限流/模型黑名单) → 统"
+  },
+  {
+   "slot": 24,
+   "kind": "paragraph",
+   "top": 1991,
+   "h": 28,
+   "style": "2801a88c",
+   "content": "30048bba",
+   "text": "关键机制："
+  },
+  {
+   "slot": 25,
+   "kind": "listItem",
+   "top": 2037,
+   "h": 29,
+   "style": "653b0b34",
+   "content": "86de3b94",
+   "text": "粘性会话: 基于请求内容 hash 绑定账户，同一会话用同一账户"
+  },
+  {
+   "slot": 26,
+   "kind": "listItem",
+   "top": 2067,
+   "h": 29,
+   "style": "e29e02e8",
+   "content": "6ab8a043",
+   "text": "并发控制: Redis Sorted Set 实现，支持排队等待（非直接 429）"
+  },
+  {
+   "slot": 27,
+   "kind": "listItem",
+   "top": 2098,
+   "h": 29,
+   "style": "f08fefce",
+   "content": "214ec5c4",
+   "text": "529 处理: 自动标记过载账户，配置时长内排除"
+  },
+  {
+   "slot": 28,
+   "kind": "listItem",
+   "top": 2129,
+   "h": 26,
+   "style": "af46ee16",
+   "content": "3f64d72d",
+   "text": "加密存储: 敏感数据（OAuth token、credentials）AES 加密存于 Redi"
+  },
+  {
+   "slot": 29,
+   "kind": "listItem",
+   "top": 2157,
+   "h": 29,
+   "style": "76d7e73c",
+   "content": "32e7fb49",
+   "text": "流式响应: SSE 传输，实时捕获 usage，客户端断开时 AbortController 清"
+  },
+  {
+   "slot": 30,
+   "kind": "heading",
+   "top": 2226,
+   "h": 29,
+   "style": "dc1864b4",
+   "content": "acd57be4",
+   "text": "开发规范§"
+  },
+  {
+   "slot": 31,
+   "kind": "heading",
+   "top": 2282,
+   "h": 23,
+   "style": "025b03fa",
+   "content": "9ed34634",
+   "text": "代码风格§"
+  },
+  {
+   "slot": 32,
+   "kind": "listItem",
+   "top": 2315,
+   "h": 29,
+   "style": "fb4ce568",
+   "content": "7de688ee",
+   "text": "无分号、单引号、100字符行宽、尾逗号 none、箭头函数始终加括号"
+  },
+  {
+   "slot": 33,
+   "kind": "listItem",
+   "top": 2345,
+   "h": 26,
+   "style": "9697c152",
+   "content": "e6532eb6",
+   "text": "强制 const（no-var、prefer-const），严格相等（eqeqeq）"
+  },
+  {
+   "slot": 34,
+   "kind": "listItem",
+   "top": 2374,
+   "h": 29,
+   "style": "3d325579",
+   "content": "fe38f7fb",
+   "text": "下划线前缀变量 _var 可豁免 unused 检查"
+  },
+  {
+   "slot": 35,
+   "kind": "listItem",
+   "top": 2404,
+   "h": 26,
+   "style": "f590a9a4",
+   "content": "ec9d3361",
+   "text": "必须使用 Prettier: npx prettier --write <file>"
+  },
+  {
+   "slot": 36,
+   "kind": "listItem",
+   "top": 2433,
+   "h": 26,
+   "style": "d4a67cbc",
+   "content": "d630cc7d",
+   "text": "前端额外安装了 prettier-plugin-tailwindcss"
+  },
+  {
+   "slot": 37,
+   "kind": "heading",
+   "top": 2486,
+   "h": 23,
+   "style": "025b03fa",
+   "content": "df7ac243",
+   "text": "开发工作流§"
+  },
+  {
+   "slot": 38,
+   "kind": "listItem",
+   "top": 2518,
+   "h": 29,
+   "style": "7f90a2fc",
+   "content": "aae035d2",
+   "text": "理解现有代码 → 读相关文件，了解现有模式"
+  },
+  {
+   "slot": 39,
+   "kind": "listItem",
+   "top": 2549,
+   "h": 29,
+   "style": "21836c0d",
+   "content": "45db94f5",
+   "text": "编写代码 → 重用已有服务和工具函数"
+  },
+  {
+   "slot": 40,
+   "kind": "listItem",
+   "top": 2580,
+   "h": 29,
+   "style": "512ee5ed",
+   "content": "ace9ce60",
+   "text": "格式化 → npx prettier --write <修改的文件>"
+  },
+  {
+   "slot": 41,
+   "kind": "listItem",
+   "top": 2611,
+   "h": 26,
+   "style": "dfdd6759",
+   "content": "8ec2b601",
+   "text": "检查 → npm run lint"
+  },
+  {
+   "slot": 42,
+   "kind": "listItem",
+   "top": 2639,
+   "h": 26,
+   "style": "2b2e0960",
+   "content": "3f990ede",
+   "text": "测试 → npm test"
+  },
+  {
+   "slot": 43,
+   "kind": "listItem",
+   "top": 2667,
+   "h": 29,
+   "style": "1e29c453",
+   "content": "af53d4e3",
+   "text": "验证 → npm run cli status 确认服务正常"
+  },
+  {
+   "slot": 44,
+   "kind": "heading",
+   "top": 2723,
+   "h": 23,
+   "style": "025b03fa",
+   "content": "c5b0024d",
+   "text": "测试规范§"
+  },
+  {
+   "slot": 45,
+   "kind": "listItem",
+   "top": 2755,
+   "h": 29,
+   "style": "772e22d4",
+   "content": "3fa8e3ac",
+   "text": "测试文件在 tests/ 目录，命名 *.test.js 或 *.spec.js"
+  },
+  {
+   "slot": 46,
+   "kind": "listItem",
+   "top": 2786,
+   "h": 26,
+   "style": "87886c4b",
+   "content": "0c1ba96a",
+   "text": "使用 jest.mock() 模拟依赖（logger、redis、services）"
+  },
+  {
+   "slot": 47,
+   "kind": "listItem",
+   "top": 2814,
+   "h": 26,
+   "style": "3165d1a3",
+   "content": "48738439",
+   "text": "beforeEach 中 jest.resetModules()，afterEach 中 jes"
+  },
+  {
+   "slot": 48,
+   "kind": "heading",
+   "top": 2868,
+   "h": 23,
+   "style": "025b03fa",
+   "content": "cb714a47",
+   "text": "前端要求§"
+  },
+  {
+   "slot": 49,
+   "kind": "listItem",
+   "top": 2900,
+   "h": 26,
+   "style": "2853124b",
+   "content": "8bf2ada0",
+   "text": "技术栈：Vue 3 Composition API + Pinia + Element Plus"
+  },
+  {
+   "slot": 50,
+   "kind": "listItem",
+   "top": 2929,
+   "h": 29,
+   "style": "993a4fac",
+   "content": "3bff5a4e",
+   "text": "响应式设计：Tailwind CSS 响应式前缀（sm:、md:、lg:、xl:）"
+  },
+  {
+   "slot": 51,
+   "kind": "listItem",
+   "top": 2959,
+   "h": 29,
+   "style": "d77e0555",
+   "content": "b181aec5",
+   "text": "暗黑模式：所有组件必须兼容，使用 dark: 前缀"
+  },
+  {
+   "slot": 52,
+   "kind": "listItem",
+   "top": 2990,
+   "h": 26,
+   "style": "6759222f",
+   "content": "661e865d",
+   "text": "主题切换：web/admin-spa/src/stores/theme.js 的 useThem"
+  },
+  {
+   "slot": 53,
+   "kind": "listItem",
+   "top": 3018,
+   "h": 29,
+   "style": "226a7c28",
+   "content": "83dc5c0a",
+   "text": "保持现有玻璃态设计风格"
+  },
+  {
+   "slot": 54,
+   "kind": "paragraph",
+   "top": 3065,
+   "h": 28,
+   "style": "2801a88c",
+   "content": "9faf7a90",
+   "text": "暗黑模式配色对照："
+  },
+  {
+   "slot": 55,
+   "kind": "table",
+   "top": 3110,
+   "h": 180,
+   "style": "600b10c0",
+   "content": "e4893b50",
+   "text": "元素明亮模式暗黑模式文本text-gray-700dark:text-gray-200背景bg-"
+  },
+  {
+   "slot": 56,
+   "kind": "heading",
+   "top": 3318,
+   "h": 23,
+   "style": "025b03fa",
+   "content": "9b23d78d",
+   "text": "代码修改原则§"
+  },
+  {
+   "slot": 57,
+   "kind": "listItem",
+   "top": 3350,
+   "h": 29,
+   "style": "4c0dc1f0",
+   "content": "5b18145c",
+   "text": "先检查现有模式和风格，重用已有服务和工具函数"
+  },
+  {
+   "slot": 58,
+   "kind": "listItem",
+   "top": 3380,
+   "h": 29,
+   "style": "993a4fac",
+   "content": "9932d492",
+   "text": "敏感数据必须加密存储（参考 claudeAccountService.js）"
+  },
+  {
+   "slot": 59,
+   "kind": "listItem",
+   "top": 3411,
+   "h": 29,
+   "style": "226a7c28",
+   "content": "f08346b4",
+   "text": "遵循现有的错误处理和日志记录模式"
+  },
+  {
+   "slot": 60,
+   "kind": "heading",
+   "top": 3480,
+   "h": 29,
+   "style": "dc1864b4",
+   "content": "113030d1",
+   "text": "常用命令§"
+  },
+  {
+   "slot": 61,
+   "kind": "code",
+   "top": 3523,
+   "h": 284,
+   "style": "f590d77a",
+   "content": "c9ce9ac7",
+   "text": "npm install && npm run setup # 初始化 npm run dev #"
+  },
+  {
+   "slot": 62,
+   "kind": "heading",
+   "top": 3834,
+   "h": 23,
+   "style": "025b03fa",
+   "content": "f4fffe49",
+   "text": "前端命令§"
+  },
+  {
+   "slot": 63,
+   "kind": "code",
+   "top": 3866,
+   "h": 84,
+   "style": "7b710046",
+   "content": "440dfacb",
+   "text": "npm run install:web # 安装前端依赖 npm run build:web #"
+  },
+  {
+   "slot": 64,
+   "kind": "heading",
+   "top": 3991,
+   "h": 29,
+   "style": "dc1864b4",
+   "content": "3a5e75d2",
+   "text": "环境变量（必须）§"
+  },
+  {
+   "slot": 65,
+   "kind": "listItem",
+   "top": 4033,
+   "h": 26,
+   "style": "143e2948",
+   "content": "8a306949",
+   "text": "JWT_SECRET — JWT 密钥（32字符+）"
+  },
+  {
+   "slot": 66,
+   "kind": "listItem",
+   "top": 4062,
+   "h": 29,
+   "style": "1220d4e7",
+   "content": "57905c49",
+   "text": "ENCRYPTION_KEY — AES 加密密钥（32字符固定）"
+  },
+  {
+   "slot": 67,
+   "kind": "listItem",
+   "top": 4092,
+   "h": 26,
+   "style": "7ab8a0e8",
+   "content": "f987e05f",
+   "text": "REDIS_HOST / REDIS_PORT / REDIS_PASSWORD — Redis"
+  },
+  {
+   "slot": 68,
+   "kind": "paragraph",
+   "top": 4136,
+   "h": 28,
+   "style": "72ac0431",
+   "content": "b110cdf4",
+   "text": "其他可选环境变量见 .env.example。"
+  },
+  {
+   "slot": 69,
+   "kind": "heading",
+   "top": 4205,
+   "h": 29,
+   "style": "dc1864b4",
+   "content": "2bc7635f",
+   "text": "故障排除§"
+  },
+  {
+   "slot": 70,
+   "kind": "table",
+   "top": 4247,
+   "h": 507,
+   "style": "78fd0850",
+   "content": "a63f8135",
+   "text": "问题排查方向Redis 连接失败检查 REDIS_HOST/PORT/PASSWORD管理员登录"
+  },
+  {
+   "slot": 71,
+   "kind": "paragraph",
+   "top": 4772,
+   "h": 28,
+   "style": "d5821f15",
+   "content": "cd4a04be",
+   "text": "日志：logs/ 目录。Web 界面 /admin-next/ 可实时查看。"
+  },
+  {
+   "slot": 72,
+   "kind": "heading",
+   "top": 4818,
+   "h": 38,
+   "style": "0e171ddb",
+   "content": "9ceb1e4f",
+   "text": "important-instruction-reminders§"
+  },
+  {
+   "slot": 73,
+   "kind": "paragraph",
+   "top": 4876,
+   "h": 130,
+   "style": "955ac251",
+   "content": "dfbb0497",
+   "text": "Do what has been asked; nothing more, nothing le"
+  }
+ ]
+}

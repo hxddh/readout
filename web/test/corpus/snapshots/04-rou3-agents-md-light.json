@@ -1,0 +1,392 @@
+{
+ "height": 3492,
+ "blocks": [
+  {
+   "slot": 1,
+   "kind": "heading",
+   "top": 40,
+   "h": 38,
+   "style": "adabe501",
+   "content": "ff7450e3",
+   "text": "rou3§"
+  },
+  {
+   "slot": 2,
+   "kind": "paragraph",
+   "top": 99,
+   "h": 104,
+   "style": "3bf306e7",
+   "content": "3dd67512",
+   "text": "Lightweight, high-performance HTTP router for JS"
+  },
+  {
+   "slot": 3,
+   "kind": "paragraph",
+   "top": 220,
+   "h": 130,
+   "style": "e6dc571d",
+   "content": "5292fb4b",
+   "text": "Layout: src/operations/ (add, find, find-all, re"
+  },
+  {
+   "slot": 4,
+   "kind": "alert",
+   "top": 368,
+   "h": 103,
+   "style": "08e8faf6",
+   "content": "21245dbf",
+   "text": "ImportantKeep AGENTS.md and .agents/*.md updated"
+  },
+  {
+   "slot": 5,
+   "kind": "heading",
+   "top": 511,
+   "h": 29,
+   "style": "f7230835",
+   "content": "b13e16cf",
+   "text": "Docs§"
+  },
+  {
+   "slot": 6,
+   "kind": "paragraph",
+   "top": 554,
+   "h": 26,
+   "style": "634c22dc",
+   "content": "2b21c915",
+   "text": "Read the relevant doc before changing that area:"
+  },
+  {
+   "slot": 7,
+   "kind": "listItem",
+   "top": 597,
+   "h": 78,
+   "style": "cc10562d",
+   "content": "3956feef",
+   "text": ".agents/matching.md: tree, lookup, same-node sib"
+  },
+  {
+   "slot": 8,
+   "kind": "listItem",
+   "top": 677,
+   "h": 52,
+   "style": "74f5c069",
+   "content": "0f39a3ab",
+   "text": ".agents/syntax.md: pattern pipeline, escapes, {}"
+  },
+  {
+   "slot": 9,
+   "kind": "listItem",
+   "top": 732,
+   "h": 52,
+   "style": "a45645ac",
+   "content": "7faca03e",
+   "text": ".agents/compiler.md: compileRouter / compileRout"
+  },
+  {
+   "slot": 10,
+   "kind": "listItem",
+   "top": 786,
+   "h": 26,
+   "style": "8577b095",
+   "content": "51b3b9cd",
+   "text": ".agents/regexp.md: routeToRegExp (regex ≡ router"
+  },
+  {
+   "slot": 11,
+   "kind": "listItem",
+   "top": 814,
+   "h": 52,
+   "style": "8d634aab",
+   "content": "757fcb86",
+   "text": ".agents/overlap.md: routesOverlap / compareRoute"
+  },
+  {
+   "slot": 12,
+   "kind": "listItem",
+   "top": 869,
+   "h": 52,
+   "style": "9b1b7816",
+   "content": "e3015c74",
+   "text": ".agents/testing.md: suites, fixture conventions,"
+  },
+  {
+   "slot": 13,
+   "kind": "heading",
+   "top": 961,
+   "h": 29,
+   "style": "f7230835",
+   "content": "3901e078",
+   "text": "Core invariants§"
+  },
+  {
+   "slot": 14,
+   "kind": "listItem",
+   "top": 1004,
+   "h": 52,
+   "style": "50c026b5",
+   "content": "a2bf1df9",
+   "text": "Interpreter (findRoute / findAllRoutes) and comp"
+  },
+  {
+   "slot": 15,
+   "kind": "listItem",
+   "top": 1058,
+   "h": 130,
+   "style": "0990bbe4",
+   "content": "1779dbf1",
+   "text": "findAllRoutes order (least → most specific) is a"
+  },
+  {
+   "slot": 16,
+   "kind": "listItem",
+   "top": 1190,
+   "h": 130,
+   "style": "cc72604f",
+   "content": "058bf019",
+   "text": "routeToRegExp(p) matches exactly the paths findR"
+  },
+  {
+   "slot": 17,
+   "kind": "listItem",
+   "top": 1323,
+   "h": 104,
+   "style": "a3191475",
+   "content": "8f496b37",
+   "text": "routeToRegExp output must not backtrack polynomi"
+  },
+  {
+   "slot": 18,
+   "kind": "listItem",
+   "top": 1429,
+   "h": 78,
+   "style": "e0594353",
+   "content": "c0f511ee",
+   "text": "Never write a second pattern parser: derived API"
+  },
+  {
+   "slot": 19,
+   "kind": "listItem",
+   "top": 1509,
+   "h": 104,
+   "style": "b4ca6b26",
+   "content": "7e199e00",
+   "text": "Lookup ignores at most one trailing slash; middl"
+  },
+  {
+   "slot": 20,
+   "kind": "listItem",
+   "top": 1616,
+   "h": 130,
+   "style": "fd048600",
+   "content": "bdfa1e02",
+   "text": "* is URLPattern's greedy catch-all ((.*), also i"
+  },
+  {
+   "slot": 21,
+   "kind": "listItem",
+   "top": 1748,
+   "h": 78,
+   "style": "46ee5e83",
+   "content": "c8714f4b",
+   "text": "Literal pattern text is percent-encoded once, at"
+  },
+  {
+   "slot": 22,
+   "kind": "listItem",
+   "top": 1828,
+   "h": 104,
+   "style": "ccc3ce5e",
+   "content": "cbbfaf7d",
+   "text": ". / .. pattern segments (%2e too) are resolved a"
+  },
+  {
+   "slot": 23,
+   "kind": "listItem",
+   "top": 1934,
+   "h": 104,
+   "style": "ab44bbd4",
+   "content": "208ff368",
+   "text": "A :name never captures \"\", and no segment a :nam"
+  },
+  {
+   "slot": 24,
+   "kind": "listItem",
+   "top": 2041,
+   "h": 130,
+   "style": "a746b66c",
+   "content": "9d9616ec",
+   "text": "Unnamed captures (*, a bare **, unnamed groups) "
+  },
+  {
+   "slot": 25,
+   "kind": "listItem",
+   "top": 2173,
+   "h": 78,
+   "style": "799fb78f",
+   "content": "e246d9f0",
+   "text": "Matching a dynamic segment is linear in its leng"
+  },
+  {
+   "slot": 26,
+   "kind": "listItem",
+   "top": 2253,
+   "h": 52,
+   "style": "ec4d5f4c",
+   "content": "4fd18380",
+   "text": "Optional features (overlap, regexp, routeNodeKey"
+  },
+  {
+   "slot": 27,
+   "kind": "listItem",
+   "top": 2308,
+   "h": 52,
+   "style": "39f39ce2",
+   "content": "dbda69e3",
+   "text": "addRoute preprocessing helpers bail early when t"
+  },
+  {
+   "slot": 28,
+   "kind": "listItem",
+   "top": 2362,
+   "h": 52,
+   "style": "85466f51",
+   "content": "c77eec9e",
+   "text": "Every thrown error starts with rou3:; pattern er"
+  },
+  {
+   "slot": 29,
+   "kind": "heading",
+   "top": 2455,
+   "h": 29,
+   "style": "f7230835",
+   "content": "89c26135",
+   "text": "Code conventions§"
+  },
+  {
+   "slot": 30,
+   "kind": "listItem",
+   "top": 2497,
+   "h": 52,
+   "style": "10cfd33b",
+   "content": "328ff86a",
+   "text": "Performance-first: charCodeAt() over .startsWith"
+  },
+  {
+   "slot": 31,
+   "kind": "listItem",
+   "top": 2551,
+   "h": 26,
+   "style": "48b9b4e0",
+   "content": "5f6b07d1",
+   "text": "Hot-path var names: m (method), p (path), s (seg"
+  },
+  {
+   "slot": 32,
+   "kind": "listItem",
+   "top": 2580,
+   "h": 26,
+   "style": "72f86a39",
+   "content": "e4f719cd",
+   "text": "Internal files are prefixed _; internal helpers "
+  },
+  {
+   "slot": 33,
+   "kind": "listItem",
+   "top": 2608,
+   "h": 156,
+   "style": "7f89e575",
+   "content": "ad8228f8",
+   "text": "Split modules by concept and consumer, not line "
+  },
+  {
+   "slot": 34,
+   "kind": "listItem",
+   "top": 2766,
+   "h": 52,
+   "style": "cd992eb8",
+   "content": "857b82a2",
+   "text": "ESM only, explicit .ts import extensions, with {"
+  },
+  {
+   "slot": 35,
+   "kind": "listItem",
+   "top": 2821,
+   "h": 26,
+   "style": "bfa70c70",
+   "content": "081efd8b",
+   "text": "Multi-arg functions take an options object as th"
+  },
+  {
+   "slot": 36,
+   "kind": "heading",
+   "top": 2887,
+   "h": 29,
+   "style": "f7230835",
+   "content": "5ca7cde9",
+   "text": "Bug fix workflow (regression-first)§"
+  },
+  {
+   "slot": 37,
+   "kind": "listItem",
+   "top": 2930,
+   "h": 26,
+   "style": "db79b31d",
+   "content": "c1caf625",
+   "text": "Write the regression test reproducing the bug."
+  },
+  {
+   "slot": 38,
+   "kind": "listItem",
+   "top": 2958,
+   "h": 26,
+   "style": "d726b4f8",
+   "content": "756d2be8",
+   "text": "Run it and confirm it fails (never skip)."
+  },
+  {
+   "slot": 39,
+   "kind": "listItem",
+   "top": 2986,
+   "h": 26,
+   "style": "69a20b21",
+   "content": "e1d7b70a",
+   "text": "Make the minimal fix."
+  },
+  {
+   "slot": 40,
+   "kind": "listItem",
+   "top": 3015,
+   "h": 26,
+   "style": "dba60bcf",
+   "content": "27c7218b",
+   "text": "Confirm the test passes, then run the broader su"
+  },
+  {
+   "slot": 41,
+   "kind": "heading",
+   "top": 3081,
+   "h": 29,
+   "style": "f7230835",
+   "content": "4b744ac4",
+   "text": "Git§"
+  },
+  {
+   "slot": 42,
+   "kind": "listItem",
+   "top": 3124,
+   "h": 52,
+   "style": "54074743",
+   "content": "1bb9a7f3",
+   "text": "Semantic, lower-case commits with scope (fix(com"
+  },
+  {
+   "slot": 43,
+   "kind": "listItem",
+   "top": 3178,
+   "h": 26,
+   "style": "df060de1",
+   "content": "d97e8550",
+   "text": "If not on main, git push after committing. Use g"
+  }
+ ]
+}

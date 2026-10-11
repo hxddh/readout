@@ -82,6 +82,7 @@ function setupCode(cb) {
 const SLOW_HIGHLIGHT_MS = 200;
 const sourceOf = new WeakMap();   // code block -> original code text
 const warmGrammars = new Set();   // grammar ids that have highlighted a block
+const prepared = new WeakSet();   // code blocks whose grammars have been loaded once
 
 function highlightBlock(cb) {
   const recheck = cb.dataset.hl === 'recheck';
@@ -110,9 +111,12 @@ function highlightBlock(cb) {
     pre.replaceWith(newPre);
     cb.dataset.hl = slow ? 'recheck' : 'done';
     if (slow) setTimeout(() => { if (cb.isConnected) highlightBlock(cb); else cb.dataset.hl = 'done'; }, 50);
+  } else if (prepared.has(cb)) {
+    cb.dataset.hl = 'none';   // everything it needs was loaded and it still failed
   } else {
     cb.dataset.hl = 'loading';
-    hl.ensureLang(id).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) highlightBlock(cb); });
+    prepared.add(cb);
+    hl.prepare(id, code).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) highlightBlock(cb); });
   }
 }
 
