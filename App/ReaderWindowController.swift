@@ -287,6 +287,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             }
             let record = BaselineStore.load(self.url)
             let patch = self.session.load(result.doc, baseline: record?.baseline)
+            // What is on disk already: an unchanged baseline is not written again.
+            self.lastSavedBaseline = record?.baseline
             self.loaded = true
             self.updateModel(patch, decoded: result.decoded)
             self.webView.whenReady { [weak self] in
@@ -501,13 +503,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // baseline payload: skip the write when nothing changed at all.
         if didSaveOnce, baseline == lastSavedBaseline, excerpt == lastSavedAnchorExcerpt,
            index == lastSavedAnchorIndex, offset == lastSavedAnchorOffset { return }
+        let baselineChanged = baseline != lastSavedBaseline
         didSaveOnce = true
         lastSavedBaseline = baseline
         lastSavedAnchorExcerpt = excerpt
         lastSavedAnchorIndex = index
         lastSavedAnchorOffset = offset
         BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset,
-                                 topExcerpt: excerpt, savedAt: Date()), for: url)
+                                 topExcerpt: excerpt, savedAt: Date()), for: url, baselineChanged: baselineChanged)
     }
 
     // MARK: Actions

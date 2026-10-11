@@ -489,6 +489,62 @@ check('rail labels use the localized template',
   await page.setViewportSize({ width: 900, height: 700 });
   check('table starts scrolling when the window narrows', !wide && narrow.scrolls && !narrow.pageScroll, JSON.stringify({ wide, narrow }));
 }
+// What changed: the edit mark of a modified block opens a word-level comparison
+// under it, without moving the reader; it stays open when the block is read
+// and a later patch arrives; an unknown earlier text says so.
+{
+  const ops = Array.from({ length: 40 }, (_, i) => ({ op: 'insert', slot: 1501 + i, after: i ? 1500 + i : 0, kind: 'paragraph', html: `<p>Paragraph ${i} with enough words to fill a line of the column.</p>` }));
+  await page.evaluate(p => window.readout.apply(p), { version: 98, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await page.evaluate(p => window.readout.apply(p), { version: 99, reset: false, rewrite: false,
+    ops: [{ op: 'replace', slot: 1521, kind: 'paragraph', change: 'content', html: '<p>Paragraph 20 now uses Postgres.</p>' },
+          { op: 'replace', slot: 1525, kind: 'paragraph', change: 'content', html: '<p>Paragraph 24 changed.</p>' }],
+    marks: [{ slot: 1521, kind: 'modified', diff: 'Paragraph 20 now uses <del>Redis &lt;b&gt;</del><ins>Postgres</ins>.' },
+            { slot: 1525, kind: 'modified', diff: '' }],
+    deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('.blk[data-slot="1521"]');
+    window.scrollTo(0, el.offsetTop - 300);
+    await new Promise(r => requestAnimationFrame(r));
+    // The block at the top of the view: what the reader is looking at.
+    const ref = [...document.querySelectorAll('#ro-doc > .blk')].find(b => b.getBoundingClientRect().top >= 0);
+    const top0 = ref.getBoundingClientRect().top;
+    const textLeft = el.firstElementChild.getBoundingClientRect().left;
+    const y = el.getBoundingClientRect().top + 8;
+    // A click on the text itself does nothing; one in the gutter opens it.
+    el.firstElementChild.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: textLeft + 20, clientY: y }));
+    const afterTextClick = !!el.querySelector('.wd-panel');
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: textLeft - 20, clientY: y }));
+    const panel = el.querySelector('.wd-panel');
+    const opened = { del: panel?.querySelector('del')?.textContent, ins: panel?.querySelector('ins')?.textContent,
+      escaped: !panel?.querySelector('b'), shift: ref.getBoundingClientRect().top - top0 };
+    // Another patch (the block was read meanwhile: no mark) keeps it open.
+    window.readout.apply({ version: 100, reset: false, rewrite: false, ops: [{ op: 'replace', slot: 1540, kind: 'paragraph', change: 'content', html: '<p>Last one edited.</p>' }],
+      marks: [{ slot: 1540, kind: 'modified', diff: '<del>a</del><ins>b</ins>' }], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+    const keptOpen = !!el.querySelector('.wd-panel ins');
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: textLeft - 20, clientY: y }));
+    const closed = !el.querySelector('.wd-panel');
+    const closeShift = ref.getBoundingClientRect().top - top0;
+    const unknown = window.readout.toggleDiff(1525) && document.querySelector('.blk[data-slot="1525"] .wd-body.wd-none')?.textContent;
+    window.readout.toggleDiff(1525);
+    // Read (the mark is gone) and the gutter still opens it; so does D.
+    el.classList.remove('m-modified', 'm-read');
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: textLeft - 20, clientY: y }));
+    const afterRead = !!el.querySelector('.wd-panel');
+    el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: textLeft - 20, clientY: y }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }));
+    const byKey = !!document.querySelector('.wd-panel');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }));
+    return { afterTextClick, opened, keptOpen, closed, closeShift, unknown, afterRead, byKey, refSlot: ref.dataset.slot };
+  });
+  check('text click does not open the comparison', r.afterTextClick === false, JSON.stringify(r));
+  check('edit mark opens the comparison', r.opened.del === 'Redis <b>' && r.opened.ins === 'Postgres' && r.opened.escaped, JSON.stringify(r.opened));
+  check('opening the comparison keeps the position', Math.abs(r.opened.shift) < 2, JSON.stringify(r.opened));
+  check('the comparison stays open across a patch', r.keptOpen, JSON.stringify(r));
+  check('closing the comparison keeps the position', r.closed && Math.abs(r.closeShift) < 2, JSON.stringify(r));
+  check('an unknown earlier text says so', typeof r.unknown === 'string' && r.unknown.length > 10, JSON.stringify(r));
+  check('the comparison opens after the block was read', r.afterRead, JSON.stringify(r));
+  check('D opens the comparison of an edited block in view', r.byKey, JSON.stringify(r));
+}
 // Code inside a closed <details> is highlighted when it is opened.
 {
   await page.evaluate(p => window.readout.apply(p), { version: 120, reset: true, rewrite: false,
@@ -503,6 +559,28 @@ check('rail labels use the localized template',
     after = await page.evaluate(() => document.querySelector('.blk[data-slot="1601"] .code-block').dataset.hl);
   }
   check('code in a closed <details> is highlighted when opened', after === 'done', JSON.stringify({ before, after }));
+}
+// Comparisons and removed texts arrive once; later patches leave them out.
+{
+  const base = { rewrite: false, toc: [], tasks: { done: 0, total: 0 } };
+  await page.evaluate(p => window.readout.apply(p), { ...base, version: 130, reset: true,
+    ops: [{ op: 'insert', slot: 1701, after: 0, kind: 'paragraph', html: '<p>The plan uses Postgres.</p>' },
+          { op: 'insert', slot: 1702, after: 1701, kind: 'paragraph', html: '<p>End.</p>' }],
+    marks: [{ slot: 1701, kind: 'modified', diff: 'The plan uses <del>Redis</del><ins>Postgres</ins>.' }],
+    deletions: [{ id: 91, after: 1701, count: 1, preview: 'Removed words.' }] });
+  await page.evaluate(p => window.readout.apply(p), { ...base, version: 131, reset: false,
+    ops: [{ op: 'replace', slot: 1702, change: 'content', kind: 'paragraph', html: '<p>End, changed.</p>' }],
+    marks: [{ slot: 1701, kind: 'modified' }, { slot: 1702, kind: 'modified', diff: '<del>End</del><ins>End, changed</ins>.' }],
+    deletions: [{ id: 91, after: 1701, count: 1 }] });
+  const r = await page.evaluate(() => {
+    const has = document.querySelector('.blk[data-slot="1701"]').classList.contains('wd-has');
+    document.querySelector('.del-mark[data-del="91"] button').click();
+    const text = document.querySelector('.del-mark[data-del="91"] .del-pop')?.textContent;
+    document.body.click();
+    return { has, text };
+  });
+  check('a comparison sent earlier stays available', r.has, JSON.stringify(r));
+  check('a removed text sent earlier still opens', r.text === 'Removed words.', JSON.stringify(r));
 }
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 

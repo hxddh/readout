@@ -68,6 +68,11 @@ final class AppSettings: ObservableObject {
 }
 
 /// Persists, per file, the version the reader last caught up with and the reading position.
+///
+/// Two files per document: the record with the baseline (which holds whole
+/// block texts, so it can be large) is written only when the baseline
+/// changes; the reading position, which changes on every settled scroll, is
+/// written to a small file of its own. Writes run in order on one queue.
 enum BaselineStore {
     struct Record: Codable {
         var baseline: [BlockKey]
@@ -79,6 +84,16 @@ enum BaselineStore {
         var savedAt: Date
     }
 
+    /// The reading position alone.
+    private struct Position: Codable {
+        var topBlockIndex: Int?
+        var topOffset: Double?
+        var topExcerpt: String?
+        var savedAt: Date
+    }
+
+    private static let queue = DispatchQueue(label: "Readout.BaselineStore", qos: .utility)
+
     private static var dir: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let d = base.appendingPathComponent("Readout/Baselines", isDirectory: true)
@@ -86,33 +101,56 @@ enum BaselineStore {
         return d
     }
 
+    private static func key(for url: URL) -> String {
+        String(XXHash64.hash(url.standardizedFileURL.path), radix: 16)
+    }
+
     private static func file(for url: URL) -> URL {
-        let key = String(XXHash64.hash(url.standardizedFileURL.path), radix: 16)
-        return dir.appendingPathComponent("\(key).json")
+        dir.appendingPathComponent("\(key(for: url)).json")
+    }
+
+    private static func positionFile(for url: URL) -> URL {
+        dir.appendingPathComponent("\(key(for: url)).pos.json")
     }
 
     static func load(_ url: URL) -> Record? {
-        guard let data = try? Data(contentsOf: file(for: url)) else { return nil }
-        return try? JSONDecoder().decode(Record.self, from: data)
+        guard let data = try? Data(contentsOf: file(for: url)),
+              var record = try? JSONDecoder().decode(Record.self, from: data) else { return nil }
+        if let data = try? Data(contentsOf: positionFile(for: url)),
+           let position = try? JSONDecoder().decode(Position.self, from: data), position.savedAt >= record.savedAt {
+            record.topBlockIndex = position.topBlockIndex
+            record.topOffset = position.topOffset
+            record.topExcerpt = position.topExcerpt
+            record.savedAt = position.savedAt
+        }
+        return record
     }
 
-    static func save(_ record: Record, for url: URL) {
-        let target = file(for: url)
-        DispatchQueue.global(qos: .utility).async {
-            if let data = try? JSONEncoder().encode(record) { try? data.write(to: target, options: .atomic) }
+    /// Saves the reading position, and the whole record only when `baselineChanged`.
+    static func save(_ record: Record, for url: URL, baselineChanged: Bool) {
+        let target = file(for: url), positionTarget = positionFile(for: url)
+        let position = Position(topBlockIndex: record.topBlockIndex, topOffset: record.topOffset,
+                                topExcerpt: record.topExcerpt, savedAt: record.savedAt)
+        queue.async {
+            if baselineChanged, let data = try? JSONEncoder().encode(record) {
+                try? data.write(to: target, options: .atomic)
+            }
+            if let data = try? JSONEncoder().encode(position) { try? data.write(to: positionTarget, options: .atomic) }
         }
     }
 
-    /// Drops records older than 90 days.
+    /// Drops records not opened for 90 days (a record whose position was saved
+    /// recently is kept, even when its baseline has not changed since).
     static func prune() {
         DispatchQueue.global(qos: .background).async {
             let fm = FileManager.default
             guard let items = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return }
             let cutoff = Date().addingTimeInterval(-90 * 86400)
-            for i in items {
-                if let m = try? i.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate, m < cutoff {
-                    try? fm.removeItem(at: i)
-                }
+            func stem(_ u: URL) -> Substring { u.lastPathComponent.split(separator: ".").first ?? "" }
+            func modified(_ u: URL) -> Date? { try? u.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }
+            let fresh = Set(items.filter { (modified($0) ?? .distantPast) >= cutoff }.map(stem))
+            for i in items where !fresh.contains(stem(i)) {
+                if let m = modified(i), m < cutoff { try? fm.removeItem(at: i) }
             }
         }
     }

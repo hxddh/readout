@@ -133,7 +133,7 @@ import Testing
         let p = s.update(parse("# T\n\nkeep one\n\nkeep two\n"))!
         #expect(p.deletions.count == 1)
         #expect(p.deletions[0].after == s.blocks[1].slot)
-        #expect(p.deletions[0].preview.contains("drop me"))
+        #expect(p.deletions[0].preview?.contains("drop me") == true)
     }
 
     @Test func insertedThenRemovedLeavesNoTrace() {

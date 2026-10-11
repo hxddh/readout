@@ -6,15 +6,28 @@ public struct BlockKey: Codable, Sendable, Equatable {
     public let kind: BlockKind
     /// Normalized text, truncated, for similarity matching.
     public let text: String
+    /// The whole text when `text` is cut short, so a changed block can be
+    /// compared word by word with what was read. Baselines saved before this
+    /// field existed lack it (decoded as nil).
+    public let full: String?
 
     public init(fingerprint: UInt64, kind: BlockKind, text: String) {
         self.fingerprint = fingerprint
         self.kind = kind
-        // Persisted baselines only need enough text for similarity matching:
-        // token-bigram Jaccard converges well before 500 characters, and the
-        // common case (exact fingerprint match) needs no text at all.
-        self.text = text.count > 500 ? String(text.prefix(500)) : text
+        // Similarity matching only needs a prefix: token-bigram Jaccard
+        // converges well before 500 characters, and the common case (exact
+        // fingerprint match) needs no text at all.
+        if text.count >= 500 {
+            self.text = String(text.prefix(500))
+            self.full = text
+        } else {
+            self.text = text
+            self.full = nil
+        }
     }
+
+    /// The block's whole text, or nil when only a prefix was kept (an older baseline).
+    public var wholeText: String? { full ?? (text.count < 500 ? text : nil) }
 
     public init(_ block: Block) {
         self.init(fingerprint: block.fingerprint, kind: block.kind, text: block.text)

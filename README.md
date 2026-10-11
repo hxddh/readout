@@ -12,7 +12,7 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 ## What it does
 
 - **Live, without losing your place.** Readout watches the file (including atomic save-and-rename writes). Updates are applied block by block, so the paragraph you are reading stays put. If you are at the end, it follows the agent like a terminal.
-- **Shows what changed.** New and edited blocks get a thin bar in the margin; removed text leaves a small marker you can open. Marks fade once you have actually read them. Press <kbd>N</kbd> for the next change, <kbd>⌘K</kbd> to mark everything read. Readout remembers what you had read, even across launches.
+- **Shows what changed.** New and edited blocks get a thin bar in the margin; click an edited block's bar to see which words changed since you read it. Removed text leaves a small marker that opens to show it in full. Marks fade once you have actually read them. Press <kbd>N</kbd> for the next change, <kbd>⌘K</kbd> to mark everything read. Readout remembers what you had read, even across launches.
 - **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42` open in your editor.
 - **Outline with progress.** The sidebar lists headings and how many tasks in each section are done.
 - **Focus on what's new.** Filter the document to unread changes only (<kbd>⇧⌘K</kbd>), see task progress in the window subtitle, and copy a link to any section by hovering its heading.
@@ -63,6 +63,7 @@ To have Claude Code open Markdown files in Readout as soon as it writes them, ad
 | Key | Action |
 | --- | --- |
 | <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change |
+| <kbd>D</kbd> | Show / hide which words changed in the edited block in view |
 | <kbd>⌘K</kbd> | Mark all as read |
 | <kbd>⌘F</kbd>, <kbd>⌘G</kbd> | Find, find next |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Text size |

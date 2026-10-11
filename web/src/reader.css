@@ -372,6 +372,29 @@ details ul, details ol { padding-left: 1.5em; }
 .blk.m-read::before { background: var(--mark-read); opacity: 1; }
 .blk.m-state::before { background: var(--accent); width: 5px; height: 5px; bottom: auto; top: 0.7em; left: 9px; border-radius: 50%; }
 .blk.m-state.m-read::before { background: var(--mark-read); }
+/* The edit mark opens the comparison: a wider target than the 3 px bar. */
+.blk.wd-has::before {
+  cursor: pointer;
+  padding: 0 7px; margin-left: -7px; background-clip: content-box;
+}
+
+/* What changed in an edited block, under it. */
+.wd-panel {
+  margin: 0 0 1.1em;
+  padding: 0.55em 0.8em 0.65em;
+  border-radius: 8px;
+  background: var(--fill);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.wd-label { font-size: 0.75rem; font-weight: 600; color: var(--text-3); margin-bottom: 0.3em; }
+.wd-body {
+  margin: 0; font-family: var(--mono); font-size: 0.95em;
+  white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-2);
+}
+.wd-body.wd-none { font-family: inherit; color: var(--text-3); }
+.wd-body del { color: var(--caution, #cf222e); text-decoration: line-through; background: color-mix(in srgb, var(--caution, #cf222e) 10%, transparent); }
+.wd-body ins { color: var(--text); text-decoration: none; background: var(--accent-soft); border-radius: 2px; }
 
 .del-mark {
   position: relative;
