@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 38,
-   "style": "ca2015e4",
+   "style": "7a63651c",
    "content": "dee781ec",
    "text": "Vaadin-on-Kotlin — AGENTS.md§"
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 118,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "088c4e28",
    "text": "What this is§"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 161,
    "h": 156,
-   "style": "c87c5b57",
+   "style": "4eaf46ca",
    "content": "65ac0be3",
    "text": "Vaadin-on-Kotlin is a web-application framework "
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 357,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "b3c6abec",
    "text": "Promises§"
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 400,
    "h": 52,
-   "style": "b179ea71",
+   "style": "f78f1a20",
    "content": "33174abe",
    "text": "No container, no magic. No DI, no MVC, no servic"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 454,
    "h": 78,
-   "style": "37a83b9d",
+   "style": "c77a41dc",
    "content": "b01549fe",
    "text": "Upstream stays reachable. VoK is glue, never a f"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 534,
    "h": 52,
-   "style": "32c3f3e9",
+   "style": "801a2dca",
    "content": "a1f13dc5",
    "text": "Typed from view to SQL. Views, queries and REST "
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 627,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "da067ec7",
    "text": "Design docs§"
   },
@@ -78,7 +78,7 @@
    "kind": "table",
    "top": 669,
    "h": 515,
-   "style": "4f8f1283",
+   "style": "8f5463bf",
    "content": "20a7541f",
    "text": "FileOwnsLoadedREADME.mdthe pitch, getting starte"
   },
@@ -87,7 +87,7 @@
    "kind": "paragraph",
    "top": 1202,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "255dd967",
    "text": "Every fact lives in exactly one of these; the ot"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 1268,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "71421799",
    "text": "Invariants§"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1311,
    "h": 104,
-   "style": "dbb59ce3",
+   "style": "ecbed588",
    "content": "4c12c6b7",
    "text": "Module dependencies point one way. vok-framework"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 1417,
    "h": 78,
-   "style": "4dcea526",
+   "style": "84ae5d03",
    "content": "4d881783",
    "text": "VaadinOnKotlin.dataSource is assigned before ini"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1497,
    "h": 78,
-   "style": "3a31b1d7",
+   "style": "48df474e",
    "content": "7e022915",
    "text": "Every database access runs inside db { }. databa"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1578,
    "h": 78,
-   "style": "ca0d3eed",
+   "style": "d60ea580",
    "content": "86cf2f98",
    "text": "A DB test deletes its own rows. The H2 in-memory"
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 1696,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "d6bbf060",
    "text": "Module map§"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1739,
    "h": 52,
-   "style": "abf5bfe2",
+   "style": "149780de",
    "content": "6b12326d",
    "text": "vok-framework — the core: bootstrap, Session, Co"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1793,
    "h": 52,
-   "style": "e154f778",
+   "style": "d3fc98ee",
    "content": "3c841e81",
    "text": "vok-framework-vokdb — Vaadin + SQL: VaadinOnKotl"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1847,
    "h": 52,
-   "style": "bf7bb7b7",
+   "style": "8cd8b787",
    "content": "9320ef8c",
    "text": "vok-rest — REST server: Javalin + Gson, Table<E>"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1902,
    "h": 52,
-   "style": "5f26e782",
+   "style": "93122d18",
    "content": "53f24998",
    "text": "vok-rest-client — REST client over the JDK HttpC"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 1956,
    "h": 52,
-   "style": "255018db",
+   "style": "ded7d235",
    "content": "efdef3d9",
    "text": "vok-example-crud — the runnable demo, and the fr"
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 2049,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "66e262dc",
    "text": "Conventions§"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 2091,
    "h": 52,
-   "style": "a1aa8415",
+   "style": "89412e82",
    "content": "dc7148d1",
    "text": "Kotlin, JDK 21 floor. Java source/target and Kot"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2145,
    "h": 52,
-   "style": "e1090285",
+   "style": "00dcb8f4",
    "content": "099d7d79",
    "text": "Published modules declare explicitApi(). Every n"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2200,
    "h": 78,
-   "style": "16dc19cb",
+   "style": "42df3f7a",
    "content": "37ab2798",
    "text": "Dependencies come from gradle/libs.versions.toml"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2280,
    "h": 52,
-   "style": "aeecc5c4",
+   "style": "12e45139",
    "content": "82ebde32",
    "text": "A new published module calls configureMavenCentr"
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 2334,
    "h": 78,
-   "style": "b59eebf6",
+   "style": "e70e27cb",
    "content": "9be7209c",
    "text": "Tests: JUnit Jupiter + Karibu-Testing. MockVaadi"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2415,
    "h": 52,
-   "style": "c0af53bb",
+   "style": "bcf53720",
    "content": "3f073dcf",
    "text": "Session-scoped state is a Session.getOrPut { } e"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 2469,
    "h": 52,
-   "style": "2f61bc9c",
+   "style": "7e376f91",
    "content": "bb27c2d4",
    "text": "Check Maven Central before bumping a version, th"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 2523,
    "h": 52,
-   "style": "a1be1b66",
+   "style": "a6e02c21",
    "content": "3aa8c290",
    "text": "Pre-1.0: break APIs freely, with a note at the t"
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 2616,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "2a8d743c",
    "text": "Commands§"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2658,
    "h": 52,
-   "style": "8c050c31",
+   "style": "296a9259",
    "content": "c43af142",
    "text": "./gradlew build — full build + tests; also the d"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2713,
    "h": 52,
-   "style": "57d2d87a",
+   "style": "172f9eb4",
    "content": "d7a2733f",
    "text": "./gradlew test / ./gradlew :vok-framework:test /"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 2767,
    "h": 26,
-   "style": "d6d93cd9",
+   "style": "15837307",
    "content": "5187b1a2",
    "text": "./gradlew vok-example-crud:run — the demo app on"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 2795,
    "h": 52,
-   "style": "cacf8e9b",
+   "style": "6bd9bfb5",
    "content": "9573cb5f",
    "text": "./gradlew clean build -Pvaadin.productionMode — "
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 2850,
    "h": 52,
-   "style": "11b0de94",
+   "style": "9c2bbff0",
    "content": "5e3f061b",
    "text": "./design/verify_design_tripwires.sh — the doc-la"
   },
@@ -330,7 +330,7 @@
    "kind": "heading",
    "top": 2942,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "894f183f",
    "text": "Skills this project follows§"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 2985,
    "h": 52,
-   "style": "2f897080",
+   "style": "9025de49",
    "content": "120ca027",
    "text": "Component-oriented: self-sufficient components t"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 3039,
    "h": 52,
-   "style": "0b61cbd9",
+   "style": "dbe87e54",
    "content": "72c66c93",
    "text": "KDoc: document the contract, cut what the code a"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 3093,
    "h": 52,
-   "style": "7f951f01",
+   "style": "d3fbde20",
    "content": "32428994",
    "text": "Karibu-Testing: browserless Vaadin tests through"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 3186,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "3d6a24b0",
    "text": "Maintenance of this file§"
   },
@@ -375,7 +375,7 @@
    "kind": "paragraph",
    "top": 3228,
    "h": 208,
-   "style": "95bf0c27",
+   "style": "e5d77d47",
    "content": "cdfcc0c7",
    "text": "Loaded every turn; cap 34 KB, a module's own AGE"
   }

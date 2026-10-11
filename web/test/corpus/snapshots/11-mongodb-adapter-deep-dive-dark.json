@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 40,
    "h": 76,
-   "style": "bbeba3a6",
+   "style": "27bf2a90",
    "content": "9a1530d9",
    "text": "Deep dive: MongoDB Atlas vector search adapter§"
   },
@@ -15,7 +15,7 @@
    "kind": "quote",
    "top": 137,
    "h": 52,
-   "style": "65fc364e",
+   "style": "f9cd3621",
    "content": "e3788241",
    "text": "Companion to 2026-04-25-mongodb-adapter-deep-div"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 229,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "33438755",
    "text": "TL;DR§"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 271,
    "h": 130,
-   "style": "50a1fde4",
+   "style": "05e5f537",
    "content": "ce565fb1",
    "text": "The adapter code for Atlas is essentially the sa"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 419,
    "h": 104,
-   "style": "77b689ee",
+   "style": "8eccd165",
    "content": "b8ef51ca",
    "text": "My recommendation: ship one adapter (@payloadcms"
   },
@@ -51,7 +51,7 @@
    "kind": "quote",
    "top": 541,
    "h": 78,
-   "style": "8f90de29",
+   "style": "46e04184",
    "content": "181f9e83",
    "text": "Decision (2026-04-25): Development will use the "
   },
@@ -60,7 +60,7 @@
    "kind": "paragraph",
    "top": 636,
    "h": 26,
-   "style": "ba22fe15",
+   "style": "2f0f5a78",
    "content": "a3eaffdb",
    "text": "Effort estimate vs the Community adapter:"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 680,
    "h": 78,
-   "style": "85786dba",
+   "style": "5d1b2b84",
    "content": "57545f34",
    "text": "If you do both as one adapter: +1–2 days on top "
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 760,
    "h": 52,
-   "style": "d86e0527",
+   "style": "4bfb8331",
    "content": "f2a11a72",
    "text": "If you do Atlas only and skip Community: ~1–1.5 "
   },
@@ -87,7 +87,7 @@
    "kind": "paragraph",
    "top": 830,
    "h": 52,
-   "style": "d0456d4d",
+   "style": "929a38da",
    "content": "1f83afe6",
    "text": "The friction is lower than Community in every di"
   },
@@ -96,7 +96,7 @@
    "kind": "rule",
    "top": 900,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -105,7 +105,7 @@
    "kind": "heading",
    "top": 941,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "27e32dcb",
    "text": "1. The adapter contract change is zero§"
   },
@@ -114,7 +114,7 @@
    "kind": "paragraph",
    "top": 983,
    "h": 104,
-   "style": "5967f4d8",
+   "style": "c3ad04ee",
    "content": "8dddc8ab",
    "text": "Everything in section 1 of the Community deep-di"
   },
@@ -123,7 +123,7 @@
    "kind": "rule",
    "top": 1105,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 1146,
    "h": 58,
-   "style": "288bf775",
+   "style": "8cdcc5db",
    "content": "857093e5",
    "text": "2. The query shape is identical, with a few extr"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 1218,
    "h": 52,
-   "style": "62063d7d",
+   "style": "19b9fb0d",
    "content": "df56eb2e",
    "text": "The $vectorSearch aggregation stage is the same "
   },
@@ -150,7 +150,7 @@
    "kind": "code",
    "top": 1287,
    "h": 364,
-   "style": "8b793496",
+   "style": "2913cf6f",
    "content": "0c6dc18e",
    "text": "db.chunks.aggregate([ { $vectorSearch: { index: "
   },
@@ -159,7 +159,7 @@
    "kind": "paragraph",
    "top": 1666,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "7437fdf9",
    "text": "New for Atlas:"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1710,
    "h": 52,
-   "style": "c0abe5c3",
+   "style": "19bd6f22",
    "content": "a7404d23",
    "text": "exact: true — opt-in exact nearest-neighbor (ful"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1764,
    "h": 52,
-   "style": "8566264b",
+   "style": "e272c718",
    "content": "3be926c5",
    "text": "HNSW under the hood — Atlas docs explicitly say "
   },
@@ -186,7 +186,7 @@
    "kind": "rule",
    "top": 1834,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 1876,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "22bcf364",
    "text": "3. Filter operators — officially enumerated§"
   },
@@ -204,7 +204,7 @@
    "kind": "quote",
    "top": 1918,
    "h": 78,
-   "style": "6574f6a0",
+   "style": "6bd2059a",
    "content": "ca1c5f90",
    "text": "Verified against payloadcms/payload/packages/db-"
   },
@@ -213,7 +213,7 @@
    "kind": "paragraph",
    "top": 2014,
    "h": 26,
-   "style": "1e27d912",
+   "style": "3ddc7e89",
    "content": "d867f24c",
    "text": "Atlas docs give the exhaustive supported list fo"
   },
@@ -222,7 +222,7 @@
    "kind": "paragraph",
    "top": 2057,
    "h": 52,
-   "style": "29e122ae",
+   "style": "3da8d283",
    "content": "44710dde",
    "text": "Supported in $vectorSearch.filter: $eq, $ne, $gt"
   },
@@ -231,7 +231,7 @@
    "kind": "paragraph",
    "top": 2127,
    "h": 52,
-   "style": "2e9379e1",
+   "style": "14308ee2",
    "content": "3c3c48a8",
    "text": "NOT supported: $regex, $all, $elemMatch, geo ope"
   },
@@ -240,7 +240,7 @@
    "kind": "paragraph",
    "top": 2196,
    "h": 26,
-   "style": "75b8b6cc",
+   "style": "4357cd08",
    "content": "5cc85206",
    "text": "Mapped against Payload's Where (per Payload's ow"
   },
@@ -249,7 +249,7 @@
    "kind": "table",
    "top": 2240,
    "h": 777,
-   "style": "5b112324",
+   "style": "1e39883e",
    "content": "011ff9b8",
    "text": "Payload operatorPayload's db-mongodb mappingIn $"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 3034,
    "h": 78,
-   "style": "131a76c8",
+   "style": "2180a0c7",
    "content": "50d70358",
    "text": "So splitWhere is needed (same pattern as adapter"
   },
@@ -267,7 +267,7 @@
    "kind": "paragraph",
    "top": 3130,
    "h": 52,
-   "style": "c1c41a2c",
+   "style": "ccd325df",
    "content": "35cab00f",
    "text": "Six things Payload's own adapter does that we mu"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 3199,
    "h": 52,
-   "style": "ff5d5725",
+   "style": "970f8458",
    "content": "c3936bab",
    "text": "escapeRegExp on like/contains. Without escaping,"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 3254,
    "h": 52,
-   "style": "a38b569b",
+   "style": "2d92db02",
    "content": "398d6668",
    "text": "Case-insensitive substring by default — $options"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 3308,
    "h": 26,
-   "style": "81612d4e",
+   "style": "318290e4",
    "content": "5b0ea36e",
    "text": "Case-insensitive and/or keys — Payload .toLowerC"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 3336,
    "h": 26,
-   "style": "e6e84051",
+   "style": "687e34d9",
    "content": "1c5e7767",
    "text": "Multi-operator on same path → wrap in $and to av"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 3364,
    "h": 52,
-   "style": "24eefb9d",
+   "style": "28016e8a",
    "content": "30f27558",
    "text": "exists is compound, not just $exists — empty str"
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 3419,
    "h": 78,
-   "style": "5af70a43",
+   "style": "b285e016",
    "content": "6a1397f9",
    "text": "ObjectId casting on _id and relationship IDs — l"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 3515,
    "h": 78,
-   "style": "46e88d08",
+   "style": "f81a2543",
    "content": "5b42922c",
    "text": "⚠️ The big Atlas gotcha that doesn't exist in PG"
   },
@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 3610,
    "h": 204,
-   "style": "7b21a099",
+   "style": "bcff587c",
    "content": "37bc623d",
    "text": "{ fields: [ { type: \"vector\", path: \"embedding\","
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 3829,
    "h": 130,
-   "style": "9315d58d",
+   "style": "32257b36",
    "content": "2641744b",
    "text": "This is a real design constraint for the adapter"
   },
@@ -357,7 +357,7 @@
    "kind": "rule",
    "top": 3977,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 4018,
    "h": 58,
-   "style": "288bf775",
+   "style": "8cdcc5db",
    "content": "b2e4f70a",
    "text": "4. Operational story — much friendlier than Comm"
   },
@@ -375,7 +375,7 @@
    "kind": "table",
    "top": 4090,
    "h": 377,
-   "style": "88ea5e3c",
+   "style": "a00e9d0f",
    "content": "bd56c18c",
    "text": "ConcernSelf-hosted CommunityAtlasMongoDB version"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 4484,
    "h": 26,
-   "style": "f496f8c5",
+   "style": "ba68f16c",
    "content": "74483aa8",
    "text": "Tier matrix for vector search (per Atlas deploym"
   },
@@ -393,7 +393,7 @@
    "kind": "table",
    "top": 4528,
    "h": 224,
-   "style": "ef60d5f3",
+   "style": "b519632f",
    "content": "16c86235",
    "text": "TierVector search?Production-ready?mongot locati"
   },
@@ -402,7 +402,7 @@
    "kind": "paragraph",
    "top": 4769,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "280d2619",
    "text": "For our adapter:"
   },
@@ -411,7 +411,7 @@
    "kind": "listItem",
    "top": 4813,
    "h": 104,
-   "style": "d499075a",
+   "style": "e857e327",
    "content": "33f5e810",
    "text": "Dev/CI: point at the M0 free tier or atlas deplo"
   },
@@ -420,7 +420,7 @@
    "kind": "listItem",
    "top": 4919,
    "h": 26,
-   "style": "26b6f6ec",
+   "style": "bdaba37c",
    "content": "04f786e9",
    "text": "Production users: mongodb+srv://... connection s"
   },
@@ -429,7 +429,7 @@
    "kind": "rule",
    "top": 4963,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -438,7 +438,7 @@
    "kind": "heading",
    "top": 5004,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "61b05dfd",
    "text": "5. One adapter or two? The strategic call§"
   },
@@ -447,7 +447,7 @@
    "kind": "paragraph",
    "top": 5047,
    "h": 52,
-   "style": "5f20ca27",
+   "style": "107f44c7",
    "content": "80d0b0cd",
    "text": "Since the wire protocol and aggregation API are "
   },
@@ -456,7 +456,7 @@
    "kind": "paragraph",
    "top": 5116,
    "h": 52,
-   "style": "97c1ea30",
+   "style": "69d42e03",
    "content": "9c93b534",
    "text": "Option A — One unified @payloadcms-vectorize/mon"
   },
@@ -465,7 +465,7 @@
    "kind": "listItem",
    "top": 5186,
    "h": 52,
-   "style": "bb0c7d5f",
+   "style": "b803d28d",
    "content": "f3a5ca34",
    "text": "Pros: one codebase, one test suite, one README. "
   },
@@ -474,7 +474,7 @@
    "kind": "listItem",
    "top": 5240,
    "h": 78,
-   "style": "9c93e9b4",
+   "style": "0834fb12",
    "content": "8fa07a63",
    "text": "Cons: must document both setup paths in the READ"
   },
@@ -483,7 +483,7 @@
    "kind": "paragraph",
    "top": 5336,
    "h": 52,
-   "style": "79fd7c8f",
+   "style": "25b2adb0",
    "content": "bad331c3",
    "text": "Option B — Two adapters, @payloadcms-vectorize/m"
   },
@@ -492,7 +492,7 @@
    "kind": "listItem",
    "top": 5406,
    "h": 52,
-   "style": "db876d37",
+   "style": "51ec10bb",
    "content": "75fc1a03",
    "text": "Pros: cleaner per-target docs; can mark Communit"
   },
@@ -501,7 +501,7 @@
    "kind": "listItem",
    "top": 5460,
    "h": 26,
-   "style": "8ae2f90f",
+   "style": "997aad12",
    "content": "143176a8",
    "text": "Cons: 95% code duplication, double the maintenan"
   },
@@ -510,7 +510,7 @@
    "kind": "paragraph",
    "top": 5504,
    "h": 26,
-   "style": "d14bb6b6",
+   "style": "446d0ee7",
    "content": "8f13cd71",
    "text": "Option C — Atlas only, defer Community."
   },
@@ -519,7 +519,7 @@
    "kind": "listItem",
    "top": 5548,
    "h": 52,
-   "style": "bb0c7d5f",
+   "style": "b803d28d",
    "content": "50ae6e9f",
    "text": "Pros: ship faster, target the production-ready p"
   },
@@ -528,7 +528,7 @@
    "kind": "listItem",
    "top": 5602,
    "h": 52,
-   "style": "cf36b945",
+   "style": "5bc3a5c5",
    "content": "c4a3d3ca",
    "text": "Cons: leaves self-hosted Payload users with no M"
   },
@@ -537,7 +537,7 @@
    "kind": "paragraph",
    "top": 5672,
    "h": 104,
-   "style": "e453ed50",
+   "style": "3ecb1dd1",
    "content": "d1894f3c",
    "text": "My recommendation: Option A, framed as \"Atlas-fi"
   },
@@ -546,7 +546,7 @@
    "kind": "rule",
    "top": 5794,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -555,7 +555,7 @@
    "kind": "heading",
    "top": 5835,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "9a15e445",
    "text": "6. Concrete proposed structure (Option A)§"
   },
@@ -564,7 +564,7 @@
    "kind": "paragraph",
    "top": 5877,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "0272e582",
    "text": "Same as the Community proposal, with these adjus"
   },
@@ -573,7 +573,7 @@
    "kind": "code",
    "top": 5921,
    "h": 424,
-   "style": "5418dd1f",
+   "style": "7ca4a8f5",
    "content": "6928f87e",
    "text": "adapters/mongodb/ ├── package.json # @payloadcms"
   },
@@ -582,7 +582,7 @@
    "kind": "paragraph",
    "top": 6360,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "66490991",
    "text": "Net code delta vs the Community-only proposal:"
   },
@@ -591,7 +591,7 @@
    "kind": "listItem",
    "top": 6404,
    "h": 26,
-   "style": "b71691a3",
+   "style": "442eb6a6",
    "content": "71986273",
    "text": "+ filterableFields config plumbing"
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 6432,
    "h": 26,
-   "style": "ff64e334",
+   "style": "fde724db",
    "content": "46ae84bd",
    "text": "+ forceExact support in search.ts"
   },
@@ -609,7 +609,7 @@
    "kind": "listItem",
    "top": 6460,
    "h": 26,
-   "style": "4b6aff2f",
+   "style": "7db04e8c",
    "content": "180ef38b",
    "text": "+ splitWhere for like / contains / all / geo (CF"
   },
@@ -618,7 +618,7 @@
    "kind": "listItem",
    "top": 6488,
    "h": 78,
-   "style": "011885ed",
+   "style": "7895b26b",
    "content": "d7c112bf",
    "text": "+ Payload-parity touches: escapeRegExp, $options"
   },
@@ -627,7 +627,7 @@
    "kind": "listItem",
    "top": 6569,
    "h": 26,
-   "style": "8ae2f90f",
+   "style": "997aad12",
    "content": "6eb424d6",
    "text": "README has a tier-decision table at the top"
   },
@@ -636,7 +636,7 @@
    "kind": "rule",
    "top": 6613,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -645,7 +645,7 @@
    "kind": "heading",
    "top": 6654,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "a2270d36",
    "text": "7. Recommendation & scope§"
   },
@@ -654,7 +654,7 @@
    "kind": "paragraph",
    "top": 6697,
    "h": 26,
-   "style": "91fa74e8",
+   "style": "fcdfe441",
    "content": "2f6c0823",
    "text": "Ship it as Option A — one adapter, Atlas-first m"
   },
@@ -663,7 +663,7 @@
    "kind": "paragraph",
    "top": 6740,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "74603072",
    "text": "Three reasons this is more compelling than the C"
   },
@@ -672,7 +672,7 @@
    "kind": "listItem",
    "top": 6784,
    "h": 52,
-   "style": "10b72da3",
+   "style": "68909bc4",
    "content": "d856c3e3",
    "text": "Production-ready today. Atlas vector search is G"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 6838,
    "h": 78,
-   "style": "95a603a1",
+   "style": "34539dd0",
    "content": "7eafeaad",
    "text": "Free tier exists. M0 means you can have a \"Get s"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 6918,
    "h": 78,
-   "style": "213f86f3",
+   "style": "9da3789e",
    "content": "cea1a680",
    "text": "You get Community for free. Same code works on s"
   },
@@ -699,7 +699,7 @@
    "kind": "paragraph",
    "top": 7014,
    "h": 52,
-   "style": "b8aedf8f",
+   "style": "2c00cd78",
    "content": "604199a6",
    "text": "Estimated breakdown (calendar time, single dev, "
   },
@@ -708,7 +708,7 @@
    "kind": "listItem",
    "top": 7084,
    "h": 26,
-   "style": "155ddf75",
+   "style": "47db8660",
    "content": "5ed674d4",
    "text": "Adapter scaffolding + storeChunk/deleteChunks/ha"
   },
@@ -717,7 +717,7 @@
    "kind": "listItem",
    "top": 7112,
    "h": 26,
-   "style": "1eab9413",
+   "style": "751cece8",
    "content": "385e14e1",
    "text": "convertWhereToMongo + splitWhere for like/contai"
   },
@@ -726,7 +726,7 @@
    "kind": "listItem",
    "top": 7140,
    "h": 52,
-   "style": "662e375a",
+   "style": "7c9e94f0",
    "content": "a1235df2",
    "text": "search with $vectorSearch + index lifecycle (inc"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 7195,
    "h": 26,
-   "style": "695ed191",
+   "style": "ed750914",
    "content": "2477c09e",
    "text": "Atlas CLI local-deployment for CI, port test sui"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 7223,
    "h": 26,
-   "style": "8ae2f90f",
+   "style": "997aad12",
    "content": "de3c8bb2",
    "text": "README with tier decision table + connection-str"
   },
@@ -753,7 +753,7 @@
    "kind": "paragraph",
    "top": 7267,
    "h": 52,
-   "style": "24801a72",
+   "style": "f1bc71cd",
    "content": "5cad0bf7",
    "text": "Total: ~1.5–2 weeks. Slightly faster than Commun"
   },
@@ -762,7 +762,7 @@
    "kind": "paragraph",
    "top": 7337,
    "h": 130,
-   "style": "ba7e576b",
+   "style": "ff1642a0",
    "content": "aeac37b8",
    "text": "Tradeoff to flag — same as Community plan: the f"
   },
@@ -771,7 +771,7 @@
    "kind": "paragraph",
    "top": 7484,
    "h": 78,
-   "style": "9c8f4d99",
+   "style": "4087fb6f",
    "content": "305929ce",
    "text": "Companion item to revisit: if we go with Option "
   },
@@ -780,7 +780,7 @@
    "kind": "rule",
    "top": 7580,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -789,7 +789,7 @@
    "kind": "heading",
    "top": 7621,
    "h": 58,
-   "style": "288bf775",
+   "style": "8cdcc5db",
    "content": "7b70fab2",
    "text": "8. Development environment: local Atlas deployme"
   },
@@ -798,7 +798,7 @@
    "kind": "paragraph",
    "top": 7693,
    "h": 104,
-   "style": "a88b1984",
+   "style": "206c43a7",
    "content": "c89705c1",
    "text": "Decision: this project uses the direct Docker pa"
   },
@@ -807,7 +807,7 @@
    "kind": "heading",
    "top": 7824,
    "h": 23,
-   "style": "2b9408bd",
+   "style": "de78c382",
    "content": "a99c05cf",
    "text": "Why Docker, not the Atlas CLI§"
   },
@@ -816,7 +816,7 @@
    "kind": "paragraph",
    "top": 7856,
    "h": 78,
-   "style": "d313ab7c",
+   "style": "3c22ad16",
    "content": "00efadd6",
    "text": "The Atlas CLI offers a atlas local command that "
   },
@@ -825,7 +825,7 @@
    "kind": "listItem",
    "top": 7952,
    "h": 52,
-   "style": "f533434f",
+   "style": "83efb624",
    "content": "58907ca6",
    "text": "Zero-prereq contributors. Anyone with Docker can"
   },
@@ -834,7 +834,7 @@
    "kind": "listItem",
    "top": 8006,
    "h": 52,
-   "style": "af524b71",
+   "style": "18f47d12",
    "content": "a7faf40b",
    "text": "CI without secrets. No ATLAS_* credentials in Gi"
   },
@@ -843,7 +843,7 @@
    "kind": "listItem",
    "top": 8060,
    "h": 52,
-   "style": "9f9d1e87",
+   "style": "01739e98",
    "content": "44112f55",
    "text": "One path, one set of docs. Local dev and CI use "
   },
@@ -852,7 +852,7 @@
    "kind": "paragraph",
    "top": 8130,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "86a8c4f0",
    "text": "The CLI is strictly a convenience wrapper — the "
   },
@@ -861,7 +861,7 @@
    "kind": "heading",
    "top": 8184,
    "h": 23,
-   "style": "2b9408bd",
+   "style": "de78c382",
    "content": "db35bbc5",
    "text": "Prerequisites§"
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 8216,
    "h": 26,
-   "style": "54a12746",
+   "style": "d7bf1daa",
    "content": "9eb1dc86",
    "text": "Docker. That's it. No Atlas account, no Atlas CL"
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 8244,
    "h": 52,
-   "style": "3cec9a03",
+   "style": "b0edb7e3",
    "content": "774224c2",
    "text": "Docker Desktop 4.31+ on macOS/Windows, or Docker"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 8298,
    "h": 26,
-   "style": "695ed191",
+   "style": "ed750914",
    "content": "43332b08",
    "text": "Min: 2 CPU cores, 2 GB free RAM."
   },
@@ -897,7 +897,7 @@
    "kind": "listItem",
    "top": 8327,
    "h": 26,
-   "style": "8ae2f90f",
+   "style": "997aad12",
    "content": "c76941c3",
    "text": "First run requires internet to pull the image (~"
   },
@@ -906,7 +906,7 @@
    "kind": "quote",
    "top": 8371,
    "h": 52,
-   "style": "ee11c29d",
+   "style": "c3ad4b88",
    "content": "e8b5d8e0",
    "text": "OrbStack: widely reported to work as a Docker De"
   },
@@ -915,7 +915,7 @@
    "kind": "heading",
    "top": 8450,
    "h": 23,
-   "style": "2b9408bd",
+   "style": "de78c382",
    "content": "60964ae3",
    "text": "Setup§"
   },
@@ -924,7 +924,7 @@
    "kind": "code",
    "top": 8482,
    "h": 124,
-   "style": "917f5632",
+   "style": "2d88706a",
    "content": "d0f2493a",
    "text": "docker run -d \\ --name vectorize-dev \\ -p 27017:"
   },
@@ -933,7 +933,7 @@
    "kind": "paragraph",
    "top": 8621,
    "h": 78,
-   "style": "3708c50f",
+   "style": "f3b8bff1",
    "content": "b7288169",
    "text": "The image self-initializes the replica set and s"
   },
@@ -942,7 +942,7 @@
    "kind": "heading",
    "top": 8726,
    "h": 23,
-   "style": "2b9408bd",
+   "style": "de78c382",
    "content": "0450f558",
    "text": "Lifecycle§"
   },
@@ -951,7 +951,7 @@
    "kind": "code",
    "top": 8758,
    "h": 84,
-   "style": "628b299b",
+   "style": "1b41399f",
    "content": "b03051a3",
    "text": "docker stop vectorize-dev # pause docker start v"
   },
@@ -960,7 +960,7 @@
    "kind": "paragraph",
    "top": 8857,
    "h": 52,
-   "style": "5f29105b",
+   "style": "edf583a9",
    "content": "df528581",
    "text": "For local dev, a docker-compose.yml at adapters/"
   },
@@ -969,7 +969,7 @@
    "kind": "code",
    "top": 8927,
    "h": 204,
-   "style": "a708894d",
+   "style": "1f4d8543",
    "content": "c9ed5089",
    "text": "services: mongodb-atlas: image: mongodb/mongodb-"
   },
@@ -978,7 +978,7 @@
    "kind": "paragraph",
    "top": 9146,
    "h": 26,
-   "style": "72df181a",
+   "style": "a1b26c80",
    "content": "ee8bb2ce",
    "text": "Then docker compose -f adapters/mongodb/dev/dock"
   },
@@ -987,7 +987,7 @@
    "kind": "rule",
    "top": 9190,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -996,7 +996,7 @@
    "kind": "heading",
    "top": 9218,
    "h": 23,
-   "style": "2b9408bd",
+   "style": "de78c382",
    "content": "a1801a5a",
    "text": "What you get vs production Atlas§"
   },
@@ -1005,7 +1005,7 @@
    "kind": "table",
    "top": 9250,
    "h": 405,
-   "style": "83098ebb",
+   "style": "44f34113",
    "content": "bae63c8c",
    "text": "AspectLocal deploymentProduction Atlas$vectorSea"
   },
@@ -1014,7 +1014,7 @@
    "kind": "paragraph",
    "top": 9673,
    "h": 130,
-   "style": "ac2d87e4",
+   "style": "daad3875",
    "content": "53a396cb",
    "text": "The only behavioral gap that matters for our ada"
   },
@@ -1023,7 +1023,7 @@
    "kind": "rule",
    "top": 9820,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1032,7 +1032,7 @@
    "kind": "heading",
    "top": 9849,
    "h": 23,
-   "style": "2b9408bd",
+   "style": "de78c382",
    "content": "416f25e9",
    "text": "Wiring into the test harness§"
   },
@@ -1041,7 +1041,7 @@
    "kind": "paragraph",
    "top": 9881,
    "h": 26,
-   "style": "6d2b4da4",
+   "style": "d9a1860a",
    "content": "1bf44ae5",
    "text": "For dev/specs/setup.ts:"
   },
@@ -1050,7 +1050,7 @@
    "kind": "code",
    "top": 9925,
    "h": 324,
-   "style": "ea9132b8",
+   "style": "96c9acaa",
    "content": "92718a0b",
    "text": "// pseudo-code outline const IMAGE = 'mongodb/mo"
   },
@@ -1059,7 +1059,7 @@
    "kind": "paragraph",
    "top": 10263,
    "h": 52,
-   "style": "5c94889b",
+   "style": "71ee13d7",
    "content": "cb7ea6e5",
    "text": "Vitest globalSetup calls setupTestDeployment onc"
   },
@@ -1068,7 +1068,7 @@
    "kind": "rule",
    "top": 10333,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1077,7 +1077,7 @@
    "kind": "heading",
    "top": 10361,
    "h": 23,
-   "style": "2b9408bd",
+   "style": "de78c382",
    "content": "29f82576",
    "text": "CI considerations (GitHub Actions)§"
   },
@@ -1086,7 +1086,7 @@
    "kind": "paragraph",
    "top": 10394,
    "h": 52,
-   "style": "5f20ca27",
+   "style": "107f44c7",
    "content": "c685281c",
    "text": "This works cleanly on GitHub-hosted Ubuntu runne"
   },
@@ -1095,7 +1095,7 @@
    "kind": "paragraph",
    "top": 10463,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "235ced69",
    "text": "Sketch:"
   },
@@ -1104,7 +1104,7 @@
    "kind": "code",
    "top": 10507,
    "h": 484,
-   "style": "e994da48",
+   "style": "1b7f69e1",
    "content": "2a62cf59",
    "text": "jobs: test-mongodb-adapter: runs-on: ubuntu-late"
   },
@@ -1113,7 +1113,7 @@
    "kind": "paragraph",
    "top": 11006,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "66fafef0",
    "text": "Notes:"
   },
@@ -1122,7 +1122,7 @@
    "kind": "listItem",
    "top": 11049,
    "h": 52,
-   "style": "3a2c8ae9",
+   "style": "a4b50da1",
    "content": "83f6e1f8",
    "text": "First-run downloads the image (~few hundred MB)."
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 11104,
    "h": 52,
-   "style": "e72a1449",
+   "style": "9066e533",
    "content": "0266c7a4",
    "text": "macOS / Windows runners: Docker isn't always rel"
   },
@@ -1140,7 +1140,7 @@
    "kind": "listItem",
    "top": 11158,
    "h": 26,
-   "style": "080ef842",
+   "style": "33dc88b7",
    "content": "19c40bfe",
    "text": "No login, no ATLAS_* secrets needed."
   },
@@ -1149,7 +1149,7 @@
    "kind": "rule",
    "top": 11202,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1158,7 +1158,7 @@
    "kind": "heading",
    "top": 11230,
    "h": 23,
-   "style": "2b9408bd",
+   "style": "de78c382",
    "content": "9f67b7f9",
    "text": "When to graduate to a real Atlas cluster§"
   },
@@ -1167,7 +1167,7 @@
    "kind": "paragraph",
    "top": 11262,
    "h": 52,
-   "style": "09b86d30",
+   "style": "5f002b9f",
    "content": "aa2d0913",
    "text": "Only at two points in the lifecycle, and never a"
   },
@@ -1176,7 +1176,7 @@
    "kind": "listItem",
    "top": 11332,
    "h": 78,
-   "style": "1b7bcb72",
+   "style": "dd03641f",
    "content": "1a8fbc2b",
    "text": "Pre-1.0 smoke test: spin up a free M0 cluster on"
   },
@@ -1185,7 +1185,7 @@
    "kind": "listItem",
    "top": 11412,
    "h": 78,
-   "style": "f35d618c",
+   "style": "a073e209",
    "content": "a24d8022",
    "text": "Search Nodes perf validation (optional, only if "
   },
@@ -1194,7 +1194,7 @@
    "kind": "paragraph",
    "top": 11508,
    "h": 26,
-   "style": "b3a707c0",
+   "style": "2ed9a1e8",
    "content": "61bb5dc0",
    "text": "For day-to-day dev and CI, the local deployment "
   },
@@ -1203,7 +1203,7 @@
    "kind": "rule",
    "top": 11552,
    "h": 1,
-   "style": "e349766d",
+   "style": "19a76362",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1212,7 +1212,7 @@
    "kind": "heading",
    "top": 11593,
    "h": 29,
-   "style": "e30c92f5",
+   "style": "763c4a7a",
    "content": "b5fac2c2",
    "text": "Sources§"
   },
@@ -1221,7 +1221,7 @@
    "kind": "listItem",
    "top": 11636,
    "h": 26,
-   "style": "60e79046",
+   "style": "529a697c",
    "content": "ca8fee53",
    "text": "$vectorSearch aggregation stage reference (Atlas"
   },
@@ -1230,7 +1230,7 @@
    "kind": "listItem",
    "top": 11664,
    "h": 26,
-   "style": "644f40a6",
+   "style": "30d2c0e0",
    "content": "2d3fbeb4",
    "text": "Run Vector Search Queries — Atlas"
   },
@@ -1239,7 +1239,7 @@
    "kind": "listItem",
    "top": 11692,
    "h": 26,
-   "style": "19591b1f",
+   "style": "5db84ec9",
    "content": "1519ca7c",
    "text": "Review Deployment Options — Atlas Vector Search"
   },
@@ -1248,7 +1248,7 @@
    "kind": "listItem",
    "top": 11720,
    "h": 26,
-   "style": "138a3552",
+   "style": "27080ea4",
    "content": "42655ee8",
    "text": "Atlas Free Cluster Limits"
   },
@@ -1257,7 +1257,7 @@
    "kind": "listItem",
    "top": 11749,
    "h": 26,
-   "style": "5ffeb412",
+   "style": "e33a73e4",
    "content": "ee0c55af",
    "text": "MongoDB Pricing"
   },
@@ -1266,7 +1266,7 @@
    "kind": "listItem",
    "top": 11777,
    "h": 26,
-   "style": "90f42cde",
+   "style": "a5b4a178",
    "content": "6a6a15d4",
    "text": "Pre-filtering Data — MongoDB Search Lab"
   },
@@ -1275,7 +1275,7 @@
    "kind": "listItem",
    "top": 11805,
    "h": 26,
-   "style": "cc17a30c",
+   "style": "78997f2a",
    "content": "92e64f74",
    "text": "vectorSearch operator (within $search)"
   },
@@ -1284,7 +1284,7 @@
    "kind": "listItem",
    "top": 11834,
    "h": 26,
-   "style": "3d1fe55d",
+   "style": "2bf27a23",
    "content": "1c9fffc9",
    "text": "Create a Local Atlas Deployment with Docker"
   },
@@ -1293,7 +1293,7 @@
    "kind": "listItem",
    "top": 11862,
    "h": 26,
-   "style": "3ca63aa5",
+   "style": "5c179b57",
    "content": "44901199",
    "text": "mongodb/mongodb-atlas-local Docker image"
   }
