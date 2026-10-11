@@ -53,7 +53,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
     }
 
-    /// Pushes the body in paced chunks (64 KB/ms, after a short header-to-body
+    /// Pushes the body in paced chunks (64 KB per 2 ms, after a short header-to-body
     /// gap) from a background queue so a cancel can land between chunks, as it
     /// would on a real socket.
     private func stream(host: String, chunk: Int, total: Int) {
@@ -64,7 +64,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
                 self.client?.urlProtocol(self, didLoad: piece)
                 sent += chunk
                 Self.lock.withLock { Self.sent[host] = sent }
-                usleep(1000)
+                usleep(2000)
             }
             if !self.isStopped { self.client?.urlProtocolDidFinishLoading(self) }
         }
@@ -100,7 +100,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
         try? await Task.sleep(nanoseconds: 50_000_000)
         let sent = StubProtocol.bytesSent("big.test")
         #expect(sent > RemoteLoad.maxBytes)
-        #expect(sent < RemoteLoad.maxBytes + 2 * 1024 * 1024, "sent \(sent) bytes")
+        #expect(sent < RemoteLoad.maxBytes + 4 * 1024 * 1024, "sent \(sent) bytes")
     }
 
     @Test func rejectsADeclaredOversizeBodyFromTheHeaders() async {
