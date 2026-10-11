@@ -175,6 +175,12 @@ await page.evaluate(p => window.readout.apply(p), {
     { op: 'insert', slot: 504, after: 503, html: '<h2 id="empty">Empty</h2>', kind: 'heading', anchor: 'empty' },
     { op: 'insert', slot: 505, after: 504, html: '<h2 id="caughtup">Caughtup</h2>', kind: 'heading', anchor: 'caughtup' },
     { op: 'insert', slot: 506, after: 505, html: '<p>body paragraph for alignment reference</p>', kind: 'paragraph' },
+    // Filler so the page scrolls: the fragment test starts at the bottom and
+    // only a real navigation brings the target back to the top (Codex P3).
+    ...Array.from({ length: 30 }, (_, i) => ({
+      op: 'insert', slot: 510 + i, after: 509 + i,
+      html: `<p style="min-height:170px">filler ${i} to make the page scrollable</p>`, kind: 'paragraph',
+    })),
   ],
   marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
 });
@@ -190,7 +196,10 @@ const idCheck = await page.evaluate(() => {
       const inner = h.querySelector('h1,h2,h3,h4,h5,h6') || h;
       const cs = getComputedStyle(inner);
       const r = inner.getBoundingClientRect();
-      return { id: inner.id, position: cs.position, width: r.width, left: r.left };
+      // textAlign/paddingTop: the old #empty rule changed these without
+      // touching position/width/left, so assert them explicitly (Codex P2).
+      return { id: inner.id, position: cs.position, width: r.width, left: r.left,
+               align: cs.textAlign, padTop: cs.paddingTop };
     }),
     paraLeft,
   };
@@ -200,7 +209,14 @@ for (const h of idCheck.heads) {
   check(`heading ${h.id} is static-positioned`, h.position === 'static', `${h.id}: ${h.position}`);
   check(`heading ${h.id} keeps full width`, h.width > 100, `${h.id}: ${h.width}`);
   check(`heading ${h.id} aligns with body text`, Math.abs(h.left - idCheck.paraLeft) <= 2, `${h.id}: ${h.left} vs ${idCheck.paraLeft}`);
+  check(`heading ${h.id} is not center-aligned`, h.align !== 'center', `${h.id}: text-align=${h.align}`);
+  check(`heading ${h.id} has no empty-state padding`, parseFloat(h.padTop) < 20, `${h.id}: padding-top=${h.padTop}`);
 }
+// Start scrolled to the bottom: with the page at scroll 0 the target already
+// sits near the top, so even a broken lookup that scrolls nowhere would pass
+// (Codex P3). From the bottom, only a real navigation lands it at the top.
+await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+await page.waitForTimeout(200);
 await page.evaluate(() => window.readout.scrollToFragment({ fragment: 'notice' }));
 const noticeTop = await page.evaluate(() => {
   const h = [...document.querySelectorAll('.k-heading')].find(e => e.querySelector('h2')?.textContent === 'Notice');
@@ -228,28 +244,33 @@ await page.evaluate(() => {
 const captured = await page.evaluate(() => window.readout.captureAnchor());
 check('changes-only capture sees slot 65', captured && captured.slot === 65, JSON.stringify(captured));
 // Insert a long unread paragraph after slot 20: slot 65 must not move.
+// Marks are a full snapshot (DocumentSession.payload sends currentMarks), so
+// the patch keeps every existing mark alongside the new one — a patch that
+// dropped them would hide 65 itself and the assertion would prove nothing.
 const top65Before = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
-await page.evaluate(() => window.readout.apply({
+await page.evaluate((extra) => window.readout.apply({
   version: 21, reset: false, rewrite: false,
   ops: [{ op: 'insert', slot: 1001, after: 20, html: `<p>${'inserted long paragraph. '.repeat(30)}</p>`, kind: 'paragraph' }],
-  marks: [{ slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-}));
+  marks: [...extra, { slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+}), Array.from({ length: 12 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' })));
 const top65After = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
 check('slot 65 does not jump after patch above', Math.abs(top65After - top65Before) < 2, `shift=${top65After - top65Before}`);
 
 // 9. Anchor block hidden by the filter: restore falls back to the nearest
 // visible block. Slot 65 sits at the viewport top; a patch that drops its
 // mark hides it, so restore must land on 55 (nearest visible before it).
+// The patch keeps every other mark (full-snapshot semantics): only 65's mark
+// is dropped, so 55 stays visible and the fallback has a real target.
 await page.evaluate(() => window.readout.setChangesOnly(false));
 await page.evaluate(() => {
   const el = document.querySelector('.blk[data-slot="65"]');
   window.scrollBy(0, el.getBoundingClientRect().top);
 });
 await page.evaluate(() => window.readout.setChangesOnly(true));
-await page.evaluate(() => window.readout.apply({
+await page.evaluate((extra) => window.readout.apply({
   version: 22, reset: false, rewrite: false, ops: [],
-  marks: [{ slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-}));
+  marks: [...extra, { slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+}), Array.from({ length: 12 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' })).filter(m => m.slot !== 65));
 const fallback = await page.evaluate(() => ({
   top55: document.querySelector('.blk[data-slot="55"]').getBoundingClientRect().top,
   hidden65: document.querySelector('.blk[data-slot="65"]').hidden,
@@ -297,6 +318,27 @@ const hiddenNext = await page.evaluate(() => {
   return document.querySelector('.blk[data-slot="41"]').hidden;
 });
 check('block hides once a later patch drops its mark', hiddenNext);
+
+// 12. Rail tick aria-labels come from the localized strings template.
+// Tall blocks so the rail renders (it hides on short documents); the
+// changes-only filter must be off, or the document is too short to scroll.
+await page.evaluate(() => window.readout.setChangesOnly(false));
+await page.evaluate(p => window.readout.apply(p), {
+  version: 30, reset: true, rewrite: false,
+  ops: Array.from({ length: 30 }, (_, i) => ({
+    op: 'insert', slot: 2000 + i, after: i === 0 ? 0 : 2000 + i - 1,
+    html: `<p style="min-height:170px">rail label probe ${i} with enough text to fill vertical space</p>`, kind: 'paragraph',
+  })),
+  marks: [{ slot: 2000, kind: 'inserted' }, { slot: 2005, kind: 'modified' }],
+  deletions: [], toc: [], tasks: { done: 0, total: 0 },
+});
+await page.evaluate(() => window.readout.setAppearance({ strings: {
+  railChange: '未读变更 %d / %d：%@', railAdded: '新增', railEdited: '修改', railRemoved: '删除',
+} }));
+await page.waitForTimeout(300);
+const railLabels = await page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => b.getAttribute('aria-label')));
+check('rail labels use the localized template',
+  JSON.stringify(railLabels) === JSON.stringify(['未读变更 1 / 2：新增', '未读变更 2 / 2：修改']), JSON.stringify(railLabels));
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 

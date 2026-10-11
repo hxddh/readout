@@ -188,47 +188,134 @@ public enum Similarity {
 
 /// Word count and reading-time estimates for subtitles and progress.
 public enum ReadingStats {
-    /// CJK characters count individually; Latin text counts whitespace-separated words.
+    /// Block kinds that carry prose. Code, math, diagrams, raw HTML and front
+    /// matter are excluded: they take scanning, not reading, time.
+    public static let proseKinds: Set<BlockKind> = [.paragraph, .heading, .listItem, .quote, .alert, .table]
+
+    /// CJK characters count individually; Latin text counts words. An
+    /// apostrophe inside a word (don't, it's, ’) does not split it.
     public static func words(in text: String) -> Int {
-        var n = 0
+        counts(in: text).latin + counts(in: text).cjk
+    }
+
+    /// Separate Latin-word and CJK-character counts, for mixed-speed timing.
+    public static func counts(in text: String) -> (latin: Int, cjk: Int) {
+        var latin = 0, cjk = 0
         var inWord = false
-        for s in text.unicodeScalars {
+        let scalars = Array(text.unicodeScalars)
+        for (i, s) in scalars.enumerated() {
             if CJK.isCJK(s) {
-                n += 1
+                cjk += 1
                 inWord = false
             } else if CharacterSet.alphanumerics.contains(s) {
-                if !inWord { n += 1; inWord = true }
+                if !inWord { latin += 1; inWord = true }
+            } else if s.value == 0x27 || s.value == 0x2019 {  // ' or ’
+                // Keep inWord: an apostrophe between alphanumerics (don't)
+                // joins; a leading/trailing one (’tis, ’) starts nothing.
+                let prevIsWord = i > 0 && CharacterSet.alphanumerics.contains(scalars[i - 1])
+                let nextIsWord = i + 1 < scalars.count && CharacterSet.alphanumerics.contains(scalars[i + 1])
+                if !(prevIsWord && nextIsWord) { inWord = false }
             } else {
                 inWord = false
             }
         }
-        return n
+        return (latin, cjk)
     }
 
     public static func words(in blocks: [Block]) -> Int {
-        blocks.reduce(0) { $0 + words(in: $1.text) }
+        blocks.filter { proseKinds.contains($0.kind) }.reduce(0) { $0 + words(in: $1.text) }
     }
 
-    /// Whole minutes at `wpm` words per minute, always at least 1.
-    public static func minutes(forWords words: Int, wpm: Int = 400) -> Int {
+    /// Mixed-pace minutes: Latin words at 230 wpm plus CJK characters at
+    /// 450 cpm, always at least 1.
+    public static func minutes(forWords words: Int, wpm: Int = 230) -> Int {
         max(1, Int((Double(words) / Double(wpm)).rounded()))
+    }
+
+    public static func minutes(forBlocks blocks: [Block]) -> Int {
+        let prose = blocks.filter { proseKinds.contains($0.kind) }
+        var latin = 0, cjk = 0
+        for b in prose {
+            let c = counts(in: b.text)
+            latin += c.latin
+            cjk += c.cjk
+        }
+        return max(1, Int((Double(latin) / 230.0 + Double(cjk) / 450.0).rounded()))
+    }
+}
+
+/// Update-check presentation policy. The decision of what the user sees is a
+/// pure function so it is unit-tested on Linux; the AppKit alert/menu code in
+/// App/UpdateChecker.swift stays a thin caller.
+public enum UpdatePolicy {
+    /// Only user-invoked checks may show a modal alert. Background checks
+    /// surface through the application menu instead and never steal focus —
+    /// whether or not they found an update.
+    public static func shouldAlert(interactive: Bool, hasUpdate: Bool) -> Bool {
+        interactive
+    }
+
+    /// Strips Markdown formatting for alert text: links keep their text,
+    /// headings lose their #'s, emphasis/code ticks go away. Capped at
+    /// `limit` characters so a long changelog cannot blow up the dialog.
+    public static func plainNotes(_ markdown: String, limit: Int = 600) -> String {
+        var s = markdown
+        s = replacing(#"\[([^\]]*)\]\([^)]*\)"#, in: s, with: "$1")
+        s = replacing(#"^#{1,6}\s*"#, in: s, with: "", anchorsMatchLines: true)
+        s = replacing(#"(\*\*|__)(.*?)\1"#, in: s, with: "$2")
+        s = replacing(#"(^|\s)(\*|_|`|>|-) "#, in: s, with: "$1")
+        s = s.replacingOccurrences(of: "`", with: "")
+        s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard s.count > limit else { return s }
+        let end = s.index(s.startIndex, offsetBy: limit)
+        return String(s[..<end]).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
+    }
+
+    private static func replacing(_ pattern: String, in s: String, with template: String, anchorsMatchLines: Bool = false) -> String {
+        guard let re = try? NSRegularExpression(pattern: pattern, options: anchorsMatchLines ? .anchorsMatchLines : []) else { return s }
+        return re.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: template)
+    }
+}
+
+/// Adaptive Welcome-window height: the base layout plus one row per recent
+/// file (capped at 5), so a single recent leaves no big blank area. Pure so
+/// it is unit-tested on Linux; WelcomeView in App/AppDelegate.swift calls it.
+public enum WelcomeHeight {
+    public static func height(forRecentCount count: Int) -> Double {
+        400 + Double(min(max(count, 0), 5)) * 24 + (count > 0 ? 30 : 0)
     }
 }
 
 /// Finds the current index of the block the reader was on when the baseline was
 /// saved. Block indices shift as agents edit; the saved text excerpt survives that.
 public enum ExcerptAnchor {
-    public static func index(of excerpt: String, in texts: [String]) -> Int? {
+    /// - Parameter near: the block index where the excerpt was saved. When
+    ///   several blocks match (agent plans repeat similar list items), the
+    ///   candidate nearest `near` wins instead of always the first.
+    public static func index(of excerpt: String, in texts: [String], near: Int? = nil) -> Int? {
         guard !excerpt.isEmpty else { return nil }
+        if let near, let i = nearestMatch(in: texts, near: near, by: { $0.hasPrefix(excerpt) }) { return i }
         if let i = texts.firstIndex(where: { $0.hasPrefix(excerpt) }) { return i }
         // Edited mid-block: fall back to containment, first of the whole excerpt,
         // then of its first half. Short excerpts are ambiguous — leave those to
         // the caller's index fallback instead of guessing.
         if excerpt.count >= 24 {
+            if let near, let i = nearestMatch(in: texts, near: near, by: { $0.contains(excerpt) }) { return i }
             if let i = texts.firstIndex(where: { $0.contains(excerpt) }) { return i }
             let half = String(excerpt.prefix(max(24, excerpt.count / 2)))
-            if half.count >= 24, let i = texts.firstIndex(where: { $0.contains(half) }) { return i }
+            if half.count >= 24 {
+                if let near, let i = nearestMatch(in: texts, near: near, by: { $0.contains(half) }) { return i }
+                if let i = texts.firstIndex(where: { $0.contains(half) }) { return i }
+            }
         }
         return nil
+    }
+
+    private static func nearestMatch(in texts: [String], near: Int, by matches: (String) -> Bool) -> Int? {
+        var best: Int?
+        for (i, t) in texts.enumerated() where matches(t) {
+            if best == nil || abs(i - near) < abs(best! - near) { best = i }
+        }
+        return best
     }
 }

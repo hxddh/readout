@@ -70,7 +70,8 @@ enum SmokeTest {
               deletions: document.querySelectorAll('.del-mark').length,
               anchorShift: window.__smoke ? (document.querySelector('.blk[data-slot="' + window.__smoke.slot + '"]').getBoundingClientRect().top - window.__smoke.top) : null,
               theme: document.documentElement.dataset.theme,
-              title: document.title
+              title: document.title,
+              early: document.body.innerText.includes('EARLY-EDIT-OK')
             })
             """)
         if let s = stats as? String {

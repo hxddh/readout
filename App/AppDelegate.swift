@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Combine
 import UniformTypeIdentifiers
+import ReadoutCore
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
@@ -30,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func applicationDidFinishLaunching(_ notification: Notification) {
         WebViewPool.shared.prewarm()
         BaselineStore.prune()
+        UpdateChecker.onBackgroundUpdate = { [weak self] name, url in self?.showUpdateMenuItem(name: name, url: url) }
         UpdateChecker.scheduleAutomaticCheck()
 
         let settings = AppSettings.shared
@@ -42,6 +44,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         if let smoke = ProcessInfo.processInfo.environment["READOUT_SMOKE_FILE"] {
             openedAtLaunch = true
             open(URL(fileURLWithPath: smoke))
+            // Task E4 probe: replace the file 50ms after opening, while the
+            // first load is likely still parsing. The final render must show
+            // the replacement, never the stale first read.
+            if let early = ProcessInfo.processInfo.environment["READOUT_SMOKE_EARLY_EDIT"] {
+                let target = URL(fileURLWithPath: smoke)
+                let source = URL(fileURLWithPath: early)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    let tmp = target.deletingLastPathComponent().appendingPathComponent(".readout-smoke-early.tmp")
+                    try? FileManager.default.removeItem(at: tmp)
+                    try? FileManager.default.copyItem(at: source, to: tmp)
+                    _ = try? FileManager.default.replaceItemAt(target, withItemAt: tmp)
+                }
+            }
         }
 
         // Files passed on launch arrive through application(_:open:) right after this; show the welcome
@@ -137,9 +152,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             w.titleVisibility = .hidden
             w.isMovableByWindowBackground = true
             w.isReleasedWhenClosed = false
-            w.setContentSize(NSSize(width: 460, height: 400))
+            w.setContentSize(NSSize(width: 460, height: WelcomeView.height(forRecentCount: 0)))
             w.center()
             welcome = w
+        }
+        // Recents change between visits: resize to the adaptive height every time.
+        if let w = welcome {
+            let count = NSDocumentController.shared.recentDocumentURLs.filter {
+                WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
+                    && FileManager.default.fileExists(atPath: $0.path)
+            }.prefix(5).count
+            w.setContentSize(NSSize(width: 460, height: WelcomeView.height(forRecentCount: count)))
         }
         welcome?.makeKeyAndOrderFront(nil)
         NSApp.activate()
@@ -166,6 +189,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     @objc func actualSizeText(_ sender: Any?) { AppSettings.shared.fontSize = 16 }
 
     @objc func checkForUpdates(_ sender: Any?) { UpdateChecker.check(interactive: true) }
+
+    /// Background check found an update: surface it as an application-menu
+    /// item that opens the release page. Never pops up, never activates —
+    /// the reader keeps reading undisturbed.
+    private var pendingUpdateURL: URL?
+    private func showUpdateMenuItem(name: String, url: URL) {
+        pendingUpdateURL = url
+        guard let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu,
+              appMenu.item(withTag: 901) == nil else { return }
+        let title = String(format: NSLocalizedString("%@ Is Available…", comment: "Menu: background update found; %@ is like 'Readout 3.0.2'"), name)
+        let item = NSMenuItem(title: title, action: #selector(openPendingUpdate(_:)), keyEquivalent: "")
+        item.tag = 901
+        // Insert right after "Check for Updates…" (index 1), before the separator.
+        appMenu.insertItem(item, at: min(2, appMenu.numberOfItems))
+    }
+
+    @objc private func openPendingUpdate(_ sender: Any?) {
+        if let url = pendingUpdateURL { NSWorkspace.shared.open(url) }
+    }
 
     // MARK: Command line tool
 
@@ -256,17 +298,13 @@ struct WelcomeView: View {
             .controlSize(.large)
             .padding(.top, 20)
 
-            let recents = NSDocumentController.shared.recentDocumentURLs.filter {
-                WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
-                    && FileManager.default.fileExists(atPath: $0.path)
-            }.prefix(5)
-            if !recents.isEmpty {
+            if !recentURLs.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(NSLocalizedString("Recent", comment: "Welcome section"))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .padding(.horizontal, 32)
-                    ForEach(Array(recents), id: \.self) { url in
+                    ForEach(recentURLs, id: \.self) { url in
                         Button {
                             onOpenURL(url)
                         } label: {
@@ -294,13 +332,19 @@ struct WelcomeView: View {
             }
             Spacer(minLength: 24)
         }
-        .frame(width: 460, height: hasRecents ? 520 : 400)
+        .frame(width: 460, height: Self.height(forRecentCount: recentURLs.count))
     }
 
-    private var hasRecents: Bool {
-        NSDocumentController.shared.recentDocumentURLs.contains {
+    /// Window height follows the recent count instead of jumping between two
+    /// fixed sizes: the base layout plus one row per recent (capped at 5).
+    static func height(forRecentCount count: Int) -> CGFloat {
+        CGFloat(WelcomeHeight.height(forRecentCount: count))
+    }
+
+    private var recentURLs: [URL] {
+        Array(NSDocumentController.shared.recentDocumentURLs.filter {
             WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased())
                 && FileManager.default.fileExists(atPath: $0.path)
-        }
+        }.prefix(5))
     }
 }

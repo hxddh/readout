@@ -55,6 +55,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var lastChangeAt: Date?
     private var halfWriteRetries = 0
     private var loaded = false
+    /// A change that arrived while the first load was still parsing. Applied
+    /// right after the initial patch so early agent writes are never lost.
+    private var editedWhileLoading = false
     private var deleted = false
     private var lastAnchor: (slot: Int, offset: Double)?
     private var saveWork: DispatchWorkItem?
@@ -331,6 +334,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 guard let self else { return }
                 self.webView.call("apply", patch)
                 SmokeTest.run(controller: self, webView: self.webView)
+                // An agent write that landed mid-load: re-read now that the
+                // first patch is applied, so the fresh content wins.
+                if self.editedWhileLoading {
+                    self.editedWhileLoading = false
+                    self.fileChanged(.modified)
+                }
                 if let pending = self.pendingAnchor {
                     // Cross-file link target: the fragment wins over the saved position.
                     self.pendingAnchor = nil
@@ -352,7 +361,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         guard let record else { return nil }
         let texts = session.blocks.map(\.text)
         if let excerpt = record.topExcerpt,
-           let i = ExcerptAnchor.index(of: excerpt, in: texts), i < session.blocks.count {
+           let i = ExcerptAnchor.index(of: excerpt, in: texts, near: record.topBlockIndex), i < session.blocks.count {
             return session.blocks[i].slot
         }
         if let idx = record.topBlockIndex, idx < session.blocks.count { return session.blocks[idx].slot }
@@ -360,7 +369,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     private func fileChanged(_ change: FileWatcher.Change) {
-        guard loaded else { return }
+        guard loaded else {
+            // The first load is still parsing: don't drop the write, replay
+            // it right after the initial patch instead.
+            editedWhileLoading = true
+            return
+        }
         if change == .deleted {
             deleted = true
             model.status = NSLocalizedString("The file was deleted.", comment: "Status")
@@ -401,6 +415,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         model.unread = session.unreadCount
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
         model.words = ReadingStats.words(in: session.blocks)
+        model.minutes = ReadingStats.minutes(forBlocks: session.blocks)
         if let enc = decoded.fallbackEncoding {
             model.status = String(format: NSLocalizedString("Decoded as %@", comment: "Status: non-UTF-8 file"), enc)
         } else {
@@ -412,10 +427,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     private func updateSubtitle() {
         let t = model.tasks
-        window?.subtitle = t.total > 0
-            ? String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
-            : String(format: NSLocalizedString("%d words · %d min read", comment: "Window subtitle when no tasks"), model.words,
-                     ReadingStats.minutes(forWords: model.words))
+        if t.total > 0 {
+            window?.subtitle = String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
+        } else {
+            window?.subtitle = String(format: NSLocalizedString("%d words · %d min read", comment: "Window subtitle when no tasks"), model.words,
+                                       model.minutes)
+        }
     }
 
     private func updateChangeItem(_ n: Int) {

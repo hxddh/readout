@@ -93,3 +93,9 @@
 "Copy Link to Section" = "复制章节链接";
 "All caught up" = "已全部读完";
 "Could not load image: %@" = "图片加载失败：%@";
+"View Full Release Notes" = "查看完整说明";
+"%@ Is Available…" = "%@ 有新版本…";
+"Unread change %d of %d: %@" = "未读变更 %d / %d：%@";
+"added" = "新增";
+"edited" = "修改";
+"removed" = "删除";

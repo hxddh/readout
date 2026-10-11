@@ -84,6 +84,7 @@ jobs:
           cp web/test/fixtures/missing-diagram.png "$RUNNER_TEMP/smoke/missing-diagram.png"
           READOUT_SMOKE_FILE="$RUNNER_TEMP/smoke/plan.md" \
           READOUT_SMOKE_EDIT="$PWD/web/test/fixtures/plan-v2.md" \
+          READOUT_SMOKE_EARLY_EDIT="$PWD/web/test/fixtures/plan-early.md" \
           READOUT_SMOKE_OUT="$PWD/smoke-out" \
             /Applications/Readout.app/Contents/MacOS/Readout > smoke-out/smoke-out.log 2>&1 &
           PID=$!

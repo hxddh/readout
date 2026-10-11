@@ -236,6 +236,10 @@ enum ReaderStrings {
             "caughtUp": NSLocalizedString("All caught up", comment: "Empty state when filtering to changes with none left"),
             "copyLink": NSLocalizedString("Copy Link to Section", comment: "Heading link button tooltip"),
             "remoteError": NSLocalizedString("Could not load image: %@", comment: "Remote image download failure; %@ is the reason"),
+            "railChange": NSLocalizedString("Unread change %d of %d: %@", comment: "Change-rail tick label; %d is position, %d is total, %@ is the kind"),
+            "railAdded": NSLocalizedString("added", comment: "Change kind in rail label"),
+            "railEdited": NSLocalizedString("edited", comment: "Change kind in rail label"),
+            "railRemoved": NSLocalizedString("removed", comment: "Change kind in rail label"),
         ]
     }
 }
