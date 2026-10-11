@@ -149,18 +149,25 @@ enum Footnotes {
         mutating func section(_ notes: [Note]) -> Block? {
             var byID: [String: Note] = [:]
             for n in notes where byID[HTML.escape(n.id)] == nil { byID[HTML.escape(n.id)] = n }
-            var items: [String] = []
-            var shown: [Note] = []
+            // First every shown note's body (references inside notes take
+            // their numbers and occurrence ids), then the back links, so a
+            // note cited from a later note links back to that citation too.
+            var bodies: [(id: String, number: Int, note: Note, body: String)] = []
             var i = 0
             while i < order.count {
                 let id = order[i]
                 i += 1
                 guard let note = byID[id] else { continue }
-                var body = fill(note.html)
+                bodies.append((id, i, note, fill(note.html)))
+            }
+            var items: [String] = []
+            var shown: [Note] = []
+            for (id, number, note, filled) in bodies {
+                var body = filled
                 // One way back per reference, as on GitHub: ↩, ↩², …
                 let back = (1...max(1, uses[id] ?? 1)).map { k in
                     let ref = k == 1 ? "user-content-fnref-\(id)" : "user-content-fnref-\(id)-\(k)"
-                    let label = k == 1 ? "Back to reference \(i)" : "Back to reference \(i)-\(k)"
+                    let label = k == 1 ? "Back to reference \(number)" : "Back to reference \(number)-\(k)"
                     return "<a href=\"#\(ref)\" class=\"fn-back\" data-footnote-backref aria-label=\"\(label)\">↩\(k == 1 ? "" : "<sup>\(k)</sup>")</a>"
                 }.joined(separator: " ")
                 if body.hasSuffix("</p>") { body = String(body.dropLast(4)) + " " + back + "</p>" } else { body += back }
