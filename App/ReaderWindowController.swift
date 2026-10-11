@@ -191,6 +191,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func configureWebView() {
         webView.navigationDelegate = self
         webView.onMessage = { [weak self] msg in self?.handle(msg) }
+        // Proxied remote images: the page posts loadRemote, we download with a
+        // cookie-free ephemeral session and serve the bytes back over readout:.
+        // Quick Look never sets this, so remote loading stays disabled there.
+        webView.remoteProvider = { RemoteImageLoader.shared.entry(for: $0).map { (data: $0.data, contentType: $0.contentType) } }
         applyAppearance()
         NotificationCenter.default.publisher(for: NSColor.systemColorsDidChangeNotification)
             .sink { [weak self] _ in self?.applyAppearance() }
@@ -451,6 +455,20 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             }
         case "open":
             if let href = msg["href"] as? String { openLink(href) }
+        case "loadRemote":
+            if let url = msg["url"] as? String, let id = msg["id"] as? String {
+                RemoteImageLoader.shared.load(url) { [weak self] result in
+                    switch result {
+                    case .success(let local):
+                        self?.webView.call("remoteReady", ["id": id, "url": local])
+                    case .failure(let error):
+                        let reason: String
+                        if case RemoteImageLoader.LoadError.rejected(let r) = error { reason = r }
+                        else { reason = "could not be loaded" }
+                        self?.webView.call("remoteFailed", ["id": id, "error": reason])
+                    }
+                }
+            }
         case "openPath":
             if let path = msg["path"] as? String {
                 EditorOpener.open(path: path, line: (msg["line"] as? NSNumber)?.intValue ?? 0,

@@ -72,7 +72,7 @@ struct HTMLRenderer {
             dims = " width=\"\(w)\" height=\"\(h)\" style=\"aspect-ratio:\(w)/\(h)\""
         }
         if r.remote {
-            return "<span class=\"remote-img\" data-src=\"\(HTML.escape(r.url))\" data-alt=\"\(alt)\"></span>"
+            return "<span class=\"remote-img\" data-tag=\"img\" data-src=\"\(HTML.escape(r.url))\" data-alt=\"\(alt)\"></span>"
         }
         return "<img src=\"\(HTML.escape(r.url))\" alt=\"\(alt)\"\(dims) loading=\"lazy\" decoding=\"async\">"
     }

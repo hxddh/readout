@@ -45,6 +45,11 @@ enum HTML {
         return s
     }
 
+    // NOTE (security boundary): this regex gate is UX only — it turns common
+    // remote media into click-to-load placeholders. The real security
+    // boundary is the Content-Security-Policy in web/src/reader.html, which
+    // allows no http:/https: sources at all, so every construct this regex
+    // misses is still blocked by the browser. See docs/design.md.
     private static func gateRemoteMedia(_ s: String) -> String {
         let ns = s as NSString
         let matches = remoteMediaSrc.matches(in: s, range: NSRange(location: 0, length: ns.length))
@@ -63,7 +68,7 @@ enum HTML {
                 // Swallow an immediately following empty close tag: <video src="…"></video>.
                 let close = "</\(tag)>"
                 if ns.substring(from: end).lowercased().hasPrefix(close) { end += close.count }
-                out += "<span class=\"remote-img\" data-src=\"\(escape(unquoted))\" data-alt=\"\"></span>"
+                out += "<span class=\"remote-img\" data-tag=\"\(tag)\" data-src=\"\(escape(unquoted))\" data-alt=\"\"></span>"
             } else {
                 out += ns.substring(with: m.range)
             }

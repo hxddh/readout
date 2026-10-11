@@ -92,3 +92,4 @@
 "Recent" = "最近";
 "Copy Link to Section" = "复制章节链接";
 "All caught up" = "已全部读完";
+"Could not load image: %@" = "图片加载失败：%@";

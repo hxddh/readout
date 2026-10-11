@@ -5,6 +5,9 @@ import ReadoutCore
 /// Serves `readout://app/...` from the bundled web renderer and `readout://file/...` images from disk.
 final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
     let webRoot: URL
+    /// Serves `readout://remote/<token>` from natively proxied downloads.
+    /// Nil in Quick Look (no remote loading there): those requests 404.
+    var remoteProvider: ((String) -> (data: Data, contentType: String)?)?
 
     init(bundle: Bundle) {
         webRoot = bundle.resourceURL!.appendingPathComponent("Web", isDirectory: true)
@@ -25,6 +28,19 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
             let path = url.path.removingPercentEncoding ?? url.path
             guard Self.imageExtensions.contains((path as NSString).pathExtension.lowercased()) else { return fail(task, 403) }
             fileURL = URL(fileURLWithPath: path)
+        case "remote":
+            let token = url.path.hasPrefix("/") ? String(url.path.dropFirst()) : url.path
+            guard let entry = remoteProvider?(token) else { return fail(task, 404) }
+            let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: [
+                "Content-Type": entry.contentType,
+                "Content-Length": String(entry.data.count),
+                "Cache-Control": "no-cache",
+                "Access-Control-Allow-Origin": "*",
+            ])!
+            task.didReceive(response)
+            task.didReceive(entry.data)
+            task.didFinish()
+            return
         default:
             return fail(task, 404)
         }
@@ -94,12 +110,22 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
     /// Receives every message other than `ready`.
     var onMessage: (([String: Any]) -> Void)?
     private let forwarder = WeakScriptMessageHandler(nil)
+    private let remoteHandler: ReadoutSchemeHandler
+
+    /// Source for `readout://remote/<token>` bytes (the App's proxied-download
+    /// cache). Leave nil — as Quick Look does — to disable remote loading.
+    var remoteProvider: ((String) -> (data: Data, contentType: String)?)? {
+        get { remoteHandler.remoteProvider }
+        set { remoteHandler.remoteProvider = newValue }
+    }
 
     static let readerURL = URL(string: "readout://app/reader.html")!
 
     init(bundle: Bundle) {
         let config = WKWebViewConfiguration()
-        config.setURLSchemeHandler(ReadoutSchemeHandler(bundle: bundle), forURLScheme: ReadoutURL.scheme)
+        let schemeHandler = ReadoutSchemeHandler(bundle: bundle)
+        remoteHandler = schemeHandler
+        config.setURLSchemeHandler(schemeHandler, forURLScheme: ReadoutURL.scheme)
         config.suppressesIncrementalRendering = false
         let prefs = WKWebpagePreferences()
         prefs.allowsContentJavaScript = true
@@ -209,6 +235,7 @@ enum ReaderStrings {
             "deletedMany": NSLocalizedString("%d blocks removed", comment: "Deletion marker tooltip; %d is a number"),
             "caughtUp": NSLocalizedString("All caught up", comment: "Empty state when filtering to changes with none left"),
             "copyLink": NSLocalizedString("Copy Link to Section", comment: "Heading link button tooltip"),
+            "remoteError": NSLocalizedString("Could not load image: %@", comment: "Remote image download failure; %@ is the reason"),
         ]
     }
 }
