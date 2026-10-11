@@ -111,6 +111,9 @@ import Testing
             ["<!doctype\ntext $x$\n\n```\n\ncode\n```\n>\n"],
             ["<!DOCTYPE\ntext\n\n```\n\ncode\n```\n>\n"],
             ["####### text\n<span>\n$x$\n\nafter\n"],
+            ["<![cdata[\n$x$\n]]>\n\nz\n", "<![CDATA[\n$x$\n]]>\n\nz\n"],
+            ["<//div>\n$x$\n\nz\n"],
+            ["---\ntitle: t\n[^x]: metadata\n---\n\nbody[^x]\n\nmore\n"],
         ]
         for sequence in versions {
             let parser = IncrementalParser()

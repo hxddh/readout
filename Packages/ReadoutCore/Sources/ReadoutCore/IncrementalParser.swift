@@ -58,7 +58,11 @@ public final class IncrementalParser: @unchecked Sendable {
         // Footnote definitions leave the flow (as in `parseFragment`); the
         // fragmenter reads the lines the Markdown parser will see.
         var flow = lines
-        let definitions = lines.contains(where: Footnotes.mentions) ? Footnotes.extract(&flow) : []
+        // Front matter is not Markdown: no definitions come from it (as in parseFragment).
+        let frontMatter = MarkdownParser.frontMatterEnd(lines)
+        if let end = frontMatter { for i in 0...end { flow[i] = "" } }
+        let definitions = flow.contains(where: Footnotes.mentions) ? Footnotes.extract(&flow) : []
+        if let end = frontMatter { for i in 0...end { flow[i] = lines[i] } }
         guard !Self.needsFullParse(flow) else {
             previous = [:]
             lastReused = 0

@@ -255,15 +255,17 @@ struct FenceTracker {
         let lower = trimmed.lowercased()
         if lower.hasPrefix("<!--") { return .some("-->") }
         if lower.hasPrefix("<?") { return .some("?>") }
-        if lower.hasPrefix("<![cdata[") { return .some("]]>") }
+        if trimmed.hasPrefix("<![CDATA[") { return .some("]]>") }   // case-sensitive in CommonMark
         // Kind 4 (declarations): <! and an uppercase ASCII letter, as in the bundled cmark-gfm.
         if lower.hasPrefix("<!"), let c = trimmed.dropFirst(2).first, c >= "A" && c <= "Z" { return .some(">") }
         let afterBracket = lower.dropFirst()
         let closing = afterBracket.hasPrefix("/")
-        let name = String(afterBracket.drop(while: { $0 == "/" }).prefix(while: { $0.isLetter || $0.isNumber || $0 == "-" }))
+        let tag = closing ? afterBracket.dropFirst() : afterBracket   // at most one slash: <//div> is text
+        guard tag.first.map({ $0.isASCII && $0.isLetter }) ?? false else { return nil }
+        let name = String(tag.prefix(while: { $0.isLetter || $0.isNumber || $0 == "-" }))
         guard !name.isEmpty else { return nil }
-        let next = afterBracket.drop(while: { $0 == "/" }).dropFirst(name.count).first
-        let ends = next == nil || next == " " || next == "\t" || next == ">" || (next == "/" && afterBracket.drop(while: { $0 == "/" }).dropFirst(name.count + 1).first == ">")
+        let next = tag.dropFirst(name.count).first
+        let ends = next == nil || next == " " || next == "\t" || next == ">" || (next == "/" && tag.dropFirst(name.count + 1).first == ">")
         if !closing, ends, next != "/", Self.rawTags.contains(name) { return .some(Self.rawEnd) }
         if ends && Self.blockTags.contains(name) { return .some(nil) }
         let s = String(trimmed)
