@@ -1,5 +1,5 @@
 {
- "height": 15938,
+ "height": 15917,
  "blocks": [
   {
    "slot": 1,
@@ -194,42 +194,42 @@
    "slot": 22,
    "kind": "listItem",
    "top": 2819,
-   "h": 31,
-   "style": "8a8bdd35",
-   "content": "622860e8",
-   "text": "生成掩码：$m_i \\sim \\text{Bernoulli}(1-p)$，即每个神经元以概率 "
+   "h": 32,
+   "style": "f3c6947f",
+   "content": "cbb32ef1",
+   "text": "生成掩码：mi∼Bernoulli(1−p)m_i \\sim \\text{Bernoulli}("
   },
   {
    "slot": 23,
    "kind": "listItem",
-   "top": 2849,
+   "top": 2850,
    "h": 28,
-   "style": "de43ac6d",
-   "content": "811cc6ce",
-   "text": "逐元素相乘：$\\tilde{h}_i = m_i \\cdot h_i$"
+   "style": "79aa7f5f",
+   "content": "7a9fa581",
+   "text": "逐元素相乘：h~i=mi⋅hi\\tilde{h}_i = m_i \\cdot h_ih~i​=m"
   },
   {
    "slot": 24,
    "kind": "listItem",
-   "top": 2878,
-   "h": 45,
-   "style": "9eb684ea",
-   "content": "869ac236",
-   "text": "缩放：$\\tilde{h}_i = \\frac{m_i \\cdot h_i}{1-p}$"
+   "top": 2879,
+   "h": 46,
+   "style": "7ebf22d6",
+   "content": "b5b6d2da",
+   "text": "缩放：h~i=mi⋅hi1−p\\tilde{h}_i = \\frac{m_i \\cdot h_i"
   },
   {
    "slot": 25,
    "kind": "paragraph",
-   "top": 2922,
-   "h": 74,
-   "style": "5cd697ba",
-   "content": "72d9bb2a",
-   "text": "为什么除以 $(1-p)$？ 这是 inverted dropout 的关键：在训练时就把缩放做"
+   "top": 2925,
+   "h": 76,
+   "style": "79f4b71c",
+   "content": "c80fab2a",
+   "text": "为什么除以 (1−p)(1-p)(1−p)？ 这是 inverted dropout 的关键：在"
   },
   {
    "slot": 26,
    "kind": "paragraph",
-   "top": 2996,
+   "top": 3000,
    "h": 102,
    "style": "55b85603",
    "content": "da51ed66",
@@ -238,7 +238,7 @@
   {
    "slot": 27,
    "kind": "quote",
-   "top": 3098,
+   "top": 3102,
    "h": 74,
    "style": "f66c19cc",
    "content": "d46c82cb",
@@ -247,7 +247,7 @@
   {
    "slot": 28,
    "kind": "heading",
-   "top": 3171,
+   "top": 3175,
    "h": 42,
    "style": "71b6e53a",
    "content": "114691e1",
@@ -256,7 +256,7 @@
   {
    "slot": 29,
    "kind": "paragraph",
-   "top": 3213,
+   "top": 3217,
    "h": 46,
    "style": "f54de366",
    "content": "9b0f2a37",
@@ -265,25 +265,25 @@
   {
    "slot": 30,
    "kind": "math",
-   "top": 3259,
+   "top": 3263,
    "h": 99,
-   "style": "fcf720d6",
+   "style": "c3d0cd4d",
    "content": "f11dc6a7",
    "text": "Lreg=L+λ2∥θ∥2L_{reg} = L + \\frac{\\lambda}{2}\\|\\t"
   },
   {
    "slot": 31,
    "kind": "paragraph",
-   "top": 3358,
-   "h": 74,
-   "style": "5879f94c",
-   "content": "a9472395",
-   "text": "梯度更新时多出一项 $\\lambda \\theta$，效果是每次更新都把权重往零拉一点——这就是"
+   "top": 3362,
+   "h": 47,
+   "style": "30f5d718",
+   "content": "f4188227",
+   "text": "梯度更新时多出一项 λθ\\lambda \\thetaλθ，效果是每次更新都把权重往零拉一点——这"
   },
   {
    "slot": 32,
    "kind": "paragraph",
-   "top": 3431,
+   "top": 3408,
    "h": 46,
    "style": "7a1385df",
    "content": "83d9d9a7",
@@ -292,7 +292,7 @@
   {
    "slot": 33,
    "kind": "table",
-   "top": 3477,
+   "top": 3454,
    "h": 234,
    "style": "84f89e88",
    "content": "7228337d",
@@ -301,16 +301,16 @@
   {
    "slot": 34,
    "kind": "paragraph",
-   "top": 3711,
+   "top": 3688,
    "h": 122,
-   "style": "c114766f",
-   "content": "9077b975",
+   "style": "a68155eb",
+   "content": "b6194741",
    "text": "PyTorch 中 optimizer = torch.optim.AdamW(model.pa"
   },
   {
    "slot": 35,
    "kind": "heading",
-   "top": 3832,
+   "top": 3810,
    "h": 42,
    "style": "71b6e53a",
    "content": "35151d62",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "paragraph",
-   "top": 3874,
+   "top": 3851,
    "h": 44,
    "style": "2e3410ae",
    "content": "aa48c1bd",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "paragraph",
-   "top": 3918,
+   "top": 3895,
    "h": 74,
    "style": "08ac1d17",
    "content": "2d9a787d",
@@ -337,25 +337,25 @@
   {
    "slot": 38,
    "kind": "math",
-   "top": 3991,
+   "top": 3969,
    "h": 84,
-   "style": "50bb3653",
+   "style": "dd3ca8d6",
    "content": "3db0bc3f",
    "text": "W~=M⊙W\\tilde{W} = M \\odot WW~=M⊙W"
   },
   {
    "slot": 39,
    "kind": "paragraph",
-   "top": 4076,
-   "h": 46,
-   "style": "f54de366",
-   "content": "d09ad63b",
-   "text": "其中 $M$ 是与 $W$ 同形状的 Bernoulli 掩码。"
+   "top": 4053,
+   "h": 47,
+   "style": "dc404b53",
+   "content": "40862e2b",
+   "text": "其中 MMM 是与 WWW 同形状的 Bernoulli 掩码。"
   },
   {
    "slot": 40,
    "kind": "paragraph",
-   "top": 4121,
+   "top": 4099,
    "h": 46,
    "style": "f54de366",
    "content": "5c0271fd",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "paragraph",
-   "top": 4167,
+   "top": 4145,
    "h": 44,
    "style": "233cdc22",
    "content": "34015de4",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "paragraph",
-   "top": 4210,
+   "top": 4189,
    "h": 74,
    "style": "e4907936",
    "content": "854164ee",
@@ -382,16 +382,16 @@
   {
    "slot": 43,
    "kind": "paragraph",
-   "top": 4284,
-   "h": 74,
-   "style": "b37bab58",
-   "content": "90da587c",
-   "text": "SpatialDropout 直接 drop 整个 channel：以概率 $p$ 把某个特征图"
+   "top": 4262,
+   "h": 75,
+   "style": "5641325e",
+   "content": "d9ff2f1c",
+   "text": "SpatialDropout 直接 drop 整个 channel：以概率 ppp 把某个特征图"
   },
   {
    "slot": 44,
    "kind": "code",
-   "top": 4358,
+   "top": 4337,
    "h": 99,
    "style": "560f34e0",
    "content": "4871d68f",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "paragraph",
-   "top": 4457,
+   "top": 4436,
    "h": 44,
    "style": "10a11c76",
    "content": "a4050c6f",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "paragraph",
-   "top": 4500,
+   "top": 4479,
    "h": 74,
    "style": "08d775c9",
    "content": "dd609757",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "paragraph",
-   "top": 4574,
+   "top": 4553,
    "h": 96,
    "style": "a3a03455",
    "content": "3c56325d",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "paragraph",
-   "top": 4669,
+   "top": 4648,
    "h": 44,
    "style": "ab7b3d0d",
    "content": "42b15946",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "paragraph",
-   "top": 4713,
+   "top": 4692,
    "h": 74,
    "style": "5879f94c",
    "content": "a208c9f9",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 4787,
+   "top": 4766,
    "h": 74,
    "style": "e7b039ae",
    "content": "0b7ce773",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "code",
-   "top": 4860,
+   "top": 4839,
    "h": 99,
    "style": "7589ed17",
    "content": "ab157f05",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "heading",
-   "top": 4959,
+   "top": 4938,
    "h": 42,
    "style": "71b6e53a",
    "content": "9426357f",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "paragraph",
-   "top": 5001,
+   "top": 4980,
    "h": 74,
    "style": "23bdef8a",
    "content": "6ab19d9b",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "paragraph",
-   "top": 5075,
+   "top": 5054,
    "h": 102,
    "style": "cded8b32",
    "content": "41266925",
@@ -490,7 +490,7 @@
   {
    "slot": 55,
    "kind": "paragraph",
-   "top": 5176,
+   "top": 5155,
    "h": 74,
    "style": "2ab69122",
    "content": "1616bd57",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "quote",
-   "top": 5250,
+   "top": 5229,
    "h": 74,
    "style": "eef181d6",
    "content": "6ff67586",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "heading",
-   "top": 5323,
+   "top": 5302,
    "h": 42,
    "style": "71b6e53a",
    "content": "52205d92",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "paragraph",
-   "top": 5365,
+   "top": 5344,
    "h": 46,
    "style": "cac977e3",
    "content": "42ce89db",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "code",
-   "top": 5411,
+   "top": 5390,
    "h": 339,
    "style": "e2527604",
    "content": "3c6bec51",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "paragraph",
-   "top": 5750,
+   "top": 5729,
    "h": 44,
    "style": "167241be",
    "content": "53d65c47",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "code",
-   "top": 5793,
+   "top": 5772,
    "h": 399,
    "style": "35b6664c",
    "content": "2ac6d587",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "paragraph",
-   "top": 6192,
+   "top": 6171,
    "h": 44,
    "style": "20a2bcf9",
    "content": "52c7db27",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "code",
-   "top": 6236,
+   "top": 6215,
    "h": 359,
    "style": "f743ed30",
    "content": "14368300",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "paragraph",
-   "top": 6595,
+   "top": 6574,
    "h": 44,
    "style": "f3cf75d1",
    "content": "5f9600ce",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "code",
-   "top": 6638,
+   "top": 6618,
    "h": 1199,
    "style": "efb455a7",
    "content": "4a312ae5",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "rule",
-   "top": 7837,
+   "top": 7817,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "heading",
-   "top": 7856,
+   "top": 7835,
    "h": 65,
    "style": "a4cadef8",
    "content": "8b8c2f31",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "paragraph",
-   "top": 7921,
+   "top": 7900,
    "h": 46,
    "style": "f54de366",
    "content": "714276f8",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "listItem",
-   "top": 7967,
+   "top": 7946,
    "h": 66,
    "style": "a721abd2",
    "content": "6a641b39",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "listItem",
-   "top": 8033,
+   "top": 8012,
    "h": 66,
    "style": "82765b9e",
    "content": "388a209e",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 8098,
+   "top": 8077,
    "h": 66,
    "style": "75a44611",
    "content": "b24668eb",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "listItem",
-   "top": 8164,
+   "top": 8143,
    "h": 94,
    "style": "09ce4086",
    "content": "e3be2c37",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "listItem",
-   "top": 8258,
+   "top": 8237,
    "h": 75,
    "style": "59e30e3b",
    "content": "c09d65f2",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "rule",
-   "top": 8333,
+   "top": 8312,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "heading",
-   "top": 8352,
+   "top": 8331,
    "h": 65,
    "style": "a4cadef8",
    "content": "56edc2d1",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "quote",
-   "top": 8417,
+   "top": 8396,
    "h": 203,
    "style": "56b08e13",
    "content": "5846674b",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "paragraph",
-   "top": 8620,
+   "top": 8599,
    "h": 46,
    "style": "57ffa9e6",
    "content": "44086af3",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "rule",
-   "top": 8666,
+   "top": 8645,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "paragraph",
-   "top": 8684,
+   "top": 8663,
    "h": 44,
    "style": "9bcdb887",
    "content": "625bc5f5",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "code",
-   "top": 8728,
+   "top": 8707,
    "h": 159,
    "style": "6d73912f",
    "content": "ce59ad65",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "paragraph",
-   "top": 8887,
+   "top": 8866,
    "h": 46,
    "style": "f54de366",
    "content": "c313536b",
@@ -733,7 +733,7 @@
   {
    "slot": 82,
    "kind": "listItem",
-   "top": 8932,
+   "top": 8912,
    "h": 47,
    "style": "daff42ae",
    "content": "eebdf13d",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "code",
-   "top": 8979,
+   "top": 8958,
    "h": 79,
    "style": "629567a5",
    "content": "ee22fc52",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "rule",
-   "top": 9058,
+   "top": 9037,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -760,7 +760,7 @@
   {
    "slot": 85,
    "kind": "heading",
-   "top": 9077,
+   "top": 9056,
    "h": 42,
    "style": "42c210bb",
    "content": "801b8215",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "paragraph",
-   "top": 9118,
+   "top": 9098,
    "h": 44,
    "style": "04eb5d5d",
    "content": "dcd190be",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 9162,
+   "top": 9141,
    "h": 35,
    "style": "6f687e70",
    "content": "847efd11",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "listItem",
-   "top": 9197,
+   "top": 9176,
    "h": 45,
    "style": "cfa351df",
    "content": "0bd52508",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "paragraph",
-   "top": 9242,
+   "top": 9221,
    "h": 46,
    "style": "ce9edc1e",
    "content": "fa3daa6d",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "code",
-   "top": 9287,
+   "top": 9267,
    "h": 159,
    "style": "6fec3ee6",
    "content": "564c0789",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "paragraph",
-   "top": 9446,
+   "top": 9426,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "code",
-   "top": 9492,
+   "top": 9471,
    "h": 259,
    "style": "d7ac54ac",
    "content": "692c607a",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "paragraph",
-   "top": 9751,
+   "top": 9730,
    "h": 46,
    "style": "55c18b90",
    "content": "69bfae7a",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 9797,
+   "top": 9776,
    "h": 47,
    "style": "c005d933",
    "content": "6b833d81",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "code",
-   "top": 9843,
+   "top": 9822,
    "h": 59,
    "style": "19e09603",
    "content": "8b3cc4a6",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "paragraph",
-   "top": 9902,
+   "top": 9881,
    "h": 46,
    "style": "58b4326d",
    "content": "8c37eb82",
@@ -868,7 +868,7 @@
   {
    "slot": 97,
    "kind": "listItem",
-   "top": 9948,
+   "top": 9927,
    "h": 47,
    "style": "daff42ae",
    "content": "0ce1b68c",
@@ -877,7 +877,7 @@
   {
    "slot": 98,
    "kind": "code",
-   "top": 9994,
+   "top": 9973,
    "h": 79,
    "style": "bc4c91ef",
    "content": "1569d993",
@@ -886,7 +886,7 @@
   {
    "slot": 99,
    "kind": "rule",
-   "top": 10073,
+   "top": 10052,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -895,7 +895,7 @@
   {
    "slot": 100,
    "kind": "heading",
-   "top": 10092,
+   "top": 10071,
    "h": 42,
    "style": "42c210bb",
    "content": "c62f66e1",
@@ -904,7 +904,7 @@
   {
    "slot": 101,
    "kind": "paragraph",
-   "top": 10134,
+   "top": 10113,
    "h": 44,
    "style": "04eb5d5d",
    "content": "dcd190be",
@@ -913,7 +913,7 @@
   {
    "slot": 102,
    "kind": "listItem",
-   "top": 10177,
+   "top": 10156,
    "h": 35,
    "style": "8bd49460",
    "content": "2107ba33",
@@ -922,7 +922,7 @@
   {
    "slot": 103,
    "kind": "listItem",
-   "top": 10213,
+   "top": 10192,
    "h": 47,
    "style": "b6b9658b",
    "content": "8d3d2ea8",
@@ -931,7 +931,7 @@
   {
    "slot": 104,
    "kind": "paragraph",
-   "top": 10259,
+   "top": 10238,
    "h": 46,
    "style": "f54de366",
    "content": "a7d4b7f5",
@@ -940,7 +940,7 @@
   {
    "slot": 105,
    "kind": "code",
-   "top": 10305,
+   "top": 10284,
    "h": 59,
    "style": "5dcbc02f",
    "content": "5e674dd8",
@@ -949,7 +949,7 @@
   {
    "slot": 106,
    "kind": "paragraph",
-   "top": 10364,
+   "top": 10343,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -958,7 +958,7 @@
   {
    "slot": 107,
    "kind": "code",
-   "top": 10409,
+   "top": 10388,
    "h": 59,
    "style": "e9cf922f",
    "content": "6b3c9824",
@@ -967,7 +967,7 @@
   {
    "slot": 108,
    "kind": "listItem",
-   "top": 10468,
+   "top": 10447,
    "h": 47,
    "style": "41a94e8e",
    "content": "46a9325a",
@@ -976,7 +976,7 @@
   {
    "slot": 109,
    "kind": "paragraph",
-   "top": 10515,
+   "top": 10494,
    "h": 46,
    "style": "f54de366",
    "content": "f6fc0d29",
@@ -985,7 +985,7 @@
   {
    "slot": 110,
    "kind": "code",
-   "top": 10560,
+   "top": 10540,
    "h": 59,
    "style": "3d74a400",
    "content": "852b18e6",
@@ -994,7 +994,7 @@
   {
    "slot": 111,
    "kind": "paragraph",
-   "top": 10619,
+   "top": 10599,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -1003,7 +1003,7 @@
   {
    "slot": 112,
    "kind": "code",
-   "top": 10665,
+   "top": 10644,
    "h": 59,
    "style": "30f8c7a7",
    "content": "7c2a8de1",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "listItem",
-   "top": 10724,
+   "top": 10703,
    "h": 47,
    "style": "d7539fc9",
    "content": "9ece78bb",
@@ -1021,7 +1021,7 @@
   {
    "slot": 114,
    "kind": "paragraph",
-   "top": 10771,
+   "top": 10750,
    "h": 46,
    "style": "4f4d467f",
    "content": "3a287cd6",
@@ -1030,7 +1030,7 @@
   {
    "slot": 115,
    "kind": "code",
-   "top": 10816,
+   "top": 10795,
    "h": 119,
    "style": "fcc7b9ed",
    "content": "3340563f",
@@ -1039,7 +1039,7 @@
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 10935,
+   "top": 10914,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -1048,7 +1048,7 @@
   {
    "slot": 117,
    "kind": "code",
-   "top": 10981,
+   "top": 10960,
    "h": 159,
    "style": "7ca996dd",
    "content": "89f005f2",
@@ -1057,7 +1057,7 @@
   {
    "slot": 118,
    "kind": "listItem",
-   "top": 11140,
+   "top": 11119,
    "h": 47,
    "style": "e012ebd7",
    "content": "f34cfd80",
@@ -1066,7 +1066,7 @@
   {
    "slot": 119,
    "kind": "paragraph",
-   "top": 11186,
+   "top": 11165,
    "h": 46,
    "style": "f54de366",
    "content": "3611dde2",
@@ -1075,7 +1075,7 @@
   {
    "slot": 120,
    "kind": "code",
-   "top": 11232,
+   "top": 11211,
    "h": 79,
    "style": "b3bcf55f",
    "content": "e9005ca3",
@@ -1084,7 +1084,7 @@
   {
    "slot": 121,
    "kind": "paragraph",
-   "top": 11311,
+   "top": 11290,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -1093,7 +1093,7 @@
   {
    "slot": 122,
    "kind": "code",
-   "top": 11356,
+   "top": 11335,
    "h": 99,
    "style": "3f7732a3",
    "content": "4ebc7a2f",
@@ -1102,7 +1102,7 @@
   {
    "slot": 123,
    "kind": "listItem",
-   "top": 11455,
+   "top": 11434,
    "h": 47,
    "style": "c005d933",
    "content": "87c166c0",
@@ -1111,7 +1111,7 @@
   {
    "slot": 124,
    "kind": "code",
-   "top": 11502,
+   "top": 11481,
    "h": 59,
    "style": "32dcf7e4",
    "content": "d53b16d4",
@@ -1120,7 +1120,7 @@
   {
    "slot": 125,
    "kind": "paragraph",
-   "top": 11561,
+   "top": 11540,
    "h": 44,
    "style": "b1763e0e",
    "content": "f69d8a38",
@@ -1129,7 +1129,7 @@
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 11604,
+   "top": 11584,
    "h": 47,
    "style": "daff42ae",
    "content": "26f86317",
@@ -1138,7 +1138,7 @@
   {
    "slot": 127,
    "kind": "code",
-   "top": 11651,
+   "top": 11630,
    "h": 79,
    "style": "b4fe0153",
    "content": "051cf92a",
@@ -1147,7 +1147,7 @@
   {
    "slot": 128,
    "kind": "rule",
-   "top": 11730,
+   "top": 11709,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "heading",
-   "top": 11749,
+   "top": 11728,
    "h": 42,
    "style": "71b6e53a",
    "content": "50787d5b",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "paragraph",
-   "top": 11790,
+   "top": 11769,
    "h": 44,
    "style": "04eb5d5d",
    "content": "dcd190be",
@@ -1174,7 +1174,7 @@
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 11834,
+   "top": 11813,
    "h": 35,
    "style": "2ff0cce3",
    "content": "0f11b01c",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "listItem",
-   "top": 11869,
+   "top": 11848,
    "h": 47,
    "style": "83c71771",
    "content": "3c27c1f7",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "paragraph",
-   "top": 11916,
+   "top": 11895,
    "h": 46,
    "style": "f54de366",
    "content": "6fb18cca",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "code",
-   "top": 11961,
+   "top": 11941,
    "h": 219,
    "style": "79ee4aa8",
    "content": "169de5bd",
@@ -1210,7 +1210,7 @@
   {
    "slot": 135,
    "kind": "paragraph",
-   "top": 12180,
+   "top": 12160,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -1219,7 +1219,7 @@
   {
    "slot": 136,
    "kind": "code",
-   "top": 12226,
+   "top": 12205,
    "h": 139,
    "style": "7cd2686f",
    "content": "fec7afd9",
@@ -1228,7 +1228,7 @@
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 12365,
+   "top": 12344,
    "h": 47,
    "style": "c005d933",
    "content": "6b833d81",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "code",
-   "top": 12412,
+   "top": 12391,
    "h": 59,
    "style": "166e3e41",
    "content": "e3713b8c",
@@ -1246,7 +1246,7 @@
   {
    "slot": 139,
    "kind": "paragraph",
-   "top": 12471,
+   "top": 12450,
    "h": 46,
    "style": "a6bab20e",
    "content": "d993b757",
@@ -1255,7 +1255,7 @@
   {
    "slot": 140,
    "kind": "listItem",
-   "top": 12516,
+   "top": 12495,
    "h": 47,
    "style": "daff42ae",
    "content": "0ce1b68c",
@@ -1264,7 +1264,7 @@
   {
    "slot": 141,
    "kind": "code",
-   "top": 12563,
+   "top": 12542,
    "h": 79,
    "style": "c7f8a774",
    "content": "8bd5d2f9",
@@ -1273,7 +1273,7 @@
   {
    "slot": 142,
    "kind": "rule",
-   "top": 12642,
+   "top": 12621,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -1282,7 +1282,7 @@
   {
    "slot": 143,
    "kind": "heading",
-   "top": 12660,
+   "top": 12639,
    "h": 42,
    "style": "71b6e53a",
    "content": "5071724a",
@@ -1291,7 +1291,7 @@
   {
    "slot": 144,
    "kind": "paragraph",
-   "top": 12702,
+   "top": 12681,
    "h": 44,
    "style": "04eb5d5d",
    "content": "dcd190be",
@@ -1300,7 +1300,7 @@
   {
    "slot": 145,
    "kind": "listItem",
-   "top": 12746,
+   "top": 12725,
    "h": 35,
    "style": "94e6f893",
    "content": "fb2c3225",
@@ -1309,7 +1309,7 @@
   {
    "slot": 146,
    "kind": "listItem",
-   "top": 12781,
+   "top": 12760,
    "h": 47,
    "style": "e1dc0fdd",
    "content": "3e848dd7",
@@ -1318,7 +1318,7 @@
   {
    "slot": 147,
    "kind": "paragraph",
-   "top": 12828,
+   "top": 12807,
    "h": 46,
    "style": "45bb61e8",
    "content": "5f490e2c",
@@ -1327,7 +1327,7 @@
   {
    "slot": 148,
    "kind": "code",
-   "top": 12873,
+   "top": 12852,
    "h": 79,
    "style": "972eb783",
    "content": "0089e16c",
@@ -1336,7 +1336,7 @@
   {
    "slot": 149,
    "kind": "paragraph",
-   "top": 12952,
+   "top": 12931,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -1345,7 +1345,7 @@
   {
    "slot": 150,
    "kind": "code",
-   "top": 12998,
+   "top": 12977,
    "h": 79,
    "style": "a08ed6f5",
    "content": "7f195c6a",
@@ -1354,7 +1354,7 @@
   {
    "slot": 151,
    "kind": "listItem",
-   "top": 13077,
+   "top": 13056,
    "h": 47,
    "style": "c005d933",
    "content": "6b833d81",
@@ -1363,7 +1363,7 @@
   {
    "slot": 152,
    "kind": "code",
-   "top": 13123,
+   "top": 13102,
    "h": 59,
    "style": "9a6c3ab0",
    "content": "f9edc9a6",
@@ -1372,7 +1372,7 @@
   {
    "slot": 153,
    "kind": "paragraph",
-   "top": 13182,
+   "top": 13161,
    "h": 46,
    "style": "f54de366",
    "content": "2da00a84",
@@ -1381,7 +1381,7 @@
   {
    "slot": 154,
    "kind": "listItem",
-   "top": 13228,
+   "top": 13207,
    "h": 47,
    "style": "daff42ae",
    "content": "0ce1b68c",
@@ -1390,7 +1390,7 @@
   {
    "slot": 155,
    "kind": "code",
-   "top": 13274,
+   "top": 13253,
    "h": 79,
    "style": "595cc95f",
    "content": "856d0591",
@@ -1399,7 +1399,7 @@
   {
    "slot": 156,
    "kind": "rule",
-   "top": 13353,
+   "top": 13332,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -1408,7 +1408,7 @@
   {
    "slot": 157,
    "kind": "heading",
-   "top": 13372,
+   "top": 13351,
    "h": 42,
    "style": "42c210bb",
    "content": "b0064fbd",
@@ -1417,7 +1417,7 @@
   {
    "slot": 158,
    "kind": "paragraph",
-   "top": 13414,
+   "top": 13393,
    "h": 44,
    "style": "04eb5d5d",
    "content": "dcd190be",
@@ -1426,7 +1426,7 @@
   {
    "slot": 159,
    "kind": "listItem",
-   "top": 13457,
+   "top": 13436,
    "h": 45,
    "style": "c6c1a1af",
    "content": "eec97ad5",
@@ -1435,7 +1435,7 @@
   {
    "slot": 160,
    "kind": "paragraph",
-   "top": 13502,
+   "top": 13481,
    "h": 46,
    "style": "f54de366",
    "content": "5cd8adaa",
@@ -1444,7 +1444,7 @@
   {
    "slot": 161,
    "kind": "listItem",
-   "top": 13548,
+   "top": 13527,
    "h": 47,
    "style": "a3d1024f",
    "content": "63819ef3",
@@ -1453,7 +1453,7 @@
   {
    "slot": 162,
    "kind": "paragraph",
-   "top": 13594,
+   "top": 13574,
    "h": 46,
    "style": "f54de366",
    "content": "85270081",
@@ -1462,7 +1462,7 @@
   {
    "slot": 163,
    "kind": "code",
-   "top": 13640,
+   "top": 13619,
    "h": 59,
    "style": "d573b2ce",
    "content": "fc681c4d",
@@ -1471,7 +1471,7 @@
   {
    "slot": 164,
    "kind": "paragraph",
-   "top": 13699,
+   "top": 13678,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -1480,7 +1480,7 @@
   {
    "slot": 165,
    "kind": "code",
-   "top": 13745,
+   "top": 13724,
    "h": 59,
    "style": "b09230ea",
    "content": "903da2fd",
@@ -1489,7 +1489,7 @@
   {
    "slot": 166,
    "kind": "listItem",
-   "top": 13804,
+   "top": 13783,
    "h": 45,
    "style": "01b99778",
    "content": "2d9fcd3d",
@@ -1498,7 +1498,7 @@
   {
    "slot": 167,
    "kind": "paragraph",
-   "top": 13848,
+   "top": 13827,
    "h": 46,
    "style": "f54de366",
    "content": "669d4ad6",
@@ -1507,7 +1507,7 @@
   {
    "slot": 168,
    "kind": "code",
-   "top": 13894,
+   "top": 13873,
    "h": 59,
    "style": "60918f9b",
    "content": "087ff2f5",
@@ -1516,7 +1516,7 @@
   {
    "slot": 169,
    "kind": "paragraph",
-   "top": 13953,
+   "top": 13932,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -1525,7 +1525,7 @@
   {
    "slot": 170,
    "kind": "code",
-   "top": 13998,
+   "top": 13977,
    "h": 59,
    "style": "a1efb0fd",
    "content": "ad7a8cf5",
@@ -1534,7 +1534,7 @@
   {
    "slot": 171,
    "kind": "listItem",
-   "top": 14057,
+   "top": 14036,
    "h": 45,
    "style": "2929d2ec",
    "content": "e5c464f9",
@@ -1543,7 +1543,7 @@
   {
    "slot": 172,
    "kind": "paragraph",
-   "top": 14102,
+   "top": 14081,
    "h": 46,
    "style": "f54de366",
    "content": "4a5d052d",
@@ -1552,7 +1552,7 @@
   {
    "slot": 173,
    "kind": "code",
-   "top": 14147,
+   "top": 14126,
    "h": 59,
    "style": "f17f5041",
    "content": "2a0f5dff",
@@ -1561,7 +1561,7 @@
   {
    "slot": 174,
    "kind": "paragraph",
-   "top": 14206,
+   "top": 14185,
    "h": 46,
    "style": "f54de366",
    "content": "a153f8b0",
@@ -1570,7 +1570,7 @@
   {
    "slot": 175,
    "kind": "code",
-   "top": 14252,
+   "top": 14231,
    "h": 59,
    "style": "6b65b47a",
    "content": "351d1ebb",
@@ -1579,7 +1579,7 @@
   {
    "slot": 176,
    "kind": "listItem",
-   "top": 14311,
+   "top": 14290,
    "h": 47,
    "style": "05ad1e2c",
    "content": "767ff516",
@@ -1588,7 +1588,7 @@
   {
    "slot": 177,
    "kind": "code",
-   "top": 14357,
+   "top": 14337,
    "h": 59,
    "style": "ef01801e",
    "content": "532ae548",
@@ -1597,7 +1597,7 @@
   {
    "slot": 178,
    "kind": "paragraph",
-   "top": 14416,
+   "top": 14396,
    "h": 46,
    "style": "f54de366",
    "content": "cb48643c",
@@ -1606,7 +1606,7 @@
   {
    "slot": 179,
    "kind": "listItem",
-   "top": 14462,
+   "top": 14441,
    "h": 47,
    "style": "daff42ae",
    "content": "f8a5b4c6",
@@ -1615,7 +1615,7 @@
   {
    "slot": 180,
    "kind": "code",
-   "top": 14509,
+   "top": 14488,
    "h": 79,
    "style": "68885231",
    "content": "ad60d0a4",
@@ -1624,7 +1624,7 @@
   {
    "slot": 181,
    "kind": "rule",
-   "top": 14588,
+   "top": 14567,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -1633,7 +1633,7 @@
   {
    "slot": 182,
    "kind": "heading",
-   "top": 14606,
+   "top": 14585,
    "h": 42,
    "style": "71b6e53a",
    "content": "514c36e1",
@@ -1642,7 +1642,7 @@
   {
    "slot": 183,
    "kind": "listItem",
-   "top": 14648,
+   "top": 14627,
    "h": 47,
    "style": "6d0ff420",
    "content": "d8194627",
@@ -1651,7 +1651,7 @@
   {
    "slot": 184,
    "kind": "code",
-   "top": 14695,
+   "top": 14674,
    "h": 219,
    "style": "0c1f92a4",
    "content": "ac8b74db",
@@ -1660,7 +1660,7 @@
   {
    "slot": 185,
    "kind": "paragraph",
-   "top": 14913,
+   "top": 14893,
    "h": 46,
    "style": "f54de366",
    "content": "6f2cf31a",
@@ -1669,7 +1669,7 @@
   {
    "slot": 186,
    "kind": "listItem",
-   "top": 14959,
+   "top": 14938,
    "h": 47,
    "style": "05ad1e2c",
    "content": "e40c143f",
@@ -1678,7 +1678,7 @@
   {
    "slot": 187,
    "kind": "paragraph",
-   "top": 15006,
+   "top": 14985,
    "h": 46,
    "style": "0de77fa0",
    "content": "fc459cb7",
@@ -1687,7 +1687,7 @@
   {
    "slot": 188,
    "kind": "code",
-   "top": 15051,
+   "top": 15030,
    "h": 59,
    "style": "80242655",
    "content": "67c43180",
@@ -1696,7 +1696,7 @@
   {
    "slot": 189,
    "kind": "code",
-   "top": 15110,
+   "top": 15089,
    "h": 79,
    "style": "8518061a",
    "content": "574af611",
@@ -1705,7 +1705,7 @@
   {
    "slot": 190,
    "kind": "paragraph",
-   "top": 15189,
+   "top": 15168,
    "h": 46,
    "style": "f54de366",
    "content": "98ef511a",
@@ -1714,7 +1714,7 @@
   {
    "slot": 191,
    "kind": "listItem",
-   "top": 15235,
+   "top": 15214,
    "h": 35,
    "style": "5d901216",
    "content": "6786d113",
@@ -1723,7 +1723,7 @@
   {
    "slot": 192,
    "kind": "listItem",
-   "top": 15270,
+   "top": 15249,
    "h": 35,
    "style": "06077540",
    "content": "fef8a978",
@@ -1732,7 +1732,7 @@
   {
    "slot": 193,
    "kind": "listItem",
-   "top": 15305,
+   "top": 15285,
    "h": 47,
    "style": "0ffbeab4",
    "content": "4fd41c7e",
@@ -1741,7 +1741,7 @@
   {
    "slot": 194,
    "kind": "code",
-   "top": 15352,
+   "top": 15331,
    "h": 99,
    "style": "28c5ba71",
    "content": "d4603b36",
@@ -1750,7 +1750,7 @@
   {
    "slot": 195,
    "kind": "paragraph",
-   "top": 15451,
+   "top": 15430,
    "h": 46,
    "style": "f4192065",
    "content": "57d5059c",
@@ -1759,7 +1759,7 @@
   {
    "slot": 196,
    "kind": "listItem",
-   "top": 15497,
+   "top": 15476,
    "h": 47,
    "style": "43166b9b",
    "content": "39ac3e37",
@@ -1768,7 +1768,7 @@
   {
    "slot": 197,
    "kind": "code",
-   "top": 15543,
+   "top": 15522,
    "h": 79,
    "style": "df48a4e0",
    "content": "857b0f32",
@@ -1777,7 +1777,7 @@
   {
    "slot": 198,
    "kind": "paragraph",
-   "top": 15622,
+   "top": 15601,
    "h": 46,
    "style": "f54de366",
    "content": "4e7a0051",

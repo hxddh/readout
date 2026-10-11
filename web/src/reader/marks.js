@@ -133,16 +133,19 @@ const caughtup = document.getElementById('ro-caughtup');
  * math untouched — `unreadElements()` already skips them via offsetParent.
  */
 export function applyChangesOnly() {
+  const toggled = [];
   for (const el of slots.values()) {
     const keep = el.classList.contains('k-heading')
       || el.classList.contains('m-inserted') || el.classList.contains('m-modified')
       || el.classList.contains('m-state') || el.nextElementSibling?.classList.contains('del-mark');
-    el.hidden = changesOnly && !keep;
-    // Hiding/showing is a filter, not a content change: re-baseline the
-    // height so the resize compensator does not "correct" the reflow that
-    // anchor restore already accounts for (double compensation scrolls away).
-    heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
+    const hide = changesOnly && !keep;
+    if (el.hidden !== hide) { el.hidden = hide; toggled.push(el); }
   }
+  // Hiding/showing is a filter, not a content change: re-baseline the
+  // height so the resize compensator does not "correct" the reflow that
+  // anchor restore already accounts for (double compensation scrolls away).
+  // Read after all writes: one layout, not one per block.
+  for (const el of toggled) heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
   for (const m of doc.querySelectorAll('.del-mark')) m.hidden = false;
   if (caughtup) {
     const anyVisible = changesOnly && unreadElements().length === 0 && slots.size > 0;

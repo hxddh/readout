@@ -21,10 +21,12 @@
     "Since the open timings end at the first presented frame (not the synchronous apply), runs",
     "measured warm_open 2587 and cold_start 8502: guards 3900 and 12800 (1.5x).",
     "write_to_update measured to the painted frame: 936 ms (496 to the apply in the same",
-    "kind of run; the runner's display paces frames slowly) -> guard 1400."
+    "kind of run; the runner's display paces frames slowly) -> guard 1400.",
+    "Incremental parsing (M5): update_100kb 12.7 ms, update_1mb 66.1 ms on the macOS runner;",
+    "guards lowered to 20 and 100 (1.5x)."
   ],
-  "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": 40 },
-  "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 530 },
+  "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": 20 },
+  "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 100 },
   "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 3900 },
   "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 12800 },
   "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 1400 },

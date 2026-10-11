@@ -13,14 +13,16 @@ export function scheduleRail() {
 
 function drawRail() {
   const list = unreadElements();
-  rail.replaceChildren();
   const total = document.scrollingElement.scrollHeight;
-  if (!list.length || total <= window.innerHeight) return;
+  if (!list.length || total <= window.innerHeight) { rail.replaceChildren(); return; }
   const scrollTop = document.scrollingElement.scrollTop;
   const h = window.innerHeight;
+  // All reads before any write, so the page is laid out once.
+  const tops = list.map(el => el.getBoundingClientRect().top + scrollTop);
+  rail.replaceChildren();
   for (let i = 0; i < list.length; i++) {
     const el = list[i];
-    const top = el.getBoundingClientRect().top + scrollTop;
+    const top = tops[i];
     const tick = document.createElement('button');
     tick.type = 'button';
     const kindKey = el.classList.contains('m-modified') ? 'railEdited'

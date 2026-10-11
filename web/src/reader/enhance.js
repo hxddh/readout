@@ -112,7 +112,12 @@ function setupCode(cb) {
   tools.appendChild(btn);
   cb.appendChild(tools);
   cb.dataset.hl = 'pending';
+  fresh.push(cb);
 }
+
+// Code blocks set up since the last renderLazy(): only these are looked at
+// after a patch, so an update costs nothing for the rest of the document.
+let fresh = [];
 
 // Shiki gives up on a line after 500 ms and colors the rest of it, and the
 // lines after, with whatever scope it was in. The first lines a grammar sees
@@ -164,9 +169,31 @@ function highlightBlock(cb) {
 }
 
 // Lazy work is triggered for anything within one screen of the viewport.
+// It runs in slices of a few milliseconds, so scrolling into a run of code
+// blocks never stalls a frame for long; the margin leaves time to finish
+// before they are on screen.
 export const lazyObserver = new IntersectionObserver(entries => {
-  for (const e of entries) if (e.isIntersecting) { lazyObserver.unobserve(e.target); lazyWork(e.target); }
+  for (const e of entries) if (e.isIntersecting) { lazyObserver.unobserve(e.target); queue.push(e.target); }
+  pump();
 }, { rootMargin: '100% 0px 100% 0px' });
+
+const SLICE_MS = 6;
+const queue = [];
+let pumping = false;
+
+function pump() {
+  if (pumping || !queue.length) return;
+  pumping = true;
+  setTimeout(() => {
+    pumping = false;
+    const start = performance.now();
+    while (queue.length && performance.now() - start < SLICE_MS) {
+      const el = queue.shift();
+      if (el.isConnected) lazyWork(el);
+    }
+    pump();
+  }, 0);
+}
 
 function lazyWork(el) {
   if (el.classList.contains('code-block')) highlightBlock(el);
@@ -174,8 +201,15 @@ function lazyWork(el) {
 }
 
 export function renderLazy() {
-  for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) {
-    if (inViewport(cb, window.innerHeight)) highlightBlock(cb); else lazyObserver.observe(cb);
+  const blocks = fresh;
+  fresh = [];
+  // Blocks on screen now are highlighted before the next paint (no flash of
+  // plain code); the rest wait until they come near.
+  const onScreen = [];
+  for (const cb of blocks) {
+    if (!cb.isConnected || cb.dataset.hl !== 'pending') continue;
+    if (inViewport(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
   }
+  for (const cb of onScreen) highlightBlock(cb);
   for (const m of doc.querySelectorAll('.mermaid-block:not(.done):not(.busy)')) lazyObserver.observe(m);
 }

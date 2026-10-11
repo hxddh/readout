@@ -41,12 +41,61 @@ import Testing
         #expect(doc.blocks.map(\.kind) == [.code])
     }
 
+    @Test func referencesInsideRawHTMLStayLiteral() {
+        let doc = parse("<div>\ntext[^n]\n</div>\n\n[^n]: Note.\n")
+        #expect(doc.blocks[0].html.contains("text[^n]"))
+        #expect(!doc.blocks[0].html.contains("\u{E000}"))
+        #expect(doc.blocks.count == 1)   // never referenced: no footnotes section
+    }
+
+    @Test func definitionsInsideLongerFencesAreCode() {
+        // A ``` line inside a ```` fence does not close it.
+        let doc = parse("See[^n].\n\n````md\n```\n[^n]: inside code\n```\n````\n\n[^n]: real\n")
+        #expect(doc.blocks.map(\.kind) == [.paragraph, .code, .footnotes])
+        #expect(doc.blocks[1].html.contains("[^n]: inside code"))
+        #expect(doc.blocks[2].html.contains("real"))
+    }
+
     @Test func multiLineDefinitionsRenderMarkdown() {
         let doc = parse("See[^long].\n\n[^long]: First line with **bold**\n    and a continuation.\n\n    Second paragraph.\n")
         let notes = doc.blocks.last!.html
         #expect(notes.contains("<strong>bold</strong>"))
         #expect(notes.contains("Second paragraph."))
         #expect(doc.blocks.last!.lines == 3...6)
+    }
+
+    @Test func wrappedDefinitionLinesStayInTheNote() {
+        let doc = parse("See[^1].\n\n[^1]: First line of the note\ncontinued without indent.\n\nBody again.\n")
+        #expect(doc.blocks.map(\.kind) == [.paragraph, .paragraph, .footnotes])
+        #expect(doc.blocks.last!.html.contains("continued without indent."))
+        #expect(!doc.blocks[1].html.contains("continued"))
+        // Text that merely starts with a bracket or a pipe continues it.
+        let bracket = parse("See[^1].\n\n[^1]: First line\n[continued] text | more\n")
+        #expect(bracket.blocks.last!.html.contains("[continued] text | more"))
+        #expect(bracket.blocks.count == 2)
+        let inline = parse("See[^1].\n\n[^1]: First line\n<em>continued</em> here\n")
+        #expect(inline.blocks.count == 2 && inline.blocks.last!.html.contains("<em>continued</em>"))
+        // A new block after the definition is not part of it.
+        let list = parse("See[^1].\n\n[^1]: Note\n- item\n")
+        #expect(list.blocks.contains { $0.kind == .listItem })
+    }
+
+    @Test func labelsMatchWithoutCase() {
+        let doc = parse("See[^Note].\n\n[^note]: Found.\n")
+        #expect(doc.blocks[0].html.contains("data-footnote-ref>1</a>"))
+        #expect(doc.blocks.last!.html.contains("Found."))
+    }
+
+    @Test func aCitationFromAnotherNoteGetsAWayBack() {
+        let notes = parse("x[^a] y[^b]\n\n[^a]: A.\n[^b]: B cites[^a].\n").blocks.last!.html
+        #expect(notes.contains(##"href="#user-content-fnref-a-2""##))
+        #expect(notes.contains(##"id="user-content-fnref-a-2""##))
+    }
+
+    @Test func everyReferenceGetsAWayBack() {
+        let notes = parse("a[^n] b[^n]\n\n[^n]: Note.\n").blocks.last!.html
+        #expect(notes.contains(##"href="#user-content-fnref-n""##))
+        #expect(notes.contains(##"href="#user-content-fnref-n-2""##))
     }
 
     @Test func lineNumbersOfOtherBlocksAreUnchanged() {
@@ -82,6 +131,14 @@ import Testing
         let doc = MarkdownParser.parse("<details>\n<summary>Outer</summary>\n\n<details>\n<summary>Inner</summary>\n\nText\n\n</details>\n\n</details>\n\nAfter.\n")
         #expect(doc.blocks.map(\.kind) == [.html, .paragraph])
         #expect(doc.blocks[0].html.components(separatedBy: "</details>").count == 3)
+    }
+
+    @Test func onlyRealDetailsTagsCount() {
+        #expect(MarkdownParser.detailsDepth("<details-card><details>") == 1)
+        #expect(MarkdownParser.detailsDepth("<details open>x<!-- </details> -->") == 1)
+        #expect(MarkdownParser.detailsDepth("</details >") == -1)
+        let doc = MarkdownParser.parse("<details>\n<summary>S</summary>\n\n<!-- </details> -->\n\nInside.\n\n</details>\n\nAfter.\n")
+        #expect(doc.blocks.map(\.kind) == [.html, .paragraph])
     }
 
     @Test func singleLineDetailsIsUnchanged() {

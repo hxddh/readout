@@ -1,5 +1,5 @@
 {
- "height": 8665,
+ "height": 8689,
  "blocks": [
   {
    "slot": 1,
@@ -599,9 +599,9 @@
    "slot": 67,
    "kind": "footnotes",
    "top": 7718,
-   "h": 676,
-   "style": "549fc96c",
-   "content": "391e96ad",
+   "h": 701,
+   "style": "62712da5",
+   "content": "9aaa8635",
    "text": "SOC 2 Compliance: The Complete Introduction (8%)"
   }
  ]

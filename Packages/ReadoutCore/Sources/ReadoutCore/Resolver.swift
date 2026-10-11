@@ -6,6 +6,9 @@ public protocol ResourceResolver: Sendable {
     func image(_ src: String) -> ResolvedImage
     /// If inline code looks like a path (optionally `path:line[:col]`) to an existing file, return it.
     func pathReference(_ code: String) -> PathReference?
+    /// Equal for resolvers that resolve everything the same way: parsed
+    /// fragments are reused only while it stays the same.
+    var identity: String { get }
 }
 
 public struct ResolvedImage: Sendable {
@@ -43,6 +46,10 @@ public struct FileResolver: ResourceResolver {
     public init(baseDirectory: URL?, searchRoots: [URL] = []) {
         self.baseDirectory = baseDirectory
         self.searchRoots = searchRoots
+    }
+
+    public var identity: String {
+        ([baseDirectory?.path ?? ""] + searchRoots.map(\.path)).joined(separator: "\u{1F}")
     }
 
     public func image(_ src: String) -> ResolvedImage {

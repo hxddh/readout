@@ -4,7 +4,7 @@ import { captureAnchor, restoreAnchor, atBottom, resizeObserver } from './anchor
 import { renderMarks, applyChangesOnly } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy } from './enhance.js';
-import { reportActiveHeading } from './heading.js';
+import { reportActiveHeading, headingsChanged } from './heading.js';
 
 const notice = document.getElementById('ro-notice');
 let first = true;
@@ -64,6 +64,7 @@ export function apply(p) {
   }
   const follow = following && (p.reset || p.rewrite || changeNearViewport);
   const changed = new Set();
+  const rerendered = [];   // silent replaces: new HTML, no mark
   const visibleChanged = [];
 
   if (p.reset) {
@@ -83,6 +84,7 @@ export function apply(p) {
       fillBlock(el, op);
       if (wasMarked && op.change === 'silent') el.classList.add(wasMarked);
       if (op.change !== 'silent') { changed.add(op.slot); if (!p.reset && inViewport(el)) visibleChanged.push(el); }
+      else rerendered.push(el);
     } else if (op.op === 'insert') {
       const el = makeBlock(op);
       const after = op.after ? slots.get(op.after) : null;
@@ -110,6 +112,7 @@ export function apply(p) {
 
   // Re-baseline heights of touched blocks so the resize compensator does not count this patch twice.
   for (const slot of changed) { const el = slots.get(slot); if (el) heights.set(el, el.getBoundingClientRect().height); }
+  for (const el of rerendered) if (el.isConnected) heights.set(el, el.getBoundingClientRect().height);
   if (p.reset) for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
 
   if (p.rewrite) showNotice(strings.rewritten);
@@ -124,6 +127,7 @@ export function apply(p) {
 
   renderLazy();
   scheduleRail();
+  if (p.reset || p.ops.length) headingsChanged();
   reportActiveHeading();
   post({ type: 'applied', version: p.version });
   // After the frame that shows it: rAF runs before the paint, the task it
