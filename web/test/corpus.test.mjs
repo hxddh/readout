@@ -63,7 +63,7 @@ const docs = readdirSync(`${CORPUS}/patches`).filter(f => f.endsWith('.json') &&
 let failures = 0;
 const summary = [];
 
-async function render(patch, dark) {
+async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   const page = await browser.newPage({ viewport: { width: WIDTH, height: 900 }, deviceScaleFactor: 1 });
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
@@ -82,7 +82,7 @@ async function render(patch, dark) {
     };
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
-  }, process.env.CORPUS_DEBUG === '1');
+  }, debug);
   await page.goto(`${base}/reader.html`);
   await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
   await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), dark);
@@ -102,6 +102,18 @@ async function render(patch, dark) {
     }
   };
   await walk();
+  // A block can be passed before its observer fires (a fast walk on a cold
+  // page): bring every one still waiting into view until none is.
+  for (let round = 0; round < 20; round++) {
+    const waiting = await page.evaluate(() => {
+      const left = [...document.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block:not(.done):not(.busy)')]
+        .filter(e => !e.querySelector('.mermaid-error'));
+      left.forEach(e => e.scrollIntoView({ block: 'center' }));
+      return left.length;
+    });
+    if (!waiting) break;
+    await page.waitForTimeout(100);
+  }
   await page.waitForFunction(() =>
     !document.querySelector('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"], .mermaid-block.busy')
     && [...document.querySelectorAll('.mermaid-block')].every(b => b.classList.contains('done') || b.querySelector('.mermaid-error'))
@@ -117,18 +129,32 @@ async function render(patch, dark) {
 
   const snapshot = await page.evaluate(() => {
     // Paint matters too: content can be laid out yet invisible.
-    const STYLE = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'color', 'backgroundColor',
-      'borderTopWidth', 'borderTopColor', 'borderLeftWidth', 'borderLeftColor', 'textDecorationLine', 'textAlign', 'display',
+    const STYLE = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'whiteSpace',
+      'color', 'backgroundColor', 'textDecorationLine', 'textAlign', 'display',
+      'borderTopWidth', 'borderTopColor', 'borderRightWidth', 'borderRightColor', 'borderBottomWidth', 'borderBottomColor',
+      'borderLeftWidth', 'borderLeftColor', 'borderRadius', 'boxShadow',
+      'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
       'visibility', 'opacity', 'clipPath', 'transform', 'filter', 'mixBlendMode'];
+    // Generated content counts too: list markers, task checks, change marks.
+    const PSEUDO = ['content', 'color', 'backgroundColor', 'width', 'height', 'left', 'top', 'borderLeftColor', 'borderTopColor', 'opacity', 'display'];
     const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(16).padStart(8, '0'); };
+    let origin = null;   // the block being described: positions are relative to it
     const describe = el => {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
-      return `${el.tagName}.${el.getAttribute('class') || ''}|${STYLE.map(k => cs[k]).join('|')}|${Math.round(r.width)}x${Math.round(r.height)}`;
+      const at = origin ? `@${Math.round(r.left - origin.left)},${Math.round(r.top - origin.top)}` : '';
+      let out = `${el.tagName}.${el.getAttribute('class') || ''}|${STYLE.map(k => cs[k]).join('|')}|${Math.round(r.width)}x${Math.round(r.height)}${at}`;
+      for (const pseudo of ['::before', '::after', ...(el.tagName === 'LI' ? ['::marker'] : [])]) {
+        const ps = getComputedStyle(el, pseudo);
+        if (ps.content && ps.content !== 'none' && ps.content !== 'normal' || pseudo === '::marker') out += `|${pseudo}:${PSEUDO.map(k => ps[k]).join('|')}`;
+      }
+      return out;
     };
     const top0 = document.getElementById('ro-doc').getBoundingClientRect().top + window.scrollY;
     const blocks = [...document.querySelectorAll('#ro-doc > .blk, #ro-doc > .del-mark')].map(b => {
+      origin = null;
       const parts = [describe(b)];
+      origin = b.getBoundingClientRect();
       for (const el of b.querySelectorAll('*')) if (!el.closest('svg') || el.tagName === 'svg') parts.push(describe(el));
       // Diagrams: the whole SVG markup, with Mermaid's generated ids numbered
       // in order of appearance and coordinates to 0.1 px, so the nodes, edges
@@ -233,6 +259,14 @@ for (const file of docs) {
       failures++;
       summary.push(name);
       console.log(`FAIL: ${name}\n      ${problems.join('\n      ')}`);
+      if (s && !update) {
+        // Render it again, with every element's description, so a failure
+        // says whether it repeats and what exactly differs (still a failure).
+        const again = await render(patch, theme === 'dark', true);
+        const repeats = JSON.stringify(again.snapshot.blocks.map(b => b.style)) === JSON.stringify(snapshot.blocks.map(b => b.style));
+        console.log(`      second render ${repeats ? 'gives the same result' : 'differs from the first: the page is not deterministic'}`);
+        writeFileSync(`${OUT}/${name}.parts.json`, JSON.stringify(again.snapshot, null, 1));
+      }
     } else {
       console.log(`${update ? 'updated' : 'ok'}: ${name} (${snapshot.blocks.length} blocks, ${snapshot.height} px)`);
     }
