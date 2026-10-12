@@ -10,7 +10,6 @@ const root = path.resolve(here, '../..');
 const { chromium } = createRequire(path.join(root, 'web/package.json'))('playwright');
 const out = path.join(root, 'App/Assets.xcassets/AppIcon.appiconset');
 const svg = name => 'data:image/svg+xml;base64,' + fs.readFileSync(path.join(here, name)).toString('base64');
-// 16 and 32 px use the simplified drawing; larger sizes the full one.
 const files = [
   ['icon_16x16.png', 16], ['icon_16x16@2x.png', 32], ['icon_32x32.png', 32], ['icon_32x32@2x.png', 64],
   ['icon_128x128.png', 128], ['icon_128x128@2x.png', 256], ['icon_256x256.png', 256],
@@ -24,7 +23,7 @@ async function render(source, px, dest) {
   await page.waitForFunction(() => document.images[0].complete);
   await page.screenshot({ path: dest, omitBackground: true });
 }
-for (const [name, px] of files) await render(px <= 32 ? 'readout-small.svg' : 'readout.svg', px, path.join(out, name));
+for (const [name, px] of files) await render('readout.svg', px, path.join(out, name));
 await render('readout.svg', 1024, path.join(here, 'readout-1024.png'));
 await browser.close();
 console.log('wrote', files.length + 1, 'PNGs');
