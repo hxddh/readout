@@ -62,8 +62,11 @@ public enum FileContent {
         while let x = it.next(), let y = it.next() {
             units.append(bigEndian ? UInt16(x) << 8 | UInt16(y) : UInt16(y) << 8 | UInt16(x))
         }
+        // A high surrogate at the end waits for its pair: also still being written.
+        var cut = truncated
+        if let last = units.last, (0xD800...0xDBFF).contains(last) { units.removeLast(); cut = true }
         let text = String(decoding: units, as: UTF16.self)
-        return Decoded(text: text, fallbackEncoding: bigEndian ? "UTF-16BE" : "UTF-16LE", truncatedTail: truncated)
+        return Decoded(text: text, fallbackEncoding: bigEndian ? "UTF-16BE" : "UTF-16LE", truncatedTail: cut)
     }
 
     public enum WriteVerdict: Equatable, Sendable { case accept, waitForMore }

@@ -21,6 +21,11 @@ import Testing
         // Half a code unit at the end: still being written.
         let cut = FileContent.decode((Data([0xFF, 0xFE]) + text.data(using: .utf16LittleEndian)!).dropLast())
         #expect(cut.truncatedTail && cut.text == "# Hi\n\n中文 and English.")
+        // Cut between the two halves of a surrogate pair: also a half-written tail.
+        let emoji = Data([0xFF, 0xFE]) + "# Hi 🚀".data(using: .utf16LittleEndian)!
+        let half = FileContent.decode(emoji.dropLast(2))
+        #expect(half.truncatedTail && half.text == "# Hi ")
+        #expect(!half.text.contains("\u{FFFD}"))
         // UTF-8 stays UTF-8.
         #expect(FileContent.decode(Data(text.utf8)).fallbackEncoding == nil)
     }
