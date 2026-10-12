@@ -50,8 +50,16 @@ enum MainMenu {
         add(file, to: main)
 
         // Edit
+        // The standard items: the find field needs ⌘V, ⌘X and ⌘Z; in the
+        // read-only page they disable themselves.
         let edit = NSMenu(title: NSLocalizedString("Edit", comment: "Menu"))
+        edit.addItem(item(NSLocalizedString("Undo", comment: "Menu"), Selector(("undo:")), "z"))
+        edit.addItem(item(NSLocalizedString("Redo", comment: "Menu"), Selector(("redo:")), "z", [.command, .shift]))
+        edit.addItem(.separator())
+        edit.addItem(item(NSLocalizedString("Cut", comment: "Menu"), #selector(NSText.cut(_:)), "x"))
         edit.addItem(item(NSLocalizedString("Copy", comment: "Menu"), #selector(NSText.copy(_:)), "c"))
+        edit.addItem(item(NSLocalizedString("Paste", comment: "Menu"), #selector(NSText.paste(_:)), "v"))
+        edit.addItem(item(NSLocalizedString("Delete", comment: "Menu"), #selector(NSText.delete(_:))))
         edit.addItem(item(NSLocalizedString("Select All", comment: "Menu"), #selector(NSText.selectAll(_:)), "a"))
         edit.addItem(.separator())
         let find = NSMenuItem(title: NSLocalizedString("Find", comment: "Menu"), action: nil, keyEquivalent: "")

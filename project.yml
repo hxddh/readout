@@ -56,6 +56,12 @@ targets:
         NSPrincipalClass: NSApplication
         NSSupportsAutomaticTermination: false
         NSSupportsSuddenTermination: false
+        # `readout -b` / `readout --hook` open through readout-open://open?path=…&background=1.
+        # Not `readout:`, which is the reader page's own scheme inside its web view.
+        CFBundleURLTypes:
+          - CFBundleURLName: io.github.hxddh.readout.open
+            CFBundleTypeRole: Viewer
+            CFBundleURLSchemes: [readout-open]
         CFBundleDocumentTypes:
           - CFBundleTypeName: Markdown Document
             CFBundleTypeRole: Viewer

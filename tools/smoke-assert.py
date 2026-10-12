@@ -77,6 +77,39 @@ check("agent folder: Readout was not activated", agent.get("active_after") is Fa
 check("agent folder: the document being read stays in front",
       agent.get("reading_before") not in (None, "", "notes.md") and agent.get("reading_after") == agent.get("reading_before"), agent)
 
+live = load("live-updates.json")
+print(f"live-updates: {live}")
+# FSEvents reports /private/tmp/...: a file opened as /tmp/... must still update.
+check("tmp: the file under /tmp was shown", (live.get("tmp") or {}).get("before") == "TMP-BEFORE", live)
+check("tmp: the file under /tmp updated live", (live.get("tmp") or {}).get("after") == "TMP-AFTER", live)
+# latest.md -> run-41.md, then `ln -sf run-42.md latest.md`: the window follows the link.
+check("link: the symlink's target was shown", (live.get("link") or {}).get("before") == "RUN-41", live)
+check("link: the retargeted symlink was followed", (live.get("link") or {}).get("after") == "RUN-42", live)
+# The window is keyed by what it shows: reopening the link finds it, opening run-41.md would not.
+check("link: the window is found through the retargeted link", (live.get("link") or {}).get("found_through_link") is True, live)
+check("link: the old target no longer maps to that window", (live.get("link") or {}).get("old_target_free") is True, live)
+
+col = live.get("collide") or {}
+# Retargeted onto a file another window shows: that window keeps the path; the link's window stays owned.
+check("collide: the link followed its new target", col.get("before") == "RUN-43" and col.get("after") == "RUN-44", live)
+check("collide: the window already showing the target keeps its path", col.get("target_window_kept") is True, live)
+check("collide: the link's window is still owned (saved on quit)", col.get("owned") is True, live)
+
+bg = load("background-opens.json")
+print(f"background-opens: {bg}")
+# `readout -b` and `readout --hook` open behind the tab being read, never in front of it.
+check("cli: both opens arrived as background requests",
+      sorted(bg.get("requests") or []) == sorted(["background.md", "plan.md"]), bg)
+check("cli: readout -b opened the file", bg.get("opened") is True, bg)
+check("cli: the document being read stays in front",
+      bg.get("reading_before") not in (None, "", "background.md", "plan.md") and bg.get("reading_after") == bg.get("reading_before"), bg)
+
+menus = load("menus.json")
+print(f"menus: {menus}")
+edit_menu = menus.get("edit_menu") or []
+for entry in ["undo: z", "redo: z", "cut: x", "paste: v", "delete:"]:
+    check(f"edit menu has {entry}", entry in edit_menu, edit_menu)
+
 logp = OUT / "smoke-out.log"
 log = logp.read_text() if logp.exists() else ""
 check("smoke-out.log present", logp.exists())

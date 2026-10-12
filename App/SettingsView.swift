@@ -46,6 +46,11 @@ struct SettingsView: View {
                 Picker(NSLocalizedString("Global shortcut", comment: "Settings label"), selection: $settings.hotKey) {
                     ForEach(AppSettings.HotKeyChoice.allCases) { Text($0.title).tag($0) }
                 }
+                if settings.hotKeyInUse {
+                    Text(NSLocalizedString("This shortcut is in use by another app. Choose another one.", comment: "Settings note: the global shortcut could not be registered"))
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
                 Picker(NSLocalizedString("Open code references in", comment: "Settings label"), selection: $settings.editor) {
                     ForEach(AppSettings.Editor.allCases) { Text($0.title).tag($0) }
                 }

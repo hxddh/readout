@@ -46,6 +46,8 @@ final class AppSettings: ObservableObject {
     @Published var showSidebar: Bool { didSet { d.set(showSidebar, forKey: "showSidebar") } }
     @Published var checkForUpdatesAutomatically: Bool { didSet { d.set(checkForUpdatesAutomatically, forKey: "checkForUpdatesAutomatically") } }
     @Published var lastUpdateCheck: Date? { didSet { d.set(lastUpdateCheck, forKey: "lastUpdateCheck") } }
+    /// The chosen global shortcut could not be registered (another app holds it). Not stored.
+    @Published var hotKeyInUse = false
 
     private init() {
         var ws = d.stringArray(forKey: "workspaces")
@@ -101,22 +103,40 @@ enum BaselineStore {
         return d
     }
 
-    private static func key(for url: URL) -> String {
-        String(XXHash64.hash(url.standardizedFileURL.path), radix: 16)
-    }
+    /// Keyed by the real path, as windows are: the same file reached through a
+    /// symlink or under /private/tmp shares one history.
+    private static func key(for url: URL) -> String { BaselineKey.key(forPath: url.path) }
 
-    private static func file(for url: URL) -> URL {
-        dir.appendingPathComponent("\(key(for: url)).json")
-    }
-
-    private static func positionFile(for url: URL) -> URL {
-        dir.appendingPathComponent("\(key(for: url)).pos.json")
-    }
+    private static func file(forKey key: String) -> URL { dir.appendingPathComponent("\(key).json") }
+    private static func positionFile(forKey key: String) -> URL { dir.appendingPathComponent("\(key).pos.json") }
+    private static func file(for url: URL) -> URL { file(forKey: key(for: url)) }
+    private static func positionFile(for url: URL) -> URL { positionFile(forKey: key(for: url)) }
 
     static func load(_ url: URL) -> Record? {
-        guard let data = try? Data(contentsOf: file(for: url)),
+        let primary = key(for: url)
+        if let record = load(key: primary) { return record }
+        // Before 3.3 the key was the path as spelled. Read that record once and
+        // copy it under the real-path key, which is the one used from now on.
+        let legacy = BaselineKey.legacyKey(forPath: url.path)
+        guard legacy != primary, let record = load(key: legacy) else { return nil }
+        let from = [file(forKey: legacy), positionFile(forKey: legacy)]
+        let to = [file(forKey: primary), positionFile(forKey: primary)]
+        queue.async {
+            for (src, dst) in zip(from, to) {
+                if let data = try? Data(contentsOf: src) { try? data.write(to: dst, options: .atomic) }
+            }
+        }
+        return record
+    }
+
+    /// Waits for every queued save: called when the app quits, which would
+    /// otherwise exit before the last reading position is written.
+    static func flush() { queue.sync {} }
+
+    private static func load(key: String) -> Record? {
+        guard let data = try? Data(contentsOf: file(forKey: key)),
               var record = try? JSONDecoder().decode(Record.self, from: data) else { return nil }
-        if let data = try? Data(contentsOf: positionFile(for: url)),
+        if let data = try? Data(contentsOf: positionFile(forKey: key)),
            let position = try? JSONDecoder().decode(Position.self, from: data), position.savedAt >= record.savedAt {
             record.topBlockIndex = position.topBlockIndex
             record.topOffset = position.topOffset

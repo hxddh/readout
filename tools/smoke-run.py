@@ -15,6 +15,12 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
   4b. when the app reports `await-agent-write` (Readout in the background,
      watching WORK_DIR/agent), writes WORK_DIR/agent/notes.md the agent way;
      the app records whether it opened on its own without activating
+  4c. when the app reports `await-tmp-edit`, rewrites a document under /tmp
+     (FSEvents reports it as /private/tmp/...); at `await-retarget`, points a
+     symlink the app shows at another file, the way `ln -sf` does
+  4d. when the app reports `await-cli`, runs `cli/readout -b` on a new file
+     and `cli/readout --hook` on plan.md (open in a tab behind); the app
+     records whether the tab being read stayed in front
   5. waits for the app to exit on its own (90 s), with its log in OUT_DIR/smoke-out.log
   6. writes OUT_DIR/timings.json: cold start, warm open and write-to-update
      times, from its own clock readings and the app's (timings-app.json)
@@ -24,6 +30,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -90,8 +97,36 @@ def main() -> int:
 
     agent_dir = work / "agent"
     agent_dir.mkdir(exist_ok=True)
+
+    # Under /tmp, spelled the way users and agents spell it (not /private/tmp).
+    tmp = Path(tempfile.mkdtemp(prefix="readout-live-", dir="/tmp"))
+    tmp_file = tmp / "live.md"
+    tmp_file.write_text("# TMP-BEFORE\n\nWritten under /tmp.\n")
+    # links/latest.md -> ../runs/run-41.md, in another folder than its target.
+    (tmp / "runs").mkdir()
+    (tmp / "links").mkdir()
+    (tmp / "runs" / "run-41.md").write_text("# RUN-41\n\nThe first run.\n")
+    (tmp / "runs" / "run-42.md").write_text("# RUN-42\n\nThe next run.\n")
+    link = tmp / "links" / "latest.md"
+    os.symlink("../runs/run-41.md", link)
+    # links/other.md -> run-43.md, later pointed at run-44.md, which has a window of its own.
+    (tmp / "runs" / "run-43.md").write_text("# RUN-43\n")
+    (tmp / "runs" / "run-44.md").write_text("# RUN-44\n")
+    collide = tmp / "links" / "other.md"
+    os.symlink("../runs/run-43.md", collide)
+    cli_file = work / "background.md"
+    cli_file.write_text("# Opened with readout -b\n")
+
     env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
-               READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir))
+               READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
+               READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
+               READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_COLLIDE_LINK=str(collide),
+               READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"))
+    # Launch Services must know the bundle for `open -b` to reach the running app.
+    bundle = app.parents[2] if app.parent.name == "MacOS" else None
+    if bundle is not None:
+        subprocess.run(["/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
+                        "-f", str(bundle)], check=False)
     clock = {}
     with open(out / "smoke-out.log", "wb") as log:
         clock["spawn"] = time.time()
@@ -116,6 +151,40 @@ def main() -> int:
                 print("harness: agent wrote notes.md")
             else:
                 print("harness: the app never reported `await-agent-write`")
+
+            if wait_for(out / "await-tmp-edit", proc, 60, poll=0.05):
+                src = tmp / ".live.src"
+                src.write_text("# TMP-AFTER\n\nRewritten under /tmp.\n")
+                agent_write(tmp_file, src)
+                print("harness: rewrote the file under /tmp")
+            else:
+                print("harness: the app never reported `await-tmp-edit`")
+
+            if wait_for(out / "await-retarget", proc, 30, poll=0.05):
+                staged = link.with_name(".latest.md.tmp")
+                os.symlink("../runs/run-42.md", staged)
+                os.replace(staged, link)  # ln -sf, atomically
+                print("harness: pointed latest.md at run-42.md")
+            else:
+                print("harness: the app never reported `await-retarget`")
+
+            if wait_for(out / "await-collide", proc, 30, poll=0.05):
+                staged = collide.with_name(".other.md.tmp")
+                os.symlink("../runs/run-44.md", staged)
+                os.replace(staged, collide)
+                print("harness: pointed other.md at run-44.md (open in its own window)")
+            else:
+                print("harness: the app never reported `await-collide`")
+
+            if wait_for(out / "await-cli", proc, 30, poll=0.05):
+                cli = ROOT / "cli" / "readout"
+                r = subprocess.run(["/bin/sh", str(cli), "-b", str(cli_file)], capture_output=True, text=True)
+                print(f"harness: readout -b exited {r.returncode} {r.stdout}{r.stderr}")
+                hook = json.dumps({"tool_input": {"file_path": str(target)}})
+                r = subprocess.run(["/bin/sh", str(cli), "--hook"], input=hook, capture_output=True, text=True)
+                print(f"harness: readout --hook exited {r.returncode} {r.stdout}{r.stderr}")
+            else:
+                print("harness: the app never reported `await-cli`")
 
             try:
                 code = proc.wait(timeout=90)

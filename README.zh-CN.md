@@ -40,7 +40,7 @@ Readout 会检查 GitHub Releases 获取新版本（**Readout → 检查更新�
 mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout
 ```
 
-（`~/.local/bin` 需要在 `PATH` 中。）之后 `readout plan.md` 打开文件，`readout -b plan.md` 打开但不切换应用。如果想用 Claude Code hook 代替文件夹监视，在 `~/.claude/settings.json` 里为 `Write|Edit|MultiEdit` 添加 `PostToolUse` 命令 `readout --hook`；当 `tool_input.file_path` 是 Markdown 文件时，它会在后台打开。
+（`~/.local/bin` 需要在 `PATH` 中。）之后 `readout plan.md` 打开文件，`readout -b plan.md` 在后台打开（作为标签页排在正在阅读的文档之后），不切换应用。如果想用 Claude Code hook 代替文件夹监视，在 `~/.claude/settings.json` 里为 `Write|Edit|MultiEdit` 添加 `PostToolUse` 命令 `readout --hook`；当 `tool_input.file_path` 是 Markdown 文件时，它会在后台打开。
 
 ## 快捷键
 
