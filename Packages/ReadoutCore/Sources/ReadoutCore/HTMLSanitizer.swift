@@ -34,8 +34,9 @@ enum HTML {
     /// GFM tagfilter plus removal of event handlers and javascript: URLs.
     /// Remote media sources are replaced with a click-to-load placeholder so
     /// raw HTML cannot phone home without the reader's consent — the same
-    /// gate Markdown images go through.
-    static func sanitize(_ raw: String) -> String {
+    /// gate Markdown images go through. Local `src` paths are resolved like
+    /// Markdown images' (relative to the document), when a resolver is given.
+    static func sanitize(_ raw: String, resolver: ResourceResolver? = nil) -> String {
         var s = raw
         // GFM tagfilter: neutralize the opening "<" and keep the tag as written (<XMP stays XMP).
         s = deniedTagPattern.stringByReplacingMatches(in: s, range: NSRange(location: 0, length: (s as NSString).length),
@@ -43,7 +44,7 @@ enum HTML {
         s = s.replacingOccurrences(of: #"\son[a-zA-Z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, with: "",
                                    options: .regularExpression)
         s = s.replacingOccurrences(of: "javascript:", with: "blocked:", options: .caseInsensitive)
-        s = gateRemoteMedia(s)
+        s = gateRemoteMedia(s, resolver: resolver)
         return s
     }
 
@@ -52,7 +53,7 @@ enum HTML {
     // boundary is the Content-Security-Policy in web/src/reader.html, which
     // allows no http:/https: sources at all, so every construct this regex
     // misses is still blocked by the browser. See docs/design.md.
-    private static func gateRemoteMedia(_ s: String) -> String {
+    private static func gateRemoteMedia(_ s: String, resolver: ResourceResolver?) -> String {
         let ns = s as NSString
         let matches = remoteMediaSrc.matches(in: s, range: NSRange(location: 0, length: ns.length))
         guard !matches.isEmpty else { return s }
@@ -71,6 +72,14 @@ enum HTML {
                 let close = "</\(tag)>"
                 if ns.substring(from: end).lowercased().hasPrefix(close) { end += close.count }
                 out += "<span class=\"remote-img\" data-tag=\"\(tag)\" data-src=\"\(escape(unquoted))\" data-alt=\"\"></span>"
+            } else if let resolver, ns.substring(with: m.range(at: 2)).lowercased() == "src", isLocalPath(lower) {
+                // A path relative to the document, not to the page: resolved as a Markdown image's.
+                let r = resolver.image(unquoted)
+                let valueRange = m.range(at: 3)
+                out += ns.substring(with: NSRange(location: m.range.location, length: valueRange.location - m.range.location))
+                out += "\"" + escape(r.url) + "\""
+                out += ns.substring(with: NSRange(location: valueRange.location + valueRange.length,
+                                                  length: m.range.location + m.range.length - valueRange.location - valueRange.length))
             } else {
                 out += ns.substring(with: m.range)
             }
@@ -78,5 +87,16 @@ enum HTML {
         }
         out += ns.substring(from: last)
         return out
+    }
+
+    /// A file path (relative, absolute, `~/` or `file:`), not another scheme, a fragment or data.
+    private static func isLocalPath(_ lower: String) -> Bool {
+        guard !lower.isEmpty, !lower.hasPrefix("#"), !lower.hasPrefix("data:") else { return false }
+        if lower.hasPrefix("file:") { return true }
+        if let colon = lower.firstIndex(of: ":"),
+           lower[..<colon].allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || "+.-".contains($0)) }) {
+            return false   // readout:, blob:, ...
+        }
+        return true
     }
 }

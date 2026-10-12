@@ -1,5 +1,5 @@
 {
- "height": 5092,
+ "height": 5122,
  "blocks": [
   {
    "slot": 1,
@@ -42,7 +42,7 @@
    "kind": "table",
    "top": 256,
    "h": 227,
-   "style": "194bd621",
+   "style": "f497fd2f",
    "content": "846e11e8",
    "text": "变更类型文件数量文件列表✅ 已完成修改9FloatingWindowService.kt (移动"
   },
@@ -95,24 +95,24 @@
    "slot": 11,
    "kind": "listItem",
    "top": 684,
-   "h": 28,
-   "style": "f2d3974d",
+   "h": 31,
+   "style": "75024ee9",
    "content": "03bfad22",
    "text": "文件: app/src/main/java/com/empathy/ai/service/Flo"
   },
   {
    "slot": 12,
    "kind": "listItem",
-   "top": 713,
-   "h": 28,
-   "style": "1a03029d",
+   "top": 715,
+   "h": 31,
+   "style": "f8018ca8",
    "content": "61083055",
    "text": "变更: 从 com.empathy.ai.domain.service 迁移到 com.empa"
   },
   {
    "slot": 13,
    "kind": "listItem",
-   "top": 741,
+   "top": 746,
    "h": 31,
    "style": "3517f9dd",
    "content": "d41f82b5",
@@ -121,7 +121,7 @@
   {
    "slot": 14,
    "kind": "listItem",
-   "top": 772,
+   "top": 776,
    "h": 47,
    "style": "ea466f4e",
    "content": "aaab4c46",
@@ -130,7 +130,7 @@
   {
    "slot": 15,
    "kind": "heading",
-   "top": 819,
+   "top": 824,
    "h": 30,
    "style": "6059d2ca",
    "content": "e1c7905e",
@@ -139,25 +139,25 @@
   {
    "slot": 16,
    "kind": "listItem",
-   "top": 849,
-   "h": 28,
-   "style": "4b3dbd64",
+   "top": 853,
+   "h": 31,
+   "style": "e18bed70",
    "content": "427bb4ae",
    "text": "文件: app/src/main/AndroidManifest.xml"
   },
   {
    "slot": 17,
    "kind": "listItem",
-   "top": 877,
-   "h": 54,
-   "style": "19d8f529",
+   "top": 884,
+   "h": 59,
+   "style": "537537a0",
    "content": "21fb213d",
    "text": "变更: 服务声明路径从 .domain.service.FloatingWindowServic"
   },
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 931,
+   "top": 943,
    "h": 47,
    "style": "ea466f4e",
    "content": "57700878",
@@ -166,7 +166,7 @@
   {
    "slot": 19,
    "kind": "heading",
-   "top": 978,
+   "top": 990,
    "h": 30,
    "style": "6059d2ca",
    "content": "16cf7b29",
@@ -175,7 +175,7 @@
   {
    "slot": 20,
    "kind": "paragraph",
-   "top": 1008,
+   "top": 1020,
    "h": 46,
    "style": "f54de366",
    "content": "61c00b59",
@@ -184,7 +184,7 @@
   {
    "slot": 21,
    "kind": "listItem",
-   "top": 1054,
+   "top": 1065,
    "h": 28,
    "style": "c4ea27aa",
    "content": "23c581c7",
@@ -193,7 +193,7 @@
   {
    "slot": 22,
    "kind": "listItem",
-   "top": 1082,
+   "top": 1094,
    "h": 28,
    "style": "438987b8",
    "content": "475785d3",
@@ -202,7 +202,7 @@
   {
    "slot": 23,
    "kind": "listItem",
-   "top": 1110,
+   "top": 1122,
    "h": 45,
    "style": "1d07f10b",
    "content": "a1133a33",
@@ -211,7 +211,7 @@
   {
    "slot": 24,
    "kind": "paragraph",
-   "top": 1155,
+   "top": 1167,
    "h": 46,
    "style": "98ace0c3",
    "content": "bf7e0676",
@@ -220,7 +220,7 @@
   {
    "slot": 25,
    "kind": "code",
-   "top": 1201,
+   "top": 1212,
    "h": 139,
    "style": "1cf0e5f9",
    "content": "72aa1b56",
@@ -229,7 +229,7 @@
   {
    "slot": 26,
    "kind": "heading",
-   "top": 1340,
+   "top": 1351,
    "h": 42,
    "style": "71b6e53a",
    "content": "caf68c6f",
@@ -238,7 +238,7 @@
   {
    "slot": 27,
    "kind": "heading",
-   "top": 1382,
+   "top": 1393,
    "h": 30,
    "style": "6059d2ca",
    "content": "7553e149",
@@ -247,7 +247,7 @@
   {
    "slot": 28,
    "kind": "paragraph",
-   "top": 1411,
+   "top": 1423,
    "h": 46,
    "style": "f54de366",
    "content": "3586d69e",
@@ -256,7 +256,7 @@
   {
    "slot": 29,
    "kind": "listItem",
-   "top": 1457,
+   "top": 1468,
    "h": 54,
    "style": "0e278e8a",
    "content": "c658721e",
@@ -265,7 +265,7 @@
   {
    "slot": 30,
    "kind": "listItem",
-   "top": 1511,
+   "top": 1523,
    "h": 54,
    "style": "9ac3e638",
    "content": "5b424e0d",
@@ -274,7 +274,7 @@
   {
    "slot": 31,
    "kind": "listItem",
-   "top": 1565,
+   "top": 1577,
    "h": 71,
    "style": "1b204256",
    "content": "eff52c79",
@@ -283,7 +283,7 @@
   {
    "slot": 32,
    "kind": "paragraph",
-   "top": 1636,
+   "top": 1648,
    "h": 46,
    "style": "4f1052da",
    "content": "98fc8b8a",
@@ -292,7 +292,7 @@
   {
    "slot": 33,
    "kind": "heading",
-   "top": 1682,
+   "top": 1694,
    "h": 30,
    "style": "6059d2ca",
    "content": "c5283041",
@@ -301,7 +301,7 @@
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 1711,
+   "top": 1723,
    "h": 28,
    "style": "c2400b2d",
    "content": "4b37fba8",
@@ -310,7 +310,7 @@
   {
    "slot": 35,
    "kind": "listItem",
-   "top": 1740,
+   "top": 1751,
    "h": 45,
    "style": "e661639b",
    "content": "a0354520",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "paragraph",
-   "top": 1785,
+   "top": 1796,
    "h": 46,
    "style": "9bb0d62c",
    "content": "6adf1206",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "heading",
-   "top": 1830,
+   "top": 1842,
    "h": 42,
    "style": "71b6e53a",
    "content": "97ba35c5",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "heading",
-   "top": 1872,
+   "top": 1884,
    "h": 30,
    "style": "6059d2ca",
    "content": "276ed40f",
@@ -346,25 +346,25 @@
   {
    "slot": 39,
    "kind": "listItem",
-   "top": 1902,
-   "h": 28,
-   "style": "1de33fd7",
+   "top": 1913,
+   "h": 31,
+   "style": "8d66dc6f",
    "content": "0973b0a8",
    "text": "文件: gradle.properties"
   },
   {
    "slot": 40,
    "kind": "listItem",
-   "top": 1930,
-   "h": 28,
-   "style": "b10130a2",
+   "top": 1944,
+   "h": 31,
+   "style": "3517f9dd",
    "content": "1e3db7b6",
    "text": "变更: APP_VERSION_CODE 从 10100 递增到 10101"
   },
   {
    "slot": 41,
    "kind": "listItem",
-   "top": 1958,
+   "top": 1975,
    "h": 47,
    "style": "ea466f4e",
    "content": "195f1f47",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "heading",
-   "top": 2006,
+   "top": 2022,
    "h": 30,
    "style": "6059d2ca",
    "content": "6e272b0b",
@@ -382,16 +382,16 @@
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 2035,
-   "h": 28,
-   "style": "23e7fc89",
+   "top": 2052,
+   "h": 31,
+   "style": "c3ecd73d",
    "content": "548a72b6",
    "text": "文件: Rules/RulesReadMe.md"
   },
   {
    "slot": 44,
    "kind": "listItem",
-   "top": 2064,
+   "top": 2082,
    "h": 171,
    "style": "e895226c",
    "content": "f2751042",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "heading",
-   "top": 2234,
+   "top": 2253,
    "h": 30,
    "style": "6059d2ca",
    "content": "0d38f9e7",
@@ -409,16 +409,16 @@
   {
    "slot": 46,
    "kind": "listItem",
-   "top": 2264,
-   "h": 28,
-   "style": "eb87c5c2",
+   "top": 2283,
+   "h": 31,
+   "style": "04eeb2a6",
    "content": "6de9cfd6",
    "text": "文件: WORKSPACE.md"
   },
   {
    "slot": 47,
    "kind": "listItem",
-   "top": 2292,
+   "top": 2313,
    "h": 140,
    "style": "440137f8",
    "content": "a680d46b",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "rule",
-   "top": 2432,
+   "top": 2453,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "heading",
-   "top": 2451,
+   "top": 2472,
    "h": 65,
    "style": "a4cadef8",
    "content": "52ae32e6",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "heading",
-   "top": 2516,
+   "top": 2537,
    "h": 42,
    "style": "71b6e53a",
    "content": "014fb4db",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "paragraph",
-   "top": 2558,
+   "top": 2579,
    "h": 46,
    "style": "98ace0c3",
    "content": "a369aaf4",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 2603,
+   "top": 2624,
    "h": 31,
    "style": "39425249",
    "content": "7b90d6cc",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 2634,
+   "top": 2655,
    "h": 31,
    "style": "185c95ed",
    "content": "f52d0eee",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "listItem",
-   "top": 2665,
+   "top": 2686,
    "h": 31,
    "style": "185c95ed",
    "content": "75b24938",
@@ -490,7 +490,7 @@
   {
    "slot": 55,
    "kind": "listItem",
-   "top": 2695,
+   "top": 2717,
    "h": 47,
    "style": "712b93e8",
    "content": "092080b8",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "heading",
-   "top": 2743,
+   "top": 2764,
    "h": 42,
    "style": "71b6e53a",
    "content": "9f2332a2",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "listItem",
-   "top": 2785,
+   "top": 2806,
    "h": 136,
    "style": "3a74544f",
    "content": "da28dcd6",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 2920,
+   "top": 2942,
    "h": 146,
    "style": "54fe7c93",
    "content": "2d3ef29e",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "rule",
-   "top": 3066,
+   "top": 3087,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "heading",
-   "top": 3085,
+   "top": 3106,
    "h": 65,
    "style": "a4cadef8",
    "content": "bc48fd32",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "heading",
-   "top": 3150,
+   "top": 3171,
    "h": 42,
    "style": "71b6e53a",
    "content": "16e36543",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "paragraph",
-   "top": 3192,
+   "top": 3213,
    "h": 46,
    "style": "98ace0c3",
    "content": "7871448a",
@@ -562,34 +562,34 @@
   {
    "slot": 63,
    "kind": "listItem",
-   "top": 3237,
-   "h": 28,
-   "style": "606b1cf3",
+   "top": 3258,
+   "h": 31,
+   "style": "734e2cbc",
    "content": "5e2c9dc8",
    "text": "FloatingWindowServiceScreenshotTest.kt - 截图功能测试"
   },
   {
    "slot": 64,
    "kind": "listItem",
-   "top": 3266,
-   "h": 28,
-   "style": "853d46f3",
+   "top": 3289,
+   "h": 31,
+   "style": "3e0c3408",
    "content": "bda8a62a",
    "text": "FloatingWindowServiceTimeoutTest.kt - 超时处理测试"
   },
   {
    "slot": 65,
    "kind": "listItem",
-   "top": 3294,
-   "h": 45,
-   "style": "156a224d",
+   "top": 3320,
+   "h": 47,
+   "style": "6abdcc56",
    "content": "b21d3991",
    "text": "SettingsViewModelBug00070Test.kt - 设置视图模型测试"
   },
   {
    "slot": 66,
    "kind": "paragraph",
-   "top": 3339,
+   "top": 3367,
    "h": 46,
    "style": "b52f1feb",
    "content": "87caea74",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "listItem",
-   "top": 3384,
+   "top": 3413,
    "h": 31,
    "style": "eaebb804",
    "content": "b0f415ee",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "listItem",
-   "top": 3415,
+   "top": 3444,
    "h": 31,
    "style": "323df906",
    "content": "ca3e6845",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "listItem",
-   "top": 3446,
+   "top": 3474,
    "h": 47,
    "style": "63f0137b",
    "content": "742e8d33",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "heading",
-   "top": 3493,
+   "top": 3522,
    "h": 42,
    "style": "71b6e53a",
    "content": "97bb927f",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 3535,
+   "top": 3563,
    "h": 163,
    "style": "a37c6200",
    "content": "e465c7fb",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "listItem",
-   "top": 3698,
+   "top": 3727,
    "h": 134,
    "style": "b9d4a917",
    "content": "d313f22f",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "listItem",
-   "top": 3832,
+   "top": 3860,
    "h": 173,
    "style": "e076ee77",
    "content": "1c9622b5",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "rule",
-   "top": 4005,
+   "top": 4034,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "heading",
-   "top": 4024,
+   "top": 4052,
    "h": 65,
    "style": "a4cadef8",
    "content": "76410c49",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "heading",
-   "top": 4089,
+   "top": 4117,
    "h": 42,
    "style": "71b6e53a",
    "content": "b64a27fd",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "listItem",
-   "top": 4131,
+   "top": 4159,
    "h": 31,
    "style": "13dfb805",
    "content": "e12157f1",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "listItem",
-   "top": 4161,
+   "top": 4190,
    "h": 31,
    "style": "9fd2c6cc",
    "content": "b0aaed29",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "listItem",
-   "top": 4192,
+   "top": 4221,
    "h": 47,
    "style": "1a9cf765",
    "content": "d2471904",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "heading",
-   "top": 4239,
+   "top": 4268,
    "h": 42,
    "style": "71b6e53a",
    "content": "1141313b",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "listItem",
-   "top": 4281,
+   "top": 4310,
    "h": 31,
    "style": "5fb00fcb",
    "content": "bea368d6",
@@ -733,7 +733,7 @@
   {
    "slot": 82,
    "kind": "listItem",
-   "top": 4312,
+   "top": 4340,
    "h": 31,
    "style": "185c95ed",
    "content": "20efa6d7",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "listItem",
-   "top": 4343,
+   "top": 4371,
    "h": 47,
    "style": "712b93e8",
    "content": "0097477d",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "rule",
-   "top": 4390,
+   "top": 4418,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -760,7 +760,7 @@
   {
    "slot": 85,
    "kind": "heading",
-   "top": 4409,
+   "top": 4437,
    "h": 65,
    "style": "a4cadef8",
    "content": "9c8312f7",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "listItem",
-   "top": 4474,
+   "top": 4502,
    "h": 30,
    "style": "e0072635",
    "content": "88df4a78",
@@ -778,16 +778,16 @@
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 4504,
-   "h": 28,
-   "style": "7bd5d499",
+   "top": 4532,
+   "h": 30,
+   "style": "4e4d01ff",
    "content": "c9c921f3",
    "text": "AndroidManifest.xml 已同步"
   },
   {
    "slot": 88,
    "kind": "listItem",
-   "top": 4532,
+   "top": 4562,
    "h": 30,
    "style": "4e4d01ff",
    "content": "5568ee68",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "listItem",
-   "top": 4561,
+   "top": 4592,
    "h": 30,
    "style": "4e4d01ff",
    "content": "fbdfef81",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "listItem",
-   "top": 4591,
+   "top": 4622,
    "h": 30,
    "style": "4e4d01ff",
    "content": "d970008b",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "listItem",
-   "top": 4621,
+   "top": 4652,
    "h": 30,
    "style": "86ba7061",
    "content": "29b89367",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "listItem",
-   "top": 4651,
+   "top": 4682,
    "h": 30,
    "style": "86ba7061",
    "content": "45e288aa",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "listItem",
-   "top": 4681,
+   "top": 4712,
    "h": 30,
    "style": "86ba7061",
    "content": "e3e93eb3",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 4711,
+   "top": 4741,
    "h": 47,
    "style": "f605535c",
    "content": "83b93e49",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "rule",
-   "top": 4758,
+   "top": 4788,
    "h": 19,
    "style": "e5aa0c45",
    "content": "811c9dc5",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "paragraph",
-   "top": 4776,
+   "top": 4807,
    "h": 46,
    "style": "98ace0c3",
    "content": "21786ae6",

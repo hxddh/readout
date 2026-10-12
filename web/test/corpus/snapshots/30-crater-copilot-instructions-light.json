@@ -1,5 +1,5 @@
 {
- "height": 3374,
+ "height": 3386,
  "blocks": [
   {
    "slot": 1,
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 191,
    "h": 65,
-   "style": "93348eb9",
+   "style": "3505f3b8",
    "content": "2bdcf33a",
    "text": "执行等级定义 (Guideline Levels)§"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 764,
    "h": 42,
-   "style": "12dcb46f",
+   "style": "1580628e",
    "content": "5946a3c6",
    "text": "coding-agent (编码助手)§"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 1435,
    "h": 42,
-   "style": "363ebc4c",
+   "style": "84eeed09",
    "content": "89f1740d",
    "text": "code-review (审查助手)§"
   },
@@ -231,7 +231,7 @@
    "kind": "heading",
    "top": 1743,
    "h": 30,
-   "style": "9ea2d51e",
+   "style": "edef9608",
    "content": "c52a457d",
    "text": "行内评论 (Inline Comments)§"
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 2100,
    "h": 30,
-   "style": "9ea2d51e",
+   "style": "edef9608",
    "content": "081eb20e",
    "text": "总览评论 (Overview Comment)§"
   },
@@ -357,7 +357,7 @@
    "kind": "heading",
    "top": 2502,
    "h": 65,
-   "style": "93348eb9",
+   "style": "3505f3b8",
    "content": "766ce48b",
    "text": "项目概览 (Repository Overview)§"
   },
@@ -365,24 +365,24 @@
    "slot": 41,
    "kind": "paragraph",
    "top": 2567,
-   "h": 96,
-   "style": "4f2b88a5",
+   "h": 102,
+   "style": "25084c6d",
    "content": "849ee118",
    "text": "Crater 是基于 Kubernetes 的异构（GPU）算力管理平台，monorepo 含 "
   },
   {
    "slot": 42,
    "kind": "heading",
-   "top": 2662,
+   "top": 2668,
    "h": 65,
-   "style": "93348eb9",
+   "style": "3505f3b8",
    "content": "2c8a2206",
    "text": "文档来源 (Documentation Sources)§"
   },
   {
    "slot": 43,
    "kind": "paragraph",
-   "top": 2727,
+   "top": 2733,
    "h": 74,
    "style": "102ae5b7",
    "content": "9276fd99",
@@ -391,25 +391,25 @@
   {
    "slot": 44,
    "kind": "listItem",
-   "top": 2801,
-   "h": 28,
-   "style": "b8b962ce",
+   "top": 2807,
+   "h": 31,
+   "style": "23154062",
    "content": "92f2a565",
    "text": "全局守则、流程、Commit / PR 规范：根 CONTRIBUTING.md"
   },
   {
    "slot": 45,
    "kind": "listItem",
-   "top": 2829,
-   "h": 71,
-   "style": "0041b608",
+   "top": 2838,
+   "h": 75,
+   "style": "b37d946c",
    "content": "32e965ea",
    "text": "各模块规范：backend/、frontend/、website/、cli/、charts/ 各"
   },
   {
    "slot": 46,
    "kind": "paragraph",
-   "top": 2900,
+   "top": 2913,
    "h": 102,
    "style": "b7c4889c",
    "content": "b44e4d76",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "paragraph",
-   "top": 3002,
+   "top": 3015,
    "h": 102,
    "style": "722ff9cc",
    "content": "6ae2f310",

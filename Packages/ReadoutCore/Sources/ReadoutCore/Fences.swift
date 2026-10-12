@@ -34,6 +34,9 @@ struct FenceTracker {
     private var itemContent: Int? = nil
     /// Depth of the `<details>` the parser is joining top-level blocks into (0: none).
     private(set) var detailsDepth = 0
+    /// The last Markdown line consumed is indented code: 4+ columns past the
+    /// content of the list item it belongs to (or the margin), not continuing a paragraph.
+    private(set) var indentedCode = false
 
     /// Inside code or raw HTML, or inside a `<details>` the parser will join.
     var isOpen: Bool { open != nil || html != nil || detailsDepth > 0 }
@@ -61,6 +64,7 @@ struct FenceTracker {
     private static let space: UInt8 = 0x20, tab: UInt8 = 0x09
 
     private mutating func consume<S: StringProtocol>(bytes u: UnsafeBufferPointer<UInt8>, _ line: S) -> Bool {
+        indentedCode = false
         let n = u.count
         var indent = 0
         while indent < n && u[indent] == Self.space { indent += 1 }
@@ -185,6 +189,12 @@ struct FenceTracker {
             paragraphInQuote = false
             headerCells = nil
             return false
+        }
+        if !inParagraph && !itemStarted {
+            // Columns, with tabs to the next multiple of 4, as CommonMark counts them.
+            var columns = 0, k = 0
+            while k < n, u[k] == Self.space || u[k] == Self.tab { columns = u[k] == Self.tab ? (columns / 4 + 1) * 4 : columns + 1; k += 1 }
+            indentedCode = columns - (columns >= base ? base : 0) >= 4
         }
         let wasParagraph = inParagraph
         inParagraph = !isHeading && !isBreak && !underline && !(relative >= 4 && !inParagraph)

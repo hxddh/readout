@@ -146,6 +146,26 @@ import Testing
         #expect(doc.blocks.map(\.kind) == [.html, .paragraph])
     }
 
+    /// A close that is not a top-level line of its own (inline after text,
+    /// indented in a list item) ends the disclosure; the rest of the document stays out.
+    @Test func closeInsideABlockEndsTheDisclosure() {
+        let cases = [
+            "<details>\n<summary>Click</summary>\n\nSome text</details>\n\n## After heading\n\nPara after.\n",
+            "<details>\n<summary>x</summary>\n\n- item\n  </details>\n\n## After heading\n\nPara after.\n",
+        ]
+        for src in cases {
+            let doc = MarkdownParser.parse(src)
+            #expect(doc.blocks.map(\.kind) == [.html, .heading, .paragraph], "\(src.debugDescription)")
+            #expect(doc.blocks[0].html.contains("</details>"))
+            #expect(doc.blocks[1].anchor == "after-heading")
+            // The incremental parser agrees, also after an edit further down.
+            let p = IncrementalParser()
+            _ = p.parse(src)
+            let edited = src + "\nMore.\n"
+            #expect(p.parse(edited).blocks.map(\.html) == MarkdownParser.parse(edited).blocks.map(\.html))
+        }
+    }
+
     @Test func unclosedDetailsRunsToTheEnd() {
         let doc = MarkdownParser.parse("<details>\n<summary>S</summary>\n\nBody\n")
         #expect(doc.blocks.count == 1)

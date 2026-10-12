@@ -109,7 +109,8 @@ public enum MarkdownParser {
         // renderer copies it.
         let protectedDefinitions = definitions.map { (def: $0, source: math.protect($0.text)) }
         let document = Document(parsing: protected, options: [.disableSmartOpts])
-        var renderer = HTMLRenderer(math: math, resolver: resolver)
+        let probe = resolver.map(ResolverProbe.init)
+        var renderer = HTMLRenderer(math: math, resolver: probe)
         renderer.sourceLines = protected.split(separator: "\n", omittingEmptySubsequences: false)
 
         func sourceSlice(_ range: ClosedRange<Int>) -> ArraySlice<String> {
@@ -133,6 +134,8 @@ public enum MarkdownParser {
 
         // Which `[^id]` are references depends on the defined ids.
         let footnoteKey = ids.isEmpty ? "" : "|fn:\(XXHash64.hash(ids.sorted().joined(separator: "\u{1F}")))"
+        // Where `[text][ref]` and `[ref]` point depends on the document's link definitions.
+        let refsKey = IncrementalParser.linkDefinitionsHash(parseLines).map { "|refs:\($0)" } ?? ""
 
         func make(_ kind: BlockKind, _ node: Markup?, range rawRange: ClosedRange<Int>, html: @autoclosure () -> String,
                   extra: String = "", heading: (Int, String, String)? = nil, taskNodes: [Markup] = []) -> Block {
@@ -151,14 +154,21 @@ public enum MarkdownParser {
             // Kind participates in the fingerprint so a paragraph and a heading with the same text differ.
             let fp = XXHash64.hash(kind.rawValue + "\u{1F}" + normalized)
             // The rendered HTML depends on the exact source (incl. task state) plus positional context.
-            let cacheKey = "\(XXHash64.hash(slice.joined(separator: "\n")))|\(kind.rawValue)|\(extra)\(footnoteKey)"
+            let source = slice.joined(separator: "\n")
+            let refs = refsKey.isEmpty || !source.utf8.contains(0x5B) /* [ */ ? "" : refsKey
+            let cacheKey = "\(XXHash64.hash(source))|\(kind.rawValue)|\(extra)\(footnoteKey)\(refs)"
             let rendered: String
             if let cached = cache?.lookup(cacheKey) { rendered = cached }
-            else { rendered = html(); cache?.store(cacheKey, rendered) }
+            else {
+                let reads = probe?.fileSystemReads ?? 0
+                rendered = html()
+                // Not kept when it depends on files (image sizes, which paths exist).
+                if (probe?.fileSystemReads ?? 0) == reads { cache?.store(cacheKey, rendered) }
+            }
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
                           taskState: tasks, html: rendered, text: normalized,
                           headingLevel: heading?.0, headingTitle: heading?.1, anchor: heading?.2)
-            b.cjk = CJK.ratio(normalized) > 0.3
+            b.cjk = (kind == .code || kind == .mermaid || kind == .math ? CJK.ratio(normalized) : CJK.proseRatio(normalized)) > 0.3
             return b
         }
 
@@ -202,14 +212,22 @@ public enum MarkdownParser {
                     if let nh = next as? HTMLBlock {
                         depth += Self.detailsDepth(nh.rawHTML)
                         if depth <= 0 { closing = nh.html; break }
+                    } else {
+                        // A `</details>` inside a block (`Some text</details>`, an
+                        // indented close in a list item) ends the disclosure there
+                        // too, as in a browser, instead of it taking in the rest of the document.
+                        // Only closing counts: a disclosure opened inside a block is
+                        // not joined (FenceTracker, which the fragmenter follows, agrees).
+                        depth += min(0, Self.nestedDetailsDepth(next))
+                        if depth <= 0 { inner.append(next); break }
                     }
                     inner.append(next)
                 }
                 func html() -> String {
-                    HTML.sanitize(h.html) + inner.map { n -> String in
-                        if let nh = n as? HTMLBlock { return HTML.sanitize(nh.html) }
+                    HTML.sanitize(h.html, resolver: probe) + inner.map { n -> String in
+                        if let nh = n as? HTMLBlock { return HTML.sanitize(nh.html, resolver: probe) }
                         return renderer.block(n)
-                    }.joined() + HTML.sanitize(closing)
+                    }.joined() + HTML.sanitize(closing, resolver: probe)
                 }
                 blocks.append(make(.html, h, range: range.lowerBound...last, html: html(), taskNodes: inner))
                 continue
@@ -217,7 +235,7 @@ public enum MarkdownParser {
             switch node {
             case let h as Heading:
                 // The anchor, and the <hN id> carrying it, are added by `assemble`.
-                let titleText = math.restore(plain: h.plainText).trimmingCharacters(in: .whitespaces)
+                let titleText = math.restore(plain: Self.headingText(h)).trimmingCharacters(in: .whitespaces)
                 blocks.append(make(.heading, h, range: range, html: renderer.inline(h),
                                    heading: (h.level, titleText, "")))
 
@@ -252,9 +270,10 @@ public enum MarkdownParser {
                 }
 
             case let p as Paragraph:
-                let raw = sourceSlice(range).joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-                if raw.hasPrefix("$$") && raw.hasSuffix("$$") && raw.count > 4 {
-                    let tex = String(raw.dropFirst(2).dropLast(2))
+                // A paragraph that is one `$$…$$` (on one line or several) is a math block.
+                let lo = max(range.lowerBound - 1, 0), hi = min(range.upperBound, renderer.sourceLines.count)
+                let protectedSource = lo < hi ? renderer.sourceLines[lo..<hi].joined(separator: "\n") : ""
+                if let tex = math.soleDisplayMath(protectedSource) {
                     blocks.append(make(.math, p, range: range, html: mathHTML(tex)))
                 } else {
                     blocks.append(make(.paragraph, p, range: range, html: renderer.block(p)))
@@ -268,7 +287,7 @@ public enum MarkdownParser {
                 // HTML comments are invisible; skip them so they never produce empty blocks.
                 let trimmed = h.rawHTML.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmed.hasPrefix("<!--") && trimmed.hasSuffix("-->") { continue }
-                blocks.append(make(.html, h, range: range, html: HTML.sanitize(h.html)))
+                blocks.append(make(.html, h, range: range, html: HTML.sanitize(h.html, resolver: probe)))
             default:
                 blocks.append(make(.paragraph, node, range: range, html: renderer.block(node)))
             }
@@ -317,6 +336,30 @@ public enum MarkdownParser {
         }
         return count(detailsOpen) - count(detailsClose)
     }
+    /// A heading's text as it reads (GitHub builds the anchor from it): code
+    /// without its backticks, raw HTML tags left out, an image as its alt text.
+    static func headingText(_ node: Markup) -> String {
+        switch node {
+        case let t as Text: return t.string
+        case let c as InlineCode: return c.code
+        case is InlineHTML: return ""
+        case is SoftBreak, is LineBreak: return " "
+        case let s as SymbolLink: return s.destination ?? ""
+        default: return node.children.map(headingText).joined()
+        }
+    }
+
+    /// Net `<details>` opened by the raw HTML inside a block (inline HTML,
+    /// HTML blocks in list items or quotes); code is not HTML.
+    static func nestedDetailsDepth(_ node: Markup) -> Int {
+        switch node {
+        case let h as InlineHTML: return h.rawHTML.utf8.count >= 9 ? detailsDepth(h.rawHTML) : 0
+        case let h as HTMLBlock: return detailsDepth(h.rawHTML)
+        case is CodeBlock, is InlineCode, is Text: return 0
+        default: return node.children.reduce(0) { $0 + nestedDetailsDepth($1) }
+        }
+    }
+
     private static let detailsOpen = try! NSRegularExpression(pattern: #"<details(?=[\s>/])"#)
     private static let detailsClose = try! NSRegularExpression(pattern: #"</details(?=[\s>])"#)
 
@@ -330,9 +373,22 @@ public enum MarkdownParser {
     }
 
     /// Index of the line closing YAML front matter, if the document opens with it.
+    /// It must read as YAML: right after the opening `---`, and with a
+    /// `key: value` line (or a `#` comment) before the close. Otherwise `---` is a thematic
+    /// break (and `---` / text / `---` a setext heading), as in CommonMark.
     static func frontMatterEnd(_ lines: [String]) -> Int? {
-        guard lines.first == "---" else { return nil }
-        return lines.indices.dropFirst().prefix(300).first(where: { lines[$0] == "---" || lines[$0] == "..." })
+        guard lines.first == "---", lines.count > 2, !lines[1].allSatisfy({ $0 == " " || $0 == "\t" }) else { return nil }
+        guard let end = lines.indices.dropFirst().prefix(300).first(where: { lines[$0] == "---" || lines[$0] == "..." }) else { return nil }
+        return lines[1..<end].contains(where: { looksLikeYAMLKey($0) || $0.hasPrefix("#") }) ? end : nil
+    }
+
+    /// `key: value` or `key:` at the start of a line (no space before the colon in the key's first word).
+    private static func looksLikeYAMLKey(_ line: String) -> Bool {
+        guard let colon = line.firstIndex(of: ":"), colon != line.startIndex else { return false }
+        let key = line[..<colon]
+        guard let first = key.first, first != " ", first != "\t", first != "#", first != "-" else { return false }
+        let after = line[line.index(after: colon)...]
+        return after.isEmpty || after.first == " " || after.first == "\t"
     }
 
     static func frontMatterBlock(_ body: [String], lines: ClosedRange<Int>) -> Block {

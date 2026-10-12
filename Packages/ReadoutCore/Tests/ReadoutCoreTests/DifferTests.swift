@@ -43,6 +43,67 @@ import Testing
         #expect(Differ.diff(old: old, new: new).rewrite)
     }
 
+    /// A five-block skeleton filled in to 29 blocks keeps every old block:
+    /// an edit (inserted blocks marked), not a rewrite.
+    @Test func growingSkeletonIsNotARewrite() {
+        let skeleton = "# Plan\n\n## Goals\n\nShip the feature.\n\n## Steps\n\nTBD.\n"
+        let steps = (1...12).map { "## Step \($0)\n\nDo \($0)." }.joined(separator: "\n\n")
+        let old = keys(skeleton), new = keys(skeleton + "\n" + steps + "\n")
+        #expect(old.count == 5 && new.count == 29)
+        let d = Differ.diff(old: old, new: new)
+        #expect(!d.rewrite)
+        #expect(d.equalCount == 5)
+        let s = DocumentSession()
+        _ = s.load(MarkdownParser.parse(skeleton))
+        let p = s.update(MarkdownParser.parse(skeleton + "\n" + steps + "\n"))!
+        #expect(!p.reset && !p.rewrite)
+        #expect(p.marks.count == 24 && p.marks.allSatisfy { $0.kind == .inserted })
+    }
+
+    /// Cutting a document down to a few of its blocks is a deletion, not a rewrite.
+    @Test func shrinkingToAFewBlocksIsNotARewrite() {
+        let full = (1...29).map { "Paragraph number \($0) of the plan." }.joined(separator: "\n\n")
+        let cut = (1...5).map { "Paragraph number \($0) of the plan." }.joined(separator: "\n\n")
+        let d = Differ.diff(old: keys(full), new: keys(cut))
+        #expect(!d.rewrite)
+        #expect(d.removed.count == 24)
+    }
+
+    /// A genuine rewrite is still detected, at equal, larger and smaller sizes.
+    @Test func trueRewritesAreStillDetected() {
+        let old = keys((1...10).map { "Old paragraph \($0) about storage." }.joined(separator: "\n\n"))
+        let same = keys("# New\n\n" + (1...9).map { "Fresh text \($0) on agents." }.joined(separator: "\n\n"))
+        let bigger = keys((1...40).map { "Fresh text \($0) on agents." }.joined(separator: "\n\n"))
+        let smaller = keys("# New\n\nOne fresh line.\n")
+        #expect(Differ.diff(old: old, new: same).rewrite)
+        #expect(Differ.diff(old: old, new: bigger).rewrite)
+        #expect(Differ.diff(old: old, new: smaller).rewrite)
+        // One block kept out of ten, the rest replaced: still a rewrite.
+        let kept = keys("Old paragraph 1 about storage.\n\n" + (1...9).map { "Fresh text \($0) on agents." }.joined(separator: "\n\n"))
+        #expect(Differ.diff(old: old, new: kept).rewrite)
+    }
+
+    /// Pairing a large rewritten section between stable blocks stays fast:
+    /// each block's shingles are built once, and the gap size is bounded.
+    @Test func largeRewrittenSectionPairsQuickly() {
+        let keep = (0..<1000).map { "Stable paragraph number \($0) with some words." }
+        for size in [100, 200] {
+            let a = (0..<size).map { "Old section paragraph \($0): " + String(repeating: "lorem ipsum dolor sit amet \($0) ", count: 15) }
+            let b = (0..<size).map { "New section paragraph \($0): " + String(repeating: "consectetur adipiscing elit \($0 * 7) ", count: 15) }
+            let old = keys((keep + a + keep).joined(separator: "\n\n")), new = keys((keep + b + keep).joined(separator: "\n\n"))
+            var best = Double.infinity
+            for _ in 0..<3 {
+                let start = DispatchTime.now().uptimeNanoseconds
+                let d = Differ.diff(old: old, new: new)
+                best = min(best, Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
+                #expect(!d.rewrite && d.equalCount == 2000)
+            }
+            print("perf differ_gap_\(size): \(String(format: "%.1f", best)) ms")
+            // Generous for a debug build on a shared runner (it took seconds before).
+            #expect(best < 1500, "pairing a \(size)x\(size) gap took \(best) ms")
+        }
+    }
+
     /// Property: applying the diff's mapping reconstructs the new key sequence.
     @Test func randomEditsReconstruct() {
         var rng = SplitMix(seed: 42)
@@ -160,6 +221,84 @@ import Testing
         let p = s.update(parse("# New\n\n- x\n- y\n"))!
         #expect(p.reset && p.rewrite)
         #expect(p.marks.isEmpty)
+    }
+
+    /// An agent truncates the file and writes it again; a read in between
+    /// sees it empty. The same text written back marks nothing.
+    @Test func brieflyEmptyFileIsNotTheBaseForTheRefill() {
+        let text = "# Report\n\nPara one.\n\nPara two.\n\nPara three.\n"
+        let s = DocumentSession()
+        _ = s.load(parse(text))
+        let slots = s.blocks.map(\.slot)
+        _ = s.update(parse(" \n"))
+        let p = s.update(parse(text))!
+        #expect(p.reset && !p.rewrite)
+        #expect(p.marks.isEmpty && p.deletions.isEmpty)
+        #expect(s.unreadCount == 0)
+        #expect(s.blocks.map(\.slot) == slots)
+        #expect(p.ops.map(\.slot) == slots)
+        // A refill that differs is marked against the version before the empty one.
+        _ = s.update(parse(""))
+        let q = s.update(parse(text + "\nPara four.\n"))!
+        #expect(q.reset)
+        #expect(q.marks.map(\.kind) == [.inserted])
+        #expect(q.deletions.isEmpty)
+    }
+
+    /// An empty version the reader has read (the deletion marked read, or all
+    /// read) is what was last read: the next content is new, not a refill.
+    @Test func readEmptyVersionIsTheBaseForWhatFollows() {
+        let text = "# Report\n\nPara one.\n\nPara two.\n"
+        for readAll in [false, true] {
+            let s = DocumentSession()
+            _ = s.load(parse(text))
+            let empty = s.update(parse(""))!
+            #expect(empty.deletions.count == 1)
+            if readAll { s.markAllRead() } else { s.markRead(slots: [], deletionIDs: empty.deletions.map(\.id)) }
+            let p = s.update(parse(text))!
+            #expect(p.marks.count == 3 && p.marks.allSatisfy { $0.kind == .inserted }, "readAll: \(readAll)")
+            #expect(p.deletions.isEmpty)
+        }
+        // Unread inserts removed by the empty version leave nothing to read: the baseline
+        // moves to the empty version, and what comes next is new as well.
+        let s = DocumentSession()
+        _ = s.load(parse("# A\n"))
+        _ = s.update(parse("# A\n\nnew one\n"))
+        s.markRead(slots: [s.blocks[0].slot], deletionIDs: [])
+        _ = s.update(parse("# A\n\nnew one\n\nnew two\n"))
+        _ = s.update(parse(""))
+        s.markAllRead()
+        let q = s.update(parse("# A\n"))!
+        #expect(q.marks.map(\.kind) == [.inserted])
+    }
+
+    @Test func rewriteSinceLastReadShowsTheNoticeOnLoad() {
+        let first = DocumentSession()
+        _ = first.load(parse("# Plan\n\nStep one is to do the first thing.\n\nStep two is the second thing.\n\nStep three.\n\nStep four.\n"))
+        let second = DocumentSession()
+        let p = second.load(parse("# Totally different\n\nAlpha beta.\n\nGamma delta.\n\nEpsilon zeta.\n\nEta theta.\n"),
+                            baseline: first.baseline)
+        #expect(p.rewrite)
+        #expect(p.marks.isEmpty && second.unreadCount == 0)
+    }
+
+    @Test func checkboxTickedWhileClosedIsMarkedOnLoad() throws {
+        let first = DocumentSession()
+        _ = first.load(parse("# T\n\n- [ ] a\n- [ ] b\n"))
+        let second = DocumentSession()
+        let p = second.load(parse("# T\n\n- [x] a\n- [ ] b\n"), baseline: first.baseline)
+        #expect(p.marks == [.init(slot: second.blocks[1].slot, kind: .state)])
+        // Unticked again live: nothing new any more.
+        let q = second.update(parse("# T\n\n- [ ] a\n- [ ] b\n"))!
+        #expect(q.marks.isEmpty)
+        // A baseline saved before task states were kept decodes without them: no mark, as before.
+        var objects = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(first.baseline)) as? [[String: Any]])
+        #expect(objects.contains { $0["taskState"] != nil })
+        for i in objects.indices { objects[i]["taskState"] = nil }
+        let old = try JSONDecoder().decode([BlockKey].self, from: JSONSerialization.data(withJSONObject: objects))
+        #expect(old.allSatisfy { $0.taskState == nil })
+        let third = DocumentSession()
+        #expect(third.load(parse("# T\n\n- [x] a\n- [ ] b\n"), baseline: old).marks.isEmpty)
     }
 
     @Test func renumberingIsSilent() {
