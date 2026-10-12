@@ -137,9 +137,11 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading:has(> h3) { --h-fs: 1.14rem; --h-mt: calc(1.5 * 1.14rem - 1.1rem); --h-mb: calc(0.5 * 1.14rem); }
 .k-heading:has(> h4) { --h-fs: 1rem; --h-mt: calc(1.3rem - 1.1rem); --h-mb: 0.4rem; }
 .k-heading:has(> :is(h5, h6)) { --h-fs: 0.94rem; --h-mt: 0rem; --h-mb: calc(0.4 * 0.94rem); }
-/* The first heading, or the one right under the front matter, starts at the top. */
+/* The first heading, or the one right under the front matter, starts at the
+   top; one right under a rule leaves the rule's 2em as the gap. */
 #ro-doc > .k-heading:first-child:has(> :is(h1, h2)),
-#ro-doc > .k-frontMatter + .k-heading:has(> :is(h1, h2)) { --h-mt: 0rem; }
+#ro-doc > .k-frontMatter + .k-heading:has(> :is(h1, h2)),
+#ro-doc > .k-rule + .k-heading { --h-mt: 0rem; }
 .k-heading > :is(h1, h2, h3, h4, h5, h6) { font-size: var(--h-fs); margin: var(--h-mt) 0 var(--h-mb); }
 .k-heading h1 { letter-spacing: -0.015em; font-weight: 700; }
 .k-heading h2 { letter-spacing: -0.01em; }

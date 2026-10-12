@@ -76,7 +76,7 @@ const doc = patch([
   ['paragraph', '<p>日本語の段落です。「かぎ括弧」を含みます。</p>', { cjk: true }],
   ['paragraph', '<p>中文段落：直、骨、角。</p>', { cjk: true }],
   ['rule', '<hr>'],
-  ['paragraph', '<p>After the rule.</p>'],
+  ['heading', '<h2 id="after-rule">After the rule</h2>', { anchor: 'after-rule' }],
   ['footnotes', '<section class="footnotes" data-footnotes><ol><li id="fn-1"><p>A note.</p></li></ol></section>'],
 ]);
 const slotOf = sel => doc.ops.findIndex(o => o.html.includes(sel)) + 1;
@@ -195,6 +195,8 @@ const spacing = await page.evaluate(() => ({
   fnAbove: parseFloat(getComputedStyle(document.querySelector('.footnotes')).marginTop),
 }));
 check('a rule has 2em below it and space above', spacing.hrBelow >= 31 && spacing.hrAbove > 0, JSON.stringify(spacing));
+const afterRule = await page.evaluate(() => Math.round(document.getElementById('after-rule').getBoundingClientRect().top - document.querySelector('hr').getBoundingClientRect().bottom));
+check('a heading under a rule keeps the rule\'s 2em, not 2em plus its own margin', Math.abs(afterRule - 32) <= 2, `gap=${afterRule}px`);
 check('footnotes keep their space above', spacing.fnAbove > 0, JSON.stringify(spacing));
 
 // 13. Han characters get Japanese forms next to kana, Chinese forms otherwise.
