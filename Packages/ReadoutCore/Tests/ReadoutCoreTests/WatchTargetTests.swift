@@ -143,8 +143,9 @@ private struct Scratch {
         #expect(try runScript(["plan.md"], cwd: s.real) == "-b io.github.hxddh.readout -- plan.md")
     }
 
-    @Test(.enabled(if: FileManager.default.isExecutableFile(atPath: "/usr/bin/plutil")))
-    func theHookOpensInTheBackgroundThroughTheScheme() throws {
+    #if os(macOS)
+    // The hook reads its JSON with macOS's plutil (the Linux toolchain ships a different one).
+    @Test func theHookOpensInTheBackgroundThroughTheScheme() throws {
         let s = try Scratch()
         s.write("plan.md")
         let out = try runScript(["--hook"], cwd: "/", stdin: #"{"tool_input":{"file_path":"\#(s.real)/plan.md"}}"#)
@@ -152,4 +153,5 @@ private struct Scratch {
         #expect(words.count == 4)
         #expect(words.last.flatMap { URL(string: $0) }.flatMap(OpenLink.parse) == .init(path: s.real + "/plan.md", background: true))
     }
+    #endif
 }
