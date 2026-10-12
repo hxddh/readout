@@ -201,6 +201,30 @@ enum SmokeTest {
             }
             result[name] = entry
         }
+        // A link retargeted to a file another window already shows: that window
+        // keeps the path, the link's window stays owned (saved on quit).
+        if let path = env["READOUT_SMOKE_COLLIDE_LINK"], let otherPath = env["READOUT_SMOKE_COLLIDE_TARGET"] {
+            let url = URL(fileURLWithPath: path), otherURL = URL(fileURLWithPath: otherPath)
+            app?.open(otherURL)
+            app?.open(url)
+            if let reader = app?.reader(for: url), let other = app?.reader(for: otherURL), reader !== other {
+                var deadline = Date().addingTimeInterval(10)
+                while (reader.model.title.isEmpty || other.model.title.isEmpty) && Date() < deadline {
+                    try? await Task.sleep(for: .milliseconds(50))
+                }
+                let before = reader.model.title
+                try? await Task.sleep(for: .milliseconds(300))
+                mark(out, "await-collide")
+                deadline = Date().addingTimeInterval(10)
+                while reader.model.title == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                try? await Task.sleep(for: .milliseconds(500))
+                result["collide"] = ["before": before, "after": reader.model.title,
+                                     "owned": app?.owns(reader) == true,
+                                     "target_window_kept": app?.reader(for: otherURL) === other]
+            } else {
+                result["collide"] = ["error": "no window"]
+            }
+        }
         guard !result.isEmpty, let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) else { return }
         try? data.write(to: out.appendingPathComponent("live-updates.json"))
     }

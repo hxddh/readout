@@ -7,6 +7,9 @@ import ReadoutCore
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var windows: [String: ReaderWindowController] = [:]
+    /// Windows whose symlink was retargeted to a file another window already
+    /// shows: no longer found by path, still owned here until they close.
+    private var displaced: [ReaderWindowController] = []
     private var welcome: NSWindow?
     private var settingsWindow: NSWindow?
     private var hotKey: GlobalHotKey?
@@ -88,6 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func applicationWillTerminate(_ notification: Notification) {
         for w in windows.values { w.saveNow() }
+        for w in displaced { w.saveNow() }
         // The saves are queued: write them before the process exits (⌘Q right after reading).
         BaselineStore.flush()
     }
@@ -132,6 +136,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         controller.onClose = { [weak self] c in
             guard let self else { return }
             self.windows = self.windows.filter { $0.value !== c }   // by identity: a retarget may have re-keyed it
+            self.displaced.removeAll { $0 === c }
         }
         controller.onRetarget = { [weak self] c in self?.rekey(c) }
         if let front = NSApp.orderedWindows.first(where: { w in windows.values.contains { $0.window === w } }),
@@ -164,12 +169,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     /// A symlink a window shows now points to another file: key the window by
     /// that file, so opening the link again finds it and opening the old target
     /// does not. When another window already shows the new file, that one keeps
-    /// the key (this window stays open, unkeyed, until closed).
+    /// the key, and this one stays open in `displaced` until it closes.
     private func rekey(_ controller: ReaderWindowController) {
         let key = WorkspaceIndex.realPath(controller.url.path)
         guard windows[key] !== controller else { return }
         windows = windows.filter { $0.value !== controller }
-        if windows[key] == nil { windows[key] = controller }
+        displaced.removeAll { $0 === controller }
+        if windows[key] == nil { windows[key] = controller } else { displaced.append(controller) }
+    }
+
+    /// Whether Readout still owns the window (saved on quit, released on close).
+    func owns(_ controller: ReaderWindowController) -> Bool {
+        windows.values.contains { $0 === controller } || displaced.contains { $0 === controller }
     }
 
     /// The window showing `url`, however it is spelled.

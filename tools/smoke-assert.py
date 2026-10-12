@@ -89,6 +89,12 @@ check("link: the retargeted symlink was followed", (live.get("link") or {}).get(
 check("link: the window is found through the retargeted link", (live.get("link") or {}).get("found_through_link") is True, live)
 check("link: the old target no longer maps to that window", (live.get("link") or {}).get("old_target_free") is True, live)
 
+col = live.get("collide") or {}
+# Retargeted onto a file another window shows: that window keeps the path; the link's window stays owned.
+check("collide: the link followed its new target", col.get("before") == "RUN-43" and col.get("after") == "RUN-44", live)
+check("collide: the window already showing the target keeps its path", col.get("target_window_kept") is True, live)
+check("collide: the link's window is still owned (saved on quit)", col.get("owned") is True, live)
+
 bg = load("background-opens.json")
 print(f"background-opens: {bg}")
 # `readout -b` and `readout --hook` open behind the tab being read, never in front of it.

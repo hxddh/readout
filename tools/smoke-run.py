@@ -109,13 +109,19 @@ def main() -> int:
     (tmp / "runs" / "run-42.md").write_text("# RUN-42\n\nThe next run.\n")
     link = tmp / "links" / "latest.md"
     os.symlink("../runs/run-41.md", link)
+    # links/other.md -> run-43.md, later pointed at run-44.md, which has a window of its own.
+    (tmp / "runs" / "run-43.md").write_text("# RUN-43\n")
+    (tmp / "runs" / "run-44.md").write_text("# RUN-44\n")
+    collide = tmp / "links" / "other.md"
+    os.symlink("../runs/run-43.md", collide)
     cli_file = work / "background.md"
     cli_file.write_text("# Opened with readout -b\n")
 
     env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
                READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
-               READOUT_SMOKE_CLI_FILE=str(cli_file))
+               READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_COLLIDE_LINK=str(collide),
+               READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"))
     # Launch Services must know the bundle for `open -b` to reach the running app.
     bundle = app.parents[2] if app.parent.name == "MacOS" else None
     if bundle is not None:
@@ -161,6 +167,14 @@ def main() -> int:
                 print("harness: pointed latest.md at run-42.md")
             else:
                 print("harness: the app never reported `await-retarget`")
+
+            if wait_for(out / "await-collide", proc, 30, poll=0.05):
+                staged = collide.with_name(".other.md.tmp")
+                os.symlink("../runs/run-44.md", staged)
+                os.replace(staged, collide)
+                print("harness: pointed other.md at run-44.md (open in its own window)")
+            else:
+                print("harness: the app never reported `await-collide`")
 
             if wait_for(out / "await-cli", proc, 30, poll=0.05):
                 cli = ROOT / "cli" / "readout"
