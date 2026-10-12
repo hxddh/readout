@@ -10,10 +10,15 @@ public struct BlockKey: Codable, Sendable, Equatable {
     /// compared word by word with what was read. Baselines saved before this
     /// field existed lack it (decoded as nil).
     public let full: String?
+    /// Checkbox states of the block's task items (not part of the
+    /// fingerprint), so a box ticked while the app was closed is noticed.
+    /// Nil for blocks without tasks and in baselines saved before this field existed.
+    public let taskState: [Bool]?
 
-    public init(fingerprint: UInt64, kind: BlockKind, text: String) {
+    public init(fingerprint: UInt64, kind: BlockKind, text: String, taskState: [Bool]? = nil) {
         self.fingerprint = fingerprint
         self.kind = kind
+        self.taskState = taskState
         // Similarity matching only needs a prefix: token-bigram Jaccard
         // converges well before 500 characters, and the common case (exact
         // fingerprint match) needs no text at all.
@@ -30,7 +35,8 @@ public struct BlockKey: Codable, Sendable, Equatable {
     public var wholeText: String? { full ?? (text.count < 500 ? text : nil) }
 
     public init(_ block: Block) {
-        self.init(fingerprint: block.fingerprint, kind: block.kind, text: block.text)
+        self.init(fingerprint: block.fingerprint, kind: block.kind, text: block.text,
+                  taskState: block.taskState.isEmpty ? nil : block.taskState)
     }
 }
 

@@ -223,6 +223,57 @@ import Testing
         #expect(p.marks.isEmpty)
     }
 
+    /// An agent truncates the file and writes it again; a read in between
+    /// sees it empty. The same text written back marks nothing.
+    @Test func brieflyEmptyFileIsNotTheBaseForTheRefill() {
+        let text = "# Report\n\nPara one.\n\nPara two.\n\nPara three.\n"
+        let s = DocumentSession()
+        _ = s.load(parse(text))
+        let slots = s.blocks.map(\.slot)
+        _ = s.update(parse(" \n"))
+        let p = s.update(parse(text))!
+        #expect(p.reset && !p.rewrite)
+        #expect(p.marks.isEmpty && p.deletions.isEmpty)
+        #expect(s.unreadCount == 0)
+        #expect(s.blocks.map(\.slot) == slots)
+        #expect(p.ops.map(\.slot) == slots)
+        // A refill that differs is marked against the version before the empty one.
+        _ = s.update(parse(""))
+        let q = s.update(parse(text + "\nPara four.\n"))!
+        #expect(q.reset)
+        #expect(q.marks.map(\.kind) == [.inserted])
+        #expect(q.deletions.isEmpty)
+    }
+
+    @Test func rewriteSinceLastReadShowsTheNoticeOnLoad() {
+        let first = DocumentSession()
+        _ = first.load(parse("# Plan\n\nStep one is to do the first thing.\n\nStep two is the second thing.\n\nStep three.\n\nStep four.\n"))
+        let second = DocumentSession()
+        let p = second.load(parse("# Totally different\n\nAlpha beta.\n\nGamma delta.\n\nEpsilon zeta.\n\nEta theta.\n"),
+                            baseline: first.baseline)
+        #expect(p.rewrite)
+        #expect(p.marks.isEmpty && second.unreadCount == 0)
+    }
+
+    @Test func checkboxTickedWhileClosedIsMarkedOnLoad() throws {
+        let first = DocumentSession()
+        _ = first.load(parse("# T\n\n- [ ] a\n- [ ] b\n"))
+        let second = DocumentSession()
+        let p = second.load(parse("# T\n\n- [x] a\n- [ ] b\n"), baseline: first.baseline)
+        #expect(p.marks == [.init(slot: second.blocks[1].slot, kind: .state)])
+        // Unticked again live: nothing new any more.
+        let q = second.update(parse("# T\n\n- [ ] a\n- [ ] b\n"))!
+        #expect(q.marks.isEmpty)
+        // A baseline saved before task states were kept decodes without them: no mark, as before.
+        var objects = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(first.baseline)) as? [[String: Any]])
+        #expect(objects.contains { $0["taskState"] != nil })
+        for i in objects.indices { objects[i]["taskState"] = nil }
+        let old = try JSONDecoder().decode([BlockKey].self, from: JSONSerialization.data(withJSONObject: objects))
+        #expect(old.allSatisfy { $0.taskState == nil })
+        let third = DocumentSession()
+        #expect(third.load(parse("# T\n\n- [x] a\n- [ ] b\n"), baseline: old).marks.isEmpty)
+    }
+
     @Test func renumberingIsSilent() {
         let s = DocumentSession()
         _ = s.load(parse("1. a\n2. b\n"))
