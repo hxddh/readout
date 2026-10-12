@@ -129,7 +129,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return
         }
         let controller = ReaderWindowController(url: url, pendingAnchor: anchor)
-        controller.onClose = { [weak self] _ in self?.windows[key] = nil }
+        controller.onClose = { [weak self] c in
+            guard let self else { return }
+            self.windows = self.windows.filter { $0.value !== c }   // by identity: a retarget may have re-keyed it
+        }
+        controller.onRetarget = { [weak self] c in self?.rekey(c) }
         if let front = NSApp.orderedWindows.first(where: { w in windows.values.contains { $0.window === w } }),
            let w = controller.window {
             w.setFrameTopLeftPoint(NSPoint(x: front.frame.minX + 26, y: front.frame.maxY - 26))
@@ -155,6 +159,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
         // A background open leaves the window the reader is in alone, the welcome window included.
         if mode == .request || !(NSApp.isActive && welcome?.isKeyWindow == true) { welcome?.close() }
+    }
+
+    /// A symlink a window shows now points to another file: key the window by
+    /// that file, so opening the link again finds it and opening the old target
+    /// does not. When another window already shows the new file, that one keeps
+    /// the key (this window stays open, unkeyed, until closed).
+    private func rekey(_ controller: ReaderWindowController) {
+        let key = WorkspaceIndex.realPath(controller.url.path)
+        guard windows[key] !== controller else { return }
+        windows = windows.filter { $0.value !== controller }
+        if windows[key] == nil { windows[key] = controller }
     }
 
     /// The window showing `url`, however it is spelled.

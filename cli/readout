@@ -55,7 +55,9 @@ case "$1" in
       fi
     done
     [ $# -gt 0 ] || exit "$status"
-    exec "$OPEN" -g -b "$APP_ID" "$@" ;;
+    # Not exec: a skipped file still makes the command fail.
+    "$OPEN" -g -b "$APP_ID" "$@" || status=$?
+    exit "$status" ;;
   "") exec "$OPEN" -b "$APP_ID" ;;
   *) exec "$OPEN" -b "$APP_ID" -- "$@" ;;
 esac

@@ -85,6 +85,9 @@ check("tmp: the file under /tmp updated live", (live.get("tmp") or {}).get("afte
 # latest.md -> run-41.md, then `ln -sf run-42.md latest.md`: the window follows the link.
 check("link: the symlink's target was shown", (live.get("link") or {}).get("before") == "RUN-41", live)
 check("link: the retargeted symlink was followed", (live.get("link") or {}).get("after") == "RUN-42", live)
+# The window is keyed by what it shows: reopening the link finds it, opening run-41.md would not.
+check("link: the window is found through the retargeted link", (live.get("link") or {}).get("found_through_link") is True, live)
+check("link: the old target no longer maps to that window", (live.get("link") or {}).get("old_target_free") is True, live)
 
 bg = load("background-opens.json")
 print(f"background-opens: {bg}")

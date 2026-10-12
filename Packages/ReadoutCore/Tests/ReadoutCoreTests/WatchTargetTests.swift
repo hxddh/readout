@@ -105,6 +105,10 @@ private struct Scratch {
 
     /// The `readout` script (cli/readout) with `open` replaced by `echo`.
     private func runScript(_ args: [String], cwd: String, stdin: String? = nil) throws -> String {
+        try runScriptWithStatus(args, cwd: cwd, stdin: stdin).output
+    }
+
+    private func runScriptWithStatus(_ args: [String], cwd: String, stdin: String? = nil) throws -> (output: String, status: Int32) {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let p = Process()
@@ -120,9 +124,18 @@ private struct Scratch {
         try p.run()
         if let stdin { input.fileHandleForWriting.write(Data(stdin.utf8)) }
         try input.fileHandleForWriting.close()
+        let data = out.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit()
-        return String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return (String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines), p.terminationStatus)
+    }
+
+    @Test func aSkippedFileMakesTheScriptFailAfterOpeningTheRest() throws {
+        let s = try Scratch()
+        s.write("plan.md")
+        let r = try runScriptWithStatus(["-b", "plan.md", "missing.md"], cwd: s.real)
+        #expect(r.output.split(separator: " ").count == 4)   // plan.md still opened
+        #expect(r.status != 0)
+        #expect(try runScriptWithStatus(["-b", "plan.md"], cwd: s.real).status == 0)
     }
 
     @Test func theScriptOpensInTheBackgroundThroughTheScheme() throws {

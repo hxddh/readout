@@ -90,6 +90,8 @@ final class FileWatcher {
     private var pollTimer: DispatchSourceTimer?
     private let queue = DispatchQueue(label: "readout.filewatcher", qos: .userInitiated)
     private let onChange: (Change) -> Void
+    /// The opened path (a symlink) now resolves to another file. On the main queue.
+    private let onRetarget: () -> Void
     private var stopped = false
 
     // Debounce: trailing 80 ms, but never hold an update for more than 400 ms during continuous writes.
@@ -100,10 +102,11 @@ final class FileWatcher {
 
     private var lastPollSignature: [Int]?
 
-    init(url: URL, onChange: @escaping (Change) -> Void) {
+    init(url: URL, onChange: @escaping (Change) -> Void, onRetarget: @escaping () -> Void = {}) {
         self.url = url
         self.target = WatchTarget(path: url.path)
         self.onChange = onChange
+        self.onRetarget = onRetarget
         queue.markForRunSync()
         let isLocal = (try? url.resourceValues(forKeys: [.volumeIsLocalKey]).volumeIsLocal) ?? true
         queue.sync { self.start(isLocal: isLocal) }
@@ -145,7 +148,7 @@ final class FileWatcher {
             let sig: [Int] = stat(self.url.path, &st) == 0
                 ? [Int(st.st_mtimespec.tv_sec), Int(st.st_mtimespec.tv_nsec), Int(st.st_size), Int(st.st_ino)]
                 : [-1]
-            _ = self.target.reresolve()
+            self.retarget()
             if let last = self.lastPollSignature, last != sig { self.schedule() }
             self.lastPollSignature = sig
         }
@@ -169,11 +172,17 @@ final class FileWatcher {
         if changed { schedule() }
     }
 
-    /// Resolves the opened path again and, when it now points into another
-    /// folder, watches that one (after this callback returns: a stream is not
-    /// invalidated from inside its own callback).
+    /// Resolves the opened path again; when it points to another file, says so
+    /// (the window is keyed by the file it shows) and, when that file is in
+    /// another folder, watches that one (after this callback returns: a stream
+    /// is not invalidated from inside its own callback).
     private func retarget() {
-        guard target.reresolve(), target.directories != watchedDirectories else { return }
+        guard target.reresolve() else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.stopped else { return }
+            self.onRetarget()
+        }
+        guard target.directories != watchedDirectories else { return }
         queue.async { [weak self] in
             guard let self, !self.stopped, self.stream != nil else { return }
             self.startStream()

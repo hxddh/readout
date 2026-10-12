@@ -186,11 +186,20 @@ enum SmokeTest {
             var deadline = Date().addingTimeInterval(10)
             while reader.model.title.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
             let before = reader.model.title
+            let shownBefore = WorkspaceIndex.realPath(path)
             try? await Task.sleep(for: .milliseconds(300))
             mark(out, marker)
             deadline = Date().addingTimeInterval(10)
             while reader.model.title == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
-            result[name] = ["before": before, "after": reader.model.title]
+            var entry: [String: Any] = ["before": before, "after": reader.model.title]
+            if shownBefore != WorkspaceIndex.realPath(path) {
+                // A retargeted link: the window is found through the link and no longer through the old target.
+                deadline = Date().addingTimeInterval(3)
+                while app?.reader(for: url) !== reader && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                entry["found_through_link"] = app?.reader(for: url) === reader
+                entry["old_target_free"] = app?.reader(for: URL(fileURLWithPath: shownBefore)) == nil
+            }
+            result[name] = entry
         }
         guard !result.isEmpty, let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) else { return }
         try? data.write(to: out.appendingPathComponent("live-updates.json"))

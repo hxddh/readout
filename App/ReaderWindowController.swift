@@ -55,6 +55,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     let url: URL
     let model = ReaderModel()
     var onClose: ((ReaderWindowController) -> Void)?
+    /// The opened path is a symlink that now points to another file.
+    var onRetarget: ((ReaderWindowController) -> Void)?
 
     private let session = DocumentSession()
     private let loader: DocumentLoader
@@ -119,7 +121,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         window.setFrameAutosaveName("ReaderWindow")
 
         model.onSelectHeading = { [weak self] slot in self?.webView.call("scrollToSlot", json: String(slot)) }
-        watcher = FileWatcher(url: self.url) { [weak self] change in self?.fileChanged(change) }
+        watcher = FileWatcher(url: self.url, onChange: { [weak self] change in self?.fileChanged(change) },
+                              onRetarget: { [weak self] in if let self { self.onRetarget?(self) } })
         load()
     }
 
