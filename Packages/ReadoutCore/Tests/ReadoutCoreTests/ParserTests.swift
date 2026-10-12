@@ -189,6 +189,20 @@ import Testing
         #expect(!doc.blocks[1].cjk)
     }
 
+    /// Chinese items that name English identifiers read as CJK, whatever the
+    /// identifiers' length or whether they are in inline code (corpus 21, 25, 27, 29).
+    @Test func mixedChineseAndEnglishItemsClassifyTheSame() {
+        let doc = parse("""
+        - 将 PromptManager 重命名为 AbstractPromptManager 并抽象化
+        - 修正 Gemini 直连 grounding 来源 index。
+        - `ApiHandler` 收到 `WebSearchResults` 后会直接覆盖 `updatedMessage.webSearchResults`
+        - helper MUST 不再读取、解析、缓存或依赖 TRUSTED_HTTP_PROXY_TERMINAL_IDS。
+        - Use the 读取 helper for every request in the pipeline.
+        - Plain English item with `代码` in code.
+        """)
+        #expect(doc.blocks.map(\.cjk) == [true, true, true, true, false, false])
+    }
+
     @Test func tocWithSectionTasks() {
         var doc = parse("# A\n\n## B\n\n- [x] t1\n- [ ] t2\n\n## C\n\n- [ ] t3\n")
         for i in doc.blocks.indices { doc.blocks[i].slot = i + 1 }

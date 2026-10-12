@@ -168,7 +168,7 @@ public enum MarkdownParser {
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
                           taskState: tasks, html: rendered, text: normalized,
                           headingLevel: heading?.0, headingTitle: heading?.1, anchor: heading?.2)
-            b.cjk = CJK.ratio(normalized) > 0.3
+            b.cjk = (kind == .code || kind == .mermaid || kind == .math ? CJK.ratio(normalized) : CJK.proseRatio(normalized)) > 0.3
             return b
         }
 
