@@ -1,6 +1,7 @@
 // The change rail: one tick per unread change, positioned by document offset.
 import { strings, quicklook } from './core.js';
 import { unreadElements } from './marks.js';
+import { scrollToElement } from './anchor.js';
 
 const rail = document.getElementById('ro-rail');
 let railQueued = false;
@@ -32,7 +33,7 @@ function drawRail() {
     tick.style.top = `${Math.min(h - 4, (top / total) * h)}px`;
     tick.setAttribute('aria-label', (strings.railChange || 'Unread change %d of %d: %@')
       .replace('%d', i + 1).replace('%d', list.length).replace('%@', kind));
-    tick.addEventListener('click', () => el.scrollIntoView({ block: 'center' }));
+    tick.addEventListener('click', () => scrollToElement(el, { center: true }));
     rail.appendChild(tick);
   }
 }

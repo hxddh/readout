@@ -108,7 +108,6 @@ function closeDiff(slot) {
 /** A block's content was replaced: its old comparison no longer applies (the patch's marks bring a new one). */
 export function forgetDiff(slot) { diffOf.delete(slot); }
 
-/** The comparison of the first edited block in view (keyboard: D). */
 /**
  * D: opens the comparison of the topmost edited block in view that is still
  * closed, so repeated presses walk down the screen; once every one in view
