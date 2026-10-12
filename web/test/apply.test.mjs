@@ -879,6 +879,25 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('theme switch keeps diagrams and the reading position', svgsSync === 8 && a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2 && restyled,
     JSON.stringify({ svgsSync, a0, a1, restyled }));
 }
+// A theme change while a diagram is being drawn in the old theme: the
+// diagram ends up drawn in the new one.
+{
+  await page.evaluate(() => window.readout.setAppearance({ dark: false }));
+  const src = 'graph TD\n  A[Theme race] --> B[Drawn mid switch]\n  B --> C[Done]';
+  const r = await page.evaluate(async p => {
+    window.readout.apply(p);
+    const b = document.querySelector('.blk[data-slot="1"] .mermaid-block');
+    for (let i = 0; i < 2000 && !b.classList.contains('busy'); i++) await new Promise(r => setTimeout(r, 1));
+    const busy = b.classList.contains('busy');
+    window.readout.setAppearance({ dark: true });
+    for (let i = 0; i < 300 && !(b.classList.contains('done') && !b.classList.contains('busy')); i++) await new Promise(r => setTimeout(r, 20));
+    const svg = b.querySelector('.mermaid-svg')?.innerHTML.toLowerCase() || '';
+    return { busy, done: b.classList.contains('done'), dark: svg.includes('#2a2a2c'), light: svg.includes('#f5f5f7') };
+  }, { ...fixBase, version: ++fixVersion, reset: true,
+    ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>` }] });
+  await page.evaluate(() => window.readout.setAppearance({ dark: false }));
+  check('a diagram drawn during a theme switch ends up in the new theme', r.busy && r.done && r.dark && !r.light, JSON.stringify(r));
+}
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();

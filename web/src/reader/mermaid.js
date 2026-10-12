@@ -88,7 +88,8 @@ async function pumpMermaid() {
       const src = srcEl.textContent;
       const m = await loadMermaid().catch(() => null);
       if (!m) break;
-      const key = mermaidTheme + '\u0000' + src;
+      const theme = mermaidTheme;
+      const key = theme + '\u0000' + src;
       let out = mermaidCache.get(key);
       if (!out) {
         const id = `mmd-${++mermaidSeq}`;
@@ -102,6 +103,8 @@ async function pumpMermaid() {
         mermaidCache.set(key, out);
       }
       if (!block.isConnected) continue;
+      // The theme changed while it was being drawn: draw it again in the new one.
+      if (theme !== (root.dataset.theme === 'dark' ? 'dark' : 'light')) { mermaidQueue.push(block); continue; }
       let fresh;
       if (out.svg) {
         fresh = document.createElement('div');
