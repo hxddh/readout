@@ -25,6 +25,12 @@ enum SmokeTest {
     /// Window request to first patch on screen, per file.
     private static var firstPaint: [String: Double] = [:]
     private static var started = false
+    /// Files opened on their own after an agent wrote them.
+    private static var autoOpened: [String] = []
+
+    static func noteAutoOpened(_ paths: [String]) {
+        if outputDirectory != nil { autoOpened += paths }
+    }
 
     static func noteApplied() {
         appliedCount += 1
@@ -100,6 +106,35 @@ enum SmokeTest {
                     try? await Task.sleep(for: .milliseconds(50))
                 }
                 NSApp.keyWindow?.close()
+            }
+            // An agent writes a new document into a watched folder while Readout is
+            // in the background: it must open on its own, without activating Readout.
+            if let folder = ProcessInfo.processInfo.environment["READOUT_SMOKE_AGENT_FOLDER"] {
+                WorkspaceIndex.shared.configure([folder])
+                NSApp.deactivate()
+                try? await Task.sleep(for: .seconds(1))
+                let wasActive = NSApp.isActive
+                // The document in front (the selected tab of the frontmost reader window).
+                func reading() -> String {
+                    let front = NSApp.orderedWindows.first { $0.windowController is ReaderWindowController }
+                    return (front?.tabGroup?.selectedWindow ?? front)?.title ?? ""
+                }
+                let readingBefore = reading()
+                mark(out, "await-agent-write")
+                let deadline = Date().addingTimeInterval(15)
+                while autoOpened.isEmpty && Date() < deadline {
+                    try? await Task.sleep(for: .milliseconds(50))
+                }
+                try? await Task.sleep(for: .milliseconds(500))
+                let titles = NSApp.windows.filter(\.isVisible).map(\.title)
+                let json: [String: Any] = ["auto_opened": autoOpened.map { URL(fileURLWithPath: $0).lastPathComponent },
+                                           "active_before": wasActive, "active_after": NSApp.isActive,
+                                           "reading_before": readingBefore, "reading_after": reading(),
+                                           "window_titles": titles]
+                if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+                    try? data.write(to: out.appendingPathComponent("agent-folder.json"))
+                }
+                NSApp.activate()
             }
             app?.showSettings(nil)
             try? await Task.sleep(for: .seconds(1.5))

@@ -1,7 +1,9 @@
 import Foundation
+import ReadoutCore
 
 /// Tracks the most recently written Markdown files under the user's workspace folders,
-/// so the global shortcut can open "whatever the agent just wrote".
+/// so the global shortcut can open "whatever the agent just wrote", and reports
+/// each write while the app runs (`onWrite`) so new documents open on their own.
 @MainActor
 final class WorkspaceIndex {
     static let shared = WorkspaceIndex()
@@ -11,9 +13,15 @@ final class WorkspaceIndex {
     private let queue = DispatchQueue(label: "readout.workspaces", qos: .utility)
     private var roots: [String] = []
 
-    nonisolated static let markdownExtensions: Set<String> = ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext"]
-    nonisolated static let skippedDirectories: Set<String> = ["node_modules", ".git", ".hg", ".svn", "build", ".build", "DerivedData",
-                                                  "Pods", "vendor", "target", "dist", ".next", ".venv", "venv", "__pycache__", ".cache"]
+    nonisolated static let markdownExtensions = AgentFolders.markdownExtensions
+    nonisolated static let skippedDirectories = AgentFolders.skippedDirectories
+    /// Writes seen while running (not the initial scan), on the main queue,
+    /// with whether the file is a new document (not there before).
+    var onWrite: (([(url: URL, isNew: Bool)]) -> Void)?
+
+    /// Markdown files known to exist under the roots: the initial scan's, then
+    /// every one seen written. Touched only on `queue`.
+    private final class Known: @unchecked Sendable { var paths: Set<String> = [] }
 
     func configure(_ paths: [String]) {
         let normalized = paths.map { ($0 as NSString).expandingTildeInPath }.filter { FileManager.default.fileExists(atPath: $0) }
@@ -23,21 +31,53 @@ final class WorkspaceIndex {
         stream = nil
         recent = []
         guard !roots.isEmpty else { return }
+        let rootsCopy = roots
+        let known = Known()
+        // FSEvents reports real paths (/private/var/..., a symlinked folder's
+        // target); map them back to the folder as the user added it.
+        let realRoots = rootsCopy.map { (given: $0, real: Self.realPath($0)) }
+        // The scan is queued before the stream starts, so on this serial queue
+        // every event is judged against the files that were already there.
+        queue.async { [weak self] in
+            let (newest, all) = Self.scan(rootsCopy)
+            known.paths = Set(all.map { Self.givenPath($0, roots: realRoots) })
+            DispatchQueue.main.async { self?.record(newest) }
+        }
         stream = FSEventsStream(paths: roots, latency: 0.3, queue: queue) { [weak self] events in
-            let hits: [(URL, Date)] = events.compactMap { e in
-                guard e.isFile, !e.isRemoved || FileManager.default.fileExists(atPath: e.path) else { return nil }
-                let url = URL(fileURLWithPath: e.path)
-                guard Self.isCandidate(url) else { return nil }
-                return (url, Date())
+            var hits: [(URL, Date, Bool)] = []
+            for e in events where e.isFile {
+                let path = Self.givenPath(e.path, roots: realRoots)
+                guard FileManager.default.fileExists(atPath: path) else {
+                    known.paths.remove(path)   // removed or renamed away: a later write is new again
+                    continue
+                }
+                let url = URL(fileURLWithPath: path)
+                guard Self.isCandidate(url, roots: rootsCopy) else { continue }
+                let isNew = known.paths.insert(path).inserted
+                hits.append((url, Date(), isNew))
             }
             guard !hits.isEmpty else { return }
-            DispatchQueue.main.async { self?.record(hits) }
+            DispatchQueue.main.async {
+                self?.record(hits.map { ($0.0, $0.1) })
+                self?.onWrite?(hits.map { (url: $0.0, isNew: $0.2) })
+            }
         }
-        let rootsCopy = roots
-        queue.async { [weak self] in
-            let found = Self.scan(rootsCopy)
-            DispatchQueue.main.async { self?.record(found) }
+    }
+
+    /// The path with symlinks and /private resolved, as FSEvents reports it.
+    nonisolated static func realPath(_ path: String) -> String {
+        guard let r = realpath(path, nil) else { return path }
+        defer { free(r) }
+        return String(cString: r)
+    }
+
+    /// An FSEvents path rewritten under the root as the user added it.
+    nonisolated static func givenPath(_ path: String, roots: [(given: String, real: String)]) -> String {
+        for r in roots where r.real != r.given {
+            if path == r.real { return r.given }
+            if path.hasPrefix(r.real + "/") { return r.given + path.dropFirst(r.real.count) }
         }
+        return path
     }
 
     private func record(_ hits: [(URL, Date)]) {
@@ -55,15 +95,12 @@ final class WorkspaceIndex {
         recent.first(where: { FileManager.default.fileExists(atPath: $0.url.path) })?.url
     }
 
-    nonisolated static func isCandidate(_ url: URL) -> Bool {
-        guard markdownExtensions.contains(url.pathExtension.lowercased()) else { return false }
-        for c in url.pathComponents where skippedDirectories.contains(c) { return false }
-        return !url.lastPathComponent.hasPrefix(".")
-    }
+    nonisolated static func isCandidate(_ url: URL, roots: [String]) -> Bool { AgentFolders.isCandidate(url.path, roots: roots) }
 
-    /// Bounded initial scan for the newest Markdown files.
-    nonisolated static func scan(_ roots: [String]) -> [(URL, Date)] {
+    /// Bounded initial scan: the newest Markdown files, and every one found.
+    nonisolated static func scan(_ roots: [String]) -> (newest: [(URL, Date)], all: Set<String>) {
         var out: [(URL, Date)] = []
+        var all: Set<String> = []
         let fm = FileManager.default
         let keys: [URLResourceKey] = [.contentModificationDateKey, .isDirectoryKey, .nameKey]
         for root in roots {
@@ -81,11 +118,12 @@ final class WorkspaceIndex {
                     continue
                 }
                 guard markdownExtensions.contains(item.pathExtension.lowercased()) else { continue }
+                all.insert(item.path)
                 if let d = try? item.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate {
                     out.append((item, d))
                 }
             }
         }
-        return out.sorted { $0.1 > $1.1 }.prefix(50).map { $0 }
+        return (out.sorted { $0.1 > $1.1 }.prefix(50).map { $0 }, all)
     }
 }

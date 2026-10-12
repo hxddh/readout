@@ -16,7 +16,6 @@ enum MainMenu {
         app.addItem(item(NSLocalizedString("Check for Updates…", comment: "Menu"), #selector(AppDelegate.checkForUpdates(_:))))
         app.addItem(.separator())
         app.addItem(item(NSLocalizedString("Settings…", comment: "Menu"), #selector(AppDelegate.showSettings(_:)), ","))
-        app.addItem(item(NSLocalizedString("Install Command Line Tool…", comment: "Menu"), #selector(AppDelegate.installCommandLineTool(_:))))
         app.addItem(.separator())
         let services = NSMenuItem(title: NSLocalizedString("Services", comment: "Menu"), action: nil, keyEquivalent: "")
         let servicesMenu = NSMenu()

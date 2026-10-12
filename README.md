@@ -16,7 +16,7 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 - **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42` open in your editor.
 - **Outline with progress.** The sidebar lists headings and how many tasks in each section are done.
 - **Focus on what's new.** Filter the document to unread changes only (<kbd>⇧⌘K</kbd>), see task progress in the window subtitle, and copy a link to any section by hovering its heading.
-- **One shortcut to the latest file.** Add the folders your agents write to (Claude Code's `~/.claude/plans` is added automatically) and press <kbd>⌥⌘R</kbd> anywhere to open the newest Markdown file.
+- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A new Markdown document an agent creates there opens in Readout on its own, in the background, without taking focus from your terminal (edits to files that were already there, such as a README, do not). Press <kbd>⌥⌘R</kbd> anywhere to open the newest one.
 - **Quick Look.** Press Space on a `.md` file in Finder.
 - **Read-only by design.** Readout never writes to your files.
 
@@ -32,31 +32,15 @@ Readout checks GitHub Releases for new versions (**Readout → Check for Updates
 
 Rendering a document sends no network requests at all: remote images and media render as placeholder buttons naming the host. Only when you click does Readout itself download the image — without cookies, and never from your own machine or local network — and show it; video and audio open in your browser instead. The only automatic network access is the weekly update check, which you can turn off in settings.
 
-## Command line and agent hooks
+## Command line (optional)
 
-Choose **Readout → Install Command Line Tool…** to get `readout`:
+Readout needs no setup for agents: the folders in Settings are enough. If you also want a `readout` command, link the script inside the app:
 
 ```sh
-readout plan.md          # open and bring Readout forward
-readout -b plan.md       # open without switching apps
+mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout
 ```
 
-To have Claude Code open Markdown files in Readout as soon as it writes them, add a hook to `~/.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [{ "type": "command", "command": "readout --hook" }]
-      }
-    ]
-  }
-}
-```
-
-`readout --hook` reads the hook payload, and opens `tool_input.file_path` in the background only when it is a Markdown file.
+(`~/.local/bin` must be on your `PATH`.) Then `readout plan.md` opens a file and `readout -b plan.md` opens it without switching apps. For a Claude Code hook instead of a watched folder, add `readout --hook` as a `PostToolUse` command for `Write|Edit|MultiEdit` in `~/.claude/settings.json`; it opens `tool_input.file_path` in the background when it is a Markdown file.
 
 ## Keyboard
 

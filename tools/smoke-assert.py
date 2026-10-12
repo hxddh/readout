@@ -68,6 +68,15 @@ dark = load("4-dark.json")
 print(f"4-dark: {dark}")
 check("4-dark theme == dark", dark.get("theme") == "dark", dark)
 
+agent = load("agent-folder.json")
+print(f"agent-folder: {agent}")
+# A document an agent writes into a watched folder opens on its own and leaves focus where it was.
+check("agent folder: Readout was in the background", agent.get("active_before") is False, agent)
+check("agent folder: notes.md opened on its own", agent.get("auto_opened") == ["notes.md"], agent)
+check("agent folder: Readout was not activated", agent.get("active_after") is False, agent)
+check("agent folder: the document being read stays in front",
+      agent.get("reading_before") not in (None, "", "notes.md") and agent.get("reading_after") == agent.get("reading_before"), agent)
+
 logp = OUT / "smoke-out.log"
 log = logp.read_text() if logp.exists() else ""
 check("smoke-out.log present", logp.exists())

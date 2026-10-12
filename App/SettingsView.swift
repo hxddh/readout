@@ -38,7 +38,7 @@ struct SettingsView: View {
             } header: {
                 Text(NSLocalizedString("Agent folders", comment: "Settings section"))
             } footer: {
-                Text(NSLocalizedString("Readout watches these folders for Markdown files. The global shortcut opens the newest one.", comment: "Settings footer"))
+                Text(NSLocalizedString("New Markdown documents your agents create here open in Readout on their own, in the background. The global shortcut opens the newest one.", comment: "Settings footer"))
                     .foregroundStyle(.secondary)
             }
 

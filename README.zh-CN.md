@@ -16,7 +16,7 @@ Agent 会把计划、规格、分析报告和代码解释写成很长的 Markdow
 - **高质量渲染。** 完整 GFM：表格、任务列表、提示块（Alerts），针对中英混排调校的排版，Shiki 代码高亮，KaTeX 数学公式，Mermaid 图表。`src/app/main.swift:42` 这样的代码引用可直接在编辑器中打开。
 - **带进度的大纲。** 侧边栏列出标题，以及每个章节的任务完成数。
 - **聚焦新增内容。** 一键只看未读变更（<kbd>⇧⌘K</kbd>），标题栏显示任务完成进度，悬停标题可复制章节链接。
-- **一键打开最新文件。** 添加 Agent 写入的文件夹（自动包含 Claude Code 的 `~/.claude/plans`），在任何地方按 <kbd>⌥⌘R</kbd> 即可打开最新的 Markdown 文件。
+- **自动打开 Agent 写的文档。** 在设置里添加 Agent 写入的文件夹（自动包含 Claude Code 的 `~/.claude/plans`）。Agent 在这里新建的 Markdown 文档会自动在 Readout 中打开，在后台进行，不会抢走终端的焦点（修改已有文件，比如 README，不会弹出）。在任何地方按 <kbd>⌥⌘R</kbd> 可打开最新的一个。
 - **Quick Look。** 在访达中选中 `.md` 文件按空格预览。
 - **始终只读。** Readout 从不写入你的文件。
 
@@ -32,31 +32,15 @@ Readout 会检查 GitHub Releases 获取新版本（**Readout → 检查更新�
 
 渲染文档时不会发出任何网络请求：远程图片与媒体只显示为注明来源的占位按钮。只有当你点击时，Readout 才会亲自下载图片（不携带 cookie）并显示；视频与音频则改用浏览器打开。应用唯一的自动联网行为是每周一次的更新检查，可在设置中关闭。
 
-## 命令行与 Agent hook
+## 命令行（可选）
 
-选择 **Readout → 安装命令行工具…** 后可使用 `readout`：
+配合 Agent 使用无需任何配置，设置里的文件夹就够了。如果还想要 `readout` 命令，把 App 里自带的脚本链接出来：
 
 ```sh
-readout plan.md          # 打开并切换到 Readout
-readout -b plan.md       # 打开但不切换应用
+mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout
 ```
 
-想让 Claude Code 每写完一个 Markdown 文件就在 Readout 中打开，在 `~/.claude/settings.json` 中加入：
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [{ "type": "command", "command": "readout --hook" }]
-      }
-    ]
-  }
-}
-```
-
-`readout --hook` 会读取 hook 的输入，只有 `tool_input.file_path` 是 Markdown 文件时才在后台打开。
+（`~/.local/bin` 需要在 `PATH` 中。）之后 `readout plan.md` 打开文件，`readout -b plan.md` 打开但不切换应用。如果想用 Claude Code hook 代替文件夹监视，在 `~/.claude/settings.json` 里为 `Write|Edit|MultiEdit` 添加 `PostToolUse` 命令 `readout --hook`；当 `tool_input.file_path` 是 Markdown 文件时，它会在后台打开。
 
 ## 快捷键
 
