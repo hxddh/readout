@@ -86,6 +86,11 @@ public struct FileResolver: ResourceResolver {
         if lower.hasPrefix("data:") { return ResolvedImage(url: src, remote: false) }
         var path = src
         if lower.hasPrefix("file://"), let u = URL(string: src) { path = u.path }
+        else if let cut = path.firstIndex(where: { $0 == "?" || $0 == "#" }) {
+            // `shot.png?raw=true`, `logo.svg#gh-dark-mode-only`: the file is what comes before
+            // (a literal ? or # in a file name is written %3F, %23).
+            path = String(path[..<cut])
+        }
         path = path.removingPercentEncoding ?? path
         let url: URL
         if path.hasPrefix("/") { url = URL(fileURLWithPath: path) }

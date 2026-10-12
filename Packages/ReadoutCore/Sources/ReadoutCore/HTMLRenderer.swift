@@ -61,7 +61,7 @@ struct HTMLRenderer {
         case is LineBreak:
             return "<br>"
         case let h as InlineHTML:
-            return HTML.sanitize(h.rawHTML)
+            return HTML.sanitize(h.rawHTML, resolver: resolver)
         case let s as SymbolLink:
             return "<code>\(HTML.escape(s.destination ?? ""))</code>"
         default:
@@ -151,7 +151,7 @@ struct HTMLRenderer {
         case is ThematicBreak:
             return "<hr>"
         case let h as HTMLBlock:
-            return HTML.sanitize(h.html)
+            return HTML.sanitize(h.html, resolver: resolver)
         case let l as UnorderedList:
             let tight = isTight(l)
             return "<ul>" + l.listItems.map { listItem($0, tight: tight) }.joined() + "</ul>"

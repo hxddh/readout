@@ -224,10 +224,10 @@ public enum MarkdownParser {
                     inner.append(next)
                 }
                 func html() -> String {
-                    HTML.sanitize(h.html) + inner.map { n -> String in
-                        if let nh = n as? HTMLBlock { return HTML.sanitize(nh.html) }
+                    HTML.sanitize(h.html, resolver: probe) + inner.map { n -> String in
+                        if let nh = n as? HTMLBlock { return HTML.sanitize(nh.html, resolver: probe) }
                         return renderer.block(n)
-                    }.joined() + HTML.sanitize(closing)
+                    }.joined() + HTML.sanitize(closing, resolver: probe)
                 }
                 blocks.append(make(.html, h, range: range.lowerBound...last, html: html(), taskNodes: inner))
                 continue
@@ -287,7 +287,7 @@ public enum MarkdownParser {
                 // HTML comments are invisible; skip them so they never produce empty blocks.
                 let trimmed = h.rawHTML.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmed.hasPrefix("<!--") && trimmed.hasSuffix("-->") { continue }
-                blocks.append(make(.html, h, range: range, html: HTML.sanitize(h.html)))
+                blocks.append(make(.html, h, range: range, html: HTML.sanitize(h.html, resolver: probe)))
             default:
                 blocks.append(make(.paragraph, node, range: range, html: renderer.block(node)))
             }
