@@ -1,6 +1,6 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
-import { doc, slots, heights } from './core.js';
+import { doc, root, slots, heights } from './core.js';
 import { scheduleRail } from './rail.js';
 
 export function isShown(e) { return !e.hidden && e.offsetParent !== null; }
@@ -28,7 +28,16 @@ export function captureAnchor() {
   for (let e = el; e; e = e.previousElementSibling) {
     if (e.classList.contains('k-heading')) { heading = e.dataset.anchor || null; break; }
   }
-  return { slot: +el.dataset.slot, offset, ratio: r.height > 0 ? offset / r.height : 0, heading };
+  // The neighbours stand in for the anchor block if a patch removes it.
+  const prev = shownSibling(el, 'previousElementSibling');
+  const next = shownSibling(el, 'nextElementSibling');
+  return { slot: +el.dataset.slot, offset, ratio: r.height > 0 ? offset / r.height : 0, heading,
+    prev: prev ? +prev.dataset.slot : null, next: next ? +next.dataset.slot : null };
+}
+
+function shownSibling(el, dir) {
+  for (let e = el[dir]; e; e = e[dir]) if (e.classList.contains('blk') && isShown(e)) return e;
+  return null;
 }
 
 export function restoreAnchor(a, changedSlots) {
@@ -44,10 +53,43 @@ export function restoreAnchor(a, changedSlots) {
     window.scrollBy(0, r.top + want);
     return;
   }
+  // The anchor block is gone: the block that followed it takes its place at
+  // the top (or, at the end of the document, the one before it ends there).
+  // Only then the section heading, which can be far above.
+  for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
+    let n = slot != null ? slots.get(slot) : null;
+    if (n && !isShown(n)) n = nearestVisible(n);
+    if (n) { window.scrollBy(0, n.getBoundingClientRect()[edge]); return; }
+  }
   if (a.heading) {
     const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
     if (h) { window.scrollBy(0, h.getBoundingClientRect().top); return; }
   }
+}
+
+/** The height of the window toolbar the page scrolls under (set by the app). */
+export function topInset() {
+  return parseFloat(root.style.getPropertyValue('--top-inset')) || 0;
+}
+
+/**
+ * Re-baselines every block's height for the resize compensator, after a
+ * change that reflows the whole page (font size, width, theme, find mode)
+ * and whose effect on the position the caller restores itself.
+ */
+export function rebaselineHeights() {
+  for (const el of slots.values()) heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
+}
+
+/**
+ * Runs `change` (which reflows the page) keeping the reader's place. With
+ * `ratio`, the anchor block itself is expected to change height too, so the
+ * place within it is kept as a fraction of its height.
+ */
+export function keepPlace(change, { ratio = false, anchor = captureAnchor() } = {}) {
+  change();
+  if (anchor) restoreAnchor(anchor, ratio ? new Set([anchor.slot]) : new Set());
+  rebaselineHeights();
 }
 
 /** Nearest visible block to `el` in document order (previous first, then next). */
@@ -80,7 +122,9 @@ export function scrollToElement(target, { center = false, gap } = {}) {
   if (forced) blk.style.contentVisibility = 'visible';
   const r = target.getBoundingClientRect();
   const margin = gap ?? (parseFloat(getComputedStyle(target).scrollMarginTop) || 0);
-  window.scrollBy(0, center ? r.top + r.height / 2 - window.innerHeight / 2 : r.top - margin);
+  // The top of the page lies under the window toolbar: aim below it.
+  const inset = topInset();
+  window.scrollBy(0, center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset);
   // On screen now: content-visibility keeps it rendered, as it would any block in view.
   if (forced) requestAnimationFrame(() => { blk.style.contentVisibility = ''; });
 }

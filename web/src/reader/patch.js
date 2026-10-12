@@ -1,6 +1,6 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport } from './core.js';
-import { captureAnchor, restoreAnchor, atBottom, resizeObserver } from './anchor.js';
+import { captureAnchor, restoreAnchor, atBottom, resizeObserver, keepPlace } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy } from './enhance.js';
@@ -49,10 +49,17 @@ export function apply(p) {
   // at the top of the document must not yank a bottom-dwelling reader.
   // The anchor block itself counts: if it was edited, restoring it keeps us
   // at the end anyway.
+  // Appending at the end is the live tail an agent writes: it counts as near
+  // whatever its predecessor's position (the page's bottom padding keeps the
+  // last block well above the bottom of the viewport).
   let changeNearViewport = false;
   if (following && !p.reset) {
+    let last = doc.lastElementChild;
+    while (last && !last.classList.contains('blk')) last = last.previousElementSibling;
+    const lastSlot = last ? +last.dataset.slot : null;
     for (const op of p.ops) {
       if (op.op === 'remove') continue;
+      if (op.op === 'insert' && op.after === lastSlot) { changeNearViewport = true; break; }
       const el = slots.get(op.slot);
       // Inserted blocks have no element yet; locate via the predecessor.
       const ref = el || (op.after ? slots.get(op.after) : null);
@@ -66,6 +73,7 @@ export function apply(p) {
   const changed = new Set();
   const rerendered = [];   // silent replaces: new HTML, no mark
   const visibleChanged = [];
+  const inserted = [];
 
   if (p.reset) {
     for (const el of slots.values()) resizeObserver.unobserve(el);
@@ -94,16 +102,19 @@ export function apply(p) {
       else doc.prepend(el);
       slots.set(op.slot, el);
       resizeObserver.observe(el);
-      if (!p.reset) { changed.add(op.slot); if (inViewport(el)) visibleChanged.push(el); }
+      if (!p.reset) { changed.add(op.slot); inserted.push(el); if (inViewport(el)) visibleChanged.push(el); }
     }
   }
 
-  doc.classList.toggle('cv', slots.size > 250);
-  if (slots.size === 0) {
-    const empty = document.createElement('div');
-    empty.id = 'ro-empty';
-    empty.textContent = strings.empty || 'This file is empty.';
-    doc.appendChild(empty);
+  updateCv();
+  // Content can arrive in a patch that is not a reset (a file that was empty).
+  const empty = document.getElementById('ro-empty');
+  if (slots.size > 0) empty?.remove();
+  else if (!empty) {
+    const e = document.createElement('div');
+    e.id = 'ro-empty';
+    e.textContent = strings.empty || 'This file is empty.';
+    doc.appendChild(e);
   }
 
   renderMarks(p.marks || [], p.deletions || [], !!p.reset);
@@ -119,7 +130,17 @@ export function apply(p) {
   if (p.rewrite) showNotice(strings.rewritten);
 
   // Restore position in the same task, before the browser paints.
-  if (follow) window.scrollTo(0, document.scrollingElement.scrollHeight);
+  if (follow) {
+    // In a large document a new block counts at its estimated height until
+    // it is laid out: lay out the new ones now so the end is the real end.
+    const forced = doc.classList.contains('cv') ? inserted.filter(el => el.isConnected) : [];
+    for (const el of forced) el.style.contentVisibility = 'visible';
+    window.scrollTo(0, document.scrollingElement.scrollHeight);
+    for (const el of forced) heights.set(el, el.getBoundingClientRect().height);
+    // Handed back once a frame has rendered them, which records their real
+    // size: content-visibility then keeps that size (and they are on screen).
+    if (forced.length) requestAnimationFrame(() => requestAnimationFrame(() => { for (const el of forced) el.style.contentVisibility = ''; }));
+  }
   else if (anchor) restoreAnchor(anchor, changed);
 
   for (const el of visibleChanged) {
@@ -140,5 +161,22 @@ function showNotice(text) {
   notice.textContent = text;
   notice.hidden = false;
   clearTimeout(showNotice.t);
-  showNotice.t = setTimeout(() => { notice.hidden = true; }, 6000);
+  // The notice sits in the flow above the document: hiding it keeps the reader's place.
+  showNotice.t = setTimeout(() => {
+    const anchor = captureAnchor();
+    notice.hidden = true;
+    restoreAnchor(anchor, new Set());
+  }, 6000);
+}
+
+// Large documents let WebKit skip laying out off-screen blocks
+// (content-visibility), but find in page skips that content too: while the
+// find bar is open the whole document is laid out.
+let finding = false;
+function updateCv() { doc.classList.toggle('cv', slots.size > 250 && !finding); }
+
+export function findMode(on) {
+  on = !!on;
+  if (on === finding) return;
+  keepPlace(() => { finding = on; updateCv(); });
 }

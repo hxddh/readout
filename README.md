@@ -49,6 +49,9 @@ mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/rea
 | <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change |
 | <kbd>D</kbd> | Show which words changed in the edited blocks in view, top first; once all are shown, hide them |
 | <kbd>⌘K</kbd> | Mark all as read |
+| <kbd>⇧⌘K</kbd> | Show only changes |
+| <kbd>⇧⌘O</kbd> | Open the latest agent file |
+| <kbd>⌥⌘R</kbd> | Open the newest agent document from anywhere (global; change or turn off in Settings) |
 | <kbd>⌘F</kbd>, <kbd>⌘G</kbd> | Find, find next |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Text size |
 | <kbd>⌥⌘\</kbd> | Narrow / wide text |

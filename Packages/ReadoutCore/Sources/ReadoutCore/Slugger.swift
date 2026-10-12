@@ -11,8 +11,9 @@ public struct Slugger {
         for scalar in text.lowercased().unicodeScalars {
             if scalar == " " { out += "-"; continue }
             if scalar == "-" || scalar == "_" { out.unicodeScalars.append(scalar); continue }
+            // Letters, marks and numbers of every kind (², ½, Ⅻ), as GitHub keeps them.
             if CharacterSet.letters.contains(scalar) || CharacterSet.decimalDigits.contains(scalar)
-                || CharacterSet.nonBaseCharacters.contains(scalar) {
+                || CharacterSet.nonBaseCharacters.contains(scalar) || scalar.properties.numericType != nil {
                 out.unicodeScalars.append(scalar)
             }
         }

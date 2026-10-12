@@ -49,6 +49,9 @@ mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/rea
 | <kbd>N</kbd> / <kbd>⇧N</kbd>（或 <kbd>⌘]</kbd> / <kbd>⌘[</kbd>） | 下一处 / 上一处未读变更 |
 | <kbd>D</kbd> | 从上到下依次显示视野内修改段落的具体改动；全部显示后再按一次收起 |
 | <kbd>⌘K</kbd> | 全部标为已读 |
+| <kbd>⇧⌘K</kbd> | 只看变更 |
+| <kbd>⇧⌘O</kbd> | 打开最新的 Agent 文件 |
+| <kbd>⌥⌘R</kbd> | 在任何地方打开最新的 Agent 文档（全局快捷键，可在设置中更改或关闭） |
 | <kbd>⌘F</kbd>、<kbd>⌘G</kbd> | 查找、查找下一个 |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | 文字大小 |
 | <kbd>⌥⌘\</kbd> | 窄栏 / 宽栏 |

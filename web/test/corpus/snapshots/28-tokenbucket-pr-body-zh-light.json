@@ -1,102 +1,102 @@
 {
- "height": 1070,
+ "height": 1086,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 40,
    "h": 42,
-   "style": "90c55070",
-   "content": "e2e70e7c",
-   "text": "Summary§"
+   "style": "124e080d",
+   "content": "414eb5b3",
+   "text": "Summary"
   },
   {
    "slot": 2,
    "kind": "paragraph",
    "top": 82,
-   "h": 148,
-   "style": "4d40230d",
+   "h": 158,
+   "style": "c150ebab",
    "content": "368f915c",
    "text": "修复 Binance OHLC 在 USE_HTTP_PROXY=true 场景下因缺失 req"
   },
   {
    "slot": 3,
    "kind": "paragraph",
-   "top": 230,
+   "top": 240,
    "h": 102,
-   "style": "218d47b3",
+   "style": "872ccc4a",
    "content": "fdfd0ef5",
    "text": "同时补充了 Futures Kline 按 limit 分段权重、Spot/Margin 使用统"
   },
   {
    "slot": 4,
    "kind": "heading",
-   "top": 332,
+   "top": 342,
    "h": 65,
-   "style": "93348eb9",
-   "content": "61b56d07",
-   "text": "Validation§"
+   "style": "99c60393",
+   "content": "3d12df9a",
+   "text": "Validation"
   },
   {
    "slot": 5,
    "kind": "listItem",
-   "top": 397,
+   "top": 407,
    "h": 54,
-   "style": "f515b811",
+   "style": "4a5f44ed",
    "content": "65e5e8c9",
    "text": "./node_modules/typescript/bin/tsc --noEmit --pro"
   },
   {
    "slot": 6,
    "kind": "listItem",
-   "top": 451,
+   "top": 461,
    "h": 45,
-   "style": "d34a9c9f",
+   "style": "76997023",
    "content": "e3f4508e",
    "text": "rush build --to @yuants/vendor-binance（workdir: "
   },
   {
    "slot": 7,
    "kind": "heading",
-   "top": 496,
+   "top": 506,
    "h": 65,
-   "style": "93348eb9",
-   "content": "4f668f54",
-   "text": "Risks§"
+   "style": "99c60393",
+   "content": "0c5b177b",
+   "text": "Risks"
   },
   {
    "slot": 8,
    "kind": "listItem",
-   "top": 561,
+   "top": 571,
    "h": 31,
-   "style": "3a033181",
+   "style": "7e0dfff4",
    "content": "0620204f",
    "text": "当前缺少代理场景的集成测试，真实代理链路仍建议补充端到端验证"
   },
   {
    "slot": 9,
    "kind": "listItem",
-   "top": 592,
+   "top": 602,
    "h": 47,
-   "style": "753a6815",
+   "style": "7e2e4250",
    "content": "96e815af",
    "text": "public-api 中其他 endpoint 仍有模板重复，后续可继续收敛统一"
   },
   {
    "slot": 10,
    "kind": "heading",
-   "top": 639,
+   "top": 649,
    "h": 65,
-   "style": "93348eb9",
-   "content": "f1dfeb4e",
-   "text": "Rollback§"
+   "style": "99c60393",
+   "content": "769c309d",
+   "text": "Rollback"
   },
   {
    "slot": 11,
    "kind": "paragraph",
-   "top": 704,
-   "h": 96,
-   "style": "1dcde814",
+   "top": 714,
+   "h": 102,
+   "style": "701f2c9f",
    "content": "57a2bc75",
    "text": "回滚 apps/vendor-binance/src/api/public-api.ts 中新增"
   }
