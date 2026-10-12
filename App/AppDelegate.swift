@@ -120,7 +120,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         } else {
             controller.show()
         }
-        welcome?.close()
+        // A background open leaves the window the reader is in alone, the welcome window included.
+        if mode == .request || !(NSApp.isActive && welcome?.isKeyWindow == true) { welcome?.close() }
     }
 
     /// Whether a window shows `path` (FSEvents reports resolved paths, windows

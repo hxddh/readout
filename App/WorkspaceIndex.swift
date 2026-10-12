@@ -26,11 +26,13 @@ final class WorkspaceIndex {
         stream = nil
         recent = []
         guard !roots.isEmpty else { return }
+        // FSEvents reports resolved paths (/private/var, a symlinked folder's target).
+        let matchRoots = roots + roots.map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path }
         stream = FSEventsStream(paths: roots, latency: 0.3, queue: queue) { [weak self] events in
             let hits: [(URL, Date)] = events.compactMap { e in
                 guard e.isFile, !e.isRemoved || FileManager.default.fileExists(atPath: e.path) else { return nil }
                 let url = URL(fileURLWithPath: e.path)
-                guard Self.isCandidate(url) else { return nil }
+                guard Self.isCandidate(url, roots: matchRoots) else { return nil }
                 return (url, Date())
             }
             guard !hits.isEmpty else { return }
@@ -61,7 +63,7 @@ final class WorkspaceIndex {
         recent.first(where: { FileManager.default.fileExists(atPath: $0.url.path) })?.url
     }
 
-    nonisolated static func isCandidate(_ url: URL) -> Bool { AgentFolders.isCandidate(url.path) }
+    nonisolated static func isCandidate(_ url: URL, roots: [String]) -> Bool { AgentFolders.isCandidate(url.path, roots: roots) }
 
     /// Bounded initial scan for the newest Markdown files.
     nonisolated static func scan(_ roots: [String]) -> [(URL, Date)] {

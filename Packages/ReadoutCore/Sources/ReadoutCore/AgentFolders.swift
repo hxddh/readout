@@ -8,12 +8,26 @@ public enum AgentFolders {
     public static let skippedDirectories: Set<String> = ["node_modules", ".git", ".hg", ".svn", "build", ".build", "DerivedData",
                                                          "Pods", "vendor", "target", "dist", ".next", ".venv", "venv", "__pycache__", ".cache"]
 
-    /// A Markdown file outside skipped directories, not hidden itself.
-    public static func isCandidate(_ path: String) -> Bool {
+    /// The one hidden folder agents write documents to (Claude Code's plans).
+    public static let agentHiddenDirectory = ".claude"
+
+    /// A Markdown file in one of `roots`, outside skipped and hidden folders
+    /// below the root (`.claude` aside), and not hidden itself: the same files
+    /// the initial scan finds. The root itself may be hidden (`~/.claude/plans`).
+    public static func isCandidate(_ path: String, roots: [String]) -> Bool {
         let url = URL(fileURLWithPath: path)
         guard markdownExtensions.contains(url.pathExtension.lowercased()) else { return false }
-        for c in url.pathComponents where skippedDirectories.contains(c) { return false }
-        return !url.lastPathComponent.hasPrefix(".")
+        let all = url.standardizedFileURL.pathComponents
+        let root = roots.map { URL(fileURLWithPath: $0).standardizedFileURL.pathComponents }
+            .filter { $0.count < all.count && Array(all.prefix($0.count)) == $0 }
+            .max { $0.count < $1.count }
+        guard let root else { return false }
+        let below = all.dropFirst(root.count)
+        for (i, c) in below.enumerated() {
+            if skippedDirectories.contains(c) { return false }
+            if c.hasPrefix("."), c != agentHiddenDirectory || i == below.count - 1 { return false }
+        }
+        return true
     }
 }
 
@@ -37,9 +51,10 @@ public struct AutoOpen: Sendable {
 
     public init() {}
 
-    /// A write the folder watcher saw while the app was running. Non-candidates are ignored.
+    /// A write the folder watcher saw while the app was running, already
+    /// filtered with `AgentFolders.isCandidate`. Non-Markdown paths are ignored.
     public mutating func noteWrite(_ path: String, at date: Date) {
-        guard AgentFolders.isCandidate(path) else { return }
+        guard AgentFolders.markdownExtensions.contains(URL(fileURLWithPath: path).pathExtension.lowercased()) else { return }
         pending[path] = max(pending[path] ?? date, date)
     }
 
