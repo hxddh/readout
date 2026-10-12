@@ -212,6 +212,14 @@ public enum MarkdownParser {
                     if let nh = next as? HTMLBlock {
                         depth += Self.detailsDepth(nh.rawHTML)
                         if depth <= 0 { closing = nh.html; break }
+                    } else {
+                        // A `</details>` inside a block (`Some text</details>`, an
+                        // indented close in a list item) ends the disclosure there
+                        // too, as in a browser, instead of it taking in the rest of the document.
+                        // Only closing counts: a disclosure opened inside a block is
+                        // not joined (FenceTracker, which the fragmenter follows, agrees).
+                        depth += min(0, Self.nestedDetailsDepth(next))
+                        if depth <= 0 { inner.append(next); break }
                     }
                     inner.append(next)
                 }
@@ -328,6 +336,17 @@ public enum MarkdownParser {
         }
         return count(detailsOpen) - count(detailsClose)
     }
+    /// Net `<details>` opened by the raw HTML inside a block (inline HTML,
+    /// HTML blocks in list items or quotes); code is not HTML.
+    static func nestedDetailsDepth(_ node: Markup) -> Int {
+        switch node {
+        case let h as InlineHTML: return h.rawHTML.utf8.count >= 9 ? detailsDepth(h.rawHTML) : 0
+        case let h as HTMLBlock: return detailsDepth(h.rawHTML)
+        case is CodeBlock, is InlineCode, is Text: return 0
+        default: return node.children.reduce(0) { $0 + nestedDetailsDepth($1) }
+        }
+    }
+
     private static let detailsOpen = try! NSRegularExpression(pattern: #"<details(?=[\s>/])"#)
     private static let detailsClose = try! NSRegularExpression(pattern: #"</details(?=[\s>])"#)
 
