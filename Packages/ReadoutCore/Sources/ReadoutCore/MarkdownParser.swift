@@ -109,7 +109,8 @@ public enum MarkdownParser {
         // renderer copies it.
         let protectedDefinitions = definitions.map { (def: $0, source: math.protect($0.text)) }
         let document = Document(parsing: protected, options: [.disableSmartOpts])
-        var renderer = HTMLRenderer(math: math, resolver: resolver)
+        let probe = resolver.map(ResolverProbe.init)
+        var renderer = HTMLRenderer(math: math, resolver: probe)
         renderer.sourceLines = protected.split(separator: "\n", omittingEmptySubsequences: false)
 
         func sourceSlice(_ range: ClosedRange<Int>) -> ArraySlice<String> {
@@ -133,6 +134,8 @@ public enum MarkdownParser {
 
         // Which `[^id]` are references depends on the defined ids.
         let footnoteKey = ids.isEmpty ? "" : "|fn:\(XXHash64.hash(ids.sorted().joined(separator: "\u{1F}")))"
+        // Where `[text][ref]` and `[ref]` point depends on the document's link definitions.
+        let refsKey = IncrementalParser.linkDefinitionsHash(parseLines).map { "|refs:\($0)" } ?? ""
 
         func make(_ kind: BlockKind, _ node: Markup?, range rawRange: ClosedRange<Int>, html: @autoclosure () -> String,
                   extra: String = "", heading: (Int, String, String)? = nil, taskNodes: [Markup] = []) -> Block {
@@ -151,10 +154,17 @@ public enum MarkdownParser {
             // Kind participates in the fingerprint so a paragraph and a heading with the same text differ.
             let fp = XXHash64.hash(kind.rawValue + "\u{1F}" + normalized)
             // The rendered HTML depends on the exact source (incl. task state) plus positional context.
-            let cacheKey = "\(XXHash64.hash(slice.joined(separator: "\n")))|\(kind.rawValue)|\(extra)\(footnoteKey)"
+            let source = slice.joined(separator: "\n")
+            let refs = refsKey.isEmpty || !source.utf8.contains(0x5B) /* [ */ ? "" : refsKey
+            let cacheKey = "\(XXHash64.hash(source))|\(kind.rawValue)|\(extra)\(footnoteKey)\(refs)"
             let rendered: String
             if let cached = cache?.lookup(cacheKey) { rendered = cached }
-            else { rendered = html(); cache?.store(cacheKey, rendered) }
+            else {
+                let reads = probe?.fileSystemReads ?? 0
+                rendered = html()
+                // Not kept when it depends on files (image sizes, which paths exist).
+                if (probe?.fileSystemReads ?? 0) == reads { cache?.store(cacheKey, rendered) }
+            }
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
                           taskState: tasks, html: rendered, text: normalized,
                           headingLevel: heading?.0, headingTitle: heading?.1, anchor: heading?.2)

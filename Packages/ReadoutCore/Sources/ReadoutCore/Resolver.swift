@@ -38,6 +38,32 @@ public enum ReadoutURL {
     }
 }
 
+/// Passes calls to a resolver and counts the answers that came from the
+/// file system (a local image's size, whether a path exists): HTML built
+/// from them can go stale while the source stays the same, so the render
+/// cache does not keep it. Used by one parse, on one thread.
+final class ResolverProbe: ResourceResolver, @unchecked Sendable {
+    let base: ResourceResolver
+    private(set) var fileSystemReads = 0
+    init(_ base: ResourceResolver) { self.base = base }
+    var identity: String { base.identity }
+
+    func image(_ src: String) -> ResolvedImage {
+        let r = base.image(src)
+        if !r.remote && !src.lowercased().hasPrefix("data:") { fileSystemReads += 1 }
+        return r
+    }
+
+    func pathReference(_ code: String) -> PathReference? {
+        let r = base.pathReference(code)
+        // What could name a file was looked up, found or not.
+        if r != nil || (code.count <= 300 && !code.contains(" ") && (code.contains(".") || code.contains("/"))) {
+            fileSystemReads += 1
+        }
+        return r
+    }
+}
+
 /// Default resolver backed by the file system, relative to the document's directory.
 public struct FileResolver: ResourceResolver {
     public let baseDirectory: URL?
