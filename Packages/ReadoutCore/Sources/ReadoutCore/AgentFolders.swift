@@ -41,8 +41,9 @@ public enum AgentFolders {
 /// `maxWait` after the first, so a file rewritten continuously cannot hold the
 /// others back). Then:
 /// - more than `burst` new documents at once is a bulk change (a branch switch,
-///   a generator, an unpacked archive): nothing opens; the global shortcut
-///   still reaches the newest;
+///   a generator, an unpacked archive): only the newest opens, and the others
+///   count as seen, so a later write of one of them does not open it either;
+///   the global shortcut still reaches the newest;
 /// - a document already open is left to its window, which updates itself;
 /// - a document opens on its own at most once per launch.
 public struct AutoOpen: Sendable {
@@ -78,15 +79,18 @@ public struct AutoOpen: Sendable {
     /// The documents to open now, oldest write first. `isOpen` tells whether a
     /// window already shows the path; `exists` whether it is still there.
     public mutating func settle(isOpen: (String) -> Bool, exists: (String) -> Bool) -> [String] {
-        let written = pending.sorted { $0.value < $1.value }.map(\.key).filter(exists)
+        // Oldest write first; same-instant writes in path order, so "newest" is well defined.
+        let written = pending.sorted { $0.value != $1.value ? $0.value < $1.value : $0.key < $1.key }
+            .map(\.key).filter(exists)
         pending = [:]
         firstPending = nil
         // A document already shown counts as opened: closing it means the reader is done with it.
         let shown = written.filter(isOpen)
         opened.formUnion(shown)
         let toOpen = written.filter { !opened.contains($0) }
-        guard toOpen.count <= Self.burst else { return [] }
         opened.formUnion(toOpen)
+        // A bulk change: the newest alone, the rest are seen and stay closed.
+        guard toOpen.count <= Self.burst else { return toOpen.last.map { [$0] } ?? [] }
         return toOpen
     }
 }
