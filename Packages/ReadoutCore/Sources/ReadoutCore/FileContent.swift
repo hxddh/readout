@@ -11,6 +11,7 @@ public enum FileContent {
     }
 
     public static func decode(_ data: Data) -> Decoded {
+        if let utf16 = decodeUTF16(data) { return utf16 }
         var bytes = data
         if bytes.starts(with: [0xEF, 0xBB, 0xBF]) { bytes = bytes.dropFirst(3) }
         if let s = String(data: bytes, encoding: .utf8) {
@@ -30,6 +31,39 @@ public enum FileContent {
         #endif
         let s = String(decoding: bytes, as: UTF8.self)
         return Decoded(text: s, fallbackEncoding: "UTF-8 (with replacement characters)", truncatedTail: false)
+    }
+
+    /// UTF-16 text (what Windows tools and PowerShell redirection write): with
+    /// a byte order mark, or without one when the high bytes of mostly-ASCII
+    /// text are zero (UTF-8 text never holds NUL bytes like that).
+    static func decodeUTF16(_ data: Data) -> Decoded? {
+        let b = [UInt8](data.prefix(4096))
+        let bigEndian: Bool
+        var body = data
+        if b.count >= 2 && b[0] == 0xFF && b[1] == 0xFE {
+            bigEndian = false; body = data.dropFirst(2)
+        } else if b.count >= 2 && b[0] == 0xFE && b[1] == 0xFF {
+            bigEndian = true; body = data.dropFirst(2)
+        } else {
+            guard b.count >= 4 else { return nil }
+            var zeroEven = 0, zeroOdd = 0
+            for (i, v) in b.enumerated() where v == 0 { if i % 2 == 0 { zeroEven += 1 } else { zeroOdd += 1 } }
+            let pairs = b.count / 2
+            if zeroOdd * 10 >= pairs * 3 && zeroEven * 10 <= zeroOdd { bigEndian = false }
+            else if zeroEven * 10 >= pairs * 3 && zeroOdd * 10 <= zeroEven { bigEndian = true }
+            else { return nil }
+        }
+        // An odd byte at the end: still being written.
+        let truncated = body.count % 2 == 1
+        if truncated { body = body.dropLast() }
+        var units: [UInt16] = []
+        units.reserveCapacity(body.count / 2)
+        var it = body.makeIterator()
+        while let x = it.next(), let y = it.next() {
+            units.append(bigEndian ? UInt16(x) << 8 | UInt16(y) : UInt16(y) << 8 | UInt16(x))
+        }
+        let text = String(decoding: units, as: UTF16.self)
+        return Decoded(text: text, fallbackEncoding: bigEndian ? "UTF-16BE" : "UTF-16LE", truncatedTail: truncated)
     }
 
     public enum WriteVerdict: Equatable, Sendable { case accept, waitForMore }

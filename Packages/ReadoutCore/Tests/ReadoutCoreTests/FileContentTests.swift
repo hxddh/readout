@@ -8,6 +8,23 @@ import Testing
         #expect(d.text == "hi")
     }
 
+    @Test func utf16WithAndWithoutByteOrderMark() {
+        let text = "# Hi\n\n中文 and English.\n"
+        let le = FileContent.decode(Data([0xFF, 0xFE]) + text.data(using: .utf16LittleEndian)!)
+        let be = FileContent.decode(Data([0xFE, 0xFF]) + text.data(using: .utf16BigEndian)!)
+        let bare = FileContent.decode(text.data(using: .utf16LittleEndian)!)
+        for d in [le, be, bare] {
+            #expect(d.text == text)
+            #expect(d.fallbackEncoding?.hasPrefix("UTF-16") == true)
+            #expect(!d.truncatedTail)
+        }
+        // Half a code unit at the end: still being written.
+        let cut = FileContent.decode((Data([0xFF, 0xFE]) + text.data(using: .utf16LittleEndian)!).dropLast())
+        #expect(cut.truncatedTail && cut.text == "# Hi\n\n中文 and English.")
+        // UTF-8 stays UTF-8.
+        #expect(FileContent.decode(Data(text.utf8)).fallbackEncoding == nil)
+    }
+
     @Test func truncatedUTF8Tail() {
         let full = Data("中文".utf8)
         let d = FileContent.decode(full.dropLast(1))

@@ -235,7 +235,7 @@ public enum MarkdownParser {
             switch node {
             case let h as Heading:
                 // The anchor, and the <hN id> carrying it, are added by `assemble`.
-                let titleText = math.restore(plain: h.plainText).trimmingCharacters(in: .whitespaces)
+                let titleText = math.restore(plain: Self.headingText(h)).trimmingCharacters(in: .whitespaces)
                 blocks.append(make(.heading, h, range: range, html: renderer.inline(h),
                                    heading: (h.level, titleText, "")))
 
@@ -336,6 +336,19 @@ public enum MarkdownParser {
         }
         return count(detailsOpen) - count(detailsClose)
     }
+    /// A heading's text as it reads (GitHub builds the anchor from it): code
+    /// without its backticks, raw HTML tags left out, an image as its alt text.
+    static func headingText(_ node: Markup) -> String {
+        switch node {
+        case let t as Text: return t.string
+        case let c as InlineCode: return c.code
+        case is InlineHTML: return ""
+        case is SoftBreak, is LineBreak: return " "
+        case let s as SymbolLink: return s.destination ?? ""
+        default: return node.children.map(headingText).joined()
+        }
+    }
+
     /// Net `<details>` opened by the raw HTML inside a block (inline HTML,
     /// HTML blocks in list items or quotes); code is not HTML.
     static func nestedDetailsDepth(_ node: Markup) -> Int {
@@ -360,9 +373,22 @@ public enum MarkdownParser {
     }
 
     /// Index of the line closing YAML front matter, if the document opens with it.
+    /// It must read as YAML: right after the opening `---`, and with a
+    /// `key: value` line (or a `#` comment) before the close. Otherwise `---` is a thematic
+    /// break (and `---` / text / `---` a setext heading), as in CommonMark.
     static func frontMatterEnd(_ lines: [String]) -> Int? {
-        guard lines.first == "---" else { return nil }
-        return lines.indices.dropFirst().prefix(300).first(where: { lines[$0] == "---" || lines[$0] == "..." })
+        guard lines.first == "---", lines.count > 2, !lines[1].allSatisfy({ $0 == " " || $0 == "\t" }) else { return nil }
+        guard let end = lines.indices.dropFirst().prefix(300).first(where: { lines[$0] == "---" || lines[$0] == "..." }) else { return nil }
+        return lines[1..<end].contains(where: { looksLikeYAMLKey($0) || $0.hasPrefix("#") }) ? end : nil
+    }
+
+    /// `key: value` or `key:` at the start of a line (no space before the colon in the key's first word).
+    private static func looksLikeYAMLKey(_ line: String) -> Bool {
+        guard let colon = line.firstIndex(of: ":"), colon != line.startIndex else { return false }
+        let key = line[..<colon]
+        guard let first = key.first, first != " ", first != "\t", first != "#", first != "-" else { return false }
+        let after = line[line.index(after: colon)...]
+        return after.isEmpty || after.first == " " || after.first == "\t"
     }
 
     static func frontMatterBlock(_ body: [String], lines: ClosedRange<Int>) -> Block {
