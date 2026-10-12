@@ -47,7 +47,7 @@ mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/rea
 | Key | Action |
 | --- | --- |
 | <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change |
-| <kbd>D</kbd> | Show / hide which words changed in the edited block in view |
+| <kbd>D</kbd> | Show which words changed in the edited blocks in view, top first; once all are shown, hide them |
 | <kbd>⌘K</kbd> | Mark all as read |
 | <kbd>⌘F</kbd>, <kbd>⌘G</kbd> | Find, find next |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Text size |

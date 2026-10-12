@@ -56,6 +56,14 @@ import Testing
         #expect(html.contains("<del>old</del><ins>new</ins>"))
     }
 
+    @Test func decomposedHangulComparesBySyllable() {
+        // 한국 → 한글 in decomposed form (NFD): only the second syllable changed.
+        let old = "한국".decomposedStringWithCanonicalMapping, new = "한글".decomposedStringWithCanonicalMapping
+        let segs = WordDiff.segments(old: old, new: new)
+        #expect(segs.first == .equal("한".decomposedStringWithCanonicalMapping), "\(segs)")
+        #expect(segs.contains(.deleted("국".decomposedStringWithCanonicalMapping)) && segs.contains(.inserted("글".decomposedStringWithCanonicalMapping)), "\(segs)")
+    }
+
     @Test func charactersAreNeverSplit() {
         for (a, b) in [("hi 👋🏻 there", "hi 👋🏿 there"), ("love ❤️ it", "love ❤ it"), ("key 1️⃣ ok", "key 2️⃣ ok"),
                        ("cafe\u{301} au lait", "cafe\u{300} au lait"), ("今日は良い天気", "今日は悪い天気"),

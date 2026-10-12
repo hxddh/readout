@@ -266,6 +266,23 @@ const linkTop = await page.evaluate(() => {
   return h ? h.getBoundingClientRect().top : -999;
 });
 check('in-document #link lands on the same heading', linkTop >= -2 && linkTop <= 40, `top=${linkTop}`);
+// Clicked in the same frame as a scroll: in a large document the target's block
+// is still skipped by content-visibility, where WebKit's scrollIntoView scrolled
+// nowhere (about one click in five). Every click must land.
+{
+  const missed = [];
+  for (let i = 0; i < 12; i++) {
+    await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+    const top = await page.evaluate(() => {
+      document.querySelector('a.frag-test[href="#Notice"]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      const h = [...document.querySelectorAll('.k-heading')].find(e => e.querySelector('h2')?.textContent === 'Notice');
+      return h.getBoundingClientRect().top;
+    });
+    if (!(top >= -2 && top <= 40)) missed.push(top);
+    await page.waitForTimeout(i % 3 * 40);
+  }
+  check('in-document #link lands even right after a scroll', missed.length === 0, JSON.stringify(missed));
+}
 const beforeBad = await page.evaluate(() => document.scrollingElement.scrollTop);
 await page.evaluate(() => document.querySelector('a.frag-test[href="#%E0%A4%A"]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
 const afterBad = await page.evaluate(() => document.scrollingElement.scrollTop);
@@ -290,7 +307,12 @@ await page.evaluate(() => {
   window.scrollBy(0, el.getBoundingClientRect().top);
 });
 const captured = await page.evaluate(() => window.readout.captureAnchor());
-check('changes-only capture sees slot 65', captured && captured.slot === 65, JSON.stringify(captured));
+// Failed once in 58 CI runs (null), never locally: say where the page was if it happens again.
+const captureState = await page.evaluate(() => ({ scrollY, scrollHeight: document.scrollingElement.scrollHeight,
+  cv: document.getElementById('ro-doc').classList.contains('cv'),
+  shown: [...document.querySelectorAll('#ro-doc > .blk')].filter(e => !e.hidden && e.offsetParent).length,
+  top65: document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top }));
+check('changes-only capture sees slot 65', captured && captured.slot === 65, JSON.stringify({ captured, ...captureState }));
 // Insert a long unread paragraph after slot 20: slot 65 must not move.
 // Marks are a full snapshot (DocumentSession.payload sends currentMarks), so
 // the patch keeps every existing mark alongside the new one — a patch that
@@ -581,6 +603,24 @@ check('rail labels use the localized template',
   });
   check('a comparison sent earlier stays available', r.has, JSON.stringify(r));
   check('a removed text sent earlier still opens', r.text === 'Removed words.', JSON.stringify(r));
+}
+// D walks down the screen: the topmost closed comparison in view first, then
+// the next; once all in view are open, it closes them.
+{
+  const base = { rewrite: false, toc: [], tasks: { done: 0, total: 0 }, deletions: [] };
+  await page.evaluate(p => window.readout.apply(p), { ...base, version: 140, reset: true,
+    ops: [{ op: 'insert', slot: 1801, after: 0, kind: 'paragraph', html: '<p>First edited.</p>' },
+          { op: 'insert', slot: 1802, after: 1801, kind: 'paragraph', html: '<p>Second edited.</p>' }],
+    marks: [{ slot: 1801, kind: 'modified', diff: '<ins>First</ins> edited.' },
+            { slot: 1802, kind: 'modified', diff: '<ins>Second</ins> edited.' }] });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const press = () => page.evaluate(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }));
+    return [1801, 1802].filter(s => document.querySelector(`.blk[data-slot="${s}"] > .wd-panel`));
+  });
+  const steps = [await press(), await press(), await press()];
+  check('D opens the top comparison, then the next, then closes both',
+    JSON.stringify(steps) === JSON.stringify([[1801], [1801, 1802], []]), JSON.stringify(steps));
 }
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 

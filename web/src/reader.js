@@ -11,7 +11,7 @@
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook } from './reader/core.js';
-import { captureAnchor, restoreAnchor, resolveFragment } from './reader/anchor.js';
+import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement } from './reader/anchor.js';
 import { apply } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
@@ -38,7 +38,7 @@ doc.addEventListener('click', ev => {
     if (!target) return;
     // Footnotes and their back-references land mid-screen and show where.
     const note = a.matches('[data-footnote-ref], [data-footnote-backref]');
-    target.scrollIntoView({ block: note ? 'center' : 'start' });
+    scrollToElement(target, { center: note });
     if (note) {
       const spot = target.closest('li, sup') || target;
       spot.classList.remove('landed'); void spot.offsetWidth; spot.classList.add('landed');
@@ -114,7 +114,7 @@ function scrollToAnchor(a) {
 
 function scrollToFragment(o) {
   const target = resolveFragment(o && o.fragment);
-  if (target) { window.scrollBy(0, target.getBoundingClientRect().top - 16); reportActiveHeading(); }
+  if (target) { scrollToElement(target, { gap: 16 }); reportActiveHeading(); }
 }
 
 window.readout = {

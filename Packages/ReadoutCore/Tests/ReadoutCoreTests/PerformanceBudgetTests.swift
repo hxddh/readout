@@ -46,8 +46,11 @@ import Testing
         return paragraphs.joined(separator: "\n\n")
     }
 
-    /// Median wall time of the full update path, in milliseconds.
-    static func measureUpdate(original: String, edited: String, runs: Int = 9) -> Double {
+    /// Fastest and median wall time of the full update path, in milliseconds.
+    /// The guard uses the fastest run: on a shared CI runner other work only
+    /// ever adds time, so the minimum is the measurement least disturbed by it
+    /// (the median of the same runs varied 2x between CI runs).
+    static func measureUpdate(original: String, edited: String, runs: Int = 9) -> (min: Double, median: Double) {
         var samples: [Double] = []
         for _ in 0..<runs {
             // The app's path: one incremental parser per document (DocumentLoader).
@@ -68,14 +71,16 @@ import Testing
             precondition(patch != nil, "edit produced no patch")
             samples.append(elapsed)
         }
-        return samples.sorted()[samples.count / 2]
+        let sorted = samples.sorted()
+        return (sorted[0], sorted[sorted.count / 2])
     }
 
     func record(_ name: String, measured: Double, detail: [String: Any]) {
         var entry = detail
         entry["ms"] = (measured * 10).rounded() / 10
         Self.results[name] = entry
-        print("perf \(name): \(String(format: "%.1f", measured)) ms")
+        let median = (detail["median_ms"] as? Double).map { String(format: " (median %.1f)", $0) } ?? ""
+        print("perf \(name): \(String(format: "%.1f", measured)) ms\(median)")
         Self.write()
     }
 
@@ -88,8 +93,8 @@ import Testing
     @Test func update100KB() {
         let doc = Self.document(bytes: 100_000)
         let ms = Self.measureUpdate(original: doc, edited: Self.edited(doc, count: 20))
-        record("update_100kb", measured: ms,
-              detail: ["bytes": doc.utf8.count, "edits": 20])
+        record("update_100kb", measured: ms.min,
+              detail: ["bytes": doc.utf8.count, "edits": 20, "median_ms": (ms.median * 10).rounded() / 10])
     }
 
     /// What the word-level comparison adds to a patch: 20 edited blocks of a 100 KB document.
@@ -112,9 +117,9 @@ import Testing
 
     @Test func update1MB() {
         let doc = Self.document(bytes: 1_000_000)
-        let ms = Self.measureUpdate(original: doc, edited: Self.edited(doc, count: 20), runs: 5)
-        record("update_1mb", measured: ms,
-              detail: ["bytes": doc.utf8.count, "edits": 20])
+        let ms = Self.measureUpdate(original: doc, edited: Self.edited(doc, count: 20), runs: 7)
+        record("update_1mb", measured: ms.min,
+              detail: ["bytes": doc.utf8.count, "edits": 20, "median_ms": (ms.median * 10).rounded() / 10])
     }
 
     @Test func editsAreRealistic() {
