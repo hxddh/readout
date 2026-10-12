@@ -1,5 +1,5 @@
 {
- "height": 15368,
+ "height": 15522,
  "blocks": [
   {
    "slot": 1,
@@ -122,15 +122,15 @@
    "slot": 14,
    "kind": "listItem",
    "top": 1214,
-   "h": 54,
-   "style": "e9a22802",
+   "h": 59,
+   "style": "a929a3ef",
    "content": "7da3a943",
    "text": "ApiHandler 收到 WebSearchResults 后会直接覆盖 updatedMes"
   },
   {
    "slot": 15,
    "kind": "listItem",
-   "top": 1268,
+   "top": 1272,
    "h": 31,
    "style": "829b9e00",
    "content": "6e0f2e00",
@@ -139,25 +139,25 @@
   {
    "slot": 16,
    "kind": "listItem",
-   "top": 1299,
-   "h": 80,
-   "style": "8bfdabc4",
+   "top": 1303,
+   "h": 87,
+   "style": "1fd53253",
    "content": "02813267",
    "text": "mergeStreamingCompletionMessage() 只合并 text/reaso"
   },
   {
    "slot": 17,
    "kind": "listItem",
-   "top": 1379,
-   "h": 54,
-   "style": "92aabec3",
+   "top": 1390,
+   "h": 59,
+   "style": "6edf0a6c",
    "content": "257215c4",
    "text": "GeminiDirectClient 从 groundingChunks 构造 WebSearc"
   },
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 1433,
+   "top": 1449,
    "h": 59,
    "style": "c2aed561",
    "content": "2b3906f4",
@@ -166,16 +166,16 @@
   {
    "slot": 19,
    "kind": "listItem",
-   "top": 1492,
-   "h": 54,
-   "style": "d9ed1f4f",
+   "top": 1507,
+   "h": 59,
+   "style": "c4204f2a",
    "content": "ebb5c101",
    "text": "工具循环不只在 OpenAIDirectClient，还存在于 OpenAIResponsesC"
   },
   {
    "slot": 20,
    "kind": "listItem",
-   "top": 1546,
+   "top": 1566,
    "h": 75,
    "style": "0cec3d9a",
    "content": "b0baa586",
@@ -184,7 +184,7 @@
   {
    "slot": 21,
    "kind": "rule",
-   "top": 1622,
+   "top": 1641,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -193,7 +193,7 @@
   {
    "slot": 22,
    "kind": "heading",
-   "top": 1640,
+   "top": 1660,
    "h": 65,
    "style": "3505f3b8",
    "content": "b938138f",
@@ -202,7 +202,7 @@
   {
    "slot": 23,
    "kind": "heading",
-   "top": 1705,
+   "top": 1725,
    "h": 42,
    "style": "5b09fa56",
    "content": "d7ab340d",
@@ -211,16 +211,16 @@
   {
    "slot": 24,
    "kind": "listItem",
-   "top": 1747,
-   "h": 28,
-   "style": "4f413ccb",
+   "top": 1767,
+   "h": 31,
+   "style": "d329ed02",
    "content": "5bcb3d97",
    "text": "保留 StreamEnd 前已经写入的 message.webSearchResults。"
   },
   {
    "slot": 25,
    "kind": "listItem",
-   "top": 1776,
+   "top": 1798,
    "h": 31,
    "style": "5af01fb9",
    "content": "4f2170ec",
@@ -229,34 +229,34 @@
   {
    "slot": 26,
    "kind": "listItem",
-   "top": 1806,
-   "h": 28,
-   "style": "4a74d42b",
+   "top": 1828,
+   "h": 31,
+   "style": "7f99a4ad",
    "content": "4316acd1",
    "text": "修正 Gemini 直连 grounding 来源 index。"
   },
   {
    "slot": 27,
    "kind": "listItem",
-   "top": 1835,
-   "h": 28,
-   "style": "99b52de8",
+   "top": 1859,
+   "h": 31,
+   "style": "52a458e5",
    "content": "a54bea3d",
    "text": "从搜索类工具结果中提取来源并 emit AppStreamEvent.WebSearchResu"
   },
   {
    "slot": 28,
    "kind": "listItem",
-   "top": 1863,
-   "h": 54,
-   "style": "fe1bf87e",
+   "top": 1890,
+   "h": 59,
+   "style": "d35f6861",
    "content": "1460cd61",
    "text": "覆盖 OpenAIDirectClient、OpenAIResponsesClient、Gemi"
   },
   {
    "slot": 29,
    "kind": "listItem",
-   "top": 1917,
+   "top": 1948,
    "h": 31,
    "style": "7f99a4ad",
    "content": "efbd992f",
@@ -265,7 +265,7 @@
   {
    "slot": 30,
    "kind": "listItem",
-   "top": 1948,
+   "top": 1979,
    "h": 47,
    "style": "691d52f6",
    "content": "754377ec",
@@ -274,7 +274,7 @@
   {
    "slot": 31,
    "kind": "heading",
-   "top": 1995,
+   "top": 2026,
    "h": 42,
    "style": "5b09fa56",
    "content": "c9628fac",
@@ -283,7 +283,7 @@
   {
    "slot": 32,
    "kind": "listItem",
-   "top": 2037,
+   "top": 2068,
    "h": 31,
    "style": "3a033181",
    "content": "57c97025",
@@ -292,16 +292,16 @@
   {
    "slot": 33,
    "kind": "listItem",
-   "top": 2068,
-   "h": 28,
-   "style": "8a1c4eb8",
+   "top": 2099,
+   "h": 31,
+   "style": "9c59eda9",
    "content": "e210f828",
    "text": "不改 PageSourcesButton UI。"
   },
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 2096,
+   "top": 2130,
    "h": 31,
    "style": "7f99a4ad",
    "content": "aa1b4e8e",
@@ -310,7 +310,7 @@
   {
    "slot": 35,
    "kind": "listItem",
-   "top": 2127,
+   "top": 2160,
    "h": 31,
    "style": "7f99a4ad",
    "content": "8f99a809",
@@ -319,16 +319,16 @@
   {
    "slot": 36,
    "kind": "listItem",
-   "top": 2157,
-   "h": 45,
-   "style": "d8fa0518",
+   "top": 2191,
+   "h": 47,
+   "style": "691d52f6",
    "content": "0706ad21",
    "text": "不提交 git commit。"
   },
   {
    "slot": 37,
    "kind": "rule",
-   "top": 2202,
+   "top": 2238,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "heading",
-   "top": 2221,
+   "top": 2257,
    "h": 65,
    "style": "3505f3b8",
    "content": "faf2cb2e",
@@ -346,7 +346,7 @@
   {
    "slot": 39,
    "kind": "heading",
-   "top": 2286,
+   "top": 2322,
    "h": 42,
    "style": "5b09fa56",
    "content": "7486aaaa",
@@ -355,7 +355,7 @@
   {
    "slot": 40,
    "kind": "paragraph",
-   "top": 2328,
+   "top": 2364,
    "h": 46,
    "style": "4e5f4924",
    "content": "72b33d65",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "code",
-   "top": 2374,
+   "top": 2410,
    "h": 159,
    "style": "f1a30cb5",
    "content": "99137eb8",
@@ -373,16 +373,16 @@
   {
    "slot": 42,
    "kind": "paragraph",
-   "top": 2533,
-   "h": 148,
-   "style": "0fad778d",
+   "top": 2569,
+   "h": 158,
+   "style": "4d9c9aea",
    "content": "d20682dd",
    "text": "不使用裸的 contains(\"search\")，避免 research、semantic_re"
   },
   {
    "slot": 43,
    "kind": "heading",
-   "top": 2680,
+   "top": 2726,
    "h": 42,
    "style": "5b09fa56",
    "content": "2f3e965d",
@@ -391,7 +391,7 @@
   {
    "slot": 44,
    "kind": "paragraph",
-   "top": 2722,
+   "top": 2768,
    "h": 46,
    "style": "4e5f4924",
    "content": "788cf7ad",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "code",
-   "top": 2768,
+   "top": 2814,
    "h": 119,
    "style": "5354da50",
    "content": "0acfb96a",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "paragraph",
-   "top": 2887,
+   "top": 2933,
    "h": 74,
    "style": "80b72bf0",
    "content": "7649f924",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "heading",
-   "top": 2960,
+   "top": 3006,
    "h": 42,
    "style": "5b09fa56",
    "content": "d76d63cb",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "paragraph",
-   "top": 3002,
+   "top": 3048,
    "h": 46,
    "style": "4e5f4924",
    "content": "4e097af1",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "code",
-   "top": 3048,
+   "top": 3094,
    "h": 219,
    "style": "167f45d2",
    "content": "3c190617",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 3267,
+   "top": 3313,
    "h": 74,
    "style": "121cf705",
    "content": "b7129091",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "rule",
-   "top": 3340,
+   "top": 3386,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "heading",
-   "top": 3359,
+   "top": 3405,
    "h": 65,
    "style": "3505f3b8",
    "content": "e21ea6c2",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "paragraph",
-   "top": 3424,
+   "top": 3470,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "listItem",
-   "top": 3468,
+   "top": 3514,
    "h": 80,
    "style": "d971fee2",
    "content": "0e13428c",
@@ -490,7 +490,7 @@
   {
    "slot": 55,
    "kind": "listItem",
-   "top": 3548,
+   "top": 3594,
    "h": 80,
    "style": "b1d1e0ae",
    "content": "7f586e43",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "listItem",
-   "top": 3628,
+   "top": 3674,
    "h": 80,
    "style": "b1d1e0ae",
    "content": "710ebb52",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "listItem",
-   "top": 3708,
+   "top": 3754,
    "h": 97,
    "style": "c5195541",
    "content": "de1a6096",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "paragraph",
-   "top": 3805,
+   "top": 3851,
    "h": 46,
    "style": "0ed127d0",
    "content": "eddb894f",
@@ -526,16 +526,16 @@
   {
    "slot": 59,
    "kind": "paragraph",
-   "top": 3851,
-   "h": 44,
-   "style": "706e9677",
+   "top": 3897,
+   "h": 46,
+   "style": "effcffda",
    "content": "8df49b6d",
    "text": "在 ApiHandlerStreamCompletionMergeTest 增加测试："
   },
   {
    "slot": 60,
    "kind": "code",
-   "top": 3895,
+   "top": 3943,
    "h": 579,
    "style": "328e9cb0",
    "content": "ce68becc",
@@ -544,25 +544,25 @@
   {
    "slot": 61,
    "kind": "paragraph",
-   "top": 4474,
-   "h": 70,
-   "style": "415c8008",
+   "top": 4522,
+   "h": 74,
+   "style": "4c6832ca",
    "content": "b3d2c660",
    "text": "同时补一个反向测试：finalizedMessage.webSearchResults 为空时保"
   },
   {
    "slot": 62,
    "kind": "paragraph",
-   "top": 4543,
-   "h": 44,
-   "style": "f81fc48a",
+   "top": 4595,
+   "h": 46,
+   "style": "07b9fe6f",
    "content": "521b97d1",
    "text": "新增多次 WebSearchResults 合并 helper 测试。先抽出一个 interna"
   },
   {
    "slot": 63,
    "kind": "code",
-   "top": 4587,
+   "top": 4641,
    "h": 119,
    "style": "284ec99c",
    "content": "a9639b25",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "paragraph",
-   "top": 4706,
+   "top": 4760,
    "h": 46,
    "style": "4e5f4924",
    "content": "61210958",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "code",
-   "top": 4751,
+   "top": 4805,
    "h": 339,
    "style": "76365c5c",
    "content": "90f9ee11",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "paragraph",
-   "top": 5090,
+   "top": 5144,
    "h": 46,
    "style": "9e53707f",
    "content": "90b523c2",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "paragraph",
-   "top": 5136,
+   "top": 5190,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "code",
-   "top": 5179,
+   "top": 5233,
    "h": 79,
    "style": "e753a6d0",
    "content": "dc22349e",
@@ -616,16 +616,16 @@
   {
    "slot": 69,
    "kind": "paragraph",
-   "top": 5258,
-   "h": 70,
-   "style": "91ab94f2",
+   "top": 5312,
+   "h": 74,
+   "style": "a1510e80",
    "content": "08eebd2f",
    "text": "Expected: 新增测试失败，原因是 webSearchResults 没有被 merge "
   },
   {
    "slot": 70,
    "kind": "paragraph",
-   "top": 5328,
+   "top": 5386,
    "h": 46,
    "style": "8a6fb86e",
    "content": "a377aa9b",
@@ -634,16 +634,16 @@
   {
    "slot": 71,
    "kind": "paragraph",
-   "top": 5374,
-   "h": 44,
-   "style": "0ea0802f",
+   "top": 5432,
+   "h": 46,
+   "style": "8972ed0a",
    "content": "dd7057ac",
    "text": "修改 mergeStreamingCompletionMessage()："
   },
   {
    "slot": 72,
    "kind": "code",
-   "top": 5417,
+   "top": 5477,
    "h": 279,
    "style": "f17a6d0e",
    "content": "e9ff9704",
@@ -652,16 +652,16 @@
   {
    "slot": 73,
    "kind": "paragraph",
-   "top": 5696,
-   "h": 44,
-   "style": "9b9dcc0e",
+   "top": 5756,
+   "h": 46,
+   "style": "4e5f4924",
    "content": "a7e27749",
    "text": "新增 helper："
   },
   {
    "slot": 74,
    "kind": "code",
-   "top": 5740,
+   "top": 5802,
    "h": 219,
    "style": "9a2e5f7c",
    "content": "1a8b5675",
@@ -670,16 +670,16 @@
   {
    "slot": 75,
    "kind": "paragraph",
-   "top": 5959,
-   "h": 44,
-   "style": "07d56b7d",
+   "top": 6021,
+   "h": 46,
+   "style": "f42ba0c4",
    "content": "4c6cac83",
    "text": "修改 WebSearchResults 分支："
   },
   {
    "slot": 76,
    "kind": "code",
-   "top": 6002,
+   "top": 6066,
    "h": 199,
    "style": "a4c47077",
    "content": "d4db0558",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "paragraph",
-   "top": 6201,
+   "top": 6265,
    "h": 46,
    "style": "4e5f4924",
    "content": "e390cfd8",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "code",
-   "top": 6247,
+   "top": 6311,
    "h": 59,
    "style": "4fc99241",
    "content": "8406c47f",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "paragraph",
-   "top": 6306,
+   "top": 6370,
    "h": 46,
    "style": "9e53707f",
    "content": "6201e311",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "paragraph",
-   "top": 6351,
+   "top": 6415,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "code",
-   "top": 6395,
+   "top": 6459,
    "h": 79,
    "style": "e753a6d0",
    "content": "dc22349e",
@@ -733,7 +733,7 @@
   {
    "slot": 82,
    "kind": "paragraph",
-   "top": 6474,
+   "top": 6538,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "b7b42634",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "rule",
-   "top": 6518,
+   "top": 6582,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -751,16 +751,16 @@
   {
    "slot": 84,
    "kind": "heading",
-   "top": 6536,
+   "top": 6600,
    "h": 65,
-   "style": "93348eb9",
+   "style": "3505f3b8",
    "content": "0f738518",
    "text": "Task 2: 修复 Gemini 直连 grounding index§"
   },
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 6601,
+   "top": 6665,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "listItem",
-   "top": 6645,
+   "top": 6709,
    "h": 97,
    "style": "5dd9b72f",
    "content": "f34b8335",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "paragraph",
-   "top": 6742,
+   "top": 6806,
    "h": 46,
    "style": "6b2b2a07",
    "content": "3966b5ce",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "paragraph",
-   "top": 6787,
+   "top": 6852,
    "h": 46,
    "style": "6a1672cc",
    "content": "9499683e",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "code",
-   "top": 6833,
+   "top": 6897,
    "h": 179,
    "style": "181284f7",
    "content": "df54a065",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "paragraph",
-   "top": 7012,
+   "top": 7076,
    "h": 46,
    "style": "8a6fb86e",
    "content": "ee182d28",
@@ -814,16 +814,16 @@
   {
    "slot": 91,
    "kind": "paragraph",
-   "top": 7058,
-   "h": 70,
-   "style": "a26aaa83",
+   "top": 7122,
+   "h": 74,
+   "style": "2028d716",
    "content": "edc44a26",
    "text": "把 chunks.mapNotNull 改成 chunks.mapIndexedNotNull，"
   },
   {
    "slot": 92,
    "kind": "paragraph",
-   "top": 7127,
+   "top": 7195,
    "h": 46,
    "style": "8a6fb86e",
    "content": "035e9aaa",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "paragraph",
-   "top": 7173,
+   "top": 7241,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "code",
-   "top": 7216,
+   "top": 7284,
    "h": 79,
    "style": "bfa121f9",
    "content": "8952c745",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "paragraph",
-   "top": 7295,
+   "top": 7363,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "fcb91fe9",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "rule",
-   "top": 7339,
+   "top": 7407,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -868,7 +868,7 @@
   {
    "slot": 97,
    "kind": "heading",
-   "top": 7358,
+   "top": 7426,
    "h": 65,
    "style": "3505f3b8",
    "content": "5c70a683",
@@ -877,7 +877,7 @@
   {
    "slot": 98,
    "kind": "paragraph",
-   "top": 7423,
+   "top": 7491,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -886,7 +886,7 @@
   {
    "slot": 99,
    "kind": "listItem",
-   "top": 7466,
+   "top": 7534,
    "h": 80,
    "style": "d971fee2",
    "content": "0dd3a35c",
@@ -895,7 +895,7 @@
   {
    "slot": 100,
    "kind": "listItem",
-   "top": 7547,
+   "top": 7615,
    "h": 97,
    "style": "5e206d4b",
    "content": "db568d21",
@@ -904,7 +904,7 @@
   {
    "slot": 101,
    "kind": "paragraph",
-   "top": 7644,
+   "top": 7712,
    "h": 46,
    "style": "0ed127d0",
    "content": "eddb894f",
@@ -913,7 +913,7 @@
   {
    "slot": 102,
    "kind": "paragraph",
-   "top": 7689,
+   "top": 7757,
    "h": 46,
    "style": "4e5f4924",
    "content": "c26a744d",
@@ -922,25 +922,25 @@
   {
    "slot": 103,
    "kind": "listItem",
-   "top": 7735,
-   "h": 28,
-   "style": "74a0d1a5",
+   "top": 7803,
+   "h": 31,
+   "style": "eefdfc59",
    "content": "3e629ac8",
    "text": "web_search 的 {ok:true, results:[{title,url,snipp"
   },
   {
    "slot": 104,
    "kind": "listItem",
-   "top": 7763,
-   "h": 28,
-   "style": "e9d8a520",
+   "top": 7833,
+   "h": 31,
+   "style": "dfae78d4",
    "content": "fe53ba3e",
    "text": "search 的结构化 {results:[{title,url,snippet}]} 可以提取"
   },
   {
    "slot": 105,
    "kind": "listItem",
-   "top": 7791,
+   "top": 7864,
    "h": 31,
    "style": "642a73a2",
    "content": "764847c9",
@@ -949,43 +949,43 @@
   {
    "slot": 106,
    "kind": "listItem",
-   "top": 7822,
-   "h": 28,
-   "style": "96fc1650",
+   "top": 7895,
+   "h": 31,
+   "style": "2df2c626",
    "content": "1c86eee1",
    "text": "web_search_exa 的 {results:[{title,href,text}]}"
   },
   {
    "slot": 107,
    "kind": "listItem",
-   "top": 7850,
-   "h": 28,
-   "style": "64bb7764",
+   "top": 7926,
+   "h": 31,
+   "style": "2d1c6eed",
    "content": "4f012474",
    "text": "firecrawl_search 的纯文本 URL"
   },
   {
    "slot": 108,
    "kind": "listItem",
-   "top": 7879,
-   "h": 28,
-   "style": "c2a1bde9",
+   "top": 7956,
+   "h": 31,
+   "style": "ea74726b",
    "content": "4cbbbc52",
    "text": "中文标点结尾 URL 会清理，例如 https://example.com。、https://e"
   },
   {
    "slot": 109,
    "kind": "listItem",
-   "top": 7907,
-   "h": 28,
-   "style": "7521a94a",
+   "top": 7987,
+   "h": 31,
+   "style": "856e6617",
    "content": "e8cc78cb",
    "text": "data.webPages.value[] 结构"
   },
   {
    "slot": 110,
    "kind": "listItem",
-   "top": 7935,
+   "top": 8018,
    "h": 31,
    "style": "7f99a4ad",
    "content": "ec5829c2",
@@ -994,16 +994,16 @@
   {
    "slot": 111,
    "kind": "listItem",
-   "top": 7966,
-   "h": 28,
-   "style": "27c9dd60",
+   "top": 8048,
+   "h": 31,
+   "style": "ef9e1c71",
    "content": "283443c2",
    "text": "webfetch 不提取"
   },
   {
    "slot": 112,
    "kind": "listItem",
-   "top": 7994,
+   "top": 8079,
    "h": 47,
    "style": "691d52f6",
    "content": "58ca478a",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "paragraph",
-   "top": 8042,
+   "top": 8126,
    "h": 46,
    "style": "9e53707f",
    "content": "90b523c2",
@@ -1021,7 +1021,7 @@
   {
    "slot": 114,
    "kind": "paragraph",
-   "top": 8087,
+   "top": 8172,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -1030,7 +1030,7 @@
   {
    "slot": 115,
    "kind": "code",
-   "top": 8131,
+   "top": 8216,
    "h": 79,
    "style": "241db5b5",
    "content": "0e5fc51e",
@@ -1039,16 +1039,16 @@
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 8210,
-   "h": 44,
-   "style": "9b9dcc0e",
+   "top": 8295,
+   "h": 46,
+   "style": "4e5f4924",
    "content": "38d5d6d9",
    "text": "Expected: FAIL，类不存在。"
   },
   {
    "slot": 117,
    "kind": "paragraph",
-   "top": 8253,
+   "top": 8340,
    "h": 46,
    "style": "8a6fb86e",
    "content": "a377aa9b",
@@ -1057,16 +1057,16 @@
   {
    "slot": 118,
    "kind": "paragraph",
-   "top": 8299,
-   "h": 44,
-   "style": "384d37f6",
+   "top": 8386,
+   "h": 46,
+   "style": "997316c3",
    "content": "c7c17a3a",
    "text": "新增 internal object WebSearchToolResultExtractor，"
   },
   {
    "slot": 119,
    "kind": "code",
-   "top": 8342,
+   "top": 8431,
    "h": 99,
    "style": "dd677842",
    "content": "0d6fd73d",
@@ -1075,7 +1075,7 @@
   {
    "slot": 120,
    "kind": "paragraph",
-   "top": 8441,
+   "top": 8530,
    "h": 46,
    "style": "4e5f4924",
    "content": "1eefa1e2",
@@ -1084,16 +1084,16 @@
   {
    "slot": 121,
    "kind": "listItem",
-   "top": 8487,
-   "h": 28,
-   "style": "65d46c32",
+   "top": 8576,
+   "h": 31,
+   "style": "a7b1f7af",
    "content": "8d315648",
    "text": "isSearchToolName(toolName) 为 false 时返回空列表。"
   },
   {
    "slot": 122,
    "kind": "listItem",
-   "top": 8515,
+   "top": 8607,
    "h": 31,
    "style": "420afab7",
    "content": "d0781048",
@@ -1102,52 +1102,52 @@
   {
    "slot": 123,
    "kind": "listItem",
-   "top": 8546,
-   "h": 28,
-   "style": "8269bd52",
+   "top": 8637,
+   "h": 31,
+   "style": "ee714af7",
    "content": "f494bca2",
    "text": "结构化结果从 results、data.results、data.webPages.value "
   },
   {
    "slot": 124,
    "kind": "listItem",
-   "top": 8574,
-   "h": 28,
-   "style": "0db0ea58",
+   "top": 8668,
+   "h": 31,
+   "style": "369f7b59",
    "content": "c3570670",
    "text": "字段兼容 url、href、link。"
   },
   {
    "slot": 125,
    "kind": "listItem",
-   "top": 8603,
-   "h": 28,
-   "style": "43e7c925",
+   "top": 8699,
+   "h": 31,
+   "style": "88276e91",
    "content": "8a58a9c7",
    "text": "title 兼容 title、name，空时用 href。"
   },
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 8631,
-   "h": 28,
-   "style": "97cf76db",
+   "top": 8729,
+   "h": 31,
+   "style": "672e57bb",
    "content": "137af07d",
    "text": "snippet 兼容 snippet、content、text、summary。"
   },
   {
    "slot": 127,
    "kind": "listItem",
-   "top": 8659,
-   "h": 28,
-   "style": "1b1ed83c",
+   "top": 8760,
+   "h": 31,
+   "style": "8d762be1",
    "content": "e2cf6c2f",
    "text": "纯文本 fallback 使用 Regex(\"\"\"https?://[^\\s)>]+\"\"\")。"
   },
   {
    "slot": 128,
    "kind": "listItem",
-   "top": 8688,
+   "top": 8791,
    "h": 54,
    "style": "dc1680ca",
    "content": "cef667cf",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "listItem",
-   "top": 8742,
+   "top": 8845,
    "h": 47,
    "style": "dcf9e5e7",
    "content": "14995b55",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "paragraph",
-   "top": 8789,
+   "top": 8893,
    "h": 46,
    "style": "9e53707f",
    "content": "6201e311",
@@ -1174,7 +1174,7 @@
   {
    "slot": 131,
    "kind": "paragraph",
-   "top": 8835,
+   "top": 8938,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "code",
-   "top": 8878,
+   "top": 8982,
    "h": 79,
    "style": "241db5b5",
    "content": "0e5fc51e",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "paragraph",
-   "top": 8957,
+   "top": 9061,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "b7b42634",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "rule",
-   "top": 9001,
+   "top": 9104,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1210,16 +1210,16 @@
   {
    "slot": 135,
    "kind": "heading",
-   "top": 9020,
+   "top": 9123,
    "h": 65,
-   "style": "93348eb9",
+   "style": "3505f3b8",
    "content": "16b9ee94",
    "text": "Task 4: 三个工具循环 emit WebSearchResults§"
   },
   {
    "slot": 136,
    "kind": "paragraph",
-   "top": 9085,
+   "top": 9188,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -1228,7 +1228,7 @@
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 9128,
+   "top": 9232,
    "h": 80,
    "style": "d971fee2",
    "content": "9761ef18",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "listItem",
-   "top": 9209,
+   "top": 9312,
    "h": 80,
    "style": "b1d1e0ae",
    "content": "6f902049",
@@ -1246,7 +1246,7 @@
   {
    "slot": 139,
    "kind": "listItem",
-   "top": 9289,
+   "top": 9392,
    "h": 97,
    "style": "5e206d4b",
    "content": "ac95f109",
@@ -1255,7 +1255,7 @@
   {
    "slot": 140,
    "kind": "paragraph",
-   "top": 9386,
+   "top": 9489,
    "h": 46,
    "style": "0ed127d0",
    "content": "c960ba28",
@@ -1264,7 +1264,7 @@
   {
    "slot": 141,
    "kind": "paragraph",
-   "top": 9431,
+   "top": 9535,
    "h": 74,
    "style": "80b72bf0",
    "content": "64935c68",
@@ -1273,7 +1273,7 @@
   {
    "slot": 142,
    "kind": "code",
-   "top": 9505,
+   "top": 9608,
    "h": 119,
    "style": "2bb3343f",
    "content": "62e4b104",
@@ -1282,7 +1282,7 @@
   {
    "slot": 143,
    "kind": "paragraph",
-   "top": 9624,
+   "top": 9727,
    "h": 46,
    "style": "391c5b23",
    "content": "1d0c3835",
@@ -1291,7 +1291,7 @@
   {
    "slot": 144,
    "kind": "code",
-   "top": 9670,
+   "top": 9773,
    "h": 119,
    "style": "9dce175f",
    "content": "e8e70220",
@@ -1300,7 +1300,7 @@
   {
    "slot": 145,
    "kind": "paragraph",
-   "top": 9789,
+   "top": 9892,
    "h": 46,
    "style": "4e5f4924",
    "content": "f27cb55e",
@@ -1309,52 +1309,52 @@
   {
    "slot": 146,
    "kind": "listItem",
-   "top": 9834,
-   "h": 54,
-   "style": "ee0e0123",
+   "top": 9937,
+   "h": 59,
+   "style": "360d9109",
    "content": "45e336dd",
    "text": "OpenAIDirectClient.kt 必须出现 WebSearchToolResultEx"
   },
   {
    "slot": 147,
    "kind": "listItem",
-   "top": 9888,
-   "h": 54,
-   "style": "d50c0645",
+   "top": 9996,
+   "h": 59,
+   "style": "72688617",
    "content": "9c9fff6c",
    "text": "OpenAIResponsesClient.kt 必须出现 WebSearchToolResul"
   },
   {
    "slot": 148,
    "kind": "listItem",
-   "top": 9943,
-   "h": 54,
-   "style": "ed2e4f9e",
+   "top": 10055,
+   "h": 59,
+   "style": "56212c94",
    "content": "4697c55e",
    "text": "GeminiDirectClient.kt 必须出现 WebSearchToolResultEx"
   },
   {
    "slot": 149,
    "kind": "listItem",
-   "top": 9997,
-   "h": 71,
-   "style": "6a2f7cf8",
+   "top": 10114,
+   "h": 75,
+   "style": "4e14241e",
    "content": "986389ce",
    "text": "三个调用点后都必须有 if (webResults.isNotEmpty()) { send(A"
   },
   {
    "slot": 150,
    "kind": "paragraph",
-   "top": 10068,
-   "h": 44,
-   "style": "b318e28c",
+   "top": 10189,
+   "h": 46,
+   "style": "8c239627",
    "content": "5d6ba5bf",
    "text": "Step 2: 实现 OpenAIDirectClient"
   },
   {
    "slot": 151,
    "kind": "paragraph",
-   "top": 10112,
+   "top": 10234,
    "h": 74,
    "style": "3453b20b",
    "content": "5f1610ac",
@@ -1363,43 +1363,43 @@
   {
    "slot": 152,
    "kind": "paragraph",
-   "top": 10185,
-   "h": 44,
-   "style": "3cfa7124",
+   "top": 10308,
+   "h": 46,
+   "style": "5c1a6a9f",
    "content": "e119bc53",
    "text": "Step 3: 实现 OpenAIResponsesClient"
   },
   {
    "slot": 153,
    "kind": "paragraph",
-   "top": 10229,
-   "h": 44,
-   "style": "007adfe9",
+   "top": 10354,
+   "h": 46,
+   "style": "37976ca3",
    "content": "2b16a5c8",
    "text": "在 result 写入 conversationInput 前加入提取和 emit。"
   },
   {
    "slot": 154,
    "kind": "paragraph",
-   "top": 10272,
-   "h": 44,
-   "style": "9be52734",
+   "top": 10399,
+   "h": 46,
+   "style": "eed3e94b",
    "content": "d4c4b250",
    "text": "Step 4: 实现 GeminiDirectClient"
   },
   {
    "slot": 155,
    "kind": "paragraph",
-   "top": 10316,
-   "h": 44,
-   "style": "8e52b57e",
+   "top": 10445,
+   "h": 46,
+   "style": "d6963b83",
    "content": "e96649ca",
    "text": "在 MCP tool result 生成 toolResponses 前加入提取和 emit。"
   },
   {
    "slot": 156,
    "kind": "paragraph",
-   "top": 10359,
+   "top": 10490,
    "h": 46,
    "style": "8a6fb86e",
    "content": "ecdeabf0",
@@ -1408,7 +1408,7 @@
   {
    "slot": 157,
    "kind": "paragraph",
-   "top": 10405,
+   "top": 10536,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -1417,7 +1417,7 @@
   {
    "slot": 158,
    "kind": "code",
-   "top": 10449,
+   "top": 10580,
    "h": 79,
    "style": "bfa121f9",
    "content": "8952c745",
@@ -1426,7 +1426,7 @@
   {
    "slot": 159,
    "kind": "paragraph",
-   "top": 10528,
+   "top": 10659,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "fcb91fe9",
@@ -1435,7 +1435,7 @@
   {
    "slot": 160,
    "kind": "rule",
-   "top": 10571,
+   "top": 10702,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1444,7 +1444,7 @@
   {
    "slot": 161,
    "kind": "heading",
-   "top": 10590,
+   "top": 10721,
    "h": 65,
    "style": "3505f3b8",
    "content": "412df3e4",
@@ -1453,7 +1453,7 @@
   {
    "slot": 162,
    "kind": "paragraph",
-   "top": 10655,
+   "top": 10786,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -1462,7 +1462,7 @@
   {
    "slot": 163,
    "kind": "listItem",
-   "top": 10699,
+   "top": 10830,
    "h": 80,
    "style": "d971fee2",
    "content": "7fa69ba6",
@@ -1471,7 +1471,7 @@
   {
    "slot": 164,
    "kind": "listItem",
-   "top": 10779,
+   "top": 10910,
    "h": 97,
    "style": "5e206d4b",
    "content": "bcdaa2e9",
@@ -1480,7 +1480,7 @@
   {
    "slot": 165,
    "kind": "paragraph",
-   "top": 10876,
+   "top": 11007,
    "h": 46,
    "style": "0ed127d0",
    "content": "eddb894f",
@@ -1489,7 +1489,7 @@
   {
    "slot": 166,
    "kind": "paragraph",
-   "top": 10921,
+   "top": 11052,
    "h": 46,
    "style": "4e5f4924",
    "content": "90722d77",
@@ -1498,7 +1498,7 @@
   {
    "slot": 167,
    "kind": "code",
-   "top": 10967,
+   "top": 11098,
    "h": 219,
    "style": "8859edff",
    "content": "177631cc",
@@ -1507,7 +1507,7 @@
   {
    "slot": 168,
    "kind": "paragraph",
-   "top": 11186,
+   "top": 11317,
    "h": 46,
    "style": "4e5f4924",
    "content": "88f3404e",
@@ -1516,7 +1516,7 @@
   {
    "slot": 169,
    "kind": "code",
-   "top": 11232,
+   "top": 11363,
    "h": 339,
    "style": "6e4d2ed0",
    "content": "56faeb45",
@@ -1525,7 +1525,7 @@
   {
    "slot": 170,
    "kind": "paragraph",
-   "top": 11571,
+   "top": 11702,
    "h": 46,
    "style": "4e5f4924",
    "content": "1e98ee1f",
@@ -1534,7 +1534,7 @@
   {
    "slot": 171,
    "kind": "code",
-   "top": 11616,
+   "top": 11747,
    "h": 359,
    "style": "e7e58d5f",
    "content": "ee920ad9",
@@ -1543,7 +1543,7 @@
   {
    "slot": 172,
    "kind": "paragraph",
-   "top": 11975,
+   "top": 12106,
    "h": 46,
    "style": "4e5f4924",
    "content": "0b31206d",
@@ -1552,7 +1552,7 @@
   {
    "slot": 173,
    "kind": "code",
-   "top": 12021,
+   "top": 12152,
    "h": 319,
    "style": "a71041da",
    "content": "53ee5935",
@@ -1561,7 +1561,7 @@
   {
    "slot": 174,
    "kind": "paragraph",
-   "top": 12340,
+   "top": 12471,
    "h": 46,
    "style": "4e5f4924",
    "content": "50037522",
@@ -1570,7 +1570,7 @@
   {
    "slot": 175,
    "kind": "code",
-   "top": 12385,
+   "top": 12516,
    "h": 299,
    "style": "7ee81d18",
    "content": "519c1c20",
@@ -1579,7 +1579,7 @@
   {
    "slot": 176,
    "kind": "paragraph",
-   "top": 12684,
+   "top": 12815,
    "h": 46,
    "style": "9e53707f",
    "content": "90b523c2",
@@ -1588,7 +1588,7 @@
   {
    "slot": 177,
    "kind": "paragraph",
-   "top": 12730,
+   "top": 12861,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -1597,7 +1597,7 @@
   {
    "slot": 178,
    "kind": "code",
-   "top": 12773,
+   "top": 12904,
    "h": 79,
    "style": "241db5b5",
    "content": "a5018854",
@@ -1606,7 +1606,7 @@
   {
    "slot": 179,
    "kind": "paragraph",
-   "top": 12852,
+   "top": 12983,
    "h": 46,
    "style": "4e5f4924",
    "content": "0e3b252b",
@@ -1615,7 +1615,7 @@
   {
    "slot": 180,
    "kind": "paragraph",
-   "top": 12898,
+   "top": 13029,
    "h": 46,
    "style": "8a6fb86e",
    "content": "a377aa9b",
@@ -1624,7 +1624,7 @@
   {
    "slot": 181,
    "kind": "paragraph",
-   "top": 12944,
+   "top": 13075,
    "h": 46,
    "style": "4e5f4924",
    "content": "a625beea",
@@ -1633,7 +1633,7 @@
   {
    "slot": 182,
    "kind": "listItem",
-   "top": 12989,
+   "top": 13120,
    "h": 31,
    "style": "3a033181",
    "content": "65ccc93c",
@@ -1642,7 +1642,7 @@
   {
    "slot": 183,
    "kind": "listItem",
-   "top": 13020,
+   "top": 13151,
    "h": 31,
    "style": "7f99a4ad",
    "content": "f70e6981",
@@ -1651,16 +1651,16 @@
   {
    "slot": 184,
    "kind": "listItem",
-   "top": 13051,
-   "h": 54,
-   "style": "54d685d9",
+   "top": 13182,
+   "h": 59,
+   "style": "7f87decf",
    "content": "1fde3291",
    "text": "citation 行匹配 [1] https://...、[2] Title https://."
   },
   {
    "slot": 185,
    "kind": "listItem",
-   "top": 13105,
+   "top": 13240,
    "h": 31,
    "style": "7f99a4ad",
    "content": "36ada380",
@@ -1669,7 +1669,7 @@
   {
    "slot": 186,
    "kind": "listItem",
-   "top": 13136,
+   "top": 13271,
    "h": 47,
    "style": "691d52f6",
    "content": "8b2dcaa7",
@@ -1678,7 +1678,7 @@
   {
    "slot": 187,
    "kind": "paragraph",
-   "top": 13183,
+   "top": 13318,
    "h": 46,
    "style": "9e53707f",
    "content": "6201e311",
@@ -1687,7 +1687,7 @@
   {
    "slot": 188,
    "kind": "paragraph",
-   "top": 13229,
+   "top": 13364,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -1696,7 +1696,7 @@
   {
    "slot": 189,
    "kind": "code",
-   "top": 13272,
+   "top": 13407,
    "h": 79,
    "style": "241db5b5",
    "content": "a5018854",
@@ -1705,7 +1705,7 @@
   {
    "slot": 190,
    "kind": "paragraph",
-   "top": 13351,
+   "top": 13486,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "b7b42634",
@@ -1714,7 +1714,7 @@
   {
    "slot": 191,
    "kind": "rule",
-   "top": 13395,
+   "top": 13530,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1723,7 +1723,7 @@
   {
    "slot": 192,
    "kind": "heading",
-   "top": 13413,
+   "top": 13549,
    "h": 65,
    "style": "3505f3b8",
    "content": "13b11048",
@@ -1732,7 +1732,7 @@
   {
    "slot": 193,
    "kind": "paragraph",
-   "top": 13478,
+   "top": 13614,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -1741,7 +1741,7 @@
   {
    "slot": 194,
    "kind": "listItem",
-   "top": 13522,
+   "top": 13657,
    "h": 45,
    "style": "973a98be",
    "content": "ea222e40",
@@ -1750,7 +1750,7 @@
   {
    "slot": 195,
    "kind": "paragraph",
-   "top": 13567,
+   "top": 13702,
    "h": 46,
    "style": "0ed127d0",
    "content": "b6d02888",
@@ -1759,7 +1759,7 @@
   {
    "slot": 196,
    "kind": "paragraph",
-   "top": 13613,
+   "top": 13748,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -1768,7 +1768,7 @@
   {
    "slot": 197,
    "kind": "code",
-   "top": 13656,
+   "top": 13792,
    "h": 79,
    "style": "f3778505",
    "content": "f77fd038",
@@ -1777,7 +1777,7 @@
   {
    "slot": 198,
    "kind": "paragraph",
-   "top": 13735,
+   "top": 13870,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "b7b42634",
@@ -1786,16 +1786,16 @@
   {
    "slot": 199,
    "kind": "paragraph",
-   "top": 13779,
-   "h": 44,
-   "style": "270a47c4",
+   "top": 13914,
+   "h": 46,
+   "style": "9e53707f",
    "content": "d0c9afa0",
    "text": "Step 2: 跑 Kotlin 编译"
   },
   {
    "slot": 200,
    "kind": "paragraph",
-   "top": 13822,
+   "top": 13960,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "d15f8ff0",
@@ -1804,7 +1804,7 @@
   {
    "slot": 201,
    "kind": "code",
-   "top": 13866,
+   "top": 14003,
    "h": 79,
    "style": "bfa121f9",
    "content": "8952c745",
@@ -1813,7 +1813,7 @@
   {
    "slot": 202,
    "kind": "paragraph",
-   "top": 13945,
+   "top": 14082,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "fcb91fe9",
@@ -1822,7 +1822,7 @@
   {
    "slot": 203,
    "kind": "paragraph",
-   "top": 13988,
+   "top": 14126,
    "h": 46,
    "style": "8a6fb86e",
    "content": "625d49d7",
@@ -1831,7 +1831,7 @@
   {
    "slot": 204,
    "kind": "paragraph",
-   "top": 14034,
+   "top": 14171,
    "h": 46,
    "style": "4e5f4924",
    "content": "02edb9c6",
@@ -1840,7 +1840,7 @@
   {
    "slot": 205,
    "kind": "code",
-   "top": 14080,
+   "top": 14217,
    "h": 59,
    "style": "8718f31b",
    "content": "4b68cb73",
@@ -1849,7 +1849,7 @@
   {
    "slot": 206,
    "kind": "paragraph",
-   "top": 14139,
+   "top": 14276,
    "h": 44,
    "style": "9b9dcc0e",
    "content": "429795f9",
@@ -1858,52 +1858,52 @@
   {
    "slot": 207,
    "kind": "listItem",
-   "top": 14182,
-   "h": 28,
-   "style": "689a0680",
+   "top": 14320,
+   "h": 31,
+   "style": "8ffd24a1",
    "content": "29d3d54b",
    "text": "三个客户端都调用 WebSearchToolResultExtractor.extract(.."
   },
   {
    "slot": 208,
    "kind": "listItem",
-   "top": 14210,
-   "h": 28,
-   "style": "5c1243b8",
+   "top": 14350,
+   "h": 31,
+   "style": "6ff1a237",
    "content": "255c2b0a",
    "text": "ApiHandler 多次 WebSearchResults 使用 mergeWebSearch"
   },
   {
    "slot": 209,
    "kind": "listItem",
-   "top": 14239,
-   "h": 28,
-   "style": "6b4ea517",
+   "top": 14381,
+   "h": 31,
+   "style": "d3c7eaa9",
    "content": "87a47e2f",
    "text": "mergeStreamingCompletionMessage() 保留 webSearchRe"
   },
   {
    "slot": 210,
    "kind": "listItem",
-   "top": 14267,
-   "h": 28,
-   "style": "8c3e2c25",
+   "top": 14412,
+   "h": 31,
+   "style": "757f9fe4",
    "content": "bdf0b9d8",
    "text": "Finish 分支使用 updatedMessage 最终化。"
   },
   {
    "slot": 211,
    "kind": "listItem",
-   "top": 14295,
-   "h": 28,
-   "style": "6a10e39d",
+   "top": 14442,
+   "h": 31,
+   "style": "61321607",
    "content": "0a2657b9",
    "text": "GeminiDirectClient grounding chunks 使用 mapIndexe"
   },
   {
    "slot": 212,
    "kind": "listItem",
-   "top": 14324,
+   "top": 14473,
    "h": 47,
    "style": "691d52f6",
    "content": "1c9c714f",
@@ -1912,7 +1912,7 @@
   {
    "slot": 213,
    "kind": "rule",
-   "top": 14371,
+   "top": 14520,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1921,7 +1921,7 @@
   {
    "slot": 214,
    "kind": "heading",
-   "top": 14390,
+   "top": 14539,
    "h": 65,
    "style": "3505f3b8",
    "content": "2d5d7c24",
@@ -1930,16 +1930,16 @@
   {
    "slot": 215,
    "kind": "table",
-   "top": 14455,
+   "top": 14604,
    "h": 394,
-   "style": "d1a6a70d",
+   "style": "b6cf1609",
    "content": "122bb4c9",
    "text": "路径处理点结果Gemini 直连 groundingindex 从 1 开始，ApiHandle"
   },
   {
    "slot": 216,
    "kind": "rule",
-   "top": 14849,
+   "top": 14999,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1948,7 +1948,7 @@
   {
    "slot": 217,
    "kind": "heading",
-   "top": 14868,
+   "top": 15017,
    "h": 65,
    "style": "3505f3b8",
    "content": "53e1f8c1",
@@ -1957,7 +1957,7 @@
   {
    "slot": 218,
    "kind": "listItem",
-   "top": 14933,
+   "top": 15082,
    "h": 31,
    "style": "0f70e471",
    "content": "1d50297a",
@@ -1966,16 +1966,16 @@
   {
    "slot": 219,
    "kind": "listItem",
-   "top": 14964,
-   "h": 28,
-   "style": "d1d616de",
+   "top": 15113,
+   "h": 31,
+   "style": "049c5fe7",
    "content": "805fb8ec",
    "text": "StreamEnd 后 webSearchResults 不丢失。"
   },
   {
    "slot": 220,
    "kind": "listItem",
-   "top": 14992,
+   "top": 15144,
    "h": 31,
    "style": "90b3fb8e",
    "content": "7166a050",
@@ -1984,7 +1984,7 @@
   {
    "slot": 221,
    "kind": "listItem",
-   "top": 15023,
+   "top": 15174,
    "h": 31,
    "style": "7f99a4ad",
    "content": "c76fc44b",
@@ -1993,9 +1993,9 @@
   {
    "slot": 222,
    "kind": "listItem",
-   "top": 15053,
-   "h": 45,
-   "style": "c690e862",
+   "top": 15205,
+   "h": 47,
+   "style": "320549a9",
    "content": "2d8b7580",
    "text": ":app:compileDebugKotlin 通过。"
   }

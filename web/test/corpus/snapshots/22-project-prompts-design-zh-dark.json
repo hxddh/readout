@@ -1,5 +1,5 @@
 {
- "height": 11774,
+ "height": 11824,
  "blocks": [
   {
    "slot": 1,
@@ -257,15 +257,15 @@
    "slot": 29,
    "kind": "listItem",
    "top": 1489,
-   "h": 28,
-   "style": "93ce1e6c",
+   "h": 31,
+   "style": "9ece7f68",
    "content": "5be9718c",
    "text": "定义模板方法：getStoragePath(), ensureStorageDirectory("
   },
   {
    "slot": 30,
    "kind": "listItem",
-   "top": 1517,
+   "top": 1520,
    "h": 31,
    "style": "323df906",
    "content": "eb84cac7",
@@ -274,7 +274,7 @@
   {
    "slot": 31,
    "kind": "listItem",
-   "top": 1548,
+   "top": 1550,
    "h": 47,
    "style": "63f0137b",
    "content": "4fdb7517",
@@ -283,7 +283,7 @@
   {
    "slot": 32,
    "kind": "paragraph",
-   "top": 1595,
+   "top": 1598,
    "h": 46,
    "style": "98ace0c3",
    "content": "214e86a4",
@@ -292,7 +292,7 @@
   {
    "slot": 33,
    "kind": "code",
-   "top": 1641,
+   "top": 1643,
    "h": 239,
    "style": "e6206988",
    "content": "d4c66c6f",
@@ -301,7 +301,7 @@
   {
    "slot": 34,
    "kind": "heading",
-   "top": 1880,
+   "top": 1882,
    "h": 30,
    "style": "bf040506",
    "content": "84316d44",
@@ -310,7 +310,7 @@
   {
    "slot": 35,
    "kind": "paragraph",
-   "top": 1909,
+   "top": 1912,
    "h": 46,
    "style": "ad4be4dc",
    "content": "a8031832",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "paragraph",
-   "top": 1955,
+   "top": 1957,
    "h": 46,
    "style": "9bb0d62c",
    "content": "4561087b",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "code",
-   "top": 2000,
+   "top": 2003,
    "h": 219,
    "style": "4d520cf3",
    "content": "e1acb91e",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "heading",
-   "top": 2219,
+   "top": 2222,
    "h": 30,
    "style": "bf040506",
    "content": "c4293774",
@@ -346,7 +346,7 @@
   {
    "slot": 39,
    "kind": "paragraph",
-   "top": 2249,
+   "top": 2251,
    "h": 46,
    "style": "ad4be4dc",
    "content": "76626885",
@@ -355,7 +355,7 @@
   {
    "slot": 40,
    "kind": "paragraph",
-   "top": 2295,
+   "top": 2297,
    "h": 46,
    "style": "9bb0d62c",
    "content": "4561087b",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "code",
-   "top": 2340,
+   "top": 2343,
    "h": 379,
    "style": "8af42ef2",
    "content": "c2609db1",
@@ -373,16 +373,16 @@
   {
    "slot": 42,
    "kind": "heading",
-   "top": 2719,
+   "top": 2722,
    "h": 30,
-   "style": "bf040506",
+   "style": "6059d2ca",
    "content": "ac335548",
    "text": "PromptScope 枚举§"
   },
   {
    "slot": 43,
    "kind": "code",
-   "top": 2749,
+   "top": 2751,
    "h": 499,
    "style": "b35cdab9",
    "content": "2b590b0f",
@@ -391,16 +391,16 @@
   {
    "slot": 44,
    "kind": "heading",
-   "top": 3248,
+   "top": 3250,
    "h": 30,
-   "style": "bf040506",
+   "style": "6059d2ca",
    "content": "f854728d",
    "text": "PromptManagerFactory 工厂类§"
   },
   {
    "slot": 45,
    "kind": "code",
-   "top": 3277,
+   "top": 3280,
    "h": 439,
    "style": "3c34168a",
    "content": "cf66a449",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "heading",
-   "top": 3716,
+   "top": 3719,
    "h": 42,
    "style": "71b6e53a",
    "content": "669f30a4",
@@ -418,16 +418,16 @@
   {
    "slot": 47,
    "kind": "heading",
-   "top": 3758,
+   "top": 3761,
    "h": 30,
-   "style": "bf040506",
+   "style": "6059d2ca",
    "content": "8bc41821",
    "text": "1. PromptManager 重构§"
   },
   {
    "slot": 48,
    "kind": "paragraph",
-   "top": 3788,
+   "top": 3790,
    "h": 46,
    "style": "9bb0d62c",
    "content": "5c04b9d8",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "listItem",
-   "top": 3833,
+   "top": 3836,
    "h": 47,
    "style": "640ad362",
    "content": "7e73b81a",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 3881,
+   "top": 3883,
    "h": 46,
    "style": "13e18f01",
    "content": "dd6cb81c",
@@ -454,16 +454,16 @@
   {
    "slot": 51,
    "kind": "listItem",
-   "top": 3926,
-   "h": 28,
-   "style": "5ceb88f8",
+   "top": 3929,
+   "h": 31,
+   "style": "3a8f0398",
    "content": "9a3995e8",
    "text": "将 PromptManager 重命名为 AbstractPromptManager 并抽象化"
   },
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 3955,
+   "top": 3959,
    "h": 31,
    "style": "323df906",
    "content": "744582e3",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 3985,
+   "top": 3990,
    "h": 47,
    "style": "63f0137b",
    "content": "4509c8f4",
@@ -481,16 +481,16 @@
   {
    "slot": 54,
    "kind": "heading",
-   "top": 4033,
+   "top": 4037,
    "h": 30,
-   "style": "bf040506",
+   "style": "6059d2ca",
    "content": "31d8d26a",
    "text": "2. CodemossSettingsService 重构§"
   },
   {
    "slot": 55,
    "kind": "paragraph",
-   "top": 4062,
+   "top": 4067,
    "h": 46,
    "style": "9bb0d62c",
    "content": "5c04b9d8",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "code",
-   "top": 4108,
+   "top": 4113,
    "h": 139,
    "style": "be274631",
    "content": "6f265358",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "paragraph",
-   "top": 4247,
+   "top": 4252,
    "h": 46,
    "style": "13e18f01",
    "content": "dd6cb81c",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "code",
-   "top": 4292,
+   "top": 4297,
    "h": 259,
    "style": "b6bf5264",
    "content": "626be816",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "heading",
-   "top": 4551,
+   "top": 4556,
    "h": 65,
    "style": "a4cadef8",
    "content": "fffdceb9",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "heading",
-   "top": 4616,
+   "top": 4621,
    "h": 42,
    "style": "71b6e53a",
    "content": "aab0a5f1",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "paragraph",
-   "top": 4658,
+   "top": 4663,
    "h": 46,
    "style": "98ace0c3",
    "content": "f96319d0",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "code",
-   "top": 4704,
+   "top": 4709,
    "h": 119,
    "style": "130048fc",
    "content": "eb38310f",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "paragraph",
-   "top": 4823,
+   "top": 4828,
    "h": 46,
    "style": "13e18f01",
    "content": "7897ec3e",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "code",
-   "top": 4868,
+   "top": 4873,
    "h": 239,
    "style": "aa3a2ef0",
    "content": "04fca32a",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "heading",
-   "top": 5107,
+   "top": 5112,
    "h": 42,
    "style": "71b6e53a",
    "content": "6c85a583",
@@ -589,25 +589,25 @@
   {
    "slot": 66,
    "kind": "heading",
-   "top": 5149,
+   "top": 5154,
    "h": 30,
-   "style": "bf040506",
+   "style": "6059d2ca",
    "content": "e5eab29e",
    "text": "PromptSection 组件重构§"
   },
   {
    "slot": 67,
    "kind": "paragraph",
-   "top": 5179,
-   "h": 44,
-   "style": "386354f1",
+   "top": 5184,
+   "h": 46,
+   "style": "60302772",
    "content": "66e2fe11",
    "text": "Props 扩展："
   },
   {
    "slot": 68,
    "kind": "code",
-   "top": 5222,
+   "top": 5229,
    "h": 279,
    "style": "4d265df2",
    "content": "21e3f455",
@@ -616,16 +616,16 @@
   {
    "slot": 69,
    "kind": "heading",
-   "top": 5501,
+   "top": 5508,
    "h": 30,
-   "style": "bf040506",
+   "style": "6059d2ca",
    "content": "3ee53fe1",
    "text": "新增组件：PromptScopeSection§"
   },
   {
    "slot": 70,
    "kind": "paragraph",
-   "top": 5531,
+   "top": 5538,
    "h": 46,
    "style": "f54de366",
    "content": "fbc6695a",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "code",
-   "top": 5577,
+   "top": 5583,
    "h": 299,
    "style": "cedca525",
    "content": "13ed5e52",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "heading",
-   "top": 5876,
+   "top": 5882,
    "h": 42,
    "style": "71b6e53a",
    "content": "7aa79cba",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "heading",
-   "top": 5917,
+   "top": 5924,
    "h": 30,
    "style": "6059d2ca",
    "content": "46f0f37e",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "code",
-   "top": 5947,
+   "top": 5954,
    "h": 199,
    "style": "0b9a7712",
    "content": "256e9b50",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "heading",
-   "top": 6146,
+   "top": 6153,
    "h": 30,
    "style": "6059d2ca",
    "content": "dfc179ad",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "code",
-   "top": 6176,
+   "top": 6182,
    "h": 79,
    "style": "741632a5",
    "content": "ddf82fe9",
@@ -688,16 +688,16 @@
   {
    "slot": 77,
    "kind": "heading",
-   "top": 6255,
+   "top": 6261,
    "h": 30,
-   "style": "bf040506",
+   "style": "6059d2ca",
    "content": "7d10a050",
    "text": "promptProvider 重构§"
   },
   {
    "slot": 78,
    "kind": "code",
-   "top": 6284,
+   "top": 6291,
    "h": 339,
    "style": "d2c67fb3",
    "content": "b97edab8",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "heading",
-   "top": 6623,
+   "top": 6630,
    "h": 65,
    "style": "a4cadef8",
    "content": "d26b38e2",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "heading",
-   "top": 6688,
+   "top": 6695,
    "h": 42,
    "style": "71b6e53a",
    "content": "c1a79b56",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "heading",
-   "top": 6730,
+   "top": 6737,
    "h": 30,
    "style": "6059d2ca",
    "content": "0025866a",
@@ -733,7 +733,7 @@
   {
    "slot": 82,
    "kind": "code",
-   "top": 6760,
+   "top": 6766,
    "h": 179,
    "style": "7a0d36ed",
    "content": "09d93c86",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "heading",
-   "top": 6939,
+   "top": 6945,
    "h": 30,
    "style": "6059d2ca",
    "content": "c569fc00",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "paragraph",
-   "top": 6968,
+   "top": 6975,
    "h": 46,
    "style": "03863f90",
    "content": "57619405",
@@ -760,7 +760,7 @@
   {
    "slot": 85,
    "kind": "code",
-   "top": 7014,
+   "top": 7021,
    "h": 319,
    "style": "e3af2f91",
    "content": "a5d2b319",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "heading",
-   "top": 7333,
+   "top": 7340,
    "h": 30,
    "style": "6059d2ca",
    "content": "8cb2a4bd",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "code",
-   "top": 7362,
+   "top": 7369,
    "h": 239,
    "style": "30042626",
    "content": "690e2dd7",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "heading",
-   "top": 7601,
+   "top": 7608,
    "h": 42,
    "style": "71b6e53a",
    "content": "994e6774",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "heading",
-   "top": 7643,
+   "top": 7650,
    "h": 30,
    "style": "6059d2ca",
    "content": "7ecbeaaa",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "code",
-   "top": 7673,
+   "top": 7680,
    "h": 339,
    "style": "b266f801",
    "content": "14e6439a",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "heading",
-   "top": 8012,
+   "top": 8019,
    "h": 30,
    "style": "6059d2ca",
    "content": "665fd3f8",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "code",
-   "top": 8041,
+   "top": 8048,
    "h": 219,
    "style": "d7670ffd",
    "content": "5667a7c4",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "heading",
-   "top": 8260,
+   "top": 8267,
    "h": 65,
    "style": "a4cadef8",
    "content": "5faaef5c",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "heading",
-   "top": 8325,
+   "top": 8332,
    "h": 42,
    "style": "71b6e53a",
    "content": "bcade9fd",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "code",
-   "top": 8367,
+   "top": 8374,
    "h": 219,
    "style": "49ba6440",
    "content": "067e01ef",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "heading",
-   "top": 8586,
+   "top": 8593,
    "h": 65,
    "style": "a4cadef8",
    "content": "2a369005",
@@ -868,7 +868,7 @@
   {
    "slot": 97,
    "kind": "heading",
-   "top": 8651,
+   "top": 8658,
    "h": 42,
    "style": "71b6e53a",
    "content": "6ac045d3",
@@ -877,7 +877,7 @@
   {
    "slot": 98,
    "kind": "listItem",
-   "top": 8693,
+   "top": 8700,
    "h": 31,
    "style": "eaebb804",
    "content": "8dc9f8ed",
@@ -886,7 +886,7 @@
   {
    "slot": 99,
    "kind": "listItem",
-   "top": 8724,
+   "top": 8731,
    "h": 47,
    "style": "63f0137b",
    "content": "1f370fb8",
@@ -895,7 +895,7 @@
   {
    "slot": 100,
    "kind": "heading",
-   "top": 8771,
+   "top": 8778,
    "h": 42,
    "style": "71b6e53a",
    "content": "ab0979ff",
@@ -904,16 +904,16 @@
   {
    "slot": 101,
    "kind": "listItem",
-   "top": 8813,
-   "h": 28,
-   "style": "a5d4e373",
+   "top": 8820,
+   "h": 31,
+   "style": "455fafb9",
    "content": "248865e7",
    "text": "ProjectPromptManager.getStoragePath() 抛出 Illegal"
   },
   {
    "slot": 102,
    "kind": "listItem",
-   "top": 8841,
+   "top": 8851,
    "h": 47,
    "style": "63f0137b",
    "content": "f81bf7e9",
@@ -922,7 +922,7 @@
   {
    "slot": 103,
    "kind": "heading",
-   "top": 8889,
+   "top": 8898,
    "h": 42,
    "style": "71b6e53a",
    "content": "66f00a1b",
@@ -931,7 +931,7 @@
   {
    "slot": 104,
    "kind": "listItem",
-   "top": 8931,
+   "top": 8940,
    "h": 31,
    "style": "eaebb804",
    "content": "a78c4d3d",
@@ -940,7 +940,7 @@
   {
    "slot": 105,
    "kind": "listItem",
-   "top": 8961,
+   "top": 8971,
    "h": 47,
    "style": "63f0137b",
    "content": "dd13e433",
@@ -949,7 +949,7 @@
   {
    "slot": 106,
    "kind": "heading",
-   "top": 9009,
+   "top": 9018,
    "h": 42,
    "style": "71b6e53a",
    "content": "c55c6215",
@@ -958,7 +958,7 @@
   {
    "slot": 107,
    "kind": "listItem",
-   "top": 9051,
+   "top": 9060,
    "h": 31,
    "style": "0c67a645",
    "content": "f2e0b892",
@@ -967,7 +967,7 @@
   {
    "slot": 108,
    "kind": "listItem",
-   "top": 9081,
+   "top": 9091,
    "h": 47,
    "style": "282123ec",
    "content": "0c599cb5",
@@ -976,7 +976,7 @@
   {
    "slot": 109,
    "kind": "heading",
-   "top": 9129,
+   "top": 9138,
    "h": 42,
    "style": "71b6e53a",
    "content": "782e9845",
@@ -985,7 +985,7 @@
   {
    "slot": 110,
    "kind": "listItem",
-   "top": 9171,
+   "top": 9180,
    "h": 31,
    "style": "eaebb804",
    "content": "4f20b1b3",
@@ -994,7 +994,7 @@
   {
    "slot": 111,
    "kind": "listItem",
-   "top": 9201,
+   "top": 9210,
    "h": 47,
    "style": "63f0137b",
    "content": "c354e1bd",
@@ -1003,7 +1003,7 @@
   {
    "slot": 112,
    "kind": "heading",
-   "top": 9249,
+   "top": 9258,
    "h": 65,
    "style": "a4cadef8",
    "content": "fe588bd1",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "heading",
-   "top": 9314,
+   "top": 9323,
    "h": 42,
    "style": "71b6e53a",
    "content": "905c7a2a",
@@ -1021,43 +1021,43 @@
   {
    "slot": 114,
    "kind": "listItem",
-   "top": 9356,
-   "h": 28,
-   "style": "38bb723f",
+   "top": 9365,
+   "h": 31,
+   "style": "c2047208",
    "content": "2b8c2f7e",
    "text": "AbstractPromptManager 通用逻辑测试"
   },
   {
    "slot": 115,
    "kind": "listItem",
-   "top": 9384,
-   "h": 28,
-   "style": "cbfe7bc2",
+   "top": 9395,
+   "h": 31,
+   "style": "e67c5f1d",
    "content": "1cceb941",
    "text": "GlobalPromptManager 路径解析测试"
   },
   {
    "slot": 116,
    "kind": "listItem",
-   "top": 9412,
-   "h": 28,
-   "style": "c3422889",
+   "top": 9426,
+   "h": 31,
+   "style": "13c77ebe",
    "content": "56908c71",
    "text": "ProjectPromptManager 路径解析测试"
   },
   {
    "slot": 117,
    "kind": "listItem",
-   "top": 9440,
-   "h": 28,
-   "style": "c3422889",
+   "top": 9457,
+   "h": 31,
+   "style": "13c77ebe",
    "content": "f8d8adc6",
    "text": "PromptManagerFactory 工厂创建测试"
   },
   {
    "slot": 118,
    "kind": "listItem",
-   "top": 9469,
+   "top": 9488,
    "h": 47,
    "style": "273b1c68",
    "content": "fdfd3bb0",
@@ -1066,7 +1066,7 @@
   {
    "slot": 119,
    "kind": "heading",
-   "top": 9516,
+   "top": 9535,
    "h": 42,
    "style": "71b6e53a",
    "content": "1c5bb478",
@@ -1075,7 +1075,7 @@
   {
    "slot": 120,
    "kind": "listItem",
-   "top": 9558,
+   "top": 9577,
    "h": 31,
    "style": "eaebb804",
    "content": "6ab49bd2",
@@ -1084,7 +1084,7 @@
   {
    "slot": 121,
    "kind": "listItem",
-   "top": 9589,
+   "top": 9608,
    "h": 31,
    "style": "323df906",
    "content": "2fb9ad27",
@@ -1093,7 +1093,7 @@
   {
    "slot": 122,
    "kind": "listItem",
-   "top": 9619,
+   "top": 9638,
    "h": 31,
    "style": "323df906",
    "content": "1eaf7d2e",
@@ -1102,7 +1102,7 @@
   {
    "slot": 123,
    "kind": "listItem",
-   "top": 9650,
+   "top": 9669,
    "h": 47,
    "style": "63f0137b",
    "content": "2b93e3c2",
@@ -1111,7 +1111,7 @@
   {
    "slot": 124,
    "kind": "heading",
-   "top": 9697,
+   "top": 9716,
    "h": 42,
    "style": "71b6e53a",
    "content": "9b6cebf8",
@@ -1120,7 +1120,7 @@
   {
    "slot": 125,
    "kind": "listItem",
-   "top": 9739,
+   "top": 9758,
    "h": 31,
    "style": "eaebb804",
    "content": "2f62301c",
@@ -1129,7 +1129,7 @@
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 9770,
+   "top": 9789,
    "h": 31,
    "style": "323df906",
    "content": "b57ae50c",
@@ -1138,7 +1138,7 @@
   {
    "slot": 127,
    "kind": "listItem",
-   "top": 9801,
+   "top": 9820,
    "h": 31,
    "style": "323df906",
    "content": "3b98ec69",
@@ -1147,7 +1147,7 @@
   {
    "slot": 128,
    "kind": "listItem",
-   "top": 9831,
+   "top": 9850,
    "h": 47,
    "style": "63f0137b",
    "content": "36016299",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "heading",
-   "top": 9879,
+   "top": 9898,
    "h": 65,
    "style": "a4cadef8",
    "content": "e08d4f00",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "heading",
-   "top": 9944,
+   "top": 9963,
    "h": 42,
    "style": "71b6e53a",
    "content": "1c6d515c",
@@ -1174,52 +1174,52 @@
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 9986,
-   "h": 28,
-   "style": "bc68d43b",
+   "top": 10005,
+   "h": 31,
+   "style": "0951395c",
    "content": "15e0db8e",
    "text": "创建 PromptScope 枚举"
   },
   {
    "slot": 132,
    "kind": "listItem",
-   "top": 10014,
-   "h": 28,
-   "style": "eef85f7f",
+   "top": 10035,
+   "h": 31,
+   "style": "12cea46b",
    "content": "da03a2ee",
    "text": "将 PromptManager 重构为 AbstractPromptManager"
   },
   {
    "slot": 133,
    "kind": "listItem",
-   "top": 10042,
-   "h": 28,
-   "style": "3e70725b",
+   "top": 10066,
+   "h": 31,
+   "style": "86b40ded",
    "content": "947bd78f",
    "text": "实现 GlobalPromptManager 和 ProjectPromptManager"
   },
   {
    "slot": 134,
    "kind": "listItem",
-   "top": 10071,
-   "h": 28,
-   "style": "8c7deb3a",
+   "top": 10097,
+   "h": 31,
+   "style": "a798772d",
    "content": "9d3bd0b0",
    "text": "实现 PromptManagerFactory"
   },
   {
    "slot": 135,
    "kind": "listItem",
-   "top": 10099,
-   "h": 28,
-   "style": "8a5cb977",
+   "top": 10127,
+   "h": 31,
+   "style": "84b375c4",
    "content": "43223de1",
    "text": "重构 CodemossSettingsService"
   },
   {
    "slot": 136,
    "kind": "listItem",
-   "top": 10127,
+   "top": 10158,
    "h": 47,
    "style": "afde95b3",
    "content": "625770be",
@@ -1228,7 +1228,7 @@
   {
    "slot": 137,
    "kind": "heading",
-   "top": 10175,
+   "top": 10205,
    "h": 42,
    "style": "71b6e53a",
    "content": "f23160a7",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "listItem",
-   "top": 10216,
+   "top": 10247,
    "h": 31,
    "style": "8a8bdd35",
    "content": "adcd284d",
@@ -1246,43 +1246,43 @@
   {
    "slot": 139,
    "kind": "listItem",
-   "top": 10247,
-   "h": 28,
-   "style": "9148d160",
+   "top": 10278,
+   "h": 31,
+   "style": "c3ac4653",
    "content": "0962184d",
    "text": "创建 PromptScopeSection 组件"
   },
   {
    "slot": 140,
    "kind": "listItem",
-   "top": 10275,
-   "h": 28,
-   "style": "7d21913b",
+   "top": 10309,
+   "h": 31,
+   "style": "6b1c6688",
    "content": "5a709895",
    "text": "重构 PromptSection 组件"
   },
   {
    "slot": 141,
    "kind": "listItem",
-   "top": 10304,
-   "h": 28,
-   "style": "bd204c99",
+   "top": 10339,
+   "h": 31,
+   "style": "22f72d66",
    "content": "d4c4577e",
    "text": "更新 usePromptManagement hook"
   },
   {
    "slot": 142,
    "kind": "listItem",
-   "top": 10332,
-   "h": 28,
-   "style": "fe4a78b6",
+   "top": 10370,
+   "h": 31,
+   "style": "bc6492a9",
    "content": "8877fb50",
    "text": "更新 promptProvider"
   },
   {
    "slot": 143,
    "kind": "listItem",
-   "top": 10360,
+   "top": 10401,
    "h": 47,
    "style": "73cc7616",
    "content": "10046dd2",
@@ -1291,7 +1291,7 @@
   {
    "slot": 144,
    "kind": "heading",
-   "top": 10408,
+   "top": 10448,
    "h": 42,
    "style": "71b6e53a",
    "content": "75cf6435",
@@ -1300,7 +1300,7 @@
   {
    "slot": 145,
    "kind": "listItem",
-   "top": 10450,
+   "top": 10490,
    "h": 31,
    "style": "8a8bdd35",
    "content": "793d49c8",
@@ -1309,7 +1309,7 @@
   {
    "slot": 146,
    "kind": "listItem",
-   "top": 10480,
+   "top": 10521,
    "h": 31,
    "style": "3374ae53",
    "content": "d53c2016",
@@ -1318,7 +1318,7 @@
   {
    "slot": 147,
    "kind": "listItem",
-   "top": 10511,
+   "top": 10551,
    "h": 31,
    "style": "3374ae53",
    "content": "9f3c4d15",
@@ -1327,7 +1327,7 @@
   {
    "slot": 148,
    "kind": "listItem",
-   "top": 10542,
+   "top": 10582,
    "h": 31,
    "style": "3374ae53",
    "content": "4e143417",
@@ -1336,7 +1336,7 @@
   {
    "slot": 149,
    "kind": "listItem",
-   "top": 10572,
+   "top": 10613,
    "h": 47,
    "style": "73cc7616",
    "content": "9c4326f0",
@@ -1345,7 +1345,7 @@
   {
    "slot": 150,
    "kind": "heading",
-   "top": 10620,
+   "top": 10660,
    "h": 42,
    "style": "71b6e53a",
    "content": "ad7b2e42",
@@ -1354,7 +1354,7 @@
   {
    "slot": 151,
    "kind": "listItem",
-   "top": 10662,
+   "top": 10702,
    "h": 31,
    "style": "8a8bdd35",
    "content": "762317d6",
@@ -1363,16 +1363,16 @@
   {
    "slot": 152,
    "kind": "listItem",
-   "top": 10692,
-   "h": 28,
-   "style": "de43ac6d",
+   "top": 10733,
+   "h": 31,
+   "style": "3374ae53",
    "content": "2e96929f",
    "text": "更新 CHANGELOG"
   },
   {
    "slot": 153,
    "kind": "listItem",
-   "top": 10721,
+   "top": 10763,
    "h": 47,
    "style": "73cc7616",
    "content": "feb38b62",
@@ -1381,7 +1381,7 @@
   {
    "slot": 154,
    "kind": "paragraph",
-   "top": 10768,
+   "top": 10811,
    "h": 46,
    "style": "077d1049",
    "content": "5670eea4",
@@ -1390,7 +1390,7 @@
   {
    "slot": 155,
    "kind": "heading",
-   "top": 10813,
+   "top": 10856,
    "h": 65,
    "style": "a4cadef8",
    "content": "d3c91d21",
@@ -1399,7 +1399,7 @@
   {
    "slot": 156,
    "kind": "table",
-   "top": 10879,
+   "top": 10922,
    "h": 198,
    "style": "a333976a",
    "content": "96231c4b",
@@ -1408,7 +1408,7 @@
   {
    "slot": 157,
    "kind": "heading",
-   "top": 11076,
+   "top": 11119,
    "h": 65,
    "style": "a4cadef8",
    "content": "c07b9e6f",
@@ -1417,7 +1417,7 @@
   {
    "slot": 158,
    "kind": "listItem",
-   "top": 11141,
+   "top": 11184,
    "h": 31,
    "style": "69e40b9e",
    "content": "3378737c",
@@ -1426,7 +1426,7 @@
   {
    "slot": 159,
    "kind": "listItem",
-   "top": 11172,
+   "top": 11215,
    "h": 31,
    "style": "185c95ed",
    "content": "01888aef",
@@ -1435,7 +1435,7 @@
   {
    "slot": 160,
    "kind": "listItem",
-   "top": 11203,
+   "top": 11246,
    "h": 31,
    "style": "9d69609d",
    "content": "8ddbda71",
@@ -1444,7 +1444,7 @@
   {
    "slot": 161,
    "kind": "listItem",
-   "top": 11234,
+   "top": 11276,
    "h": 31,
    "style": "185c95ed",
    "content": "0995e99b",
@@ -1453,7 +1453,7 @@
   {
    "slot": 162,
    "kind": "listItem",
-   "top": 11264,
+   "top": 11307,
    "h": 47,
    "style": "712b93e8",
    "content": "f0eb44a6",
@@ -1462,7 +1462,7 @@
   {
    "slot": 163,
    "kind": "heading",
-   "top": 11312,
+   "top": 11355,
    "h": 65,
    "style": "a4cadef8",
    "content": "a22e4a52",
@@ -1471,16 +1471,16 @@
   {
    "slot": 164,
    "kind": "listItem",
-   "top": 11377,
-   "h": 54,
-   "style": "bea85e1a",
+   "top": 11420,
+   "h": 59,
+   "style": "a9ad493f",
    "content": "cbecbb03",
    "text": "现有 PromptManager 实现：src/main/java/com/github/cla"
   },
   {
    "slot": 165,
    "kind": "listItem",
-   "top": 11431,
+   "top": 11478,
    "h": 28,
    "style": "1100f605",
    "content": "2274e6a9",
@@ -1489,9 +1489,9 @@
   {
    "slot": 166,
    "kind": "listItem",
-   "top": 11459,
-   "h": 45,
-   "style": "660f7d68",
+   "top": 11507,
+   "h": 47,
+   "style": "9125544f",
    "content": "bb58f226",
    "text": "聊天自动补全：webview/src/components/ChatInputBox/provi"
   }
