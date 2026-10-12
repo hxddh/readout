@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         for ext in ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext"] {
             if let t = UTType(filenameExtension: ext) { types.append(t) }
         }
-        types.append(.plainText)
+        // Not .plainText: open(_:) takes Markdown extensions only, so a .txt picked here would just beep.
         return types
     }()
 
@@ -35,12 +35,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         WebViewPool.shared.prewarm()
         BaselineStore.prune()
         UpdateChecker.onBackgroundUpdate = { [weak self] name, url in self?.showUpdateMenuItem(name: name, url: url) }
-        UpdateChecker.scheduleAutomaticCheck()
+        UpdateChecker.startAutomaticChecks()
 
         let settings = AppSettings.shared
         settings.$hotKey.sink { [weak self] choice in
             self?.hotKey?.unregister()
             self?.hotKey = GlobalHotKey.make(choice) { [weak self] in self?.openLatest(nil) }
+            // Registration fails when another app holds the combination: say so where it is chosen.
+            let inUse = choice != .none && self?.hotKey == nil
+            if settings.hotKeyInUse != inUse { settings.hotKeyInUse = inUse }
+        }.store(in: &cancellables)
+        // Turning automatic checks on takes effect now, not at the next launch.
+        settings.$checkForUpdatesAutomatically.dropFirst().removeDuplicates().sink { on in
+            if on { DispatchQueue.main.async { UpdateChecker.checkIfDue() } }
         }.store(in: &cancellables)
         settings.$workspaces.sink { paths in WorkspaceIndex.shared.configure(paths) }.store(in: &cancellables)
         WorkspaceIndex.shared.onWrite = { [weak self] urls in self?.noteAgentWrites(urls) }
@@ -61,7 +68,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         openedAtLaunch = true
-        for url in urls { open(url) }
+        for url in urls {
+            if url.isFileURL {
+                open(url)
+            } else if let request = OpenLink.parse(url) {
+                // `readout -b` and `readout --hook`: open behind the document being read.
+                open(URL(fileURLWithPath: request.path), mode: request.background ? .background : .request)
+                if request.background { SmokeTest.noteBackgroundRequest(request.path) }
+            }
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
@@ -73,6 +88,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func applicationWillTerminate(_ notification: Notification) {
         for w in windows.values { w.saveNow() }
+        // The saves are queued: write them before the process exits (⌘Q right after reading).
+        BaselineStore.flush()
     }
 
     // MARK: Opening
@@ -81,11 +98,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     enum OpenMode {
         /// Asked for by the reader or by Launch Services (Finder, `open`, the
         /// `readout` script): the window comes to the front of Readout's windows.
-        /// Readout never activates itself here: Launch Services already did,
-        /// unless the request asked for the background (`open -g`, `readout -b`).
+        /// Readout never activates itself here: Launch Services already did.
         case request
-        /// Opened on its own (an agent wrote the file): an open window is left
-        /// alone, a new one appears without taking focus from anything.
+        /// Opened on its own (an agent wrote the file) or asked for in the
+        /// background (`readout -b`, `readout --hook`, through `readout-open:`):
+        /// an open window is left alone, a new one appears without taking focus
+        /// from anything.
         case background
     }
 
@@ -103,7 +121,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let key = WorkspaceIndex.realPath(url.path)
         if let existing = windows[key] {
             // An open window follows the file by itself; bringing it forward is
-            // only for a request, and never activates Readout.
+            // only for a request, and never activates Readout. A window whose
+            // first read failed reads again.
+            existing.retryLoadIfFailed()
             if mode == .request { existing.show() }
             if let anchor { existing.scrollToAnchor(fragment: anchor) }
             return
@@ -136,6 +156,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // A background open leaves the window the reader is in alone, the welcome window included.
         if mode == .request || !(NSApp.isActive && welcome?.isKeyWindow == true) { welcome?.close() }
     }
+
+    /// The window showing `url`, however it is spelled.
+    func reader(for url: URL) -> ReaderWindowController? { windows[WorkspaceIndex.realPath(url.standardizedFileURL.path)] }
 
     /// Whether a window shows `path`, however it is spelled.
     private func isShown(_ path: String) -> Bool { windows[WorkspaceIndex.realPath(path)] != nil }
@@ -309,7 +332,7 @@ struct WelcomeView: View {
                 Button(action: onOpenLatest) {
                     HStack(spacing: 6) {
                         Text(NSLocalizedString("Open Latest", comment: "Button"))
-                        if settings.hotKey != .none {
+                        if settings.hotKey != .none && !settings.hotKeyInUse {
                             Text(settings.hotKey.title).foregroundStyle(.secondary)
                         }
                     }

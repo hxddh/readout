@@ -40,7 +40,7 @@ Readout needs no setup for agents: the folders in Settings are enough. If you al
 mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout
 ```
 
-(`~/.local/bin` must be on your `PATH`.) Then `readout plan.md` opens a file and `readout -b plan.md` opens it without switching apps. For a Claude Code hook instead of a watched folder, add `readout --hook` as a `PostToolUse` command for `Write|Edit|MultiEdit` in `~/.claude/settings.json`; it opens `tool_input.file_path` in the background when it is a Markdown file.
+(`~/.local/bin` must be on your `PATH`.) Then `readout plan.md` opens a file and `readout -b plan.md` opens it in the background, as a tab behind the one you are reading, without switching apps. For a Claude Code hook instead of a watched folder, add `readout --hook` as a `PostToolUse` command for `Write|Edit|MultiEdit` in `~/.claude/settings.json`; it opens `tool_input.file_path` in the background when it is a Markdown file.
 
 ## Keyboard
 

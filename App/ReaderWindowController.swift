@@ -7,19 +7,30 @@ import os
 
 /// Keeps one reader page loaded and initialised in the background so a new window opens instantly.
 @MainActor
-final class WebViewPool {
+final class WebViewPool: NSObject, WKNavigationDelegate {
     static let shared = WebViewPool()
     private var spare: ReaderWebView?
 
     func prewarm() {
         guard spare == nil else { return }
         let w = ReaderWebView(bundle: .main)
+        w.navigationDelegate = self
         w.whenReady { w.call("warm") }
         spare = w
     }
 
+    /// The idle spare's web content process died (memory pressure, a crash):
+    /// drop it, or the next window would open on a blank page. A new one is
+    /// made shortly.
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        guard webView === spare else { return }
+        spare = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.prewarm() }
+    }
+
     func take() -> ReaderWebView {
         let w = spare ?? ReaderWebView(bundle: .main)
+        w.navigationDelegate = nil   // the window controller sets its own
         spare = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.prewarm() }
         return w
@@ -57,6 +68,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // File state (content tracking lives in `loader`)
     private var loaded = false
+    /// The first read failed: the next change on disk, or opening the file
+    /// again, reads it again instead of waiting for a load that never comes.
+    private var loadFailed = false
     /// A change that arrived while the first load was still parsing. Applied
     /// right after the initial patch so early agent writes are never lost.
     private var editedWhileLoading = false
@@ -282,7 +296,17 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         loader.loadInitial { [weak self] result in
             guard let self else { return }
             guard let result else {
-                self.model.status = NSLocalizedString("The file could not be read.", comment: "Status")
+                self.loadFailed = true
+                if self.editedWhileLoading {
+                    // It changed while the failed read ran: read it again now.
+                    self.editedWhileLoading = false
+                    self.retryLoadIfFailed()
+                    return
+                }
+                let gone = !FileManager.default.fileExists(atPath: self.url.path)
+                self.deleted = gone
+                self.model.status = gone ? NSLocalizedString("The file was deleted.", comment: "Status")
+                                         : NSLocalizedString("The file could not be read.", comment: "Status")
                 return
             }
             let record = BaselineStore.load(self.url)
@@ -290,6 +314,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             // What is on disk already: an unchanged baseline is not written again.
             self.lastSavedBaseline = record?.baseline
             self.loaded = true
+            self.deleted = false
             self.updateModel(patch, decoded: result.decoded)
             self.webView.whenReady { [weak self] in
                 guard let self else { return }
@@ -329,7 +354,23 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         return nil
     }
 
+    /// Reads the file again when its first read failed.
+    func retryLoadIfFailed() {
+        guard !loaded, loadFailed else { return }
+        loadFailed = false
+        load()
+    }
+
     private func fileChanged(_ change: FileWatcher.Change) {
+        if !loaded && loadFailed {
+            if change == .deleted {
+                deleted = true
+                model.status = NSLocalizedString("The file was deleted.", comment: "Status")
+            } else {
+                retryLoadIfFailed()
+            }
+            return
+        }
         guard loaded else {
             // The first load is still parsing: don't drop the write, replay
             // it right after the initial patch instead.

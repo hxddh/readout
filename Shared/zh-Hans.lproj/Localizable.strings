@@ -106,3 +106,10 @@
 "Wrap long lines in code blocks" = "代码块长行自动换行";
 "Changes since you last read" = "自上次阅读以来的改动";
 "The earlier text was not kept, so there is nothing to compare with." = "没有保存更早的原文，无法对比。";
+"Undo" = "撤销";
+"Redo" = "重做";
+"Cut" = "剪切";
+"Paste" = "粘贴";
+"Delete" = "删除";
+"This shortcut is in use by another app. Choose another one." = "此快捷键已被其他应用占用，请选择其他快捷键。";
+"GitHub's limit on update checks from this network was reached. Please try again in an hour." = "当前网络向 GitHub 检查更新的次数已达上限，请一小时后再试。";

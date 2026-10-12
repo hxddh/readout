@@ -44,19 +44,22 @@ enum UpdateChecker {
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         URLSession.shared.dataTask(with: request) { data, response, error in
             var release: Release?
-            if let data, (response as? HTTPURLResponse)?.statusCode == 200 {
+            let http = response as? HTTPURLResponse
+            if let data, http?.statusCode == 200 {
                 release = try? JSONDecoder().decode(Release.self, from: data)
             }
+            // GitHub answers 403 (or 429) with no requests left when the hourly limit is used up.
+            let rateLimited = (http?.statusCode == 403 || http?.statusCode == 429)
+                && http?.value(forHTTPHeaderField: "x-ratelimit-remaining") == "0"
             DispatchQueue.main.async {
                 guard let release else {
-                    // A failed background check must not push the weekly timer
-                    // forward: otherwise one offline launch silences updates
-                    // for another week. Only interactive runs record it.
+                    // A failed check does not count as a check: otherwise one
+                    // offline launch silences updates for another week.
                     if interactive {
-                        AppSettings.shared.lastUpdateCheck = Date()
-                        alert(titleKey: "Could Not Check for Updates",
-                              body: NSLocalizedString("Readout could not reach GitHub. Please try again later.", comment: "Update alert body"),
-                              updateURL: nil)
+                        let body = rateLimited
+                            ? NSLocalizedString("GitHub's limit on update checks from this network was reached. Please try again in an hour.", comment: "Update alert body: GitHub rate limit")
+                            : NSLocalizedString("Readout could not reach GitHub. Please try again later.", comment: "Update alert body")
+                        alert(titleKey: "Could Not Check for Updates", body: body, updateURL: nil)
                     }
                     return
                 }
@@ -79,13 +82,29 @@ enum UpdateChecker {
         }.resume()
     }
 
-    /// Schedules the weekly background check. Called once at launch.
-    static func scheduleAutomaticCheck() {
-        guard AppSettings.shared.checkForUpdatesAutomatically else { return }
+    private static var automaticTimer: Timer?
+    private static var checkQueued = false
+
+    /// Starts the weekly background check: at launch, then every few hours
+    /// for an app that stays open for weeks. Called once at launch.
+    static func startAutomaticChecks() {
+        checkIfDue()
+        automaticTimer?.invalidate()
+        automaticTimer = Timer.scheduledTimer(withTimeInterval: 6 * 3600, repeats: true) { _ in
+            MainActor.assumeIsolated { checkIfDue() }
+        }
+    }
+
+    /// Runs a background check when automatic checks are on and the last one
+    /// is more than a week old (also when the setting is turned on).
+    static func checkIfDue() {
+        guard AppSettings.shared.checkForUpdatesAutomatically, !checkQueued else { return }
         let last = AppSettings.shared.lastUpdateCheck ?? .distantPast
         guard Date().timeIntervalSince(last) > 7 * 86400 else { return }
+        checkQueued = true
         // Delay so the check never slows down launch.
         DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+            checkQueued = false
             guard AppSettings.shared.checkForUpdatesAutomatically else { return }
             check(interactive: false)
         }

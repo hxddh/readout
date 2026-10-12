@@ -2,12 +2,13 @@
 # readout — open Markdown files in Readout.
 #
 #   readout FILE...            open files and bring Readout forward
-#   readout -b FILE...         open files without switching apps
+#   readout -b FILE...         open files in the background, behind the one you are reading
 #   readout --hook             for agent hooks: read hook JSON on stdin and open
 #                              tool_input.file_path in the background if it is Markdown
 #
 # Bundle identifier of the Readout app.
 APP_ID="io.github.hxddh.readout"
+OPEN="${READOUT_OPEN_COMMAND:-/usr/bin/open}"
 
 usage() {
   sed -n '3,8p' "$0" | sed 's/^# \{0,1\}//'
@@ -20,14 +21,41 @@ is_markdown() {
   esac
 }
 
+# readout-open://open?background=1&path=<absolute path, every byte percent-encoded>.
+# `open -g` alone only keeps Readout from activating: the file would still be
+# opened as a request and its tab brought to the front. The URL asks Readout to
+# leave the tab being read alone.
+background_url() {
+  case "$1" in
+    /*) p=$1 ;;
+    *) p="$PWD/$1" ;;
+  esac
+  printf 'readout-open://open?background=1&path=%s' \
+    "$(printf '%s' "$p" | od -An -v -tx1 | tr -d ' \n' | sed 's/../%&/g')"
+}
+
 case "$1" in
   -h|--help) usage; exit 0 ;;
   --hook)
     input=$(cat)
     path=$(printf '%s' "$input" | /usr/bin/plutil -extract tool_input.file_path raw -o - - 2>/dev/null)
-    [ -n "$path" ] && is_markdown "$path" && [ -f "$path" ] && exec /usr/bin/open -g -b "$APP_ID" "$path"
+    [ -n "$path" ] && is_markdown "$path" && [ -f "$path" ] && exec "$OPEN" -g -b "$APP_ID" "$(background_url "$path")"
     exit 0 ;;
-  -b|--background) shift; exec /usr/bin/open -g -b "$APP_ID" -- "$@" ;;
-  "") exec /usr/bin/open -b "$APP_ID" ;;
-  *) exec /usr/bin/open -b "$APP_ID" -- "$@" ;;
+  -b|--background)
+    shift
+    [ "$1" = "--" ] && shift
+    status=0
+    for f do
+      shift
+      if [ -f "$f" ]; then
+        set -- "$@" "$(background_url "$f")"
+      else
+        echo "readout: $f: No such file" >&2
+        status=1
+      fi
+    done
+    [ $# -gt 0 ] || exit "$status"
+    exec "$OPEN" -g -b "$APP_ID" "$@" ;;
+  "") exec "$OPEN" -b "$APP_ID" ;;
+  *) exec "$OPEN" -b "$APP_ID" -- "$@" ;;
 esac

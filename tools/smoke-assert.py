@@ -77,6 +77,30 @@ check("agent folder: Readout was not activated", agent.get("active_after") is Fa
 check("agent folder: the document being read stays in front",
       agent.get("reading_before") not in (None, "", "notes.md") and agent.get("reading_after") == agent.get("reading_before"), agent)
 
+live = load("live-updates.json")
+print(f"live-updates: {live}")
+# FSEvents reports /private/tmp/...: a file opened as /tmp/... must still update.
+check("tmp: the file under /tmp was shown", (live.get("tmp") or {}).get("before") == "TMP-BEFORE", live)
+check("tmp: the file under /tmp updated live", (live.get("tmp") or {}).get("after") == "TMP-AFTER", live)
+# latest.md -> run-41.md, then `ln -sf run-42.md latest.md`: the window follows the link.
+check("link: the symlink's target was shown", (live.get("link") or {}).get("before") == "RUN-41", live)
+check("link: the retargeted symlink was followed", (live.get("link") or {}).get("after") == "RUN-42", live)
+
+bg = load("background-opens.json")
+print(f"background-opens: {bg}")
+# `readout -b` and `readout --hook` open behind the tab being read, never in front of it.
+check("cli: both opens arrived as background requests",
+      sorted(bg.get("requests") or []) == sorted(["background.md", "plan.md"]), bg)
+check("cli: readout -b opened the file", bg.get("opened") is True, bg)
+check("cli: the document being read stays in front",
+      bg.get("reading_before") not in (None, "", "background.md", "plan.md") and bg.get("reading_after") == bg.get("reading_before"), bg)
+
+menus = load("menus.json")
+print(f"menus: {menus}")
+edit_menu = menus.get("edit_menu") or []
+for entry in ["undo: z", "redo: z", "cut: x", "paste: v", "delete:"]:
+    check(f"edit menu has {entry}", entry in edit_menu, edit_menu)
+
 logp = OUT / "smoke-out.log"
 log = logp.read_text() if logp.exists() else ""
 check("smoke-out.log present", logp.exists())

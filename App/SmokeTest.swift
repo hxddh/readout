@@ -10,6 +10,11 @@ import WebKit
 ///   `opened`      the smoke file was opened (harness may race an early edit)
 ///   `await-edit`  1-initial was captured and the view scrolled mid-document;
 ///                 the harness now replaces the file with the edited version
+///   `await-tmp-edit`, `await-retarget`
+///                 a file under /tmp, and one reached through a symlink, are
+///                 shown; the harness rewrites the first and points the link
+///                 at another file (`ln -sf`)
+///   `await-cli`   the harness runs `readout -b` and `readout --hook`
 @MainActor
 enum SmokeTest {
     static var outputDirectory: URL? {
@@ -30,6 +35,13 @@ enum SmokeTest {
 
     static func noteAutoOpened(_ paths: [String]) {
         if outputDirectory != nil { autoOpened += paths }
+    }
+
+    /// Opens asked for in the background through `readout-open:` (`readout -b`, `--hook`).
+    private static var backgroundRequests: [String] = []
+
+    static func noteBackgroundRequest(_ path: String) {
+        if outputDirectory != nil { backgroundRequests.append(path) }
     }
 
     static func noteApplied() {
@@ -114,11 +126,6 @@ enum SmokeTest {
                 NSApp.deactivate()
                 try? await Task.sleep(for: .seconds(1))
                 let wasActive = NSApp.isActive
-                // The document in front (the selected tab of the frontmost reader window).
-                func reading() -> String {
-                    let front = NSApp.orderedWindows.first { $0.windowController is ReaderWindowController }
-                    return (front?.tabGroup?.selectedWindow ?? front)?.title ?? ""
-                }
                 let readingBefore = reading()
                 mark(out, "await-agent-write")
                 let deadline = Date().addingTimeInterval(15)
@@ -136,6 +143,14 @@ enum SmokeTest {
                 }
                 NSApp.activate()
             }
+            await liveUpdates(app: app, out: out)
+            await backgroundOpens(out: out)
+            if let edit = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") })?.submenu {
+                let items = edit.items.compactMap { i in i.action.map { NSStringFromSelector($0) + (i.keyEquivalent.isEmpty ? "" : " " + i.keyEquivalent) } }
+                if let data = try? JSONSerialization.data(withJSONObject: ["edit_menu": items], options: [.prettyPrinted, .sortedKeys]) {
+                    try? data.write(to: out.appendingPathComponent("menus.json"))
+                }
+            }
             app?.showSettings(nil)
             try? await Task.sleep(for: .seconds(1.5))
             screen(out, "5-settings")
@@ -145,6 +160,60 @@ enum SmokeTest {
             screen(out, "6-welcome")
             writeTimings(out)
             NSApp.terminate(nil)
+        }
+    }
+
+    /// The document in front (the selected tab of the frontmost reader window).
+    private static func reading() -> String {
+        let front = NSApp.orderedWindows.first { $0.windowController is ReaderWindowController }
+        return (front?.tabGroup?.selectedWindow ?? front)?.title ?? ""
+    }
+
+    /// A file under /tmp (FSEvents reports /private/tmp) and a symlink pointed
+    /// at another file must both follow what is on disk.
+    private static func liveUpdates(app: AppDelegate?, out: URL) async {
+        let env = ProcessInfo.processInfo.environment
+        var result: [String: Any] = [:]
+        for (name, variable, marker) in [("tmp", "READOUT_SMOKE_TMP_FILE", "await-tmp-edit"),
+                                         ("link", "READOUT_SMOKE_LINK_FILE", "await-retarget")] {
+            guard let path = env[variable] else { continue }
+            let url = URL(fileURLWithPath: path)
+            app?.open(url)
+            guard let reader = app?.reader(for: url) else {
+                result[name] = ["error": "no window"]
+                continue
+            }
+            var deadline = Date().addingTimeInterval(10)
+            while reader.model.title.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+            let before = reader.model.title
+            try? await Task.sleep(for: .milliseconds(300))
+            mark(out, marker)
+            deadline = Date().addingTimeInterval(10)
+            while reader.model.title == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+            result[name] = ["before": before, "after": reader.model.title]
+        }
+        guard !result.isEmpty, let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) else { return }
+        try? data.write(to: out.appendingPathComponent("live-updates.json"))
+    }
+
+    /// `readout -b` (a new file) and `readout --hook` (a file already open in a
+    /// tab behind) must leave the tab being read in front.
+    private static func backgroundOpens(out: URL) async {
+        guard let file = ProcessInfo.processInfo.environment["READOUT_SMOKE_CLI_FILE"] else { return }
+        try? await Task.sleep(for: .milliseconds(500))
+        let before = reading()
+        mark(out, "await-cli")
+        var deadline = Date().addingTimeInterval(15)
+        while backgroundRequests.count < 2 && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        deadline = Date().addingTimeInterval(5)
+        let name = URL(fileURLWithPath: file).lastPathComponent
+        while !NSApp.windows.contains(where: { $0.title == name }) && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        try? await Task.sleep(for: .seconds(1))
+        let json: [String: Any] = ["requests": backgroundRequests.map { URL(fileURLWithPath: $0).lastPathComponent },
+                                   "reading_before": before, "reading_after": reading(),
+                                   "opened": NSApp.windows.contains { $0.title == name }]
+        if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: out.appendingPathComponent("background-opens.json"))
         }
     }
 
