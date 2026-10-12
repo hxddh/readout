@@ -89,6 +89,25 @@ check("link: the retargeted symlink was followed", (live.get("link") or {}).get(
 check("link: the window is found through the retargeted link", (live.get("link") or {}).get("found_through_link") is True, live)
 check("link: the old target no longer maps to that window", (live.get("link") or {}).get("old_target_free") is True, live)
 
+check("link: the retargeted link's reading state is saved with its record",
+      (live.get("link") or {}).get("record_at_new_target") is True, live)
+leg = live.get("legacy") or {}
+check("legacy: a pre-3.3 record is read", leg.get("loaded") is True, live)
+check("legacy: it is moved under the real-path key", leg.get("moved") is True and leg.get("old_removed") is True, live)
+check("legacy: a copy that fails keeps the old record", leg.get("kept_on_failure") is True, live)
+check("legacy: the newer reading position moves with the record",
+      leg.get("position_kept") is True and leg.get("old_position_removed") is True, live)
+# Saving between the retarget and the new file's read must not store the old file's state under the new key.
+check("link: no record under the new key before its content is read",
+      (live.get("link") or {}).get("early_record") is not True, live)
+
+find = load("find-mode.json")
+print(f"find-mode: {find}")
+# Return in the find field must not switch find mode (a full re-layout) off and on again.
+check("find mode switches on once and off once", find.get("calls") == [True, False], find)
+check("find mode in a cold window is delivered once its page is up",
+      find.get("cold_calls") == [True] and find.get("cold_ready") == [True], find)
+
 col = live.get("collide") or {}
 # Retargeted onto a file another window shows: that window keeps the path; the link's window stays owned.
 check("collide: the link followed its new target", col.get("before") == "RUN-43" and col.get("after") == "RUN-44", live)

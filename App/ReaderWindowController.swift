@@ -122,7 +122,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
         model.onSelectHeading = { [weak self] slot in self?.webView.call("scrollToSlot", json: String(slot)) }
         watcher = FileWatcher(url: self.url, onChange: { [weak self] change in self?.fileChanged(change) },
-                              onRetarget: { [weak self] in if let self { self.onRetarget?(self) } })
+                              onRetarget: { [weak self] target in if let self { self.retargeted(to: target) } })
         load()
     }
 
@@ -290,6 +290,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             guard let self else { return }
             self.applyAppearance()
             self.webView.call("apply", self.session.fullPayload(rewrite: false))
+            // The new page starts out of find mode, and switches queued before
+            // the crash have run by now: send the state the window is in.
+            self.webView.call("findMode", json: self.findModeOn ? "true" : "false")
         }
     }
 
@@ -312,11 +315,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                                          : NSLocalizedString("The file could not be read.", comment: "Status")
                 return
             }
-            let record = BaselineStore.load(self.url)
+            let record = BaselineStore.load(self.url, realPath: result.sourcePath)   // the file this read came from
             let patch = self.session.load(result.doc, baseline: record?.baseline)
             // What is on disk already: an unchanged baseline is not written again.
             self.lastSavedBaseline = record?.baseline
             self.loaded = true
+            self.contentPath = result.sourcePath
             self.deleted = false
             self.updateModel(patch, decoded: result.decoded)
             self.webView.whenReady { [weak self] in
@@ -387,6 +391,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         loader.readChange { [weak self] change in
             guard let self else { return }
+            defer { self.finishRetarget() }   // after the session took the new content
             guard case .content(let result) = change else {
                 if self.deleted { self.deleted = false; self.model.status = nil }
                 return
@@ -533,8 +538,31 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var lastSavedAnchorOffset: Double?
     private var didSaveOnce = false
 
+    /// The opened symlink points to another file, whose state has its own key.
+    /// Until that file's content is read, the session still holds the old
+    /// one: saves wait until a read of that file (not one of the old target
+    /// still in flight) lands, then the next save writes the whole record there.
+    private var retargetGate = RetargetGate()
+    /// The real path of the file whose content the session holds: the key the
+    /// reading state is saved under. Not resolved at save time, which could
+    /// already see a retarget the window has not read yet.
+    private var contentPath: String?
+    private func retargeted(to target: String) {
+        retargetGate.retargeted(to: target)
+        onRetarget?(self)
+    }
+
+    /// A read filled the session: when it was the retargeted file's, saves resume under its key.
+    private func finishRetarget() {
+        guard retargetGate.read(from: loader.lastSourcePath) else { return }
+        contentPath = loader.lastSourcePath ?? contentPath
+        didSaveOnce = false
+        lastSavedBaseline = nil
+        scheduleSave()
+    }
+
     func saveNow() {
-        guard loaded else { return }
+        guard loaded, !retargetGate.isPending else { return }
         var index: Int? = nil
         var excerpt: String? = nil
         if let a = lastAnchor, let i = session.blocks.firstIndex(where: { $0.slot == a.slot }) {
@@ -554,7 +582,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         lastSavedAnchorIndex = index
         lastSavedAnchorOffset = offset
         BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset,
-                                 topExcerpt: excerpt, savedAt: Date()), for: url, baselineChanged: baselineChanged)
+                                 topExcerpt: excerpt, savedAt: Date()),
+                           for: contentPath.map { URL(fileURLWithPath: $0) } ?? url, baselineChanged: baselineChanged)
     }
 
     // MARK: Actions
@@ -613,13 +642,28 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     /// While finding, the page lays out the whole document: in a large one it
-    /// otherwise skips off-screen blocks, and so would find in page.
+    /// otherwise skips off-screen blocks, and so would find in page. Sent only
+    /// when it changes: each switch re-lays out the document.
+    private var findModeOn = false
     private func setFindMode(_ on: Bool) {
-        webView.call("findMode", json: on ? "true" : "false")
+        guard on != findModeOn else { return }
+        findModeOn = on
+        // A cold window's page may not be up yet: deliver once it is.
+        webView.whenReady { [weak self] in
+            guard let self else { return }
+            self.webView.call("findMode", json: on ? "true" : "false")
+            SmokeTest.noteFindMode(on, pageReady: self.webView.isReady)
+        }
     }
 
+    // Find mode stays on while the find bar is open: Return in the field may
+    // end and restart editing, which must not re-lay out the document twice.
+    // It ends on Escape, or when editing ends with the field empty (the bar closes).
     func controlTextDidBeginEditing(_ obj: Notification) { setFindMode(true) }
-    func controlTextDidEndEditing(_ obj: Notification) { setFindMode(false) }
+    func controlTextDidEndEditing(_ obj: Notification) {
+        if searchItem?.searchField.stringValue.isEmpty ?? true { setFindMode(false) }
+    }
+    func searchFieldDidEndSearching(_ sender: NSSearchField) { setFindMode(false) }
 
     @objc func findNext(_ sender: Any?) { find(backwards: false) }
     @objc func findPrevious(_ sender: Any?) { find(backwards: true) }

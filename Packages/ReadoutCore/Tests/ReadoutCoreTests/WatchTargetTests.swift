@@ -78,6 +78,25 @@ private struct Scratch {
         #expect(!t.isTarget(s.real + "/runs/run-41.md"))
     }
 
+    @Test func aRetargetSettlesOnlyOnAReadOfTheNewTarget() {
+        var g = RetargetGate()
+        let r1 = g.read(from: "/r/run-41.md")
+        #expect(!r1)       // nothing pending
+        g.retargeted(to: "/r/run-42.md")
+        #expect(g.isPending)
+        let r2 = g.read(from: "/r/run-41.md")
+        #expect(!r2)       // the old target's read, still in flight
+        #expect(g.isPending)
+        let r3 = g.read(from: nil)
+        #expect(!r3)
+        g.retargeted(to: "/r/run-43.md")             // pointed elsewhere again before any read
+        let r4 = g.read(from: "/r/run-42.md")
+        #expect(!r4)
+        let r5 = g.read(from: "/r/run-43.md")
+        #expect(r5)
+        #expect(!g.isPending)
+    }
+
     @Test func baselineKeysAgreeAcrossSpellings() throws {
         let s = try Scratch()
         s.write("plan.md")

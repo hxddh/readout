@@ -145,6 +145,7 @@ enum SmokeTest {
             }
             await liveUpdates(app: app, out: out)
             await backgroundOpens(out: out)
+            await findModeSwitches(controller: controller, out: out)
             if let edit = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") })?.submenu {
                 let items = edit.items.compactMap { i in i.action.map { NSStringFromSelector($0) + (i.keyEquivalent.isEmpty ? "" : " " + i.keyEquivalent) } }
                 if let data = try? JSONSerialization.data(withJSONObject: ["edit_menu": items], options: [.prettyPrinted, .sortedKeys]) {
@@ -187,17 +188,36 @@ enum SmokeTest {
             while reader.model.title.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
             let before = reader.model.title
             let shownBefore = WorkspaceIndex.realPath(path)
+            reader.saveNow()   // a record for what it shows now
             try? await Task.sleep(for: .milliseconds(300))
             mark(out, marker)
+            var earlyRecord: Bool?
+            if name == "link" {
+                // Retargeted, but the new file not read yet: a save now must not
+                // store the old file's state under the new key.
+                deadline = Date().addingTimeInterval(10)
+                func retargetSeen() -> Bool { WorkspaceIndex.realPath(path) != shownBefore && app?.reader(for: url) === reader }
+                while !retargetSeen() && Date() < deadline { try? await Task.sleep(for: .milliseconds(2)) }
+                if reader.model.title == before {
+                    reader.saveNow()
+                    BaselineStore.flush()
+                    earlyRecord = FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).current.path)
+                }
+            }
             deadline = Date().addingTimeInterval(10)
             while reader.model.title == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
             var entry: [String: Any] = ["before": before, "after": reader.model.title]
+            if let earlyRecord { entry["early_record"] = earlyRecord }
             if shownBefore != WorkspaceIndex.realPath(path) {
                 // A retargeted link: the window is found through the link and no longer through the old target.
                 deadline = Date().addingTimeInterval(3)
                 while app?.reader(for: url) !== reader && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
                 entry["found_through_link"] = app?.reader(for: url) === reader
                 entry["old_target_free"] = app?.reader(for: URL(fileURLWithPath: shownBefore)) == nil
+                // Its reading state is saved under the new target's key, record included.
+                reader.saveNow()
+                BaselineStore.flush()
+                entry["record_at_new_target"] = FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).current.path)
             }
             result[name] = entry
         }
@@ -225,6 +245,36 @@ enum SmokeTest {
                 result["collide"] = ["error": "no window"]
             }
         }
+        // A pre-3.3 record (keyed by the path as spelled, /tmp/...) is read once and moved.
+        if let tmpPath = env["READOUT_SMOKE_TMP_FILE"] {
+            let url = URL(fileURLWithPath: tmpPath).deletingLastPathComponent().appendingPathComponent("legacy-record.md")
+            let files = BaselineStore.recordFiles(for: url)
+            let record = BaselineStore.Record(baseline: [], topBlockIndex: 3, topOffset: 0, topExcerpt: nil, savedAt: Date())
+            // Its reading position, saved later in a file of its own, must survive the move.
+            let position: [String: Any] = ["topBlockIndex": 5, "topOffset": 0, "savedAt": Date().timeIntervalSinceReferenceDate + 10]
+            if files.current != files.legacy, let data = try? JSONEncoder().encode(record),
+               let positionData = try? JSONSerialization.data(withJSONObject: position) {
+                try? data.write(to: files.legacy)
+                try? positionData.write(to: files.legacyPosition)
+                let fm = FileManager.default
+                // A copy that cannot be written (a folder in the way) keeps the old record.
+                try? fm.createDirectory(at: files.current, withIntermediateDirectories: true)
+                _ = BaselineStore.load(url)
+                BaselineStore.flush()
+                let keptOnFailure = fm.fileExists(atPath: files.legacy.path)
+                try? fm.removeItem(at: files.current)
+                let loaded = BaselineStore.load(url)
+                BaselineStore.flush()
+                let reloaded = BaselineStore.load(url)   // now from the new key
+                result["legacy"] = ["loaded": loaded?.topBlockIndex == 5, "kept_on_failure": keptOnFailure,
+                                    "position_kept": reloaded?.topBlockIndex == 5,
+                                    "old_position_removed": !fm.fileExists(atPath: files.legacyPosition.path),
+                                    "moved": fm.fileExists(atPath: files.current.path),
+                                    "old_removed": !fm.fileExists(atPath: files.legacy.path)]
+            } else {
+                result["legacy"] = ["error": "same key"]
+            }
+        }
         guard !result.isEmpty, let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) else { return }
         try? data.write(to: out.appendingPathComponent("live-updates.json"))
     }
@@ -247,6 +297,57 @@ enum SmokeTest {
                                    "opened": NSApp.windows.contains { $0.title == name }]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: out.appendingPathComponent("background-opens.json"))
+        }
+    }
+
+    /// Find-mode switches the page was sent (each re-lays out the document).
+    private static var findModeCalls: [Bool] = []
+    /// Whether the page was up when each switch was delivered.
+    private static var findModeReady: [Bool] = []
+    static func noteFindMode(_ on: Bool, pageReady: Bool) {
+        guard outputDirectory != nil else { return }
+        findModeCalls.append(on)
+        findModeReady.append(pageReady)
+    }
+
+    /// Find bar open, Return twice with editing ending and restarting around
+    /// it, then Escape: find mode goes on once and off once.
+    private static func findModeSwitches(controller: ReaderWindowController, out: URL) async {
+        guard let field = controller.window?.toolbar?.items.compactMap({ $0 as? NSSearchToolbarItem }).first?.searchField else { return }
+        findModeCalls = []
+        controller.showFind(nil)
+        field.stringValue = "Readout"
+        let note = Notification(name: NSControl.textDidEndEditingNotification, object: field)
+        for _ in 0..<2 {
+            controller.controlTextDidEndEditing(note)
+            controller.controlTextDidBeginEditing(note)
+            _ = controller.control(field, textView: NSTextView(), doCommandBy: #selector(NSResponder.insertNewline(_:)))
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+        _ = controller.control(field, textView: NSTextView(), doCommandBy: #selector(NSResponder.cancelOperation(_:)))
+        field.stringValue = ""
+        controller.controlTextDidEndEditing(note)
+        try? await Task.sleep(for: .milliseconds(300))
+        var json: [String: Any] = ["calls": findModeCalls]
+        // Find asked for in a window whose page is not up yet (the pool's spare
+        // went to the window opened just before): delivered once it is.
+        if let tmp = ProcessInfo.processInfo.environment["READOUT_SMOKE_TMP_FILE"] {
+            let dir = URL(fileURLWithPath: tmp).deletingLastPathComponent()
+            let app = NSApp.delegate as? AppDelegate
+            findModeCalls = []
+            findModeReady = []
+            app?.open(dir.appendingPathComponent("cold-a.md"))
+            app?.open(dir.appendingPathComponent("cold-b.md"))
+            if let cold = app?.reader(for: dir.appendingPathComponent("cold-b.md")) {
+                cold.showFind(nil)
+                let deadline = Date().addingTimeInterval(10)
+                while findModeCalls.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                json["cold_calls"] = findModeCalls
+                json["cold_ready"] = findModeReady
+            }
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: out.appendingPathComponent("find-mode.json"))
         }
     }
 
