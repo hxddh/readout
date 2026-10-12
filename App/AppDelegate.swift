@@ -12,6 +12,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var hotKey: GlobalHotKey?
     private var cancellables: Set<AnyCancellable> = []
     private var openedAtLaunch = false
+    /// Markdown written in the agent folders opens on its own, in the background.
+    private var autoOpen = AutoOpen()
+    private var autoOpenWork: DispatchWorkItem?
 
     static let markdownTypes: [UTType] = {
         var types: [UTType] = [UTType("net.daringfireball.markdown")].compactMap { $0 }
@@ -40,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.hotKey = GlobalHotKey.make(choice) { [weak self] in self?.openLatest(nil) }
         }.store(in: &cancellables)
         settings.$workspaces.sink { paths in WorkspaceIndex.shared.configure(paths) }.store(in: &cancellables)
+        WorkspaceIndex.shared.onWrite = { [weak self] urls in self?.noteAgentWrites(urls) }
 
         if let smoke = ProcessInfo.processInfo.environment["READOUT_SMOKE_FILE"] {
             openedAtLaunch = true
@@ -73,7 +77,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     // MARK: Opening
 
-    func open(_ url: URL, anchor: String? = nil) {
+    /// How an open request treats the reader's focus.
+    enum OpenMode {
+        /// Asked for by the reader or by Launch Services (Finder, `open`, the
+        /// `readout` script): the window comes to the front of Readout's windows.
+        /// Readout never activates itself here: Launch Services already did,
+        /// unless the request asked for the background (`open -g`, `readout -b`).
+        case request
+        /// Opened on its own (an agent wrote the file): an open window is left
+        /// alone, a new one appears without taking focus from anything.
+        case background
+    }
+
+    func open(_ url: URL, anchor: String? = nil, mode: OpenMode = .request) {
         let url = url.standardizedFileURL
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
@@ -83,8 +99,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
         NSDocumentController.shared.noteNewRecentDocumentURL(url)
         if let existing = windows[url.path] {
-            existing.show()
-            NSApp.activate()
+            // An open window follows the file by itself; bringing it forward is
+            // only for a request, and never activates Readout.
+            if mode == .request { existing.show() }
             if let anchor { existing.scrollToAnchor(fragment: anchor) }
             return
         }
@@ -97,8 +114,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             controller.window?.center()
         }
         windows[url.path] = controller
-        controller.show()
+        if mode == .background, NSApp.isActive, let key = NSApp.keyWindow, let w = controller.window {
+            // The reader is in Readout: the new window waits just behind the one they read.
+            w.order(.below, relativeTo: key.windowNumber)
+        } else {
+            controller.show()
+        }
         welcome?.close()
+    }
+
+    /// Whether a window shows `path` (FSEvents reports resolved paths, windows
+    /// keep the path they were opened with).
+    private func isShown(_ path: String) -> Bool {
+        if windows[path] != nil { return true }
+        let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+        return windows.values.contains { $0.url.resolvingSymlinksInPath().path == resolved }
+    }
+
+    private func noteAgentWrites(_ urls: [URL]) {
+        let now = Date()
+        for url in urls { autoOpen.noteWrite(url.standardizedFileURL.path, at: now) }
+        guard autoOpen.hasPending else { return }
+        autoOpenWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.openSettledWrites() }
+        autoOpenWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + AutoOpen.quiet, execute: work)
+    }
+
+    private func openSettledWrites() {
+        let paths = autoOpen.settle(isOpen: { [unowned self] in isShown($0) },
+                                    exists: { FileManager.default.fileExists(atPath: $0) })
+        for path in paths { open(URL(fileURLWithPath: path), mode: .background) }
+        if !paths.isEmpty { SmokeTest.noteAutoOpened(paths) }
     }
 
     @objc func openDocument(_ sender: Any?) {
@@ -187,26 +234,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc private func openPendingUpdate(_ sender: Any?) {
         if let url = pendingUpdateURL { NSWorkspace.shared.open(url) }
-    }
-
-    // MARK: Command line tool
-
-    @objc func installCommandLineTool(_ sender: Any?) {
-        guard let script = Bundle.main.url(forResource: "readout", withExtension: nil) else { return }
-        let target = "/usr/local/bin/readout"
-        let shell = "mkdir -p /usr/local/bin && ln -sf '\(script.path)' '\(target)'"
-        let source = "do shell script \"\(shell.replacingOccurrences(of: "\"", with: "\\\""))\" with administrator privileges"
-        var error: NSDictionary?
-        NSAppleScript(source: source)?.executeAndReturnError(&error)
-        let alert = NSAlert()
-        if error == nil {
-            alert.messageText = NSLocalizedString("Command line tool installed", comment: "Alert title")
-            alert.informativeText = NSLocalizedString("Use “readout FILE” to open a file, or “readout -b FILE” to open it without switching apps.", comment: "Alert body")
-        } else {
-            alert.messageText = NSLocalizedString("The command line tool was not installed", comment: "Alert title")
-            alert.informativeText = (error?[NSAppleScript.errorMessage] as? String) ?? ""
-        }
-        alert.runModal()
     }
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {

@@ -12,6 +12,9 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
      (an agent write racing the first load: the first capture must show it)
   3. when the app reports `await-edit`, replaces it with plan-v2.md
   4. opens a second document while running (warm open)
+  4b. when the app reports `await-agent-write` (Readout in the background,
+     watching WORK_DIR/agent), writes WORK_DIR/agent/notes.md the agent way;
+     the app records whether it opened on its own without activating
   5. waits for the app to exit on its own (90 s), with its log in OUT_DIR/smoke-out.log
   6. writes OUT_DIR/timings.json: cold start, warm open and write-to-update
      times, from its own clock readings and the app's (timings-app.json)
@@ -85,8 +88,10 @@ def main() -> int:
     second = work / "second.md"
     shutil.copyfile(ROOT / "web" / "test" / "corpus" / "01-sdd-fix-loop-plan.md", second)
 
+    agent_dir = work / "agent"
+    agent_dir.mkdir(exist_ok=True)
     env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
-               READOUT_SMOKE_SECOND=str(second))
+               READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir))
     clock = {}
     with open(out / "smoke-out.log", "wb") as log:
         clock["spawn"] = time.time()
@@ -105,6 +110,12 @@ def main() -> int:
             agent_write(target, FIXTURES / "plan-v2.md")
             clock["edit"] = time.time()
             print("harness: edit written")
+
+            if wait_for(out / "await-agent-write", proc, 60, poll=0.05):
+                agent_write(agent_dir / "notes.md", FIXTURES / "plan.md")
+                print("harness: agent wrote notes.md")
+            else:
+                print("harness: the app never reported `await-agent-write`")
 
             try:
                 code = proc.wait(timeout=90)

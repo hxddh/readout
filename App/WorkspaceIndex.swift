@@ -1,7 +1,9 @@
 import Foundation
+import ReadoutCore
 
 /// Tracks the most recently written Markdown files under the user's workspace folders,
-/// so the global shortcut can open "whatever the agent just wrote".
+/// so the global shortcut can open "whatever the agent just wrote", and reports
+/// each write while the app runs (`onWrite`) so new documents open on their own.
 @MainActor
 final class WorkspaceIndex {
     static let shared = WorkspaceIndex()
@@ -11,9 +13,10 @@ final class WorkspaceIndex {
     private let queue = DispatchQueue(label: "readout.workspaces", qos: .utility)
     private var roots: [String] = []
 
-    nonisolated static let markdownExtensions: Set<String> = ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext"]
-    nonisolated static let skippedDirectories: Set<String> = ["node_modules", ".git", ".hg", ".svn", "build", ".build", "DerivedData",
-                                                  "Pods", "vendor", "target", "dist", ".next", ".venv", "venv", "__pycache__", ".cache"]
+    nonisolated static let markdownExtensions = AgentFolders.markdownExtensions
+    nonisolated static let skippedDirectories = AgentFolders.skippedDirectories
+    /// Writes seen while running (not the initial scan), on the main queue.
+    var onWrite: (([URL]) -> Void)?
 
     func configure(_ paths: [String]) {
         let normalized = paths.map { ($0 as NSString).expandingTildeInPath }.filter { FileManager.default.fileExists(atPath: $0) }
@@ -31,7 +34,10 @@ final class WorkspaceIndex {
                 return (url, Date())
             }
             guard !hits.isEmpty else { return }
-            DispatchQueue.main.async { self?.record(hits) }
+            DispatchQueue.main.async {
+                self?.record(hits)
+                self?.onWrite?(hits.map(\.0))
+            }
         }
         let rootsCopy = roots
         queue.async { [weak self] in
@@ -55,11 +61,7 @@ final class WorkspaceIndex {
         recent.first(where: { FileManager.default.fileExists(atPath: $0.url.path) })?.url
     }
 
-    nonisolated static func isCandidate(_ url: URL) -> Bool {
-        guard markdownExtensions.contains(url.pathExtension.lowercased()) else { return false }
-        for c in url.pathComponents where skippedDirectories.contains(c) { return false }
-        return !url.lastPathComponent.hasPrefix(".")
-    }
+    nonisolated static func isCandidate(_ url: URL) -> Bool { AgentFolders.isCandidate(url.path) }
 
     /// Bounded initial scan for the newest Markdown files.
     nonisolated static func scan(_ roots: [String]) -> [(URL, Date)] {

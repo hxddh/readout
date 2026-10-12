@@ -12,7 +12,6 @@
 "Check for Updates…" = "检查更新…";
 "Clear Menu" = "清除菜单";
 "Close" = "关闭";
-"Command line tool installed" = "命令行工具已安装";
 "Copied" = "已复制";
 "Copy File Path" = "复制文件路径";
 "Copy" = "复制";
@@ -29,7 +28,6 @@
 "Help" = "帮助";
 "Hide %@" = "隐藏 %@";
 "Hide Others" = "隐藏其他";
-"Install Command Line Tool…" = "安装命令行工具…";
 "Jump to the next unread change (N)" = "跳到下一处未读变更（N）";
 "Load image from %@" = "加载来自 %@ 的图片";
 "Mark All as Read" = "全部标为已读";
@@ -56,12 +54,10 @@
 "Smaller Text" = "缩小文字";
 "Switch between narrow and wide text" = "在窄栏和宽栏之间切换";
 "Text Width" = "文字宽度";
-"The command line tool was not installed" = "命令行工具未能安装";
 "The file could not be read." = "无法读取此文件。";
 "The file was deleted." = "文件已被删除。";
 "This file is empty." = "此文件为空。";
 "This file was rewritten" = "此文件已被整篇重写";
-"Use “readout FILE” to open a file, or “readout -b FILE” to open it without switching apps." = "使用“readout 文件”打开文件，或用“readout -b 文件”在不切换应用的情况下打开。";
 "View" = "显示";
 "Welcome" = "欢迎";
 "Wide Text" = "宽栏文字";
@@ -76,7 +72,7 @@
 "No headings" = "没有标题";
 "Open Latest" = "打开最新文件";
 "Read what your agents write." = "阅读 Agent 写下的一切。";
-"Readout watches these folders for Markdown files. The global shortcut opens the newest one." = "Readout 会监视这些文件夹中的 Markdown 文件，全局快捷键会打开其中最新的一个。";
+"Markdown files your agents write here open in Readout on their own, in the background. The global shortcut opens the newest one." = "Agent 在这些文件夹里写下的 Markdown 文件会自动在 Readout 中打开，不打断你正在做的事。全局快捷键会打开其中最新的一个。";
 "Check for updates automatically" = "自动检查更新";
 "No folders yet" = "尚未添加文件夹";
 "Download Update" = "下载更新";
