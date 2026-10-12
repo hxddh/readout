@@ -114,6 +114,9 @@ def main() -> int:
     (tmp / "runs" / "run-44.md").write_text("# RUN-44\n")
     collide = tmp / "links" / "other.md"
     os.symlink("../runs/run-43.md", collide)
+    # Two windows opened back to back: the second one's page starts cold.
+    (tmp / "cold-a.md").write_text("# Cold A\n")
+    (tmp / "cold-b.md").write_text("# Cold B\n")
     cli_file = work / "background.md"
     cli_file.write_text("# Opened with readout -b\n")
 

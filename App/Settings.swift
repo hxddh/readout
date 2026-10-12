@@ -124,8 +124,9 @@ enum BaselineStore {
         let to = [file(forKey: primary), positionFile(forKey: primary)]
         queue.async {
             for (src, dst) in zip(from, to) {
-                if let data = try? Data(contentsOf: src) { try? data.write(to: dst, options: .atomic) }
-                try? FileManager.default.removeItem(at: src)
+                guard let data = try? Data(contentsOf: src) else { continue }
+                // The old file goes only once the copy is safely written.
+                if (try? data.write(to: dst, options: .atomic)) != nil { try? FileManager.default.removeItem(at: src) }
             }
         }
         return record

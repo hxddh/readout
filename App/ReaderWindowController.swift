@@ -388,6 +388,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         loader.readChange { [weak self] change in
             guard let self else { return }
+            defer { self.finishRetarget() }   // after the session took the new content
             guard case .content(let result) = change else {
                 if self.deleted { self.deleted = false; self.model.status = nil }
                 return
@@ -534,16 +535,26 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var lastSavedAnchorOffset: Double?
     private var didSaveOnce = false
 
-    /// The opened symlink points to another file, whose state has its own key:
-    /// the next save writes the whole record there, even if nothing changed.
+    /// The opened symlink points to another file, whose state has its own key.
+    /// Until that file's content is read, the session still holds the old
+    /// one: saves wait, then the next save writes the whole record there.
+    private var awaitingRetargetContent = false
     private func retargeted() {
-        didSaveOnce = false
-        lastSavedBaseline = nil
+        awaitingRetargetContent = true
         onRetarget?(self)
     }
 
+    /// The retargeted file's content is in the session now.
+    private func finishRetarget() {
+        guard awaitingRetargetContent else { return }
+        awaitingRetargetContent = false
+        didSaveOnce = false
+        lastSavedBaseline = nil
+        scheduleSave()
+    }
+
     func saveNow() {
-        guard loaded else { return }
+        guard loaded, !awaitingRetargetContent else { return }
         var index: Int? = nil
         var excerpt: String? = nil
         if let a = lastAnchor, let i = session.blocks.firstIndex(where: { $0.slot == a.slot }) {
@@ -628,8 +639,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func setFindMode(_ on: Bool) {
         guard on != findModeOn else { return }
         findModeOn = on
-        webView.call("findMode", json: on ? "true" : "false")
-        SmokeTest.noteFindMode(on)
+        // A cold window's page may not be up yet: deliver once it is.
+        webView.whenReady { [weak self] in
+            guard let self else { return }
+            self.webView.call("findMode", json: on ? "true" : "false")
+            SmokeTest.noteFindMode(on, pageReady: self.webView.isReady)
+        }
     }
 
     // Find mode stays on while the find bar is open: Return in the field may

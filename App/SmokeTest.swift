@@ -191,9 +191,22 @@ enum SmokeTest {
             reader.saveNow()   // a record for what it shows now
             try? await Task.sleep(for: .milliseconds(300))
             mark(out, marker)
+            var earlyRecord: Bool?
+            if name == "link" {
+                // Retargeted, but the new file not read yet: a save now must not
+                // store the old file's state under the new key.
+                deadline = Date().addingTimeInterval(10)
+                while app?.reader(for: url) !== reader && Date() < deadline { try? await Task.sleep(for: .milliseconds(2)) }
+                if reader.model.title == before {
+                    reader.saveNow()
+                    BaselineStore.flush()
+                    earlyRecord = FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).current.path)
+                }
+            }
             deadline = Date().addingTimeInterval(10)
             while reader.model.title == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
             var entry: [String: Any] = ["before": before, "after": reader.model.title]
+            if let earlyRecord { entry["early_record"] = earlyRecord }
             if shownBefore != WorkspaceIndex.realPath(path) {
                 // A retargeted link: the window is found through the link and no longer through the old target.
                 deadline = Date().addingTimeInterval(3)
@@ -238,10 +251,16 @@ enum SmokeTest {
             let record = BaselineStore.Record(baseline: [], topBlockIndex: 3, topOffset: 0, topExcerpt: nil, savedAt: Date())
             if files.current != files.legacy, let data = try? JSONEncoder().encode(record) {
                 try? data.write(to: files.legacy)
+                let fm = FileManager.default
+                // A copy that cannot be written (a folder in the way) keeps the old record.
+                try? fm.createDirectory(at: files.current, withIntermediateDirectories: true)
+                _ = BaselineStore.load(url)
+                BaselineStore.flush()
+                let keptOnFailure = fm.fileExists(atPath: files.legacy.path)
+                try? fm.removeItem(at: files.current)
                 let loaded = BaselineStore.load(url)
                 BaselineStore.flush()
-                let fm = FileManager.default
-                result["legacy"] = ["loaded": loaded?.topBlockIndex == 3,
+                result["legacy"] = ["loaded": loaded?.topBlockIndex == 3, "kept_on_failure": keptOnFailure,
                                     "moved": fm.fileExists(atPath: files.current.path),
                                     "old_removed": !fm.fileExists(atPath: files.legacy.path)]
             } else {
@@ -275,8 +294,12 @@ enum SmokeTest {
 
     /// Find-mode switches the page was sent (each re-lays out the document).
     private static var findModeCalls: [Bool] = []
-    static func noteFindMode(_ on: Bool) {
-        if outputDirectory != nil { findModeCalls.append(on) }
+    /// Whether the page was up when each switch was delivered.
+    private static var findModeReady: [Bool] = []
+    static func noteFindMode(_ on: Bool, pageReady: Bool) {
+        guard outputDirectory != nil else { return }
+        findModeCalls.append(on)
+        findModeReady.append(pageReady)
     }
 
     /// Find bar open, Return twice with editing ending and restarting around
@@ -297,7 +320,25 @@ enum SmokeTest {
         field.stringValue = ""
         controller.controlTextDidEndEditing(note)
         try? await Task.sleep(for: .milliseconds(300))
-        if let data = try? JSONSerialization.data(withJSONObject: ["calls": findModeCalls], options: [.prettyPrinted, .sortedKeys]) {
+        var json: [String: Any] = ["calls": findModeCalls]
+        // Find asked for in a window whose page is not up yet (the pool's spare
+        // went to the window opened just before): delivered once it is.
+        if let tmp = ProcessInfo.processInfo.environment["READOUT_SMOKE_TMP_FILE"] {
+            let dir = URL(fileURLWithPath: tmp).deletingLastPathComponent()
+            let app = NSApp.delegate as? AppDelegate
+            findModeCalls = []
+            findModeReady = []
+            app?.open(dir.appendingPathComponent("cold-a.md"))
+            app?.open(dir.appendingPathComponent("cold-b.md"))
+            if let cold = app?.reader(for: dir.appendingPathComponent("cold-b.md")) {
+                cold.showFind(nil)
+                let deadline = Date().addingTimeInterval(10)
+                while findModeCalls.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                json["cold_calls"] = findModeCalls
+                json["cold_ready"] = findModeReady
+            }
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: out.appendingPathComponent("find-mode.json"))
         }
     }
