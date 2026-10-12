@@ -97,16 +97,24 @@ public final class DocumentSession {
         title = doc.title
         for i in blocks.indices { blocks[i].slot = allocSlot() }
         marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]; sentDiffs = []; sentDeletions = []
+        beforeEmpty = nil
         let keys = blocks.map(BlockKey.init)
+        var rewrite = false
         if let persisted, persisted != keys {
             let d = Differ.diff(old: persisted, new: keys)
-            if !d.rewrite { applyMarks(d, oldKeys: persisted, oldSlotForIndex: { _ in nil }, oldTexts: persisted.map(\.wholeText)) }
+            rewrite = d.rewrite
+            // Checkbox states come from the baseline (nil in one saved before they were kept).
+            if !d.rewrite {
+                applyMarks(d, oldKeys: persisted, oldSlotForIndex: { _ in nil }, oldTasks: { persisted[$0].taskState },
+                           oldTexts: persisted.map(\.wholeText))
+            }
             baseline = persisted
             if marks.isEmpty && deletions.isEmpty { baseline = keys }
         } else {
             baseline = keys
         }
-        return fullPayload(rewrite: false)
+        // Rewritten since it was last read: no marks, and the notice says why.
+        return fullPayload(rewrite: rewrite)
     }
 
     public func fullPayload(rewrite: Bool) -> RenderPatch {
@@ -123,8 +131,39 @@ public final class DocumentSession {
 
     // MARK: Updating
 
+    /// What the session held before the document went empty. An agent
+    /// truncates a file before writing it again, and a read can land in
+    /// between: the version after the empty one is compared with this, so
+    /// rewriting the same text marks nothing (and a deletion of everything
+    /// does not stay behind).
+    private struct State {
+        var blocks: [Block], title: String?, marks: [Int: MarkKind], deletions: [RenderPatch.Deletion]
+        var baseline: [BlockKey], readText: [Int: String?], readKey: [Int: BlockKey], readTasks: [Int: [Bool]]
+        var diffs: [Int: String]
+    }
+    private var beforeEmpty: State?
+
     /// Applies a new parse. Returns nil when nothing visible changed.
     public func update(_ doc: ParsedDocument) -> RenderPatch? {
+        if doc.blocks.isEmpty {
+            if beforeEmpty == nil && !blocks.isEmpty {
+                beforeEmpty = State(blocks: blocks, title: title, marks: marks, deletions: deletions, baseline: baseline,
+                                    readText: readText, readKey: readKey, readTasks: readTasks, diffs: diffs)
+            }
+        } else if let s = beforeEmpty {
+            beforeEmpty = nil
+            blocks = s.blocks; title = s.title; marks = s.marks; deletions = s.deletions; baseline = s.baseline
+            readText = s.readText; readKey = s.readKey; readTasks = s.readTasks; diffs = s.diffs
+            // The page shows the empty version: it gets the whole document, marked against the one before.
+            if let p = apply(doc), p.reset { return p }
+            return fullPayload(rewrite: false)
+        }
+        let patch = apply(doc)
+        dropBeforeEmptyIfRead()
+        return patch
+    }
+
+    private func apply(_ doc: ParsedDocument) -> RenderPatch? {
         let oldBlocks = blocks
         let oldKeys = oldBlocks.map(BlockKey.init)
         var newBlocks = doc.blocks
@@ -174,6 +213,7 @@ public final class DocumentSession {
         let oldSlotForIndex: (Int) -> Int? = { oldBlocks[$0].slot }
         blocks = newBlocks
         applyMarks(d, oldKeys: oldKeys, oldSlotForIndex: oldSlotForIndex, oldBlocks: oldBlocks,
+                   oldTasks: { oldBlocks[$0].taskState },
                    oldTexts: oldBlocks.map(\.text))
         if marks.isEmpty && deletions.isEmpty { baseline = newKeys }
         if ops.isEmpty { return nil }
@@ -181,7 +221,7 @@ public final class DocumentSession {
     }
 
     private func applyMarks(_ d: DiffResult, oldKeys: [BlockKey], oldSlotForIndex: (Int) -> Int?,
-                            oldBlocks: [Block] = [], oldTexts: [String?]) {
+                            oldBlocks: [Block] = [], oldTasks: (Int) -> [Bool]?, oldTexts: [String?]) {
         let newSlots = Set(blocks.map(\.slot))
         // One comparison budget for the update: many large edited blocks cost
         // what one does, and those past it are shown replaced whole.
@@ -198,14 +238,14 @@ public final class DocumentSession {
                         readText[slot] = oldTexts[o]
                         if oldTexts[o] == nil { readKey[slot] = oldKeys[o] }
                         // Unless a checkbox change since reading already recorded them.
-                        if readTasks[slot] == nil, !oldBlocks.isEmpty { readTasks[slot] = oldBlocks[o].taskState }
+                        if readTasks[slot] == nil, let read = oldTasks(o) { readTasks[slot] = read }
                     }
                     let reverted = (readText[slot] ?? nil).map { $0 == blocks[n].text }
                         ?? (readKey[slot].map { $0.fingerprint == blocks[n].fingerprint } ?? false)
                     if reverted {
                         // Changed back to the text that was read: no comparison to show,
                         // but a checkbox that differs from what was read is still news.
-                        let readState = readTasks[slot] ?? (oldBlocks.isEmpty ? nil : oldBlocks[o].taskState)
+                        let readState = readTasks[slot] ?? oldTasks(o)
                         marks[slot] = readState.map { $0 != blocks[n].taskState } == true ? .state : nil
                         readText[slot] = nil; readKey[slot] = nil; diffs[slot] = nil
                         // A state mark keeps the checkboxes as read, so unticking clears it.
@@ -221,9 +261,9 @@ public final class DocumentSession {
                     }
                 }
             case let .equal(o):
-                if !oldBlocks.isEmpty, oldBlocks[o].taskState != blocks[n].taskState, marks[slot] == nil {
+                if let read = oldTasks(o), read != blocks[n].taskState, marks[slot] == nil {
                     marks[slot] = .state
-                    readTasks[slot] = oldBlocks[o].taskState   // the checkboxes as read
+                    readTasks[slot] = read   // the checkboxes as read
                 } else if marks[slot] == .state, let read = readTasks[slot], read == blocks[n].taskState {
                     // Ticked and unticked again before it was read: nothing new.
                     marks[slot] = nil; readTasks[slot] = nil
@@ -310,13 +350,24 @@ public final class DocumentSession {
     public func markRead(slots: [Int], deletionIDs: [Int]) {
         for s in slots { marks[s] = nil; readText[s] = nil; readKey[s] = nil; readTasks[s] = nil; diffs[s] = nil }
         let ids = Set(deletionIDs)
+        // Reading the removal of everything accepts the empty version: it is
+        // no longer a passing truncation to look past.
+        if blocks.isEmpty && deletions.contains(where: { ids.contains($0.id) }) { beforeEmpty = nil }
         deletions.removeAll { ids.contains($0.id) }
         if marks.isEmpty && deletions.isEmpty { baseline = blocks.map(BlockKey.init) }
+        dropBeforeEmptyIfRead()
+    }
+
+    /// Once the reader has caught up with the empty version (the baseline
+    /// moved to it), what came before is no longer what was last read.
+    private func dropBeforeEmptyIfRead() {
+        if beforeEmpty != nil && blocks.isEmpty && marks.isEmpty && deletions.isEmpty { beforeEmpty = nil }
     }
 
     public func markAllRead() {
         marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]; sentDiffs = []; sentDeletions = []
         baseline = blocks.map(BlockKey.init)
+        dropBeforeEmptyIfRead()
     }
 
     public var currentMarks: [RenderPatch.Mark] {

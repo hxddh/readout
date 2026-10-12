@@ -20,6 +20,11 @@ struct HTMLRenderer {
     func inline(_ node: Markup) -> String {
         var out = ""
         for child in node.children { out += inlineNode(child) }
+        // Lines taken into multi-line display math leave a filler (MathProtector.protect).
+        if out.utf8.contains(0xEE), out.contains(MathProtector.filler) {
+            out = out.replacingOccurrences(of: "\n" + String(MathProtector.filler), with: "")
+                .replacingOccurrences(of: String(MathProtector.filler), with: "")
+        }
         return out
     }
 
@@ -56,7 +61,7 @@ struct HTMLRenderer {
         case is LineBreak:
             return "<br>"
         case let h as InlineHTML:
-            return HTML.sanitize(h.rawHTML)
+            return HTML.sanitize(h.rawHTML, resolver: resolver)
         case let s as SymbolLink:
             return "<code>\(HTML.escape(s.destination ?? ""))</code>"
         default:
@@ -67,8 +72,10 @@ struct HTMLRenderer {
     private func image(_ img: Image) -> String {
         let src = math.restore(plain: img.source ?? "")
         let alt = HTML.escape(math.restore(plain: img.plainText))
+        var title = ""
+        if let t = img.title, !t.isEmpty { title = " title=\"\(HTML.escape(math.restore(plain: t)))\"" }
         guard let resolver else {
-            return "<img src=\"\(HTML.escape(src))\" alt=\"\(alt)\" loading=\"lazy\">"
+            return "<img src=\"\(HTML.escape(src))\" alt=\"\(alt)\"\(title) loading=\"lazy\">"
         }
         let r = resolver.image(src)
         var dims = ""
@@ -78,16 +85,16 @@ struct HTMLRenderer {
         if r.remote {
             return "<span class=\"remote-img\" data-tag=\"img\" data-src=\"\(HTML.escape(r.url))\" data-alt=\"\(alt)\"></span>"
         }
-        return "<img src=\"\(HTML.escape(r.url))\" alt=\"\(alt)\"\(dims) loading=\"lazy\" decoding=\"async\">"
+        return "<img src=\"\(HTML.escape(r.url))\" alt=\"\(alt)\"\(title)\(dims) loading=\"lazy\" decoding=\"async\">"
     }
 
     /// GFM extended autolinks: http(s) URLs, `www.` hosts and email addresses.
     /// Trailing punctuation (ASCII and CJK) is left out of the link, and so
     /// are the private-use tokens standing for math and footnote references.
     private static let urlRegex = try! NSRegularExpression(
-        pattern: #"\b(?:https?|ftp)://[^\s<>"'`\x{E000}-\x{E003}]+[^\s<>"'`\x{E000}-\x{E003}.,;:!?)\]}，。；：！？）】]"#
-            + #"|(?<![\w.@/:-])www\.[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?:[/?#][^\s<>"'`\x{E000}-\x{E003}]*[^\s<>"'`\x{E000}-\x{E003}.,;:!?)\]}，。；：！？）】])?"#
-            + #"|(?<![\w.+-])[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9_-]+)*\.[A-Za-z0-9_-]*[A-Za-z0-9](?![-_\w])"#)
+        pattern: #"\b(?:https?|ftp)://[^\s<>"'`\x{E000}-\x{E004}]+[^\s<>"'`\x{E000}-\x{E004}.,;:!?)\]}，。；：！？）】]"#
+            + #"|(?<![\w.@/:-])www\.[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?:[/?#][^\s<>"'`\x{E000}-\x{E004}]*[^\s<>"'`\x{E000}-\x{E004}.,;:!?)\]}，。；：！？）】])?"#
+            + #"|(?<![\w.+-])[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9_-]+)*\.[A-Za-z0-9_-]*[A-Za-z](?![-_\w])"#)
 
     /// `&amp;` followed by letters and digits just before a `;` reads as an entity reference: GFM leaves it out of the link.
     private static let trailingEntity = try! NSRegularExpression(pattern: #"&[A-Za-z0-9]+$"#)
@@ -146,7 +153,7 @@ struct HTMLRenderer {
         case is ThematicBreak:
             return "<hr>"
         case let h as HTMLBlock:
-            return HTML.sanitize(h.html)
+            return HTML.sanitize(h.html, resolver: resolver)
         case let l as UnorderedList:
             let tight = isTight(l)
             return "<ul>" + l.listItems.map { listItem($0, tight: tight) }.joined() + "</ul>"
@@ -227,7 +234,7 @@ struct HTMLRenderer {
             var firstChild = true
             for child in item.children {
                 guard let cr = child.range else { continue }
-                if !firstChild && !(child is ListItemContainer) && isBlank(cr.lowerBound.line - 1) { return false }
+                if !firstChild && isBlank(cr.lowerBound.line - 1) { return false }
                 firstChild = false
             }
         }

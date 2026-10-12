@@ -1,5 +1,5 @@
 {
- "height": 5286,
+ "height": 5317,
  "blocks": [
   {
    "slot": 1,
@@ -51,7 +51,7 @@
    "kind": "heading",
    "top": 428,
    "h": 42,
-   "style": "42c210bb",
+   "style": "71b6e53a",
    "content": "5ff42848",
    "text": "Clean Architecture 分层映射§"
   },
@@ -131,15 +131,15 @@
    "slot": 15,
    "kind": "listItem",
    "top": 1024,
-   "h": 54,
-   "style": "4cd4b4e8",
+   "h": 59,
+   "style": "5167b653",
    "content": "1cdf2e1e",
    "text": "敏感数据（OAuth token、refreshToken、credentials）必须 AES"
   },
   {
    "slot": 16,
    "kind": "listItem",
-   "top": 1078,
+   "top": 1083,
    "h": 31,
    "style": "323df906",
    "content": "958e3cfd",
@@ -148,7 +148,7 @@
   {
    "slot": 17,
    "kind": "listItem",
-   "top": 1109,
+   "top": 1113,
    "h": 31,
    "style": "323df906",
    "content": "ecd53c98",
@@ -157,7 +157,7 @@
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 1140,
+   "top": 1144,
    "h": 31,
    "style": "323df906",
    "content": "0fd2c888",
@@ -166,7 +166,7 @@
   {
    "slot": 19,
    "kind": "listItem",
-   "top": 1170,
+   "top": 1175,
    "h": 47,
    "style": "2f7fa9c3",
    "content": "c3039208",
@@ -175,7 +175,7 @@
   {
    "slot": 20,
    "kind": "heading",
-   "top": 1218,
+   "top": 1222,
    "h": 65,
    "style": "a4cadef8",
    "content": "9cff7fba",
@@ -184,7 +184,7 @@
   {
    "slot": 21,
    "kind": "code",
-   "top": 1283,
+   "top": 1287,
    "h": 519,
    "style": "400a1bad",
    "content": "cdc6edf2",
@@ -193,7 +193,7 @@
   {
    "slot": 22,
    "kind": "heading",
-   "top": 1802,
+   "top": 1806,
    "h": 65,
    "style": "a4cadef8",
    "content": "20092a3a",
@@ -202,7 +202,7 @@
   {
    "slot": 23,
    "kind": "code",
-   "top": 1867,
+   "top": 1871,
    "h": 119,
    "style": "9022aba6",
    "content": "dd7d3727",
@@ -211,7 +211,7 @@
   {
    "slot": 24,
    "kind": "paragraph",
-   "top": 1986,
+   "top": 1990,
    "h": 46,
    "style": "f54de366",
    "content": "30048bba",
@@ -220,7 +220,7 @@
   {
    "slot": 25,
    "kind": "listItem",
-   "top": 2031,
+   "top": 2036,
    "h": 31,
    "style": "f95bb91c",
    "content": "86de3b94",
@@ -229,7 +229,7 @@
   {
    "slot": 26,
    "kind": "listItem",
-   "top": 2062,
+   "top": 2067,
    "h": 31,
    "style": "044ede1a",
    "content": "6ab8a043",
@@ -238,7 +238,7 @@
   {
    "slot": 27,
    "kind": "listItem",
-   "top": 2093,
+   "top": 2097,
    "h": 31,
    "style": "6620c238",
    "content": "214ec5c4",
@@ -247,16 +247,16 @@
   {
    "slot": 28,
    "kind": "listItem",
-   "top": 2124,
-   "h": 28,
-   "style": "3b021f05",
+   "top": 2128,
+   "h": 31,
+   "style": "044ede1a",
    "content": "3f64d72d",
    "text": "加密存储: 敏感数据（OAuth token、credentials）AES 加密存于 Redi"
   },
   {
    "slot": 29,
    "kind": "listItem",
-   "top": 2152,
+   "top": 2159,
    "h": 47,
    "style": "d59e0745",
    "content": "32e7fb49",
@@ -265,7 +265,7 @@
   {
    "slot": 30,
    "kind": "heading",
-   "top": 2199,
+   "top": 2206,
    "h": 65,
    "style": "a4cadef8",
    "content": "acd57be4",
@@ -274,7 +274,7 @@
   {
    "slot": 31,
    "kind": "heading",
-   "top": 2264,
+   "top": 2271,
    "h": 42,
    "style": "71b6e53a",
    "content": "9ed34634",
@@ -283,7 +283,7 @@
   {
    "slot": 32,
    "kind": "listItem",
-   "top": 2306,
+   "top": 2313,
    "h": 31,
    "style": "97292bcd",
    "content": "7de688ee",
@@ -292,16 +292,16 @@
   {
    "slot": 33,
    "kind": "listItem",
-   "top": 2337,
-   "h": 28,
-   "style": "b12ab696",
+   "top": 2344,
+   "h": 31,
+   "style": "6f922ce2",
    "content": "e6532eb6",
    "text": "强制 const（no-var、prefer-const），严格相等（eqeqeq）"
   },
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 2365,
+   "top": 2374,
    "h": 31,
    "style": "8165388f",
    "content": "fe38f7fb",
@@ -310,25 +310,25 @@
   {
    "slot": 35,
    "kind": "listItem",
-   "top": 2396,
-   "h": 28,
-   "style": "bb71cedd",
+   "top": 2405,
+   "h": 31,
+   "style": "a885d8cf",
    "content": "ec9d3361",
    "text": "必须使用 Prettier: npx prettier --write <file>"
   },
   {
    "slot": 36,
    "kind": "listItem",
-   "top": 2424,
-   "h": 45,
-   "style": "ba8cf6da",
+   "top": 2436,
+   "h": 47,
+   "style": "1363d4a1",
    "content": "d630cc7d",
    "text": "前端额外安装了 prettier-plugin-tailwindcss"
   },
   {
    "slot": 37,
    "kind": "heading",
-   "top": 2469,
+   "top": 2483,
    "h": 42,
    "style": "71b6e53a",
    "content": "df7ac243",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "listItem",
-   "top": 2511,
+   "top": 2525,
    "h": 31,
    "style": "69e40b9e",
    "content": "aae035d2",
@@ -346,7 +346,7 @@
   {
    "slot": 39,
    "kind": "listItem",
-   "top": 2542,
+   "top": 2556,
    "h": 31,
    "style": "185c95ed",
    "content": "45db94f5",
@@ -355,7 +355,7 @@
   {
    "slot": 40,
    "kind": "listItem",
-   "top": 2572,
+   "top": 2586,
    "h": 31,
    "style": "918d766d",
    "content": "ace9ce60",
@@ -364,25 +364,25 @@
   {
    "slot": 41,
    "kind": "listItem",
-   "top": 2603,
-   "h": 28,
-   "style": "c35ad71d",
+   "top": 2617,
+   "h": 31,
+   "style": "d3dc1d57",
    "content": "8ec2b601",
    "text": "检查 → npm run lint"
   },
   {
    "slot": 42,
    "kind": "listItem",
-   "top": 2631,
-   "h": 28,
-   "style": "a3ab0c46",
+   "top": 2648,
+   "h": 31,
+   "style": "a7088e1e",
    "content": "3f990ede",
    "text": "测试 → npm test"
   },
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 2660,
+   "top": 2679,
    "h": 47,
    "style": "2dbcc0d5",
    "content": "af53d4e3",
@@ -391,7 +391,7 @@
   {
    "slot": 44,
    "kind": "heading",
-   "top": 2707,
+   "top": 2726,
    "h": 42,
    "style": "71b6e53a",
    "content": "c5b0024d",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "listItem",
-   "top": 2749,
+   "top": 2768,
    "h": 31,
    "style": "3d0d00e9",
    "content": "3fa8e3ac",
@@ -409,25 +409,25 @@
   {
    "slot": 46,
    "kind": "listItem",
-   "top": 2780,
-   "h": 28,
-   "style": "c14c06d2",
+   "top": 2798,
+   "h": 31,
+   "style": "c43094ad",
    "content": "0c1ba96a",
    "text": "使用 jest.mock() 模拟依赖（logger、redis、services）"
   },
   {
    "slot": 47,
    "kind": "listItem",
-   "top": 2808,
-   "h": 45,
-   "style": "21a95ed7",
+   "top": 2829,
+   "h": 47,
+   "style": "f223b6a7",
    "content": "48738439",
    "text": "beforeEach 中 jest.resetModules()，afterEach 中 jes"
   },
   {
    "slot": 48,
    "kind": "heading",
-   "top": 2853,
+   "top": 2877,
    "h": 42,
    "style": "71b6e53a",
    "content": "cb714a47",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "listItem",
-   "top": 2895,
+   "top": 2918,
    "h": 28,
    "style": "4d2b37ac",
    "content": "8bf2ada0",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "listItem",
-   "top": 2923,
+   "top": 2947,
    "h": 31,
    "style": "323df906",
    "content": "3bff5a4e",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "listItem",
-   "top": 2954,
+   "top": 2977,
    "h": 31,
    "style": "0e56bc7d",
    "content": "b181aec5",
@@ -463,16 +463,16 @@
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 2984,
-   "h": 28,
-   "style": "cc7661da",
+   "top": 3008,
+   "h": 31,
+   "style": "1b4ce614",
    "content": "661e865d",
    "text": "主题切换：web/admin-spa/src/stores/theme.js 的 useThem"
   },
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 3013,
+   "top": 3039,
    "h": 47,
    "style": "63f0137b",
    "content": "83dc5c0a",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "paragraph",
-   "top": 3060,
+   "top": 3086,
    "h": 46,
    "style": "f54de366",
    "content": "9faf7a90",
@@ -490,16 +490,16 @@
   {
    "slot": 55,
    "kind": "table",
-   "top": 3106,
+   "top": 3132,
    "h": 198,
-   "style": "ed5fa841",
+   "style": "de27cf29",
    "content": "e4893b50",
    "text": "元素明亮模式暗黑模式文本text-gray-700dark:text-gray-200背景bg-"
   },
   {
    "slot": 56,
    "kind": "heading",
-   "top": 3303,
+   "top": 3329,
    "h": 42,
    "style": "71b6e53a",
    "content": "9b23d78d",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "listItem",
-   "top": 3345,
+   "top": 3371,
    "h": 31,
    "style": "eaebb804",
    "content": "5b18145c",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 3376,
+   "top": 3402,
    "h": 31,
    "style": "323df906",
    "content": "9932d492",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "listItem",
-   "top": 3407,
+   "top": 3433,
    "h": 47,
    "style": "63f0137b",
    "content": "f08346b4",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "heading",
-   "top": 3454,
+   "top": 3480,
    "h": 65,
    "style": "a4cadef8",
    "content": "113030d1",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "code",
-   "top": 3519,
+   "top": 3545,
    "h": 299,
    "style": "ca082ab3",
    "content": "c5190053",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "heading",
-   "top": 3818,
+   "top": 3844,
    "h": 42,
    "style": "71b6e53a",
    "content": "f4fffe49",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "code",
-   "top": 3860,
+   "top": 3886,
    "h": 99,
    "style": "36113a16",
    "content": "b33ac35f",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "heading",
-   "top": 3959,
+   "top": 3985,
    "h": 65,
    "style": "a4cadef8",
    "content": "3a5e75d2",
@@ -580,16 +580,16 @@
   {
    "slot": 65,
    "kind": "listItem",
-   "top": 4024,
-   "h": 28,
-   "style": "34349e8a",
+   "top": 4050,
+   "h": 31,
+   "style": "37820e49",
    "content": "8a306949",
    "text": "JWT_SECRET — JWT 密钥（32字符+）"
   },
   {
    "slot": 66,
    "kind": "listItem",
-   "top": 4052,
+   "top": 4081,
    "h": 31,
    "style": "3c3482d6",
    "content": "57905c49",
@@ -598,16 +598,16 @@
   {
    "slot": 67,
    "kind": "listItem",
-   "top": 4083,
-   "h": 45,
-   "style": "b9368e78",
+   "top": 4112,
+   "h": 47,
+   "style": "b273b777",
    "content": "f987e05f",
    "text": "REDIS_HOST / REDIS_PORT / REDIS_PASSWORD — Redis"
   },
   {
    "slot": 68,
    "kind": "paragraph",
-   "top": 4128,
+   "top": 4159,
    "h": 46,
    "style": "3c8efac5",
    "content": "b110cdf4",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "heading",
-   "top": 4174,
+   "top": 4204,
    "h": 65,
    "style": "a4cadef8",
    "content": "2bc7635f",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "table",
-   "top": 4239,
+   "top": 4270,
    "h": 525,
    "style": "55908b06",
    "content": "a63f8135",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "paragraph",
-   "top": 4764,
+   "top": 4795,
    "h": 46,
    "style": "14f2ccdf",
    "content": "cd4a04be",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "heading",
-   "top": 4809,
+   "top": 4840,
    "h": 59,
    "style": "428c387a",
    "content": "9ceb1e4f",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "paragraph",
-   "top": 4868,
+   "top": 4899,
    "h": 148,
    "style": "ad33ca6e",
    "content": "dfbb0497",

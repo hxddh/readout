@@ -189,6 +189,20 @@ import Testing
         #expect(!doc.blocks[1].cjk)
     }
 
+    /// Chinese items that name English identifiers read as CJK, whatever the
+    /// identifiers' length or whether they are in inline code (corpus 21, 25, 27, 29).
+    @Test func mixedChineseAndEnglishItemsClassifyTheSame() {
+        let doc = parse("""
+        - 将 PromptManager 重命名为 AbstractPromptManager 并抽象化
+        - 修正 Gemini 直连 grounding 来源 index。
+        - `ApiHandler` 收到 `WebSearchResults` 后会直接覆盖 `updatedMessage.webSearchResults`
+        - helper MUST 不再读取、解析、缓存或依赖 TRUSTED_HTTP_PROXY_TERMINAL_IDS。
+        - Use the 读取 helper for every request in the pipeline.
+        - Plain English item with `代码` in code.
+        """)
+        #expect(doc.blocks.map(\.cjk) == [true, true, true, true, false, false])
+    }
+
     @Test func tocWithSectionTasks() {
         var doc = parse("# A\n\n## B\n\n- [x] t1\n- [ ] t2\n\n## C\n\n- [ ] t3\n")
         for i in doc.blocks.indices { doc.blocks[i].slot = i + 1 }
@@ -210,6 +224,32 @@ import Testing
         #expect(html.contains("data-line=\"42\""))
         #expect(html.contains("<code>1.2.3</code>"))
         #expect(html.contains("<code>missing/file.ts</code>"))
+    }
+
+    @Test func localImagesWithQueryFragmentOrRawHTMLResolve() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("readout-img-\(UUID())")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        var png: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]
+        png += [0, 0, 0x02, 0x80, 0, 0, 0x01, 0xE0] + [UInt8](repeating: 0, count: 10)
+        try Data(png).write(to: dir.appendingPathComponent("shot.png"))
+        let resolver = FileResolver(baseDirectory: dir)
+        let file = ReadoutURL.file(dir.appendingPathComponent("shot.png").standardizedFileURL.path)
+        for src in ["shot.png?raw=true", "shot.png#gh-dark-mode-only"] {
+            let r = resolver.image(src)
+            #expect(r.url == file, "\(src)")
+            #expect(r.width == 640 && r.height == 480, "\(src)")
+        }
+        let doc = MarkdownParser.parse("""
+        <p align="center"><img src="shot.png" width="200"></p>
+
+        Inline <img src='./shot.png?raw=true'> and <img src="https://example.com/x.png"> and <img src="data:image/png;base64,AA==">.
+        """, resolver: resolver)
+        #expect(doc.blocks[0].html.hasPrefix("<p align=\"center\"><img src=\"\(file)\" width=\"200\"></p>"))
+        let inline = doc.blocks[1].html
+        #expect(inline.contains("<img src=\"\(file)\">"))
+        #expect(inline.contains("class=\"remote-img\""))
+        #expect(inline.contains("src=\"data:image/png;base64,AA==\""))
     }
 
     @Test func imageSizes() {

@@ -1,5 +1,5 @@
 {
- "height": 7033,
+ "height": 7090,
  "blocks": [
   {
    "slot": 1,
@@ -32,33 +32,33 @@
    "slot": 4,
    "kind": "paragraph",
    "top": 209,
-   "h": 44,
-   "style": "d6ef4d48",
+   "h": 46,
+   "style": "60f1b351",
    "content": "84feb095",
    "text": "Talebook 是基于 Calibre 的个人电子书管理系统："
   },
   {
    "slot": 5,
    "kind": "listItem",
-   "top": 253,
-   "h": 28,
-   "style": "dcd0e005",
+   "top": 255,
+   "h": 31,
+   "style": "36163cdc",
    "content": "bfadcbef",
    "text": "webserver/ — Python 后端（Tornado + Calibre），详见 web"
   },
   {
    "slot": 6,
    "kind": "listItem",
-   "top": 281,
-   "h": 45,
-   "style": "d352b95c",
+   "top": 286,
+   "h": 47,
+   "style": "098ee3d5",
    "content": "4f9a79ee",
    "text": "app/ — 前端（Nuxt 4 + Vue 3 + Vuetify），详见 app/CLAUD"
   },
   {
    "slot": 7,
    "kind": "paragraph",
-   "top": 326,
+   "top": 333,
    "h": 74,
    "style": "5ed36e74",
    "content": "da207c68",
@@ -67,7 +67,7 @@
   {
    "slot": 8,
    "kind": "heading",
-   "top": 400,
+   "top": 407,
    "h": 65,
    "style": "3505f3b8",
    "content": "113030d1",
@@ -76,7 +76,7 @@
   {
    "slot": 9,
    "kind": "code",
-   "top": 465,
+   "top": 472,
    "h": 279,
    "style": "2bcb2bce",
    "content": "4eadc093",
@@ -85,7 +85,7 @@
   {
    "slot": 10,
    "kind": "paragraph",
-   "top": 744,
+   "top": 751,
    "h": 46,
    "style": "4a6a0ce1",
    "content": "61646f38",
@@ -94,7 +94,7 @@
   {
    "slot": 11,
    "kind": "heading",
-   "top": 790,
+   "top": 796,
    "h": 65,
    "style": "3505f3b8",
    "content": "acd57be4",
@@ -103,7 +103,7 @@
   {
    "slot": 12,
    "kind": "heading",
-   "top": 855,
+   "top": 862,
    "h": 42,
    "style": "5b09fa56",
    "content": "f19d8a11",
@@ -112,7 +112,7 @@
   {
    "slot": 13,
    "kind": "paragraph",
-   "top": 897,
+   "top": 903,
    "h": 74,
    "style": "804250a5",
    "content": "480305d8",
@@ -121,7 +121,7 @@
   {
    "slot": 14,
    "kind": "listItem",
-   "top": 970,
+   "top": 977,
    "h": 31,
    "style": "635d437e",
    "content": "2b508824",
@@ -130,7 +130,7 @@
   {
    "slot": 15,
    "kind": "listItem",
-   "top": 1001,
+   "top": 1008,
    "h": 75,
    "style": "552cdcfb",
    "content": "ee322e7b",
@@ -139,7 +139,7 @@
   {
    "slot": 16,
    "kind": "paragraph",
-   "top": 1076,
+   "top": 1083,
    "h": 46,
    "style": "4e5f4924",
    "content": "13ac7af4",
@@ -148,7 +148,7 @@
   {
    "slot": 17,
    "kind": "listItem",
-   "top": 1122,
+   "top": 1129,
    "h": 31,
    "style": "4b29b5ab",
    "content": "5c703640",
@@ -157,7 +157,7 @@
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 1153,
+   "top": 1159,
    "h": 59,
    "style": "107b36bf",
    "content": "8da7744b",
@@ -166,7 +166,7 @@
   {
    "slot": 19,
    "kind": "listItem",
-   "top": 1211,
+   "top": 1218,
    "h": 59,
    "style": "5de2626d",
    "content": "004a6454",
@@ -175,7 +175,7 @@
   {
    "slot": 20,
    "kind": "listItem",
-   "top": 1270,
+   "top": 1277,
    "h": 59,
    "style": "72770403",
    "content": "803c1bd3",
@@ -184,7 +184,7 @@
   {
    "slot": 21,
    "kind": "listItem",
-   "top": 1329,
+   "top": 1335,
    "h": 31,
    "style": "7f99a4ad",
    "content": "94130970",
@@ -193,7 +193,7 @@
   {
    "slot": 22,
    "kind": "listItem",
-   "top": 1359,
+   "top": 1366,
    "h": 115,
    "style": "242f06cd",
    "content": "99cd53c1",
@@ -202,7 +202,7 @@
   {
    "slot": 23,
    "kind": "listItem",
-   "top": 1474,
+   "top": 1481,
    "h": 87,
    "style": "2b274276",
    "content": "30ef7965",
@@ -211,7 +211,7 @@
   {
    "slot": 24,
    "kind": "listItem",
-   "top": 1561,
+   "top": 1568,
    "h": 31,
    "style": "7f99a4ad",
    "content": "b4aa4c2c",
@@ -220,7 +220,7 @@
   {
    "slot": 25,
    "kind": "listItem",
-   "top": 1591,
+   "top": 1598,
    "h": 75,
    "style": "9283b619",
    "content": "0d57c416",
@@ -229,7 +229,7 @@
   {
    "slot": 26,
    "kind": "paragraph",
-   "top": 1667,
+   "top": 1674,
    "h": 102,
    "style": "77459bdb",
    "content": "d3fba9b7",
@@ -238,7 +238,7 @@
   {
    "slot": 27,
    "kind": "paragraph",
-   "top": 1768,
+   "top": 1775,
    "h": 158,
    "style": "bd6dc8c0",
    "content": "fba897c2",
@@ -247,7 +247,7 @@
   {
    "slot": 28,
    "kind": "heading",
-   "top": 1926,
+   "top": 1933,
    "h": 42,
    "style": "5b09fa56",
    "content": "aca65359",
@@ -256,7 +256,7 @@
   {
    "slot": 29,
    "kind": "paragraph",
-   "top": 1968,
+   "top": 1975,
    "h": 46,
    "style": "4e5f4924",
    "content": "0cbce8f0",
@@ -265,7 +265,7 @@
   {
    "slot": 30,
    "kind": "listItem",
-   "top": 2013,
+   "top": 2020,
    "h": 31,
    "style": "64d78d46",
    "content": "25708e14",
@@ -274,7 +274,7 @@
   {
    "slot": 31,
    "kind": "listItem",
-   "top": 2044,
+   "top": 2051,
    "h": 31,
    "style": "37574362",
    "content": "545ef6bb",
@@ -283,7 +283,7 @@
   {
    "slot": 32,
    "kind": "listItem",
-   "top": 2075,
+   "top": 2082,
    "h": 31,
    "style": "37574362",
    "content": "e86c6681",
@@ -292,7 +292,7 @@
   {
    "slot": 33,
    "kind": "listItem",
-   "top": 2106,
+   "top": 2112,
    "h": 31,
    "style": "37574362",
    "content": "030d887e",
@@ -301,7 +301,7 @@
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 2136,
+   "top": 2143,
    "h": 47,
    "style": "2d99d755",
    "content": "96a3a807",
@@ -310,7 +310,7 @@
   {
    "slot": 35,
    "kind": "paragraph",
-   "top": 2184,
+   "top": 2190,
    "h": 130,
    "style": "d0becc3b",
    "content": "e54f677f",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "heading",
-   "top": 2313,
+   "top": 2320,
    "h": 30,
    "style": "edef9608",
    "content": "e97a2632",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "paragraph",
-   "top": 2343,
+   "top": 2350,
    "h": 130,
    "style": "626acd15",
    "content": "8ae4ff07",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "paragraph",
-   "top": 2472,
+   "top": 2479,
    "h": 130,
    "style": "6d84df2f",
    "content": "36705e70",
@@ -346,16 +346,16 @@
   {
    "slot": 39,
    "kind": "paragraph",
-   "top": 2602,
-   "h": 44,
-   "style": "d992565a",
+   "top": 2609,
+   "h": 46,
+   "style": "78d9acf7",
    "content": "c0cdefd8",
    "text": "内部方案使用中文，路径格式为 design/<module>/yyyymmdd-<feature"
   },
   {
    "slot": 40,
    "kind": "listItem",
-   "top": 2646,
+   "top": 2654,
    "h": 87,
    "style": "e2986ca4",
    "content": "c14c0f0b",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "listItem",
-   "top": 2732,
+   "top": 2741,
    "h": 31,
    "style": "af558cc5",
    "content": "0d908c99",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "listItem",
-   "top": 2763,
+   "top": 2772,
    "h": 59,
    "style": "89e52de4",
    "content": "ebfb0b3b",
@@ -382,7 +382,7 @@
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 2822,
+   "top": 2831,
    "h": 87,
    "style": "60715b0d",
    "content": "0f2103e6",
@@ -391,7 +391,7 @@
   {
    "slot": 44,
    "kind": "listItem",
-   "top": 2908,
+   "top": 2917,
    "h": 59,
    "style": "a651fa1e",
    "content": "945080da",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "listItem",
-   "top": 2967,
+   "top": 2976,
    "h": 59,
    "style": "72770403",
    "content": "aa7694ab",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "listItem",
-   "top": 3026,
+   "top": 3035,
    "h": 87,
    "style": "79e4cbfb",
    "content": "02afcf65",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "listItem",
-   "top": 3113,
+   "top": 3121,
    "h": 75,
    "style": "57953079",
    "content": "5fee6142",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "paragraph",
-   "top": 3188,
+   "top": 3197,
    "h": 158,
    "style": "2d1c1613",
    "content": "6fcf6459",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "code",
-   "top": 3345,
+   "top": 3354,
    "h": 59,
    "style": "5034f8d6",
    "content": "ba605037",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 3404,
+   "top": 3413,
    "h": 102,
    "style": "5ead715b",
    "content": "78b47e69",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "paragraph",
-   "top": 3506,
+   "top": 3515,
    "h": 102,
    "style": "5ead715b",
    "content": "42d553c7",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "paragraph",
-   "top": 3608,
+   "top": 3616,
    "h": 102,
    "style": "3f827340",
    "content": "aad073bb",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "paragraph",
-   "top": 3709,
+   "top": 3718,
    "h": 102,
    "style": "4f317b1e",
    "content": "022fe8fe",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "heading",
-   "top": 3811,
+   "top": 3820,
    "h": 42,
    "style": "5b09fa56",
    "content": "fa43264e",
@@ -490,25 +490,25 @@
   {
    "slot": 55,
    "kind": "listItem",
-   "top": 3853,
-   "h": 325,
-   "style": "b492498d",
+   "top": 3861,
+   "h": 351,
+   "style": "ec3ad81e",
    "content": "cf023554",
    "text": "HTTP 接口应当遵守 RESTFUL 的 API 设计原则: 例如，设计 作者 的 别名 功能"
   },
   {
    "slot": 56,
    "kind": "heading",
-   "top": 4178,
+   "top": 4212,
    "h": 42,
-   "style": "7b843d1d",
+   "style": "5b09fa56",
    "content": "426300a9",
    "text": "Pull Request 提交规范§"
   },
   {
    "slot": 57,
    "kind": "listItem",
-   "top": 4220,
+   "top": 4254,
    "h": 31,
    "style": "3a033181",
    "content": "778b276d",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 4250,
+   "top": 4285,
    "h": 59,
    "style": "72770403",
    "content": "b9d9e383",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "listItem",
-   "top": 4309,
+   "top": 4344,
    "h": 31,
    "style": "7f99a4ad",
    "content": "caf2b54a",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "listItem",
-   "top": 4340,
+   "top": 4374,
    "h": 59,
    "style": "72770403",
    "content": "5441f234",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "listItem",
-   "top": 4399,
+   "top": 4433,
    "h": 87,
    "style": "a8c19d02",
    "content": "db8f2119",
@@ -553,25 +553,25 @@
   {
    "slot": 62,
    "kind": "listItem",
-   "top": 4485,
-   "h": 92,
-   "style": "6258b9ae",
+   "top": 4520,
+   "h": 95,
+   "style": "eaef7c83",
    "content": "ced1a5e0",
    "text": "固定链接按以下格式转换： https://github.com/<owner>/<repo>/b"
   },
   {
    "slot": 63,
    "kind": "listItem",
-   "top": 4578,
-   "h": 206,
-   "style": "148b7fdc",
+   "top": 4615,
+   "h": 221,
+   "style": "632b8e0a",
    "content": "0af867df",
    "text": "示例： GitHub 文件：https://github.com/talebook/talebo"
   },
   {
    "slot": 64,
    "kind": "heading",
-   "top": 4784,
+   "top": 4836,
    "h": 42,
    "style": "5b09fa56",
    "content": "755f951e",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "listItem",
-   "top": 4826,
+   "top": 4878,
    "h": 31,
    "style": "99d113e4",
    "content": "ac5614c4",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "listItem",
-   "top": 4856,
+   "top": 4908,
    "h": 31,
    "style": "44709aaa",
    "content": "604ba6b7",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "listItem",
-   "top": 4887,
+   "top": 4939,
    "h": 47,
    "style": "691d52f6",
    "content": "979e1d8c",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "heading",
-   "top": 4934,
+   "top": 4986,
    "h": 42,
    "style": "5b09fa56",
    "content": "bee6f050",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "listItem",
-   "top": 4976,
+   "top": 5028,
    "h": 87,
    "style": "f49635f9",
    "content": "e7495c66",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "listItem",
-   "top": 5063,
+   "top": 5115,
    "h": 87,
    "style": "60715b0d",
    "content": "a3e6d1be",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 5150,
+   "top": 5202,
    "h": 87,
    "style": "60715b0d",
    "content": "2cb06051",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "listItem",
-   "top": 5236,
+   "top": 5288,
    "h": 115,
    "style": "8e62dab1",
    "content": "b0fcf032",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "listItem",
-   "top": 5351,
+   "top": 5403,
    "h": 59,
    "style": "72770403",
    "content": "879960a9",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "listItem",
-   "top": 5410,
+   "top": 5462,
    "h": 59,
    "style": "895a752c",
    "content": "65cd14b9",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "listItem",
-   "top": 5468,
+   "top": 5521,
    "h": 87,
    "style": "5b1c9e75",
    "content": "9b15fa21",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "listItem",
-   "top": 5555,
+   "top": 5607,
    "h": 87,
    "style": "60715b0d",
    "content": "bfdef56a",
@@ -688,16 +688,16 @@
   {
    "slot": 77,
    "kind": "listItem",
-   "top": 5642,
-   "h": 232,
-   "style": "c052d61a",
+   "top": 5694,
+   "h": 235,
+   "style": "0647b353",
    "content": "d398bc84",
    "text": "前端本地体验默认使用两个终端启动： # 终端 1：Docker 后端 make dev # 确认"
   },
   {
    "slot": 78,
    "kind": "listItem",
-   "top": 5874,
+   "top": 5929,
    "h": 75,
    "style": "52b250c6",
    "content": "2e365be7",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "heading",
-   "top": 5950,
+   "top": 6004,
    "h": 42,
    "style": "5b09fa56",
    "content": "c4e8cdd4",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "code",
-   "top": 5992,
+   "top": 6046,
    "h": 159,
    "style": "02ee7f3d",
    "content": "d85baa0a",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "heading",
-   "top": 6151,
+   "top": 6205,
    "h": 42,
    "style": "5b09fa56",
    "content": "9ed34634",
@@ -733,16 +733,16 @@
   {
    "slot": 82,
    "kind": "listItem",
-   "top": 6192,
-   "h": 28,
-   "style": "5e70874b",
+   "top": 6247,
+   "h": 31,
+   "style": "6f80aaea",
    "content": "574900da",
    "text": "Python 行宽上限 120 字符（见 pyproject.toml black 配置）。"
   },
   {
    "slot": 83,
    "kind": "listItem",
-   "top": 6221,
+   "top": 6278,
    "h": 115,
    "style": "18de105d",
    "content": "41733b48",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "listItem",
-   "top": 6335,
+   "top": 6392,
    "h": 31,
    "style": "23aa9c85",
    "content": "62353c98",
@@ -760,7 +760,7 @@
   {
    "slot": 85,
    "kind": "listItem",
-   "top": 6366,
+   "top": 6423,
    "h": 187,
    "style": "52cff483",
    "content": "36bf29fb",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "heading",
-   "top": 6553,
+   "top": 6610,
    "h": 42,
    "style": "5b09fa56",
    "content": "ebf656f2",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 6595,
+   "top": 6652,
    "h": 31,
    "style": "c2ae541d",
    "content": "2389011c",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "listItem",
-   "top": 6626,
+   "top": 6683,
    "h": 31,
    "style": "791d3828",
    "content": "32292cfe",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "listItem",
-   "top": 6657,
+   "top": 6714,
    "h": 59,
    "style": "3960cd54",
    "content": "cb93ceee",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "listItem",
-   "top": 6715,
+   "top": 6772,
    "h": 47,
    "style": "f5e88c7b",
    "content": "a51bd340",

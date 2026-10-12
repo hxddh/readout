@@ -21,24 +21,101 @@ struct MathProtector {
 
     static let open: Character = "\u{E000}"
     static let close: Character = "\u{E001}"
+    /// Stands for a source line taken into a multi-line display math token:
+    /// the line stays (line numbers and the paragraph hold), and the
+    /// renderer drops it with the line break before it (`HTMLRenderer.inline`).
+    static let filler: Character = "\u{E004}"
 
     private(set) var spans: [Span] = []
 
     mutating func protect(_ source: String) -> String {
-        var out: [Substring] = []
+        var out: [String] = []
         var fences = FenceTracker()
-        var result = ""
-        for line in source.split(separator: "\n", omittingEmptySubsequences: false) {
+        let lines = source.split(separator: "\n", omittingEmptySubsequences: false)
+        var i = 0
+        while i < lines.count {
+            let line = lines[i]
             if fences.consume(line) {
-                out.append(line)
+                out.append(String(line))
+                i += 1
                 continue
             }
-            // Indented code blocks (4 spaces) are left alone.
-            if line.hasPrefix("    ") || line.hasPrefix("\t") { out.append(line); continue }
-            out.append(Substring(protectLine(String(line))))
+            // Indented code is left alone: 4+ columns past the content of
+            // the list item the line is in, and not continuing a paragraph.
+            if fences.indentedCode { out.append(String(line)); i += 1; continue }
+            if let block = displayBlock(lines, at: i) {
+                out.append(block.opener + token(block.tex, display: true))
+                for (k, prefix) in block.prefixes.enumerated() {
+                    _ = fences.consume(lines[i + 1 + k])
+                    let isLast = k == block.prefixes.count - 1
+                    out.append(prefix + String(MathProtector.filler) + (isLast ? protectLine(block.rest) : ""))
+                }
+                i = block.end + 1
+                continue
+            }
+            out.append(protectLine(String(line)))
+            i += 1
         }
-        result = out.joined(separator: "\n")
-        return result
+        return out.joined(separator: "\n")
+    }
+
+    /// Container syntax before a line's content: block quote markers, list markers, indentation.
+    private static let containerPrefix = try! NSRegularExpression(
+        pattern: #"^(?:[ \t]*(?:>|[-*+](?=[ \t])|\d{1,9}[.)](?=[ \t])))*[ \t]*"#)
+
+    /// `$$` opening a line's content (after its container prefix) and closed
+    /// on a later line of the same paragraph: display math over several
+    /// lines, which may hold what would otherwise be Markdown (`+ b`).
+    /// Returns the opener's prefix, the TeX, the index of the closing line,
+    /// each following line's container prefix and the text after the closing `$$`.
+    private func displayBlock(_ lines: [Substring], at i: Int)
+        -> (opener: String, tex: String, end: Int, prefixes: [String], rest: String)? {
+        guard lines[i].utf8.contains(0x24) /* $ */ else { return nil }
+        let line = String(lines[i])
+        guard line.contains("$$") else { return nil }
+        let ns = line as NSString
+        let p = MathProtector.containerPrefix.firstMatch(in: line, range: NSRange(location: 0, length: ns.length))?.range.length ?? 0
+        let prefix = ns.substring(to: p), content = ns.substring(from: p)
+        guard content.hasPrefix("$$") else { return nil }
+        let first = content.dropFirst(2)
+        guard !first.contains("$$") else { return nil }   // closed on this line: inline display math
+        // Following lines belong to the same containers: as many quote
+        // markers, then the indentation of the opener's content.
+        let quotes = prefix.filter { $0 == ">" }.count
+        let afterQuote = prefix.lastIndex(of: ">").map { prefix[prefix.index(after: $0)...] } ?? prefix[...]
+        var indent = afterQuote.count
+        if quotes > 0, afterQuote.first == " " { indent -= 1 }
+        var tex: [String] = [String(first)]
+        var prefixes: [String] = []
+        var j = i + 1
+        while j < lines.count, j - i <= 500 {
+            var rest = lines[j][...]
+            var taken = ""
+            for _ in 0..<quotes {
+                let spaces = rest.prefix(while: { $0 == " " })
+                guard spaces.count <= 3, rest.dropFirst(spaces.count).first == ">" else { break }
+                taken += rest.prefix(spaces.count + 1)
+                rest = rest.dropFirst(spaces.count + 1)
+                if rest.first == " " { taken += " "; rest = rest.dropFirst() }
+            }
+            let lead = rest.prefix(while: { $0 == " " }).prefix(indent)
+            taken += lead
+            rest = rest.dropFirst(lead.count)
+            // A blank line ends the paragraph; a fence or HTML would open a
+            // block the other passes (footnotes, fragments) see.
+            let trimmed = rest.drop(while: { $0 == " " || $0 == "\t" })
+            if trimmed.isEmpty || trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") || trimmed.hasPrefix("<") { return nil }
+            prefixes.append(taken)
+            if let close = rest.range(of: "$$") {
+                tex.append(String(rest[..<close.lowerBound]))
+                let joined = tex.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !joined.isEmpty else { return nil }
+                return (prefix, joined, j, prefixes, String(rest[close.upperBound...]))
+            }
+            tex.append(String(rest))
+            j += 1
+        }
+        return nil
     }
 
     private mutating func token(_ tex: String, display: Bool) -> String {
@@ -51,17 +128,161 @@ struct MathProtector {
         return "\(MathProtector.open)\(spans.count - 1)\(MathProtector.close)"
     }
 
+    /// The display math a paragraph's protected source consists of, if it is
+    /// exactly one display token (filler lines and white space aside).
+    func soleDisplayMath(_ source: String) -> String? {
+        let t = source.filter { $0 != MathProtector.filler }.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard t.first == MathProtector.open, t.last == MathProtector.close,
+              let n = Int(t.dropFirst().dropLast()), n < spans.count, spans[n].display, spans[n].footnote == nil else { return nil }
+        return spans[n].tex
+    }
+
+    /// Whether `\(…\)` or `\[…\]` content reads as TeX rather than escaped
+    /// punctuation in prose (`\[WIP\]`, `\[x\]`, `\(sic\)`, `\[\\\]`): it has a
+    /// letter or digit and TeX syntax or an operator; inline, a single
+    /// character or a space also count.
+    static func looksLikeTeX(_ s: ArraySlice<Character>, display: Bool) -> Bool {
+        guard s.contains(where: { $0.isLetter || $0.isNumber }) else { return false }
+        if s.contains(where: { "\\^_{}=+*/<>|".contains($0) }) { return true }
+        if display { return false }
+        return s.count == 1 || s.contains(" ")
+    }
+
+    /// The next `\` + `closer` at or after a position, scanning each part of
+    /// the line once however many openers ask (positions only grow).
+    private struct CloserSearch {
+        let closer: Character
+        var found = -1
+        var exhausted = false
+        mutating func next(_ chars: [Character], from: Int) -> Int? {
+            if exhausted { return nil }
+            if found >= from { return found }
+            var k = max(from, found + 1)
+            while k + 1 < chars.count {
+                if chars[k] == "\\" {
+                    if chars[k + 1] == closer { found = k; return k }
+                    k += 2   // an escaped character: in `\\]` the `\]` is not a closer
+                } else {
+                    k += 1
+                }
+            }
+            exhausted = true
+            return nil
+        }
+    }
+
+    /// The end (exclusive) of an inline link's destination and optional
+    /// title starting at `start` (just after `](`), following CommonMark: a
+    /// `<…>` destination, or a bare one without white space and with balanced
+    /// parentheses; then optionally white space and a `"…"`, `'…'` or `(…)`
+    /// title; then `)`. Nil when that is not what follows: `[x](not a title)`
+    /// is text, and so is what is inside it.
+    static func destinationEnd(_ chars: [Character], from start: Int) -> Int? {
+        let n = chars.count
+        var k = start
+        while k < n, chars[k].isWhitespace { k += 1 }
+        if k < n, chars[k] == "<" {
+            k += 1
+            while k < n, chars[k] != ">" {
+                if chars[k] == "<" { return nil }
+                k += chars[k] == "\\" ? 2 : 1
+            }
+            guard k < n else { return nil }
+            k += 1
+        } else {
+            var depth = 0
+            while k < n {
+                let c = chars[k]
+                if c == "\\" { k += 2; continue }
+                if c.isWhitespace { break }
+                if c == "(" { depth += 1 } else if c == ")" { if depth == 0 { break }; depth -= 1 }
+                k += 1
+            }
+            guard depth == 0, k <= n else { return nil }
+        }
+        let afterDestination = k
+        while k < n, chars[k].isWhitespace { k += 1 }
+        guard k < n else { return nil }
+        if chars[k] == ")" { return k + 1 }
+        // A title, set off from the destination by white space.
+        guard k > afterDestination else { return nil }
+        let open = chars[k]
+        let close: Character
+        switch open {
+        case "\"": close = "\""
+        case "'": close = "'"
+        case "(": close = ")"
+        default: return nil
+        }
+        k += 1
+        while k < n, chars[k] != close {
+            if open == "(" && chars[k] == "(" { return nil }
+            k += chars[k] == "\\" ? 2 : 1
+        }
+        guard k < n else { return nil }
+        k += 1
+        while k < n, chars[k].isWhitespace { k += 1 }
+        return k < n && chars[k] == ")" ? k + 1 : nil
+    }
+
+    /// The end (exclusive) of a `<scheme:…>` or `<user@host>` autolink at `start`.
+    private static func autolinkEnd(_ chars: [Character], from start: Int) -> Int? {
+        var k = start + 1
+        var sawColonOrAt = false
+        guard k < chars.count, chars[k].isLetter || chars[k].isNumber else { return nil }
+        while k < chars.count {
+            let c = chars[k]
+            if c == ">" { return sawColonOrAt ? k + 1 : nil }
+            if c == "<" || c.isWhitespace { return nil }
+            if c == ":" || c == "@" { sawColonOrAt = true }
+            k += 1
+        }
+        return nil
+    }
+
+    /// The end (exclusive) of a bare `http(s)://` or `www.` address at `i`,
+    /// up to the next white space or `<`.
+    private static func bareURLEnd(_ chars: [Character], at i: Int) -> Int? {
+        if i > 0, chars[i - 1].isLetter || chars[i - 1].isNumber { return nil }
+        func starts(_ s: String) -> Bool {
+            var k = i
+            for c in s {
+                guard k < chars.count, chars[k] == c || chars[k] == Character(c.uppercased()) else { return false }
+                k += 1
+            }
+            return true
+        }
+        // Only what the autolinker links (HTMLRenderer.urlRegex): `www.` and a
+        // host label, or a scheme and an address.
+        let prefix = starts("www.") ? 4 : starts("https://") ? 8 : starts("http://") ? 7 : 0
+        guard prefix > 0, i + prefix < chars.count else { return nil }
+        let next = chars[i + prefix]
+        if prefix == 4 {
+            guard next.isASCII, next.isLetter || next.isNumber || next == "-" else { return nil }
+        } else {
+            guard !next.isWhitespace, next != "<" else { return nil }
+        }
+        var k = i
+        while k < chars.count, !chars[k].isWhitespace, chars[k] != "<" {
+            // A footnote reference right after an address is not part of it.
+            if chars[k] == "[", k + 1 < chars.count, chars[k + 1] == "^" { break }
+            k += 1
+        }
+        return k
+    }
+
     private mutating func protectLine(_ line: String) -> String {
         let mayHaveFootnote = !footnoteIDs.isEmpty && Footnotes.mentions(line)
         // Fast path: nothing that could start math or a footnote reference.
         if !mayHaveFootnote && !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
         let chars = Array(line)
-        // A line that is only `$$...$$` is display math handled at block level.
-        let t = line.trimmingCharacters(in: .whitespaces)
-        if t.hasPrefix("$$") && !mayHaveFootnote { return line }
-        let displayLine = t.hasPrefix("$$")
         var out = ""
         var i = 0
+        var parenClose = CloserSearch(closer: ")"), bracketClose = CloserSearch(closer: "]")
+        // The next `$$` at or after a position (-1: none searched yet), as for `\)`.
+        var displayClose = -1, displayExhausted = false
+        // Unescaped `[` not yet closed: a `](` is a link destination only after one.
+        var openBrackets = 0
         while i < chars.count {
             let c = chars[i]
             // Inline code span: copy verbatim.
@@ -88,38 +309,64 @@ struct MathProtector {
                 }
                 continue
             }
+            // Link and image destinations, autolinks and bare addresses:
+            // a `$` or `\(` there is part of the address, not math.
+            if c == "[" { openBrackets += 1 }
+            if c == "]", openBrackets > 0 {
+                openBrackets -= 1
+                if i + 1 < chars.count, chars[i + 1] == "(", let end = Self.destinationEnd(chars, from: i + 2) {
+                    out += String(chars[i..<end]); i = end; continue
+                }
+            }
+            if c == "<", let end = Self.autolinkEnd(chars, from: i) {
+                out += String(chars[i..<end]); i = end; continue
+            }
+            if c == "h" || c == "H" || c == "w" || c == "W", let end = Self.bareURLEnd(chars, at: i) {
+                out += String(chars[i..<end]); i = end; continue
+            }
             // Footnote reference: [^id] whose definition exists.
             if mayHaveFootnote && c == "[" && i + 1 < chars.count && chars[i + 1] == "^",
                let end = chars[(i + 2)...].firstIndex(of: "]"), end > i + 2 {
                 let id = String(chars[(i + 2)..<end])
                 if footnoteIDs.contains(id.lowercased()) && !id.contains(where: \.isWhitespace) {
                     out += footnoteToken(id.lowercased())
+                    openBrackets -= 1   // its `]` is taken with it
                     i = end + 1
                     continue
                 }
             }
-            if displayLine { out.append(c); i += 1; continue }
-            // Escaped dollar.
             if c == "\\" && i + 1 < chars.count {
-                if chars[i + 1] == "(" , let end = find(chars, from: i + 2, seq: ["\\", ")"]) {
-                    let tex = String(chars[(i + 2)..<end])
-                    out += token(tex, display: false)
+                // \(…\) and \[…\]: math when closed and TeX-like, otherwise CommonMark escapes.
+                if chars[i + 1] == "(", let end = parenClose.next(chars, from: i + 2),
+                   Self.looksLikeTeX(chars[(i + 2)..<end], display: false) {
+                    out += token(String(chars[(i + 2)..<end]), display: false)
                     i = end + 2
                     continue
                 }
-                if chars[i + 1] == "[" , let end = find(chars, from: i + 2, seq: ["\\", "]"]) {
-                    let tex = String(chars[(i + 2)..<end])
-                    out += token(tex, display: true)
+                if chars[i + 1] == "[", let end = bracketClose.next(chars, from: i + 2),
+                   Self.looksLikeTeX(chars[(i + 2)..<end], display: true) {
+                    out += token(String(chars[(i + 2)..<end]), display: true)
                     i = end + 2
                     continue
                 }
+                // An escaped character (an escaped dollar among them).
                 out.append(c); out.append(chars[i + 1]); i += 2
                 continue
             }
             if c == "$" {
                 if i + 1 < chars.count && chars[i + 1] == "$" {
                     // Inline display math $$...$$
-                    if let end = find(chars, from: i + 2, seq: ["$", "$"]), end > i + 2 {
+                    if !displayExhausted && displayClose < i + 2 {
+                        displayClose = -1
+                        var k = i + 2
+                        while k + 1 < chars.count {
+                            if chars[k] == "$" && chars[k + 1] == "$" { displayClose = k; break }
+                            k += 1
+                        }
+                        if displayClose < 0 { displayExhausted = true }
+                    }
+                    if !displayExhausted, displayClose > i + 2 {
+                        let end = displayClose
                         out += token(String(chars[(i + 2)..<end]), display: true)
                         i = end + 2
                         continue
@@ -152,15 +399,6 @@ struct MathProtector {
             i += 1
         }
         return out
-    }
-
-    private func find(_ chars: [Character], from: Int, seq: [Character]) -> Int? {
-        var i = from
-        while i + seq.count <= chars.count {
-            if Array(chars[i..<(i + seq.count)]) == seq { return i }
-            i += 1
-        }
-        return nil
     }
 
     /// Replaces tokens in already-escaped HTML text with math placeholders.

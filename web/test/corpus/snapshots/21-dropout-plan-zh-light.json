@@ -1,5 +1,5 @@
 {
- "height": 15917,
+ "height": 15970,
  "blocks": [
   {
    "slot": 1,
@@ -32,24 +32,24 @@
    "slot": 4,
    "kind": "paragraph",
    "top": 268,
-   "h": 96,
-   "style": "bdf18f8f",
+   "h": 102,
+   "style": "8ab826a8",
    "content": "bbe35a35",
    "text": "Architecture: 新建独立目录 00-Prerequisites/regulariza"
   },
   {
    "slot": 5,
    "kind": "paragraph",
-   "top": 364,
-   "h": 44,
-   "style": "38b68a05",
+   "top": 370,
+   "h": 46,
+   "style": "2bcb1e8a",
    "content": "385dde6b",
    "text": "Tech Stack: Markdown (含 Mermaid 图)、Python/PyTorc"
   },
   {
    "slot": 6,
    "kind": "paragraph",
-   "top": 407,
+   "top": 415,
    "h": 44,
    "style": "04b2a1a1",
    "content": "8057b7aa",
@@ -58,7 +58,7 @@
   {
    "slot": 7,
    "kind": "rule",
-   "top": 451,
+   "top": 459,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -67,16 +67,16 @@
   {
    "slot": 8,
    "kind": "heading",
-   "top": 469,
+   "top": 477,
    "h": 42,
-   "style": "7b843d1d",
+   "style": "5b09fa56",
    "content": "8d0c359f",
    "text": "Task 1: 创建 regularization 目录和 README.md 主文件§"
   },
   {
    "slot": 9,
    "kind": "paragraph",
-   "top": 511,
+   "top": 519,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -85,7 +85,7 @@
   {
    "slot": 10,
    "kind": "listItem",
-   "top": 555,
+   "top": 563,
    "h": 35,
    "style": "6a2a8e37",
    "content": "55f84e74",
@@ -94,7 +94,7 @@
   {
    "slot": 11,
    "kind": "listItem",
-   "top": 590,
+   "top": 598,
    "h": 47,
    "style": "66694cad",
    "content": "ba4a68f2",
@@ -103,7 +103,7 @@
   {
    "slot": 12,
    "kind": "code",
-   "top": 637,
+   "top": 645,
    "h": 59,
    "style": "eaeb812e",
    "content": "e3ba633d",
@@ -112,7 +112,7 @@
   {
    "slot": 13,
    "kind": "listItem",
-   "top": 696,
+   "top": 704,
    "h": 47,
    "style": "82299e13",
    "content": "a467aaba",
@@ -121,16 +121,16 @@
   {
    "slot": 14,
    "kind": "paragraph",
-   "top": 742,
-   "h": 70,
-   "style": "5da15beb",
+   "top": 750,
+   "h": 74,
+   "style": "1d8c657d",
    "content": "bf41e879",
    "text": "写入 00-Prerequisites/regularization/README.md，完整内"
   },
   {
    "slot": 15,
    "kind": "code",
-   "top": 812,
+   "top": 824,
    "h": 1179,
    "style": "0db2fbec",
    "content": "a7414263",
@@ -139,7 +139,7 @@
   {
    "slot": 16,
    "kind": "paragraph",
-   "top": 1991,
+   "top": 2003,
    "h": 74,
    "style": "c6344a47",
    "content": "7d3fe198",
@@ -148,7 +148,7 @@
   {
    "slot": 17,
    "kind": "paragraph",
-   "top": 2064,
+   "top": 2076,
    "h": 74,
    "style": "1b71bda2",
    "content": "81115ed9",
@@ -157,7 +157,7 @@
   {
    "slot": 18,
    "kind": "quote",
-   "top": 2138,
+   "top": 2150,
    "h": 74,
    "style": "85e100df",
    "content": "38cf41de",
@@ -166,7 +166,7 @@
   {
    "slot": 19,
    "kind": "heading",
-   "top": 2211,
+   "top": 2223,
    "h": 42,
    "style": "5b09fa56",
    "content": "50e10e92",
@@ -175,61 +175,61 @@
   {
    "slot": 20,
    "kind": "mermaid",
-   "top": 2253,
+   "top": 2265,
    "h": 522,
-   "style": "6c9d1791",
+   "style": "610860ee",
    "content": "08cce12b",
    "text": "graph TD H[\"隐藏层输出 h\\n(batch, hidden)\"]:::input M"
   },
   {
    "slot": 21,
    "kind": "paragraph",
-   "top": 2775,
-   "h": 44,
-   "style": "9b9dcc0e",
+   "top": 2787,
+   "h": 46,
+   "style": "4e5f4924",
    "content": "6a19ce84",
    "text": "Inverted Dropout 的操作分三步："
   },
   {
    "slot": 22,
    "kind": "listItem",
-   "top": 2819,
+   "top": 2833,
    "h": 32,
-   "style": "ad2343fc",
+   "style": "2ca9e010",
    "content": "cbb32ef1",
    "text": "生成掩码：mi∼Bernoulli(1−p)m_i \\sim \\text{Bernoulli}("
   },
   {
    "slot": 23,
    "kind": "listItem",
-   "top": 2850,
-   "h": 28,
-   "style": "a3fd9249",
+   "top": 2864,
+   "h": 32,
+   "style": "2e4d8de3",
    "content": "7a9fa581",
    "text": "逐元素相乘：h~i=mi⋅hi\\tilde{h}_i = m_i \\cdot h_ih~i​=m"
   },
   {
    "slot": 24,
    "kind": "listItem",
-   "top": 2879,
+   "top": 2896,
    "h": 46,
-   "style": "6b9d8f7d",
+   "style": "34ce6504",
    "content": "b5b6d2da",
    "text": "缩放：h~i=mi⋅hi1−p\\tilde{h}_i = \\frac{m_i \\cdot h_i"
   },
   {
    "slot": 25,
    "kind": "paragraph",
-   "top": 2925,
+   "top": 2942,
    "h": 76,
-   "style": "739bad8b",
+   "style": "ba9f1acd",
    "content": "c80fab2a",
    "text": "为什么除以 (1−p)(1-p)(1−p)？ 这是 inverted dropout 的关键：在"
   },
   {
    "slot": 26,
    "kind": "paragraph",
-   "top": 3000,
+   "top": 3018,
    "h": 102,
    "style": "5ead715b",
    "content": "da51ed66",
@@ -238,7 +238,7 @@
   {
    "slot": 27,
    "kind": "quote",
-   "top": 3102,
+   "top": 3119,
    "h": 74,
    "style": "bf49b589",
    "content": "d46c82cb",
@@ -247,7 +247,7 @@
   {
    "slot": 28,
    "kind": "heading",
-   "top": 3175,
+   "top": 3193,
    "h": 42,
    "style": "5b09fa56",
    "content": "114691e1",
@@ -256,7 +256,7 @@
   {
    "slot": 29,
    "kind": "paragraph",
-   "top": 3217,
+   "top": 3235,
    "h": 46,
    "style": "4e5f4924",
    "content": "9b0f2a37",
@@ -265,25 +265,25 @@
   {
    "slot": 30,
    "kind": "math",
-   "top": 3263,
+   "top": 3280,
    "h": 99,
-   "style": "b5ec5484",
+   "style": "267efe2b",
    "content": "f11dc6a7",
    "text": "Lreg=L+λ2∥θ∥2L_{reg} = L + \\frac{\\lambda}{2}\\|\\t"
   },
   {
    "slot": 31,
    "kind": "paragraph",
-   "top": 3362,
+   "top": 3379,
    "h": 47,
-   "style": "9e535b7e",
+   "style": "f200d926",
    "content": "f4188227",
    "text": "梯度更新时多出一项 λθ\\lambda \\thetaλθ，效果是每次更新都把权重往零拉一点——这"
   },
   {
    "slot": 32,
    "kind": "paragraph",
-   "top": 3408,
+   "top": 3426,
    "h": 46,
    "style": "7f484e1a",
    "content": "83d9d9a7",
@@ -292,7 +292,7 @@
   {
    "slot": 33,
    "kind": "table",
-   "top": 3454,
+   "top": 3471,
    "h": 234,
    "style": "ec0e855a",
    "content": "7228337d",
@@ -301,16 +301,16 @@
   {
    "slot": 34,
    "kind": "paragraph",
-   "top": 3688,
-   "h": 122,
-   "style": "fb5ac6c5",
+   "top": 3705,
+   "h": 131,
+   "style": "5882db59",
    "content": "b6194741",
    "text": "PyTorch 中 optimizer = torch.optim.AdamW(model.pa"
   },
   {
    "slot": 35,
    "kind": "heading",
-   "top": 3810,
+   "top": 3836,
    "h": 42,
    "style": "5b09fa56",
    "content": "35151d62",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "paragraph",
-   "top": 3851,
+   "top": 3878,
    "h": 44,
    "style": "ac4813e7",
    "content": "aa48c1bd",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "paragraph",
-   "top": 3895,
+   "top": 3921,
    "h": 74,
    "style": "8cbdf832",
    "content": "2d9a787d",
@@ -337,25 +337,25 @@
   {
    "slot": 38,
    "kind": "math",
-   "top": 3969,
+   "top": 3995,
    "h": 84,
-   "style": "424e364c",
+   "style": "c6c53e4d",
    "content": "3db0bc3f",
    "text": "W~=M⊙W\\tilde{W} = M \\odot WW~=M⊙W"
   },
   {
    "slot": 39,
    "kind": "paragraph",
-   "top": 4053,
+   "top": 4079,
    "h": 47,
-   "style": "6c64981d",
+   "style": "40b0f105",
    "content": "40862e2b",
    "text": "其中 MMM 是与 WWW 同形状的 Bernoulli 掩码。"
   },
   {
    "slot": 40,
    "kind": "paragraph",
-   "top": 4099,
+   "top": 4126,
    "h": 46,
    "style": "4e5f4924",
    "content": "5c0271fd",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "paragraph",
-   "top": 4145,
+   "top": 4171,
    "h": 44,
    "style": "fdab707b",
    "content": "34015de4",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "paragraph",
-   "top": 4189,
+   "top": 4215,
    "h": 74,
    "style": "1b71bda2",
    "content": "854164ee",
@@ -382,16 +382,16 @@
   {
    "slot": 43,
    "kind": "paragraph",
-   "top": 4262,
+   "top": 4289,
    "h": 75,
-   "style": "41e52405",
+   "style": "a508b398",
    "content": "d9ff2f1c",
    "text": "SpatialDropout 直接 drop 整个 channel：以概率 ppp 把某个特征图"
   },
   {
    "slot": 44,
    "kind": "code",
-   "top": 4337,
+   "top": 4363,
    "h": 99,
    "style": "56673259",
    "content": "4871d68f",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "paragraph",
-   "top": 4436,
+   "top": 4462,
    "h": 44,
    "style": "2758d357",
    "content": "a4050c6f",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "paragraph",
-   "top": 4479,
+   "top": 4506,
    "h": 74,
    "style": "f6792b1a",
    "content": "dd609757",
@@ -418,16 +418,16 @@
   {
    "slot": 47,
    "kind": "paragraph",
-   "top": 4553,
-   "h": 96,
-   "style": "d0bc1ba2",
+   "top": 4579,
+   "h": 102,
+   "style": "20b486f1",
    "content": "3c56325d",
    "text": "DropBlock drop 的是连续的方形区域。参数 block_size 控制区域大小，是 "
   },
   {
    "slot": 48,
    "kind": "paragraph",
-   "top": 4648,
+   "top": 4681,
    "h": 44,
    "style": "e7b20a04",
    "content": "42b15946",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "paragraph",
-   "top": 4692,
+   "top": 4724,
    "h": 74,
    "style": "80b72bf0",
    "content": "a208c9f9",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 4766,
+   "top": 4798,
    "h": 74,
    "style": "a8c3a617",
    "content": "0b7ce773",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "code",
-   "top": 4839,
+   "top": 4872,
    "h": 99,
    "style": "099323d1",
    "content": "ab157f05",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "heading",
-   "top": 4938,
+   "top": 4971,
    "h": 42,
    "style": "5b09fa56",
    "content": "9426357f",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "paragraph",
-   "top": 4980,
+   "top": 5012,
    "h": 74,
    "style": "e8f65555",
    "content": "6ab19d9b",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "paragraph",
-   "top": 5054,
+   "top": 5086,
    "h": 102,
    "style": "e7bdf037",
    "content": "41266925",
@@ -490,7 +490,7 @@
   {
    "slot": 55,
    "kind": "paragraph",
-   "top": 5155,
+   "top": 5188,
    "h": 74,
    "style": "028a6113",
    "content": "1616bd57",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "quote",
-   "top": 5229,
+   "top": 5261,
    "h": 74,
    "style": "85e100df",
    "content": "6ff67586",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "heading",
-   "top": 5302,
+   "top": 5335,
    "h": 42,
    "style": "5b09fa56",
    "content": "52205d92",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "paragraph",
-   "top": 5344,
+   "top": 5377,
    "h": 46,
    "style": "276dd466",
    "content": "42ce89db",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "code",
-   "top": 5390,
+   "top": 5422,
    "h": 339,
    "style": "b5a7a5cc",
    "content": "3c6bec51",
@@ -535,16 +535,16 @@
   {
    "slot": 60,
    "kind": "paragraph",
-   "top": 5729,
-   "h": 44,
-   "style": "5d78e909",
+   "top": 5761,
+   "h": 46,
+   "style": "c3e142ed",
    "content": "53d65c47",
    "text": "Step 2 · PyTorch nn.Dropout + train/eval 切换"
   },
   {
    "slot": 61,
    "kind": "code",
-   "top": 5772,
+   "top": 5807,
    "h": 399,
    "style": "2587d8a6",
    "content": "2ac6d587",
@@ -553,16 +553,16 @@
   {
    "slot": 62,
    "kind": "paragraph",
-   "top": 6171,
-   "h": 44,
-   "style": "847f9860",
+   "top": 6206,
+   "h": 46,
+   "style": "50ccf54f",
    "content": "52c7db27",
    "text": "Step 3 · CNN 中 SpatialDropout 的使用"
   },
   {
    "slot": 63,
    "kind": "code",
-   "top": 6215,
+   "top": 6251,
    "h": 359,
    "style": "8709cf45",
    "content": "14368300",
@@ -571,16 +571,16 @@
   {
    "slot": 64,
    "kind": "paragraph",
-   "top": 6574,
-   "h": 44,
-   "style": "aad35f1c",
+   "top": 6610,
+   "h": 46,
+   "style": "7e56d0ff",
    "content": "5f9600ce",
    "text": "Step 4 · 对比实验：不同 Dropout 率下的 train/val loss"
   },
   {
    "slot": 65,
    "kind": "code",
-   "top": 6618,
+   "top": 6656,
    "h": 1199,
    "style": "a55af852",
    "content": "4a312ae5",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "rule",
-   "top": 7817,
+   "top": 7855,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "heading",
-   "top": 7835,
+   "top": 7874,
    "h": 65,
    "style": "3505f3b8",
    "content": "8b8c2f31",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "paragraph",
-   "top": 7900,
+   "top": 7939,
    "h": 46,
    "style": "4e5f4924",
    "content": "714276f8",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "listItem",
-   "top": 7946,
+   "top": 7984,
    "h": 66,
    "style": "fd656ecd",
    "content": "6a641b39",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "listItem",
-   "top": 8012,
+   "top": 8050,
    "h": 66,
    "style": "40adf933",
    "content": "388a209e",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 8077,
+   "top": 8116,
    "h": 66,
    "style": "32334a2a",
    "content": "b24668eb",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "listItem",
-   "top": 8143,
+   "top": 8182,
    "h": 94,
    "style": "a307b8b9",
    "content": "e3be2c37",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "listItem",
-   "top": 8237,
+   "top": 8275,
    "h": 75,
    "style": "77add22c",
    "content": "c09d65f2",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "rule",
-   "top": 8312,
+   "top": 8351,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "heading",
-   "top": 8331,
+   "top": 8369,
    "h": 65,
    "style": "3505f3b8",
    "content": "56edc2d1",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "quote",
-   "top": 8396,
+   "top": 8434,
    "h": 203,
    "style": "801bf5b7",
    "content": "5846674b",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "paragraph",
-   "top": 8599,
+   "top": 8638,
    "h": 46,
    "style": "afe3c58c",
    "content": "44086af3",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "rule",
-   "top": 8645,
+   "top": 8683,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -706,16 +706,16 @@
   {
    "slot": 79,
    "kind": "paragraph",
-   "top": 8663,
-   "h": 44,
-   "style": "a78145c7",
+   "top": 8702,
+   "h": 46,
+   "style": "a1125367",
    "content": "625bc5f5",
    "text": "上一章: 深度学习基础 | 下一章: 训练与优化"
   },
   {
    "slot": 80,
    "kind": "code",
-   "top": 8707,
+   "top": 8747,
    "h": 159,
    "style": "1d0d4705",
    "content": "ce59ad65",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "paragraph",
-   "top": 8866,
+   "top": 8906,
    "h": 46,
    "style": "4e5f4924",
    "content": "c313536b",
@@ -733,7 +733,7 @@
   {
    "slot": 82,
    "kind": "listItem",
-   "top": 8912,
+   "top": 8952,
    "h": 47,
    "style": "90f86e25",
    "content": "eebdf13d",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "code",
-   "top": 8958,
+   "top": 8998,
    "h": 79,
    "style": "0bc3cf8c",
    "content": "ee22fc52",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "rule",
-   "top": 9037,
+   "top": 9077,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -760,16 +760,16 @@
   {
    "slot": 85,
    "kind": "heading",
-   "top": 9056,
+   "top": 9096,
    "h": 42,
-   "style": "7b843d1d",
+   "style": "5b09fa56",
    "content": "801b8215",
    "text": "Task 2: 更新 00-Prerequisites/README.md§"
   },
   {
    "slot": 86,
    "kind": "paragraph",
-   "top": 9098,
+   "top": 9138,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 9141,
+   "top": 9182,
    "h": 35,
    "style": "40abf9a6",
    "content": "847efd11",
@@ -787,16 +787,16 @@
   {
    "slot": 88,
    "kind": "listItem",
-   "top": 9176,
-   "h": 45,
-   "style": "4e8bb891",
+   "top": 9217,
+   "h": 47,
+   "style": "8b61b822",
    "content": "0bd52508",
    "text": "Step 1: 添加 regularization 模块链接"
   },
   {
    "slot": 89,
    "kind": "paragraph",
-   "top": 9221,
+   "top": 9263,
    "h": 46,
    "style": "bd878f7c",
    "content": "fa3daa6d",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "code",
-   "top": 9267,
+   "top": 9309,
    "h": 159,
    "style": "dcd5be97",
    "content": "564c0789",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "paragraph",
-   "top": 9426,
+   "top": 9468,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "code",
-   "top": 9471,
+   "top": 9514,
    "h": 259,
    "style": "656a05c6",
    "content": "692c607a",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "paragraph",
-   "top": 9730,
+   "top": 9773,
    "h": 46,
    "style": "15113dbe",
    "content": "69bfae7a",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 9776,
+   "top": 9818,
    "h": 47,
    "style": "f896fb54",
    "content": "6b833d81",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "code",
-   "top": 9822,
+   "top": 9865,
    "h": 59,
    "style": "813f065c",
    "content": "8b3cc4a6",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "paragraph",
-   "top": 9881,
+   "top": 9924,
    "h": 46,
    "style": "c58a226d",
    "content": "8c37eb82",
@@ -868,7 +868,7 @@
   {
    "slot": 97,
    "kind": "listItem",
-   "top": 9927,
+   "top": 9969,
    "h": 47,
    "style": "90f86e25",
    "content": "0ce1b68c",
@@ -877,7 +877,7 @@
   {
    "slot": 98,
    "kind": "code",
-   "top": 9973,
+   "top": 10016,
    "h": 79,
    "style": "5ae09cc2",
    "content": "1569d993",
@@ -886,7 +886,7 @@
   {
    "slot": 99,
    "kind": "rule",
-   "top": 10052,
+   "top": 10095,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -895,16 +895,16 @@
   {
    "slot": 100,
    "kind": "heading",
-   "top": 10071,
+   "top": 10113,
    "h": 42,
-   "style": "7b843d1d",
+   "style": "5b09fa56",
    "content": "c62f66e1",
    "text": "Task 3: 更新 deep-learning-basics 导航和交叉引用§"
   },
   {
    "slot": 101,
    "kind": "paragraph",
-   "top": 10113,
+   "top": 10155,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -913,7 +913,7 @@
   {
    "slot": 102,
    "kind": "listItem",
-   "top": 10156,
+   "top": 10199,
    "h": 35,
    "style": "af942762",
    "content": "2107ba33",
@@ -922,7 +922,7 @@
   {
    "slot": 103,
    "kind": "listItem",
-   "top": 10192,
+   "top": 10234,
    "h": 47,
    "style": "3e0a3143",
    "content": "8d3d2ea8",
@@ -931,7 +931,7 @@
   {
    "slot": 104,
    "kind": "paragraph",
-   "top": 10238,
+   "top": 10281,
    "h": 46,
    "style": "4e5f4924",
    "content": "a7d4b7f5",
@@ -940,7 +940,7 @@
   {
    "slot": 105,
    "kind": "code",
-   "top": 10284,
+   "top": 10326,
    "h": 59,
    "style": "ff4096cd",
    "content": "5e674dd8",
@@ -949,7 +949,7 @@
   {
    "slot": 106,
    "kind": "paragraph",
-   "top": 10343,
+   "top": 10385,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -958,7 +958,7 @@
   {
    "slot": 107,
    "kind": "code",
-   "top": 10388,
+   "top": 10431,
    "h": 59,
    "style": "8d4ddb3d",
    "content": "6b3c9824",
@@ -967,7 +967,7 @@
   {
    "slot": 108,
    "kind": "listItem",
-   "top": 10447,
+   "top": 10490,
    "h": 47,
    "style": "290e56a5",
    "content": "46a9325a",
@@ -976,7 +976,7 @@
   {
    "slot": 109,
    "kind": "paragraph",
-   "top": 10494,
+   "top": 10536,
    "h": 46,
    "style": "4e5f4924",
    "content": "f6fc0d29",
@@ -985,7 +985,7 @@
   {
    "slot": 110,
    "kind": "code",
-   "top": 10540,
+   "top": 10582,
    "h": 59,
    "style": "17165bd6",
    "content": "852b18e6",
@@ -994,7 +994,7 @@
   {
    "slot": 111,
    "kind": "paragraph",
-   "top": 10599,
+   "top": 10641,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -1003,7 +1003,7 @@
   {
    "slot": 112,
    "kind": "code",
-   "top": 10644,
+   "top": 10687,
    "h": 59,
    "style": "8bef7d65",
    "content": "7c2a8de1",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "listItem",
-   "top": 10703,
+   "top": 10745,
    "h": 47,
    "style": "ebc32e6e",
    "content": "9ece78bb",
@@ -1021,7 +1021,7 @@
   {
    "slot": 114,
    "kind": "paragraph",
-   "top": 10750,
+   "top": 10792,
    "h": 46,
    "style": "2d5ad403",
    "content": "3a287cd6",
@@ -1030,7 +1030,7 @@
   {
    "slot": 115,
    "kind": "code",
-   "top": 10795,
+   "top": 10838,
    "h": 119,
    "style": "571cc71e",
    "content": "3340563f",
@@ -1039,7 +1039,7 @@
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 10914,
+   "top": 10957,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -1048,7 +1048,7 @@
   {
    "slot": 117,
    "kind": "code",
-   "top": 10960,
+   "top": 11002,
    "h": 159,
    "style": "a2ee8006",
    "content": "89f005f2",
@@ -1057,7 +1057,7 @@
   {
    "slot": 118,
    "kind": "listItem",
-   "top": 11119,
+   "top": 11161,
    "h": 47,
    "style": "021c42ac",
    "content": "f34cfd80",
@@ -1066,7 +1066,7 @@
   {
    "slot": 119,
    "kind": "paragraph",
-   "top": 11165,
+   "top": 11208,
    "h": 46,
    "style": "4e5f4924",
    "content": "3611dde2",
@@ -1075,7 +1075,7 @@
   {
    "slot": 120,
    "kind": "code",
-   "top": 11211,
+   "top": 11253,
    "h": 79,
    "style": "25ba36e5",
    "content": "e9005ca3",
@@ -1084,7 +1084,7 @@
   {
    "slot": 121,
    "kind": "paragraph",
-   "top": 11290,
+   "top": 11332,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -1093,7 +1093,7 @@
   {
    "slot": 122,
    "kind": "code",
-   "top": 11335,
+   "top": 11378,
    "h": 99,
    "style": "da7559be",
    "content": "4ebc7a2f",
@@ -1102,7 +1102,7 @@
   {
    "slot": 123,
    "kind": "listItem",
-   "top": 11434,
+   "top": 11477,
    "h": 47,
    "style": "f896fb54",
    "content": "87c166c0",
@@ -1111,7 +1111,7 @@
   {
    "slot": 124,
    "kind": "code",
-   "top": 11481,
+   "top": 11523,
    "h": 59,
    "style": "5c524958",
    "content": "d53b16d4",
@@ -1120,16 +1120,16 @@
   {
    "slot": 125,
    "kind": "paragraph",
-   "top": 11540,
-   "h": 44,
-   "style": "128029d0",
+   "top": 11582,
+   "h": 46,
+   "style": "6d9a1fe1",
    "content": "f69d8a38",
    "text": "预期：末尾导航指向 ../regularization/README.md。"
   },
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 11584,
+   "top": 11628,
    "h": 47,
    "style": "90f86e25",
    "content": "26f86317",
@@ -1138,7 +1138,7 @@
   {
    "slot": 127,
    "kind": "code",
-   "top": 11630,
+   "top": 11674,
    "h": 79,
    "style": "e37d27b6",
    "content": "051cf92a",
@@ -1147,7 +1147,7 @@
   {
    "slot": 128,
    "kind": "rule",
-   "top": 11709,
+   "top": 11753,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "heading",
-   "top": 11728,
+   "top": 11772,
    "h": 42,
    "style": "5b09fa56",
    "content": "50787d5b",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "paragraph",
-   "top": 11769,
+   "top": 11814,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -1174,7 +1174,7 @@
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 11813,
+   "top": 11857,
    "h": 35,
    "style": "c8be359d",
    "content": "0f11b01c",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "listItem",
-   "top": 11848,
+   "top": 11893,
    "h": 47,
    "style": "6bb10d89",
    "content": "3c27c1f7",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "paragraph",
-   "top": 11895,
+   "top": 11939,
    "h": 46,
    "style": "4e5f4924",
    "content": "6fb18cca",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "code",
-   "top": 11941,
+   "top": 11985,
    "h": 219,
    "style": "1636e43e",
    "content": "169de5bd",
@@ -1210,7 +1210,7 @@
   {
    "slot": 135,
    "kind": "paragraph",
-   "top": 12160,
+   "top": 12204,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -1219,7 +1219,7 @@
   {
    "slot": 136,
    "kind": "code",
-   "top": 12205,
+   "top": 12250,
    "h": 139,
    "style": "3d495357",
    "content": "fec7afd9",
@@ -1228,7 +1228,7 @@
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 12344,
+   "top": 12389,
    "h": 47,
    "style": "f896fb54",
    "content": "6b833d81",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "code",
-   "top": 12391,
+   "top": 12435,
    "h": 59,
    "style": "77af323d",
    "content": "e3713b8c",
@@ -1246,7 +1246,7 @@
   {
    "slot": 139,
    "kind": "paragraph",
-   "top": 12450,
+   "top": 12494,
    "h": 46,
    "style": "fb68c872",
    "content": "d993b757",
@@ -1255,7 +1255,7 @@
   {
    "slot": 140,
    "kind": "listItem",
-   "top": 12495,
+   "top": 12540,
    "h": 47,
    "style": "90f86e25",
    "content": "0ce1b68c",
@@ -1264,7 +1264,7 @@
   {
    "slot": 141,
    "kind": "code",
-   "top": 12542,
+   "top": 12586,
    "h": 79,
    "style": "d3d4864b",
    "content": "8bd5d2f9",
@@ -1273,7 +1273,7 @@
   {
    "slot": 142,
    "kind": "rule",
-   "top": 12621,
+   "top": 12665,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1282,7 +1282,7 @@
   {
    "slot": 143,
    "kind": "heading",
-   "top": 12639,
+   "top": 12684,
    "h": 42,
    "style": "5b09fa56",
    "content": "5071724a",
@@ -1291,7 +1291,7 @@
   {
    "slot": 144,
    "kind": "paragraph",
-   "top": 12681,
+   "top": 12726,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -1300,7 +1300,7 @@
   {
    "slot": 145,
    "kind": "listItem",
-   "top": 12725,
+   "top": 12769,
    "h": 35,
    "style": "008bf761",
    "content": "fb2c3225",
@@ -1309,7 +1309,7 @@
   {
    "slot": 146,
    "kind": "listItem",
-   "top": 12760,
+   "top": 12805,
    "h": 47,
    "style": "a628bd71",
    "content": "3e848dd7",
@@ -1318,7 +1318,7 @@
   {
    "slot": 147,
    "kind": "paragraph",
-   "top": 12807,
+   "top": 12851,
    "h": 46,
    "style": "a7002504",
    "content": "5f490e2c",
@@ -1327,7 +1327,7 @@
   {
    "slot": 148,
    "kind": "code",
-   "top": 12852,
+   "top": 12897,
    "h": 79,
    "style": "ba468cb2",
    "content": "0089e16c",
@@ -1336,7 +1336,7 @@
   {
    "slot": 149,
    "kind": "paragraph",
-   "top": 12931,
+   "top": 12976,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -1345,7 +1345,7 @@
   {
    "slot": 150,
    "kind": "code",
-   "top": 12977,
+   "top": 13021,
    "h": 79,
    "style": "f6be4b32",
    "content": "7f195c6a",
@@ -1354,7 +1354,7 @@
   {
    "slot": 151,
    "kind": "listItem",
-   "top": 13056,
+   "top": 13100,
    "h": 47,
    "style": "f896fb54",
    "content": "6b833d81",
@@ -1363,7 +1363,7 @@
   {
    "slot": 152,
    "kind": "code",
-   "top": 13102,
+   "top": 13147,
    "h": 59,
    "style": "43dddf92",
    "content": "f9edc9a6",
@@ -1372,7 +1372,7 @@
   {
    "slot": 153,
    "kind": "paragraph",
-   "top": 13161,
+   "top": 13206,
    "h": 46,
    "style": "4e5f4924",
    "content": "2da00a84",
@@ -1381,7 +1381,7 @@
   {
    "slot": 154,
    "kind": "listItem",
-   "top": 13207,
+   "top": 13251,
    "h": 47,
    "style": "90f86e25",
    "content": "0ce1b68c",
@@ -1390,7 +1390,7 @@
   {
    "slot": 155,
    "kind": "code",
-   "top": 13253,
+   "top": 13298,
    "h": 79,
    "style": "4636ce3e",
    "content": "856d0591",
@@ -1399,7 +1399,7 @@
   {
    "slot": 156,
    "kind": "rule",
-   "top": 13332,
+   "top": 13377,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1408,16 +1408,16 @@
   {
    "slot": 157,
    "kind": "heading",
-   "top": 13351,
+   "top": 13395,
    "h": 42,
-   "style": "7b843d1d",
+   "style": "5b09fa56",
    "content": "b0064fbd",
    "text": "Task 6: 更新 Timeline 链接§"
   },
   {
    "slot": 158,
    "kind": "paragraph",
-   "top": 13393,
+   "top": 13437,
    "h": 44,
    "style": "785510ba",
    "content": "dcd190be",
@@ -1426,7 +1426,7 @@
   {
    "slot": 159,
    "kind": "listItem",
-   "top": 13436,
+   "top": 13481,
    "h": 45,
    "style": "b29d961c",
    "content": "eec97ad5",
@@ -1435,7 +1435,7 @@
   {
    "slot": 160,
    "kind": "paragraph",
-   "top": 13481,
+   "top": 13526,
    "h": 46,
    "style": "4e5f4924",
    "content": "5cd8adaa",
@@ -1444,7 +1444,7 @@
   {
    "slot": 161,
    "kind": "listItem",
-   "top": 13527,
+   "top": 13571,
    "h": 47,
    "style": "be00a004",
    "content": "63819ef3",
@@ -1453,7 +1453,7 @@
   {
    "slot": 162,
    "kind": "paragraph",
-   "top": 13574,
+   "top": 13618,
    "h": 46,
    "style": "4e5f4924",
    "content": "85270081",
@@ -1462,7 +1462,7 @@
   {
    "slot": 163,
    "kind": "code",
-   "top": 13619,
+   "top": 13664,
    "h": 59,
    "style": "e3077528",
    "content": "fc681c4d",
@@ -1471,7 +1471,7 @@
   {
    "slot": 164,
    "kind": "paragraph",
-   "top": 13678,
+   "top": 13723,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -1480,7 +1480,7 @@
   {
    "slot": 165,
    "kind": "code",
-   "top": 13724,
+   "top": 13768,
    "h": 59,
    "style": "cd6dce38",
    "content": "903da2fd",
@@ -1489,16 +1489,16 @@
   {
    "slot": 166,
    "kind": "listItem",
-   "top": 13783,
-   "h": 45,
-   "style": "7dc7d4eb",
+   "top": 13827,
+   "h": 47,
+   "style": "aa6a5dd8",
    "content": "2d9fcd3d",
    "text": "Step 2: 更新 2013 年 DropConnect 条目"
   },
   {
    "slot": 167,
    "kind": "paragraph",
-   "top": 13827,
+   "top": 13874,
    "h": 46,
    "style": "4e5f4924",
    "content": "669d4ad6",
@@ -1507,7 +1507,7 @@
   {
    "slot": 168,
    "kind": "code",
-   "top": 13873,
+   "top": 13919,
    "h": 59,
    "style": "2b317d5f",
    "content": "087ff2f5",
@@ -1516,7 +1516,7 @@
   {
    "slot": 169,
    "kind": "paragraph",
-   "top": 13932,
+   "top": 13978,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -1525,7 +1525,7 @@
   {
    "slot": 170,
    "kind": "code",
-   "top": 13977,
+   "top": 14024,
    "h": 59,
    "style": "518aaf7b",
    "content": "ad7a8cf5",
@@ -1534,16 +1534,16 @@
   {
    "slot": 171,
    "kind": "listItem",
-   "top": 14036,
-   "h": 45,
-   "style": "3b082493",
+   "top": 14083,
+   "h": 47,
+   "style": "67aaad80",
    "content": "e5c464f9",
    "text": "Step 3: 更新 2014 年 Dropout in RNNs 条目"
   },
   {
    "slot": 172,
    "kind": "paragraph",
-   "top": 14081,
+   "top": 14129,
    "h": 46,
    "style": "4e5f4924",
    "content": "4a5d052d",
@@ -1552,7 +1552,7 @@
   {
    "slot": 173,
    "kind": "code",
-   "top": 14126,
+   "top": 14175,
    "h": 59,
    "style": "559ecb2f",
    "content": "2a0f5dff",
@@ -1561,7 +1561,7 @@
   {
    "slot": 174,
    "kind": "paragraph",
-   "top": 14185,
+   "top": 14234,
    "h": 46,
    "style": "4e5f4924",
    "content": "a153f8b0",
@@ -1570,7 +1570,7 @@
   {
    "slot": 175,
    "kind": "code",
-   "top": 14231,
+   "top": 14279,
    "h": 59,
    "style": "99a261ba",
    "content": "351d1ebb",
@@ -1579,7 +1579,7 @@
   {
    "slot": 176,
    "kind": "listItem",
-   "top": 14290,
+   "top": 14338,
    "h": 47,
    "style": "46114faf",
    "content": "767ff516",
@@ -1588,7 +1588,7 @@
   {
    "slot": 177,
    "kind": "code",
-   "top": 14337,
+   "top": 14385,
    "h": 59,
    "style": "945ab66d",
    "content": "532ae548",
@@ -1597,7 +1597,7 @@
   {
    "slot": 178,
    "kind": "paragraph",
-   "top": 14396,
+   "top": 14444,
    "h": 46,
    "style": "4e5f4924",
    "content": "cb48643c",
@@ -1606,7 +1606,7 @@
   {
    "slot": 179,
    "kind": "listItem",
-   "top": 14441,
+   "top": 14490,
    "h": 47,
    "style": "90f86e25",
    "content": "f8a5b4c6",
@@ -1615,7 +1615,7 @@
   {
    "slot": 180,
    "kind": "code",
-   "top": 14488,
+   "top": 14536,
    "h": 79,
    "style": "65799a3c",
    "content": "ad60d0a4",
@@ -1624,7 +1624,7 @@
   {
    "slot": 181,
    "kind": "rule",
-   "top": 14567,
+   "top": 14615,
    "h": 19,
    "style": "a289bcb9",
    "content": "811c9dc5",
@@ -1633,7 +1633,7 @@
   {
    "slot": 182,
    "kind": "heading",
-   "top": 14585,
+   "top": 14634,
    "h": 42,
    "style": "5b09fa56",
    "content": "514c36e1",
@@ -1642,7 +1642,7 @@
   {
    "slot": 183,
    "kind": "listItem",
-   "top": 14627,
+   "top": 14675,
    "h": 47,
    "style": "04d0011b",
    "content": "d8194627",
@@ -1651,7 +1651,7 @@
   {
    "slot": 184,
    "kind": "code",
-   "top": 14674,
+   "top": 14722,
    "h": 219,
    "style": "99cbc76e",
    "content": "ac8b74db",
@@ -1660,7 +1660,7 @@
   {
    "slot": 185,
    "kind": "paragraph",
-   "top": 14893,
+   "top": 14941,
    "h": 46,
    "style": "4e5f4924",
    "content": "6f2cf31a",
@@ -1669,7 +1669,7 @@
   {
    "slot": 186,
    "kind": "listItem",
-   "top": 14938,
+   "top": 14987,
    "h": 47,
    "style": "46114faf",
    "content": "e40c143f",
@@ -1678,7 +1678,7 @@
   {
    "slot": 187,
    "kind": "paragraph",
-   "top": 14985,
+   "top": 15033,
    "h": 46,
    "style": "265a1564",
    "content": "fc459cb7",
@@ -1687,7 +1687,7 @@
   {
    "slot": 188,
    "kind": "code",
-   "top": 15030,
+   "top": 15079,
    "h": 59,
    "style": "e83d1d61",
    "content": "67c43180",
@@ -1696,7 +1696,7 @@
   {
    "slot": 189,
    "kind": "code",
-   "top": 15089,
+   "top": 15138,
    "h": 79,
    "style": "37f5cd46",
    "content": "574af611",
@@ -1705,7 +1705,7 @@
   {
    "slot": 190,
    "kind": "paragraph",
-   "top": 15168,
+   "top": 15217,
    "h": 46,
    "style": "4e5f4924",
    "content": "98ef511a",
@@ -1714,25 +1714,25 @@
   {
    "slot": 191,
    "kind": "listItem",
-   "top": 15214,
-   "h": 35,
-   "style": "244cdb6c",
+   "top": 15262,
+   "h": 38,
+   "style": "af2529e7",
    "content": "6786d113",
    "text": "deep-learning-basics 的下一章指向 regularization"
   },
   {
    "slot": 192,
    "kind": "listItem",
-   "top": 15249,
-   "h": 35,
-   "style": "b64f66f8",
+   "top": 15300,
+   "h": 38,
+   "style": "37dc1831",
    "content": "fef8a978",
    "text": "regularization 的下一章指向 training"
   },
   {
    "slot": 193,
    "kind": "listItem",
-   "top": 15285,
+   "top": 15338,
    "h": 47,
    "style": "81f33590",
    "content": "4fd41c7e",
@@ -1741,7 +1741,7 @@
   {
    "slot": 194,
    "kind": "code",
-   "top": 15331,
+   "top": 15384,
    "h": 99,
    "style": "1de37a65",
    "content": "d4603b36",
@@ -1750,7 +1750,7 @@
   {
    "slot": 195,
    "kind": "paragraph",
-   "top": 15430,
+   "top": 15483,
    "h": 46,
    "style": "a6db184d",
    "content": "57d5059c",
@@ -1759,7 +1759,7 @@
   {
    "slot": 196,
    "kind": "listItem",
-   "top": 15476,
+   "top": 15529,
    "h": 47,
    "style": "c543b0e4",
    "content": "39ac3e37",
@@ -1768,7 +1768,7 @@
   {
    "slot": 197,
    "kind": "code",
-   "top": 15522,
+   "top": 15575,
    "h": 79,
    "style": "b230eaf0",
    "content": "857b0f32",
@@ -1777,7 +1777,7 @@
   {
    "slot": 198,
    "kind": "paragraph",
-   "top": 15601,
+   "top": 15654,
    "h": 46,
    "style": "4e5f4924",
    "content": "4e7a0051",
