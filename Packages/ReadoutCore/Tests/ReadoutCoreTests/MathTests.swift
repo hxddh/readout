@@ -92,6 +92,15 @@ import Testing
         #expect(!h.contains("math"))
     }
 
+    /// A `](` without an opening `[` before it is text, not a destination.
+    @Test func bracketParenWithoutAnOpenerIsText() {
+        let h = html("literal ](value $x$) and \\[a](b $y$) here\n")
+        #expect(h.contains("data-tex=\"x\""))
+        #expect(h.contains("data-tex=\"y\""))
+        // With an opener it is still a destination.
+        #expect(html("[a](http://x.com/$p$q) $z$\n").contains("href=\"http://x.com/$p$q\""))
+    }
+
     @Test func dollarsInBareURLsAndAutolinksAreNotMath() {
         let bare = html("Bare https://services.odata.org/People?$filter=Name&$top=5 here.\n")
         #expect(bare.contains("href=\"https://services.odata.org/People?$filter=Name&amp;$top=5\""))

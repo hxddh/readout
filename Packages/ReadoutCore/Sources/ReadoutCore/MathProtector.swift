@@ -236,6 +236,8 @@ struct MathProtector {
         var parenClose = CloserSearch(closer: ")"), bracketClose = CloserSearch(closer: "]")
         // The next `$$` at or after a position (-1: none searched yet), as for `\)`.
         var displayClose = -1, displayExhausted = false
+        // Unescaped `[` not yet closed: a `](` is a link destination only after one.
+        var openBrackets = 0
         while i < chars.count {
             let c = chars[i]
             // Inline code span: copy verbatim.
@@ -264,8 +266,12 @@ struct MathProtector {
             }
             // Link and image destinations, autolinks and bare addresses:
             // a `$` or `\(` there is part of the address, not math.
-            if c == "]", i + 1 < chars.count, chars[i + 1] == "(", let end = Self.destinationEnd(chars, from: i + 2) {
-                out += String(chars[i..<end]); i = end; continue
+            if c == "[" { openBrackets += 1 }
+            if c == "]", openBrackets > 0 {
+                openBrackets -= 1
+                if i + 1 < chars.count, chars[i + 1] == "(", let end = Self.destinationEnd(chars, from: i + 2) {
+                    out += String(chars[i..<end]); i = end; continue
+                }
             }
             if c == "<", let end = Self.autolinkEnd(chars, from: i) {
                 out += String(chars[i..<end]); i = end; continue
@@ -279,6 +285,7 @@ struct MathProtector {
                 let id = String(chars[(i + 2)..<end])
                 if footnoteIDs.contains(id.lowercased()) && !id.contains(where: \.isWhitespace) {
                     out += footnoteToken(id.lowercased())
+                    openBrackets -= 1   // its `]` is taken with it
                     i = end + 1
                     continue
                 }
