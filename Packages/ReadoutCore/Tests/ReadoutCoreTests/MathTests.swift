@@ -101,6 +101,27 @@ import Testing
         #expect(html("[a](http://x.com/$p$q) $z$\n").contains("href=\"http://x.com/$p$q\""))
     }
 
+    /// What is not a valid destination (white space without a title) is text, math included.
+    @Test func invalidDestinationIsText() {
+        let h = html("[x](not a title $y$)\n")
+        #expect(h.contains("data-tex=\"y\""))
+        #expect(!h.contains("<a "))
+        // Valid forms are still left to the link: titles in each quoting, <…>, nested parentheses.
+        for (src, href) in [("[a](u?$p=1 \"t $q$\")", "u?$p=1"), ("[a](u?$p=1 'q')", "u?$p=1"), ("[a](u?$p (t))", "u?$p"),
+                            ("[a](<u $p$ v>)", "u $p$ v"), ("[a](f(x)$p$)", "f(x)$p$"), ("[a]()", "")] {
+            let out = html(src + "\n")
+            #expect(out.contains("href=\"\(href)\""), "\(src): \(out)")
+            #expect(!out.contains("math"), "\(src): \(out)")
+        }
+    }
+
+    /// Only what the autolinker links is shielded: `www.$x$` is not an address.
+    @Test func wwwWithoutAHostIsNotAnAddress() {
+        #expect(html("See www.$x$ here\n").contains("data-tex=\"x\""))
+        #expect(html("See https:// $y$ here\n").contains("data-tex=\"y\""))
+        #expect(!html("See www.example.com/?$a=1&$b=2 here\n").contains("math"))
+    }
+
     @Test func dollarsInBareURLsAndAutolinksAreNotMath() {
         let bare = html("Bare https://services.odata.org/People?$filter=Name&$top=5 here.\n")
         #expect(bare.contains("href=\"https://services.odata.org/People?$filter=Name&amp;$top=5\""))

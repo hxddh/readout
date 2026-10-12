@@ -171,22 +171,58 @@ struct MathProtector {
         }
     }
 
-    /// The end (exclusive) of a link destination and title starting at
-    /// `start` (just after `](`); nil when its parenthesis does not close on this line.
-    private static func destinationEnd(_ chars: [Character], from start: Int) -> Int? {
+    /// The end (exclusive) of an inline link's destination and optional
+    /// title starting at `start` (just after `](`), following CommonMark: a
+    /// `<…>` destination, or a bare one without white space and with balanced
+    /// parentheses; then optionally white space and a `"…"`, `'…'` or `(…)`
+    /// title; then `)`. Nil when that is not what follows: `[x](not a title)`
+    /// is text, and so is what is inside it.
+    static func destinationEnd(_ chars: [Character], from start: Int) -> Int? {
+        let n = chars.count
         var k = start
-        var depth = 0
-        var angle = false
-        while k < chars.count {
-            let c = chars[k]
-            if c == "\\" { k += 2; continue }
-            if angle { if c == ">" { angle = false } }
-            else if c == "<" && k == start { angle = true }
-            else if c == "(" { depth += 1 }
-            else if c == ")" { if depth == 0 { return k + 1 }; depth -= 1 }
+        while k < n, chars[k].isWhitespace { k += 1 }
+        if k < n, chars[k] == "<" {
             k += 1
+            while k < n, chars[k] != ">" {
+                if chars[k] == "<" { return nil }
+                k += chars[k] == "\\" ? 2 : 1
+            }
+            guard k < n else { return nil }
+            k += 1
+        } else {
+            var depth = 0
+            while k < n {
+                let c = chars[k]
+                if c == "\\" { k += 2; continue }
+                if c.isWhitespace { break }
+                if c == "(" { depth += 1 } else if c == ")" { if depth == 0 { break }; depth -= 1 }
+                k += 1
+            }
+            guard depth == 0, k <= n else { return nil }
         }
-        return nil
+        let afterDestination = k
+        while k < n, chars[k].isWhitespace { k += 1 }
+        guard k < n else { return nil }
+        if chars[k] == ")" { return k + 1 }
+        // A title, set off from the destination by white space.
+        guard k > afterDestination else { return nil }
+        let open = chars[k]
+        let close: Character
+        switch open {
+        case "\"": close = "\""
+        case "'": close = "'"
+        case "(": close = ")"
+        default: return nil
+        }
+        k += 1
+        while k < n, chars[k] != close {
+            if open == "(" && chars[k] == "(" { return nil }
+            k += chars[k] == "\\" ? 2 : 1
+        }
+        guard k < n else { return nil }
+        k += 1
+        while k < n, chars[k].isWhitespace { k += 1 }
+        return k < n && chars[k] == ")" ? k + 1 : nil
     }
 
     /// The end (exclusive) of a `<scheme:…>` or `<user@host>` autolink at `start`.
@@ -216,7 +252,16 @@ struct MathProtector {
             }
             return true
         }
-        guard starts("http://") || starts("https://") || starts("www.") else { return nil }
+        // Only what the autolinker links (HTMLRenderer.urlRegex): `www.` and a
+        // host label, or a scheme and an address.
+        let prefix = starts("www.") ? 4 : starts("https://") ? 8 : starts("http://") ? 7 : 0
+        guard prefix > 0, i + prefix < chars.count else { return nil }
+        let next = chars[i + prefix]
+        if prefix == 4 {
+            guard next.isASCII, next.isLetter || next.isNumber || next == "-" else { return nil }
+        } else {
+            guard !next.isWhitespace, next != "<" else { return nil }
+        }
         var k = i
         while k < chars.count, !chars[k].isWhitespace, chars[k] != "<" {
             // A footnote reference right after an address is not part of it.
