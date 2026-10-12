@@ -90,8 +90,8 @@ final class FileWatcher {
     private var pollTimer: DispatchSourceTimer?
     private let queue = DispatchQueue(label: "readout.filewatcher", qos: .userInitiated)
     private let onChange: (Change) -> Void
-    /// The opened path (a symlink) now resolves to another file. On the main queue.
-    private let onRetarget: () -> Void
+    /// The opened path (a symlink) now resolves to another file (its real path). On the main queue.
+    private let onRetarget: (String) -> Void
     private var stopped = false
 
     // Debounce: trailing 80 ms, but never hold an update for more than 400 ms during continuous writes.
@@ -102,7 +102,7 @@ final class FileWatcher {
 
     private var lastPollSignature: [Int]?
 
-    init(url: URL, onChange: @escaping (Change) -> Void, onRetarget: @escaping () -> Void = {}) {
+    init(url: URL, onChange: @escaping (Change) -> Void, onRetarget: @escaping (String) -> Void = { _ in }) {
         self.url = url
         self.target = WatchTarget(path: url.path)
         self.onChange = onChange
@@ -178,9 +178,10 @@ final class FileWatcher {
     /// is not invalidated from inside its own callback).
     private func retarget() {
         guard target.reresolve() else { return }
+        let newTarget = target.target
         DispatchQueue.main.async { [weak self] in
             guard let self, !self.stopped else { return }
-            self.onRetarget()
+            self.onRetarget(newTarget)
         }
         guard target.directories != watchedDirectories else { return }
         queue.async { [weak self] in

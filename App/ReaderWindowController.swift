@@ -122,7 +122,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
         model.onSelectHeading = { [weak self] slot in self?.webView.call("scrollToSlot", json: String(slot)) }
         watcher = FileWatcher(url: self.url, onChange: { [weak self] change in self?.fileChanged(change) },
-                              onRetarget: { [weak self] in if let self { self.retargeted() } })
+                              onRetarget: { [weak self] target in if let self { self.retargeted(to: target) } })
         load()
     }
 
@@ -285,12 +285,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         // Recover from a crashed renderer: reload the page and re-send the document.
-        findModeOn = false   // the new page starts out of find mode
         self.webView.reloadReader()
         self.webView.whenReady { [weak self] in
             guard let self else { return }
             self.applyAppearance()
             self.webView.call("apply", self.session.fullPayload(rewrite: false))
+            // The new page starts out of find mode, and switches queued before
+            // the crash have run by now: send the state the window is in.
+            self.webView.call("findMode", json: self.findModeOn ? "true" : "false")
         }
     }
 
@@ -538,21 +540,21 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     /// The opened symlink points to another file, whose state has its own key.
     /// Until that file's content is read, the session still holds the old
-    /// one: saves wait, then the next save writes the whole record there.
-    private var awaitingRetargetContent = false
+    /// one: saves wait until a read of that file (not one of the old target
+    /// still in flight) lands, then the next save writes the whole record there.
+    private var retargetGate = RetargetGate()
     /// The real path of the file whose content the session holds: the key the
     /// reading state is saved under. Not resolved at save time, which could
     /// already see a retarget the window has not read yet.
     private var contentPath: String?
-    private func retargeted() {
-        awaitingRetargetContent = true
+    private func retargeted(to target: String) {
+        retargetGate.retargeted(to: target)
         onRetarget?(self)
     }
 
-    /// The retargeted file's content is in the session now.
+    /// A read filled the session: when it was the retargeted file's, saves resume under its key.
     private func finishRetarget() {
-        guard awaitingRetargetContent else { return }
-        awaitingRetargetContent = false
+        guard retargetGate.read(from: loader.lastSourcePath) else { return }
         contentPath = loader.lastSourcePath ?? contentPath
         didSaveOnce = false
         lastSavedBaseline = nil
@@ -560,7 +562,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     func saveNow() {
-        guard loaded, !awaitingRetargetContent else { return }
+        guard loaded, !retargetGate.isPending else { return }
         var index: Int? = nil
         var excerpt: String? = nil
         if let a = lastAnchor, let i = session.blocks.firstIndex(where: { $0.slot == a.slot }) {

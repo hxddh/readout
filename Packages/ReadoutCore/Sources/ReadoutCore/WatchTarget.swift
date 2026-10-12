@@ -71,6 +71,28 @@ public struct WatchTarget: Equatable, Sendable {
     private static func same(_ a: String, _ b: String) -> Bool { a == b || a.lowercased() == b.lowercased() }
 }
 
+/// After a shown symlink is pointed at another file, the reader holds its
+/// saves until a read of that file has filled the session: a read of the old
+/// target still in flight when the link changed does not count.
+public struct RetargetGate: Equatable, Sendable {
+    /// The real path of the new target, until a read of it lands.
+    public private(set) var pending: String?
+
+    public init() {}
+
+    public var isPending: Bool { pending != nil }
+
+    public mutating func retargeted(to target: String) { pending = target }
+
+    /// A read from `source` (`DocumentLoader.lastSourcePath`) has filled the
+    /// session. True when it is the pending target's: the retarget is settled.
+    public mutating func read(from source: String?) -> Bool {
+        guard let p = pending, source == p else { return false }
+        pending = nil
+        return true
+    }
+}
+
 /// Where the reading state of a file is kept: one key per file, however the
 /// path is spelled (through a symlink, under /tmp or /private/tmp), as windows are.
 public enum BaselineKey {
