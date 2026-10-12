@@ -16,7 +16,7 @@ import { apply as applyPatch, findMode } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelHeadingLinks, setCodeWrap, highlightAll } from './reader/enhance.js';
-import { rerenderMermaid, renderAllMermaid } from './reader/mermaid.js';
+import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
 import { remoteReady, remoteFailed } from './reader/remote.js';
 import { reportActiveHeading } from './reader/heading.js';
 
@@ -186,11 +186,13 @@ post({ type: 'ready' });
 /**
  * Called by the app before it prints: draws every diagram and highlights
  * every code block, wherever they are (they are otherwise done lazily, near
- * the viewport). Resolves when done, or after a few seconds regardless.
+ * the viewport), diagrams in the light theme paper prints in. Resolves when
+ * done, or after a few seconds regardless. afterprint draws them back.
  */
 async function preparePrint() {
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const deadline = performance.now() + 8000;
+  setPrintDiagrams(true);
   highlightAll();
   await Promise.race([renderAllMermaid(), wait(8000)]);
   // Code whose grammar is still loading is highlighted when it arrives.
@@ -199,8 +201,13 @@ async function preparePrint() {
     await wait(50);
     highlightAll();
   }
+  // The app prints right away; should printing not begin, the diagrams go
+  // back to the page's theme.
+  clearTimeout(printFallback);
+  printFallback = setTimeout(() => setPrintDiagrams(false), 5000);
   return true;
 }
+let printFallback = null;
 
 // Printing shows the whole document: folded <details> open, the changes-only
 // filter lifted, all code highlighted; afterwards the screen is as it was.
@@ -214,6 +221,8 @@ window.addEventListener('beforeprint', () => {
   printOpened = [...document.querySelectorAll('#ro-doc details:not([open])')];
   printOpened.forEach(d => { d.open = true; });
   setPrinting(true);
+  clearTimeout(printFallback);
+  setPrintDiagrams(true);
   highlightAll();
   rebaselineHeights();
   if (printAnchor) restoreAnchor(printAnchor, new Set());
@@ -222,6 +231,7 @@ window.addEventListener('afterprint', () => {
   printOpened.forEach(d => { d.open = false; });
   printOpened = [];
   setPrinting(false);
+  setPrintDiagrams(false);   // redrawn in the page's theme, in place (from the cache)
   rebaselineHeights();
   if (printAnchor) restoreAnchor(printAnchor, new Set());
   printAnchor = null;

@@ -1,5 +1,6 @@
 // Reports the heading at the top of the viewport so the native TOC can follow.
 import { doc, post } from './core.js';
+import { topInset } from './anchor.js';
 
 let lastActive = null;
 let headings = null;   // in document order; reset whenever blocks change
@@ -11,7 +12,8 @@ export function reportActiveHeading() {
   // Headings are in document order, so their tops increase: binary search
   // for the last one at or above the line. This relies on headings never
   // being hidden ("Show Only Changes" keeps them as context).
-  const line = 80;
+  // Below the window toolbar: jumps land a heading 16 px under it.
+  const line = 80 + topInset();
   let lo = 0, hi = headings.length - 1, active = null;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;

@@ -6,6 +6,12 @@ const mermaidCache = new Map();   // source+theme -> {svg, id} or {error}
 let mermaidPromise = null;
 let mermaidTheme = null;
 let mermaidSeq = 0;
+let printTheme = null;   // while printing, diagrams are drawn for paper: light
+
+/** The theme diagrams are drawn in: the page's, or light while printing. */
+function diagramTheme() {
+  return printTheme || (root.dataset.theme === 'dark' ? 'dark' : 'light');
+}
 
 function loadMermaid() {
   if (!mermaidPromise) {
@@ -18,11 +24,19 @@ function loadMermaid() {
     });
   }
   return mermaidPromise.then(m => {
-    const theme = root.dataset.theme === 'dark' ? 'dark' : 'light';
+    const theme = diagramTheme();
     if (theme !== mermaidTheme) {
-      // Diagrams take the page's own colors and type, in both themes.
+      // Diagrams take the page's own colors and type, in both themes. The
+      // colors of a theme the page is not shown in (printing) are read with
+      // the page switched to it for the moment, before anything is painted.
+      const shown = root.dataset.theme;
+      const swap = theme !== (shown === 'dark' ? 'dark' : 'light');
+      if (swap) root.dataset.theme = theme;
       const css = getComputedStyle(root);
-      const v = name => css.getPropertyValue(name).trim();
+      const vars = {};
+      const v = name => vars[name] ??= css.getPropertyValue(name).trim();
+      for (const name of ['--font', '--bg', '--fill', '--fill-2', '--text', '--text-2', '--text-3', '--rule']) v(name);
+      if (swap) root.dataset.theme = shown;
       m.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
@@ -104,7 +118,7 @@ async function pumpMermaid() {
       }
       if (!block.isConnected) continue;
       // The theme changed while it was being drawn: draw it again in the new one.
-      if (theme !== (root.dataset.theme === 'dark' ? 'dark' : 'light')) { mermaidQueue.push(block); continue; }
+      if (theme !== diagramTheme()) { mermaidQueue.push(block); continue; }
       let fresh;
       if (out.svg) {
         fresh = document.createElement('div');
@@ -168,6 +182,17 @@ export function rerenderMermaid() {
     if (b.classList.contains('busy')) continue;   // queued: it is drawn in the new theme
     if (inViewport(b, window.innerHeight)) renderMermaid(b); else lazyObserver.observe(b);
   }
+}
+
+/**
+ * Printing: diagrams are drawn in the light theme for paper (the page's text
+ * prints light too), and back in the page's theme afterwards. Drawings are
+ * swapped in place, so the page keeps its height.
+ */
+export function setPrintDiagrams(on) {
+  const before = diagramTheme();
+  printTheme = on ? 'light' : null;
+  if (diagramTheme() !== before) rerenderMermaid();
 }
 
 /** Draws every diagram not drawn (or drawn in another theme); resolves when all are done. */
