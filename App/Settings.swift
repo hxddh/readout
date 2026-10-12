@@ -112,8 +112,11 @@ enum BaselineStore {
     private static func file(for url: URL) -> URL { file(forKey: key(for: url)) }
     private static func positionFile(for url: URL) -> URL { positionFile(forKey: key(for: url)) }
 
-    static func load(_ url: URL) -> Record? {
-        let primary = key(for: url)
+    /// `realPath`: the file the caller's content was read from, when known —
+    /// a link may already point elsewhere. The spelling in `url` serves only
+    /// the pre-3.3 fallback.
+    static func load(_ url: URL, realPath: String? = nil) -> Record? {
+        let primary = realPath.map { BaselineKey.key(forPath: $0) } ?? key(for: url)
         if let record = load(key: primary) { return record }
         // Before 3.3 the key was the path as spelled. Read that record once:
         // move it under the real-path key, which is the one used from now on,

@@ -315,7 +315,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                                          : NSLocalizedString("The file could not be read.", comment: "Status")
                 return
             }
-            let record = BaselineStore.load(self.url)
+            let record = BaselineStore.load(self.url, realPath: result.sourcePath)   // the file this read came from
             let patch = self.session.load(result.doc, baseline: record?.baseline)
             // What is on disk already: an unchanged baseline is not written again.
             self.lastSavedBaseline = record?.baseline
