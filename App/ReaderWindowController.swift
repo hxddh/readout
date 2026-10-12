@@ -318,7 +318,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             // What is on disk already: an unchanged baseline is not written again.
             self.lastSavedBaseline = record?.baseline
             self.loaded = true
-            self.contentPath = WorkspaceIndex.realPath(self.url.path)
+            self.contentPath = result.sourcePath
             self.deleted = false
             self.updateModel(patch, decoded: result.decoded)
             self.webView.whenReady { [weak self] in
@@ -553,7 +553,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func finishRetarget() {
         guard awaitingRetargetContent else { return }
         awaitingRetargetContent = false
-        contentPath = WorkspaceIndex.realPath(url.path)
+        contentPath = loader.lastSourcePath ?? contentPath
         didSaveOnce = false
         lastSavedBaseline = nil
         scheduleSave()

@@ -49,6 +49,26 @@ import Testing
         guard case .unchanged = await change(l) else { Issue.record("expected unchanged"); return }
     }
 
+    @Test func eachReadNamesTheFileItCameFrom() async throws {
+        let fm = FileManager.default
+        let a = dir.appendingPathComponent("run-41.md"), b = dir.appendingPathComponent("run-42.md")
+        try Data("# A\n".utf8).write(to: a)
+        try Data("# A\n".utf8).write(to: b)   // same bytes: an unchanged read still moves the source
+        try fm.createSymbolicLink(atPath: file.path, withDestinationPath: "run-41.md")
+        let l = loader()
+        let r = await initial(l)
+        #expect(r?.sourcePath == RealPath.of(a.path))
+        #expect(l.lastSourcePath == RealPath.of(a.path))
+        try fm.removeItem(at: file)
+        try fm.createSymbolicLink(atPath: file.path, withDestinationPath: "run-42.md")
+        guard case .unchanged = await change(l) else { Issue.record("expected unchanged"); return }
+        #expect(l.lastSourcePath == RealPath.of(b.path))
+        try Data("# B\n\nNew.\n".utf8).write(to: b)
+        guard case .content(let c) = await change(l) else { Issue.record("expected content"); return }
+        #expect(c.sourcePath == RealPath.of(b.path))
+        #expect(l.lastSourcePath == RealPath.of(b.path))
+    }
+
     @Test func newContentIsReported() async throws {
         try write("# Plan\n")
         let l = loader()

@@ -120,14 +120,12 @@ enum BaselineStore {
         // so a symlink retargeted later does not fall back to it again.
         let legacy = BaselineKey.legacyKey(forPath: url.path)
         guard legacy != primary, let record = load(key: legacy) else { return nil }
-        let from = [file(forKey: legacy), positionFile(forKey: legacy)]
-        let to = [file(forKey: primary), positionFile(forKey: primary)]
+        // One unit: the record already merged with its position goes to the
+        // new key, and the old files go only once that write succeeded.
+        let old = [file(forKey: legacy), positionFile(forKey: legacy)], target = file(forKey: primary)
         queue.async {
-            for (src, dst) in zip(from, to) {
-                guard let data = try? Data(contentsOf: src) else { continue }
-                // The old file goes only once the copy is safely written.
-                if (try? data.write(to: dst, options: .atomic)) != nil { try? FileManager.default.removeItem(at: src) }
-            }
+            guard let data = try? JSONEncoder().encode(record), (try? data.write(to: target, options: .atomic)) != nil else { return }
+            for f in old { try? FileManager.default.removeItem(at: f) }
         }
         return record
     }
@@ -150,8 +148,9 @@ enum BaselineStore {
     }
 
     /// Where the records for `url` live under the current and the pre-3.3 key (smoke test).
-    static func recordFiles(for url: URL) -> (current: URL, legacy: URL) {
-        (file(for: url), file(forKey: BaselineKey.legacyKey(forPath: url.path)))
+    static func recordFiles(for url: URL) -> (current: URL, legacy: URL, legacyPosition: URL) {
+        let legacy = BaselineKey.legacyKey(forPath: url.path)
+        return (file(for: url), file(forKey: legacy), positionFile(forKey: legacy))
     }
 
     /// Saves the reading position, and the whole record when `baselineChanged`

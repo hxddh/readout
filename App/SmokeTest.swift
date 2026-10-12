@@ -250,8 +250,12 @@ enum SmokeTest {
             let url = URL(fileURLWithPath: tmpPath).deletingLastPathComponent().appendingPathComponent("legacy-record.md")
             let files = BaselineStore.recordFiles(for: url)
             let record = BaselineStore.Record(baseline: [], topBlockIndex: 3, topOffset: 0, topExcerpt: nil, savedAt: Date())
-            if files.current != files.legacy, let data = try? JSONEncoder().encode(record) {
+            // Its reading position, saved later in a file of its own, must survive the move.
+            let position: [String: Any] = ["topBlockIndex": 5, "topOffset": 0, "savedAt": Date().timeIntervalSinceReferenceDate + 10]
+            if files.current != files.legacy, let data = try? JSONEncoder().encode(record),
+               let positionData = try? JSONSerialization.data(withJSONObject: position) {
                 try? data.write(to: files.legacy)
+                try? positionData.write(to: files.legacyPosition)
                 let fm = FileManager.default
                 // A copy that cannot be written (a folder in the way) keeps the old record.
                 try? fm.createDirectory(at: files.current, withIntermediateDirectories: true)
@@ -261,7 +265,10 @@ enum SmokeTest {
                 try? fm.removeItem(at: files.current)
                 let loaded = BaselineStore.load(url)
                 BaselineStore.flush()
-                result["legacy"] = ["loaded": loaded?.topBlockIndex == 3, "kept_on_failure": keptOnFailure,
+                let reloaded = BaselineStore.load(url)   // now from the new key
+                result["legacy"] = ["loaded": loaded?.topBlockIndex == 5, "kept_on_failure": keptOnFailure,
+                                    "position_kept": reloaded?.topBlockIndex == 5,
+                                    "old_position_removed": !fm.fileExists(atPath: files.legacyPosition.path),
                                     "moved": fm.fileExists(atPath: files.current.path),
                                     "old_removed": !fm.fileExists(atPath: files.legacy.path)]
             } else {

@@ -13,6 +13,8 @@ public final class DocumentLoader {
         public let hash: UInt64
         public let size: Int
         public let decoded: FileContent.Decoded
+        /// The real path the bytes were read from (a symlink resolved when read).
+        public let sourcePath: String
     }
 
     public enum Change: Sendable {
@@ -36,6 +38,10 @@ public final class DocumentLoader {
     private var lastSize: Int?
     private var lastChangeAt: Date?
     private var halfWriteRetries = 0
+    /// The real path of the last read accepted or found unchanged: the file
+    /// whose content the caller now holds, bound to that read (a symlink may
+    /// point elsewhere again by the time its completion runs).
+    public private(set) var lastSourcePath: String?
 
     // Parse coalescing: rapid successive writes share one in-flight parse;
     // completions carry a generation and stale ones are dropped.
@@ -59,6 +65,7 @@ public final class DocumentLoader {
             if let self, let result {
                 self.lastHash = result.hash
                 self.lastSize = result.size
+                self.lastSourcePath = result.sourcePath
             }
             completion(result)
         }
@@ -69,7 +76,11 @@ public final class DocumentLoader {
     public func readChange(_ completion: @escaping (Change) -> Void) {
         read { [weak self] result in
             guard let self, let result else { return }
-            if result.hash == self.lastHash { completion(.unchanged); return }
+            if result.hash == self.lastHash {
+                self.lastSourcePath = result.sourcePath
+                completion(.unchanged)
+                return
+            }
             let verdict = FileContent.verdict(newSize: result.size, previousSize: self.lastSize,
                                               secondsSincePreviousWrite: self.lastChangeAt.map { Date().timeIntervalSince($0) },
                                               truncatedTail: result.decoded.truncatedTail, retriesSoFar: self.halfWriteRetries)
@@ -84,6 +95,7 @@ public final class DocumentLoader {
             self.lastHash = result.hash
             self.lastSize = result.size
             self.lastChangeAt = Date()
+            self.lastSourcePath = result.sourcePath
             completion(.content(result))
         }
     }
@@ -106,11 +118,13 @@ public final class DocumentLoader {
         let parser = self.parser
         parseQueue.async {
             var result: ReadResult?
-            if let data = try? Data(contentsOf: url) {
+            // Resolve first, then read that file: the path and the bytes always belong together.
+            let source = RealPath.of(url.path)
+            if let data = try? Data(contentsOf: URL(fileURLWithPath: source)) {
                 let decoded = FileContent.decode(data)
                 cache.beginGeneration()
                 let doc = parser.parse(decoded.text, resolver: resolver, cache: cache)
-                result = ReadResult(doc: doc, hash: XXHash64.hash(data), size: data.count, decoded: decoded)
+                result = ReadResult(doc: doc, hash: XXHash64.hash(data), size: data.count, decoded: decoded, sourcePath: source)
             }
             let finished = result
             DispatchQueue.main.async { [weak self] in
