@@ -70,6 +70,7 @@ struct MathProtector {
     /// each following line's container prefix and the text after the closing `$$`.
     private func displayBlock(_ lines: [Substring], at i: Int)
         -> (opener: String, tex: String, end: Int, prefixes: [String], rest: String)? {
+        guard lines[i].utf8.contains(0x24) /* $ */ else { return nil }
         let line = String(lines[i])
         guard line.contains("$$") else { return nil }
         let ns = line as NSString

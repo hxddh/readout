@@ -30,16 +30,19 @@ enum CJK {
     /// commands) do not count. Mixed Chinese and English list items then
     /// read the same way instead of flipping with the length of the English words.
     static func proseRatio(_ text: String) -> Double {
-        let scalars = Array(text.unicodeScalars)
         var skip: [Range<Int>] = []
-        if text.utf8.contains(0x60) { skip = codeSpans(scalars) }
+        if text.utf8.contains(0x60) { skip = codeSpans(Array(text.unicodeScalars)) }
         var cjk = 0, units = 0
         var inWord = false
         var next = 0   // index into skip
-        var i = 0
-        while i < scalars.count {
-            if next < skip.count, i == skip[next].lowerBound { i = skip[next].upperBound; next += 1; inWord = false; continue }
-            let s = scalars[i]
+        var i = -1
+        for s in text.unicodeScalars {
+            i += 1
+            if next < skip.count, i >= skip[next].lowerBound {
+                if i < skip[next].upperBound { inWord = false; continue }
+                next += 1
+                if next < skip.count, i >= skip[next].lowerBound { inWord = false; continue }
+            }
             let v = s.value
             let letter: Bool
             if v < 0x80 {
@@ -52,7 +55,6 @@ enum CJK {
             }
             if letter && !inWord { units += 1 }
             inWord = letter
-            i += 1
         }
         return units == 0 ? 0 : Double(cjk) / Double(units)
     }

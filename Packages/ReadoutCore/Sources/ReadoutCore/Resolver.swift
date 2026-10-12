@@ -56,10 +56,14 @@ final class ResolverProbe: ResourceResolver, @unchecked Sendable {
 
     func pathReference(_ code: String) -> PathReference? {
         let r = base.pathReference(code)
-        // What could name a file was looked up, found or not.
-        if r != nil || (code.count <= 300 && !code.contains(" ") && (code.contains(".") || code.contains("/"))) {
-            fileSystemReads += 1
+        // What could name a file was looked up, found or not (a file
+        // resolver without folders looks up absolute and ~/ paths only).
+        var looked = r != nil || (code.count <= 300 && !code.contains(" ") && (code.contains(".") || code.contains("/")))
+        if looked, let f = base as? FileResolver, f.baseDirectory == nil, f.searchRoots.isEmpty,
+           !code.hasPrefix("/"), !code.hasPrefix("~") {
+            looked = false
         }
+        if looked { fileSystemReads += 1 }
         return r
     }
 }
