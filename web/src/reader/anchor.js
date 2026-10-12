@@ -65,6 +65,26 @@ function nearestVisible(el) {
   return null;
 }
 
+/**
+ * Scrolls so `target` sits at the top of the viewport (`gap` above it, else its
+ * scroll-margin) or, with `center`, in the middle.
+ *
+ * Not scrollIntoView: in a large document an off-screen block is laid out with
+ * content-visibility, its content skipped; right after a scroll WebKit's
+ * scrollIntoView on an element inside such a block scrolls nowhere. The block
+ * is made visible for the measurement, so the position is the real one.
+ */
+export function scrollToElement(target, { center = false, gap } = {}) {
+  const blk = target.closest('#ro-doc > .blk');
+  const forced = blk && blk.style.contentVisibility !== 'visible';
+  if (forced) blk.style.contentVisibility = 'visible';
+  const r = target.getBoundingClientRect();
+  const margin = gap ?? (parseFloat(getComputedStyle(target).scrollMarginTop) || 0);
+  window.scrollBy(0, center ? r.top + r.height / 2 - window.innerHeight / 2 : r.top - margin);
+  // On screen now: content-visibility keeps it rendered, as it would any block in view.
+  if (forced) requestAnimationFrame(() => { blk.style.contentVisibility = ''; });
+}
+
 export function atBottom() {
   const se = document.scrollingElement;
   return se.scrollHeight - (se.scrollTop + window.innerHeight) < 48 && se.scrollTop > 0;

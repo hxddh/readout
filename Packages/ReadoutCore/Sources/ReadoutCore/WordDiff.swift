@@ -184,7 +184,7 @@ public enum WordDiff {
             guard let (sc, _) = x else { return false }
             let v = sc.value
             if v < 0x80 { return (v >= 0x30 && v <= 0x39) || (v >= 0x41 && v <= 0x5A) || (v >= 0x61 && v <= 0x7A) || v == 0x5F }
-            return !CJK.isCJK(sc) && (sc.properties.isAlphabetic || sc.properties.numericType != nil)
+            return !perCharacter(sc) && (sc.properties.isAlphabetic || sc.properties.numericType != nil)
         }
         var p = 0
         while p < limit && a[p] == b[p] { p += 1 }
@@ -363,6 +363,16 @@ public enum WordDiff {
 
     // MARK: Tokens
 
+    /// Scripts compared character by character: CJK, and Hangul written as
+    /// separate jamo (decomposed text), whose syllables then compare like
+    /// precomposed ones.
+    static func perCharacter(_ s: Unicode.Scalar) -> Bool {
+        switch s.value {
+        case 0x1100...0x11FF, 0xA960...0xA97F, 0xD7B0...0xD7FF: return true
+        default: return CJK.isCJK(s)
+        }
+    }
+
     static func tokens(_ text: String) -> [Substring] {
         var out: [Substring] = []
         let scalars = text.unicodeScalars
@@ -375,7 +385,7 @@ public enum WordDiff {
             let next = scalars.index(after: i)
             let v = s.value
             let word = (v >= 0x61 && v <= 0x7A) || (v >= 0x41 && v <= 0x5A) || (v >= 0x30 && v <= 0x39) || v == 0x5F
-                || (v >= 0x80 && !CJK.isCJK(s) && (s.properties.isAlphabetic || s.properties.numericType != nil))
+                || (v >= 0x80 && !perCharacter(s) && (s.properties.isAlphabetic || s.properties.numericType != nil))
             if v >= 0x80 && i > scalars.startIndex && String.Index(i, within: text) == nil {
                 // Inside a character (a vowel sign after a space, conjoining jamo):
                 // it stays with the token it continues.

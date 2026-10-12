@@ -1,7 +1,7 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes, and the "Show Only Changes" filter.
 import { doc, slots, heights, strings, quicklook, post, inViewport } from './core.js';
-import { captureAnchor, restoreAnchor } from './anchor.js';
+import { captureAnchor, restoreAnchor, isShown } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -109,11 +109,21 @@ function closeDiff(slot) {
 export function forgetDiff(slot) { diffOf.delete(slot); }
 
 /** The comparison of the first edited block in view (keyboard: D). */
+/**
+ * D: opens the comparison of the topmost edited block in view that is still
+ * closed, so repeated presses walk down the screen; once every one in view
+ * is open, closes them all.
+ */
 export function toggleDiffInView() {
-  for (const [slot] of diffOf) {
-    const el = slots.get(slot);
-    if (el && inViewport(el)) return toggleDiff(slot);
-  }
+  const inView = [...diffOf.keys()].map(slot => slots.get(slot)).filter(el => el && isShown(el) && inViewport(el))
+    .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+  if (!inView.length) return false;
+  const closed = inView.find(el => !openDiffs.has(+el.dataset.slot));
+  if (closed) return toggleDiff(+closed.dataset.slot);
+  const anchor = captureAnchor();
+  for (const el of inView) { closeDiff(+el.dataset.slot); heights.set(el, el.getBoundingClientRect().height); }
+  restoreAnchor(anchor, new Set());
+  scheduleRail();
   return false;
 }
 
