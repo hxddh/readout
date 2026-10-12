@@ -111,7 +111,8 @@ async function pumpMermaid() {
         fresh.className = 'mermaid-svg';
         // The SVG's styles and markers refer to its id: every later copy on
         // the page (the same diagram twice, or from the cache) gets an id of its own.
-        fresh.innerHTML = out.used ? out.svg.replace(new RegExp(`${out.id}(?![0-9])`, 'g'), `mmd-${++mermaidSeq}`) : out.svg;
+        fresh.innerHTML = out.svg;
+        if (out.used) renameIds(fresh, out.id, `mmd-${++mermaidSeq}`);
         out.used = true;
       } else {
         fresh = document.createElement('div');
@@ -132,6 +133,24 @@ async function pumpMermaid() {
   }
 }
 const idle = [];   // resolvers waiting for the queue to drain
+
+/**
+ * Gives a drawing the id `to` in place of `from`: in ids, in the attributes
+ * that refer to them (href, url(#…), aria references) and in its style
+ * sheet's selectors. Text the diagram shows is left as written.
+ */
+function renameIds(wrap, from, to) {
+  const re = new RegExp(`${from}(?![0-9])`, 'g');
+  for (const el of wrap.querySelectorAll('*')) {
+    for (const a of el.attributes) {
+      if (/^(id|href|xlink:href|aria-labelledby|aria-describedby)$/.test(a.name) || a.value.includes('url(')) {
+        const v = a.value.replace(re, to);
+        if (v !== a.value) a.value = v;
+      }
+    }
+    if (el.localName === 'style') el.textContent = el.textContent.replace(re, to);
+  }
+}
 
 /**
  * Re-renders every diagram after a theme change (only once Mermaid was ever
