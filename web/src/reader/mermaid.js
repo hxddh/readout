@@ -2,7 +2,7 @@
 import { doc, root, strings, inViewport } from './core.js';
 import { lazyObserver } from './enhance.js';
 
-const mermaidCache = new Map();   // source+theme -> svg
+const mermaidCache = new Map();   // source+theme -> {svg, id} or {error}
 let mermaidPromise = null;
 let mermaidTheme = null;
 let mermaidSeq = 0;
@@ -88,48 +88,95 @@ async function pumpMermaid() {
       const src = srcEl.textContent;
       const m = await loadMermaid().catch(() => null);
       if (!m) break;
-      const key = mermaidTheme + '\u0000' + src;
+      const theme = mermaidTheme;
+      const key = theme + '\u0000' + src;
       let out = mermaidCache.get(key);
       if (!out) {
+        const id = `mmd-${++mermaidSeq}`;
         try {
-          const { svg } = await m.render(`mmd-${++mermaidSeq}`, src);
-          out = { svg };
+          const { svg } = await m.render(id, src);
+          out = { svg, id };
         } catch (err) {
           out = { error: diagramError(err) };
-          document.querySelectorAll(`#dmmd-${mermaidSeq}, #mmd-${mermaidSeq}`).forEach(e => e.remove());
+          document.querySelectorAll(`#d${id}, #${id}`).forEach(e => e.remove());
         }
         mermaidCache.set(key, out);
       }
       if (!block.isConnected) continue;
-      block.querySelectorAll('.mermaid-svg, .mermaid-error').forEach(e => e.remove());
+      // The theme changed while it was being drawn: draw it again in the new one.
+      if (theme !== (root.dataset.theme === 'dark' ? 'dark' : 'light')) { mermaidQueue.push(block); continue; }
+      let fresh;
       if (out.svg) {
-        const wrap = document.createElement('div');
-        wrap.className = 'mermaid-svg';
-        wrap.innerHTML = out.svg;
+        fresh = document.createElement('div');
+        fresh.className = 'mermaid-svg';
+        // The SVG's styles and markers refer to its id: every later copy on
+        // the page (the same diagram twice, or from the cache) gets an id of its own.
+        fresh.innerHTML = out.svg;
+        if (out.used) renameIds(fresh, out.id, `mmd-${++mermaidSeq}`);
+        out.used = true;
         // Natural size, never narrower than three quarters of it (the block scrolls).
-        const svg = wrap.querySelector('svg'), w = svg && svg.viewBox.baseVal && svg.viewBox.baseVal.width; if (w) svg.style.minWidth = `${Math.round(w * 0.75)}px`;
-        block.appendChild(wrap);
-        block.classList.add('done');
+        const svg = fresh.querySelector('svg'), w = svg && svg.viewBox.baseVal && svg.viewBox.baseVal.width; if (w) svg.style.minWidth = `${Math.round(w * 0.75)}px`;
       } else {
-        const e = document.createElement('div');
-        e.className = 'mermaid-error';
-        e.textContent = `${strings.diagramError}: ${out.error}`;
-        block.appendChild(e);
-        block.classList.remove('done');
+        fresh = document.createElement('div');
+        fresh.className = 'mermaid-error';
+        fresh.textContent = `${strings.diagramError}: ${out.error}`;
       }
+      // Swapped in place: the old drawing (a theme change) stays until the new one is ready.
+      const old = block.querySelectorAll('.mermaid-svg, .mermaid-error');
+      if (old.length) { old[0].replaceWith(fresh); for (let i = 1; i < old.length; i++) old[i].remove(); }
+      else block.appendChild(fresh);
+      block.classList.toggle('done', !!out.svg);
+      delete block.dataset.stale;
       block.classList.remove('busy');
     }
   } finally {
     mermaidBusy = false;
+    for (const resolve of idle.splice(0)) resolve();
+  }
+}
+const idle = [];   // resolvers waiting for the queue to drain
+
+/**
+ * Gives a drawing the id `to` in place of `from`: in ids, in the attributes
+ * that refer to them (href, url(#…), aria references) and in its style
+ * sheet's selectors. Text the diagram shows is left as written.
+ */
+function renameIds(wrap, from, to) {
+  const re = new RegExp(`${from}(?![0-9])`, 'g');
+  for (const el of wrap.querySelectorAll('*')) {
+    for (const a of el.attributes) {
+      if (/^(id|href|xlink:href|aria-labelledby|aria-describedby)$/.test(a.name) || a.value.includes('url(')) {
+        const v = a.value.replace(re, to);
+        if (v !== a.value) a.value = v;
+      }
+    }
+    if (el.localName === 'style') el.textContent = el.textContent.replace(re, to);
   }
 }
 
-/** Re-renders every diagram after a theme change (only once Mermaid was ever used). */
+/**
+ * Re-renders every diagram after a theme change (only once Mermaid was ever
+ * used). The drawings stay where they are until their new ones replace
+ * them, so the page keeps its height; off-screen ones are redrawn when they
+ * come near.
+ */
 export function rerenderMermaid() {
   if (!mermaidPromise) return;
   for (const b of doc.querySelectorAll('.mermaid-block')) {
-    b.classList.remove('done', 'busy');
-    b.querySelectorAll('.mermaid-svg, .mermaid-error').forEach(e => e.remove());
+    if (!b.classList.contains('done') && !b.querySelector('.mermaid-error')) continue;   // not drawn yet: renders as usual
+    b.dataset.stale = '1';
+    if (b.classList.contains('busy')) continue;   // queued: it is drawn in the new theme
     if (inViewport(b, window.innerHeight)) renderMermaid(b); else lazyObserver.observe(b);
   }
+}
+
+/** Draws every diagram not drawn (or drawn in another theme); resolves when all are done. */
+export function renderAllMermaid() {
+  const todo = [...doc.querySelectorAll('.mermaid-block')]
+    .filter(b => !b.classList.contains('busy') && (!b.classList.contains('done') || b.dataset.stale));
+  if (!todo.length && !mermaidBusy) return Promise.resolve();
+  const done = new Promise(resolve => idle.push(resolve));
+  for (const b of todo) renderMermaid(b);
+  pumpMermaid();
+  return done;
 }

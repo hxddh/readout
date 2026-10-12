@@ -98,18 +98,24 @@ const bottomAfter = await page.evaluate(() => document.scrollingElement.scrollTo
 check('top insert does not yank bottom reader', Math.abs(bottomAfter - bottomBefore) < 120, `delta=${bottomAfter - bottomBefore}`);
 
 // 4. Follow still works: an append at the end follows the bottom reader.
+// The appended block is tall (taller than the page's bottom padding), so the
+// reader only stays at the end if the page follows; and following goes on.
 await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
 await page.waitForTimeout(200);
-await page.evaluate(() => window.readout.apply({
-  version: 6, reset: false, rewrite: false,
-  ops: [{ op: 'insert', slot: 202, after: 40, html: '<p>appended at end</p>', kind: 'paragraph' }],
-  marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-}));
-const atBottom = await page.evaluate(() => {
-  const se = document.scrollingElement;
-  return se.scrollHeight - (se.scrollTop + window.innerHeight) < 48;
-});
-check('append at end follows', atBottom);
+const follows = [];
+for (const [slot, after] of [[202, 40], [203, 202]]) {
+  await page.evaluate(([slot, after]) => window.readout.apply({
+    version: 6, reset: false, rewrite: false,
+    ops: [{ op: 'insert', slot, after, html: `<p>${'appended at the end of the document '.repeat(60)}</p>`, kind: 'paragraph' }],
+    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+  }), [slot, after]);
+  follows.push(await page.evaluate(slot => {
+    const se = document.scrollingElement;
+    return { gap: Math.round(se.scrollHeight - (se.scrollTop + window.innerHeight)),
+      height: Math.round(document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().height) };
+  }, slot));
+}
+check('append at end follows (tall block, twice)', follows.every(f => f.gap < 48 && f.height >= 600 && f.height <= 900), JSON.stringify(follows));
 
 // 5. Fragment scroll.
 await page.evaluate(() => window.scrollTo(0, 0));
@@ -643,6 +649,300 @@ check('rail labels use the localized template',
   check('D reaches a comparison the one above pushed off screen',
     steps[0].pushed && JSON.stringify(steps.map(s => s.open)) === JSON.stringify([[1901], [1901, 1902], []]),
     JSON.stringify(steps));
+}
+// ---------------------------------------------------------------- 3.3 reader fixes
+const fixBase = { rewrite: false, toc: [], tasks: { done: 0, total: 0 }, marks: [], deletions: [] };
+let fixVersion = 200;
+function fixReset(n, html = i => `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(6)}</p>`, kind = () => 'paragraph', first = 1) {
+  const ops = [];
+  for (let i = 0; i < n; i++) ops.push({ op: 'insert', slot: first + i, after: i ? first + i - 1 : 0, html: html(first + i), kind: kind(first + i) });
+  return { ...fixBase, version: ++fixVersion, reset: true, ops };
+}
+const fixPatch = o => ({ ...fixBase, version: ++fixVersion, reset: false, ops: [], ...o });
+const topOf = slot => page.evaluate(slot => Math.round(document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top), slot);
+const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
+  window.scrollBy(0, document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top - at);
+}, [slot, at]);
+
+// "This file is empty." goes once content arrives in a patch that is not a reset.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(0));
+  const shown = await page.evaluate(() => !!document.getElementById('ro-empty'));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({
+    ops: [{ op: 'insert', slot: 1, after: 0, html: '<p>hello</p>', kind: 'paragraph' }], marks: [{ slot: 1, kind: 'inserted' }] }));
+  const after = await page.evaluate(() => !!document.getElementById('ro-empty'));
+  check('empty-file notice goes when content arrives', shown && !after, JSON.stringify({ shown, after }));
+}
+
+// The block at the top of the viewport is removed: the block after it takes
+// its place, not the section heading far above.
+{
+  const r = fixReset(60, i => i === 1 ? '<h2>Section</h2>' : `<p>para ${i} ${'lorem ipsum '.repeat(10)}</p>`, i => i === 1 ? 'heading' : 'paragraph');
+  r.ops[0].anchor = 'section';
+  await page.evaluate(p => window.readout.apply(p), r);
+  await toTop(40, 5);
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 40 }], deletions: [{ id: 1, after: 39, count: 1, preview: 'x' }] }));
+  const a = await page.evaluate(() => window.readout.captureAnchor());
+  check('removing the top block keeps the reader at the next one', a.slot === 41 && Math.abs(a.offset) <= 2, JSON.stringify(a));
+}
+
+// Font size, column width and window size reflow every block: the reader keeps their place.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(100));
+  await toTop(80);
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 20 }));
+  const sync = await page.evaluate(() => window.readout.captureAnchor());
+  await page.waitForTimeout(500);
+  const font = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
+  await page.waitForTimeout(500);
+  const wide = await page.evaluate(() => window.readout.captureAnchor());
+  await page.setViewportSize({ width: 560, height: 700 });
+  await page.waitForTimeout(600);
+  const narrow = await page.evaluate(() => window.readout.captureAnchor());
+  await page.setViewportSize({ width: 900, height: 700 });
+  await page.waitForTimeout(600);
+  const back = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16, width: 'narrow' }));
+  const restored = await page.evaluate(() => window.readout.captureAnchor());
+  const steps = [sync, font, wide, narrow, back, restored].map(a => a.slot);
+  check('font size, width and window resize keep the reading position',
+    a0.slot === 80 && steps.every(s => s === 80) && Math.abs(restored.offset) <= 3, JSON.stringify({ steps, offset: restored.offset }));
+}
+
+// Jump targets aim below the window toolbar the page scrolls under.
+{
+  const r = fixReset(60, i => i === 30 ? '<h2 id="inset-target">Target</h2>' : `<p>para ${i}</p>`, i => i === 30 ? 'heading' : 'paragraph');
+  r.ops[29].anchor = 'inset-target';
+  await page.evaluate(p => window.readout.apply(p), r);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => window.readout.scrollToSlot(40));
+  const slotTop = await topOf(40);
+  await page.evaluate(() => window.readout.scrollToFragment({ fragment: 'inset-target' }));
+  const fragTop = await page.evaluate(() => Math.round(document.getElementById('inset-target').getBoundingClientRect().top));
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('TOC and fragment jumps land below the toolbar inset', Math.abs(slotTop - 68) <= 2 && Math.abs(fragTop - 68) <= 2, JSON.stringify({ slotTop, fragTop }));
+}
+
+// Find in page: a large document lays out all of its blocks while finding.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 200 ? '<p>needle zebracorn here</p>' : `<p>para ${i} short</p>`));
+  await toTop(100);
+  await page.waitForTimeout(300);
+  const before = await topOf(100);
+  await page.evaluate(() => window.readout.findMode(true));
+  const r = await page.evaluate(() => ({ cv: document.getElementById('ro-doc').classList.contains('cv'), top: Math.round(document.querySelector('.blk[data-slot="100"]').getBoundingClientRect().top) }));
+  const found = await page.evaluate(() => {
+    getSelection().removeAllRanges();
+    const f = window.find('zebracorn');
+    const s = getSelection();
+    return { f, slot: s.rangeCount ? s.getRangeAt(0).startContainer.parentElement.closest('.blk')?.dataset.slot : null };
+  });
+  await page.evaluate(() => window.readout.findMode(false));
+  const cvAfter = await page.evaluate(() => document.getElementById('ro-doc').classList.contains('cv'));
+  check('find mode lays out a large document and keeps the place', !r.cv && Math.abs(r.top - before) <= 2 && cvAfter, JSON.stringify({ before, r, cvAfter }));
+  check('find in page reaches block 200 of 400 in find mode', found.f && found.slot === '200', JSON.stringify(found));
+}
+
+// n in a large document lands on the change (no smooth scroll fighting the compensator).
+{
+  const r = fixReset(400, i => `<p>para ${i} short</p>`);
+  r.marks = [{ slot: 380, kind: 'inserted' }];
+  await page.evaluate(p => window.readout.apply(p), r);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', bubbles: true })));
+  await page.waitForTimeout(1500);
+  const r2 = await page.evaluate(() => ({ top: Math.round(document.querySelector('.blk[data-slot="380"]').getBoundingClientRect().top), want: Math.round(innerHeight / 3) }));
+  check('n in a large document lands on the change', Math.abs(r2.top - r2.want) <= 30, JSON.stringify(r2));
+}
+
+// A change taller than two screens is marked read once half a screen of it has been seen.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(10));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({
+    ops: [{ op: 'insert', slot: 11, after: 5, html: `<p>${'a very long inserted paragraph '.repeat(400)}</p>`, kind: 'paragraph' }],
+    marks: [{ slot: 11, kind: 'inserted' }] }));
+  await page.evaluate(() => { window.__msgs.length = 0; });
+  await toTop(11, -100);
+  await page.waitForTimeout(1300);
+  const r = await page.evaluate(() => ({ h: Math.round(document.querySelector('.blk[data-slot="11"]').getBoundingClientRect().height),
+    read: window.__msgs.filter(m => m.type === 'read').flatMap(m => m.slots) }));
+  check('a block taller than two screens is marked read', r.h > 2 * 700 && r.read.includes(11), JSON.stringify(r));
+}
+
+// Read detection while unfocused: a retry that gives up (block out of view)
+// lets the next intersection start a new timer.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(40));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => { document.hasFocus = () => false; window.__msgs.length = 0; });
+  await page.evaluate(p => window.readout.apply(p), fixPatch({
+    ops: [{ op: 'replace', slot: 3, html: `<p>${'edited text in a taller block '.repeat(20)}</p>`, kind: 'paragraph', change: 'content' }],
+    marks: [{ slot: 3, kind: 'modified', diff: '' }] }));
+  await page.waitForTimeout(900);      // the 800 ms timer ran unfocused: a retry is due in 1 s
+  // Out of view for the retry, without the intersection observer seeing it.
+  await page.evaluate(() => {
+    const el = document.querySelector('.blk[data-slot="3"]');
+    el.getBoundingClientRect = () => ({ top: 5000, bottom: 5100, left: 0, right: 100, height: 100, width: 100, x: 0, y: 5000 });
+  });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => { delete document.querySelector('.blk[data-slot="3"]').getBoundingClientRect; delete document.hasFocus; });
+  // Partly scrolled off: an intersection change with more than half still visible.
+  await page.evaluate(() => { const el = document.querySelector('.blk[data-slot="3"]'); const r = el.getBoundingClientRect(); window.scrollBy(0, r.top + r.height * 0.3); });
+  await page.waitForTimeout(1300);
+  const read = await page.evaluate(() => window.__msgs.filter(m => m.type === 'read').flatMap(m => m.slots));
+  check('read detection restarts after an unfocused retry gave up', read.includes(3), JSON.stringify(read));
+}
+
+// The rewrite notice hiding does not move the text.
+{
+  const rw = fixReset(60, i => `<p>rewritten ${i}</p>`, () => 'paragraph', 1000);
+  rw.rewrite = true;
+  await page.evaluate(p => window.readout.apply(p), rw);
+  await toTop(1030);
+  await page.waitForTimeout(200);
+  const t0 = await topOf(1030);
+  await page.waitForTimeout(6300);
+  const t1 = await topOf(1030);
+  const hidden = await page.evaluate(() => document.getElementById('ro-notice').hidden);
+  check('rewrite notice hides without moving the text', hidden && Math.abs(t1 - t0) <= 1, JSON.stringify({ t0, t1, hidden }));
+}
+
+// An open removed-text popup survives an unrelated patch.
+{
+  await page.evaluate(p => window.readout.apply(p), fixPatch({
+    ops: [{ op: 'replace', slot: 1031, html: '<p>edited</p>', kind: 'paragraph', change: 'content' }],
+    marks: [{ slot: 1031, kind: 'modified', diff: '' }], deletions: [{ id: 7, after: 1030, count: 1, preview: 'removed text' }] }));
+  await page.evaluate(() => document.querySelector('.del-mark > button').click());
+  const before = await page.evaluate(() => document.querySelector('.del-pop')?.textContent);
+  await page.evaluate(p => window.readout.apply(p), fixPatch({
+    ops: [{ op: 'insert', slot: 2000, after: 1059, html: '<p>agent appended</p>', kind: 'paragraph' }],
+    marks: [{ slot: 1031, kind: 'modified' }, { slot: 2000, kind: 'inserted' }], deletions: [{ id: 7, after: 1030, count: 1 }] }));
+  const after = await page.evaluate(() => document.querySelector('.del-pop')?.textContent);
+  check('removed-text popup stays open across an unrelated patch', before === 'removed text' && after === 'removed text', JSON.stringify({ before, after }));
+}
+
+// Printing: the changes-only filter is lifted (and comes back afterwards),
+// and preparePrint draws diagrams and highlights code far from the viewport.
+{
+  const mm = '<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Print] --> B[Me]</pre></div>';
+  const code = '<div class="code-block" data-lang="js"><pre><code>const far = 1;</code></pre></div>';
+  const r = fixReset(300, i => i === 280 ? mm : i === 290 ? code : `<p>para ${i}</p>`, i => i === 280 ? 'mermaid' : i === 290 ? 'code' : 'paragraph');
+  r.marks = [{ slot: 50, kind: 'inserted' }];
+  await page.evaluate(p => window.readout.apply(p), r);
+  await page.evaluate(() => window.readout.setChangesOnly(true));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const hiddenOnScreen = await page.evaluate(() => document.querySelector('.blk[data-slot="20"]').hidden);
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  const hiddenPrinting = await page.evaluate(() => document.querySelector('.blk[data-slot="20"]').hidden);
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  const hiddenAfter = await page.evaluate(() => document.querySelector('.blk[data-slot="20"]').hidden);
+  await page.evaluate(() => window.readout.setChangesOnly(false));
+  check('printing lifts the changes-only filter, then restores it', hiddenOnScreen && !hiddenPrinting && hiddenAfter, JSON.stringify({ hiddenOnScreen, hiddenPrinting, hiddenAfter }));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const prepared = await page.evaluate(async () => {
+    await window.readout.preparePrint();
+    return { diagram: document.querySelector('.blk[data-slot="280"] .mermaid-block').classList.contains('done'),
+      code: document.querySelector('.blk[data-slot="290"] .code-block').dataset.hl };
+  });
+  check('preparePrint draws far diagrams and highlights far code', prepared.diagram && prepared.code === 'done', JSON.stringify(prepared));
+}
+
+// Diagrams: identical diagrams get SVG ids of their own; switching the theme
+// redraws them in place, keeping the reader where they were.
+{
+  const mm = i => `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Start] --> B[Middle ${i % 2}]\n  B --> C[End]</pre></div>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(40, i => i % 5 === 0 ? mm(i) : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`, i => i % 5 === 0 ? 'mermaid' : 'paragraph'));
+  // Scroll through so each diagram is drawn as it comes near.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  for (let k = 0; k < 60 && await page.evaluate(() => document.querySelectorAll('.mermaid-block.done').length) < 8; k++) {
+    await page.evaluate(() => window.scrollBy(0, 400));
+    await page.waitForTimeout(150);
+  }
+  const ids = await page.evaluate(() => [...document.querySelectorAll('#ro-doc [id]')].map(e => e.id));
+  check('identical diagrams have unique SVG ids', ids.length > 8 && new Set(ids).size === ids.length,
+    `${ids.length} ids, ${new Set(ids).size} unique`);
+  await toTop(27);
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.readout.setAppearance({ dark: true }));
+  const svgsSync = await page.evaluate(() => document.querySelectorAll('.mermaid-svg').length);
+  await page.waitForTimeout(1500);
+  const a1 = await page.evaluate(() => window.readout.captureAnchor());
+  const restyled = await page.evaluate(() => [...document.querySelectorAll('.mermaid-block')].filter(b => b.getBoundingClientRect().bottom > -innerHeight && b.getBoundingClientRect().top < 2 * innerHeight).every(b => !b.dataset.stale && b.classList.contains('done')));
+  await page.evaluate(() => window.readout.setAppearance({ dark: false }));
+  await page.waitForTimeout(800);
+  check('theme switch keeps diagrams and the reading position', svgsSync === 8 && a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2 && restyled,
+    JSON.stringify({ svgsSync, a0, a1, restyled }));
+}
+// A theme change while a diagram is being drawn in the old theme: the
+// diagram ends up drawn in the new one.
+{
+  await page.evaluate(() => window.readout.setAppearance({ dark: false }));
+  const src = 'graph TD\n  A[Theme race] --> B[Drawn mid switch]\n  B --> C[Done]';
+  const r = await page.evaluate(async p => {
+    window.readout.apply(p);
+    const b = document.querySelector('.blk[data-slot="1"] .mermaid-block');
+    for (let i = 0; i < 2000 && !b.classList.contains('busy'); i++) await new Promise(r => setTimeout(r, 1));
+    const busy = b.classList.contains('busy');
+    window.readout.setAppearance({ dark: true });
+    for (let i = 0; i < 300 && !(b.classList.contains('done') && !b.classList.contains('busy')); i++) await new Promise(r => setTimeout(r, 20));
+    const svg = b.querySelector('.mermaid-svg')?.innerHTML.toLowerCase() || '';
+    return { busy, done: b.classList.contains('done'), dark: svg.includes('#2a2a2c'), light: svg.includes('#f5f5f7') };
+  }, { ...fixBase, version: ++fixVersion, reset: true,
+    ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>` }] });
+  await page.evaluate(() => window.readout.setAppearance({ dark: false }));
+  check('a diagram drawn during a theme switch ends up in the new theme', r.busy && r.done && r.dark && !r.light, JSON.stringify(r));
+}
+// A second copy of a cached diagram gets ids of its own, but its text stays
+// the text written, even when a label looks like an id.
+{
+  const draw = async (p, n) => page.evaluate(async ([p, n]) => {
+    window.readout.apply(p);
+    for (let i = 0; i < 400 && document.querySelectorAll('.mermaid-block.done').length < n; i++) await new Promise(r => setTimeout(r, 20));
+  }, [p, n]);
+  const block = src => `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>`;
+  await draw({ ...fixBase, version: ++fixVersion, reset: true,
+    ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: block('graph TD\n  P[Probe] --> Q[Id]') }] }, 1);
+  // The next diagram drawn takes the id after the probe's.
+  const next = await page.evaluate(() => `mmd-${+document.querySelector('.mermaid-svg svg').id.slice(4) + 1}`);
+  const src = `graph TD\n  A["${next}"] --> B[Copy]`;
+  await draw({ ...fixBase, version: ++fixVersion, reset: true,
+    ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: block(src) },
+          { op: 'insert', slot: 2, after: 1, kind: 'mermaid', html: block(src) }] }, 2);
+  const r = await page.evaluate(label => {
+    const svgs = [...document.querySelectorAll('.mermaid-svg svg')];
+    const ids = [...document.querySelectorAll('#ro-doc [id]')].map(e => e.id);
+    // Every url(#…) and href="#…" points at an element of the same drawing.
+    const refsOk = svgs.every(svg => [...svg.querySelectorAll('*')].every(el => [...el.attributes].every(a => {
+      const m = a.value.match(/url\(['"]?#([^'")]+)/) || (/href$/.test(a.name) && a.value.match(/^#(.+)/));
+      return !m || !!svg.querySelector(`[id="${CSS.escape(m[1])}"]`);
+    })));
+    const styled = svgs.every(svg => svg.querySelector('style')?.textContent.includes(`#${svg.id}`));
+    return { svgIds: svgs.map(s => s.id), labels: svgs.map(s => s.textContent.includes(label)), unique: new Set(ids).size === ids.length, refsOk, styled };
+  }, next);
+  check('a cached diagram copy keeps label text that looks like an id', r.svgIds.length === 2 && r.svgIds[0] !== r.svgIds[1]
+    && r.labels.every(Boolean) && r.unique && r.refsOk && r.styled, JSON.stringify(r));
+}
+
+// Printing opens a folded <details> above the viewport: closing it after
+// printing leaves the reader where they were.
+{
+  const fold = `<details><summary>Folded</summary>${'<p>folded paragraph with some words in it</p>'.repeat(40)}</details>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(60, i => i === 5 ? fold : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`));
+  await toTop(40);
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await page.waitForTimeout(300);
+  const a1 = await page.evaluate(() => window.readout.captureAnchor());
+  check('printing with a folded section above keeps the place', a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2, JSON.stringify({ a0, a1 }));
 }
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 

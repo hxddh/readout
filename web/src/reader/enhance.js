@@ -223,6 +223,11 @@ function lazyWork(el) {
   else if (el.classList.contains('mermaid-block')) renderMermaid(el);
 }
 
+/** Highlights every code block not highlighted yet, wherever it is (printing). */
+export function highlightAll() {
+  for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) highlightBlock(cb);
+}
+
 export function renderLazy() {
   const blocks = fresh;
   fresh = [];

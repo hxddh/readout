@@ -10,6 +10,7 @@ const openDiffs = new Set(); // slots whose comparison is shown
 const previewOf = new Map(); // deletion id -> removed text (each patch sends it once)
 const readTimers = new Map();
 let changesOnly = false;
+let printing = false;   // printing shows the whole document
 
 export function renderMarks(marks, deletions, reset = false) {
   // Comparisons and removed texts arrive once; later patches leave them out.
@@ -17,6 +18,9 @@ export function renderMarks(marks, deletions, reset = false) {
   for (const el of doc.querySelectorAll('.m-inserted, .m-modified, .m-state')) {
     el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
   }
+  // A removed-text popup the reader has open stays open across the rebuild.
+  const openPops = reset ? new Set()
+    : new Set([...doc.querySelectorAll('.del-mark')].filter(m => m.querySelector('.del-pop')).map(m => +m.dataset.del));
   doc.querySelectorAll('.del-mark').forEach(e => e.remove());
   marked = new Map();
   if (quicklook) return;
@@ -55,17 +59,22 @@ export function renderMarks(marks, deletions, reset = false) {
       const open = mark.querySelector('.del-pop');
       document.querySelectorAll('.del-pop').forEach(p => p.remove());
       if (open) return;
-      const pop = document.createElement('pre');
-      pop.className = 'del-pop';
-      pop.textContent = previewOf.get(d.id) ?? '';
-      mark.appendChild(pop);
+      showPop(mark, d.id);
     });
     mark.appendChild(btn);
+    if (openPops.has(d.id)) showPop(mark, d.id);
     const after = d.after ? slots.get(d.after) : null;
     if (after) after.after(mark);
     else doc.insertBefore(mark, doc.querySelector('.blk'));
     readObserver.observe(mark);
   }
+}
+
+function showPop(mark, id) {
+  const pop = document.createElement('pre');
+  pop.className = 'del-pop';
+  pop.textContent = previewOf.get(id) ?? '';
+  mark.appendChild(pop);
 }
 
 document.addEventListener('click', () => document.querySelectorAll('.del-pop').forEach(p => p.remove()));
@@ -159,25 +168,33 @@ doc.addEventListener('click', ev => {
   toggleDiff(+el.dataset.slot);
 });
 
-// A change counts as read once at least half of it has been visible for 800 ms while the window is focused.
+// A change counts as read once at least half of it (or, for a block taller
+// than two screens, half a screen of it) has been visible for 800 ms while
+// the window is focused. The fine thresholds report a tall block's visible
+// part as it grows.
+const readThresholds = [0];
+for (let i = 1; i <= 10; i++) readThresholds.push(i / 100);
+for (let i = 3; i <= 20; i++) readThresholds.push(i / 20);
 const readObserver = new IntersectionObserver(entries => {
   for (const e of entries) {
     const el = e.target;
-    if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+    const screen = e.rootBounds ? e.rootBounds.height : window.innerHeight;
+    if (e.isIntersecting && (e.intersectionRatio >= 0.5 || e.intersectionRect.height >= screen / 2)) {
       if (!readTimers.has(el)) readTimers.set(el, setTimeout(() => tryRead(el), 800));
     } else {
       clearTimeout(readTimers.get(el));
       readTimers.delete(el);
     }
   }
-}, { threshold: [0, 0.5, 1] });
+}, { threshold: readThresholds });
 
 let pendingRead = { slots: [], deletions: [] };
 function tryRead(el) {
   readTimers.delete(el);
   if (!document.hasFocus() || document.hidden) {
     // Try again when focus returns.
-    readTimers.set(el, setTimeout(() => inViewport(el) && tryRead(el), 1000));
+    // Out of view by then: drop the entry so the next intersection starts a new timer.
+    readTimers.set(el, setTimeout(() => { if (inViewport(el)) tryRead(el); else readTimers.delete(el); }, 1000));
     return;
   }
   readObserver.unobserve(el);
@@ -213,7 +230,19 @@ export function jump(dir) {
   if (dir > 0) target = list.find(e => e.getBoundingClientRect().top > line + 4) || list[0];
   else target = list.slice().reverse().find(e => e.getBoundingClientRect().top < line - 4) || list[list.length - 1];
   const top = target.getBoundingClientRect().top - line;
-  window.scrollBy({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  // In a large document the blocks a smooth scroll passes are laid out on
+  // the way and change height, and the compensation for them fights the
+  // animation: jump at once, then aim again once the blocks around the
+  // target have their real heights.
+  const smooth = !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollBy({ top, behavior: smooth ? 'smooth' : 'auto' });
+  if (!smooth) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!target.isConnected) return;
+      const off = target.getBoundingClientRect().top - line;
+      if (Math.abs(off) > 2) window.scrollBy(0, off);
+    }));
+  }
 }
 
 export function markAllRead() {
@@ -248,7 +277,7 @@ export function applyChangesOnly() {
     const keep = el.classList.contains('k-heading')
       || el.classList.contains('m-inserted') || el.classList.contains('m-modified')
       || el.classList.contains('m-state') || el.nextElementSibling?.classList.contains('del-mark');
-    const hide = changesOnly && !keep;
+    const hide = changesOnly && !printing && !keep;
     if (el.hidden !== hide) { el.hidden = hide; toggled.push(el); }
   }
   // Hiding/showing is a filter, not a content change: re-baseline the
@@ -258,12 +287,15 @@ export function applyChangesOnly() {
   for (const el of toggled) heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
   for (const m of doc.querySelectorAll('.del-mark')) m.hidden = false;
   if (caughtup) {
-    const anyVisible = changesOnly && unreadElements().length === 0 && slots.size > 0;
+    const anyVisible = changesOnly && !printing && unreadElements().length === 0 && slots.size > 0;
     caughtup.textContent = anyVisible ? (strings.caughtUp || 'All caught up') : '';
     caughtup.hidden = !anyVisible;
   }
   scheduleRail();
 }
+
+/** Lifts the filter while printing (the caller keeps the place). */
+export function setPrinting(on) { printing = !!on; applyChangesOnly(); }
 
 /** Sets the filter without moving (initial appearance). */
 export function initChangesOnly(on) { changesOnly = !!on; applyChangesOnly(); }
