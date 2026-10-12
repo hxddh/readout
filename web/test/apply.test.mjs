@@ -849,6 +849,8 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     return { diagram: document.querySelector('.blk[data-slot="280"] .mermaid-block').classList.contains('done'),
       code: document.querySelector('.blk[data-slot="290"] .code-block').dataset.hl };
   });
+  // The app prints right after preparePrint: finish the print cycle.
+  await page.evaluate(() => { window.dispatchEvent(new Event('beforeprint')); window.dispatchEvent(new Event('afterprint')); });
   check('preparePrint draws far diagrams and highlights far code', prepared.diagram && prepared.code === 'done', JSON.stringify(prepared));
 }
 
@@ -943,6 +945,57 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await page.waitForTimeout(300);
   const a1 = await page.evaluate(() => window.readout.captureAnchor());
   check('printing with a folded section above keeps the place', a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2, JSON.stringify({ a0, a1 }));
+}
+// The TOC follows a jump under a tall toolbar (toolbar and tab bar): the
+// heading it lands on is the active one.
+{
+  const r = fixReset(80, i => i % 20 === 1 ? `<h2>Sec ${i}</h2>` : `<p>para ${i} ${'lorem ipsum '.repeat(10)}</p>`, i => i % 20 === 1 ? 'heading' : 'paragraph');
+  r.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `sec-${o.slot}`; });
+  await page.evaluate(p => window.readout.apply(p), r);
+  const active = [];
+  for (const inset of [52, 66, 80]) {
+    await page.evaluate(i => window.readout.setAppearance({ topInset: i }), inset);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(150);
+    await page.evaluate(() => window.readout.scrollToSlot(41));
+    await page.waitForTimeout(300);
+    active.push(await page.evaluate(() => window.__msgs.filter(m => m.type === 'activeHeading').at(-1)?.slot));
+  }
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('TOC highlights the heading a jump lands on under a tall toolbar', active.every(s => s === 41), JSON.stringify(active));
+}
+
+// Printing from dark mode: diagrams are drawn light for paper, then dark
+// again afterwards, and the reader stays where they were.
+{
+  const mm = '<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Paper] --> B[Light]</pre></div>';
+  await page.evaluate(() => window.readout.setAppearance({ dark: true }));
+  await page.evaluate(p => window.readout.apply(p), fixReset(60, i => i === 3 ? mm : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`, i => i === 3 ? 'mermaid' : 'paragraph'));
+  const fills = () => page.evaluate(async () => {
+    const b = document.querySelector('.blk[data-slot="3"] .mermaid-block');
+    for (let i = 0; i < 300 && !(b.classList.contains('done') && !b.dataset.stale && !b.classList.contains('busy')); i++) await new Promise(r => setTimeout(r, 20));
+    const svg = b.querySelector('.mermaid-svg')?.innerHTML.toLowerCase() || '';
+    return svg.includes('#2a2a2c') ? 'dark' : svg.includes('#f5f5f7') ? 'light' : 'none';
+  });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const onScreen = await fills();
+  await toTop(40);
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.readout.preparePrint());
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  const printed = await fills();
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await page.waitForTimeout(300);
+  const a1 = await page.evaluate(() => window.readout.captureAnchor());
+  // Off-screen diagrams are drawn back in the page's theme as they come near.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const after = await fills();
+  const theme = await page.evaluate(() => document.documentElement.dataset.theme);
+  await page.evaluate(() => window.readout.setAppearance({ dark: false }));
+  check('printing from dark mode draws diagrams light, then dark again, keeping the place',
+    onScreen === 'dark' && printed === 'light' && after === 'dark' && theme === 'dark' && a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2,
+    JSON.stringify({ onScreen, printed, after, theme, a0: [a0.slot, a0.offset], a1: [a1.slot, a1.offset] }));
 }
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
