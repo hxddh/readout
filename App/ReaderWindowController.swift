@@ -318,6 +318,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             // What is on disk already: an unchanged baseline is not written again.
             self.lastSavedBaseline = record?.baseline
             self.loaded = true
+            self.contentPath = WorkspaceIndex.realPath(self.url.path)
             self.deleted = false
             self.updateModel(patch, decoded: result.decoded)
             self.webView.whenReady { [weak self] in
@@ -539,6 +540,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// Until that file's content is read, the session still holds the old
     /// one: saves wait, then the next save writes the whole record there.
     private var awaitingRetargetContent = false
+    /// The real path of the file whose content the session holds: the key the
+    /// reading state is saved under. Not resolved at save time, which could
+    /// already see a retarget the window has not read yet.
+    private var contentPath: String?
     private func retargeted() {
         awaitingRetargetContent = true
         onRetarget?(self)
@@ -548,6 +553,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func finishRetarget() {
         guard awaitingRetargetContent else { return }
         awaitingRetargetContent = false
+        contentPath = WorkspaceIndex.realPath(url.path)
         didSaveOnce = false
         lastSavedBaseline = nil
         scheduleSave()
@@ -574,7 +580,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         lastSavedAnchorIndex = index
         lastSavedAnchorOffset = offset
         BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset,
-                                 topExcerpt: excerpt, savedAt: Date()), for: url, baselineChanged: baselineChanged)
+                                 topExcerpt: excerpt, savedAt: Date()),
+                           for: contentPath.map { URL(fileURLWithPath: $0) } ?? url, baselineChanged: baselineChanged)
     }
 
     // MARK: Actions

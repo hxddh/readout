@@ -196,7 +196,8 @@ enum SmokeTest {
                 // Retargeted, but the new file not read yet: a save now must not
                 // store the old file's state under the new key.
                 deadline = Date().addingTimeInterval(10)
-                while app?.reader(for: url) !== reader && Date() < deadline { try? await Task.sleep(for: .milliseconds(2)) }
+                func retargetSeen() -> Bool { WorkspaceIndex.realPath(path) != shownBefore && app?.reader(for: url) === reader }
+                while !retargetSeen() && Date() < deadline { try? await Task.sleep(for: .milliseconds(2)) }
                 if reader.model.title == before {
                     reader.saveNow()
                     BaselineStore.flush()
