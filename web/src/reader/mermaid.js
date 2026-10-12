@@ -106,10 +106,10 @@ async function pumpMermaid() {
       if (out.svg) {
         fresh = document.createElement('div');
         fresh.className = 'mermaid-svg';
-        // The SVG's styles and markers refer to its id: every copy on the
-        // page (the same diagram twice, or cached) gets an id of its own.
-        const id = `mmd-${++mermaidSeq}`;
-        fresh.innerHTML = out.svg.replace(new RegExp(`${out.id}(?![0-9])`, 'g'), id);
+        // The SVG's styles and markers refer to its id: every later copy on
+        // the page (the same diagram twice, or from the cache) gets an id of its own.
+        fresh.innerHTML = out.used ? out.svg.replace(new RegExp(`${out.id}(?![0-9])`, 'g'), `mmd-${++mermaidSeq}`) : out.svg;
+        out.used = true;
       } else {
         fresh = document.createElement('div');
         fresh.className = 'mermaid-error';
