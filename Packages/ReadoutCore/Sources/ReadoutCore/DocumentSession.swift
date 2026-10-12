@@ -158,7 +158,9 @@ public final class DocumentSession {
             if let p = apply(doc), p.reset { return p }
             return fullPayload(rewrite: false)
         }
-        return apply(doc)
+        let patch = apply(doc)
+        dropBeforeEmptyIfRead()
+        return patch
     }
 
     private func apply(_ doc: ParsedDocument) -> RenderPatch? {
@@ -348,13 +350,24 @@ public final class DocumentSession {
     public func markRead(slots: [Int], deletionIDs: [Int]) {
         for s in slots { marks[s] = nil; readText[s] = nil; readKey[s] = nil; readTasks[s] = nil; diffs[s] = nil }
         let ids = Set(deletionIDs)
+        // Reading the removal of everything accepts the empty version: it is
+        // no longer a passing truncation to look past.
+        if blocks.isEmpty && deletions.contains(where: { ids.contains($0.id) }) { beforeEmpty = nil }
         deletions.removeAll { ids.contains($0.id) }
         if marks.isEmpty && deletions.isEmpty { baseline = blocks.map(BlockKey.init) }
+        dropBeforeEmptyIfRead()
+    }
+
+    /// Once the reader has caught up with the empty version (the baseline
+    /// moved to it), what came before is no longer what was last read.
+    private func dropBeforeEmptyIfRead() {
+        if beforeEmpty != nil && blocks.isEmpty && marks.isEmpty && deletions.isEmpty { beforeEmpty = nil }
     }
 
     public func markAllRead() {
         marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]; sentDiffs = []; sentDeletions = []
         baseline = blocks.map(BlockKey.init)
+        dropBeforeEmptyIfRead()
     }
 
     public var currentMarks: [RenderPatch.Mark] {

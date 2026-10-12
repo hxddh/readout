@@ -245,6 +245,33 @@ import Testing
         #expect(q.deletions.isEmpty)
     }
 
+    /// An empty version the reader has read (the deletion marked read, or all
+    /// read) is what was last read: the next content is new, not a refill.
+    @Test func readEmptyVersionIsTheBaseForWhatFollows() {
+        let text = "# Report\n\nPara one.\n\nPara two.\n"
+        for readAll in [false, true] {
+            let s = DocumentSession()
+            _ = s.load(parse(text))
+            let empty = s.update(parse(""))!
+            #expect(empty.deletions.count == 1)
+            if readAll { s.markAllRead() } else { s.markRead(slots: [], deletionIDs: empty.deletions.map(\.id)) }
+            let p = s.update(parse(text))!
+            #expect(p.marks.count == 3 && p.marks.allSatisfy { $0.kind == .inserted }, "readAll: \(readAll)")
+            #expect(p.deletions.isEmpty)
+        }
+        // Unread inserts removed by the empty version leave nothing to read: the baseline
+        // moves to the empty version, and what comes next is new as well.
+        let s = DocumentSession()
+        _ = s.load(parse("# A\n"))
+        _ = s.update(parse("# A\n\nnew one\n"))
+        s.markRead(slots: [s.blocks[0].slot], deletionIDs: [])
+        _ = s.update(parse("# A\n\nnew one\n\nnew two\n"))
+        _ = s.update(parse(""))
+        s.markAllRead()
+        let q = s.update(parse("# A\n"))!
+        #expect(q.marks.map(\.kind) == [.inserted])
+    }
+
     @Test func rewriteSinceLastReadShowsTheNoticeOnLoad() {
         let first = DocumentSession()
         _ = first.load(parse("# Plan\n\nStep one is to do the first thing.\n\nStep two is the second thing.\n\nStep three.\n\nStep four.\n"))
