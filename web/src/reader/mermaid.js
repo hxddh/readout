@@ -106,6 +106,8 @@ async function pumpMermaid() {
         const wrap = document.createElement('div');
         wrap.className = 'mermaid-svg';
         wrap.innerHTML = out.svg;
+        // Natural size, never narrower than three quarters of it (the block scrolls).
+        const svg = wrap.querySelector('svg'), w = svg && svg.viewBox.baseVal && svg.viewBox.baseVal.width; if (w) svg.style.minWidth = `${Math.round(w * 0.75)}px`;
         block.appendChild(wrap);
         block.classList.add('done');
       } else {

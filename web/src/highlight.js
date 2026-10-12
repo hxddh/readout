@@ -161,6 +161,8 @@ export function highlightSync(code, id) {
       lang: id,
       themes: { light: 'github-light-default', dark: 'github-dark-default' },
       defaultColor: false,
+      // github-light's comment grey is 4.2:1 on the code block fill; this is 4.9:1 (WCAG AA).
+      colorReplacements: { 'github-light-default': { '#6e7781': '#636c76' } },
       // Shiki's per-line guard. The rendering-baseline tests raise it
       // (READOUT_TOKENIZE_LIMIT) so a starved CI machine cannot cut lines
       // short and make the same page render differently between runs.
