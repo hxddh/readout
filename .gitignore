@@ -8,3 +8,4 @@ node_modules/
 .DS_Store
 web/build/
 web/test/out/
+__pycache__/

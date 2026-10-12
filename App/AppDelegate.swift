@@ -98,7 +98,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return
         }
         NSDocumentController.shared.noteNewRecentDocumentURL(url)
-        if let existing = windows[url.path] {
+        // Keyed by the real path: the same file reached through a symlink, or
+        // reported by FSEvents under /private, is the same window.
+        let key = WorkspaceIndex.realPath(url.path)
+        if let existing = windows[key] {
             // An open window follows the file by itself; bringing it forward is
             // only for a request, and never activates Readout.
             if mode == .request { existing.show() }
@@ -106,17 +109,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return
         }
         let controller = ReaderWindowController(url: url, pendingAnchor: anchor)
-        controller.onClose = { [weak self] c in self?.windows[c.url.path] = nil }
+        controller.onClose = { [weak self] _ in self?.windows[key] = nil }
         if let front = NSApp.orderedWindows.first(where: { w in windows.values.contains { $0.window === w } }),
            let w = controller.window {
             w.setFrameTopLeftPoint(NSPoint(x: front.frame.minX + 26, y: front.frame.maxY - 26))
         } else if windows.isEmpty {
             controller.window?.center()
         }
-        windows[url.path] = controller
-        if mode == .background, NSApp.isActive, let key = NSApp.keyWindow, let w = controller.window {
-            // The reader is in Readout: the new window waits just behind the one they read.
-            w.order(.below, relativeTo: key.windowNumber)
+        let readers = NSApp.orderedWindows.filter { w in windows.values.contains { $0.window === w } }
+        windows[key] = controller
+        if mode == .background, let w = controller.window {
+            if let current = readers.first {
+                // Reader windows join tabs: add it as a tab behind the one being read.
+                let reading = current.tabGroup?.selectedWindow ?? current
+                current.addTabbedWindow(w, ordered: .above)
+                current.tabGroup?.selectedWindow = reading
+            } else if NSApp.isActive, let keyWindow = NSApp.keyWindow {
+                // The reader is in another Readout window (welcome, settings): wait behind it.
+                w.order(.below, relativeTo: keyWindow.windowNumber)
+            } else {
+                controller.show()   // Readout is in the background: this does not activate it
+            }
         } else {
             controller.show()
         }
@@ -124,22 +137,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         if mode == .request || !(NSApp.isActive && welcome?.isKeyWindow == true) { welcome?.close() }
     }
 
-    /// Whether a window shows `path` (FSEvents reports resolved paths, windows
-    /// keep the path they were opened with).
-    private func isShown(_ path: String) -> Bool {
-        if windows[path] != nil { return true }
-        let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
-        return windows.values.contains { $0.url.resolvingSymlinksInPath().path == resolved }
-    }
+    /// Whether a window shows `path`, however it is spelled.
+    private func isShown(_ path: String) -> Bool { windows[WorkspaceIndex.realPath(path)] != nil }
 
-    private func noteAgentWrites(_ urls: [URL]) {
+    private func noteAgentWrites(_ writes: [(url: URL, isNew: Bool)]) {
         let now = Date()
-        for url in urls { autoOpen.noteWrite(url.standardizedFileURL.path, at: now) }
+        for w in writes { autoOpen.noteWrite(w.url.standardizedFileURL.path, at: now, isNew: w.isNew) }
         guard autoOpen.hasPending else { return }
         autoOpenWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.openSettledWrites() }
         autoOpenWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + AutoOpen.quiet, execute: work)
+        let delay = max(0, autoOpen.settleDate(now: now).timeIntervalSince(now))
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     private func openSettledWrites() {

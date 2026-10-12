@@ -16,7 +16,7 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 - **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42` open in your editor.
 - **Outline with progress.** The sidebar lists headings and how many tasks in each section are done.
 - **Focus on what's new.** Filter the document to unread changes only (<kbd>⇧⌘K</kbd>), see task progress in the window subtitle, and copy a link to any section by hovering its heading.
-- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A Markdown file an agent writes there opens in Readout on its own, in the background, without taking focus from your terminal. Press <kbd>⌥⌘R</kbd> anywhere to open the newest one.
+- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A new Markdown document an agent creates there opens in Readout on its own, in the background, without taking focus from your terminal (edits to files that were already there, such as a README, do not). Press <kbd>⌥⌘R</kbd> anywhere to open the newest one.
 - **Quick Look.** Press Space on a `.md` file in Finder.
 - **Read-only by design.** Readout never writes to your files.
 

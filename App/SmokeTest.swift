@@ -114,6 +114,12 @@ enum SmokeTest {
                 NSApp.deactivate()
                 try? await Task.sleep(for: .seconds(1))
                 let wasActive = NSApp.isActive
+                // The document in front (the selected tab of the frontmost reader window).
+                func reading() -> String {
+                    let front = NSApp.orderedWindows.first { $0.windowController is ReaderWindowController }
+                    return (front?.tabGroup?.selectedWindow ?? front)?.title ?? ""
+                }
+                let readingBefore = reading()
                 mark(out, "await-agent-write")
                 let deadline = Date().addingTimeInterval(15)
                 while autoOpened.isEmpty && Date() < deadline {
@@ -123,6 +129,7 @@ enum SmokeTest {
                 let titles = NSApp.windows.filter(\.isVisible).map(\.title)
                 let json: [String: Any] = ["auto_opened": autoOpened.map { URL(fileURLWithPath: $0).lastPathComponent },
                                            "active_before": wasActive, "active_after": NSApp.isActive,
+                                           "reading_before": readingBefore, "reading_after": reading(),
                                            "window_titles": titles]
                 if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
                     try? data.write(to: out.appendingPathComponent("agent-folder.json"))

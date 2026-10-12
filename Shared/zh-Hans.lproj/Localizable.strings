@@ -72,7 +72,7 @@
 "No headings" = "没有标题";
 "Open Latest" = "打开最新文件";
 "Read what your agents write." = "阅读 Agent 写下的一切。";
-"Markdown files your agents write here open in Readout on their own, in the background. The global shortcut opens the newest one." = "Agent 在这些文件夹里写下的 Markdown 文件会自动在 Readout 中打开，不打断你正在做的事。全局快捷键会打开其中最新的一个。";
+"New Markdown documents your agents create here open in Readout on their own, in the background. The global shortcut opens the newest one." = "Agent 在这些文件夹里新建的 Markdown 文档会自动在 Readout 中打开，不打断你正在做的事。全局快捷键会打开其中最新的一个。";
 "Check for updates automatically" = "自动检查更新";
 "No folders yet" = "尚未添加文件夹";
 "Download Update" = "下载更新";

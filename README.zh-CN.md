@@ -16,7 +16,7 @@ Agent 会把计划、规格、分析报告和代码解释写成很长的 Markdow
 - **高质量渲染。** 完整 GFM：表格、任务列表、提示块（Alerts），针对中英混排调校的排版，Shiki 代码高亮，KaTeX 数学公式，Mermaid 图表。`src/app/main.swift:42` 这样的代码引用可直接在编辑器中打开。
 - **带进度的大纲。** 侧边栏列出标题，以及每个章节的任务完成数。
 - **聚焦新增内容。** 一键只看未读变更（<kbd>⇧⌘K</kbd>），标题栏显示任务完成进度，悬停标题可复制章节链接。
-- **自动打开 Agent 写的文档。** 在设置里添加 Agent 写入的文件夹（自动包含 Claude Code 的 `~/.claude/plans`）。Agent 在这里写下的 Markdown 文件会自动在 Readout 中打开，在后台进行，不会抢走终端的焦点。在任何地方按 <kbd>⌥⌘R</kbd> 可打开最新的一个。
+- **自动打开 Agent 写的文档。** 在设置里添加 Agent 写入的文件夹（自动包含 Claude Code 的 `~/.claude/plans`）。Agent 在这里新建的 Markdown 文档会自动在 Readout 中打开，在后台进行，不会抢走终端的焦点（修改已有文件，比如 README，不会弹出）。在任何地方按 <kbd>⌥⌘R</kbd> 可打开最新的一个。
 - **Quick Look。** 在访达中选中 `.md` 文件按空格预览。
 - **始终只读。** Readout 从不写入你的文件。
 
