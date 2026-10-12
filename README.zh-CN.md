@@ -1,4 +1,4 @@
-<p align="center"><img src="tools/icon-1024.png" width="128" alt=""></p>
+<p align="center"><img src="tools/icon/readout-1024.png" width="128" alt=""></p>
 
 <h1 align="center">Readout</h1>
 
