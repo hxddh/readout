@@ -20,6 +20,11 @@ struct HTMLRenderer {
     func inline(_ node: Markup) -> String {
         var out = ""
         for child in node.children { out += inlineNode(child) }
+        // Lines taken into multi-line display math leave a filler (MathProtector.protect).
+        if out.utf8.contains(0xEE), out.contains(MathProtector.filler) {
+            out = out.replacingOccurrences(of: "\n" + String(MathProtector.filler), with: "")
+                .replacingOccurrences(of: String(MathProtector.filler), with: "")
+        }
         return out
     }
 
@@ -85,8 +90,8 @@ struct HTMLRenderer {
     /// Trailing punctuation (ASCII and CJK) is left out of the link, and so
     /// are the private-use tokens standing for math and footnote references.
     private static let urlRegex = try! NSRegularExpression(
-        pattern: #"\b(?:https?|ftp)://[^\s<>"'`\x{E000}-\x{E003}]+[^\s<>"'`\x{E000}-\x{E003}.,;:!?)\]}，。；：！？）】]"#
-            + #"|(?<![\w.@/:-])www\.[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?:[/?#][^\s<>"'`\x{E000}-\x{E003}]*[^\s<>"'`\x{E000}-\x{E003}.,;:!?)\]}，。；：！？）】])?"#
+        pattern: #"\b(?:https?|ftp)://[^\s<>"'`\x{E000}-\x{E004}]+[^\s<>"'`\x{E000}-\x{E004}.,;:!?)\]}，。；：！？）】]"#
+            + #"|(?<![\w.@/:-])www\.[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*(?:[/?#][^\s<>"'`\x{E000}-\x{E004}]*[^\s<>"'`\x{E000}-\x{E004}.,;:!?)\]}，。；：！？）】])?"#
             + #"|(?<![\w.+-])[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9_-]+)*\.[A-Za-z0-9_-]*[A-Za-z0-9](?![-_\w])"#)
 
     /// `&amp;` followed by letters and digits just before a `;` reads as an entity reference: GFM leaves it out of the link.

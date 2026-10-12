@@ -252,9 +252,10 @@ public enum MarkdownParser {
                 }
 
             case let p as Paragraph:
-                let raw = sourceSlice(range).joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-                if raw.hasPrefix("$$") && raw.hasSuffix("$$") && raw.count > 4 {
-                    let tex = String(raw.dropFirst(2).dropLast(2))
+                // A paragraph that is one `$$…$$` (on one line or several) is a math block.
+                let lo = max(range.lowerBound - 1, 0), hi = min(range.upperBound, renderer.sourceLines.count)
+                let protectedSource = lo < hi ? renderer.sourceLines[lo..<hi].joined(separator: "\n") : ""
+                if let tex = math.soleDisplayMath(protectedSource) {
                     blocks.append(make(.math, p, range: range, html: mathHTML(tex)))
                 } else {
                     blocks.append(make(.paragraph, p, range: range, html: renderer.block(p)))
