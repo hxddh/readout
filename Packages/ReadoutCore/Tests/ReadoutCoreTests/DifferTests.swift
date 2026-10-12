@@ -43,6 +43,67 @@ import Testing
         #expect(Differ.diff(old: old, new: new).rewrite)
     }
 
+    /// A five-block skeleton filled in to 29 blocks keeps every old block:
+    /// an edit (inserted blocks marked), not a rewrite.
+    @Test func growingSkeletonIsNotARewrite() {
+        let skeleton = "# Plan\n\n## Goals\n\nShip the feature.\n\n## Steps\n\nTBD.\n"
+        let steps = (1...12).map { "## Step \($0)\n\nDo \($0)." }.joined(separator: "\n\n")
+        let old = keys(skeleton), new = keys(skeleton + "\n" + steps + "\n")
+        #expect(old.count == 5 && new.count == 29)
+        let d = Differ.diff(old: old, new: new)
+        #expect(!d.rewrite)
+        #expect(d.equalCount == 5)
+        let s = DocumentSession()
+        _ = s.load(MarkdownParser.parse(skeleton))
+        let p = s.update(MarkdownParser.parse(skeleton + "\n" + steps + "\n"))!
+        #expect(!p.reset && !p.rewrite)
+        #expect(p.marks.count == 24 && p.marks.allSatisfy { $0.kind == .inserted })
+    }
+
+    /// Cutting a document down to a few of its blocks is a deletion, not a rewrite.
+    @Test func shrinkingToAFewBlocksIsNotARewrite() {
+        let full = (1...29).map { "Paragraph number \($0) of the plan." }.joined(separator: "\n\n")
+        let cut = (1...5).map { "Paragraph number \($0) of the plan." }.joined(separator: "\n\n")
+        let d = Differ.diff(old: keys(full), new: keys(cut))
+        #expect(!d.rewrite)
+        #expect(d.removed.count == 24)
+    }
+
+    /// A genuine rewrite is still detected, at equal, larger and smaller sizes.
+    @Test func trueRewritesAreStillDetected() {
+        let old = keys((1...10).map { "Old paragraph \($0) about storage." }.joined(separator: "\n\n"))
+        let same = keys("# New\n\n" + (1...9).map { "Fresh text \($0) on agents." }.joined(separator: "\n\n"))
+        let bigger = keys((1...40).map { "Fresh text \($0) on agents." }.joined(separator: "\n\n"))
+        let smaller = keys("# New\n\nOne fresh line.\n")
+        #expect(Differ.diff(old: old, new: same).rewrite)
+        #expect(Differ.diff(old: old, new: bigger).rewrite)
+        #expect(Differ.diff(old: old, new: smaller).rewrite)
+        // One block kept out of ten, the rest replaced: still a rewrite.
+        let kept = keys("Old paragraph 1 about storage.\n\n" + (1...9).map { "Fresh text \($0) on agents." }.joined(separator: "\n\n"))
+        #expect(Differ.diff(old: old, new: kept).rewrite)
+    }
+
+    /// Pairing a large rewritten section between stable blocks stays fast:
+    /// each block's shingles are built once, and the gap size is bounded.
+    @Test func largeRewrittenSectionPairsQuickly() {
+        let keep = (0..<1000).map { "Stable paragraph number \($0) with some words." }
+        for size in [100, 200] {
+            let a = (0..<size).map { "Old section paragraph \($0): " + String(repeating: "lorem ipsum dolor sit amet \($0) ", count: 15) }
+            let b = (0..<size).map { "New section paragraph \($0): " + String(repeating: "consectetur adipiscing elit \($0 * 7) ", count: 15) }
+            let old = keys((keep + a + keep).joined(separator: "\n\n")), new = keys((keep + b + keep).joined(separator: "\n\n"))
+            var best = Double.infinity
+            for _ in 0..<3 {
+                let start = DispatchTime.now().uptimeNanoseconds
+                let d = Differ.diff(old: old, new: new)
+                best = min(best, Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000)
+                #expect(!d.rewrite && d.equalCount == 2000)
+            }
+            print("perf differ_gap_\(size): \(String(format: "%.1f", best)) ms")
+            // Generous for a debug build on a shared runner (it took seconds before).
+            #expect(best < 1500, "pairing a \(size)x\(size) gap took \(best) ms")
+        }
+    }
+
     /// Property: applying the diff's mapping reconstructs the new key sequence.
     @Test func randomEditsReconstruct() {
         var rng = SplitMix(seed: 42)

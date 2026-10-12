@@ -28,13 +28,30 @@ enum CJK {
 public enum Similarity {
     static func tokens(_ text: String) -> [String] {
         var out: [String] = []
-        var word = ""
-        func flush() { if !word.isEmpty { out.append(word); word = "" } }
-        for s in text.lowercased().unicodeScalars {
-            if CJK.isCJK(s) {
+        // The current word as UTF-8. Words with non-ASCII letters are
+        // lowercased when complete; ASCII (most of what agents write) is
+        // lowercased and classified inline, without the much slower
+        // CharacterSet lookup.
+        var word: [UInt8] = []
+        var nonASCII = false
+        func flush() {
+            guard !word.isEmpty else { return }
+            let w = String(decoding: word, as: UTF8.self)
+            out.append(nonASCII ? w.lowercased() : w)
+            word.removeAll(keepingCapacity: true)
+            nonASCII = false
+        }
+        for s in text.unicodeScalars {
+            let v = s.value
+            if v < 0x80 {
+                if (v >= 0x61 && v <= 0x7A) || (v >= 0x30 && v <= 0x39) { word.append(UInt8(v)) }
+                else if v >= 0x41 && v <= 0x5A { word.append(UInt8(v + 0x20)) }
+                else { flush() }
+            } else if CJK.isCJK(s) {
                 flush(); out.append(String(s))
             } else if CharacterSet.alphanumerics.contains(s) {
-                word.unicodeScalars.append(s)
+                word.append(contentsOf: String(s).utf8)
+                nonASCII = true
             } else {
                 flush()
             }

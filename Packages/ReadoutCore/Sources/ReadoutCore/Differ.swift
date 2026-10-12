@@ -54,7 +54,9 @@ public struct DiffResult: Sendable, Equatable {
 public enum Differ {
     public static let similarityThreshold = 0.5
     /// Gaps larger than this (old × new) are not paired, everything becomes insert/delete.
-    public static let maxPairingCells = 40_000
+    /// Bounds the worst case (a 100-block section rewritten in place, every
+    /// block of distinct words) to a few milliseconds of a release build.
+    public static let maxPairingCells = 10_000
 
     public static func diff(old: [BlockKey], new: [BlockKey]) -> DiffResult {
         // Step 1: exact matches via Myers diff on fingerprints.
@@ -93,8 +95,12 @@ public enum Differ {
         }
 
         let removed = (0..<old.count).filter { !matchedOld.contains($0) }
+        // Rewritten: almost nothing of the smaller version survives unchanged.
+        // Measured against the smaller one, so a skeleton that grows into a
+        // full document (every old block kept) or a document cut down to a
+        // few of its blocks is an edit, not a rewrite.
         let rewrite = old.count >= 5 && new.count >= 1
-            && Double(equalPairs.count) / Double(max(old.count, new.count)) < 0.2
+            && Double(equalPairs.count) / Double(min(old.count, new.count)) < 0.2
         return DiffResult(changes: changes, removed: removed, rewrite: rewrite)
     }
 
@@ -107,29 +113,68 @@ public enum Differ {
             if old[0].kind == new[0].kind { return [(0, 0)] }
             return similarity(old[0], new[0]) >= similarityThreshold ? [(0, 0)] : []
         }
-        var sim = [[Double]](repeating: [Double](repeating: 0, count: b), count: a)
-        for i in 0..<a { for j in 0..<b { sim[i][j] = similarity(old[i], new[j]) } }
+        // Each block's shingles are built once (a + b sets, not 2ab), as
+        // sorted ids (a token's id, or a pair of them for a bigram), so a
+        // cell is one merge of two short arrays.
+        var ids: [String: Int64] = [:]
+        func shingleIDs(_ k: BlockKey) -> [Int64] {
+            let tokens = Similarity.tokens(k.text).map { t -> Int64 in
+                if let v = ids[t] { return v }
+                let v = Int64(ids.count + 1); ids[t] = v; return v
+            }
+            var out = tokens
+            if tokens.count >= 2 { for i in 0..<(tokens.count - 1) { out.append(tokens[i] << 32 | tokens[i + 1]) } }
+            out.sort()
+            var unique: [Int64] = []
+            unique.reserveCapacity(out.count)
+            for v in out where unique.last != v { unique.append(v) }
+            return unique
+        }
+        let os = old.map(shingleIDs), ns = new.map(shingleIDs)
+        var sim = [Double](repeating: 0, count: a * b)
+        for i in 0..<a {
+            for j in 0..<b {
+                sim[i * b + j] = similarity(old[i], os[i], new[j], ns[j])
+            }
+        }
         // dp[i][j] = best total for old[i...], new[j...]
-        var dp = [[Double]](repeating: [Double](repeating: 0, count: b + 1), count: a + 1)
+        let w = b + 1
+        var dp = [Double](repeating: 0, count: (a + 1) * w)
         for i in stride(from: a - 1, through: 0, by: -1) {
             for j in stride(from: b - 1, through: 0, by: -1) {
-                var best = max(dp[i + 1][j], dp[i][j + 1])
-                if sim[i][j] >= similarityThreshold { best = max(best, sim[i][j] + dp[i + 1][j + 1]) }
-                dp[i][j] = best
+                var best = max(dp[(i + 1) * w + j], dp[i * w + j + 1])
+                let s = sim[i * b + j]
+                if s >= similarityThreshold { best = max(best, s + dp[(i + 1) * w + j + 1]) }
+                dp[i * w + j] = best
             }
         }
         var pairs: [(Int, Int)] = []
         var i = 0, j = 0
         while i < a && j < b {
-            if sim[i][j] >= similarityThreshold && abs(dp[i][j] - (sim[i][j] + dp[i + 1][j + 1])) < 1e-9 {
+            let s = sim[i * b + j]
+            if s >= similarityThreshold && abs(dp[i * w + j] - (s + dp[(i + 1) * w + j + 1])) < 1e-9 {
                 pairs.append((i, j)); i += 1; j += 1
-            } else if abs(dp[i][j] - dp[i + 1][j]) < 1e-9 {
+            } else if abs(dp[i * w + j] - dp[(i + 1) * w + j]) < 1e-9 {
                 i += 1
             } else {
                 j += 1
             }
         }
         return pairs
+    }
+
+    /// `similarity` over precomputed sorted shingle ids.
+    private static func similarity(_ x: BlockKey, _ xs: [Int64], _ y: BlockKey, _ ys: [Int64]) -> Double {
+        let penalty = x.kind == y.kind ? 1.0 : 0.5
+        if xs.isEmpty && ys.isEmpty { return x.text == y.text ? penalty : 0 }
+        let small = min(xs.count, ys.count), large = max(xs.count, ys.count)
+        // Jaccard is at most small / large: skip the merge when that cannot reach the threshold.
+        if Double(small) / Double(large) * penalty < similarityThreshold { return 0 }
+        var p = 0, q = 0, inter = 0
+        while p < xs.count && q < ys.count {
+            if xs[p] == ys[q] { inter += 1; p += 1; q += 1 } else if xs[p] < ys[q] { p += 1 } else { q += 1 }
+        }
+        return Double(inter) / Double(xs.count + ys.count - inter) * penalty
     }
 
     static func similarity(_ x: BlockKey, _ y: BlockKey) -> Double {
