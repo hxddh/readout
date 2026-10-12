@@ -206,17 +206,23 @@ async function preparePrint() {
 // filter lifted, all code highlighted; afterwards the screen is as it was.
 let printOpened = [];
 let printAnchor = null;
+// Unfolding and refolding are not content changes: heights are re-baselined
+// before the place is restored, so the resize compensator does not move the
+// reader a second time.
 window.addEventListener('beforeprint', () => {
   printAnchor = captureAnchor();
   printOpened = [...document.querySelectorAll('#ro-doc details:not([open])')];
   printOpened.forEach(d => { d.open = true; });
   setPrinting(true);
   highlightAll();
+  rebaselineHeights();
+  if (printAnchor) restoreAnchor(printAnchor, new Set());
 });
 window.addEventListener('afterprint', () => {
   printOpened.forEach(d => { d.open = false; });
   printOpened = [];
   setPrinting(false);
+  rebaselineHeights();
   if (printAnchor) restoreAnchor(printAnchor, new Set());
   printAnchor = null;
 });

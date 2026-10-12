@@ -898,6 +898,52 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await page.evaluate(() => window.readout.setAppearance({ dark: false }));
   check('a diagram drawn during a theme switch ends up in the new theme', r.busy && r.done && r.dark && !r.light, JSON.stringify(r));
 }
+// A second copy of a cached diagram gets ids of its own, but its text stays
+// the text written, even when a label looks like an id.
+{
+  const draw = async (p, n) => page.evaluate(async ([p, n]) => {
+    window.readout.apply(p);
+    for (let i = 0; i < 400 && document.querySelectorAll('.mermaid-block.done').length < n; i++) await new Promise(r => setTimeout(r, 20));
+  }, [p, n]);
+  const block = src => `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>`;
+  await draw({ ...fixBase, version: ++fixVersion, reset: true,
+    ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: block('graph TD\n  P[Probe] --> Q[Id]') }] }, 1);
+  // The next diagram drawn takes the id after the probe's.
+  const next = await page.evaluate(() => `mmd-${+document.querySelector('.mermaid-svg svg').id.slice(4) + 1}`);
+  const src = `graph TD\n  A["${next}"] --> B[Copy]`;
+  await draw({ ...fixBase, version: ++fixVersion, reset: true,
+    ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: block(src) },
+          { op: 'insert', slot: 2, after: 1, kind: 'mermaid', html: block(src) }] }, 2);
+  const r = await page.evaluate(label => {
+    const svgs = [...document.querySelectorAll('.mermaid-svg svg')];
+    const ids = [...document.querySelectorAll('#ro-doc [id]')].map(e => e.id);
+    // Every url(#…) and href="#…" points at an element of the same drawing.
+    const refsOk = svgs.every(svg => [...svg.querySelectorAll('*')].every(el => [...el.attributes].every(a => {
+      const m = a.value.match(/url\(['"]?#([^'")]+)/) || (/href$/.test(a.name) && a.value.match(/^#(.+)/));
+      return !m || !!svg.querySelector(`[id="${CSS.escape(m[1])}"]`);
+    })));
+    const styled = svgs.every(svg => svg.querySelector('style')?.textContent.includes(`#${svg.id}`));
+    return { svgIds: svgs.map(s => s.id), labels: svgs.map(s => s.textContent.includes(label)), unique: new Set(ids).size === ids.length, refsOk, styled };
+  }, next);
+  check('a cached diagram copy keeps label text that looks like an id', r.svgIds.length === 2 && r.svgIds[0] !== r.svgIds[1]
+    && r.labels.every(Boolean) && r.unique && r.refsOk && r.styled, JSON.stringify(r));
+}
+
+// Printing opens a folded <details> above the viewport: closing it after
+// printing leaves the reader where they were.
+{
+  const fold = `<details><summary>Folded</summary>${'<p>folded paragraph with some words in it</p>'.repeat(40)}</details>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(60, i => i === 5 ? fold : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`));
+  await toTop(40);
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await page.waitForTimeout(300);
+  const a1 = await page.evaluate(() => window.readout.captureAnchor());
+  check('printing with a folded section above keeps the place', a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2, JSON.stringify({ a0, a1 }));
+}
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
