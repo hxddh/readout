@@ -121,6 +121,29 @@ public final class IncrementalParser: @unchecked Sendable {
         return false
     }
 
+    /// A hash of the link reference definitions in `lines` (each definition
+    /// line and the line after it, where a title may continue), nil without any.
+    static func linkDefinitionsHash(_ lines: [String]) -> UInt64? {
+        func mentionsDefinition(_ line: String) -> Bool {
+            var previous: UInt8 = 0
+            for b in line.utf8 { if b == 0x3A && previous == 0x5D { return true }; previous = b }   // "]:"
+            return false
+        }
+        guard lines.contains(where: mentionsDefinition) else { return nil }
+        var fences = FenceTracker()
+        var text = ""
+        var found = false
+        for (i, line) in lines.enumerated() {
+            if fences.consume(line) { continue }
+            guard mentionsDefinition(line) else { continue }
+            let ns = line as NSString
+            guard documentWide.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) != nil else { continue }
+            found = true
+            text += line + "\n" + (i + 1 < lines.count ? lines[i + 1] : "") + "\n"
+        }
+        return found ? XXHash64.hash(text) : nil
+    }
+
     private static let listMarker = try! NSRegularExpression(pattern: #"^\d{1,9}[.)](?:[ \t]|$)"#)
 
     /// True when a line can begin a fresh top-level block that nothing before
