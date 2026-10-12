@@ -11,12 +11,12 @@
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook } from './reader/core.js';
-import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement } from './reader/anchor.js';
-import { apply } from './reader/patch.js';
-import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView } from './reader/marks.js';
+import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, rebaselineHeights, topInset } from './reader/anchor.js';
+import { apply as applyPatch, findMode } from './reader/patch.js';
+import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelHeadingLinks, setCodeWrap } from './reader/enhance.js';
-import { rerenderMermaid } from './reader/mermaid.js';
+import { relabelHeadingLinks, setCodeWrap, highlightAll } from './reader/enhance.js';
+import { rerenderMermaid, renderAllMermaid } from './reader/mermaid.js';
 import { remoteReady, remoteFailed } from './reader/remote.js';
 import { reportActiveHeading } from './reader/heading.js';
 
@@ -72,8 +72,40 @@ window.addEventListener('scroll', () => {
     reportActiveHeading();
     clearTimeout(followAnchor);
     followAnchor = setTimeout(() => post({ type: 'anchor', anchor: captureAnchor() }), 400);
+    if (!resizeAnchor) settle();
   });
 }, { passive: true });
+
+// ---------------------------------------------------------------- Window resize
+
+// By the time a resize event arrives the page already has its new width, so
+// the place to keep is the one captured while the reader last sat still.
+let settledAnchor = null;
+let settleTimer = null;
+function settle() {
+  settledAnchor = null;
+  clearTimeout(settleTimer);
+  settleTimer = setTimeout(() => { settledAnchor = captureAnchor(); }, 100);
+}
+
+let resizeAnchor = null;
+let resizeEnd = null;
+window.addEventListener('resize', () => {
+  if (!resizeAnchor) resizeAnchor = settledAnchor || captureAnchor();
+  if (!resizeAnchor) return;
+  const hold = () => {
+    restoreAnchor(resizeAnchor, new Set([resizeAnchor.slot]));
+    rebaselineHeights();
+  };
+  hold();
+  clearTimeout(resizeEnd);
+  resizeEnd = setTimeout(() => { hold(); resizeAnchor = null; settle(); }, 200);
+});
+
+function apply(p) {
+  applyPatch(p);
+  if (!resizeAnchor) settle();
+}
 
 // ---------------------------------------------------------------- Native API
 
@@ -81,16 +113,25 @@ function setAppearance(o) {
   if (o.dark !== undefined) {
     const t = o.dark ? 'dark' : 'light';
     if (root.dataset.theme !== t) {
-      root.dataset.theme = t;
-      rerenderMermaid();
+      keepPlace(() => {
+        root.dataset.theme = t;
+        rerenderMermaid();
+      });
     }
   }
   if (o.accent) {
     root.style.setProperty('--accent', o.accent);
     root.style.setProperty('--accent-soft', `color-mix(in srgb, ${o.accent} ${root.dataset.theme === 'dark' ? 18 : 12}%, transparent)`);
   }
-  if (o.width) root.dataset.width = o.width;
-  if (o.fontSize) root.style.setProperty('--size', `${o.fontSize}px`);
+  // Width and type size reflow every block, the one being read included.
+  const width = o.width && o.width !== root.dataset.width;
+  const size = o.fontSize && root.style.getPropertyValue('--size') !== `${o.fontSize}px`;
+  if (width || size) {
+    keepPlace(() => {
+      if (width) root.dataset.width = o.width;
+      if (size) root.style.setProperty('--size', `${o.fontSize}px`);
+    }, { ratio: true });
+  }
   if (o.strings) {
     mergeStrings(o.strings);
     relabelHeadingLinks();
@@ -100,11 +141,12 @@ function setAppearance(o) {
   if (o.topInset !== undefined) root.style.setProperty('--top-inset', `${Math.max(0, +o.topInset || 0)}px`);
   if (o.mode === 'quicklook') enableQuicklook();
   scheduleRail();
+  if (!resizeAnchor) settle();
 }
 
 function scrollToSlot(slot) {
   const el = slots.get(slot);
-  if (el) { window.scrollBy(0, el.getBoundingClientRect().top - 16); reportActiveHeading(); }
+  if (el) { window.scrollBy(0, el.getBoundingClientRect().top - 16 - topInset()); reportActiveHeading(); }
 }
 
 function scrollToAnchor(a) {
@@ -125,6 +167,8 @@ window.readout = {
   scrollToAnchor,
   scrollToFragment,
   captureAnchor,
+  findMode,
+  preparePrint,
   nextChange: () => jump(1),
   previousChange: () => jump(-1),
   markAllRead,
@@ -137,13 +181,42 @@ window.readout = {
 hl.init();
 post({ type: 'ready' });
 
-// Printing shows folded <details> open (and folds them back afterwards).
+// ---------------------------------------------------------------- Printing
+
+/**
+ * Called by the app before it prints: draws every diagram and highlights
+ * every code block, wherever they are (they are otherwise done lazily, near
+ * the viewport). Resolves when done, or after a few seconds regardless.
+ */
+async function preparePrint() {
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const deadline = performance.now() + 8000;
+  highlightAll();
+  await Promise.race([renderAllMermaid(), wait(8000)]);
+  // Code whose grammar is still loading is highlighted when it arrives.
+  while (doc.querySelector('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"]')
+         && performance.now() < deadline) {
+    await wait(50);
+    highlightAll();
+  }
+  return true;
+}
+
+// Printing shows the whole document: folded <details> open, the changes-only
+// filter lifted, all code highlighted; afterwards the screen is as it was.
 let printOpened = [];
+let printAnchor = null;
 window.addEventListener('beforeprint', () => {
+  printAnchor = captureAnchor();
   printOpened = [...document.querySelectorAll('#ro-doc details:not([open])')];
   printOpened.forEach(d => { d.open = true; });
+  setPrinting(true);
+  highlightAll();
 });
 window.addEventListener('afterprint', () => {
   printOpened.forEach(d => { d.open = false; });
   printOpened = [];
+  setPrinting(false);
+  if (printAnchor) restoreAnchor(printAnchor, new Set());
+  printAnchor = null;
 });

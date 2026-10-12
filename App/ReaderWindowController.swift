@@ -542,6 +542,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     @objc func printDocument(_ sender: Any?) {
+        // Diagrams and code are drawn lazily near the viewport: the page draws
+        // the rest first (it gives up after a few seconds), then prints.
+        webView.callAsyncJavaScript("return await window.readout.preparePrint()", in: nil, in: .page) { [weak self] _ in
+            self?.runPrint()
+        }
+    }
+
+    private func runPrint() {
         guard let window else { return }
         let info = (NSPrintInfo.shared.copy() as? NSPrintInfo) ?? NSPrintInfo.shared
         info.horizontalPagination = .fit
@@ -556,8 +564,18 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     @objc func showFind(_ sender: Any?) {
         guard let item = searchItem else { return }
+        setFindMode(true)
         item.beginSearchInteraction()
     }
+
+    /// While finding, the page lays out the whole document: in a large one it
+    /// otherwise skips off-screen blocks, and so would find in page.
+    private func setFindMode(_ on: Bool) {
+        webView.call("findMode", json: on ? "true" : "false")
+    }
+
+    func controlTextDidBeginEditing(_ obj: Notification) { setFindMode(true) }
+    func controlTextDidEndEditing(_ obj: Notification) { setFindMode(false) }
 
     @objc func findNext(_ sender: Any?) { find(backwards: false) }
     @objc func findPrevious(_ sender: Any?) { find(backwards: true) }
@@ -571,6 +589,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         config.backwards = backwards
         config.caseSensitive = false
         config.wraps = true
+        setFindMode(true)
         webView.find(text, configuration: config) { result in
             if !result.matchFound { NSSound.beep() }
         }
@@ -579,6 +598,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
         if selector == #selector(NSResponder.cancelOperation(_:)) {
             searchItem?.endSearchInteraction()
+            setFindMode(false)
             window?.makeFirstResponder(webView)
             return true
         }
