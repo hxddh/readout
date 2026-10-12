@@ -89,6 +89,17 @@ check("link: the retargeted symlink was followed", (live.get("link") or {}).get(
 check("link: the window is found through the retargeted link", (live.get("link") or {}).get("found_through_link") is True, live)
 check("link: the old target no longer maps to that window", (live.get("link") or {}).get("old_target_free") is True, live)
 
+check("link: the retargeted link's reading state is saved with its record",
+      (live.get("link") or {}).get("record_at_new_target") is True, live)
+leg = live.get("legacy") or {}
+check("legacy: a pre-3.3 record is read", leg.get("loaded") is True, live)
+check("legacy: it is moved under the real-path key", leg.get("moved") is True and leg.get("old_removed") is True, live)
+
+find = load("find-mode.json")
+print(f"find-mode: {find}")
+# Return in the find field must not switch find mode (a full re-layout) off and on again.
+check("find mode switches on once and off once", find.get("calls") == [True, False], find)
+
 col = live.get("collide") or {}
 # Retargeted onto a file another window shows: that window keeps the path; the link's window stays owned.
 check("collide: the link followed its new target", col.get("before") == "RUN-43" and col.get("after") == "RUN-44", live)

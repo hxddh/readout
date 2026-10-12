@@ -115,8 +115,9 @@ enum BaselineStore {
     static func load(_ url: URL) -> Record? {
         let primary = key(for: url)
         if let record = load(key: primary) { return record }
-        // Before 3.3 the key was the path as spelled. Read that record once and
-        // copy it under the real-path key, which is the one used from now on.
+        // Before 3.3 the key was the path as spelled. Read that record once:
+        // move it under the real-path key, which is the one used from now on,
+        // so a symlink retargeted later does not fall back to it again.
         let legacy = BaselineKey.legacyKey(forPath: url.path)
         guard legacy != primary, let record = load(key: legacy) else { return nil }
         let from = [file(forKey: legacy), positionFile(forKey: legacy)]
@@ -124,6 +125,7 @@ enum BaselineStore {
         queue.async {
             for (src, dst) in zip(from, to) {
                 if let data = try? Data(contentsOf: src) { try? data.write(to: dst, options: .atomic) }
+                try? FileManager.default.removeItem(at: src)
             }
         }
         return record
@@ -146,13 +148,20 @@ enum BaselineStore {
         return record
     }
 
-    /// Saves the reading position, and the whole record only when `baselineChanged`.
+    /// Where the records for `url` live under the current and the pre-3.3 key (smoke test).
+    static func recordFiles(for url: URL) -> (current: URL, legacy: URL) {
+        (file(for: url), file(forKey: BaselineKey.legacyKey(forPath: url.path)))
+    }
+
+    /// Saves the reading position, and the whole record when `baselineChanged`
+    /// or when there is none under the key yet (a symlink now pointing to
+    /// another file): `load` needs the record, not just the position.
     static func save(_ record: Record, for url: URL, baselineChanged: Bool) {
         let target = file(for: url), positionTarget = positionFile(for: url)
         let position = Position(topBlockIndex: record.topBlockIndex, topOffset: record.topOffset,
                                 topExcerpt: record.topExcerpt, savedAt: record.savedAt)
         queue.async {
-            if baselineChanged, let data = try? JSONEncoder().encode(record) {
+            if baselineChanged || !FileManager.default.fileExists(atPath: target.path), let data = try? JSONEncoder().encode(record) {
                 try? data.write(to: target, options: .atomic)
             }
             if let data = try? JSONEncoder().encode(position) { try? data.write(to: positionTarget, options: .atomic) }

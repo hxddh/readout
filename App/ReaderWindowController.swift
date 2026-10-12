@@ -122,7 +122,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
         model.onSelectHeading = { [weak self] slot in self?.webView.call("scrollToSlot", json: String(slot)) }
         watcher = FileWatcher(url: self.url, onChange: { [weak self] change in self?.fileChanged(change) },
-                              onRetarget: { [weak self] in if let self { self.onRetarget?(self) } })
+                              onRetarget: { [weak self] in if let self { self.retargeted() } })
         load()
     }
 
@@ -285,6 +285,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         // Recover from a crashed renderer: reload the page and re-send the document.
+        findModeOn = false   // the new page starts out of find mode
         self.webView.reloadReader()
         self.webView.whenReady { [weak self] in
             guard let self else { return }
@@ -533,6 +534,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var lastSavedAnchorOffset: Double?
     private var didSaveOnce = false
 
+    /// The opened symlink points to another file, whose state has its own key:
+    /// the next save writes the whole record there, even if nothing changed.
+    private func retargeted() {
+        didSaveOnce = false
+        lastSavedBaseline = nil
+        onRetarget?(self)
+    }
+
     func saveNow() {
         guard loaded else { return }
         var index: Int? = nil
@@ -613,13 +622,24 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     /// While finding, the page lays out the whole document: in a large one it
-    /// otherwise skips off-screen blocks, and so would find in page.
+    /// otherwise skips off-screen blocks, and so would find in page. Sent only
+    /// when it changes: each switch re-lays out the document.
+    private var findModeOn = false
     private func setFindMode(_ on: Bool) {
+        guard on != findModeOn else { return }
+        findModeOn = on
         webView.call("findMode", json: on ? "true" : "false")
+        SmokeTest.noteFindMode(on)
     }
 
+    // Find mode stays on while the find bar is open: Return in the field may
+    // end and restart editing, which must not re-lay out the document twice.
+    // It ends on Escape, or when editing ends with the field empty (the bar closes).
     func controlTextDidBeginEditing(_ obj: Notification) { setFindMode(true) }
-    func controlTextDidEndEditing(_ obj: Notification) { setFindMode(false) }
+    func controlTextDidEndEditing(_ obj: Notification) {
+        if searchItem?.searchField.stringValue.isEmpty ?? true { setFindMode(false) }
+    }
+    func searchFieldDidEndSearching(_ sender: NSSearchField) { setFindMode(false) }
 
     @objc func findNext(_ sender: Any?) { find(backwards: false) }
     @objc func findPrevious(_ sender: Any?) { find(backwards: true) }
