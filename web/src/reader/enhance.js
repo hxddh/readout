@@ -14,6 +14,17 @@ export function enhance(el) {
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
   for (const h of el.classList.contains('k-heading') ? [el] : []) setupHeadingLink(h);
   if (el.querySelector('.math, .math-block')) renderMath(el);
+  setLang(el);
+}
+
+// Han characters take Japanese forms in a block with kana, Chinese otherwise
+// (the page itself is lang="en", which leaves the choice to the font).
+const KANA = /[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f]/;
+const HAN = /[\u3400-\u9fff\uf900-\ufaff]/;
+function setLang(el) {
+  const text = el.textContent;
+  const lang = KANA.test(text) ? 'ja' : HAN.test(text) ? 'zh' : null;
+  if (lang) el.lang = lang; else el.removeAttribute('lang');
 }
 
 /** A table wider than the column scrolls sideways (and pins its first column). */
@@ -37,16 +48,17 @@ function setupHeadingLink(h) {
   const btn = document.createElement('button');
   btn.className = 'h-link';
   btn.type = 'button';
-  btn.textContent = '§';
+  btn.dataset.label = '§';
   btn.title = strings.copyLink || 'Copy Link to Section';
   btn.setAttribute('aria-label', btn.title);
   btn.addEventListener('click', ev => {
     ev.stopPropagation();
     post({ type: 'copyLink', anchor });
-    btn.textContent = '✓';
-    setTimeout(() => { btn.textContent = '§'; }, 1200);
+    btn.dataset.label = '✓';
+    setTimeout(() => { btn.dataset.label = '§'; }, 1200);
   });
-  h.appendChild(btn);
+  // At the start of the heading's first line (CSS moves it into the gutter).
+  (h.querySelector('h1, h2, h3, h4, h5, h6') || h).prepend(btn);
 }
 
 /**
@@ -73,9 +85,19 @@ export function relabelHeadingLinks() {
     h.setAttribute('aria-label', h.title);
   }
   for (const w of doc.querySelectorAll('.cb-wrap')) {
-    w.textContent = strings.wrap || w.textContent;
+    setLabel(w, strings.wrap || w.dataset.label);
     w.title = strings.wrapTitle || w.title;
   }
+  for (const c of doc.querySelectorAll('.cb-copy')) setLabel(c, strings.copy || c.dataset.label);
+}
+
+/**
+ * Control labels are CSS generated content (see reader.css), so a selection
+ * across a code block or heading never copies "Copy", "Wrap", "§" or the language.
+ */
+function setLabel(el, text) {
+  el.dataset.label = text;
+  if (el.tagName === 'BUTTON') el.setAttribute('aria-label', text);
 }
 
 function setupCode(cb) {
@@ -85,13 +107,14 @@ function setupCode(cb) {
   if (cb.dataset.lang) {
     const lang = document.createElement('span');
     lang.className = 'cb-lang';
-    lang.textContent = cb.dataset.lang;
+    lang.dataset.label = cb.dataset.lang;
+    lang.setAttribute('aria-hidden', 'true');
     tools.appendChild(lang);
   }
   const wrap = document.createElement('button');
   wrap.className = 'cb-wrap';
   wrap.type = 'button';
-  wrap.textContent = strings.wrap || 'Wrap';
+  setLabel(wrap, strings.wrap || 'Wrap');
   wrap.title = strings.wrapTitle || 'Wrap long lines in code blocks';
   wrap.addEventListener('click', ev => {
     ev.stopPropagation();
@@ -101,13 +124,13 @@ function setupCode(cb) {
   const btn = document.createElement('button');
   btn.className = 'cb-copy';
   btn.type = 'button';
-  btn.textContent = strings.copy;
+  setLabel(btn, strings.copy || 'Copy');
   btn.addEventListener('click', ev => {
     ev.stopPropagation();
     const code = cb.querySelector('pre').innerText.replace(/\n$/, '');
     post({ type: 'copy', text: code });
-    btn.textContent = strings.copied;
-    setTimeout(() => { btn.textContent = strings.copy; }, 1400);
+    setLabel(btn, strings.copied || 'Copied');
+    setTimeout(() => setLabel(btn, strings.copy || 'Copy'), 1400);
   });
   tools.appendChild(btn);
   cb.appendChild(tools);

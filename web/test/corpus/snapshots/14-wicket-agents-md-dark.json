@@ -1,21 +1,21 @@
 {
- "height": 4210,
+ "height": 4216,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 40,
    "h": 59,
-   "style": "428c387a",
-   "content": "ae280a9b",
-   "text": "Apache Wicket§"
+   "style": "d03bb9a3",
+   "content": "a283977e",
+   "text": "Apache Wicket"
   },
   {
    "slot": 2,
    "kind": "paragraph",
    "top": 99,
    "h": 96,
-   "style": "806cfc34",
+   "style": "772762ed",
    "content": "e83f75ef",
    "text": "Component-based Java web framework. master is th"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 194,
    "h": 70,
-   "style": "136c44ce",
+   "style": "ed357007",
    "content": "37aff0b0",
    "text": "Versions — the Java release, the Servlet level, "
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 264,
    "h": 122,
-   "style": "66e3a5d4",
+   "style": "83e3e111",
    "content": "c2cbdbe5",
    "text": "The code format (tabs, braces on their own line,"
   },
@@ -42,16 +42,16 @@
    "kind": "heading",
    "top": 386,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "5173c8d1",
-   "text": "How a change lands§"
+   "style": "e72ca9c0",
+   "content": "b6ce1a2c",
+   "text": "How a change lands"
   },
   {
    "slot": 6,
    "kind": "listItem",
    "top": 451,
    "h": 80,
-   "style": "1333ed9a",
+   "style": "386b1727",
    "content": "5671ba0c",
    "text": "Prepare the change and stop. Whether it goes in "
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 531,
    "h": 97,
-   "style": "f148c52c",
+   "style": "adc5f7bd",
    "content": "93732041",
    "text": "Fixes go on master first and are cherry-picked d"
   },
@@ -69,16 +69,16 @@
    "kind": "heading",
    "top": 628,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "869920ee",
-   "text": "Commits§"
+   "style": "e72ca9c0",
+   "content": "827e28bd",
+   "text": "Commits"
   },
   {
    "slot": 9,
    "kind": "listItem",
    "top": 693,
    "h": 106,
-   "style": "694a45da",
+   "style": "ed960ab7",
    "content": "3cbcada8",
    "text": "The subject says what the change does, in plain "
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 799,
    "h": 97,
-   "style": "42376c59",
+   "style": "5afcfeb6",
    "content": "0cd65737",
    "text": "The body carries the reasoning: what the behavio"
   },
@@ -96,16 +96,16 @@
    "kind": "heading",
    "top": 896,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "ee7e5dcb",
-   "text": "Build and test§"
+   "style": "e72ca9c0",
+   "content": "2620b54e",
+   "text": "Build and test"
   },
   {
    "slot": 12,
    "kind": "listItem",
    "top": 961,
    "h": 61,
-   "style": "72b26909",
+   "style": "3c497a89",
    "content": "d2c9f06e",
    "text": "A full mvn clean verify has to be green before a"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 1023,
    "h": 113,
-   "style": "f8258d37",
+   "style": "a42c0a09",
    "content": "0e1998b5",
    "text": "Getting there is not how to work there. While it"
   },
@@ -122,278 +122,278 @@
    "slot": 14,
    "kind": "listItem",
    "top": 1136,
-   "h": 238,
-   "style": "a88df6a2",
-   "content": "3b626deb",
+   "h": 244,
+   "style": "6aac9e31",
+   "content": "7dd3fe4a",
    "text": "Most tests are not in the module they exercise, "
   },
   {
    "slot": 15,
    "kind": "listItem",
-   "top": 1374,
+   "top": 1380,
    "h": 71,
-   "style": "7264fef9",
+   "style": "84a2d985",
    "content": "2b9265bb",
    "text": "A test class must be named *Test.java. Surefire "
   },
   {
    "slot": 16,
    "kind": "heading",
-   "top": 1445,
+   "top": 1451,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "2a631122",
-   "text": "Where code goes§"
+   "style": "e72ca9c0",
+   "content": "75406731",
+   "text": "Where code goes"
   },
   {
    "slot": 17,
    "kind": "listItem",
-   "top": 1510,
+   "top": 1516,
    "h": 132,
-   "style": "af6d20d2",
+   "style": "cf2a715b",
    "content": "384875f7",
    "text": "A component's markup, .properties, .js and .css "
   },
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 1642,
+   "top": 1649,
    "h": 132,
-   "style": "92c84b09",
+   "style": "0b933c98",
    "content": "20f0b06e",
    "text": "Tests live in the module's -tests companion wher"
   },
   {
    "slot": 19,
    "kind": "listItem",
-   "top": 1774,
+   "top": 1781,
    "h": 97,
-   "style": "3aa4cd38",
+   "style": "4a1e095f",
    "content": "ccff4837",
    "text": "WicketTester, WicketTestCase, FormTester and Tag"
   },
   {
    "slot": 20,
    "kind": "heading",
-   "top": 1871,
+   "top": 1878,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "cc6072b1",
-   "text": "Poms§"
+   "style": "e72ca9c0",
+   "content": "e5b8758c",
+   "text": "Poms"
   },
   {
    "slot": 21,
    "kind": "listItem",
-   "top": 1936,
+   "top": 1943,
    "h": 106,
-   "style": "9cec1fd6",
+   "style": "4516b62b",
    "content": "c7269ddd",
    "text": "Section, dependency and plugin order is enforced"
   },
   {
    "slot": 22,
    "kind": "listItem",
-   "top": 2043,
+   "top": 2049,
    "h": 71,
-   "style": "6b1b26c2",
+   "style": "efe59e9f",
    "content": "c4a2c140",
    "text": "A module pom carries no <version> for a dependen"
   },
   {
    "slot": 23,
    "kind": "heading",
-   "top": 2114,
+   "top": 2120,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "e1fc8624",
-   "text": "API compatibility§"
+   "style": "e72ca9c0",
+   "content": "1976c76b",
+   "text": "API compatibility"
   },
   {
    "slot": 24,
    "kind": "listItem",
-   "top": 2179,
+   "top": 2186,
    "h": 132,
-   "style": "e197ff61",
+   "style": "5ee14380",
    "content": "70cc28d2",
    "text": "japicmp fails the build on binary-incompatible c"
   },
   {
    "slot": 25,
    "kind": "listItem",
-   "top": 2311,
+   "top": 2318,
    "h": 80,
-   "style": "060e3706",
+   "style": "ca84f03d",
    "content": "eb6d1dd4",
    "text": "Quiet is not permission. Changing or removing pu"
   },
   {
    "slot": 26,
    "kind": "listItem",
-   "top": 2391,
+   "top": 2398,
    "h": 149,
-   "style": "32df82c8",
+   "style": "72807903",
    "content": "248fc238",
    "text": "An API change owes users a migration path. Add a"
   },
   {
    "slot": 27,
    "kind": "heading",
-   "top": 2540,
+   "top": 2547,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "1b374a36",
-   "text": "Javadoc§"
+   "style": "e72ca9c0",
+   "content": "91184615",
+   "text": "Javadoc"
   },
   {
    "slot": 28,
    "kind": "listItem",
-   "top": 2606,
+   "top": 2612,
    "h": 54,
-   "style": "20b4ffa8",
+   "style": "9734d579",
    "content": "9582ac3c",
    "text": "Javadoc is user-facing documentation, not a form"
   },
   {
    "slot": 29,
    "kind": "listItem",
-   "top": 2660,
+   "top": 2667,
    "h": 149,
-   "style": "a89abe69",
+   "style": "7b2b817a",
    "content": "4e11c14b",
    "text": "Say what a method does to the value it is given,"
   },
   {
    "slot": 30,
    "kind": "heading",
-   "top": 2809,
+   "top": 2815,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "f0ca9bf0",
-   "text": "Comments§"
+   "style": "e72ca9c0",
+   "content": "52582af7",
+   "text": "Comments"
   },
   {
    "slot": 31,
    "kind": "listItem",
-   "top": 2874,
+   "top": 2881,
    "h": 28,
-   "style": "4d2b37ac",
+   "style": "b56c8e65",
    "content": "68b2346d",
    "text": "Only write a comment when it really matters. Mos"
   },
   {
    "slot": 32,
    "kind": "listItem",
-   "top": 2902,
+   "top": 2909,
    "h": 54,
-   "style": "142a666c",
+   "style": "23c721d1",
    "content": "5ed2a9b1",
    "text": "Prefer a clearer name or an extracted method ove"
   },
   {
    "slot": 33,
    "kind": "listItem",
-   "top": 2957,
+   "top": 2963,
    "h": 54,
-   "style": "4b2668ed",
+   "style": "c90d6572",
    "content": "5f1c0f15",
    "text": "Comment the why, not the what. Never restate wha"
   },
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 3011,
+   "top": 3018,
    "h": 80,
-   "style": "84b23460",
+   "style": "376f3fa9",
    "content": "f905aa7c",
    "text": "Keep an inline comment to a single line of inten"
   },
   {
    "slot": 35,
    "kind": "listItem",
-   "top": 3091,
+   "top": 3098,
    "h": 54,
-   "style": "d8e72ada",
+   "style": "45e8bb1f",
    "content": "2eb47fda",
    "text": "A comment that no longer matches the code is wor"
   },
   {
    "slot": 36,
    "kind": "listItem",
-   "top": 3145,
+   "top": 3152,
    "h": 54,
-   "style": "142a666c",
+   "style": "23c721d1",
    "content": "82c2223e",
    "text": "Don't dump your reasoning into a comment. Deeper"
   },
   {
    "slot": 37,
    "kind": "listItem",
-   "top": 3200,
+   "top": 3206,
    "h": 97,
-   "style": "42376c59",
+   "style": "5afcfeb6",
    "content": "0aaa8808",
    "text": "Before finalizing an edit that adds a comment, r"
   },
   {
    "slot": 38,
    "kind": "heading",
-   "top": 3297,
+   "top": 3303,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "60621f74",
-   "text": "Language§"
+   "style": "e72ca9c0",
+   "content": "9a73db9b",
+   "text": "Language"
   },
   {
    "slot": 39,
    "kind": "listItem",
-   "top": 3362,
+   "top": 3369,
    "h": 80,
-   "style": "1333ed9a",
+   "style": "386b1727",
    "content": "1b72ddcd",
    "text": "Everything you write is English: identifiers, co"
   },
   {
    "slot": 40,
    "kind": "listItem",
-   "top": 3442,
+   "top": 3449,
    "h": 97,
-   "style": "6f62f63d",
+   "style": "9fa157d6",
    "content": "972e06b0",
    "text": "The localized bundles (Application_xx.utf8.prope"
   },
   {
    "slot": 41,
    "kind": "heading",
-   "top": 3539,
+   "top": 3546,
    "h": 65,
-   "style": "01b38eaf",
-   "content": "720eb634",
-   "text": "Security§"
+   "style": "e72ca9c0",
+   "content": "c2fe21db",
+   "text": "Security"
   },
   {
    "slot": 42,
    "kind": "listItem",
-   "top": 3604,
+   "top": 3611,
    "h": 158,
-   "style": "846c8770",
+   "style": "19ec5633",
    "content": "eed9572e",
    "text": "SECURITY.md is the policy, and it is long: the s"
   },
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 3762,
+   "top": 3769,
    "h": 80,
-   "style": "e41fd1d5",
+   "style": "8e27d025",
    "content": "64de40e3",
    "text": "A suspected vulnerability does not go into a Git"
   },
   {
    "slot": 44,
    "kind": "listItem",
-   "top": 3843,
+   "top": 3849,
    "h": 97,
-   "style": "42376c59",
+   "style": "5afcfeb6",
    "content": "a21334d6",
    "text": "Working notes, draft advisories and CVE records "
   }

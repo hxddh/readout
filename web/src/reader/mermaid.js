@@ -114,6 +114,8 @@ async function pumpMermaid() {
         fresh.innerHTML = out.svg;
         if (out.used) renameIds(fresh, out.id, `mmd-${++mermaidSeq}`);
         out.used = true;
+        // Natural size, never narrower than three quarters of it (the block scrolls).
+        const svg = fresh.querySelector('svg'), w = svg && svg.viewBox.baseVal && svg.viewBox.baseVal.width; if (w) svg.style.minWidth = `${Math.round(w * 0.75)}px`;
       } else {
         fresh = document.createElement('div');
         fresh.className = 'mermaid-error';
