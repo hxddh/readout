@@ -111,16 +111,25 @@ export function forgetDiff(slot) { diffOf.delete(slot); }
 /**
  * D: opens the comparison of the topmost edited block in view that is still
  * closed, so repeated presses walk down the screen; once every one in view
- * is open, closes them all.
+ * is open, closes them all. The blocks in view when the walk started stay in
+ * it while one of them is still in view, so a tall comparison that pushes
+ * the next block off screen does not skip it.
  */
+let walk = [];
 export function toggleDiffInView() {
-  const inView = [...diffOf.keys()].map(slot => slots.get(slot)).filter(el => el && isShown(el) && inViewport(el))
+  const live = slot => { const el = slots.get(slot); return el && diffOf.has(slot) && isShown(el) ? el : null; };
+  const inView = [...diffOf.keys()].map(live).filter(el => el && inViewport(el));
+  if (!inView.length) { walk = []; return false; }
+  const viewed = new Set(inView.map(el => +el.dataset.slot));
+  if (!walk.some(slot => viewed.has(slot))) walk = [];
+  const all = [...new Set([...walk, ...viewed])].map(live).filter(Boolean)
     .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-  if (!inView.length) return false;
-  const closed = inView.find(el => !openDiffs.has(+el.dataset.slot));
+  walk = all.map(el => +el.dataset.slot);
+  const closed = all.find(el => !openDiffs.has(+el.dataset.slot));
   if (closed) return toggleDiff(+closed.dataset.slot);
+  walk = [];
   const anchor = captureAnchor();
-  for (const el of inView) { closeDiff(+el.dataset.slot); heights.set(el, el.getBoundingClientRect().height); }
+  for (const el of all) { closeDiff(+el.dataset.slot); heights.set(el, el.getBoundingClientRect().height); }
   restoreAnchor(anchor, new Set());
   scheduleRail();
   return false;

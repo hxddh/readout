@@ -622,6 +622,28 @@ check('rail labels use the localized template',
   check('D opens the top comparison, then the next, then closes both',
     JSON.stringify(steps) === JSON.stringify([[1801], [1801, 1802], []]), JSON.stringify(steps));
 }
+// A tall comparison that pushes the next edited block off screen does not
+// stop D from reaching it: the press after still opens that block.
+{
+  const base = { rewrite: false, toc: [], tasks: { done: 0, total: 0 }, deletions: [] };
+  const long = 'changed words here '.repeat(1500);
+  await page.evaluate(p => window.readout.apply(p), { ...base, version: 150, reset: true,
+    ops: [{ op: 'insert', slot: 1901, after: 0, kind: 'paragraph', html: '<p>First edited.</p>' },
+          { op: 'insert', slot: 1902, after: 1901, kind: 'paragraph', html: '<p>Second edited.</p>' }],
+    marks: [{ slot: 1901, kind: 'modified', diff: `<del>${long}</del><ins>First</ins> edited.` },
+            { slot: 1902, kind: 'modified', diff: '<ins>Second</ins> edited.' }] });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const press = () => page.evaluate(() => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }));
+    const second = document.querySelector('.blk[data-slot="1902"]').getBoundingClientRect().top;
+    return { open: [1901, 1902].filter(s => document.querySelector(`.blk[data-slot="${s}"] > .wd-panel`)),
+             pushed: second > innerHeight };
+  });
+  const steps = [await press(), await press(), await press()];
+  check('D reaches a comparison the one above pushed off screen',
+    steps[0].pushed && JSON.stringify(steps.map(s => s.open)) === JSON.stringify([[1901], [1901, 1902], []]),
+    JSON.stringify(steps));
+}
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
