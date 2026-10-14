@@ -190,11 +190,14 @@ public enum MarkdownParser {
         func appendListItems(_ list: ListItemContainer, ordered: Bool, start: Int) {
             let tight = renderer.isTight(list)
             let items = Array(list.listItems)
+            // Every item of a list numbered past 99 gets the same marker width.
+            let width = ordered ? HTMLRenderer.numberWidthClass(start: start, count: items.count) : nil
             for (i, item) in items.enumerated() {
                 var cls = "li-block"
                 if i == 0 { cls += " li-first" }
                 if i == items.count - 1 { cls += " li-last" }
                 if !tight { cls += " li-loose" }
+                if let width { cls += " " + width }
                 func html() -> String {
                     let li = renderer.listItem(item, tight: tight)
                     return ordered

@@ -224,6 +224,35 @@ import Testing
         #expect(en.blocks.map(\.cjk) == [false, false])
     }
 
+    @Test func numberedListsWithWideNumbersCarryTheirWidth() {
+        let wide = parse("98. a\n99. b\n100. c\n")
+        #expect(wide.blocks.count == 3)
+        #expect(wide.blocks.allSatisfy { $0.html.hasPrefix("<ol class=\"li-block") && $0.html.contains(" ol-w3\"") })
+        #expect(parse("9998. a\n9999. b\n").blocks.allSatisfy { $0.html.contains(" ol-w4\"") })
+        #expect(parse("123456. a\n").blocks[0].html.contains(" ol-w5\""))
+        let narrow = parse("1. a\n2. b\n").blocks.map(\.html).joined()
+        #expect(!narrow.contains("ol-w"))
+        // A nested list is sized by its own numbers.
+        let nested = parse("1. a\n\n   100. b\n   101. c\n").blocks[0].html
+        #expect(nested.contains("<ol class=\"ol-w3\" start=\"100\">"))
+    }
+
+    @Test func numericColumnsAreMarked() {
+        let doc = parse("""
+        | Name | Time | Share | Size | Note | Price |
+        |------|------|-------|-----:|------|-------|
+        | a | 12 ms | 45% | 3 GiB | v2 | $5 |
+        | b | 1,204.5 ms | −3% | 512 MB | 7 | ~10k |
+        | c |  | 0.5% | 1 KB | x | ≈ 2.5× |
+        """)
+        let h = doc.blocks[0].html
+        #expect(h.contains("<th>Name</th><th class=\"num\">Time</th><th class=\"num\">Share</th><th style=\"text-align:right\">Size</th><th>Note</th><th class=\"num\">Price</th>"))
+        #expect(h.contains("<td>a</td><td class=\"num\">12 ms</td><td class=\"num\">45%</td><td style=\"text-align:right\">3 GiB</td><td>v2</td><td class=\"num\">$5</td>"))
+        #expect(h.contains("<td class=\"num\"></td>"))
+        // A column with no numbers at all is not numeric.
+        #expect(!parse("| a |\n|---|\n|  |\n").blocks[0].html.contains("num"))
+    }
+
     @Test func rawHTMLSrcsetCandidatesResolve() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("readout-srcset-\(UUID())")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
