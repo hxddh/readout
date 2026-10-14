@@ -7,7 +7,7 @@ import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
 const server = http.createServer((req, res) => {
   const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
@@ -997,6 +997,331 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     onScreen === 'dark' && printed === 'light' && after === 'dark' && theme === 'dark' && a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2,
     JSON.stringify({ onScreen, printed, after, theme, a0: [a0.slot, a0.offset], a1: [a1.slot, a1.offset] }));
 }
+// ---------------------------------------------------------------- 3.4 reader fixes
+const gapToEnd = () => page.evaluate(() => { const se = document.scrollingElement; return Math.round(se.scrollHeight - (se.scrollTop + innerHeight)); });
+const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+
+// The agent writes on into the last block (a replace of the last slot, not an
+// insert after it): a reader following the end stays at the end.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(30));
+  let text = 'streamed line one.';
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'insert', slot: 31, after: 30, html: `<p>${text}</p>`, kind: 'paragraph' }] }));
+  await toEnd();
+  await page.waitForTimeout(300);
+  const gaps = [];
+  for (let k = 0; k < 6; k++) {
+    text += ' ' + 'another streamed sentence appended to the same paragraph. '.repeat(6);
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 31, html: `<p>${text}</p>`, kind: 'paragraph', change: 'content' }] }));
+    await page.waitForTimeout(50);
+    gaps.push(await gapToEnd());
+  }
+  // A code block the agent streams into, the same.
+  const code = n => `<div class="code-block" data-lang="text"><pre><code>${Array.from({ length: n }, (_, i) => `line ${i}`).join('\n')}</code></pre></div>`;
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'insert', slot: 32, after: 31, html: code(3), kind: 'code' }] }));
+  await toEnd();
+  await page.waitForTimeout(200);
+  for (let k = 1; k <= 4; k++) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 32, html: code(3 + k * 15), kind: 'code', change: 'content' }] }));
+    await page.waitForTimeout(50);
+    gaps.push(await gapToEnd());
+  }
+  check('writing on into the last block keeps a following reader at the end', gaps.every(g => g <= 1), JSON.stringify(gaps));
+}
+
+// Font size, column width, find mode and window size reflow the page: a
+// reader following the end stays at the end, and goes on following.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(40));
+  await toEnd();
+  await page.waitForTimeout(300);
+  const gaps = {};
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 19 }));
+  await page.waitForTimeout(300);
+  gaps.font = await gapToEnd();
+  await page.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
+  await page.waitForTimeout(300);
+  gaps.width = await gapToEnd();
+  await page.setViewportSize({ width: 640, height: 700 });
+  await page.waitForTimeout(600);
+  gaps.resize = await gapToEnd();
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'insert', slot: 41, after: 40, html: `<p>${'appended live tail text '.repeat(40)}</p>`, kind: 'paragraph' }] }));
+  gaps.append = await gapToEnd();
+  await page.setViewportSize({ width: 900, height: 700 });
+  await page.waitForTimeout(600);
+  gaps.back = await gapToEnd();
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16, width: 'narrow' }));
+  await page.waitForTimeout(300);
+  gaps.restored = await gapToEnd();
+  check('font size, width and window resize keep a following reader at the end',
+    Object.values(gaps).every(g => g <= 1), JSON.stringify(gaps));
+}
+
+// Under the window toolbar: the block at the top is the first one below it,
+// and when that block is removed the next one takes its place below the toolbar.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  // A block hidden under the toolbar is removed: the text below it stays put.
+  await toTop(30, 30);   // block 29 ends under the toolbar, block 30 shows below it
+  await page.waitForTimeout(300);
+  const under = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#ro-doc > .blk')].find(e => e.getBoundingClientRect().bottom > 8);
+    return { slot: +b.dataset.slot, bottom: Math.round(b.getBoundingClientRect().bottom) };
+  });
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: under.slot }], deletions: [{ id: 1, after: under.slot - 1, count: 1, preview: 'x' }] }));
+  const kept = await topOf(30);
+  // The block at the toolbar's edge goes, with the one under the toolbar above
+  // it: the next block takes its place below the toolbar, not under it.
+  await toTop(40, 52);
+  await page.waitForTimeout(300);
+  const a = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 39 }, { op: 'remove', slot: 40 }], deletions: [{ id: 2, after: 38, count: 2, preview: 'x' }] }));
+  const nextTop = await topOf(41);
+  // A block straddling the toolbar's edge grows: the share of it above the
+  // edge stays the same, so the line being read stays at the edge.
+  await toTop(20, 12);
+  await page.waitForTimeout(300);
+  const grow = await page.evaluate(() => {
+    const r = document.querySelector('.blk[data-slot="20"]').getBoundingClientRect();
+    return { slot: window.readout.captureAnchor().slot, above: (52 - r.top) / r.height };
+  });
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 20, html: `<p>para 20 ${'lorem ipsum dolor sit amet '.repeat(18)}</p>`, kind: 'paragraph', change: 'content' }] }));
+  grow.after = await page.evaluate(() => {
+    const r = document.querySelector('.blk[data-slot="20"]').getBoundingClientRect();
+    return { above: (52 - r.top) / r.height, h: r.height };
+  });
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('a block at the toolbar edge keeps its share above the edge when it grows',
+    grow.slot === 20 && Math.abs(grow.after.above * grow.after.h - grow.above * grow.after.h) <= 2, JSON.stringify(grow));
+  // A block under the toolbar grows later (an image, a diagram): the text below it stays put.
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  await toTop(10, 30);
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { const d = document.createElement('div'); d.id = 'grown'; d.style.height = '100px'; document.querySelector('.blk[data-slot="9"]').appendChild(d); });
+  await page.waitForTimeout(300);
+  const grown = await topOf(10);
+  await page.evaluate(() => document.getElementById('grown').remove());
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('a block growing under the toolbar leaves the text below it in place', Math.abs(grown - 30) <= 2, `top=${grown}`);
+  check('removing a block under the toolbar leaves the text below it in place', under.slot === 29 && under.bottom <= 52 && Math.abs(kept - 30) <= 2, JSON.stringify({ under, kept }));
+  check('the reading position is taken below the toolbar and kept there', a.slot === 40 && Math.abs(nextTop - 52) <= 2, JSON.stringify({ slot: a.slot, nextTop }));
+}
+
+// A file emptied and written again (an agent truncating it first) brings the
+// reader back where they were, or to the end when they were following it.
+{
+  const emptyAll = () => fixPatch({ ops: Array.from({ length: 60 }, (_, i) => ({ op: 'remove', slot: i + 1 })), deletions: [{ id: 7, after: 0, count: 60, preview: 'x' }] });
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  await toTop(30);
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(p => window.readout.apply(p), emptyAll());
+  await page.waitForTimeout(200);
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  const after = await page.evaluate(() => window.readout.captureAnchor());
+  await toEnd();
+  await page.waitForTimeout(300);
+  await page.evaluate(p => window.readout.apply(p), emptyAll());
+  await page.waitForTimeout(200);
+  await page.evaluate(p => window.readout.apply(p), fixReset(61));
+  const gap = await gapToEnd();
+  check('an emptied file written again keeps the reading position', before.slot === 30 && after?.slot === 30 && Math.abs(after.offset - before.offset) <= 2 && gap <= 1,
+    JSON.stringify({ before: [before.slot, before.offset], after: after && [after.slot, after.offset], gap }));
+
+  // Written again in parts: the first part does not reach the reader's block.
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  await toTop(30);
+  await page.waitForTimeout(300);
+  const before2 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(p => window.readout.apply(p), emptyAll());
+  await page.evaluate(p => window.readout.apply(p), fixReset(20));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: fixReset(40, undefined, undefined, 21).ops.map((o, i) => ({ ...o, after: 20 + i })) }));
+  const after2 = await page.evaluate(() => window.readout.captureAnchor());
+  // Following, and the first part fits in the window: following goes on.
+  await toEnd();
+  await page.waitForTimeout(300);
+  await page.evaluate(p => window.readout.apply(p), emptyAll());
+  await page.evaluate(p => window.readout.apply(p), fixReset(2));
+  const tail = [];
+  for (const slot of [3, 4, 5]) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'insert', slot, after: slot - 1, html: `<p>${'appended live tail text '.repeat(60)}</p>`, kind: 'paragraph' }] }));
+    tail.push(await gapToEnd());
+  }
+  check('an emptied file written again in parts keeps the reading position, or the end',
+    after2?.slot === 30 && Math.abs(after2.offset - before2.offset) <= 2 && tail.every(g => g <= 1),
+    JSON.stringify({ before: [before2.slot, before2.offset], after: after2 && [after2.slot, after2.offset], tail }));
+}
+
+// Headings are named by their text, not by the link button inside them; the
+// button stays a named, focusable button.
+{
+  const r = fixReset(5, i => i === 1 ? '<h2>Overview of <code>the plan</code></h2>'
+    : i === 2 ? '<h2>Status <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Passing"></h2>'
+    : i === 3 ? '<h2>Build <span class="remote-img" data-src="https://badge.example/b.svg" data-alt="Green"></span><span hidden> secret</span></h2>' : `<p>para ${i}</p>`, i => i <= 3 ? 'heading' : 'paragraph');
+  r.ops[0].anchor = 'overview';
+  r.ops[1].anchor = 'status';
+  r.ops[2].anchor = 'build';
+  await page.evaluate(p => window.readout.apply(p), r);
+  const named = await page.getByRole('heading', { name: 'Overview of the plan', exact: true }).count()
+    + await page.getByRole('heading', { name: 'Status Passing', exact: true }).count()
+    + await page.getByRole('heading', { name: 'Build Green', exact: true }).count();
+  const button = page.getByRole('button', { name: 'Copy Link to Section', exact: true }).first();
+  await button.focus();
+  const focused = await page.evaluate(() => document.activeElement?.classList.contains('h-link'));
+  await page.evaluate(() => { window.__msgs.length = 0; });
+  await page.keyboard.press('Enter');
+  const msg = await page.evaluate(() => window.__msgs.find(m => m.type === 'copyLink'));
+  check('a heading is named by its content alone, its link button stays reachable', named === 3 && focused && msg?.anchor === 'overview',
+    JSON.stringify({ named, focused, msg }));
+}
+
+// An update measures the blocks it changed once, after changing them all: one
+// layout, not one per op.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(120));
+  await toTop(60);
+  await page.waitForTimeout(300);
+  const ops = Array.from({ length: 20 }, (_, i) => ({ op: 'replace', slot: 3 + i * 6, html: `<p>edited ${i} ${'lorem ipsum '.repeat(8)}</p>`, kind: 'paragraph', change: 'content' }));
+  ops.push(...Array.from({ length: 5 }, (_, i) => ({ op: 'insert', slot: 500 + i, after: 50 + i * 10, html: `<p>inserted ${i}</p>`, kind: 'paragraph' })));
+  const layouts = await page.evaluate(p => {
+    // Counts measurements that follow a DOM change: each forces a layout.
+    let dirty = false, layouts = 0;
+    const html = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+    const rect = Element.prototype.getBoundingClientRect;
+    Object.defineProperty(Element.prototype, 'innerHTML', { configurable: true, get() { return html.get.call(this); }, set(v) { dirty = true; html.set.call(this, v); } });
+    Element.prototype.getBoundingClientRect = function () { if (dirty) { layouts++; dirty = false; } return rect.call(this); };
+    try { window.readout.apply(p); } finally {
+      Object.defineProperty(Element.prototype, 'innerHTML', html);
+      Element.prototype.getBoundingClientRect = rect;
+    }
+    return layouts;
+  }, fixPatch({ ops, marks: ops.map(o => ({ slot: o.slot, kind: o.op === 'insert' ? 'inserted' : 'modified' })) }));
+  check('a 25-op update lays out the page once while applying', layouts <= 2, `layouts=${layouts}`);
+}
+
+// While the reader scrolls through a large document, blocks resize as they
+// are laid out: the rail is redrawn a few times a second, not every frame,
+// and its last state is drawn.
+{
+  const r = fixReset(400, i => `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(1 + (i * 7) % 13)}</p>`);
+  r.marks = Array.from({ length: 40 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' }));
+  await page.evaluate(p => window.readout.apply(p), r);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(400);
+  const r2 = await page.evaluate(() => new Promise(resolve => {
+    const rail = document.getElementById('ro-rail');
+    let rebuilds = 0, resizes = 0;
+    const mo = new MutationObserver(recs => { for (const rec of recs) if (rec.removedNodes.length) rebuilds++; });
+    mo.observe(rail, { childList: true });
+    const ro = new ResizeObserver(() => { resizes++; });
+    for (const b of document.querySelectorAll('#ro-doc > .blk')) ro.observe(b);
+    const start = performance.now();
+    const step = () => {
+      window.scrollBy(0, 120);
+      if (performance.now() - start < 1500) requestAnimationFrame(step);
+      else setTimeout(() => { mo.disconnect(); ro.disconnect(); resolve({ rebuilds, resizes, ticks: rail.children.length }); }, 500);
+    };
+    requestAnimationFrame(step);
+  }));
+  const unread = await page.evaluate(() => document.querySelectorAll('#ro-doc > .blk.m-inserted:not(.m-read)').length);
+  // 1.5 s of scrolling plus the half second after: at most one redraw per 250 ms.
+  check('the rail is redrawn at most every 250 ms while blocks resize', r2.resizes > 20 && r2.rebuilds <= 9 && r2.ticks === unread,
+    JSON.stringify({ ...r2, unread }));
+}
+
+// Rail ticks: placed below the window toolbar, at least 6 px tall, titled
+// with their label; a checkbox change is an edit, not an addition.
+{
+  const r = fixReset(30, i => i === 2 ? '<ul><li><input type="checkbox" checked disabled> task</li></ul>' : `<p style="min-height:170px">rail probe ${i}</p>`, i => i === 2 ? 'listItem' : 'paragraph');
+  r.marks = [{ slot: 1, kind: 'inserted' }, { slot: 2, kind: 'state' }];
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52, strings: { railChange: 'Unread change %d of %d: %@', railAdded: 'added', railEdited: 'edited', railRemoved: 'removed' } }));
+  await page.evaluate(p => window.readout.apply(p), r);
+  await page.waitForTimeout(400);
+  const ticks = () => page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => {
+    const rect = b.getBoundingClientRect();
+    return { top: Math.round(rect.top), h: Math.round(rect.height), w: Math.round(rect.width), label: b.getAttribute('aria-label'), title: b.title };
+  }));
+  const before = await ticks();
+  await page.evaluate(() => window.readout.setAppearance({ strings: { railTask: 'task' } }));
+  await page.waitForTimeout(400);
+  const after = await ticks();
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('rail ticks sit below the toolbar, 6 px tall at least, titled with their label',
+    before.length === 2 && before.every(t => t.top >= 52 && t.h >= 6 && t.w === 3 && t.title === t.label), JSON.stringify(before));
+  check('a task change is labelled as one (or as an edit), not as an addition',
+    before[1]?.label === 'Unread change 2 of 2: edited' && after[1]?.label === 'Unread change 2 of 2: task', JSON.stringify({ before, after }));
+}
+
+// The rewrite notice sits below the window toolbar, and fades before it goes.
+{
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  const rw = fixReset(60, i => `<p>rewritten ${i}</p>`, () => 'paragraph', 3000);
+  rw.rewrite = true;
+  const r = await page.evaluate(async p => {
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const notice = document.getElementById('ro-notice');
+    window.readout.apply(p);
+    window.scrollBy(0, document.querySelector('.blk[data-slot="3030"]').getBoundingClientRect().top);
+    await wait(300);
+    const top = Math.round(notice.getBoundingClientRect().top);
+    const t0 = Math.round(document.querySelector('.blk[data-slot="3030"]').getBoundingClientRect().top);
+    await wait(6000 - 300 + 150);
+    const fading = { hidden: notice.hidden, opacity: +getComputedStyle(notice).opacity };
+    await wait(600);
+    const t1 = Math.round(document.querySelector('.blk[data-slot="3030"]').getBoundingClientRect().top);
+    return { top, fading, hidden: notice.hidden, t0, t1 };
+  }, rw);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('the rewrite notice sits below the toolbar', r.top >= 52 + 8, JSON.stringify(r));
+  check('the rewrite notice fades out, then goes without moving the text',
+    !r.fading.hidden && r.fading.opacity < 1 && r.hidden && Math.abs(r.t1 - r.t0) <= 1, JSON.stringify(r));
+}
+
+// The rail's own label comes from the app's strings.
+{
+  const before = await page.evaluate(() => document.getElementById('ro-rail').getAttribute('aria-label'));
+  await page.evaluate(() => window.readout.setAppearance({ strings: { railLabel: '未读变更' } }));
+  await page.waitForTimeout(400);
+  const after = await page.evaluate(() => document.getElementById('ro-rail').getAttribute('aria-label'));
+  await page.evaluate(() => window.readout.setAppearance({ strings: { railLabel: 'Unread changes' } }));
+  check('the rail is labelled with the localized string', before === 'Unread changes' && after === '未读变更', JSON.stringify({ before, after }));
+}
+
+// No data-theme from the app (reader.html sets none): diagrams follow the
+// system's appearance, print light, and the attribute is left absent.
+{
+  const sys = await browser.newPage({ viewport: { width: 900, height: 700 }, colorScheme: 'dark' });
+  sys.on('pageerror', e => errors.push(String(e)));
+  await sys.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await sys.goto(`${base}/reader.html`);
+  await sys.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  const mm = '<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[System] --> B[Theme]</pre></div>';
+  const ops = Array.from({ length: 3 }, (_, i) => ({ op: 'insert', slot: i + 1, after: i, kind: i === 0 ? 'mermaid' : 'paragraph', html: i === 0 ? mm : `<p>para ${i}</p>` }));
+  await sys.evaluate(p => window.readout.apply(p), { ...fixBase, version: 1, reset: true, ops });
+  const fills = () => sys.evaluate(async () => {
+    const b = document.querySelector('.mermaid-block');
+    for (let i = 0; i < 400 && !(b.classList.contains('done') && !b.dataset.stale && !b.classList.contains('busy')); i++) await new Promise(r => setTimeout(r, 20));
+    const svg = b.querySelector('.mermaid-svg')?.innerHTML.toLowerCase() || '';
+    return { theme: svg.includes('#2a2a2c') ? 'dark' : svg.includes('#f5f5f7') ? 'light' : 'none',
+      attr: document.documentElement.getAttribute('data-theme') };
+  });
+  const shown = await fills();
+  await sys.evaluate(() => window.readout.preparePrint());
+  await sys.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  const printed = await fills();
+  await sys.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  const back = await fills();
+  await sys.close();
+  check('with no data-theme, diagrams follow the system, print light, and leave the attribute absent',
+    shown.theme === 'dark' && printed.theme === 'light' && back.theme === 'dark' && [shown, printed, back].every(s => s.attr === null),
+    JSON.stringify({ shown, printed, back }));
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();

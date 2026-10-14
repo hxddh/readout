@@ -7,14 +7,15 @@ export function isShown(e) { return !e.hidden && e.offsetParent !== null; }
 
 function blockList() { return Array.from(doc.children).filter(e => e.classList.contains('blk') && isShown(e)); }
 
-/** First block whose bottom edge is below the top of the viewport. */
+/** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
 function topBlock() {
   const list = blockList();
+  const line = topInset() + 8;
   let lo = 0, hi = list.length - 1, found = null;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
     const r = list[mid].getBoundingClientRect();
-    if (r.bottom > 8) { found = list[mid]; hi = mid - 1; } else { lo = mid + 1; }
+    if (r.bottom > line) { found = list[mid]; hi = mid - 1; } else { lo = mid + 1; }
   }
   return found;
 }
@@ -24,6 +25,8 @@ export function captureAnchor() {
   if (!el) return null;
   const r = el.getBoundingClientRect();
   const offset = -r.top;
+  // The share of the block above the toolbar's edge, kept when its height changes.
+  const ratio = r.height > 0 ? (topInset() - r.top) / r.height : 0;
   let heading = null;
   for (let e = el; e; e = e.previousElementSibling) {
     if (e.classList.contains('k-heading')) { heading = e.dataset.anchor || null; break; }
@@ -31,7 +34,7 @@ export function captureAnchor() {
   // The neighbours stand in for the anchor block if a patch removes it.
   const prev = shownSibling(el, 'previousElementSibling');
   const next = shownSibling(el, 'nextElementSibling');
-  return { slot: +el.dataset.slot, offset, ratio: r.height > 0 ? offset / r.height : 0, heading,
+  return { slot: +el.dataset.slot, offset, ratio, heading,
     prev: prev ? +prev.dataset.slot : null, next: next ? +next.dataset.slot : null };
 }
 
@@ -40,8 +43,9 @@ function shownSibling(el, dir) {
   return null;
 }
 
+/** Returns whether the anchor's own block was there to restore to. */
 export function restoreAnchor(a, changedSlots) {
-  if (!a) return;
+  if (!a) return false;
   let el = slots.get(a.slot);
   // The anchor block may have been hidden by the changes-only filter (or
   // removed): fall back to the nearest visible block in document order,
@@ -49,22 +53,25 @@ export function restoreAnchor(a, changedSlots) {
   if (el && !isShown(el)) el = nearestVisible(el);
   if (el) {
     const r = el.getBoundingClientRect();
-    const want = changedSlots.has(a.slot) ? a.ratio * r.height : a.offset;
+    const want = changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset;
     window.scrollBy(0, r.top + want);
-    return;
+    return slots.has(a.slot);
   }
   // The anchor block is gone: the block that followed it takes its place at
   // the top (or, at the end of the document, the one before it ends there).
-  // Only then the section heading, which can be far above.
+  // Only then the section heading, which can be far above. The top is the
+  // bottom of the window toolbar the page scrolls under.
+  const inset = topInset();
   for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
     let n = slot != null ? slots.get(slot) : null;
     if (n && !isShown(n)) n = nearestVisible(n);
-    if (n) { window.scrollBy(0, n.getBoundingClientRect()[edge]); return; }
+    if (n) { window.scrollBy(0, n.getBoundingClientRect()[edge] - inset); return false; }
   }
   if (a.heading) {
     const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
-    if (h) { window.scrollBy(0, h.getBoundingClientRect().top); return; }
+    if (h) window.scrollBy(0, h.getBoundingClientRect().top - inset);
   }
+  return false;
 }
 
 /** The height of the window toolbar the page scrolls under (set by the app). */
@@ -84,12 +91,19 @@ export function rebaselineHeights() {
 /**
  * Runs `change` (which reflows the page) keeping the reader's place. With
  * `ratio`, the anchor block itself is expected to change height too, so the
- * place within it is kept as a fraction of its height.
+ * place within it is kept as a fraction of its height. A reader following
+ * the end of the document stays at the end (and so keeps following).
  */
-export function keepPlace(change, { ratio = false, anchor = captureAnchor() } = {}) {
+export function keepPlace(change, { ratio = false, anchor = captureAnchor(), bottom = atBottom() } = {}) {
   change();
-  if (anchor) restoreAnchor(anchor, ratio ? new Set([anchor.slot]) : new Set());
+  holdPlace(anchor, bottom, ratio);
   rebaselineHeights();
+}
+
+/** Puts the reader back at `anchor`, or at the end when they were `bottom`. */
+export function holdPlace(anchor, bottom, ratio = false) {
+  if (bottom) window.scrollTo(0, document.scrollingElement.scrollHeight);
+  else if (anchor) restoreAnchor(anchor, ratio ? new Set([anchor.slot]) : new Set());
 }
 
 /** Nearest visible block to `el` in document order (previous first, then next). */
@@ -150,10 +164,13 @@ export function resolveFragment(raw) {
     || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(lower)}"]`);
 }
 
+let settleQueued = false;
+
 // Keep blocks above the viewport from pushing content down when their height changes later
 // (diagrams, math, images, content-visibility estimates becoming real).
 export const resizeObserver = new ResizeObserver(entries => {
   let delta = 0;
+  const inset = topInset();
   for (const entry of entries) {
     const el = entry.target;
     const h = el.getBoundingClientRect().height;
@@ -161,8 +178,18 @@ export const resizeObserver = new ResizeObserver(entries => {
     heights.set(el, h);
     if (prev === undefined || prev === h) continue;
     const r = el.getBoundingClientRect();
-    if (r.bottom <= 1) delta += h - prev; // entirely above the viewport
+    // Entirely above the viewport, or under the toolbar, before it resized.
+    if (r.bottom - (h - prev) <= inset + 1) delta += h - prev;
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) window.scrollBy(0, delta);
+  // Blocks that content-visibility lays out once they come into view change
+  // size again; measured at the start of the next frame, they settle before
+  // its observations. Left to the frame's own layout, WebKit reports a
+  // ResizeObserver loop. (3.3 got this measurement from redrawing the rail
+  // on every callback; the rail is now redrawn at most every 250 ms.)
+  if (!settleQueued) {
+    settleQueued = true;
+    requestAnimationFrame(() => { settleQueued = false; void document.scrollingElement.scrollHeight; });
+  }
   scheduleRail();
 });

@@ -40,7 +40,15 @@
     "parsing) 395. Target: half of 3.3.0. Guard 1.3x the 3.4 measurement.",
     "With those changes two macOS runs measured update_100kb 5.7 and 5.1 ms, update_1mb 25.4 and",
     "23.4 ms (3.3.0: 12.0-12.7 and 64.6-78.6): guards lowered to 12 and 50 (about 2x the higher,",
-    "since parallel parsing on a shared runner may vary more); targets unchanged."
+    "since parallel parsing on a shared runner may vary more); targets unchanged.",
+    "3.4 (web): web_update_20_blocks_1mb_ms now waits two frames after the scroll before the",
+    "update, so the scroll's own layout is no longer counted, and the update measures the blocks",
+    "it changed once after its ops instead of once per op (one layout instead of 20). Three CI",
+    "runs: 18, 21, 16 ms (3.3 on the old harness: 131-245 ms). Guard 700 -> 40: about 2x the",
+    "highest, since shared-runner runs of one commit have differed 2x (225 and 459 above).",
+    "web_first_apply_1mb_painted_ms (new): first apply until the frame showing it is painted;",
+    "three CI runs 3288, 2406, 1934 ms -> guard 4900 (1.5x the highest). web_first_apply_1mb_ms",
+    "measured 2361, 1610, 1266 in the same runs (unchanged code; 1017-2201 before): guard stays 3000."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 421, "guard": 514 },
   "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": 12 },
@@ -50,6 +58,7 @@
   "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 12800 },
   "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 1400 },
   "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": 3000 },
-  "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 700 },
+  "web_first_apply_1mb_painted_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": 4900 },
+  "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 40 },
   "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null }
 }

@@ -58,7 +58,32 @@ function setupHeadingLink(h) {
     setTimeout(() => { btn.dataset.label = '§'; }, 1200);
   });
   // At the start of the heading's first line (CSS moves it into the gutter).
-  (h.querySelector('h1, h2, h3, h4, h5, h6') || h).prepend(btn);
+  // Inside the heading, its label would start the heading's accessible name
+  // ("Copy Link to Section Overview"): the heading is named by its own content.
+  const hn = h.querySelector('h1, h2, h3, h4, h5, h6') || h;
+  const name = contentName(hn).replace(/\s+/g, ' ').trim();
+  if (name) hn.setAttribute('aria-label', name);
+  hn.prepend(btn);
+}
+
+/**
+ * The name a heading's content gives it: its text, with images (remote ones
+ * too) by their alt text and elements by their own label; hidden content left out.
+ */
+function contentName(node) {
+  let out = '';
+  for (const n of node.childNodes) {
+    if (n.nodeType === Node.TEXT_NODE) { out += n.data; continue; }
+    if (n.nodeType !== Node.ELEMENT_NODE || n.classList.contains('h-link')) continue;
+    // Hidden (the block may not be in the page yet, so no computed style).
+    if (n.hidden || n.getAttribute('aria-hidden') === 'true' || n.style?.display === 'none' || n.style?.visibility === 'hidden') continue;
+    const label = n.getAttribute('aria-label');
+    if (label) out += ` ${label} `;
+    else if (n.classList.contains('remote-img')) out += n.dataset.alt || '';   // a remote image not loaded (yet): its button is not its name
+    else if (n.localName === 'img') out += n.getAttribute('alt') || '';
+    else out += contentName(n);
+  }
+  return out;
 }
 
 /**

@@ -5,12 +5,12 @@
 // Requires web/build.mjs to have run. Exits nonzero on any failure.
 import { chromium, webkit, firefox } from 'playwright';
 import http from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
 const TRACK = process.argv[2] || 'track.example';
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
 const server = http.createServer((req, res) => {
   const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
@@ -77,6 +77,51 @@ await page.waitForTimeout(500);
 const loadMsg = await page.evaluate(() => window.__msgs.find(m => m.type === 'loadRemote'));
 check('placeholder click posts loadRemote', !!loadMsg && loadMsg.url === `${T}/a.png`, JSON.stringify(loadMsg));
 check('still no direct requests after click', escaped === 0, `escaped=${escaped}`);
+
+// Diagrams: Mermaid and every chunk it loads come from the app's own files,
+// never the network. A flowchart loads the core and the flowchart's chunks,
+// not every kind of diagram.
+{
+  const requests = [];
+  const missing = [];
+  page.on('request', r => requests.push(r.url()));
+  page.on('response', r => { if (r.status() >= 400) missing.push(`${r.status()} ${r.url()}`); });
+  const block = src => `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>`;
+  const draw = sources => page.evaluate(async sources => {
+    window.readout.apply({ version: 2, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+      ops: sources.map((html, i) => ({ op: 'insert', slot: i + 1, after: i, kind: 'mermaid', html })) });
+    const blocks = () => [...document.querySelectorAll('.mermaid-block')];
+    for (let i = 0; i < 1500 && !blocks().every(b => b.classList.contains('done') || b.querySelector('.mermaid-error')); i++) {
+      for (const b of blocks()) if (!b.classList.contains('done')) b.scrollIntoView();
+      await new Promise(r => setTimeout(r, 20));
+    }
+    return blocks().map(b => b.classList.contains('done') ? 'done' : (b.querySelector('.mermaid-error')?.textContent || 'pending'));
+  }, sources.map(block));
+  const vendorBytes = () => requests.filter(u => u.startsWith(`${base}/vendor/mermaid/`))
+    .reduce((n, u) => n + statSync(join('build/Web', new URL(u).pathname)).size, 0);
+  const flow = await draw(['graph TD\n  A[Start] --> B{Choice}\n  B --> C[End]']);
+  const flowBytes = vendorBytes();
+  console.log(`Mermaid loaded for one flowchart: ${(flowBytes / 1e6).toFixed(2)} MB in ${requests.filter(u => u.includes('/vendor/mermaid/')).length} files`);
+  const kinds = await draw([
+    'sequenceDiagram\n  Alice->>Bob: Hi\n  Bob-->>Alice: Hello',
+    'classDiagram\n  Animal <|-- Duck',
+    'stateDiagram-v2\n  [*] --> Still\n  Still --> [*]',
+    'erDiagram\n  CUSTOMER ||--o{ ORDER : places',
+    'gantt\n  title Plan\n  dateFormat YYYY-MM-DD\n  section A\n  Task :a1, 2024-01-01, 3d',
+    'pie title Pets\n  "Dogs" : 386\n  "Cats" : 85',
+    'mindmap\n  root((Plan))\n    A\n    B',
+    'gitGraph\n  commit\n  branch dev\n  commit',
+    'journey\n  title Day\n  section Work\n  Code: 5: Me',
+    'timeline\n  title History\n  2024 : Start',
+  ]);
+  const external = requests.filter(u => !u.startsWith(`${base}/`));
+  check('a flowchart draws from the bundled ESM build, loading only what it needs',
+    flow[0] === 'done' && !requests.some(u => u.endsWith('mermaid.min.js')) && flowBytes > 0 && flowBytes < 3_000_000,
+    JSON.stringify({ flow, flowBytes }));
+  check('every kind of diagram draws from bundled chunks', kinds.every(k => k === 'done'), JSON.stringify(kinds));
+  check('diagrams make no external requests and miss no file', external.length === 0 && missing.length === 0 && escaped === 0,
+    JSON.stringify({ external, missing }));
+}
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 

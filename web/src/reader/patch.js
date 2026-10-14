@@ -8,6 +8,12 @@ import { reportActiveHeading, headingsChanged } from './heading.js';
 
 const notice = document.getElementById('ro-notice');
 let first = true;
+// The reader's place when a patch emptied the document. An agent truncates a
+// file before writing it again, and a read can land in between or catch the
+// new text half written: the refill brings the reader back there (or to the
+// end, when they were following), and so do the patches after it until
+// their block is back (or they reach the end), or until they move.
+let held = null;   // {anchor, following, top}
 
 function estimateHeight(kind, html) {
   const text = html.length;
@@ -43,15 +49,20 @@ function fillBlock(el, op) {
 export function apply(p) {
   const isFirst = first;
   first = false;
-  const anchor = isFirst ? null : captureAnchor();
-  const following = !isFirst && atBottom();
+  // The document was emptied (truncated): the place it had before counts.
+  if (held && slots.size > 0 && Math.abs(document.scrollingElement.scrollTop - held.top) > 2) held = null;   // the reader moved
+  const place = held;
+  held = null;
+  const anchor = isFirst ? null : place ? place.anchor : captureAnchor();
+  const following = !isFirst && (place ? place.following : atBottom());
   // Only follow when the change is at (or below) the viewport: an insertion
   // at the top of the document must not yank a bottom-dwelling reader.
   // The anchor block itself counts: if it was edited, restoring it keeps us
   // at the end anyway.
   // Appending at the end is the live tail an agent writes: it counts as near
   // whatever its predecessor's position (the page's bottom padding keeps the
-  // last block well above the bottom of the viewport).
+  // last block well above the bottom of the viewport). So does the agent
+  // writing on into that last block (a replace of it).
   let changeNearViewport = false;
   if (following && !p.reset) {
     let last = doc.lastElementChild;
@@ -60,6 +71,7 @@ export function apply(p) {
     for (const op of p.ops) {
       if (op.op === 'remove') continue;
       if (op.op === 'insert' && op.after === lastSlot) { changeNearViewport = true; break; }
+      if (op.op === 'replace' && op.slot === lastSlot) { changeNearViewport = true; break; }
       const el = slots.get(op.slot);
       // Inserted blocks have no element yet; locate via the predecessor.
       const ref = el || (op.after ? slots.get(op.after) : null);
@@ -74,6 +86,9 @@ export function apply(p) {
   const rerendered = [];   // silent replaces: new HTML, no mark
   const visibleChanged = [];
   const inserted = [];
+  // Measured once after all the ops: a measurement between two DOM changes
+  // forces a layout each time.
+  const maybeVisible = [];
 
   if (p.reset) {
     for (const el of slots.values()) resizeObserver.unobserve(el);
@@ -92,7 +107,7 @@ export function apply(p) {
       fillBlock(el, op);
       if (op.change === 'content') forgetDiff(op.slot);
       if (wasMarked && op.change === 'silent') el.classList.add(wasMarked);
-      if (op.change !== 'silent') { changed.add(op.slot); if (!p.reset && inViewport(el)) visibleChanged.push(el); }
+      if (op.change !== 'silent') { changed.add(op.slot); if (!p.reset) maybeVisible.push(el); }
       else rerendered.push(el);
     } else if (op.op === 'insert') {
       const el = makeBlock(op);
@@ -102,9 +117,11 @@ export function apply(p) {
       else doc.prepend(el);
       slots.set(op.slot, el);
       resizeObserver.observe(el);
-      if (!p.reset) { changed.add(op.slot); inserted.push(el); if (inViewport(el)) visibleChanged.push(el); }
+      if (!p.reset) { changed.add(op.slot); inserted.push(el); maybeVisible.push(el); }
     }
   }
+
+  for (const el of maybeVisible) if (el.isConnected && inViewport(el)) visibleChanged.push(el);
 
   updateCv();
   // Content can arrive in a patch that is not a reset (a file that was empty).
@@ -130,6 +147,7 @@ export function apply(p) {
   if (p.rewrite) showNotice(strings.rewritten);
 
   // Restore position in the same task, before the browser paints.
+  let restored = false;
   if (follow) {
     // In a large document a new block counts at its estimated height until
     // it is laid out: lay out the new ones now so the end is the real end.
@@ -141,7 +159,11 @@ export function apply(p) {
     // size: content-visibility then keeps that size (and they are on screen).
     if (forced.length) requestAnimationFrame(() => requestAnimationFrame(() => { for (const el of forced) el.style.contentVisibility = ''; }));
   }
-  else if (anchor) restoreAnchor(anchor, changed);
+  else if (anchor) restored = restoreAnchor(anchor, changed);
+  // Emptied, or refilled only in part: hold on to the reader's place.
+  if (anchor && (slots.size === 0 || (place && (following ? !atBottom() : !restored)))) {
+    held = { anchor, following, top: document.scrollingElement.scrollTop };
+  }
 
   for (const el of visibleChanged) {
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
@@ -157,16 +179,25 @@ export function apply(p) {
   requestAnimationFrame(() => setTimeout(() => post({ type: 'painted', version: p.version }), 0));
 }
 
+const NOTICE_MS = 6000;
+const NOTICE_FADE_MS = 400;   // reader.css: #ro-notice's opacity transition
+
 function showNotice(text) {
   notice.textContent = text;
   notice.hidden = false;
+  notice.style.opacity = '';
   clearTimeout(showNotice.t);
-  // The notice sits in the flow above the document: hiding it keeps the reader's place.
+  // It fades out, then leaves the flow above the document: hiding it keeps
+  // the reader's place.
   showNotice.t = setTimeout(() => {
-    const anchor = captureAnchor();
-    notice.hidden = true;
-    restoreAnchor(anchor, new Set());
-  }, 6000);
+    notice.style.opacity = '0';
+    showNotice.t = setTimeout(() => {
+      const anchor = captureAnchor();
+      notice.hidden = true;
+      notice.style.opacity = '';
+      restoreAnchor(anchor, new Set());
+    }, NOTICE_FADE_MS);
+  }, NOTICE_MS);
 }
 
 // Large documents let WebKit skip laying out off-screen blocks
