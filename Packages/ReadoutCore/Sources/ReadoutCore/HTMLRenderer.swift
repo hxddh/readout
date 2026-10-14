@@ -248,8 +248,11 @@ struct HTMLRenderer {
     /// A number as tables hold them: an optional sign, currency or
     /// approximation, digits with separators, an optional unit or `%`, and
     /// an optional footnote star (`12 ms`, `−3%`, `$5`, `~10k`, `3 GiB`, `2.5×`).
+    /// At most one decimal point and none at the end, commas only between
+    /// groups of three: versions, addresses and list-like steps (`1.0.0`,
+    /// `10.0.0.1`, `1.`) are not numbers.
     private static let numberPattern = try! NSRegularExpression(
-        pattern: #"^[-+−$€£¥~≈<>]?\s*[\d.,]*\d[\d.,]*\s*(?:%|ms|[µμ]s|s|x|×|[KMGT]i?B|k|M)?\*?$"#)
+        pattern: #"^[-+−$€£¥~≈<>]?\s*(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)\s*(?:%|ms|[µμ]s|s|x|×|[KMGT]i?B|k|M)?\*?$"#)
 
     static func isNumber(_ text: String) -> Bool {
         guard text.utf8.count <= 40, text.utf8.contains(where: { $0 >= 0x30 && $0 <= 0x39 }) else { return false }
