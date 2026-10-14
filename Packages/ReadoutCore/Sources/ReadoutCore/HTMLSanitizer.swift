@@ -27,9 +27,9 @@ enum HTML {
     private static let deniedTagPattern = try! NSRegularExpression(
         pattern: "<(/?(?:" + deniedTags.joined(separator: "|") + ")(?=[\\s/>]|$))", options: .caseInsensitive)
 
-    /// A media tag with a `src` or `srcset` attribute.
+    /// A media tag with a `src` or `srcset` attribute (a `>` inside a quoted value does not end it).
     private static let remoteMediaSrc = try! NSRegularExpression(
-        pattern: #"<(img|video|audio|source|track)\b[^>]*?\s(?:src|srcset)\s*=[^>]*>?"#,
+        pattern: #"<(img|video|audio|source|track)\b(?:[^>"']|"[^"]*"|'[^']*')*?\s(?:src|srcset)\s*=(?:[^>"']|"[^"]*"|'[^']*')*>?"#,
         options: .caseInsensitive)
     /// Each `src` and `srcset` attribute of a media tag.
     private static let sourceAttribute = try! NSRegularExpression(

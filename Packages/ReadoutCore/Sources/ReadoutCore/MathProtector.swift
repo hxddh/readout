@@ -124,7 +124,9 @@ struct MathProtector {
         return nil
     }
 
-    /// `>`, or a bullet or `1.` / `1)` followed by white space or the end of the line.
+    /// A quote or list item that may interrupt a paragraph (the `$$` text
+    /// is one): `>`, or a bullet or `1.` / `1)`, then white space and text.
+    /// Other numbers (`2. y`) and empty items are lazy continuation lines.
     private static func startsContainer(_ s: Substring) -> Bool {
         guard let c = s.first else { return false }
         if c == ">" { return true }
@@ -132,15 +134,16 @@ struct MathProtector {
         if c == "-" || c == "*" || c == "+" {
             // nothing more
         } else if c.isASCII, c.isNumber {
-            let digits = rest.prefix(while: { $0.isASCII && $0.isNumber })
-            guard digits.count < 9 else { return false }
-            rest = rest.dropFirst(digits.count)
+            let digits = s.prefix(while: { $0.isASCII && $0.isNumber })
+            guard digits.count <= 9, Int(digits) == 1 else { return false }
+            rest = s.dropFirst(digits.count)
             guard let d = rest.first, d == "." || d == ")" else { return false }
             rest = rest.dropFirst()
         } else {
             return false
         }
-        return rest.first.map { $0 == " " || $0 == "\t" } ?? true
+        guard let space = rest.first, space == " " || space == "\t" else { return false }
+        return rest.contains(where: { $0 != " " && $0 != "\t" })
     }
 
     private mutating func token(_ tex: String, display: Bool) -> String {

@@ -266,6 +266,10 @@ import Testing
         let remote = MarkdownParser.parse("<img src=\"a.png\" srcset=\"https://example.com/a.png 2x\">\n", resolver: resolver).blocks[0].html
         #expect(remote.contains("class=\"remote-img\"") && remote.contains("data-src=\"https://example.com/a.png\""))
         #expect(!remote.contains("<img"))
+        // A `>` inside a quoted path is part of it.
+        let gt = ReadoutURL.file(dir.appendingPathComponent("a>b.png").standardizedFileURL.path)
+        let quoted = MarkdownParser.parse("<img src=\"a>b.png\" alt=\"x\">\n", resolver: resolver).blocks[0].html
+        #expect(quoted.trimmingCharacters(in: .newlines) == "<img src=\"\(HTML.escape(gt))\" alt=\"x\">")
     }
 
     @Test func tocWithSectionTasks() {

@@ -65,6 +65,10 @@ import Testing
         #expect(outdented.blocks.count == 2 && outdented.blocks.last?.kind == .quote)
         // Closed inside the item it still is display math.
         #expect(html("- $$\n  a_1\n  $$\n- next\n").contains("data-tex=\"a_1\""))
+        // Lines that cannot interrupt a paragraph (another number than 1, an
+        // empty item) are lazy continuation lines: the span goes on.
+        #expect(html("- $$\n  x\n2. y\n  $$\n").contains("data-tex=\"x\n2. y\""))
+        #expect(html("- $$\n  x\n-\n  $$\n").contains("data-tex=\"x\n-\""))
     }
 
     @Test func displayMathAfterATextLine() {
