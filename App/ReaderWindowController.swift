@@ -411,12 +411,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 return
             }
             self.updateModel(patch, decoded: result.decoded)
-            let restore = self.placeAfterRefill(wasEmpty: wasEmpty, patch: patch)
-            self.webView.whenReady { [weak self] in
-                guard let self else { return }
-                self.webView.call("apply", patch)
-                if let restore { self.scrollToAnchor(restore) }
-            }
+            self.keepPlaceAcrossRefill(wasEmpty: wasEmpty, patch: patch)
+            self.webView.whenReady { [weak self] in self?.webView.call("apply", patch) }
             self.scheduleSave()
         }
     }
@@ -425,25 +421,18 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// before writing it again), until it has content again.
     private var anchorBeforeEmpty: (slot: Int, offset: Double)?
 
-    /// After a brief truncate-and-refill, the page gets the whole document
-    /// again (a reset) and may have lost the place: the reader's last place,
-    /// when its block is back. Scrolling there again is harmless when the page kept it.
-    private func placeAfterRefill(wasEmpty: Bool, patch: RenderPatch) -> (slot: Int, offset: Double)? {
+    /// After a brief truncate-and-refill the page itself returns to the
+    /// reader's place (or to the end when following), so the app does not
+    /// scroll: it only keeps the saved position from the empty interval out
+    /// of the record until the page reports the place again.
+    private func keepPlaceAcrossRefill(wasEmpty: Bool, patch: RenderPatch) {
         if session.blocks.isEmpty {
             if anchorBeforeEmpty == nil { anchorBeforeEmpty = lastAnchor }
-            return nil
+            return
         }
         defer { anchorBeforeEmpty = nil }
-        guard wasEmpty, patch.reset, let a = anchorBeforeEmpty, session.blocks.contains(where: { $0.slot == a.slot }) else { return nil }
+        guard wasEmpty, patch.reset, let a = anchorBeforeEmpty, session.blocks.contains(where: { $0.slot == a.slot }) else { return }
         lastAnchor = a
-        return a
-    }
-
-    private func scrollToAnchor(_ a: (slot: Int, offset: Double)) {
-        let anchor = ["slot": a.slot, "offset": a.offset, "ratio": 0] as [String: Any]
-        if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
-            webView.call("scrollToAnchor", json: json)
-        }
     }
 
     private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded) {
