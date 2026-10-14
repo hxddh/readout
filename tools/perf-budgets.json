@@ -33,8 +33,13 @@
     "3.2: update_100kb and update_1mb are measured on the fastest of 9 / 7 runs (runner",
     "interference only adds time). Three macOS runs of the same commit: update_100kb 11.2,",
     "11.7, 11.7 ms; update_1mb 59.0, 56.6, 51.9 ms. Guards lowered to 18 and 90 (1.5x the",
-    "highest); both now meet their targets."
+    "highest); both now meet their targets.",
+    "3.4: update_1mb_minstr is the same update counted in instructions (millions) by valgrind",
+    "in the Linux core job (Packages/ReadoutCore/Tools/perf-instructions.sh), which runner noise",
+    "does not move. 3.3.0 measured 842 with Swift 6.1 on Linux; 3.4 (byte scans, parallel fragment",
+    "parsing) 395. Target: half of 3.3.0. Guard 1.3x the 3.4 measurement."
   ],
+  "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 421, "guard": 514 },
   "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": 18 },
   "word_diff_100kb":            { "where": "mac",          "unit": "ms",     "target": 5,    "guard": 5 },
   "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 90 },
