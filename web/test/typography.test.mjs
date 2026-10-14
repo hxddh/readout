@@ -421,6 +421,7 @@ for (const dark of [false, true]) {
       katexMargin: [cs(ms.querySelector('.katex-display')).marginTop, cs(ms.querySelector('.katex-display')).marginBottom], mathBg: cs(ms).backgroundImage,
       longOverflows: $('#m-long').scrollWidth > $('#m-long').clientWidth,
       h4: h('v4'), h5: h('v5'), h6: h('v6'), text3: cs(document.documentElement).getPropertyValue('--text-3').trim(), rem: parseFloat(cs(document.documentElement).fontSize),
+      pageBg: cs(document.documentElement).backgroundColor,
       ol2: cs($('#ol2')).listStyleType, ol3: cs($('#ol3')).listStyleType,
       w: ['w3', 'w4', 'w5'].map(id => parseFloat(cs($(`#${id}`)).paddingLeft) / parseFloat(cs($(`#${id}`)).fontSize)),
     };
@@ -448,7 +449,9 @@ for (const dark of [false, true]) {
   check(`a formula block carries the overflow shade (${th})`, /gradient/.test(g.mathBg) && g.longOverflows, JSON.stringify([g.mathBg.slice(0, 60), g.longOverflows]));
   // 10. Heading levels: h4 has room above it, h5/h6 some; h6 is quieter than h5.
   check(`h4/h5/h6 keep space above (${th})`, Math.abs(g.h4.mt - 0.6 * g.rem) < 0.5 && Math.abs(g.h5.mt - 0.3 * g.rem) < 0.5 && Math.abs(g.h6.mt - 0.3 * g.rem) < 0.5, JSON.stringify([g.h4, g.h5, g.h6]));
-  check(`h6 is smaller and quieter than h5, not uppercase (${th})`, g.h6.fs < g.h5.fs && g.h6.color !== g.h5.color && g.h6.tt === 'none', JSON.stringify([g.h5, g.h6]));
+  const ratio = (a, b) => { const lum = c => { const [r, gg, bb] = c.match(/[\d.]+/g).slice(0, 3).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * gg + 0.0722 * bb; };
+    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  check(`h6 is smaller than h5, not uppercase, and meets AA (${th})`, g.h6.fs < g.h5.fs && g.h6.tt === 'none' && ratio(g.h6.color, g.pageBg) >= 4.5, JSON.stringify([g.h5, g.h6, g.pageBg]));
   // 11, 12. Nested numbered lists: i, then a. Long numbered lists: a wider indent.
   check(`nested numbered lists use roman, then letters (${th})`, g.ol2 === 'lower-roman' && g.ol3 === 'lower-alpha', JSON.stringify([g.ol2, g.ol3]));
   check(`3, 4 and 5 digit numbered lists widen the indent (${th})`, [2.1, 2.6, 3.1].every((v, i) => Math.abs(g.w[i] - v) < 0.01), JSON.stringify(g.w));
@@ -540,6 +543,45 @@ for (const dark of [false, true]) {
   const barPx = [...PNG.sync.read(await page.screenshot({ clip: { x: bar.x, y: bar.y, width: 1, height: 1 } })).data.subarray(0, 3)];
   check(`increase contrast: solid 4 px change marks (${th})`, hc.modW === '4px' && barPx.every(v => Math.abs(v - 140) <= 3) && parseFloat(hc.readW) >= 2, JSON.stringify({ ...hc, barPx }));
   check(`increase contrast: the diff panel and popover have edges (${th})`, /inset/.test(hc.panel) && hc.pop !== 'none', JSON.stringify(hc));
+  await page.close();
+}
+
+// 12, 13. Real parser output (web/test/fixtures/lists-tables.md rendered by
+//         ReadoutCore to lists-tables.json): numeric columns carry class
+//         "num" and align right; long numbered lists carry ol-w3/4/5, top
+//         level and nested, and their numbers fit inside the indent.
+{
+  const real = JSON.parse(readFileSync(new URL('./fixtures/lists-tables.json', import.meta.url), 'utf8'));
+  page = await open(600);
+  await page.evaluate(p => window.readout.apply(p), real);
+  await page.waitForTimeout(300);
+  const r = await page.evaluate(() => {
+    const cs = e => getComputedStyle(e);
+    const cells = [...document.querySelectorAll('.table-wrap tr:nth-child(1) td'), ...document.querySelectorAll('.table-wrap th')]
+      .map(c => [c.tagName, c.className, cs(c).textAlign]);
+    const lists = [...document.querySelectorAll('ol.ol-w3, ol.ol-w4, ol.ol-w5')].map(ol => {
+      const li = ol.querySelector(':scope > li:last-child');
+      const n = (+ol.getAttribute('start') || 1) + ol.children.length - 1;
+      const probe = document.createElement('span');
+      probe.textContent = `${n}.`;
+      probe.style.cssText = `font: ${cs(li).font}; font-variant-numeric: tabular-nums; position: absolute; white-space: nowrap`;
+      document.body.appendChild(probe);
+      const w = probe.getBoundingClientRect().width; probe.remove();
+      return { cls: ol.className, nested: !ol.classList.contains('li-block'), pad: parseFloat(cs(ol).paddingLeft), em: parseFloat(cs(ol).fontSize), marker: Math.round(w), type: cs(ol).listStyleType };
+    });
+    return { cells, lists };
+  });
+  const numOK = r.cells.every(([, cls, align]) => (cls === 'num') === (align === 'right'));
+  check('parser-marked numeric columns align right, others do not', numOK && r.cells.filter(c => c[1] === 'num').length === 4, JSON.stringify(r.cells));
+  const want = { 'ol-w3': 2.1, 'ol-w4': 2.6, 'ol-w5': 3.1 };
+  const wOK = r.lists.length === 8 && r.lists.every(l => { const k = l.cls.match(/ol-w\d/)[0]; return Math.abs(l.pad / l.em - want[k]) < 0.01; });
+  check('parser ol-w3/4/5 lists (top level and nested) get the wider indent', wOK && r.lists.some(l => l.nested), JSON.stringify(r.lists));
+  // A number may hang a little into the gutter, as two-figure ones do with
+  // the plain 1.5em indent, but never as far as the change bar (10-13 px into
+  // the 28 px gutter): at most half an em past the indent. Without the
+  // classes the 4 and 5 figure numbers would hang 14-32 px.
+  check('their largest numbers stay clear of the change bar', r.lists.every(l => l.marker <= l.pad + 0.5 * l.em), JSON.stringify(r.lists));
+  check('a nested list numbered past 99 keeps decimal numbers', r.lists.filter(l => l.nested).every(l => l.type === 'decimal'), JSON.stringify(r.lists));
   await page.close();
 }
 

@@ -183,7 +183,8 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading h1 { letter-spacing: -0.015em; font-weight: 700; }
 .k-heading h2 { letter-spacing: -0.01em; }
 .k-heading h5 { color: var(--text-2); }
-.k-heading h6 { color: var(--text-3); }
+/* h6: smaller than h5 in the same secondary colour (AA: 6.3:1 light, 7.0:1 dark). */
+.k-heading h6 { color: var(--text-2); }
 
 /* A quiet underline tells a link from the text in both themes (in dark the
    link colour alone is only about 2:1 against the text); full on hover. */
@@ -267,11 +268,14 @@ ol.li-block > li::marker { font-variant-numeric: tabular-nums; }
 /* Nested numbered lists count differently from their parent: 1. › i. › a. */
 .li-block li ol { list-style-type: lower-roman; }
 .li-block li ol ol { list-style-type: lower-alpha; }
+/* A nested list numbered past 99 keeps its digits (no CMXCVIII.). */
+.li-block li ol:is(.ol-w3, .ol-w4, .ol-w5) { list-style-type: decimal; }
 /* Long numbered lists (3, 4, 5+ digit numbers) widen the indent so the
-   numbers stay inside the column. */
-ol.li-block.ol-w3 { padding-left: 2.1em; }
-ol.li-block.ol-w4 { padding-left: 2.6em; }
-ol.li-block.ol-w5 { padding-left: 3.1em; }
+   numbers stay inside the column: top-level items (ol.li-block) and lists
+   nested in an item, a quote, an alert or a disclosure. */
+ol.ol-w3, .li-block li > ol.ol-w3 { padding-left: 2.1em; }
+ol.ol-w4, .li-block li > ol.ol-w4 { padding-left: 2.6em; }
+ol.ol-w5, .li-block li > ol.ol-w5 { padding-left: 3.1em; }
 
 li.task { list-style: none; position: relative; }
 li.task > .task-box {
