@@ -150,7 +150,7 @@
    "kind": "table",
    "top": 2518,
    "h": 270,
-   "style": "0cb73cad",
+   "style": "72f8c573",
    "content": "5695e6a8",
    "text": "ConfigVUsRequestsIterationsElapsedRPSError %P50P"
   },
@@ -294,7 +294,7 @@
    "kind": "table",
    "top": 5332,
    "h": 191,
-   "style": "467086d7",
+   "style": "5b76babb",
    "content": "eb32daa4",
    "text": "Runsingle-get VUs=50 error%chained-5-step VUs=50"
   },

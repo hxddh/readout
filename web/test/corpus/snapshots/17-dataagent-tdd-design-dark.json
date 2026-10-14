@@ -393,7 +393,7 @@
    "kind": "table",
    "top": 6751,
    "h": 234,
-   "style": "cde04820",
+   "style": "f43f92aa",
    "content": "74a37cb0",
    "text": "FileMethodsActionStateUtilSimpleTest.java7Expand"
   },
@@ -2265,7 +2265,7 @@
    "kind": "table",
    "top": 26278,
    "h": 415,
-   "style": "acc4dd9f",
+   "style": "c2dc2ec7",
    "content": "842480c9",
    "text": "ComponentTargetPhase 0Phase 1Phase 2Phase 3Phase"
   },
@@ -2418,7 +2418,7 @@
    "kind": "table",
    "top": 27836,
    "h": 343,
-   "style": "98e95bea",
+   "style": "715a4435",
    "content": "132c0283",
    "text": "PhaseNew TestsRestored TestsTotal MethodsPhase 0"
   },
@@ -2535,7 +2535,7 @@
    "kind": "table",
    "top": 28601,
    "h": 372,
-   "style": "12965246",
+   "style": "d1da3248",
    "content": "70ad85d3",
    "text": "PhaseFocusDeliverableCoverage Target0Cleanup & R"
   },
@@ -2562,7 +2562,7 @@
    "kind": "table",
    "top": 29064,
    "h": 742,
-   "style": "6ded0d93",
+   "style": "76ef1ae2",
    "content": "93904ccc",
    "text": "NodeConstructor DependenciesMock CountIntentReco"
   },
