@@ -64,6 +64,11 @@ final class FSEventsStream {
     /// Stops and invalidates the stream on its queue, so it never races a callback.
     func stop() { queue.runSync { stopOnQueue() } }
 
+    /// Stops it once the queue is free, without waiting: for a caller on the
+    /// main thread while long work (a folder scan) may hold the queue. Events
+    /// delivered before then still reach the handler, which must drop them.
+    func stopAsync() { queue.async { self.stopOnQueue() } }
+
     private func stopOnQueue() {
         guard let s = stream else { return }
         stream = nil
@@ -94,11 +99,12 @@ final class FileWatcher {
     private let onRetarget: (String) -> Void
     private var stopped = false
 
-    // Debounce: trailing 80 ms, but never hold an update for more than 400 ms during continuous writes.
+    // Debounce: the first event after a quiet spell is reported at once; a
+    // burst after it waits for 80 ms without events, but never more than
+    // 400 ms. DocumentLoader retries a write that looks half-finished, and
+    // drops a re-read of identical bytes.
     private var pending: DispatchWorkItem?
-    private var firstPendingAt: Date?
-    private let trailing: TimeInterval = 0.08
-    private let maxWait: TimeInterval = 0.4
+    private var debounce = WriteDebounce(trailing: 0.08, maxWait: 0.4)
 
     private var lastPollSignature: [Int]?
 
@@ -190,20 +196,32 @@ final class FileWatcher {
         }
     }
 
+    private static func now() -> Double { ProcessInfo.processInfo.systemUptime }
+
     private func schedule() {
-        let now = Date()
-        if firstPendingAt == nil { firstPendingAt = now }
-        pending?.cancel()
-        let waited = now.timeIntervalSince(firstPendingAt!)
-        let delay = max(0, min(trailing, maxWait - waited))
-        let item = DispatchWorkItem { [weak self] in
-            guard let self, !self.stopped else { return }
-            self.firstPendingAt = nil
-            let exists = FileManager.default.fileExists(atPath: self.url.path)
-            DispatchQueue.main.async { self.onChange(exists ? .modified : .deleted) }
+        switch debounce.event(at: Self.now()) {
+        case .fire:
+            report()
+        case .schedule(let delay):
+            pending?.cancel()
+            let item = DispatchWorkItem { [weak self] in
+                guard let self, !self.stopped else { return }
+                self.pending = nil
+                self.debounce.fired(at: Self.now())
+                self.report()
+            }
+            pending = item
+            queue.asyncAfter(deadline: .now() + delay, execute: item)
         }
-        pending = item
-        queue.asyncAfter(deadline: .now() + delay, execute: item)
+    }
+
+    /// On `queue`.
+    private func report() {
+        let exists = FileManager.default.fileExists(atPath: url.path)
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.stopped else { return }
+            self.onChange(exists ? .modified : .deleted)
+        }
     }
 }
 

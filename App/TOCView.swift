@@ -15,6 +15,7 @@ final class ReaderModel: ObservableObject {
 
 struct TOCView: View {
     @ObservedObject var model: ReaderModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
@@ -38,7 +39,15 @@ struct TOCView: View {
                     }
                     .listStyle(.sidebar)
                     .onChange(of: model.activeSlot) { _, slot in
-                        withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(slot, anchor: .center) }
+                        // No anchor: a row already in view stays where it is
+                        // (the outline does not re-center on every heading);
+                        // one out of view scrolls just into it.
+                        guard slot != 0 else { return }
+                        if reduceMotion {
+                            proxy.scrollTo(slot)
+                        } else {
+                            withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(slot) }
+                        }
                     }
                 }
             }
@@ -57,7 +66,8 @@ struct TOCView: View {
         }
     }
 
-    private var minLevel: Int { model.toc.map(\.level).min() ?? 1 }
+    /// The level rows indent from: under a lone H1 title, its sections' level.
+    private var minLevel: Int { ReaderChrome.outlineBaseLevel(model.toc.map(\.level)) }
 
     /// Programmatic changes (from scrolling) only move the highlight; user clicks also scroll the document.
     private var selection: Binding<Int?> {
@@ -79,7 +89,7 @@ private struct TOCRow: View {
     var body: some View {
         HStack(spacing: 6) {
             Text(entry.title.isEmpty ? "—" : entry.title)
-                .font(entry.level == minLevel ? .body.weight(.medium) : .body)
+                .font(entry.level <= minLevel ? .body.weight(.medium) : .body)
                 .lineLimit(2)
                 .truncationMode(.tail)
             Spacer(minLength: 4)

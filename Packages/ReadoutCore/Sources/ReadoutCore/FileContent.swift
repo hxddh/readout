@@ -30,8 +30,13 @@ public enum FileContent {
         }
         #endif
         let s = String(decoding: bytes, as: UTF8.self)
-        return Decoded(text: s, fallbackEncoding: "UTF-8 (with replacement characters)", truncatedTail: false)
+        return Decoded(text: s, fallbackEncoding: replacementEncoding, truncatedTail: false)
     }
+
+    /// `fallbackEncoding` for bytes that are no known encoding: decoded as
+    /// UTF-8 with the invalid bytes replaced. Not an encoding name, so the app
+    /// translates it.
+    public static let replacementEncoding = "UTF-8 (with replacement characters)"
 
     /// UTF-16 text (what Windows tools and PowerShell redirection write): with
     /// a byte order mark, or without one when the high bytes of mostly-ASCII

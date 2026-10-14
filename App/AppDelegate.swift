@@ -84,6 +84,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
+    /// An agent folder created since (`~/.claude/plans` before Claude Code's
+    /// first plan) is watched from now on.
+    func applicationDidBecomeActive(_ notification: Notification) { WorkspaceIndex.shared.refresh() }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag { showWelcome(nil) }
         return true
@@ -222,7 +226,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         } else {
             let alert = NSAlert()
             alert.messageText = NSLocalizedString("No recent Markdown files", comment: "Alert title")
-            alert.informativeText = NSLocalizedString("Add the folders your agents write to in Settings. Readout then opens the newest Markdown file with this command.", comment: "Alert body")
+            alert.informativeText = NSLocalizedString("Add the folders your agents write to in Settings. Readout then opens the most recently written Markdown file with this command.", comment: "Alert body")
             alert.addButton(withTitle: NSLocalizedString("Open Settings", comment: "Button"))
             alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Button"))
             NSApp.activate()
@@ -357,7 +361,7 @@ struct WelcomeView: View {
                     .keyboardShortcut("o", modifiers: .command)
                 Button(action: onOpenLatest) {
                     HStack(spacing: 6) {
-                        Text(NSLocalizedString("Open Latest", comment: "Button"))
+                        Text(NSLocalizedString("Open Latest Agent File", comment: "Menu"))
                         if settings.hotKey != .none && !settings.hotKeyInUse {
                             Text(settings.hotKey.title).foregroundStyle(.secondary)
                         }

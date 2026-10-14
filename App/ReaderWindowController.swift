@@ -66,6 +66,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var sidebarItem: NSSplitViewItem!
     private var searchItem: NSSearchToolbarItem?
     private var changeItem: NSToolbarItem?
+    private var widthItem: NSToolbarItem?
     private var cancellables: Set<AnyCancellable> = []
 
     // File state (content tracking lives in `loader`)
@@ -181,22 +182,25 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case .nextChange:
             let item = NSToolbarItem(itemIdentifier: id)
             item.label = NSLocalizedString("Next Change", comment: "Toolbar")
-            item.toolTip = NSLocalizedString("Jump to the next unread change (N)", comment: "Toolbar tooltip")
-            item.image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: item.label)
+            // A plain chevron: the bordered item already draws a capsule.
+            item.image = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: item.label)
             item.target = self
             item.action = #selector(nextChange(_:))
             item.isBordered = true
-            item.isHidden = true
+            // Always in place (the toolbar never reflows); disabled with nothing unread.
+            item.autovalidates = false
             changeItem = item
+            updateChangeItem(model.unread)
             return item
         case .width:
             let item = NSToolbarItem(itemIdentifier: id)
             item.label = NSLocalizedString("Text Width", comment: "Toolbar")
             item.toolTip = NSLocalizedString("Switch between narrow and wide text", comment: "Toolbar tooltip")
-            item.image = NSImage(systemSymbolName: "arrow.left.and.right", accessibilityDescription: item.label)
             item.target = self
             item.action = #selector(toggleWidth(_:))
             item.isBordered = true
+            widthItem = item
+            updateWidthItem()
             return item
         case .search:
             let item = NSSearchToolbarItem(itemIdentifier: id)
@@ -268,10 +272,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func observeSettings() {
         let s = AppSettings.shared
         s.$fontSize.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
-        s.$wide.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
+        s.$wide.dropFirst().sink { [weak self] _ in
+            DispatchQueue.main.async { self?.applyAppearance(); self?.updateWidthItem() }
+        }.store(in: &cancellables)
         // A wrap toggled in one window applies to every open window.
         s.$codeWrap.dropFirst().removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         model.$unread.sink { [weak self] n in self?.updateChangeItem(n) }.store(in: &cancellables)
+        // The status (deleted, could not be read, decoded as…) is shown in the title bar, sidebar or not.
+        model.$status.removeDuplicates().sink { [weak self] status in self?.updateSubtitle(status: status) }.store(in: &cancellables)
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
@@ -397,14 +405,34 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 return
             }
             self.deleted = false
+            let wasEmpty = self.session.blocks.isEmpty
             guard let patch = self.session.update(result.doc) else {
                 self.model.status = nil
                 return
             }
             self.updateModel(patch, decoded: result.decoded)
+            self.keepPlaceAcrossRefill(wasEmpty: wasEmpty, patch: patch)
             self.webView.whenReady { [weak self] in self?.webView.call("apply", patch) }
             self.scheduleSave()
         }
+    }
+
+    /// Where the reader was when the file went empty (an agent truncating it
+    /// before writing it again), until it has content again.
+    private var anchorBeforeEmpty: (slot: Int, offset: Double)?
+
+    /// After a brief truncate-and-refill the page itself returns to the
+    /// reader's place (or to the end when following), so the app does not
+    /// scroll: it only keeps the saved position from the empty interval out
+    /// of the record until the page reports the place again.
+    private func keepPlaceAcrossRefill(wasEmpty: Bool, patch: RenderPatch) {
+        if session.blocks.isEmpty {
+            if anchorBeforeEmpty == nil { anchorBeforeEmpty = lastAnchor }
+            return
+        }
+        defer { anchorBeforeEmpty = nil }
+        guard wasEmpty, patch.reset, let a = anchorBeforeEmpty, session.blocks.contains(where: { $0.slot == a.slot }) else { return }
+        lastAnchor = a
     }
 
     private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded) {
@@ -412,8 +440,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         model.tasks = patch.tasks
         model.unread = session.unreadCount
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
+        // Tabs of same-named files (every agent's plan.md) show the document's
+        // title; the window title stays the file name.
+        window?.tab.title = patch.title ?? url.lastPathComponent
         if let enc = decoded.fallbackEncoding {
-            model.status = String(format: NSLocalizedString("Decoded as %@", comment: "Status: non-UTF-8 file"), enc)
+            let name = enc == FileContent.replacementEncoding
+                ? NSLocalizedString("UTF-8 (with replacement characters)", comment: "Status: bytes that are no known encoding, shown with replacement characters")
+                : enc
+            model.status = String(format: NSLocalizedString("Decoded as %@", comment: "Status: non-UTF-8 file"), name)
         } else {
             model.status = nil
         }
@@ -421,19 +455,31 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         updateSubtitle()
     }
 
-    /// The subtitle shows task progress when the document has tasks, and nothing otherwise.
-    private func updateSubtitle() {
-        let t = model.tasks
-        window?.subtitle = t.total > 0
-            ? String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), t.done, t.total)
-            : ""
+    /// The subtitle shows the file's status when there is one (deleted, could
+    /// not be read, decoded as…), else task progress, else the file's folder.
+    private func updateSubtitle(status: String?? = nil) {
+        let status = status ?? model.status
+        switch ReaderChrome.subtitle(status: status, tasks: model.tasks, path: url.path) {
+        case .status(let s): window?.subtitle = s
+        case .tasks(let done, let total):
+            window?.subtitle = String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), done, total)
+        case .folder(let name): window?.subtitle = name
+        }
     }
 
     private func updateChangeItem(_ n: Int) {
         guard let item = changeItem else { return }
-        item.isHidden = n == 0
+        item.isEnabled = n > 0
         item.badge = n > 0 ? .count(n) : nil
-        item.toolTip = String(format: NSLocalizedString("%d unread changes. Press N to jump to the next one.", comment: "Toolbar tooltip"), n)
+        item.toolTip = n > 0
+            ? String(format: NSLocalizedString("Unread changes: %d. Press N for the next change, D to see what changed.", comment: "Toolbar tooltip; %d is the number of unread changes"), n)
+            : NSLocalizedString("No unread changes", comment: "Toolbar tooltip")
+    }
+
+    private func updateWidthItem() {
+        // Arrows out: wide text; arrows in: narrow.
+        let symbol = AppSettings.shared.wide ? "arrow.left.and.line.vertical.and.arrow.right" : "arrow.right.and.line.vertical.and.arrow.left"
+        widthItem?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: widthItem?.label)
     }
 
     // MARK: Messages from the page
@@ -454,9 +500,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
         case .copyLink(let anchor):
-            // Section link: "<filename>#<anchor>" on the clipboard.
+            // Section link: "<full path>#<anchor>" on the clipboard, usable from anywhere.
             NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString("\(url.lastPathComponent)#\(anchor)", forType: .string)
+            NSPasteboard.general.setString("\(url.path)#\(anchor)", forType: .string)
         case .applied:
             ReaderPerf.signposter.emitEvent("applied")
             SmokeTest.noteApplied()
@@ -658,12 +704,39 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // Find mode stays on while the find bar is open: Return in the field may
     // end and restart editing, which must not re-lay out the document twice.
-    // It ends on Escape, or when editing ends with the field empty (the bar closes).
-    func controlTextDidBeginEditing(_ obj: Notification) { setFindMode(true) }
+    // It ends on Escape, when editing ends with the field empty, or when the
+    // field has given up focus and its bar is collapsed (closed with text in it).
+    private var editingGeneration = 0
+    func controlTextDidBeginEditing(_ obj: Notification) {
+        editingGeneration += 1
+        setFindMode(true)
+    }
     func controlTextDidEndEditing(_ obj: Notification) {
-        if searchItem?.searchField.stringValue.isEmpty ?? true { setFindMode(false) }
+        editingGeneration += 1
+        if searchItem?.searchField.stringValue.isEmpty ?? true {
+            setFindMode(false)
+            return
+        }
+        // Return ends and restarts editing at once: decide once that settled.
+        let generation = editingGeneration
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.editingGeneration == generation, !self.isSearchFieldEditing, self.isSearchCollapsed else { return }
+            self.setFindMode(false)
+        }
     }
     func searchFieldDidEndSearching(_ sender: NSSearchField) { setFindMode(false) }
+
+    /// The find field is the window's field editor's client (it has focus).
+    private var isSearchFieldEditing: Bool {
+        guard let field = searchItem?.searchField, let editor = field.currentEditor() else { return false }
+        return window?.firstResponder === editor
+    }
+
+    /// The find bar shows only its button: collapsed, or not in the window at all.
+    private var isSearchCollapsed: Bool {
+        guard let field = searchItem?.searchField, field.window != nil, !field.isHiddenOrHasHiddenAncestor else { return true }
+        return field.bounds.width < 60
+    }
 
     @objc func findNext(_ sender: Any?) { find(backwards: false) }
     @objc func findPrevious(_ sender: Any?) { find(backwards: true) }
@@ -677,7 +750,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         config.backwards = backwards
         config.caseSensitive = false
         config.wraps = true
-        setFindMode(true)
+        // ⌘G with the find bar closed finds without switching find mode on: it
+        // would stay on (a full layout of the document) with no bar to close.
+        if !isSearchCollapsed || isSearchFieldEditing { setFindMode(true) }
         webView.find(text, configuration: config) { result in
             if !result.matchFound { NSSound.beep() }
         }
@@ -685,6 +760,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
         if selector == #selector(NSResponder.cancelOperation(_:)) {
+            editingGeneration += 1
             searchItem?.endSearchInteraction()
             setFindMode(false)
             window?.makeFirstResponder(webView)

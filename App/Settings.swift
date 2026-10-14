@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import UniformTypeIdentifiers
 import ReadoutCore
 
 /// User preferences, stored in UserDefaults.
@@ -52,13 +53,15 @@ final class AppSettings: ObservableObject {
     private init() {
         var ws = d.stringArray(forKey: "workspaces")
         if ws == nil {
-            // First launch: Claude Code keeps plans under ~/.claude/plans.
-            let plans = (NSHomeDirectory() as NSString).appendingPathComponent(".claude/plans")
-            ws = FileManager.default.fileExists(atPath: plans) ? [plans] : []
+            // First launch: Claude Code keeps plans under ~/.claude/plans. Added
+            // even before Claude Code made it: it is watched once it exists
+            // (the folders are checked again whenever Readout becomes active).
+            ws = [(NSHomeDirectory() as NSString).appendingPathComponent(".claude/plans")]
         }
         workspaces = ws ?? []
         editor = Editor(rawValue: d.string(forKey: "editor") ?? "") ?? .system
-        hotKey = HotKeyChoice(rawValue: d.string(forKey: "hotKey") ?? "") ?? .optCmdR
+        // Not ⌥⌘R, which Safari and Xcode use. A stored choice is the user's own and is kept.
+        hotKey = HotKeyChoice(rawValue: d.string(forKey: "hotKey") ?? "") ?? .ctrlOptCmdR
         let fs = d.double(forKey: "fontSize")
         fontSize = fs == 0 ? 16 : fs
         wide = d.bool(forKey: "wide")
@@ -217,7 +220,30 @@ enum EditorOpener {
         if let url, NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
             NSWorkspace.shared.open(url)
         } else {
-            NSWorkspace.shared.open(URL(fileURLWithPath: path))
+            openInDefaultEditor(URL(fileURLWithPath: path))
         }
+    }
+
+    /// Opens the file in the app the system picks for it, unless that is
+    /// Readout itself (the default app for Markdown): then in the default
+    /// plain-text editor, or TextEdit.
+    private static func openInDefaultEditor(_ file: URL) {
+        let ws = NSWorkspace.shared
+        let isReadout = { (app: URL?) -> Bool in
+            guard let app else { return false }
+            return Bundle(url: app)?.bundleIdentifier == Bundle.main.bundleIdentifier
+                || app.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+        }
+        let app = ws.urlForApplication(toOpen: file)
+        guard isReadout(app) else {
+            ws.open(file)
+            return
+        }
+        var editor = ws.urlForApplication(toOpen: .plainText)
+        if editor == nil || isReadout(editor) {
+            editor = ws.urlForApplication(withBundleIdentifier: "com.apple.TextEdit")
+        }
+        guard let editor else { return NSSound.beep() }
+        ws.open([file], withApplicationAt: editor, configuration: NSWorkspace.OpenConfiguration())
     }
 }

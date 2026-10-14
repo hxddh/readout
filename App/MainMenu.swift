@@ -1,4 +1,5 @@
 import AppKit
+import ReadoutCore
 
 /// The application menu, built in code.
 @MainActor
@@ -130,19 +131,22 @@ enum MainMenu {
 @MainActor
 final class HelpTarget: NSObject {
     static let shared = HelpTarget()
+    /// The keyboard section of the README, in the language the app is shown in.
     @objc func openHelp(_ sender: Any?) {
-        NSWorkspace.shared.open(URL(string: "https://github.com/hxddh/readout#readme")!)
+        NSWorkspace.shared.open(ReaderChrome.helpURL(preferredLanguages: Bundle.main.preferredLocalizations))
     }
 }
 
 /// Fills "Open Recent" from the shared document controller's list every time it opens.
 @MainActor
-final class RecentMenuDelegate: NSObject, NSMenuDelegate {
+final class RecentMenuDelegate: NSObject, NSMenuDelegate, NSMenuItemValidation {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         let urls = NSDocumentController.shared.recentDocumentURLs
-        for url in urls {
-            let i = NSMenuItem(title: url.lastPathComponent, action: #selector(openRecent(_:)), keyEquivalent: "")
+        // Same-named files (every agent's plan.md) carry their folder.
+        let titles = ReaderChrome.recentTitles(urls.map(\.path))
+        for (url, title) in zip(urls, titles) {
+            let i = NSMenuItem(title: title, action: #selector(openRecent(_:)), keyEquivalent: "")
             i.target = self
             i.representedObject = url
             i.toolTip = url.path
@@ -156,6 +160,15 @@ final class RecentMenuDelegate: NSObject, NSMenuDelegate {
         clear.target = self
         clear.isEnabled = !urls.isEmpty
         menu.addItem(clear)
+    }
+
+    /// A file that is gone (deleted, or its folder moved) is shown but cannot be chosen.
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(openRecent(_:)), let url = item.representedObject as? URL {
+            return FileManager.default.fileExists(atPath: url.path)
+        }
+        if item.action == #selector(clear(_:)) { return !NSDocumentController.shared.recentDocumentURLs.isEmpty }
+        return true
     }
 
     @objc func openRecent(_ sender: NSMenuItem) {

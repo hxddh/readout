@@ -243,6 +243,8 @@ enum ReaderStrings {
             "railAdded": NSLocalizedString("added", comment: "Change kind in rail label"),
             "railEdited": NSLocalizedString("edited", comment: "Change kind in rail label"),
             "railRemoved": NSLocalizedString("removed", comment: "Change kind in rail label"),
+            "railTask": NSLocalizedString("task", comment: "Change kind in rail label: a task was checked or unchecked"),
+            "railLabel": NSLocalizedString("Unread changes", comment: "Accessibility label of the change rail beside the page"),
             "wrap": NSLocalizedString("Wrap", comment: "Code block button: wrap long lines"),
             "wrapTitle": NSLocalizedString("Wrap long lines in code blocks", comment: "Code block wrap button tooltip"),
             "changesSince": NSLocalizedString("Changes since you last read", comment: "Label of the word-level comparison under an edited block"),
