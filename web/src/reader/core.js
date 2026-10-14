@@ -32,6 +32,15 @@ export function trace(type, data) {
 }
 export function traceEntries() { return traceLog.slice(); }
 
+/**
+ * Scrolls that keep the reader's place (restoring it, compensating for a
+ * block above that changed height, holding the end) are not the reader
+ * moving: whoever tracks the reader's position hears of them here.
+ */
+let keptScrollListener = null;
+export function onKeptScroll(f) { keptScrollListener = f; }
+export function keptScroll(dy) { if (dy && keptScrollListener) keptScrollListener(dy); }
+
 /** Quick Look renders statically: no marks, no rail. */
 export let quicklook = false;
 export function enableQuicklook() { quicklook = true; root.dataset.mode = 'quicklook'; }
