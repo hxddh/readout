@@ -21,11 +21,11 @@ public enum MarkdownParser {
     static func sourceLines(_ rawSource: String) -> [String] {
         var source = rawSource
         if source.utf8.starts(with: [0xEF, 0xBB, 0xBF]) { source.removeFirst() }
-        if source.utf8.contains(0x0D) {
+        if FastBytes.contains(source, 0x0D) {
             source = source.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         }
         // Split on bytes: Character iteration is several times slower.
-        return source.utf8.split(separator: 0x0A, omittingEmptySubsequences: false).map { String(Substring($0)) }
+        return FastBytes.lines(source)
     }
 
     /// Adds document-wide context to fragments' blocks, in order: absolute
@@ -35,6 +35,10 @@ public enum MarkdownParser {
     struct Fragment: Sendable {
         var blocks: [Block]
         var notes: [Footnotes.Note] = []
+        /// Render-cache keys of its blocks' HTML: a fragment reused unchanged
+        /// keeps them alive (`RenderCache.keep`), so an edit to it later
+        /// re-renders only the blocks that changed.
+        var cacheKeys: [String] = []
     }
 
     static func assemble(_ fragments: [(offset: Int, fragment: Fragment)]) -> ParsedDocument {
@@ -46,6 +50,16 @@ public enum MarkdownParser {
         var currentPath: [String] = []   // headingStack's titles, shared by the blocks under it
         var slugger = Slugger()
         var title: String? = nil
+        // Mixed blocks (`Task 2: 更新 README.md`) read as CJK in a document
+        // whose other prose is mostly CJK.
+        var cjkProse = 0, otherProse = 0
+        for (_, fragment) in fragments {
+            for b in fragment.blocks where !b.cjkMixed && b.kind != .code && b.kind != .mermaid && b.kind != .math
+                && b.kind != .frontMatter && b.kind != .rule {
+                if b.cjk { cjkProse += 1 } else { otherProse += 1 }
+            }
+        }
+        let mixedIsCJK = cjkProse > otherProse
         for (offset, fragment) in fragments {
             for var n in fragment.notes {
                 n.lines = (n.lines.lowerBound + offset)...(n.lines.upperBound + offset)
@@ -71,7 +85,8 @@ public enum MarkdownParser {
                 var nb = Block(kind: b.kind, headingPath: path, lines: lines, fingerprint: b.fingerprint,
                                taskState: b.taskState, html: html, text: b.text,
                                headingLevel: b.headingLevel, headingTitle: b.headingTitle, anchor: anchor)
-                nb.cjk = b.cjk
+                nb.cjk = b.cjk || (b.cjkMixed && mixedIsCJK)
+                nb.cjkMixed = b.cjkMixed
                 out.append(nb)
             }
         }
@@ -86,6 +101,7 @@ public enum MarkdownParser {
     static func parseFragment(_ lines: [String], atDocumentStart: Bool, footnoteIDs: Set<String>? = nil,
                               resolver: ResourceResolver?, cache: RenderCache?) -> Fragment {
         var blocks: [Block] = []
+        var cacheKeys: [String] = []
 
         // Front matter.
         var parseLines = lines
@@ -158,28 +174,35 @@ public enum MarkdownParser {
             let refs = refsKey.isEmpty || !source.utf8.contains(0x5B) /* [ */ ? "" : refsKey
             let cacheKey = "\(XXHash64.hash(source))|\(kind.rawValue)|\(extra)\(footnoteKey)\(refs)"
             let rendered: String
-            if let cached = cache?.lookup(cacheKey) { rendered = cached }
+            if let cached = cache?.lookup(cacheKey) { rendered = cached; cacheKeys.append(cacheKey) }
             else {
                 let reads = probe?.fileSystemReads ?? 0
                 rendered = html()
                 // Not kept when it depends on files (image sizes, which paths exist).
-                if (probe?.fileSystemReads ?? 0) == reads { cache?.store(cacheKey, rendered) }
+                if let cache, (probe?.fileSystemReads ?? 0) == reads { cache.store(cacheKey, rendered); cacheKeys.append(cacheKey) }
             }
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
                           taskState: tasks, html: rendered, text: normalized,
                           headingLevel: heading?.0, headingTitle: heading?.1, anchor: heading?.2)
-            b.cjk = (kind == .code || kind == .mermaid || kind == .math ? CJK.ratio(normalized) : CJK.proseRatio(normalized)) > 0.3
+            if kind == .code || kind == .mermaid || kind == .math {
+                b.cjk = CJK.ratio(normalized) > 0.3
+            } else {
+                (b.cjk, b.cjkMixed) = CJK.prose(normalized)
+            }
             return b
         }
 
         func appendListItems(_ list: ListItemContainer, ordered: Bool, start: Int) {
             let tight = renderer.isTight(list)
             let items = Array(list.listItems)
+            // Every item of a list numbered past 99 gets the same marker width.
+            let width = ordered ? HTMLRenderer.numberWidthClass(start: start, count: items.count) : nil
             for (i, item) in items.enumerated() {
                 var cls = "li-block"
                 if i == 0 { cls += " li-first" }
                 if i == items.count - 1 { cls += " li-last" }
                 if !tight { cls += " li-loose" }
+                if let width { cls += " " + width }
                 func html() -> String {
                     let li = renderer.listItem(item, tight: tight)
                     return ordered
@@ -298,7 +321,7 @@ public enum MarkdownParser {
             Footnotes.Note(id: entry.def.id, lines: entry.def.lines, text: entry.def.text,
                            html: renderer.children(Document(parsing: entry.source, options: [.disableSmartOpts])))
         }
-        return Fragment(blocks: blocks, notes: notes)
+        return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys)
     }
 
     /// Two-generation cache of rendered block HTML, keyed by exact block source and context.
@@ -315,6 +338,13 @@ public enum MarkdownParser {
         }
         func store(_ key: String, _ value: String) {
             lock.lock(); next[key] = value; lock.unlock()
+        }
+        /// Carries entries into this generation without a lookup (for fragments reused whole).
+        func keep<S: Sequence>(_ keys: S) where S.Element == String {
+            lock.lock(); defer { lock.unlock() }
+            for key in keys where next[key] == nil {
+                if let v = current[key] { next[key] = v }
+            }
         }
         /// Call before each parse of the same document.
         public func beginGeneration() {

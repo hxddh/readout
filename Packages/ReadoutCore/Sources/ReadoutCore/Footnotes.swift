@@ -82,6 +82,7 @@ enum Footnotes {
     }
 
     /// The text contains `[^` (bytes, without Unicode-aware search).
+    static func mentions(_ text: String) -> Bool { FastBytes.contains(text, 0x5B, 0x5E) }
     static func mentions<S: StringProtocol>(_ text: S) -> Bool {
         var previous: UInt8 = 0
         for b in text.utf8 {
@@ -129,7 +130,7 @@ enum Footnotes {
 
         /// Replaces the placeholders in `html` (no-op without any).
         mutating func fill(_ html: String) -> String {
-            guard html.utf8.contains(0xEE), html.contains(Footnotes.open) else { return html }
+            guard FastBytes.contains(html, 0xEE), html.contains(Footnotes.open) else { return html }
             var out = ""
             var rest = html[...]
             while let o = rest.firstIndex(of: Footnotes.open), let c = rest[o...].firstIndex(of: Footnotes.close) {
