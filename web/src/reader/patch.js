@@ -54,7 +54,10 @@ export function apply(p) {
   const place = held;
   held = null;
   const anchor = isFirst ? null : place ? place.anchor : captureAnchor();
-  const following = !isFirst && (place ? place.following : atBottom());
+  // An empty page is never following: there is no end being read. (It can
+  // sit at its own bottom when it scrolls at all; following from there would
+  // send the content that arrives to its end.)
+  const following = !isFirst && (place ? place.following : slots.size > 0 && atBottom());
   // Only follow when the change is at (or below) the viewport: an insertion
   // at the top of the document must not yank a bottom-dwelling reader.
   // The anchor block itself counts: if it was edited, restoring it keeps us
