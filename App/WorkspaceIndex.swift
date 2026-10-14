@@ -31,8 +31,12 @@ final class WorkspaceIndex {
 
     /// Folders asked for that do not exist yet, with when that was first seen.
     private var missingSince: [String: Date] = [:]
-    /// Checks every few seconds, only while a folder is missing, whether it exists now.
-    private var missingTimer: Timer?
+    /// While a folder is missing: the nearest folder above it that exists,
+    /// watched for entries added or removed (no timer, no wakeups otherwise).
+    private var missingWatches: [String: DirectoryWatch] = [:]
+    /// The initial scan of the current folders has not landed yet.
+    private var scanning = false
+    private var afterScan: [() -> Void] = []
 
     func configure(_ paths: [String]) {
         requested = paths
@@ -54,8 +58,15 @@ final class WorkspaceIndex {
         // can hold for seconds. The old stream's late events are dropped by generation.
         stream?.stopAsync()
         stream = nil
-        recent = []
-        guard !roots.isEmpty else { return }
+        // What is known stays until the new scan lands (the global shortcut
+        // must not find nothing in between), except files no longer watched.
+        recent.removeAll { !Self.isCandidate($0.url, roots: roots) }
+        guard !roots.isEmpty else {
+            recent = []
+            finishScan()
+            return
+        }
+        scanning = true
         let rootsCopy = roots
         let known = Known()
         // FSEvents reports real paths (/private/var/..., a symlinked folder's
@@ -75,7 +86,11 @@ final class WorkspaceIndex {
             }
             DispatchQueue.main.async {
                 guard let self, self.generation == gen else { return }
+                // The scan replaces what was kept meanwhile (on this queue no
+                // stream event of this generation came before it).
+                self.recent = []
                 self.record(newest)
+                self.finishScan()
                 if !fresh.isEmpty { self.onWrite?(fresh) }
             }
         }
@@ -105,21 +120,53 @@ final class WorkspaceIndex {
     /// were set (`~/.claude/plans` before the first plan) is picked up once it does.
     func refresh() { configure(requested) }
 
-    /// Polls (a stat per missing folder every 2 s) only while a folder asked
-    /// for does not exist, so one created later is watched without waiting
-    /// for Readout to become active.
+    /// Runs `block` once the scan of the folders asked for has landed (at
+    /// once when none is running): the global shortcut pressed right after a
+    /// folder appeared opens what is in it instead of finding nothing.
+    func whenScanned(_ block: @escaping () -> Void) {
+        if scanning { afterScan.append(block) } else { block() }
+    }
+
+    private func finishScan() {
+        scanning = false
+        let blocks = afterScan
+        afterScan = []
+        blocks.forEach { $0() }
+    }
+
+    /// While a folder asked for does not exist, watches the nearest folder
+    /// above it that does (`~/.claude` or `~` for `~/.claude/plans` before
+    /// the first plan) for entries added, removed or renamed: one created
+    /// later is watched without waiting for Readout to become active, and
+    /// nothing wakes the app while nothing changes there.
     private func watchForMissingFolders() {
-        if missingSince.isEmpty {
-            missingTimer?.invalidate()
-            missingTimer = nil
-        } else if missingTimer == nil {
-            missingTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
-                MainActor.assumeIsolated {
-                    let index = WorkspaceIndex.shared
-                    if index.missingSince.keys.contains(where: { FileManager.default.fileExists(atPath: $0) }) { index.refresh() }
-                }
+        var wanted: [String: Set<String>] = [:]   // folder watched -> missing folders below it
+        for missing in missingSince.keys {
+            guard let above = AgentFolders.nearestExistingAncestor(of: missing, exists: { FileManager.default.fileExists(atPath: $0) }) else { continue }
+            wanted[above, default: []].insert(missing)
+        }
+        // A watched folder that was deleted or moved away: watch again by path.
+        for (path, watch) in missingWatches where wanted[path] == nil || watch.isGone {
+            watch.cancel()
+            missingWatches[path] = nil
+        }
+        for path in wanted.keys where missingWatches[path] == nil {
+            missingWatches[path] = DirectoryWatch(path: path) {
+                // Something was added (or the watched folder itself moved):
+                // watch again from there, or start watching what appeared.
+                MainActor.assumeIsolated { WorkspaceIndex.shared.refresh() }
             }
         }
+        // Created between finding it missing and the watch starting: no event comes for it.
+        if missingSince.keys.contains(where: { FileManager.default.fileExists(atPath: $0) }) {
+            DispatchQueue.main.async { WorkspaceIndex.shared.refresh() }
+        }
+    }
+
+    /// What watches for missing folders, for the smoke test.
+    var missingFolderWatch: [String: Any] {
+        ["watched": missingWatches.keys.sorted(), "missing": missingSince.keys.sorted(),
+         "polling": missingWatches.values.contains { $0.isPolling }]
     }
 
     /// The path with symlinks and /private resolved, as FSEvents reports it
@@ -180,5 +227,45 @@ final class WorkspaceIndex {
             }
         }
         return (out.sorted { $0.1 > $1.1 }.prefix(50).map { $0 }, all)
+    }
+}
+
+/// Reports entries added, removed or renamed in one folder, and the folder
+/// itself deleted or moved (kqueue, on the main queue). Where the folder cannot
+/// be opened for events, it checks every 30 s instead, with a wide leeway.
+@MainActor
+final class DirectoryWatch {
+    private var source: DispatchSourceProtocol?
+    private(set) var isPolling = false
+    /// The folder was deleted or moved: the watch no longer follows its path.
+    private(set) var isGone = false
+
+    init(path: String, onChange: @escaping @Sendable () -> Void) {
+        let fd = open(path, O_EVTONLY)
+        if fd >= 0 {
+            let s = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .delete, .rename, .revoke], queue: .main)
+            s.setEventHandler { [weak self] in
+                MainActor.assumeIsolated {
+                    if let self, let fs = self.source as? DispatchSourceFileSystemObject,
+                       !fs.data.isDisjoint(with: [.delete, .rename, .revoke]) { self.isGone = true }
+                }
+                onChange()
+            }
+            s.setCancelHandler { close(fd) }
+            s.resume()
+            source = s
+        } else {
+            let t = DispatchSource.makeTimerSource(queue: .main)
+            t.schedule(deadline: .now() + 30, repeating: 30, leeway: .seconds(10))
+            t.setEventHandler(handler: onChange)
+            t.resume()
+            source = t
+            isPolling = true
+        }
+    }
+
+    func cancel() {
+        source?.cancel()
+        source = nil
     }
 }

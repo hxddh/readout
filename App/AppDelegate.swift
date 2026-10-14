@@ -221,7 +221,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func openLatest(_ sender: Any?) {
         // The global shortcut works with Readout in the background: pick up a folder created since.
-        WorkspaceIndex.shared.refresh()
+        let index = WorkspaceIndex.shared
+        index.refresh()
+        if let url = index.latest {
+            open(url)
+            NSApp.activate()
+        } else {
+            // Nothing known yet: a folder that just appeared is still being
+            // scanned. Decide once it has been.
+            index.whenScanned { [weak self] in self?.openLatestScanned() }
+        }
+    }
+
+    private func openLatestScanned() {
         if let url = WorkspaceIndex.shared.latest {
             open(url)
             NSApp.activate()
@@ -311,7 +323,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
 struct WelcomeView: View {
     /// Fixed size: open, open latest and drop a file. Recent files live in File ▸ Open Recent.
-    static let height: CGFloat = 400
+    static let height: CGFloat = 430
 
     let onOpen: () -> Void
     let onOpenLatest: () -> Void
@@ -331,6 +343,13 @@ struct WelcomeView: View {
             Text(NSLocalizedString("Read what your agents write.", comment: "Welcome subtitle"))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
+            Text(NSLocalizedString("New plans in ~/.claude/plans open in Readout on their own. Add other agent folders in Settings.", comment: "Welcome: how documents arrive"))
+                .font(.callout)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 40)
+                .padding(.top, 8)
 
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(style: StrokeStyle(lineWidth: 1.25, dash: [5, 4]))

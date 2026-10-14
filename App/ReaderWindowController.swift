@@ -39,7 +39,6 @@ final class WebViewPool: NSObject, WKNavigationDelegate {
 
 extension NSToolbarItem.Identifier {
     static let nextChange = NSToolbarItem.Identifier("readout.nextChange")
-    static let width = NSToolbarItem.Identifier("readout.width")
     static let search = NSToolbarItem.Identifier("readout.search")
 }
 
@@ -66,7 +65,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var sidebarItem: NSSplitViewItem!
     private var searchItem: NSSearchToolbarItem?
     private var changeItem: NSToolbarItem?
-    private var widthItem: NSToolbarItem?
     private var cancellables: Set<AnyCancellable> = []
 
     // File state (content tracking lives in `loader`)
@@ -107,7 +105,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         window.minSize = NSSize(width: 460, height: 320)
         window.titlebarSeparatorStyle = .automatic
         window.toolbarStyle = .unified
-        window.tabbingMode = .preferred
+        // As System Settings ▸ Desktop & Dock ▸ "Prefer tabs" says; opens in
+        // the background still join the reader's window as tabs (AppDelegate.open).
+        window.tabbingMode = .automatic
         window.isRestorable = false
         super.init(window: window)
         window.delegate = self
@@ -119,9 +119,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
         window.title = url.lastPathComponent
         window.representedURL = url
+        // Where the file is: on the tab, not in the subtitle.
+        window.tab.toolTip = ReaderChrome.tabToolTip(path: self.url.path)
         window.setFrameAutosaveName("ReaderWindow")
 
-        model.onSelectHeading = { [weak self] slot in self?.webView.call("scrollToSlot", json: String(slot)) }
+        model.onSelectHeading = { [weak self] slot in self?.jumpToHeading(slot) }
         watcher = FileWatcher(url: self.url, onChange: { [weak self] change in self?.fileChanged(change) },
                               onRetarget: { [weak self] target in if let self { self.retargeted(to: target) } })
         load()
@@ -170,7 +172,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [.toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, .nextChange, .width, .search]
+        [.toggleSidebar, .sidebarTrackingSeparator, .flexibleSpace, .nextChange, .search]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -182,25 +184,15 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case .nextChange:
             let item = NSToolbarItem(itemIdentifier: id)
             item.label = NSLocalizedString("Next Change", comment: "Toolbar")
-            // A plain chevron: the bordered item already draws a capsule.
-            item.image = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: item.label)
+            item.image = NSImage(systemSymbolName: "arrow.down", accessibilityDescription: item.label)
             item.target = self
             item.action = #selector(nextChange(_:))
             item.isBordered = true
-            // Always in place (the toolbar never reflows); disabled with nothing unread.
+            // Shown only with something unread. It is the last item before
+            // the search field, so hiding it moves nothing else.
             item.autovalidates = false
             changeItem = item
             updateChangeItem(model.unread)
-            return item
-        case .width:
-            let item = NSToolbarItem(itemIdentifier: id)
-            item.label = NSLocalizedString("Text Width", comment: "Toolbar")
-            item.toolTip = NSLocalizedString("Switch between narrow and wide text", comment: "Toolbar tooltip")
-            item.target = self
-            item.action = #selector(toggleWidth(_:))
-            item.isBordered = true
-            widthItem = item
-            updateWidthItem()
             return item
         case .search:
             let item = NSSearchToolbarItem(itemIdentifier: id)
@@ -210,6 +202,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             item.searchField.delegate = self
             item.searchField.sendsSearchStringImmediately = false
             item.searchField.sendsWholeSearchString = true
+            item.preferredWidthForSearchField = 160
             searchItem = item
             return item
         default:
@@ -272,9 +265,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func observeSettings() {
         let s = AppSettings.shared
         s.$fontSize.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
-        s.$wide.dropFirst().sink { [weak self] _ in
-            DispatchQueue.main.async { self?.applyAppearance(); self?.updateWidthItem() }
-        }.store(in: &cancellables)
+        s.$wide.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         // A wrap toggled in one window applies to every open window.
         s.$codeWrap.dropFirst().removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         model.$unread.sink { [weak self] n in self?.updateChangeItem(n) }.store(in: &cancellables)
@@ -284,7 +275,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
         guard let target = action.request.url else { return .cancel }
-        if target.scheme == ReadoutURL.scheme { return .allow }
+        // The reader page is the only page: any other readout: URL (a
+        // relative link resolved against the page, readout://app/other.md)
+        // would replace the document with an error page.
+        if target.scheme == ReadoutURL.scheme { return ReaderWebView.isReaderPage(target) ? .allow : .cancel }
         // A file dropped onto the window arrives as a navigation.
         if target.isFileURL { (NSApp.delegate as? AppDelegate)?.open(target) }
         else if action.navigationType == .linkActivated { NSWorkspace.shared.open(target) }
@@ -462,7 +456,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         webView.evaluateJavaScript("requestAnimationFrame(() => window.readout.scrollToAnchor(\(json))); 1", completionHandler: nil)
     }
 
-    private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded) {
+    /// `decoded`: how the content was read (sets the status); nil keeps the status.
+    private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded?) {
         model.toc = patch.toc
         model.tasks = patch.tasks
         model.unread = session.unreadCount
@@ -470,12 +465,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // Tabs of same-named files (every agent's plan.md) show the document's
         // title; the window title stays the file name.
         window?.tab.title = patch.title ?? url.lastPathComponent
-        if let enc = decoded.fallbackEncoding {
+        if let decoded, let enc = decoded.fallbackEncoding {
             let name = enc == FileContent.replacementEncoding
                 ? NSLocalizedString("UTF-8 (with replacement characters)", comment: "Status: bytes that are no known encoding, shown with replacement characters")
                 : enc
             model.status = String(format: NSLocalizedString("Decoded as %@", comment: "Status: non-UTF-8 file"), name)
-        } else {
+        } else if decoded != nil {
             model.status = nil
         }
         if model.activeSlot == 0 { model.activeSlot = patch.toc.first?.slot ?? 0 }
@@ -483,30 +478,26 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     /// The subtitle shows the file's status when there is one (deleted, could
-    /// not be read, decoded as…), else task progress, else the file's folder.
+    /// not be read, decoded as…), else task progress, else nothing (the
+    /// folder is in the tab's tooltip).
     private func updateSubtitle(status: String?? = nil) {
         let status = status ?? model.status
-        switch ReaderChrome.subtitle(status: status, tasks: model.tasks, path: url.path) {
+        switch ReaderChrome.subtitle(status: status, tasks: model.tasks) {
         case .status(let s): window?.subtitle = s
         case .tasks(let done, let total):
             window?.subtitle = String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), done, total)
-        case .folder(let name): window?.subtitle = name
+        case nil: window?.subtitle = ""
         }
     }
 
     private func updateChangeItem(_ n: Int) {
         guard let item = changeItem else { return }
         item.isEnabled = n > 0
+        item.isHidden = n == 0
         item.badge = n > 0 ? .count(n) : nil
         item.toolTip = n > 0
             ? String(format: NSLocalizedString("Unread changes: %d. Press N for the next change, D to see what changed.", comment: "Toolbar tooltip; %d is the number of unread changes"), n)
             : NSLocalizedString("No unread changes", comment: "Toolbar tooltip")
-    }
-
-    private func updateWidthItem() {
-        // Arrows out: wide text; arrows in: narrow.
-        let symbol = AppSettings.shared.wide ? "arrow.left.and.line.vertical.and.arrow.right" : "arrow.right.and.line.vertical.and.arrow.left"
-        widthItem?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: widthItem?.label)
     }
 
     // MARK: Messages from the page
@@ -549,6 +540,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             EditorOpener.open(path: path, line: line, column: column)
         case .setCodeWrap(let on):
             if AppSettings.shared.codeWrap != on { AppSettings.shared.codeWrap = on }
+        case .nothing:
+            // A key with nothing to go to (N past the last change).
+            NSSound.beep()
         case .ready, .error:
             break   // handled by ReaderWebView
         }
@@ -670,10 +664,53 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     @objc func markAllRead(_ sender: Any?) {
+        guard session.unreadCount > 0 else { return }
+        let before = session.baseline
         session.markAllRead()
         model.unread = 0
         webView.call("markAllRead")
         scheduleSave()
+        // ⌘Z brings the marks back.
+        window?.undoManager?.registerUndo(withTarget: self) { $0.restoreUnread(baseline: before) }
+        window?.undoManager?.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
+    }
+
+    /// Undo of Mark All as Read: the document marked against the baseline from
+    /// before, as reopening the window would show it, at the same place.
+    private func restoreUnread(baseline: [BlockKey]) {
+        let place = lastAnchor.flatMap { a in session.blocks.firstIndex { $0.slot == a.slot }.map { (index: $0, offset: a.offset) } }
+        let patch = session.reload(baseline: baseline)
+        model.activeSlot = 0   // the slots are new
+        updateModel(patch, decoded: nil)
+        let restore = place.flatMap { p in p.index < session.blocks.count ? (slot: session.blocks[p.index].slot, offset: p.offset) : nil }
+        if let restore { lastAnchor = restore }
+        webView.whenReady { [weak self] in
+            guard let self else { return }
+            self.webView.call("apply", patch)
+            if let restore { self.restorePlace(restore) }
+        }
+        scheduleSave()
+        // Redo marks everything read again.
+        window?.undoManager?.registerUndo(withTarget: self) { $0.markAllRead(nil) }
+        window?.undoManager?.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
+    }
+
+    /// A click in the outline: to that heading, every time (clicking the row
+    /// already selected jumps again), then back to the page so the keyboard
+    /// scrolls it. Arrow keys in the outline keep the focus there.
+    private var lastJump: (slot: Int, at: Date)?
+    private func jumpToHeading(_ slot: Int) {
+        // The selection change and the click both report one click.
+        if let last = lastJump, last.slot == slot, Date().timeIntervalSince(last.at) < 0.3 { return }
+        lastJump = (slot, Date())
+        webView.call("scrollToSlot", json: String(slot))
+        let mouse: Set<NSEvent.EventType> = [.leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp]
+        if let type = NSApp.currentEvent?.type, mouse.contains(type) {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.window?.makeFirstResponder(self.webView)
+            }
+        }
     }
 
     @objc func toggleWidth(_ sender: Any?) { AppSettings.shared.wide.toggle() }

@@ -31,8 +31,10 @@ enum SmokeTest {
     /// for the harness's cold-start and write-to-update measurements.
     private static var appliedAt: [Double] = []
     private static var paintedAt: [Double] = []
-    /// Window request to first patch on screen, per file.
+    /// Window request to first patch on screen, per file (the last open of
+    /// it), and every open's when a file is opened more than once.
     private static var firstPaint: [String: Double] = [:]
+    private static var firstPaintSamples: [String: [Double]] = [:]
     private static var started = false
     /// Files opened on their own after an agent wrote them.
     private static var autoOpened: [String] = []
@@ -60,11 +62,13 @@ enum SmokeTest {
     static func noteFirstPaint(_ url: URL, seconds: Double) {
         guard outputDirectory != nil else { return }
         firstPaint[url.path] = seconds
+        firstPaintSamples[url.path, default: []].append(seconds)
     }
 
     /// Timings for tools/smoke-run.py, which adds its own clock readings.
     private static func writeTimings(_ dir: URL) {
-        let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint]
+        let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint,
+                                   "first_paint_samples_s": firstPaintSamples]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: dir.appendingPathComponent("timings-app.json"))
         }
@@ -107,6 +111,8 @@ enum SmokeTest {
             _ = try? await webView.evaluateJavaScript("(() => { const t = document.querySelector('.blk.k-table.m-modified'); return t ? window.readout.toggleDiff(+t.dataset.slot) : false; })()")
             try? await Task.sleep(for: .milliseconds(300))
             await capture(webView, window: controller.window, to: out, name: "3-marks")
+            await undoMarkAllRead(controller: controller, webView: webView, out: out)
+            await navigationStaysOnTheReader(webView: webView, out: out)
 
             // Dark appearance, then the auxiliary windows.
             NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -116,15 +122,21 @@ enum SmokeTest {
             NSApp.appearance = nil
             let app = NSApp.delegate as? AppDelegate
             // Open a second file while running: the warm open-to-first-paint path.
+            // Three opens (the harness takes the median: one slow moment of a
+            // shared runner is not a regression), each with a spare page made again.
             if let second = ProcessInfo.processInfo.environment["READOUT_SMOKE_SECOND"] {
                 let secondURL = URL(fileURLWithPath: second)
-                app?.open(secondURL)
-                // Keep it open until its first frame is on screen (or well past the guard).
-                let deadline = Date().addingTimeInterval(10)
-                while firstPaint[secondURL.path] == nil && Date() < deadline {
-                    try? await Task.sleep(for: .milliseconds(50))
+                for round in 1...3 {
+                    app?.open(secondURL)
+                    // Keep it open until its first frame is on screen (or well past the guard).
+                    let deadline = Date().addingTimeInterval(10)
+                    while (firstPaintSamples[secondURL.path]?.count ?? 0) < round && Date() < deadline {
+                        try? await Task.sleep(for: .milliseconds(50))
+                    }
+                    app?.reader(for: secondURL)?.window?.close()
+                    // The pool makes its next spare page a second after one is taken.
+                    try? await Task.sleep(for: .seconds(2))
                 }
-                NSApp.keyWindow?.close()
             }
             // An agent writes a new document into a watched folder while Readout is
             // in the background: it must open on its own, without activating Readout.
@@ -153,12 +165,29 @@ enum SmokeTest {
                 // background, its new document must still open on its own.
                 if let late = ProcessInfo.processInfo.environment["READOUT_SMOKE_LATE_FOLDER"] {
                     WorkspaceIndex.shared.configure([folder, late])
+                    // Watched through the folder above it that exists, not polled.
+                    let watch = WorkspaceIndex.shared.missingFolderWatch
                     let count = autoOpened.count
                     mark(out, "await-late-folder")
                     let deadline = Date().addingTimeInterval(15)
                     while autoOpened.count == count && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
-                    write(["auto_opened": autoOpened.dropFirst(count).map { URL(fileURLWithPath: $0).lastPathComponent },
-                           "active_after": NSApp.isActive], to: out, "late-folder.json")
+                    var json: [String: Any] = ["auto_opened": autoOpened.dropFirst(count).map { URL(fileURLWithPath: $0).lastPathComponent },
+                                               "active_after": NSApp.isActive, "missing_watch": watch,
+                                               "missing_watch_after": WorkspaceIndex.shared.missingFolderWatch]
+                    // Another folder added (or one appearing, as the global shortcut
+                    // finds it): while it is scanned, what was known stays, so the
+                    // shortcut never finds nothing; then the scan's result.
+                    let work = URL(fileURLWithPath: folder).deletingLastPathComponent().path
+                    WorkspaceIndex.shared.configure([folder, late, work])
+                    let during = WorkspaceIndex.shared.latest?.lastPathComponent ?? ""
+                    final class Box { var after: String? }
+                    let box = Box()
+                    WorkspaceIndex.shared.whenScanned { box.after = WorkspaceIndex.shared.latest?.lastPathComponent ?? "" }
+                    let scanDeadline = Date().addingTimeInterval(10)
+                    while box.after == nil && Date() < scanDeadline { try? await Task.sleep(for: .milliseconds(20)) }
+                    json["rescan"] = ["latest_during": during, "latest_after": box.after ?? "(no scan)"]
+                    WorkspaceIndex.shared.configure([folder, late])
+                    write(json, to: out, "late-folder.json")
                 }
                 NSApp.activate()
             }
@@ -247,12 +276,70 @@ enum SmokeTest {
         write(json, to: out, "refill.json")
     }
 
-    /// The window around a document: title, tab title, subtitle, the next-change button.
+    /// The window around a document: title, tab title and tooltip, subtitle,
+    /// the toolbar (the next-change button, the find field) and how it tabs.
     private static func chrome(_ reader: ReaderWindowController) -> [String: Any] {
-        let item = reader.window?.toolbar?.items.first { $0.itemIdentifier == .nextChange }
+        let items = reader.window?.toolbar?.items ?? []
+        let item = items.first { $0.itemIdentifier == .nextChange }
+        let search = items.compactMap { $0 as? NSSearchToolbarItem }.first
         return ["title": reader.window?.title ?? "", "tab_title": reader.window?.tab.title ?? "",
+                "tab_tooltip": reader.window?.tab.toolTip ?? "", "path": reader.url.path,
                 "subtitle": reader.window?.subtitle ?? "", "status": reader.model.status ?? "", "unread": reader.model.unread,
+                "toolbar": items.map(\.itemIdentifier.rawValue),
+                "search_width": search.map { Double($0.preferredWidthForSearchField) } ?? -1,
+                "tabbing_automatic": reader.window?.tabbingMode == .automatic,
                 "change_item": ["present": item != nil, "hidden": item?.isHidden ?? true, "enabled": item?.isEnabled ?? false]]
+    }
+
+    /// ⌘K, then Edit ▸ Undo through the menu as the reader would choose it:
+    /// the marks come back, with the page showing them.
+    private static func undoMarkAllRead(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
+        controller.show()
+        try? await Task.sleep(for: .milliseconds(300))
+        let marks = "document.querySelectorAll('.m-inserted, .m-modified, .m-state, .del-mark').length"
+        var json: [String: Any] = ["unread_before": controller.model.unread]
+        json["page_marks_before"] = (try? await webView.evaluateJavaScript(marks)) as? Int ?? -1
+        controller.markAllRead(nil)
+        try? await Task.sleep(for: .milliseconds(300))
+        json["unread_after_mark"] = controller.model.unread
+        let edit = NSApp.mainMenu?.items.first { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") }?.submenu
+        let undo = edit?.items.first { $0.action == Selector(("undo:")) }
+        edit?.update()
+        json["undo_title"] = undo?.title ?? ""
+        json["undo_enabled"] = undo?.isEnabled ?? false
+        let before = appliedCount
+        if let undo, let action = undo.action { json["undo_sent"] = NSApp.sendAction(action, to: undo.target, from: undo) }
+        let deadline = Date().addingTimeInterval(5)
+        while appliedCount == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        try? await Task.sleep(for: .milliseconds(500))
+        json["unread_after_undo"] = controller.model.unread
+        json["page_marks_after_undo"] = (try? await webView.evaluateJavaScript(marks)) as? Int ?? -1
+        edit?.update()
+        json["redo_title"] = edit?.items.first { $0.action == Selector(("redo:")) }?.title ?? ""
+        write(json, to: out, "undo.json")
+    }
+
+    /// A readout: URL other than the reader page (a relative link opened in
+    /// the web view, as the context menu's Open Link did) must not replace the
+    /// document; the context menu offers no link items.
+    private static func navigationStaysOnTheReader(webView: WKWebView, out: URL) async {
+        let blocks = "document.querySelectorAll('.blk').length"
+        var json: [String: Any] = ["blocks_before": (try? await webView.evaluateJavaScript(blocks)) as? Int ?? -1]
+        _ = try? await webView.evaluateJavaScript("location.href = 'readout://app/other-plan.md'; 1")
+        try? await Task.sleep(for: .seconds(1))
+        json["href"] = (try? await webView.evaluateJavaScript("location.href")) as? String ?? ""
+        json["blocks_after"] = (try? await webView.evaluateJavaScript(blocks)) as? Int ?? -1
+        let menu = NSMenu()
+        for id in ["WKMenuItemIdentifierOpenLink", "WKMenuItemIdentifierOpenLinkInNewWindow", "WKMenuItemIdentifierDownloadLinkedFile",
+                   "WKMenuItemIdentifierCopyLink", "-", "WKMenuItemIdentifierCopy", "-", "WKMenuItemIdentifierLookUp", "-"] {
+            if id == "-" { menu.addItem(.separator()); continue }
+            let item = NSMenuItem(title: id, action: nil, keyEquivalent: "")
+            item.identifier = NSUserInterfaceItemIdentifier(id)
+            menu.addItem(item)
+        }
+        ReaderWebView.filterContextMenu(menu)
+        json["context_menu"] = menu.items.map { $0.isSeparatorItem ? "-" : ($0.identifier?.rawValue ?? "") }
+        write(json, to: out, "navigation.json")
     }
 
     /// The document in front (the selected tab of the frontmost reader window).
