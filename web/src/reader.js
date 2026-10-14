@@ -144,7 +144,15 @@ function setAppearance(o) {
   }
   if (o.changesOnly !== undefined) initChangesOnly(o.changesOnly);
   if (o.codeWrap !== undefined) setCodeWrap(!!o.codeWrap);
-  if (o.topInset !== undefined) root.style.setProperty('--top-inset', `${Math.max(0, +o.topInset || 0)}px`);
+  if (o.topInset !== undefined) {
+    // The inset pads the top of the document: a reader inside it keeps their
+    // place (at the top, the document moves down from under the toolbar).
+    const inset = `${Math.max(0, +o.topInset || 0)}px`;
+    if (root.style.getPropertyValue('--top-inset') !== inset) {
+      const set = () => root.style.setProperty('--top-inset', inset);
+      if (document.scrollingElement.scrollTop > 0) keepPlace(set); else { set(); rebaselineHeights(); }
+    }
+  }
   if (o.mode === 'quicklook') enableQuicklook();
   scheduleRail();
   if (!resizeAnchor) settle();

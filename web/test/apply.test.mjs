@@ -1322,6 +1322,63 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
     JSON.stringify({ shown, printed, back }));
 }
 
+// An empty page is never following. A file opened empty in a short window,
+// whose empty page sits scrolled to its own bottom: the content that arrives
+// shows from the top, not from its end.
+{
+  const short = await browser.newPage({ viewport: { width: 900, height: 160 } });
+  short.on('pageerror', e => errors.push(String(e)));
+  await short.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await short.goto(`${base}/reader.html`);
+  await short.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16, topInset: 80 }));
+  await short.evaluate(p => window.readout.apply(p), { ...fixBase, version: 1, reset: true, ops: [] });
+  const emptyTop = await short.evaluate(() => { window.scrollTo(0, 10000); return document.scrollingElement.scrollTop; });
+  await short.waitForTimeout(200);
+  await short.evaluate(p => window.readout.apply(p), { ...fixBase, version: 2, reset: false, ops: fixReset(60).ops, marks: [] });
+  const first = await short.evaluate(() => Math.round(document.querySelector('.blk[data-slot="1"]').getBoundingClientRect().top));
+  await short.close();
+  check('content arriving in an empty page shows from the top, not from its end', emptyTop > 0 && first >= 0 && first < 160, JSON.stringify({ emptyTop, first }));
+}
+
+// A file emptied and written again: scrolling the empty page in between
+// does not lose the place.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  await toTop(30);
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 60 }, (_, i) => ({ op: 'remove', slot: i + 1 })), deletions: [{ id: 9, after: 0, count: 60, preview: 'x' }] }));
+  await page.evaluate(() => { window.scrollTo(0, 10000); window.scrollTo(0, 0); });
+  await page.waitForTimeout(600);
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  const after = await page.evaluate(() => window.readout.captureAnchor());
+  check('scrolling the emptied page does not lose the reading position', after?.slot === 30 && Math.abs(after.offset - before.offset) <= 2,
+    JSON.stringify({ before: [before.slot, before.offset], after: after && [after.slot, after.offset] }));
+}
+
+// The toolbar inset changes (a tab bar appears): a reader inside the document
+// keeps their place; at the top, the document moves down from under the toolbar.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  await toTop(40, 100);
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  const inside = await topOf(40);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  const back = await topOf(40);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const top0 = await topOf(1);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  const top52 = await topOf(1);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('a toolbar inset change keeps a reader in the document in place, and moves the top down',
+    Math.abs(inside - 100) <= 2 && Math.abs(back - 100) <= 2 && top52 - top0 === 52, JSON.stringify({ inside, back, top0, top52 }));
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
