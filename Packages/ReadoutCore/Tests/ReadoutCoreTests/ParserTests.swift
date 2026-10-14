@@ -224,6 +224,21 @@ import Testing
         #expect(en.blocks.map(\.cjk) == [false, false])
     }
 
+    @Test func rawHTMLSrcsetCandidatesResolve() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("readout-srcset-\(UUID())")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let resolver = FileResolver(baseDirectory: dir)
+        let a = ReadoutURL.file(dir.appendingPathComponent("a.png").standardizedFileURL.path)
+        let b = ReadoutURL.file(dir.appendingPathComponent("b.png").standardizedFileURL.path)
+        let h = MarkdownParser.parse("<img srcset=\"a.png 2x, b.png 1x\" src=\"a.png\">\n", resolver: resolver).blocks[0].html
+        #expect(h.trimmingCharacters(in: .newlines) == "<img srcset=\"\(a) 2x, \(b) 1x\" src=\"\(a)\">")
+        // A remote candidate anywhere in the tag needs consent.
+        let remote = MarkdownParser.parse("<img src=\"a.png\" srcset=\"https://example.com/a.png 2x\">\n", resolver: resolver).blocks[0].html
+        #expect(remote.contains("class=\"remote-img\"") && remote.contains("data-src=\"https://example.com/a.png\""))
+        #expect(!remote.contains("<img"))
+    }
+
     @Test func tocWithSectionTasks() {
         var doc = parse("# A\n\n## B\n\n- [x] t1\n- [ ] t2\n\n## C\n\n- [ ] t3\n")
         for i in doc.blocks.indices { doc.blocks[i].slot = i + 1 }
