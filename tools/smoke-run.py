@@ -38,6 +38,8 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# Opens of the second document in App/SmokeTest.swift (warm_open_ms is their median).
+WARM_OPENS = 3
 FIXTURES = ROOT / "web" / "test" / "fixtures"
 
 
@@ -86,12 +88,15 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
             found = next((v for k, v in table.items() if k.endswith("/second.md")), None)
         return found
     samples = for_second(app.get("first_paint_samples_s", {})) or []
-    warm = for_second(app.get("first_paint_s", {}))
-    if samples:
+    timings["warm_open_samples_ms"] = [round(v * 1000, 1) for v in samples]
+    warm = None
+    # Every open must have painted: one that never did (or past the app's
+    # 10 s wait) leaves warm_open_ms unmeasured, which fails the budget.
+    if len(samples) == WARM_OPENS:
         ordered = sorted(samples)
-        mid = len(ordered) // 2
-        warm = ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
-        timings["warm_open_samples_ms"] = [round(v * 1000, 1) for v in samples]
+        warm = ordered[len(ordered) // 2]
+    else:
+        print(f"harness: {len(samples)} of {WARM_OPENS} warm opens painted")
     if warm is not None:
         timings["warm_open_ms"] = round(warm * 1000, 1)
     (out / "timings.json").write_text(json.dumps(timings, indent=1, sort_keys=True) + "\n")

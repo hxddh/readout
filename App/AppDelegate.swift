@@ -223,14 +223,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // The global shortcut works with Readout in the background: pick up a folder created since.
         let index = WorkspaceIndex.shared
         index.refresh()
-        if let url = index.latest {
-            open(url)
-            NSApp.activate()
-        } else {
-            // Nothing known yet: a folder that just appeared is still being
-            // scanned. Decide once it has been.
-            index.whenScanned { [weak self] in self?.openLatestScanned() }
-        }
+        // A folder that just appeared (or was added) is still being scanned:
+        // decide once it has been, so its newest file is the one opened and an
+        // empty list is never taken for "nothing written". At once otherwise.
+        index.whenScanned { [weak self] in self?.openLatestScanned() }
     }
 
     private func openLatestScanned() {

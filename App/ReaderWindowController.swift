@@ -66,6 +66,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var searchItem: NSSearchToolbarItem?
     private var changeItem: NSToolbarItem?
     private var cancellables: Set<AnyCancellable> = []
+    /// The window's undo manager (Mark All as Read). Nothing between the web
+    /// view and the window handles undo: itself, so this controller does.
+    private let undoStack = UndoManager()
 
     // File state (content tracking lives in `loader`)
     private var loaded = false
@@ -671,8 +674,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         webView.call("markAllRead")
         scheduleSave()
         // ⌘Z brings the marks back.
-        window?.undoManager?.registerUndo(withTarget: self) { $0.restoreUnread(baseline: before) }
-        window?.undoManager?.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
+        undoStack.registerUndo(withTarget: self) { $0.restoreUnread(baseline: before) }
+        undoStack.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
     }
 
     /// Undo of Mark All as Read: the document marked against the baseline from
@@ -691,9 +694,15 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         scheduleSave()
         // Redo marks everything read again.
-        window?.undoManager?.registerUndo(withTarget: self) { $0.markAllRead(nil) }
-        window?.undoManager?.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
+        undoStack.registerUndo(withTarget: self) { $0.markAllRead(nil) }
+        undoStack.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
     }
+
+    // Edit ▸ Undo / Redo with the page focused (the find field's editor
+    // handles its own text first).
+    @objc func undo(_ sender: Any?) { if undoStack.canUndo { undoStack.undo() } }
+    @objc func redo(_ sender: Any?) { if undoStack.canRedo { undoStack.redo() } }
+    func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { undoStack }
 
     /// A click in the outline: to that heading, every time (clicking the row
     /// already selected jumps again), then back to the page so the keyboard
@@ -852,6 +861,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case #selector(toggleWidth(_:)):
             item.state = AppSettings.shared.wide ? .on : .off
             return true
+        case #selector(undo(_:)):
+            item.title = undoStack.undoMenuItemTitle
+            return undoStack.canUndo
+        case #selector(redo(_:)):
+            item.title = undoStack.redoMenuItemTitle
+            return undoStack.canRedo
         default:
             return true
         }
