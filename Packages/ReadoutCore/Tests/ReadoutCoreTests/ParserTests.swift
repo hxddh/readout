@@ -360,6 +360,12 @@ import Testing
         // `src=` inside a quoted value of a tag whose quotes pair up is text, not a source.
         let titled = "<video title=\"example src=https://e/x\"><source src=\"local.mp4\"></video>"
         #expect(HTML.sanitize(titled) == titled)
+        // A tag-like `<` inside a quoted value stays in it, before or after the source.
+        let ltTag = "<span class=\"remote-img\" data-tag=\"img\" data-src=\"https://e/x.png\" data-alt=\"\"></span>"
+        #expect(HTML.sanitize("<img src=\"https://e/x.png\" alt=\"x<y\">") == ltTag)
+        #expect(HTML.sanitize("<img alt=\"x<y\" src=\"https://e/x.png\">") == ltTag)
+        // An unbalanced quote at the end of the input does not swallow the text after the tag.
+        #expect(HTML.sanitize("<img src=\"https://e/x.png\" alt='it's'>Don't") == ltTag + "Don't")
         // A tag cut short at the end of the input is still gated.
         #expect(HTML.sanitize("<img src=\"https://e.com/a.png\"").contains("remote-img"))
     }

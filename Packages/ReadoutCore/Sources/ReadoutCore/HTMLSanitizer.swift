@@ -28,19 +28,22 @@ enum HTML {
         pattern: "<(/?(?:" + deniedTags.joined(separator: "|") + ")(?=[\\s/>]|$))", options: .caseInsensitive)
 
     /// A media tag with a `src` or `srcset` attribute. A `>` inside a quoted
-    /// value does not end it, but nothing in it runs into a following tag (a
-    /// `<` that starts one): only a tag whose quotes do not pair up —
-    /// `alt='it's'` — falls back to ending at its first `>`, so it cannot
-    /// swallow the text and tags after it (a tag whose quotes pair up never
-    /// does, so `src=` inside a quoted value stays text). Every attempt stops
-    /// at the next tag, so the scan is linear.
+    /// value does not end it, and neither does a `<` (`alt="x<y"`), but a
+    /// value that has passed a `>` cannot run on into a following tag (a `<`
+    /// that starts one), and unquoted text never does. A tag whose quotes do
+    /// not pair up — `alt='it's'` — so that the quote-aware scan cannot reach
+    /// its `>`, falls back to ending at its first `>`: it cannot swallow the
+    /// text and tags after it. A tag whose quotes pair up never falls back, so
+    /// `src=` inside a quoted value stays text. Every attempt stops at the
+    /// next `>` followed by a tag, so the scan is linear.
     private static let remoteMediaSrc: NSRegularExpression = {
         let lt = #"<(?![a-z/!?])"#                      // a `<` that does not start a tag
-        let item = #"(?:[^<>"']|\#(lt)|"(?:[^"<]|\#(lt))*"|'(?:[^'<]|\#(lt))*')"#
+        let quoted = { (q: String) in #"\#(q)[^\#(q)>]*(?:>(?:[^\#(q)<]|\#(lt))*)?\#(q)"# }
+        let item = #"(?:[^<>"']|\#(lt)|\#(quoted("\""))|\#(quoted("'")))"#
         let plain = #"(?:[^<>]|\#(lt))"#
         let source = #"\s(?:src|srcset)\s*="#
-        let quoteAware = #"\#(item)*?\#(source)\#(item)*(?:>|$)"#
-        let unbalanced = #"(?!\#(item)*(?:>|$))\#(plain)*?\#(source)\#(plain)*>?"#
+        let quoteAware = #"\#(item)*?\#(source)\#(item)*>"#
+        let unbalanced = #"(?!\#(item)*>)\#(plain)*?\#(source)\#(plain)*>?"#
         return try! NSRegularExpression(
             pattern: #"<(img|video|audio|source|track)\b(?:\#(quoteAware)|\#(unbalanced))"#, options: .caseInsensitive)
     }()
