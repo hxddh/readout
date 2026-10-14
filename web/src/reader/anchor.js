@@ -1,6 +1,6 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
-import { doc, root, slots, heights } from './core.js';
+import { doc, root, slots, heights, trace } from './core.js';
 import { scheduleRail } from './rail.js';
 
 export function isShown(e) { return !e.hidden && e.offsetParent !== null; }
@@ -43,7 +43,11 @@ function shownSibling(el, dir) {
   return null;
 }
 
-/** Returns whether the anchor's own block was there to restore to. */
+/**
+ * Returns whether the reader is back at the anchor: its own block was there,
+ * and the page could scroll to put it where it was (a document cut short
+ * cannot scroll that far).
+ */
 export function restoreAnchor(a, changedSlots) {
   if (!a) return false;
   let el = slots.get(a.slot);
@@ -55,7 +59,7 @@ export function restoreAnchor(a, changedSlots) {
     const r = el.getBoundingClientRect();
     const want = changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset;
     window.scrollBy(0, r.top + want);
-    return slots.has(a.slot);
+    return slots.has(a.slot) && Math.abs(el.getBoundingClientRect().top + want) <= 1;
   }
   // The anchor block is gone: the block that followed it takes its place at
   // the top (or, at the end of the document, the one before it ends there).
@@ -181,7 +185,10 @@ export const resizeObserver = new ResizeObserver(entries => {
     // Entirely above the viewport, or under the toolbar, before it resized.
     if (r.bottom - (h - prev) <= inset + 1) delta += h - prev;
   }
-  if (delta !== 0 && document.scrollingElement.scrollTop > 0) window.scrollBy(0, delta);
+  if (delta !== 0 && document.scrollingElement.scrollTop > 0) {
+    window.scrollBy(0, delta);
+    trace('compensate', { delta: Math.round(delta) });
+  }
   // Blocks that content-visibility lays out once they come into view change
   // size again; measured at the start of the next frame, they settle before
   // its observations. Left to the frame's own layout, WebKit reports a

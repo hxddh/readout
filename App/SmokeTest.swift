@@ -198,6 +198,15 @@ enum SmokeTest {
         _ = try? await webView.evaluateJavaScript("(() => { const b = [...document.querySelectorAll('.blk')]; const t = b[Math.floor(b.length/2)]; window.scrollBy(0, t.getBoundingClientRect().top - 40); window.__refill = {slot: +t.dataset.slot, top: t.getBoundingClientRect().top}; return 1; })()")
         // The page reports its place a moment after scrolling settles.
         try? await Task.sleep(for: .seconds(1.2))
+        // Diagnostics, so a failure can be explained: where the page was, the
+        // anchor block and the blocks above it, and what else is in the flow.
+        let state = "(() => { const r = window.__refill; const b = [...document.querySelectorAll('#ro-doc > .blk')]; const i = r ? b.findIndex(e => +e.dataset.slot === r.slot) : -1; const e = i >= 0 ? b[i] : null; return JSON.stringify({ scrollY: Math.round(scrollY), scrollHeight: document.scrollingElement.scrollHeight, innerHeight, anchorTop: e ? Math.round(e.getBoundingClientRect().top * 10) / 10 : null, captured: window.readout.captureAnchor(), above: (i >= 0 ? b.slice(0, i) : []).map(x => [+x.dataset.slot, x.className.replace(/^blk /, ''), Math.round(x.getBoundingClientRect().height)]), extra: [...document.querySelectorAll('#ro-doc > :not(.blk)')].map(x => [x.id || x.className, Math.round(x.getBoundingClientRect().height)]) }); })()"
+        func pageState() async -> Any? {
+            guard let text = try? await webView.evaluateJavaScript(state) as? String, let data = text.data(using: .utf8) else { return nil }
+            return try? JSONSerialization.jsonObject(with: data)
+        }
+        let stateBefore = await pageState()
+        let started = Date()
         let before = appliedCount
         mark(out, "await-refill")
         let deadline = Date().addingTimeInterval(15)
@@ -219,6 +228,16 @@ enum SmokeTest {
         let shift = try? await webView.evaluateJavaScript("(() => { const r = window.__refill; const e = r && document.querySelector('.blk[data-slot=\"' + r.slot + '\"]'); return e ? e.getBoundingClientRect().top - r.top : null; })()")
         var json: [String: Any] = ["applies": appliedCount - before]
         if let shift = shift as? Double { json["shift"] = shift }
+        // What moved the page, and when (page time, ms): patches, compensation,
+        // resize holds, and the app's fallback restore (scrollToAnchor).
+        if let s = stateBefore { json["before"] = s }
+        if let s = await pageState() { json["after"] = s }
+        if let text = try? await webView.evaluateJavaScript("JSON.stringify(window.readout.trace ? window.readout.trace() : [])") as? String,
+           let data = text.data(using: .utf8), let trace = try? JSONSerialization.jsonObject(with: data) {
+            json["trace"] = trace
+        }
+        if let now = try? await webView.evaluateJavaScript("Math.round(performance.now())") as? Double { json["page_now_ms"] = now }
+        json["seconds_waited"] = Date().timeIntervalSince(started)
 
         NSPasteboard.general.clearContents()
         _ = try? await webView.evaluateJavaScript("(() => { const l = document.querySelector('.k-heading .h-link'); if (l) l.click(); return !!l; })()")

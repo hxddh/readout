@@ -1,6 +1,6 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
-import { doc, slots, heights, strings, post, inViewport } from './core.js';
-import { captureAnchor, restoreAnchor, atBottom, resizeObserver, keepPlace } from './anchor.js';
+import { doc, slots, heights, strings, post, inViewport, trace } from './core.js';
+import { captureAnchor, restoreAnchor, atBottom, resizeObserver, keepPlace, isShown } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy } from './enhance.js';
@@ -163,10 +163,17 @@ export function apply(p) {
     if (forced.length) requestAnimationFrame(() => requestAnimationFrame(() => { for (const el of forced) el.style.contentVisibility = ''; }));
   }
   else if (anchor) restored = restoreAnchor(anchor, changed);
-  // Emptied, or refilled only in part: hold on to the reader's place.
-  if (anchor && (slots.size === 0 || (place && (following ? !atBottom() : !restored)))) {
+  // Emptied, refilled only in part, or cut short so the page cannot scroll
+  // to the reader's place (it then sits at the end, which is not following):
+  // hold on to the place until a later patch can restore it.
+  const own = anchor && slots.get(anchor.slot);
+  const cutShort = !follow && !restored && !!own && isShown(own);
+  if (anchor && (slots.size === 0 || cutShort || (place && (following ? !atBottom() : !restored)))) {
     held = { anchor, following, top: document.scrollingElement.scrollTop };
   }
+  trace('apply', { version: p.version, reset: !!p.reset, ops: p.ops.length, blocks: slots.size, place: !!place,
+    anchor: anchor && { slot: anchor.slot, offset: Math.round(anchor.offset) }, following, follow, restored, held: !!held,
+    height: document.scrollingElement.scrollHeight });
 
   for (const el of visibleChanged) {
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
