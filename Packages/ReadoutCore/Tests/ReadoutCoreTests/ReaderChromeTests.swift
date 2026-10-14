@@ -3,15 +3,19 @@ import Testing
 @testable import ReadoutCore
 
 @Suite struct ReaderChromeTests {
-    @Test func theSubtitleShowsStatusFirstThenTasksAndNeverTheFolder() {
+    @Test func theSubtitleShowsStatusFirstThenTasksAndTheFolderOnlyWithoutATabBar() {
         let tasks = TaskStats(done: 2, total: 5)
-        #expect(ReaderChrome.subtitle(status: "The file was deleted.", tasks: tasks) == .status("The file was deleted."))
-        #expect(ReaderChrome.subtitle(status: nil, tasks: tasks) == .tasks(done: 2, total: 5))
-        // Nothing to report: no subtitle (it used to name the folder, which the tab's tooltip shows now).
-        #expect(ReaderChrome.subtitle(status: "", tasks: TaskStats()) == nil)
-        #expect(ReaderChrome.subtitle(status: nil, tasks: TaskStats()) == nil)
-        // A failed first read has no tasks and must still say why the window is blank.
-        #expect(ReaderChrome.subtitle(status: "The file could not be read.", tasks: TaskStats()) == .status("The file could not be read."))
+        for tabs in [true, false] {
+            #expect(ReaderChrome.subtitle(status: "The file was deleted.", tasks: tasks, path: "/a/runs/plan.md", showsTabBar: tabs) == .status("The file was deleted."))
+            #expect(ReaderChrome.subtitle(status: nil, tasks: tasks, path: "/a/runs/plan.md", showsTabBar: tabs) == .tasks(done: 2, total: 5))
+            // A failed first read has no tasks and must still say why the window is blank.
+            #expect(ReaderChrome.subtitle(status: "The file could not be read.", tasks: TaskStats(), path: "/a/plan.md", showsTabBar: tabs) == .status("The file could not be read."))
+        }
+        // Nothing to report with a tab bar: no subtitle (the tab's tooltip has the path).
+        #expect(ReaderChrome.subtitle(status: "", tasks: TaskStats(), path: "/a/runs/plan.md", showsTabBar: true) == nil)
+        // A window of its own (no tab bar, no tooltip): the folder tells two plan.md apart.
+        #expect(ReaderChrome.subtitle(status: nil, tasks: TaskStats(), path: "/a/runs/plan.md", showsTabBar: false) == .folder("runs"))
+        #expect(ReaderChrome.subtitle(status: nil, tasks: TaskStats(), path: "/plan.md", showsTabBar: false) == nil)
     }
 
     @Test func theTabToolTipIsThePathWithHomeAsTilde() {
@@ -41,6 +45,24 @@ import Testing
         #expect(ReaderChrome.recentTitles(["/plan.md", "/x/plan.md"]) == ["plan.md", "plan.md — x"])
         #expect(ReaderChrome.recentTitles(["/a/plan.md", "/a/plan.md"]) == ["plan.md — a", "plan.md — a"])
         #expect(Set(ReaderChrome.recentTitles(["/p/q/plan.md", "/r/q/plan.md", "/s/plan.md"])).count == 3)
+    }
+
+    @Test func linkItemsInTheContextMenuStayOnlyForLinksToTheWeb() {
+        let inPage = ReaderChrome.blockedContextMenuItems(linkURL: "readout://app/other.md")
+        let web = ReaderChrome.blockedContextMenuItems(linkURL: "https://example.com/a")
+        let unknown = ReaderChrome.blockedContextMenuItems(linkURL: nil)
+        // A relative link resolves to readout://app/...: nothing to copy or open.
+        #expect(inPage.contains("WKMenuItemIdentifierCopyLink") && inPage.contains("WKMenuItemIdentifierDownloadLinkedFile"))
+        #expect(unknown.contains("WKMenuItemIdentifierCopyLink"))
+        #expect(ReaderChrome.blockedContextMenuItems(linkURL: "file:///tmp/x.md").contains("WKMenuItemIdentifierCopyLink"))
+        // A web link can be copied (opening it in the web view never works: a click opens it).
+        #expect(!web.contains("WKMenuItemIdentifierCopyLink"))
+        #expect(!ReaderChrome.blockedContextMenuItems(linkURL: "mailto:a@b.c").contains("WKMenuItemIdentifierCopyLink"))
+        for blocked in [inPage, web, unknown] {
+            #expect(blocked.isSuperset(of: ["WKMenuItemIdentifierOpenLink", "WKMenuItemIdentifierOpenLinkInNewWindow",
+                                        "WKMenuItemIdentifierReload", "WKMenuItemIdentifierCopyImageURL"]))
+            #expect(!blocked.contains("WKMenuItemIdentifierCopy") && !blocked.contains("WKMenuItemIdentifierLookUp"))
+        }
     }
 
     @Test func anOutlineUnderASingleTitleIndentsFromItsSections() {

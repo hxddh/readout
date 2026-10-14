@@ -288,6 +288,8 @@ enum SmokeTest {
                 "toolbar": items.map(\.itemIdentifier.rawValue),
                 "search_width": search.map { Double($0.preferredWidthForSearchField) } ?? -1,
                 "tabbing_automatic": reader.window?.tabbingMode == .automatic,
+                "tab_bar_visible": reader.window?.tabGroup?.isTabBarVisible ?? false,
+                "folder": reader.url.deletingLastPathComponent().lastPathComponent,
                 "change_item": ["present": item != nil, "hidden": item?.isHidden ?? true, "enabled": item?.isEnabled ?? false]]
     }
 
@@ -345,7 +347,8 @@ enum SmokeTest {
 
     /// A readout: URL other than the reader page (a relative link opened in
     /// the web view, as the context menu's Open Link did) must not replace the
-    /// document; the context menu offers no link items.
+    /// document; the context menu offers no item that opens a link in the web
+    /// view, and copies a link only when it leads to the web.
     private static func navigationStaysOnTheReader(webView: WKWebView, out: URL) async {
         let blocks = "document.querySelectorAll('.blk').length"
         var json: [String: Any] = ["blocks_before": (try? await webView.evaluateJavaScript(blocks)) as? Int ?? -1]
@@ -353,16 +356,31 @@ enum SmokeTest {
         try? await Task.sleep(for: .seconds(1))
         json["href"] = (try? await webView.evaluateJavaScript("location.href")) as? String ?? ""
         json["blocks_after"] = (try? await webView.evaluateJavaScript(blocks)) as? Int ?? -1
-        let menu = NSMenu()
-        for id in ["WKMenuItemIdentifierOpenLink", "WKMenuItemIdentifierOpenLinkInNewWindow", "WKMenuItemIdentifierDownloadLinkedFile",
-                   "WKMenuItemIdentifierCopyLink", "-", "WKMenuItemIdentifierCopy", "-", "WKMenuItemIdentifierLookUp", "-"] {
-            if id == "-" { menu.addItem(.separator()); continue }
-            let item = NSMenuItem(title: id, action: nil, keyEquivalent: "")
-            item.identifier = NSUserInterfaceItemIdentifier(id)
-            menu.addItem(item)
+        // The link a context menu opens on, as the app's script reports it.
+        func contextLink(_ href: String) async -> String {
+            let script = "(() => { const a = document.createElement('a'); a.href = '\(href)'; a.textContent = 'x'; document.body.appendChild(a); a.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true})); a.remove(); return 1; })()"
+            _ = try? await webView.evaluateJavaScript(script)
+            try? await Task.sleep(for: .milliseconds(300))
+            return (webView as? ReaderWebView)?.contextLink ?? ""
         }
-        ReaderWebView.filterContextMenu(menu)
-        json["context_menu"] = menu.items.map { $0.isSeparatorItem ? "-" : ($0.identifier?.rawValue ?? "") }
+        func filtered(_ link: String?) -> [String] {
+            let menu = NSMenu()
+            for id in ["WKMenuItemIdentifierOpenLink", "WKMenuItemIdentifierOpenLinkInNewWindow", "WKMenuItemIdentifierDownloadLinkedFile",
+                       "WKMenuItemIdentifierCopyLink", "-", "WKMenuItemIdentifierCopy", "-", "WKMenuItemIdentifierLookUp", "-"] {
+                if id == "-" { menu.addItem(.separator()); continue }
+                let item = NSMenuItem(title: id, action: nil, keyEquivalent: "")
+                item.identifier = NSUserInterfaceItemIdentifier(id)
+                menu.addItem(item)
+            }
+            ReaderWebView.filterContextMenu(menu, linkURL: link)
+            return menu.items.map { $0.isSeparatorItem ? "-" : ($0.identifier?.rawValue ?? "") }
+        }
+        let web = await contextLink("https://example.com/readout")
+        let relative = await contextLink("other-plan.md")
+        json["context_link_web"] = web
+        json["context_link_relative"] = relative
+        json["context_menu_web"] = filtered(web.isEmpty ? nil : web)
+        json["context_menu"] = filtered(relative.isEmpty ? nil : relative)
         write(json, to: out, "navigation.json")
     }
 
@@ -533,9 +551,11 @@ enum SmokeTest {
         let name = URL(fileURLWithPath: file).lastPathComponent
         while !NSApp.windows.contains(where: { $0.title == name }) && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
         try? await Task.sleep(for: .seconds(1))
-        let json: [String: Any] = ["requests": backgroundRequests.map { URL(fileURLWithPath: $0).lastPathComponent },
+        var json: [String: Any] = ["requests": backgroundRequests.map { URL(fileURLWithPath: $0).lastPathComponent },
                                    "reading_before": before, "reading_after": reading(),
                                    "opened": NSApp.windows.contains { $0.title == name }]
+        // Opened as a tab: with the tab bar showing, the subtitle leaves the folder to the tab's tooltip.
+        if let reader = (NSApp.delegate as? AppDelegate)?.reader(for: URL(fileURLWithPath: file)) { json["chrome"] = chrome(reader) }
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: out.appendingPathComponent("background-opens.json"))
         }

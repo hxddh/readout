@@ -144,6 +144,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         super.init(frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: config)
         forwarder.target = self
         ucc.add(forwarder, name: "readout")
+        ucc.addUserScript(WKUserScript(source: Self.contextLinkScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         allowsMagnification = false
         allowsBackForwardNavigationGestures = false
         underPageBackgroundColor = .textBackgroundColor
@@ -159,21 +160,27 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         load(URLRequest(url: Self.readerURL))
     }
 
-    /// Context-menu items that would navigate away from the rendered document
-    /// (Reload, Back, a link opened in the web view) or hand out the page's
-    /// internal readout:// URLs (Copy Link, Download Linked File). A link is
-    /// opened by clicking it; a section link is copied from its heading.
-    static let blockedMenuItems: Set<String> = [
-        "WKMenuItemIdentifierReload", "WKMenuItemIdentifierGoBack", "WKMenuItemIdentifierGoForward",
-        "WKMenuItemIdentifierOpenLink", "WKMenuItemIdentifierOpenLinkInNewWindow", "WKMenuItemIdentifierCopyLink",
-        "WKMenuItemIdentifierDownloadLinkedFile", "WKMenuItemIdentifierOpenFrameInNewWindow",
-        "WKMenuItemIdentifierOpenImageInNewWindow", "WKMenuItemIdentifierDownloadImage",
-        "WKMenuItemIdentifierCopyImageURL", "WKMenuItemIdentifierInspectElement",
-    ]
+    /// The link under the pointer when the context menu opened (its resolved
+    /// URL), reported by `contextLinkScript` just before WebKit asks for the
+    /// menu; nil when none or not known.
+    private(set) var contextLink: String?
 
-    /// Removes the blocked items, and separators left leading, trailing or doubled.
-    static func filterContextMenu(_ menu: NSMenu) {
-        for item in menu.items where blockedMenuItems.contains(item.identifier?.rawValue ?? "") { menu.removeItem(item) }
+    /// Reports the link a context menu opens on (an app script, not the
+    /// reader page's: WebKit gives the menu no way to ask). The message is
+    /// posted while the event is handled, before the menu is built.
+    private static let contextLinkScript = """
+        document.addEventListener('contextmenu', e => {
+          const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+          window.webkit.messageHandlers.readout.postMessage({ type: 'contextLink', href: a ? a.href : '' });
+        }, true);
+        """
+
+    /// Removes the items `ReaderChrome.blockedContextMenuItems` names for the
+    /// link (navigation, and readout: URLs a copy would hand out), and
+    /// separators left leading, trailing or doubled.
+    static func filterContextMenu(_ menu: NSMenu, linkURL: String?) {
+        let blocked = ReaderChrome.blockedContextMenuItems(linkURL: linkURL)
+        for item in menu.items where blocked.contains(item.identifier?.rawValue ?? "") { menu.removeItem(item) }
         var previousSeparator = true
         for item in menu.items {
             if item.isSeparatorItem && previousSeparator { menu.removeItem(item) } else { previousSeparator = item.isSeparatorItem }
@@ -182,7 +189,8 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
     }
 
     override func willOpenMenu(_ menu: NSMenu, with event: NSEvent) {
-        Self.filterContextMenu(menu)
+        Self.filterContextMenu(menu, linkURL: contextLink)
+        contextLink = nil
         super.willOpenMenu(menu, with: event)
     }
 
@@ -194,6 +202,11 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         guard let body = message.body as? [String: Any], let type = body["type"] as? String else { return }
         if type == "error" {
             NSLog("Readout page error: %@", (body["message"] as? String) ?? "?")
+            return
+        }
+        if type == "contextLink" {
+            let href = body["href"] as? String ?? ""
+            contextLink = href.isEmpty ? nil : href
             return
         }
         if type == "ready" {
