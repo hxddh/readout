@@ -183,16 +183,19 @@ function renameIds(wrap, from, to) {
  * Re-renders every diagram after a theme or type size change (only once
  * Mermaid was ever used). The drawings stay where they are until their new ones replace
  * them, so the page keeps its height; off-screen ones are redrawn when they
- * come near.
+ * come near. Resolves when the ones in view are drawn.
  */
 export function rerenderMermaid() {
-  if (!mermaidPromise) return;
+  if (!mermaidPromise) return Promise.resolve();
+  let drawing = false;
   for (const b of doc.querySelectorAll('.mermaid-block')) {
     if (!b.classList.contains('done') && !b.querySelector('.mermaid-error')) continue;   // not drawn yet: renders as usual
     b.dataset.stale = '1';
-    if (b.classList.contains('busy')) continue;   // queued: it is drawn in the new theme
-    if (inViewport(b, window.innerHeight)) renderMermaid(b); else lazyObserver.observe(b);
+    if (b.classList.contains('busy')) { drawing = true; continue; }   // queued: it is drawn in the new theme
+    if (inViewport(b, window.innerHeight)) { renderMermaid(b); drawing = true; } else lazyObserver.observe(b);
   }
+  // Resolves once the diagrams in view are drawn again.
+  return drawing && (mermaidBusy || mermaidQueue.length) ? new Promise(resolve => idle.push(resolve)) : Promise.resolve();
 }
 
 /**

@@ -796,6 +796,30 @@ for (const dark of [false, true]) {
   await page.close();
 }
 
+// The same, read at the end of the page: the redraw at the new size keeps the
+// reader at the end (the diagram grows after the type has reflowed).
+{
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ...Array.from({ length: 30 }, (_, i) => ['paragraph', `<p>Paragraph ${i} above the diagram, long enough to wrap once in the column at this width.</p>`]),
+    ['mermaid', '<div class="mermaid-block"><pre class="mermaid-src">flowchart TD\n  A[Agent writes the plan] --> B[Reader shows it]\n  B --> C[Agent edits]\n  C --> D[Reader marks the change]</pre></div>'],
+  ]));
+  await page.evaluate(() => document.querySelector('.mermaid-block').scrollIntoView());
+  await until(page, () => document.querySelector('.mermaid-block.done svg'));
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  await page.waitForTimeout(300);
+  const gap = () => page.evaluate(() => { const se = document.scrollingElement; return Math.round(se.scrollHeight - se.scrollTop - window.innerHeight); });
+  const g0 = await gap();
+  const h0 = await page.evaluate(() => document.querySelector('.mermaid-block svg').getBoundingClientRect().height);
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 20 }));
+  await until(page, () => { const l = document.querySelector('.mermaid-block svg .nodeLabel, .mermaid-block svg text'); return l && parseFloat(getComputedStyle(l).fontSize) > 16; }, 15000);
+  await page.waitForTimeout(400);
+  const h1 = await page.evaluate(() => document.querySelector('.mermaid-block svg').getBoundingClientRect().height);
+  const g1 = await gap();
+  check('reading at the end, a diagram redrawn at the new size keeps the reader at the end', g0 <= 1 && g1 <= 1 && h1 > h0 + 5, JSON.stringify({ g0, g1, h0, h1 }));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();
