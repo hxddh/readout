@@ -1379,6 +1379,48 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
     Math.abs(inside - 100) <= 2 && Math.abs(back - 100) <= 2 && top52 - top0 === 52, JSON.stringify({ inside, back, top0, top52 }));
 }
 
+// A read that catches the file half written cuts the document short below
+// the reader: the page cannot scroll to their place and sits at its end.
+// That is not following: when the rest arrives the reader is put back, not
+// sent to the new end. Directly, and after the file was emptied first.
+{
+  const shifts = [];
+  for (const emptied of [false, true]) {
+    await page.evaluate(p => window.readout.apply(p), fixReset(60));
+    await toTop(30, 40);
+    await page.waitForTimeout(300);
+    const t0 = await topOf(30);
+    if (emptied) {
+      await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 60 }, (_, i) => ({ op: 'remove', slot: i + 1 })), deletions: [{ id: 11, after: 0, count: 60, preview: 'x' }] }));
+      await page.evaluate(p => window.readout.apply(p), fixReset(31));
+    } else {
+      await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 29 }, (_, i) => ({ op: 'remove', slot: 32 + i })) }));
+    }
+    const cut = await topOf(30);
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: fixReset(29, undefined, undefined, 32).ops.map((o, i) => ({ ...o, after: 31 + i })) }));
+    shifts.push({ emptied, cut: cut - t0, shift: (await topOf(30)) - t0 });
+  }
+  check('a document cut short below the reader, then completed, puts the reader back', shifts.every(s => s.cut > 0 && Math.abs(s.shift) <= 1), JSON.stringify(shifts));
+}
+
+// The window resizes in the frame of a scroll made just before it (the app
+// showing a window, a script scrolling): resize events run before scroll
+// events, so the place settled before that scroll is stale. The resize keeps
+// the place the scroll went to. (The smoke refill check failed this way:
+// a resize hold put the reader back where they had been seconds earlier.)
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  await toTop(10);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => {
+    window.scrollBy(0, document.querySelector('.blk[data-slot="40"]').getBoundingClientRect().top - 40);
+    window.dispatchEvent(new Event('resize'));
+  });
+  await page.waitForTimeout(500);
+  const top40 = await topOf(40);
+  check('a resize right after a scroll keeps the place the scroll went to', Math.abs(top40 - 40) <= 2, `top=${top40}`);
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();

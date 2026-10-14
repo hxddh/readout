@@ -20,6 +20,18 @@ export function pageTheme() {
   return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+/**
+ * The last moves of the reading position (patches, compensation, resize
+ * holds, restores the app asked for), kept so a misplaced reader can be
+ * explained: the smoke test writes them out (window.readout.trace()).
+ */
+const traceLog = [];
+export function trace(type, data) {
+  traceLog.push({ t: Math.round(performance.now()), type, y: Math.round(document.scrollingElement.scrollTop), ...data });
+  if (traceLog.length > 80) traceLog.shift();
+}
+export function traceEntries() { return traceLog.slice(); }
+
 /** Quick Look renders statically: no marks, no rail. */
 export let quicklook = false;
 export function enableQuicklook() { quicklook = true; root.dataset.mode = 'quicklook'; }

@@ -10,7 +10,7 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme } from './reader/core.js';
+import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom } from './reader/anchor.js';
 import { apply as applyPatch, findMode } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting } from './reader/marks.js';
@@ -81,13 +81,18 @@ window.addEventListener('scroll', () => {
 // By the time a resize event arrives the page already has its new width, so
 // the place to keep is the one captured while the reader last sat still
 // (and whether they sat at the end, following the live tail: they stay there).
+// It is only that place while the page is still where it was: a scroll the
+// scroll handler has not seen yet (resize events run before scroll events in
+// a frame, so a scroll made just before the window resized, by the app or a
+// script) makes it stale, and the place is taken now instead.
 let settledAnchor = null;
 let settledBottom = false;
+let settledY = 0;
 let settleTimer = null;
 function settle() {
   settledAnchor = null;
   clearTimeout(settleTimer);
-  settleTimer = setTimeout(() => { settledAnchor = captureAnchor(); settledBottom = atBottom(); }, 100);
+  settleTimer = setTimeout(() => { settledAnchor = captureAnchor(); settledBottom = atBottom(); settledY = document.scrollingElement.scrollTop; }, 100);
 }
 
 let resizeAnchor = null;
@@ -95,11 +100,16 @@ let resizeBottom = false;
 let resizeEnd = null;
 window.addEventListener('resize', () => {
   if (!resizeAnchor) {
-    resizeBottom = settledAnchor ? settledBottom : atBottom();
-    resizeAnchor = settledAnchor || captureAnchor();
+    // Moved since it settled, other than by a shorter page being clamped to its new end.
+    const se = document.scrollingElement;
+    const clamped = se.scrollTop < settledY && se.scrollTop >= se.scrollHeight - innerHeight - 1;
+    const settled = settledAnchor && (Math.abs(se.scrollTop - settledY) <= 1 || clamped) ? settledAnchor : null;
+    resizeBottom = settled ? settledBottom : atBottom();
+    resizeAnchor = settled || captureAnchor();
   }
   if (!resizeAnchor) return;
   const hold = () => {
+    trace('resize', { slot: resizeAnchor.slot, bottom: resizeBottom, w: innerWidth, h: innerHeight });
     holdPlace(resizeAnchor, resizeBottom, true);
     rebaselineHeights();
   };
@@ -165,6 +175,7 @@ function scrollToSlot(slot) {
 
 function scrollToAnchor(a) {
   if (!a) return;
+  trace('scrollToAnchor', { slot: a.slot, offset: Math.round(a.offset) });
   restoreAnchor(a, new Set());
 }
 
@@ -181,6 +192,7 @@ window.readout = {
   scrollToAnchor,
   scrollToFragment,
   captureAnchor,
+  trace: traceEntries,
   findMode,
   preparePrint,
   nextChange: () => jump(1),
