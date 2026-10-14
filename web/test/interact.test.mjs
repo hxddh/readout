@@ -178,6 +178,13 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
   await page.waitForTimeout(300);
   const scrolled = await active();
   check('a TOC jump reports the section clicked until the reader scrolls', clicked.every(([s, a]) => s === a) && scrolled !== 51, JSON.stringify({ clicked, scrolled }));
+  // A patch that turns the section's heading into another kind of block ends the pin.
+  await page.evaluate(() => window.readout.scrollToSlot(33));
+  await page.waitForTimeout(200);
+  await page.evaluate(() => window.readout.apply({ version: 99, reset: false, rewrite: false, ops: [{ op: 'replace', slot: 33, html: '<p>no longer a heading</p>', kind: 'paragraph', change: 'content' }], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } }));
+  await page.waitForTimeout(200);
+  const replaced = await active();
+  check('a TOC pin ends when its heading becomes another kind of block', replaced !== 33 && replaced != null, `active=${replaced}`);
   await page.close();
 
   // A large document (content-visibility): from the top to headings far down.

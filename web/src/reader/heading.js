@@ -24,7 +24,8 @@ function report(slot) {
 
 export function reportActiveHeading() {
   if (pin) {
-    if (slots.has(pin.slot) && Math.abs(document.scrollingElement.scrollTop - pin.y) <= 2) return report(pin.slot);
+    // Still a heading (a patch can turn the block in that slot into another kind).
+    if (slots.get(pin.slot)?.classList.contains('k-heading') && Math.abs(document.scrollingElement.scrollTop - pin.y) <= 2) return report(pin.slot);
     pin = null;
   }
   if (!headings) headings = Array.from(doc.querySelectorAll('.k-heading'));
