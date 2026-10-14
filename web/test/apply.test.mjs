@@ -1279,6 +1279,49 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
     !r.fading.hidden && r.fading.opacity < 1 && r.hidden && Math.abs(r.t1 - r.t0) <= 1, JSON.stringify(r));
 }
 
+// The rail's own label comes from the app's strings.
+{
+  const before = await page.evaluate(() => document.getElementById('ro-rail').getAttribute('aria-label'));
+  await page.evaluate(() => window.readout.setAppearance({ strings: { railLabel: '未读变更' } }));
+  await page.waitForTimeout(400);
+  const after = await page.evaluate(() => document.getElementById('ro-rail').getAttribute('aria-label'));
+  await page.evaluate(() => window.readout.setAppearance({ strings: { railLabel: 'Unread changes' } }));
+  check('the rail is labelled with the localized string', before === 'Unread changes' && after === '未读变更', JSON.stringify({ before, after }));
+}
+
+// No data-theme from the app (reader.html sets none): diagrams follow the
+// system's appearance, print light, and the attribute is left absent.
+{
+  const sys = await browser.newPage({ viewport: { width: 900, height: 700 }, colorScheme: 'dark' });
+  sys.on('pageerror', e => errors.push(String(e)));
+  await sys.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await sys.goto(`${base}/reader.html`);
+  await sys.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  const mm = '<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[System] --> B[Theme]</pre></div>';
+  const ops = Array.from({ length: 3 }, (_, i) => ({ op: 'insert', slot: i + 1, after: i, kind: i === 0 ? 'mermaid' : 'paragraph', html: i === 0 ? mm : `<p>para ${i}</p>` }));
+  await sys.evaluate(p => window.readout.apply(p), { ...fixBase, version: 1, reset: true, ops });
+  const fills = () => sys.evaluate(async () => {
+    const b = document.querySelector('.mermaid-block');
+    for (let i = 0; i < 400 && !(b.classList.contains('done') && !b.dataset.stale && !b.classList.contains('busy')); i++) await new Promise(r => setTimeout(r, 20));
+    const svg = b.querySelector('.mermaid-svg')?.innerHTML.toLowerCase() || '';
+    return { theme: svg.includes('#2a2a2c') ? 'dark' : svg.includes('#f5f5f7') ? 'light' : 'none',
+      attr: document.documentElement.getAttribute('data-theme') };
+  });
+  const shown = await fills();
+  await sys.evaluate(() => window.readout.preparePrint());
+  await sys.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  const printed = await fills();
+  await sys.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  const back = await fills();
+  await sys.close();
+  check('with no data-theme, diagrams follow the system, print light, and leave the attribute absent',
+    shown.theme === 'dark' && printed.theme === 'light' && back.theme === 'dark' && [shown, printed, back].every(s => s.attr === null),
+    JSON.stringify({ shown, printed, back }));
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();

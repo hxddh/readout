@@ -10,7 +10,7 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook } from './reader/core.js';
+import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom } from './reader/anchor.js';
 import { apply as applyPatch, findMode } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting } from './reader/marks.js';
@@ -127,7 +127,7 @@ function setAppearance(o) {
   }
   if (o.accent) {
     root.style.setProperty('--accent', o.accent);
-    root.style.setProperty('--accent-soft', `color-mix(in srgb, ${o.accent} ${root.dataset.theme === 'dark' ? 18 : 12}%, transparent)`);
+    root.style.setProperty('--accent-soft', `color-mix(in srgb, ${o.accent} ${pageTheme() === 'dark' ? 18 : 12}%, transparent)`);
   }
   // Width and type size reflow every block, the one being read included.
   const width = o.width && o.width !== root.dataset.width;

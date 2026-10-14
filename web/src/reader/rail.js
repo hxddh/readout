@@ -28,6 +28,7 @@ function kindKey(el) {
 }
 
 function drawRail() {
+  rail.setAttribute('aria-label', strings.railLabel || 'Unread changes');
   const list = unreadElements();
   // Nothing unread: nothing to measure (a measurement here forces a layout).
   if (!list.length) { if (rail.firstChild) rail.replaceChildren(); return; }

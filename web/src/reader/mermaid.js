@@ -1,5 +1,5 @@
 // Mermaid diagrams, loaded on first use and rendered one at a time.
-import { doc, root, strings, inViewport } from './core.js';
+import { doc, root, strings, inViewport, pageTheme } from './core.js';
 import { lazyObserver } from './enhance.js';
 
 const mermaidCache = new Map();   // source+theme -> {svg, id} or {error}
@@ -10,7 +10,7 @@ let printTheme = null;   // while printing, diagrams are drawn for paper: light
 
 /** The theme diagrams are drawn in: the page's, or light while printing. */
 function diagramTheme() {
-  return printTheme || (root.dataset.theme === 'dark' ? 'dark' : 'light');
+  return printTheme || pageTheme();
 }
 
 // Mermaid's ESM build, bundled with the app (build.mjs copies it and its
@@ -29,14 +29,15 @@ function loadMermaid() {
       // Diagrams take the page's own colors and type, in both themes. The
       // colors of a theme the page is not shown in (printing) are read with
       // the page switched to it for the moment, before anything is painted.
-      const shown = root.dataset.theme;
-      const swap = theme !== (shown === 'dark' ? 'dark' : 'light');
-      if (swap) root.dataset.theme = theme;
+      // With no data-theme the page follows the system: put it back that way.
+      const shown = root.getAttribute('data-theme');
+      const swap = theme !== pageTheme();
+      if (swap) root.setAttribute('data-theme', theme);
       const css = getComputedStyle(root);
       const vars = {};
       const v = name => vars[name] ??= css.getPropertyValue(name).trim();
       for (const name of ['--font', '--bg', '--fill', '--fill-2', '--text', '--text-2', '--text-3', '--rule']) v(name);
-      if (swap) root.dataset.theme = shown;
+      if (swap) { if (shown === null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', shown); }
       m.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
