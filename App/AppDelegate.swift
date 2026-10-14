@@ -157,6 +157,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 let reading = current.tabGroup?.selectedWindow ?? current
                 current.addTabbedWindow(w, ordered: .above)
                 current.tabGroup?.selectedWindow = reading
+                // With a tab bar now, the folder leaves the subtitles (the tabs' tooltips have it).
+                for window in current.tabGroup?.windows ?? [w] { (window.windowController as? ReaderWindowController)?.tabsChanged() }
             } else if NSApp.isActive, let keyWindow = NSApp.keyWindow {
                 // The reader is in another Readout window (welcome, settings): wait behind it.
                 w.order(.below, relativeTo: keyWindow.windowNumber)
@@ -339,7 +341,10 @@ struct WelcomeView: View {
             Text(NSLocalizedString("Read what your agents write.", comment: "Welcome subtitle"))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
-            Text(NSLocalizedString("New plans in ~/.claude/plans open in Readout on their own. Add other agent folders in Settings.", comment: "Welcome: how documents arrive"))
+            // Plans are mentioned only while their folder is in Settings.
+            Text(AgentFolders.includesClaudePlans(settings.workspaces)
+                 ? NSLocalizedString("New plans in ~/.claude/plans open in Readout on their own. Add other agent folders in Settings.", comment: "Welcome: how documents arrive")
+                 : NSLocalizedString("New Markdown files in the agent folders you add in Settings open in Readout on their own.", comment: "Welcome: how documents arrive, ~/.claude/plans not in Settings"))
                 .font(.callout)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)

@@ -4,18 +4,24 @@ import Foundation
 /// sidebar), decided without AppKit so it can be tested.
 public enum ReaderChrome {
     /// What the window subtitle shows, most important first: the file's
-    /// status (deleted, could not be read, decoded as…), then task progress;
-    /// nil otherwise. The folder is not repeated there: the tab's tooltip
-    /// shows the path (`tabToolTip`).
+    /// status (deleted, could not be read, decoded as…), then task progress,
+    /// then, only for a window without a tab bar, the folder the file is in.
+    /// With a tab bar the folder is not repeated there: the tab's tooltip
+    /// shows the path (`tabToolTip`). Without one (System Settings' "Prefer
+    /// tabs: In Full Screen") the tooltip never shows, and two plan.md
+    /// windows would look the same in the title bar and the Window menu.
     public enum Subtitle: Equatable, Sendable {
         case status(String)
         case tasks(done: Int, total: Int)
+        case folder(String)
     }
 
-    public static func subtitle(status: String?, tasks: TaskStats) -> Subtitle? {
+    public static func subtitle(status: String?, tasks: TaskStats, path: String, showsTabBar: Bool) -> Subtitle? {
         if let status, !status.isEmpty { return .status(status) }
         if tasks.total > 0 { return .tasks(done: tasks.done, total: tasks.total) }
-        return nil
+        guard !showsTabBar else { return nil }
+        let folder = ((path as NSString).deletingLastPathComponent as NSString).lastPathComponent
+        return folder.isEmpty || folder == "/" ? nil : .folder(folder)
     }
 
     /// The tab's tooltip: the file's path, with the home folder as `~`, so
@@ -59,6 +65,29 @@ public enum ReaderChrome {
             depth += 1
         }
         return titles
+    }
+
+    /// Context-menu items (WebKit identifiers) the reader removes. Always the
+    /// ones that would navigate away from the rendered document or open a
+    /// link inside the web view. Copy Link, Download Linked File and Copy
+    /// Image URL only for links into the page's own readout: URLs (a relative
+    /// link resolved against the page, a local or proxied image; the page's
+    /// policy allows no http(s) images, so an image URL is always one): a
+    /// link to the web (`linkURL` https, mailto, …) can still be copied.
+    /// `linkURL` nil: the link under the pointer is not known, treat it as internal.
+    public static func blockedContextMenuItems(linkURL: String?) -> Set<String> {
+        var blocked: Set<String> = [
+            "WKMenuItemIdentifierReload", "WKMenuItemIdentifierGoBack", "WKMenuItemIdentifierGoForward",
+            "WKMenuItemIdentifierOpenLink", "WKMenuItemIdentifierOpenLinkInNewWindow",
+            "WKMenuItemIdentifierOpenFrameInNewWindow", "WKMenuItemIdentifierOpenImageInNewWindow",
+            "WKMenuItemIdentifierDownloadImage", "WKMenuItemIdentifierCopyImageURL",
+            "WKMenuItemIdentifierInspectElement",
+        ]
+        let scheme = linkURL.flatMap { URL(string: $0)?.scheme?.lowercased() }
+        if scheme == nil || scheme == ReadoutURL.scheme || scheme == "file" {
+            blocked.formUnion(["WKMenuItemIdentifierCopyLink", "WKMenuItemIdentifierDownloadLinkedFile"])
+        }
+        return blocked
     }
 
     /// The heading level the outline indents from. A document whose only

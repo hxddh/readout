@@ -235,7 +235,8 @@ final class WorkspaceIndex {
 /// be opened for events, it checks every 30 s instead, with a wide leeway.
 @MainActor
 final class DirectoryWatch {
-    private var source: DispatchSourceProtocol?
+    /// Cancelling a dispatch source is safe from any thread (deinit).
+    nonisolated(unsafe) private var source: DispatchSourceProtocol?
     private(set) var isPolling = false
     /// The folder was deleted or moved: the watch no longer follows its path.
     private(set) var isGone = false
@@ -268,4 +269,6 @@ final class DirectoryWatch {
         source?.cancel()
         source = nil
     }
+
+    deinit { source?.cancel() }
 }

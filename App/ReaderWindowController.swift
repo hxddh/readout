@@ -66,9 +66,19 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var searchItem: NSSearchToolbarItem?
     private var changeItem: NSToolbarItem?
     private var cancellables: Set<AnyCancellable> = []
-    /// The window's undo manager (Mark All as Read). Nothing between the web
-    /// view and the window handles undo: itself, so this controller does.
-    private let undoStack = UndoManager()
+    /// The window's undo manager (Mark All as Read; NSWindow handles undo:
+    /// with it). A few levels: each one keeps a whole baseline.
+    private let undoStack: UndoManager = {
+        let u = UndoManager()
+        u.levelsOfUndo = 5
+        return u
+    }()
+    /// Given to the window while the document is momentarily empty (an agent
+    /// truncating before it writes): Undo is disabled then, the actions wait.
+    private let idleUndo = UndoManager()
+    /// The tab group whose tab bar the subtitle follows.
+    private weak var observedTabGroup: NSWindowTabGroup?
+    private var tabBarObservations: [NSKeyValueObservation] = []
 
     // File state (content tracking lives in `loader`)
     private var loaded = false
@@ -481,16 +491,38 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     /// The subtitle shows the file's status when there is one (deleted, could
-    /// not be read, decoded as…), else task progress, else nothing (the
-    /// folder is in the tab's tooltip).
+    /// not be read, decoded as…), else task progress, else, for a window
+    /// without a tab bar, the file's folder (with one, the tab's tooltip has
+    /// the path).
     private func updateSubtitle(status: String?? = nil) {
         let status = status ?? model.status
-        switch ReaderChrome.subtitle(status: status, tasks: model.tasks) {
+        observeTabBar()
+        let showsTabBar = window?.tabGroup?.isTabBarVisible ?? false
+        switch ReaderChrome.subtitle(status: status, tasks: model.tasks, path: url.path, showsTabBar: showsTabBar) {
         case .status(let s): window?.subtitle = s
         case .tasks(let done, let total):
             window?.subtitle = String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), done, total)
+        case .folder(let name): window?.subtitle = name
         case nil: window?.subtitle = ""
         }
+    }
+
+    /// The window joined or left tabs, or its tab bar was shown or hidden:
+    /// the subtitle follows.
+    func tabsChanged() { updateSubtitle() }
+
+    /// Follows the tab bar of the window's current tab group (it changes when
+    /// the window is moved into or out of tabs).
+    private func observeTabBar() {
+        guard let group = window?.tabGroup, group !== observedTabGroup else { return }
+        observedTabGroup = group
+        let changed: @Sendable () -> Void = { [weak self] in
+            DispatchQueue.main.async { MainActor.assumeIsolated { self?.updateSubtitle() } }
+        }
+        tabBarObservations = [
+            group.observe(\.isTabBarVisible) { _, _ in changed() },
+            group.observe(\.windows) { _, _ in changed() },
+        ]
     }
 
     private func updateChangeItem(_ n: Int) {
@@ -681,6 +713,18 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// Undo of Mark All as Read: the document marked against the baseline from
     /// before, as reopening the window would show it, at the same place.
     private func restoreUnread(baseline: [BlockKey]) {
+        // Empty for a moment: reloading now would mark the empty version
+        // against the old baseline and drop the session's memory of what came
+        // before it. Keep the action for when the content is back.
+        guard !session.blocks.isEmpty else {
+            NSSound.beep()
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.undoStack.registerUndo(withTarget: self) { $0.restoreUnread(baseline: baseline) }
+                self.undoStack.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
+            }
+            return
+        }
         let place = lastAnchor.flatMap { a in session.blocks.firstIndex { $0.slot == a.slot }.map { (index: $0, offset: a.offset) } }
         let patch = session.reload(baseline: baseline)
         model.activeSlot = 0   // the slots are new
@@ -698,11 +742,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         undoStack.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
     }
 
-    // Edit ▸ Undo / Redo with the page focused (the find field's editor
-    // handles its own text first).
-    @objc func undo(_ sender: Any?) { if undoStack.canUndo { undoStack.undo() } }
-    @objc func redo(_ sender: Any?) { if undoStack.canRedo { undoStack.redo() } }
-    func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { undoStack }
+    func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? {
+        loaded && session.blocks.isEmpty ? idleUndo : undoStack
+    }
 
     /// A click in the outline: to that heading, every time (clicking the row
     /// already selected jumps again), then back to the page so the keyboard
@@ -861,12 +903,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case #selector(toggleWidth(_:)):
             item.state = AppSettings.shared.wide ? .on : .off
             return true
-        case #selector(undo(_:)):
-            item.title = undoStack.undoMenuItemTitle
-            return undoStack.canUndo
-        case #selector(redo(_:)):
-            item.title = undoStack.redoMenuItemTitle
-            return undoStack.canRedo
         default:
             return true
         }
@@ -885,6 +921,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         watcher?.stop()
         watcher = nil
         cancellables.removeAll()
+        tabBarObservations = []
         // Nothing to undo in a closed window; the actions hold the controller.
         undoStack.removeAllActions()
         AppSettings.shared.showSidebar = !sidebarItem.isCollapsed
@@ -892,6 +929,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
+        updateSubtitle()
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
     }
 }

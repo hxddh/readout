@@ -148,9 +148,11 @@ chrome = (live.get("tmp") or {}).get("chrome") or {}
 # window title stays the file name, the tab's tooltip shows where it is.
 check("chrome: the window title is the file name", chrome.get("title") == "live.md", live)
 check("chrome: the tab title is the document title", chrome.get("tab_title") == "TMP-AFTER", live)
-# 3.5: the subtitle shows only status or task progress (live.md has neither),
-# never the folder (3.4 showed it there, making the top bar taller than needed).
-check("chrome: no subtitle without status or tasks", chrome.get("subtitle") == "", live)
+# The subtitle shows status or task progress (live.md has neither); else the
+# folder only for a window without a tab bar, whose tab tooltip never shows
+# (System Settings "Prefer tabs: In Full Screen", the default, opens windows).
+check("chrome: the subtitle names the folder only without a tab bar",
+      chrome.get("subtitle") == ("" if chrome.get("tab_bar_visible") else chrome.get("folder")), live)
 tip, path = chrome.get("tab_tooltip") or "", chrome.get("path") or ""
 check("chrome: the tab tooltip is the file's path", bool(tip) and (tip == path or path.endswith(tip.lstrip("~"))), live)
 # The toolbar: sidebar, next change, find; no text-width item (View ▸ Wide Text stays).
@@ -206,9 +208,17 @@ print(f"navigation: {nav}")
 # view) is not loaded: the document stays (3.4 showed a blank window).
 check("navigation: the reader page stays", (nav.get("href") or "").startswith("readout://app/reader.html"), nav)
 check("navigation: the document stays", (nav.get("blocks_after") or 0) > 0 and nav.get("blocks_after") == nav.get("blocks_before"), nav)
-# No link items in the context menu (they navigated the web view or copied readout:// URLs).
-check("navigation: the context menu has no link items",
+# The app's script reports the link a context menu opens on, resolved.
+check("navigation: the context menu's link is known",
+      nav.get("context_link_web") == "https://example.com/readout"
+      and (nav.get("context_link_relative") or "").startswith("readout://app/"), nav)
+# A relative link (readout://app/...): no link items (they navigated the web view or copied readout:// URLs).
+check("navigation: no link items for a link into the page",
       nav.get("context_menu") == ["WKMenuItemIdentifierCopy", "-", "WKMenuItemIdentifierLookUp"], nav)
+# A web link can still be copied; opening it stays a click.
+check("navigation: a web link can be copied",
+      nav.get("context_menu_web") == ["WKMenuItemIdentifierDownloadLinkedFile", "WKMenuItemIdentifierCopyLink", "-",
+                                      "WKMenuItemIdentifierCopy", "-", "WKMenuItemIdentifierLookUp"], nav)
 
 find = load("find-mode.json")
 print(f"find-mode: {find}")
@@ -229,6 +239,10 @@ print(f"background-opens: {bg}")
 check("cli: both opens arrived as background requests",
       sorted(bg.get("requests") or []) == sorted(["background.md", "plan.md"]), bg)
 check("cli: readout -b opened the file", bg.get("opened") is True, bg)
+bgc = bg.get("chrome") or {}
+# readout -b adds a tab: with the tab bar showing, no folder in the subtitle (3.5 rule).
+check("cli: the background tab shows a tab bar and no folder subtitle",
+      bgc.get("tab_bar_visible") is True and bgc.get("subtitle") == "", bg)
 check("cli: the document being read stays in front",
       bg.get("reading_before") not in (None, "", "background.md", "plan.md") and bg.get("reading_after") == bg.get("reading_before"), bg)
 
