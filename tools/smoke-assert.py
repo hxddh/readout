@@ -96,6 +96,13 @@ check("agent folder: Readout was not activated", agent.get("active_after") is Fa
 check("agent folder: the document being read stays in front",
       agent.get("reading_before") not in (None, "", "notes.md") and agent.get("reading_after") == agent.get("reading_before"), agent)
 
+late = load("late-folder.json")
+print(f"late-folder: {late}")
+# An agent folder created after launch is watched without Readout becoming active.
+check("late folder: a document written into a folder created later opens on its own",
+      late.get("auto_opened") == ["late.md"], late)
+check("late folder: Readout was not activated", late.get("active_after") is False, late)
+
 live = load("live-updates.json")
 print(f"live-updates: {live}")
 # FSEvents reports /private/tmp/...: a file opened as /tmp/... must still update.

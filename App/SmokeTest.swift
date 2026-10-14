@@ -148,6 +148,18 @@ enum SmokeTest {
                 if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
                     try? data.write(to: out.appendingPathComponent("agent-folder.json"))
                 }
+                // A folder in Settings that does not exist yet (~/.claude/plans before
+                // the first plan): created and written to while Readout stays in the
+                // background, its new document must still open on its own.
+                if let late = ProcessInfo.processInfo.environment["READOUT_SMOKE_LATE_FOLDER"] {
+                    WorkspaceIndex.shared.configure([folder, late])
+                    let count = autoOpened.count
+                    mark(out, "await-late-folder")
+                    let deadline = Date().addingTimeInterval(15)
+                    while autoOpened.count == count && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                    write(["auto_opened": autoOpened.dropFirst(count).map { URL(fileURLWithPath: $0).lastPathComponent },
+                           "active_after": NSApp.isActive], to: out, "late-folder.json")
+                }
                 NSApp.activate()
             }
             await refill(controller: controller, webView: webView, out: out)
@@ -189,8 +201,21 @@ enum SmokeTest {
         let before = appliedCount
         mark(out, "await-refill")
         let deadline = Date().addingTimeInterval(15)
-        while appliedCount < before + 2 && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
-        try? await Task.sleep(for: .seconds(1.5))
+        // The empty patch, then the refill: wait until the block is back and
+        // no further patch arrived for a while (a read can catch the refill
+        // half written and a second one completes it).
+        let blockBack = "(() => { const r = window.__refill; return !!(r && document.querySelector('.blk[data-slot=\"' + r.slot + '\"]')); })()"
+        var settled = (count: -1, at: Date())
+        while Date() < deadline {
+            if appliedCount != settled.count { settled = (appliedCount, Date()) }
+            if appliedCount >= before + 2, Date().timeIntervalSince(settled.at) > 0.6,
+               (try? await webView.evaluateJavaScript(blockBack)) as? Bool == true { break }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        // Two frames: the page's restore and any fallback scheduled on the next frame have run.
+        _ = try? await webView.callAsyncJavaScript("await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); return 1", contentWorld: .page)
+        // Lazy renderers (math, diagrams) settle; the page compensates for their height.
+        try? await Task.sleep(for: .seconds(1))
         let shift = try? await webView.evaluateJavaScript("(() => { const r = window.__refill; const e = r && document.querySelector('.blk[data-slot=\"' + r.slot + '\"]'); return e ? e.getBoundingClientRect().top - r.top : null; })()")
         var json: [String: Any] = ["applies": appliedCount - before]
         if let shift = shift as? Double { json["shift"] = shift }

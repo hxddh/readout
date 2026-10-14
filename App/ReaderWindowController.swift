@@ -411,28 +411,55 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 return
             }
             self.updateModel(patch, decoded: result.decoded)
-            self.keepPlaceAcrossRefill(wasEmpty: wasEmpty, patch: patch)
-            self.webView.whenReady { [weak self] in self?.webView.call("apply", patch) }
+            let emptiedNow = !wasEmpty && self.session.blocks.isEmpty
+            let restore = self.placeAfterRefill(wasEmpty: wasEmpty, patch: patch)
+            self.webView.whenReady { [weak self] in
+                guard let self else { return }
+                if emptiedNow {
+                    // Asked before the empty patch is applied (calls run in
+                    // order): whether the reader sat at the end, following.
+                    self.webView.evaluateJavaScript(Self.atBottomScript) { [weak self] value, _ in
+                        self?.followingBeforeEmpty = (value as? Bool) ?? false
+                    }
+                }
+                self.webView.call("apply", patch)
+                if let restore { self.restorePlace(restore) }
+            }
             self.scheduleSave()
         }
     }
 
-    /// Where the reader was when the file went empty (an agent truncating it
-    /// before writing it again), until it has content again.
-    private var anchorBeforeEmpty: (slot: Int, offset: Double)?
+    /// The page's own test for "at the end" (anchor.js atBottom).
+    private static let atBottomScript = "(() => { const s = document.scrollingElement; return s.scrollHeight - (s.scrollTop + window.innerHeight) < 48 && s.scrollTop > 0; })()"
 
-    /// After a brief truncate-and-refill the page itself returns to the
-    /// reader's place (or to the end when following), so the app does not
-    /// scroll: it only keeps the saved position from the empty interval out
-    /// of the record until the page reports the place again.
-    private func keepPlaceAcrossRefill(wasEmpty: Bool, patch: RenderPatch) {
+    /// Where the reader was when the file went empty (an agent truncating it
+    /// before writing it again), until it has content again, and whether they
+    /// were following the end then.
+    private var anchorBeforeEmpty: (slot: Int, offset: Double)?
+    private var followingBeforeEmpty = false
+
+    /// After a brief truncate-and-refill the page returns to the reader's
+    /// place itself (or to the end when following). As a fallback, when the
+    /// reader was not following and the anchor block is back, the app sends
+    /// that place once the page has applied the refill: a no-op when the page
+    /// kept it. Never when following: the page goes to the new end.
+    private func placeAfterRefill(wasEmpty: Bool, patch: RenderPatch) -> (slot: Int, offset: Double)? {
         if session.blocks.isEmpty {
             if anchorBeforeEmpty == nil { anchorBeforeEmpty = lastAnchor }
-            return
+            return nil
         }
-        defer { anchorBeforeEmpty = nil }
-        guard wasEmpty, patch.reset, let a = anchorBeforeEmpty, session.blocks.contains(where: { $0.slot == a.slot }) else { return }
+        defer { anchorBeforeEmpty = nil; followingBeforeEmpty = false }
+        guard wasEmpty, patch.reset, let a = anchorBeforeEmpty, session.blocks.contains(where: { $0.slot == a.slot }) else { return nil }
         lastAnchor = a
+        return followingBeforeEmpty ? nil : a
+    }
+
+    /// Restores a place after the page's next frame, once its own restore
+    /// and the layout the refill caused have run.
+    private func restorePlace(_ a: (slot: Int, offset: Double)) {
+        let anchor = ["slot": a.slot, "offset": a.offset, "ratio": 0] as [String: Any]
+        guard let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) else { return }
+        webView.evaluateJavaScript("requestAnimationFrame(() => window.readout.scrollToAnchor(\(json))); 1", completionHandler: nil)
     }
 
     private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded) {
@@ -750,11 +777,15 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         config.backwards = backwards
         config.caseSensitive = false
         config.wraps = true
-        // ⌘G with the find bar closed finds without switching find mode on: it
-        // would stay on (a full layout of the document) with no bar to close.
-        if !isSearchCollapsed || isSearchFieldEditing { setFindMode(true) }
-        webView.find(text, configuration: config) { result in
+        // Find mode lays out the whole document, so matches off screen in a
+        // large one are found. ⌘G with the find bar closed switches it on for
+        // this search only: left on, it would stay with no bar to close.
+        let onlyForThisSearch = !findModeOn && isSearchCollapsed && !isSearchFieldEditing
+        setFindMode(true)
+        webView.find(text, configuration: config) { [weak self] result in
             if !result.matchFound { NSSound.beep() }
+            guard let self, onlyForThisSearch, self.isSearchCollapsed, !self.isSearchFieldEditing else { return }
+            self.setFindMode(false)
         }
     }
 

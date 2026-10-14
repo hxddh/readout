@@ -220,6 +220,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc func openLatest(_ sender: Any?) {
+        // The global shortcut works with Readout in the background: pick up a folder created since.
+        WorkspaceIndex.shared.refresh()
         if let url = WorkspaceIndex.shared.latest {
             open(url)
             NSApp.activate()

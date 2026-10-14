@@ -29,9 +29,23 @@ final class WorkspaceIndex {
     /// stream event delivered before its stream stopped) are dropped.
     private var generation = 0
 
+    /// Folders asked for that do not exist yet, with when that was first seen.
+    private var missingSince: [String: Date] = [:]
+    /// Checks every few seconds, only while a folder is missing, whether it exists now.
+    private var missingTimer: Timer?
+
     func configure(_ paths: [String]) {
         requested = paths
-        let normalized = paths.map { ($0 as NSString).expandingTildeInPath }.filter { FileManager.default.fileExists(atPath: $0) }
+        let expanded = paths.map { ($0 as NSString).expandingTildeInPath }
+        let normalized = expanded.filter { FileManager.default.fileExists(atPath: $0) }
+        // A folder that appeared since it was found missing: what an agent
+        // wrote into it since then is new, not something that was already there.
+        let now = Date()
+        var appeared: [(root: String, since: Date)] = []
+        for root in normalized { if let since = missingSince.removeValue(forKey: root) { appeared.append((root, since)) } }
+        for root in expanded where !normalized.contains(root) && missingSince[root] == nil { missingSince[root] = now }
+        missingSince = missingSince.filter { expanded.contains($0.key) }
+        watchForMissingFolders()
         guard normalized != roots else { return }
         roots = normalized
         generation += 1
@@ -52,9 +66,17 @@ final class WorkspaceIndex {
         queue.async { [weak self] in
             let (newest, all) = Self.scan(rootsCopy)
             known.paths = Set(all.map { Self.givenPath($0, roots: realRoots) })
+            // Written into a folder that did not exist a moment ago: new documents.
+            var fresh: [(url: URL, isNew: Bool)] = []
+            for a in appeared {
+                for (url, date) in Self.scan([a.root]).newest where date >= a.since.addingTimeInterval(-2) {
+                    fresh.append((url: url, isNew: true))
+                }
+            }
             DispatchQueue.main.async {
                 guard let self, self.generation == gen else { return }
                 self.record(newest)
+                if !fresh.isEmpty { self.onWrite?(fresh) }
             }
         }
         stream = FSEventsStream(paths: roots, latency: 0.3, queue: queue) { [weak self] events in
@@ -82,6 +104,23 @@ final class WorkspaceIndex {
     /// Watches the folders asked for again: one that did not exist when they
     /// were set (`~/.claude/plans` before the first plan) is picked up once it does.
     func refresh() { configure(requested) }
+
+    /// Polls (a stat per missing folder every 2 s) only while a folder asked
+    /// for does not exist, so one created later is watched without waiting
+    /// for Readout to become active.
+    private func watchForMissingFolders() {
+        if missingSince.isEmpty {
+            missingTimer?.invalidate()
+            missingTimer = nil
+        } else if missingTimer == nil {
+            missingTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
+                MainActor.assumeIsolated {
+                    let index = WorkspaceIndex.shared
+                    if index.missingSince.keys.contains(where: { FileManager.default.fileExists(atPath: $0) }) { index.refresh() }
+                }
+            }
+        }
+    }
 
     /// The path with symlinks and /private resolved, as FSEvents reports it
     /// (a symlink to a file not written yet: where that file will be).
