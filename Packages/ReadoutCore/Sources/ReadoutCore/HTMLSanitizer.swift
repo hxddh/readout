@@ -27,10 +27,26 @@ enum HTML {
     private static let deniedTagPattern = try! NSRegularExpression(
         pattern: "<(/?(?:" + deniedTags.joined(separator: "|") + ")(?=[\\s/>]|$))", options: .caseInsensitive)
 
-    /// A media tag with a `src` or `srcset` attribute (a `>` inside a quoted value does not end it).
-    private static let remoteMediaSrc = try! NSRegularExpression(
-        pattern: #"<(img|video|audio|source|track)\b(?:[^>"']|"[^"]*"|'[^']*')*?\s(?:src|srcset)\s*=(?:[^>"']|"[^"]*"|'[^']*')*>?"#,
-        options: .caseInsensitive)
+    /// A media tag with a `src` or `srcset` attribute. A `>` inside a quoted
+    /// value does not end it, and neither does a `<` (`alt="x<y"`), but a
+    /// value that has passed a `>` cannot run on into a following tag (a `<`
+    /// that starts one), and unquoted text never does. A tag whose quotes do
+    /// not pair up — `alt='it's'` — so that the quote-aware scan cannot reach
+    /// its `>`, falls back to ending at its first `>`: it cannot swallow the
+    /// text and tags after it. A tag whose quotes pair up never falls back, so
+    /// `src=` inside a quoted value stays text. Every attempt stops at the
+    /// next `>` followed by a tag, so the scan is linear.
+    private static let remoteMediaSrc: NSRegularExpression = {
+        let lt = #"<(?![a-z/!?])"#                      // a `<` that does not start a tag
+        let quoted = { (q: String) in #"\#(q)[^\#(q)>]*(?:>(?:[^\#(q)<]|\#(lt))*)?\#(q)"# }
+        let item = #"(?:[^<>"']|\#(lt)|\#(quoted("\""))|\#(quoted("'")))"#
+        let plain = #"(?:[^<>]|\#(lt))"#
+        let source = #"\s(?:src|srcset)\s*="#
+        let quoteAware = #"\#(item)*?\#(source)\#(item)*>"#
+        let unbalanced = #"(?!\#(item)*>)\#(plain)*?\#(source)\#(plain)*>?"#
+        return try! NSRegularExpression(
+            pattern: #"<(img|video|audio|source|track)\b(?:\#(quoteAware)|\#(unbalanced))"#, options: .caseInsensitive)
+    }()
     /// Each `src` and `srcset` attribute of a media tag.
     private static let sourceAttribute = try! NSRegularExpression(
         pattern: #"\s(src|srcset)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, options: .caseInsensitive)

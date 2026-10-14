@@ -227,7 +227,8 @@ check('inline code broken across lines keeps its padding', polish.clone === 'clo
 check('a scrolling table hints at more on the right', polish.tableFade && polish.tableFade !== 'none', JSON.stringify(polish));
 // A 16 px icon keeps its corners: the pixel next to a corner is the icon's, not the page's.
 await page.evaluate(() => document.querySelector('img[src="icon.png"]').scrollIntoView({ block: 'center' }));
-const iconBox = await page.evaluate(() => { const r = document.querySelector('img[src="icon.png"]').getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; });
+// On whole pixels: a clip at a fractional position starts a pixel early, on the page.
+const iconBox = await page.evaluate(() => { const r = document.querySelector('img[src="icon.png"]').getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top), width: r.width, height: r.height }; });
 const iconShot = PNG.sync.read(await page.screenshot({ clip: iconBox }));
 const corner = [...iconShot.data.subarray(((1 * iconShot.width) + 1) * 4, ((1 * iconShot.width) + 1) * 4 + 3)];
 check('a small inline icon is not rounded into a blob', iconBox.width === 16 && corner[0] > 150 && corner[1] < 90, JSON.stringify({ iconBox, corner }));
@@ -389,7 +390,8 @@ for (const dark of [false, true]) {
     tops.push(await page.evaluate(() => { window.scrollTo(0, 0); return Math.round(document.getElementById('v-top').getBoundingClientRect().top); }));
   }
   await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check(`first heading sits 28 px under the toolbar at insets 0/52/80 (${th})`, tops[0] === 28 && tops[1] === 80 && tops[2] === 108, JSON.stringify(tops));
+  // 3.5: 12 px (was 28): the document starts close under the toolbar.
+  check(`first heading sits 12 px under the toolbar at insets 0/52/80 (${th})`, tops[0] === 12 && tops[1] === 64 && tops[2] === 92, JSON.stringify(tops));
 
   const g = await page.evaluate(() => {
     const $ = s => document.querySelector(s);
@@ -600,6 +602,230 @@ const pm = await page.evaluate(() => {
 check('a long formula wraps to the printed page', pm.mFits && pm.katexRight <= pm.mRight + 1 && pm.ws === 'normal' && pm.bg === 'none', JSON.stringify(pm));
 check('a wide table still wraps to the printed page', pm.tFits, JSON.stringify(pm));
 await page.close();
+
+// ---------- 3.5 visual refinements ----------
+
+const lum = c => { const [r, gg, bb] = c.slice(0, 3).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * gg + 0.0722 * bb; };
+const contrastOf = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return +((x + 0.05) / (y + 0.05)).toFixed(2); };
+// A colour as the page computes it (rgb(), rgba() or color(srgb …)), 0-255 with alpha 0-1.
+const parseColor = s => {
+  const n = (s.match(/[\d.]+/g) || []).map(Number);
+  if (/^color\(srgb/.test(s)) return [n[0] * 255, n[1] * 255, n[2] * 255, n[3] ?? 1];
+  return [n[0], n[1], n[2], n[3] ?? 1];
+};
+const over = (fg, bg) => [0, 1, 2].map(i => fg[i] * fg[3] + bg[i] * (1 - fg[3]));
+const pixel = async (pg, x, y) => [...PNG.sync.read(await pg.screenshot({ clip: { x: Math.round(x), y: Math.round(y), width: 1, height: 1 } })).data.subarray(0, 3)];
+
+const v35 = patch([
+  ['heading', '<h1 id="t-top">Visual 3.5</h1>', { anchor: 't-top' }],
+  ['paragraph', '<p id="t-p">Body text with <em id="t-em">Latin emphasis</em> and <del id="t-del">struck text</del>.</p>'],
+  ['code', `<div class="code-block" id="cb-long" data-lang="ts"><pre><code>// a line too long for the column\n${longLine}\nreturn result;</code></pre></div>`],
+  ['code', '<div class="code-block" id="cb-short" data-lang="sh"><pre><code>npm test</code></pre></div>'],
+  ['code', `<div class="code-block" id="cb-diff" data-lang="diff"><pre><code>--- a/x.js\n+++ b/x.js\n-const b = 2;\n+const b = 3; // ${longLine}\n console.log(b);</code></pre></div>`],
+  ['paragraph', '<p id="t-zh">中文里的<em id="t-zh-em">强调文字</em>不用斜体。</p>', { cjk: true }],
+  ['paragraph', '<p id="t-ja">日本語の<em id="t-ja-em">強調</em>は傍点です。</p>', { cjk: true }],
+  ['paragraph', '<p id="t-zh-lat">中文段落里的<em id="t-zh-lat-em">a whole English sentence in italics, 例如</em>，以及<em id="t-zh-mix-em">调用 API 接口</em>。</p>', { cjk: true }],
+  ['listItem', '<ol class="li-block li-first li-last" id="t-ol" start="97"><li>Ninety-seven</li><li>Ninety-eight</li><li id="t-li99">Ninety-nine</li></ol>'],
+  ['listItem', '<ul class="li-block li-first li-last"><li class="task" id="t-done"><span class="task-box checked" aria-hidden="true"></span>Done parent<ul><li class="task" id="t-open"><span class="task-box" aria-hidden="true"></span>Open sub-item</li></ul></li></ul>'],
+  ['paragraph', '<p>A <mark id="t-mark">highlighted phrase</mark>.</p>'],
+  ['table', '<div class="table-wrap"><table id="t-table"><thead><tr><th>K</th><th>V</th></tr></thead><tbody><tr><td>a</td><td>1</td></tr></tbody></table></div>'],
+  ['footnotes', '<section class="footnotes" id="t-fn" data-footnotes><ol><li id="fn-35"><p>A note.</p></li></ol></section>'],
+]);
+
+for (const dark of [false, true]) {
+  const th = dark ? 'dark' : 'light';
+  page = await open(600, dark);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  await page.evaluate(p => window.readout.apply(p), v35);
+  await until(page, () => [...document.querySelectorAll('.code-block')].every(c => c.dataset.hl === 'done'));
+  await page.waitForTimeout(300);
+
+  // 3. A code block whose lines run past the column shows the right-edge
+  //    shade (as a wide table does); one that fits, or one scrolled to the
+  //    end, does not. Diff bands stay tinted under it.
+  const fill = await page.evaluate(() => { const d = document.createElement('div'); d.style.color = 'var(--fill)'; document.body.appendChild(d); const v = getComputedStyle(d).color; d.remove(); return v; });
+  const fillRGB = parseColor(fill);
+  const edge = async id => {
+    const r = await page.evaluate(i => { const pre = document.querySelector(`#${i} pre`); pre.scrollIntoView({ block: 'center' }); const b = pre.getBoundingClientRect(); return { x: b.right - 2, y: b.top + 14, over: pre.scrollWidth > pre.clientWidth }; }, id);
+    return { ...r, px: await pixel(page, r.x, r.y) };
+  };
+  const long = await edge('cb-long'), short = await edge('cb-short');
+  const darker = (px, base) => px.every((v, i) => (dark ? v > base[i] + 3 : v < base[i] - 3));   // the shade is 9% of the text colour
+  const same = (px, base) => px.every((v, i) => Math.abs(v - base[i]) <= 2);
+  check(`an overflowing code block shades its right edge (${th})`, long.over && darker(long.px, fillRGB), JSON.stringify({ long, fill }));
+  check(`a code block that fits has no shade (${th})`, !short.over && same(short.px, fillRGB), JSON.stringify({ short, fill }));
+  await page.evaluate(() => { const pre = document.querySelector('#cb-long pre'); pre.scrollLeft = pre.scrollWidth; });
+  await page.waitForTimeout(50);
+  const end = await edge('cb-long');
+  check(`scrolled to the end, the shade is gone (${th})`, same(end.px, fillRGB), JSON.stringify({ end, fill }));
+  const band = await page.evaluate(() => { const l = document.querySelector('#cb-diff .line.add'); const pre = l.closest('pre'); pre.scrollIntoView({ block: 'center' }); const b = l.getBoundingClientRect(), p = pre.getBoundingClientRect(); return { x: p.right - 3, mid: p.left + 40, y: b.top + b.height / 2 }; });
+  const [bandEdge, bandMid] = [await pixel(page, band.x, band.y), await pixel(page, band.mid, band.y)];
+  check(`a diff band stays green under the shade (${th})`, bandEdge[1] > bandEdge[0] + 4 && bandMid[1] > bandMid[0] + 4, JSON.stringify({ bandEdge, bandMid }));
+  await page.evaluate(() => window.readout.setAppearance({ codeWrap: true }));
+  await page.waitForTimeout(50);
+  const wrapped = await edge('cb-long');
+  check(`a wrapped code block has no shade (${th})`, !wrapped.over && same(wrapped.px, fillRGB), JSON.stringify(wrapped));
+  await page.evaluate(() => window.readout.setAppearance({ codeWrap: false }));
+
+  const g = await page.evaluate(() => {
+    const $ = s => document.querySelector(s), cs = (e, p) => getComputedStyle(e, p);
+    const rules = [];
+    for (const sh of document.styleSheets) for (const r of sh.cssRules) rules.push(r.cssText);
+    const em = e => ({ style: cs(e).fontStyle, synth: cs(e).getPropertyValue('font-synthesis-style'), mark: cs(e).getPropertyValue('text-emphasis-style') || cs(e).getPropertyValue('-webkit-text-emphasis-style'),
+      pos: cs(e).getPropertyValue('text-emphasis-position') || cs(e).getPropertyValue('-webkit-text-emphasis-position') });
+    const root = cs(document.documentElement);
+    return {
+      selection: rules.filter(t => /::selection/.test(t)),
+      latin: em($('#t-em')), zh: em($('#t-zh-em')), ja: em($('#t-ja-em')),
+      zhLatin: em($('#t-zh-lat-em')), zhMix: em($('#t-zh-mix-em')),
+      font: root.getPropertyValue('--font'), fontDisplay: root.getPropertyValue('--font-display').trim(),
+      h1Font: cs($('#t-top')).fontFamily, pFont: cs($('#t-p')).fontFamily,
+      del: cs($('#t-del')).color, text2: cs($('#t-p')).color, bg: root.backgroundColor,
+      marker: cs($('#t-li99'), '::marker').color,
+      done: cs($('#t-done')).color, open: cs($('#t-open')).color, body: cs($('#t-p')).color,
+      mark: cs($('#t-mark')).backgroundColor, markText: cs($('#t-mark')).color,
+      sizes: { table: cs($('#t-table')).fontSize, footnotes: cs($('#t-fn')).fontSize, code: cs($('#cb-long')).fontSize,
+        buttons: cs($('.cb-copy')).fontSize, lang: cs($('.cb-lang')).fontSize },
+      tokens: ['--fs-sm', '--fs-code', '--fs-xs', '--flow'].map(k => root.getPropertyValue(k).trim()),
+    };
+  });
+  // 4. Native selection colour (follows the accent, greys in an inactive window).
+  check(`no custom ::selection colour (${th})`, g.selection.length === 0, JSON.stringify(g.selection));
+  // 5. CJK emphasis: dots under Chinese, sesame over Japanese, no synthetic
+  //    slant; Latin emphasis stays italic without marks.
+  check(`Chinese emphasis: filled dots under, no synthetic italic (${th})`, /dot/.test(g.zh.mark) && !/open/.test(g.zh.mark) && /under/.test(g.zh.pos) && !/left/.test(g.zh.pos) && g.zh.synth === 'none', JSON.stringify(g.zh));
+  check(`Japanese emphasis: filled sesame over (${th})`, /sesame/.test(g.ja.mark) && !/open/.test(g.ja.mark) && /over/.test(g.ja.pos) && !/left/.test(g.ja.pos) && g.ja.synth === 'none', JSON.stringify(g.ja));
+  check(`Latin emphasis stays italic, without marks (${th})`, g.latin.style === 'italic' && /none/.test(g.latin.mark) && g.latin.synth !== 'none', JSON.stringify(g.latin));
+  // Only emphasis that is mostly CJK takes the dots: Latin emphasis in a CJK
+  // block stays italic; mostly-CJK emphasis with a Latin word gets dots, no slant.
+  check(`Latin emphasis in a CJK block stays italic, without dots; mostly-CJK emphasis gets them (${th})`,
+    g.zhLatin.style === 'italic' && /none/.test(g.zhLatin.mark) && g.zhLatin.synth !== 'none'
+    && /dot/.test(g.zhMix.mark) && g.zhMix.synth === 'none', JSON.stringify({ zhLatin: g.zhLatin, zhMix: g.zhMix }));
+  // 7. One system font family: -apple-system gives headings SF's display optical size.
+  check(`no SF Pro names and no display stack; headings use the body font (${th})`, !/SF Pro/.test(g.font) && /-apple-system/.test(g.font) && g.fontDisplay === '' && g.h1Font === g.pFont, JSON.stringify(g));
+  // 8. Struck-through text and list numbers reach AA; a ticked task greys
+  //    only its own text; the dark highlight is gold, not olive, and AA.
+  const bg = parseColor(g.bg);
+  check(`struck-through text reaches 4.5:1 (${th})`, contrastOf(parseColor(g.del), bg) >= 4.5, `${g.del} on ${g.bg}`);
+  check(`numbered list numbers reach 4.5:1 (${th})`, contrastOf(parseColor(g.marker), bg) >= 4.5, `${g.marker} on ${g.bg}`);
+  check(`a ticked task greys its text, not its open sub-items (${th})`, g.done !== g.body && g.open === g.body, JSON.stringify([g.done, g.open, g.body]));
+  const markRGB = over(parseColor(g.mark), bg);
+  const hue = (([r, gg, b]) => { const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b); if (mx === mn) return 0; const h = mx === r ? (gg - b) / (mx - mn) : mx === gg ? 2 + (b - r) / (mx - mn) : 4 + (r - gg) / (mx - mn); return (h * 60 + 360) % 360; })(markRGB);
+  check(`highlighted text reaches 4.5:1 on its highlight (${th})`, contrastOf(parseColor(g.markText), markRGB) >= 4.5, JSON.stringify({ markRGB, text: g.markText }));
+  if (dark) check('the dark highlight is a warm gold, not olive', hue >= 30 && hue <= 46, `hue=${hue.toFixed(1)} ${JSON.stringify(markRGB)}`);
+  // 9. Three small sizes: secondary text, code, labels (16 px reading size).
+  check(`small type uses the three size tokens (${th})`, g.tokens.map(parseFloat).join() === '0.875,0.84,0.75,1.1' && g.sizes.table === '14px' && g.sizes.footnotes === '14px'
+    && Math.abs(parseFloat(g.sizes.code) - 13.44) < 0.01 && g.sizes.buttons === '12px' && parseFloat(g.sizes.lang) < 12, JSON.stringify(g));
+
+  // 8. Two-figure numbers sit inside the column: no ink left of it.
+  const col = await page.evaluate(() => {
+    const d = document.getElementById('ro-doc'), li = document.getElementById('t-li99');
+    li.scrollIntoView({ block: 'center' });
+    const r = li.getBoundingClientRect();
+    return { left: d.getBoundingClientRect().left + parseFloat(getComputedStyle(d).paddingLeft), top: r.top, h: r.height };
+  });
+  const strip = PNG.sync.read(await page.screenshot({ clip: { x: Math.round(col.left) - 20, y: Math.round(col.top), width: 20, height: Math.round(col.h) } }));
+  // How far ink reaches into the gutter, in px (anti-aliasing of a glyph
+  // edge at the column's own pixel boundary is allowed: 1 px).
+  let into = 0;
+  for (let y = 0; y < strip.height; y++) for (let x = 0; x < strip.width; x++) if (Math.abs(strip.data[(y * strip.width + x) * 4] - bg[0]) > 40) into = Math.max(into, strip.width - x);
+  check(`two-figure list numbers stay inside the column (${th})`, into <= 1, `ink reaches ${into} px into the gutter`);
+  await page.close();
+}
+
+// 1. Quick Look (no toolbar) keeps 28 px at the top; print has none.
+{
+  page = await open(600);
+  await page.evaluate(p => window.readout.apply(p), v35);
+  await page.evaluate(() => window.readout.setAppearance({ mode: 'quicklook' }));
+  const ql = await page.evaluate(() => getComputedStyle(document.getElementById('ro-doc')).paddingTop);
+  check('Quick Look keeps a 28 px top', ql === '28px', ql);
+  await page.close();
+}
+
+// 2. The measure is in rem: ⌘+ and ⌘− keep the characters per line; 680
+//    and 920 px at 16 px as before.
+{
+  page = await open(1600);
+  await page.evaluate(p => window.readout.apply(p), v35);
+  const m = [];
+  for (const w of ['narrow', 'wide']) for (const fs of [13, 16, 20, 24]) {
+    await page.evaluate(([w, fs]) => window.readout.setAppearance({ width: w, fontSize: fs }), [w, fs]);
+    m.push(await page.evaluate(([w, fs]) => { const p = document.getElementById('t-p'); return { w, fs, col: p.getBoundingClientRect().width, ems: p.getBoundingClientRect().width / fs }; }, [w, fs]));
+  }
+  check('the narrow column is 42.5 em at 13/16/20/24 px', m.filter(x => x.w === 'narrow').every(x => Math.abs(x.ems - 42.5) < 0.05), JSON.stringify(m));
+  check('the wide column is 57.5 em at 13/16/20/24 px', m.filter(x => x.w === 'wide').every(x => Math.abs(x.ems - 57.5) < 0.05), JSON.stringify(m));
+  check('at 16 px the columns are 680 and 920 px, as before', m.some(x => x.w === 'narrow' && x.fs === 16 && Math.abs(x.col - 680) < 0.5) && m.some(x => x.w === 'wide' && x.fs === 16 && Math.abs(x.col - 920) < 0.5), JSON.stringify(m));
+  await page.close();
+}
+
+// 6. Paragraphs and items ask for better line breaks (text-wrap: pretty; a
+//    no-op in a WebKit without it, which drops it from the CSSOM: read the source).
+{
+  const css = readFileSync(new URL('../src/reader.css', import.meta.url), 'utf8');
+  check('paragraphs and list items use text-wrap: pretty', /(^|\n)p, li \{ text-wrap: pretty; \}/.test(css));
+}
+
+// 8. Printed, two- and five-figure numbers are not cut at the page edge.
+{
+  page = await open(600);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['listItem', '<ol class="li-block li-first li-last" id="p2" start="99"><li>Ninety-nine</li></ol>'],
+    ['listItem', '<ol class="li-block li-first li-last ol-w5" id="p5" start="99999"><li>Big</li></ol>'],
+  ]));
+  await page.emulateMedia({ media: 'print' });
+  // The printed page starts at x = 0: a number cut there has ink in the
+  // first pixel column. The leftmost ink must sit clear of the edge.
+  const rows = await page.evaluate(() => ['p2', 'p5'].map(id => { const r = document.getElementById(id).firstElementChild.getBoundingClientRect(); return { id, y: r.top, h: r.height, text: r.left }; }));
+  const pr = [];
+  for (const r of rows) {
+    const shot = PNG.sync.read(await page.screenshot({ clip: { x: 0, y: Math.round(r.y), width: Math.round(r.text), height: Math.round(r.h) } }));
+    let left = Infinity;
+    for (let y = 0; y < shot.height; y++) for (let x = 0; x < shot.width; x++) if (shot.data[(y * shot.width + x) * 4] < 200) { left = Math.min(left, x); break; }
+    pr.push({ ...r, inkLeft: left });
+  }
+  check('printed list numbers are not cut at the page edge', pr.every(x => x.inkLeft >= 1 && x.inkLeft < x.text), JSON.stringify(pr));
+  await page.close();
+}
+
+// 8. Diagram text follows the reading size (13 px at 16 px), redrawn when it changes.
+{
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([['mermaid', '<div class="mermaid-block"><pre class="mermaid-src">flowchart LR\n  A[Agent writes] --> B[Reader shows]</pre></div>']]));
+  await until(page, () => document.querySelector('.mermaid-block.done svg'));
+  const size = () => page.evaluate(() => { const l = document.querySelector('.mermaid-block svg .nodeLabel, .mermaid-block svg text'); return l ? parseFloat(getComputedStyle(l).fontSize) : 0; });
+  const at16 = await size();
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 20 }));
+  const ok20 = await until(page, () => { const l = document.querySelector('.mermaid-block svg .nodeLabel, .mermaid-block svg text'); return l && Math.abs(parseFloat(getComputedStyle(l).fontSize) - 16.3) < 0.2; }, 15000);
+  const at20 = await size();
+  check('diagram text is 13 px at the 16 px reading size', Math.abs(at16 - 13) < 0.2, String(at16));
+  check('diagram text follows the reading size (16.3 px at 20 px)', ok20, String(at20));
+  await page.close();
+}
+
+// The same, read at the end of the page: the redraw at the new size keeps the
+// reader at the end (the diagram grows after the type has reflowed).
+{
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ...Array.from({ length: 30 }, (_, i) => ['paragraph', `<p>Paragraph ${i} above the diagram, long enough to wrap once in the column at this width.</p>`]),
+    ['mermaid', '<div class="mermaid-block"><pre class="mermaid-src">flowchart TD\n  A[Agent writes the plan] --> B[Reader shows it]\n  B --> C[Agent edits]\n  C --> D[Reader marks the change]</pre></div>'],
+  ]));
+  await page.evaluate(() => document.querySelector('.mermaid-block').scrollIntoView());
+  await until(page, () => document.querySelector('.mermaid-block.done svg'));
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  await page.waitForTimeout(300);
+  const gap = () => page.evaluate(() => { const se = document.scrollingElement; return Math.round(se.scrollHeight - se.scrollTop - window.innerHeight); });
+  const g0 = await gap();
+  const h0 = await page.evaluate(() => document.querySelector('.mermaid-block svg').getBoundingClientRect().height);
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 20 }));
+  await until(page, () => { const l = document.querySelector('.mermaid-block svg .nodeLabel, .mermaid-block svg text'); return l && parseFloat(getComputedStyle(l).fontSize) > 16; }, 15000);
+  await page.waitForTimeout(400);
+  const h1 = await page.evaluate(() => document.querySelector('.mermaid-block svg').getBoundingClientRect().height);
+  const g1 = await gap();
+  check('reading at the end, a diagram redrawn at the new size keeps the reader at the end', g0 <= 1 && g1 <= 1 && h1 > h0 + 5, JSON.stringify({ g0, g1, h0, h1 }));
+  await page.close();
+}
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();

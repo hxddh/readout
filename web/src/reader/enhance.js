@@ -15,6 +15,7 @@ export function enhance(el) {
   for (const h of el.classList.contains('k-heading') ? [el] : []) setupHeadingLink(h);
   if (el.querySelector('.math, .math-block')) renderMath(el);
   setLang(el);
+  markCjkEmphasis(el);
 }
 
 // Han characters take Japanese forms in a block with kana, Chinese otherwise
@@ -25,6 +26,18 @@ function setLang(el) {
   const text = el.textContent;
   const lang = KANA.test(text) ? 'ja' : HAN.test(text) ? 'zh' : null;
   if (lang) el.lang = lang; else el.removeAttribute('lang');
+}
+
+// Emphasis that is mostly CJK (at least as many CJK characters as Latin
+// letters) takes emphasis dots instead of a slant (reader.css: em.cjk-em).
+const CJK_CHARS = /[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]/g;
+const LATIN_LETTERS = /[A-Za-z\u00c0-\u024f]/g;
+function markCjkEmphasis(el) {
+  for (const em of el.querySelectorAll('em')) {
+    const text = em.textContent;
+    const cjk = (text.match(CJK_CHARS) || []).length;
+    em.classList.toggle('cjk-em', cjk > 0 && cjk >= (text.match(LATIN_LETTERS) || []).length);
+  }
 }
 
 /**

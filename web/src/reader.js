@@ -181,11 +181,23 @@ function setAppearance(o) {
   const width = o.width && o.width !== root.dataset.width;
   const size = o.fontSize && root.style.getPropertyValue('--size') !== `${o.fontSize}px`;
   if (width || size) {
+    const anchor = captureAnchor(), bottom = atBottom();
     keepPlace(() => {
       if (width) root.dataset.width = o.width;
       if (size) root.style.setProperty('--size', `${o.fontSize}px`);
       measureTables();   // the column decides which tables scroll
-    }, { ratio: true });
+    }, { ratio: true, anchor, bottom });
+    // Diagram text follows the reading size. A diagram in view is drawn
+    // again a moment later at its new size: the reader keeps the same place
+    // through that too, unless they have scrolled since.
+    if (size) {
+      const y = document.scrollingElement.scrollTop;
+      rerenderMermaid().then(() => {
+        if (document.scrollingElement.scrollTop !== y) return;
+        holdPlace(anchor, bottom, true);
+        rebaselineHeights();
+      });
+    }
   }
   if (o.strings) {
     mergeStrings(o.strings);

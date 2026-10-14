@@ -73,8 +73,8 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
   check('a table that scrolled fits again when the window widens', narrow && !wide, JSON.stringify({ narrow, wide }));
   await page.close();
 
-  // The column and the type size (no window resize): a table of long words
-  // that fits the wide column, or smaller type, but not the narrow column.
+  // The column (no window resize): a table of long words that fits the wide
+  // column but not the narrow one.
   const p2 = await newPage({ width: 1300, height: 800 });
   const words = ['Implementation', 'Responsibility', 'Configuration', 'Documentation', 'Compatibility', 'Infrastructure', 'Observability'];
   const row = words.map(w => `<td>${w}</td>`).join('');
@@ -82,15 +82,16 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
     html: `<div class="table-wrap"><table><thead><tr>${words.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody><tr>${row}</tr></tbody></table></div>` }], { reset: true }));
   await p2.waitForTimeout(300);
   const state = async () => (await p2.evaluate(() => document.querySelector('.table-wrap').classList.contains('scrolls')));
-  const steps = { narrow16: await state() };
-  await p2.evaluate(() => window.readout.setAppearance({ fontSize: 12 }));
-  steps.narrow12 = await state();
-  await p2.evaluate(() => window.readout.setAppearance({ fontSize: 16 }));
-  steps.narrow16again = await state();
+  // (The column is set in rem: a type size change scales it with the table.)
+  const steps = { narrow: await state() };
   await p2.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
-  steps.wide16 = await state();
-  check('a table that scrolled fits again when the column widens or the type gets smaller',
-    steps.narrow16 && !steps.narrow12 && steps.narrow16again && !steps.wide16, JSON.stringify(steps));
+  steps.wide = await state();
+  await p2.evaluate(() => window.readout.setAppearance({ width: 'narrow' }));
+  steps.narrowAgain = await state();
+  await p2.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
+  steps.wideAgain = await state();
+  check('a table that scrolled fits again when the column widens',
+    steps.narrow && !steps.wide && steps.narrowAgain && !steps.wideAgain, JSON.stringify(steps));
   await p2.close();
 }
 
