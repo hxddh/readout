@@ -147,6 +147,7 @@ function setAppearance(o) {
       if (width) root.dataset.width = o.width;
       if (size) root.style.setProperty('--size', `${o.fontSize}px`);
     }, { ratio: true });
+    if (size) rerenderMermaid();   // diagram text follows the reading size
   }
   if (o.strings) {
     mergeStrings(o.strings);

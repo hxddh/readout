@@ -2,15 +2,25 @@
 import { doc, root, strings, inViewport, pageTheme } from './core.js';
 import { lazyObserver } from './enhance.js';
 
-const mermaidCache = new Map();   // source+theme -> {svg, id} or {error}
+const mermaidCache = new Map();   // look+source -> {svg, id} or {error}
 let mermaidPromise = null;
-let mermaidTheme = null;
+let mermaidLook = null;   // the look Mermaid is set up for: theme and type size
 let mermaidSeq = 0;
 let printTheme = null;   // while printing, diagrams are drawn for paper: light
 
 /** The theme diagrams are drawn in: the page's, or light while printing. */
 function diagramTheme() {
   return printTheme || pageTheme();
+}
+
+/** Diagram text: 13 px at the default 16 px reading size, following ⌘+ and ⌘−. */
+function diagramFontSize() {
+  return Math.round(parseFloat(getComputedStyle(root).fontSize) * 13 / 16 * 10) / 10 || 13;
+}
+
+/** What a drawing depends on besides its source: the theme and the type size. */
+function diagramLook() {
+  return `${diagramTheme()}/${diagramFontSize()}`;
 }
 
 // Mermaid's ESM build, bundled with the app (build.mjs copies it and its
@@ -24,8 +34,8 @@ function loadMermaid() {
     mermaidPromise = import(MERMAID_URL).then(mod => mod.default);
   }
   return mermaidPromise.then(m => {
-    const theme = diagramTheme();
-    if (theme !== mermaidTheme) {
+    const theme = diagramTheme(), look = diagramLook(), fontSize = diagramFontSize();
+    if (look !== mermaidLook) {
       // Diagrams take the page's own colors and type, in both themes. The
       // colors of a theme the page is not shown in (printing) are read with
       // the page switched to it for the moment, before anything is painted.
@@ -42,10 +52,10 @@ function loadMermaid() {
         startOnLoad: false,
         securityLevel: 'strict',
         theme: 'base',
-        fontFamily: v('--font') || '-apple-system, "SF Pro Text", "PingFang SC", sans-serif',
+        fontFamily: v('--font') || '-apple-system, "PingFang SC", sans-serif',
         themeVariables: {
           darkMode: theme === 'dark',
-          fontSize: '13px',
+          fontSize: `${fontSize}px`,
           background: v('--bg'),
           primaryColor: v('--fill'),
           primaryTextColor: v('--text'),
@@ -67,9 +77,9 @@ function loadMermaid() {
           signalTextColor: v('--text'),
         },
         flowchart: { htmlLabels: true, curve: 'basis' },
-        sequence: { actorFontSize: 13, messageFontSize: 13, noteFontSize: 13, useMaxWidth: true },
+        sequence: { actorFontSize: fontSize, messageFontSize: fontSize, noteFontSize: fontSize, useMaxWidth: true },
       });
-      mermaidTheme = theme;
+      mermaidLook = look;
     }
     return m;
   });
@@ -103,7 +113,7 @@ async function pumpMermaid() {
       const src = srcEl.textContent;
       const m = await loadMermaid().catch(() => null);
       if (!m) break;
-      const theme = mermaidTheme;
+      const theme = mermaidLook;
       const key = theme + '\u0000' + src;
       let out = mermaidCache.get(key);
       if (!out) {
@@ -118,8 +128,8 @@ async function pumpMermaid() {
         mermaidCache.set(key, out);
       }
       if (!block.isConnected) continue;
-      // The theme changed while it was being drawn: draw it again in the new one.
-      if (theme !== diagramTheme()) { mermaidQueue.push(block); continue; }
+      // The theme or type size changed while it was being drawn: draw it again.
+      if (theme !== diagramLook()) { mermaidQueue.push(block); continue; }
       let fresh;
       if (out.svg) {
         fresh = document.createElement('div');
@@ -170,8 +180,8 @@ function renameIds(wrap, from, to) {
 }
 
 /**
- * Re-renders every diagram after a theme change (only once Mermaid was ever
- * used). The drawings stay where they are until their new ones replace
+ * Re-renders every diagram after a theme or type size change (only once
+ * Mermaid was ever used). The drawings stay where they are until their new ones replace
  * them, so the page keeps its height; off-screen ones are redrawn when they
  * come near.
  */
