@@ -137,6 +137,11 @@ unreadable = live.get("unreadable") or {}
 check("unreadable: the status is set", bool(unreadable.get("status")), live)
 check("unreadable: the subtitle shows the status",
       bool(unreadable.get("status")) and unreadable.get("subtitle") == unreadable.get("status"), live)
+uitem = unreadable.get("change_item") or {}
+# Nothing unread: the next-change button keeps its place, disabled (it used to be hidden, reflowing the toolbar).
+check("chrome: with nothing unread the next-change button stays, disabled",
+      unreadable.get("unread") == 0 and uitem.get("present") is True
+      and uitem.get("hidden") is False and uitem.get("enabled") is False, live)
 
 dangle = live.get("dangle") or {}
 # `ln -sf` to a file written only afterwards: the window follows it once it exists.
