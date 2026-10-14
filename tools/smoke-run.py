@@ -15,9 +15,12 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
   4b. when the app reports `await-agent-write` (Readout in the background,
      watching WORK_DIR/agent), writes WORK_DIR/agent/notes.md the agent way;
      the app records whether it opened on its own without activating
+  4b'. when the app reports `await-refill`, empties plan.md in place and writes
+     the same bytes back a second later (an agent truncating, then writing)
   4c. when the app reports `await-tmp-edit`, rewrites a document under /tmp
      (FSEvents reports it as /private/tmp/...); at `await-retarget`, points a
-     symlink the app shows at another file, the way `ln -sf` does
+     symlink the app shows at another file, the way `ln -sf` does; at
+     `await-dangle`, points one at a file not written yet, then writes it
   4d. when the app reports `await-cli`, runs `cli/readout -b` on a new file
      and `cli/readout --hook` on plan.md (open in a tab behind); the app
      records whether the tab being read stayed in front
@@ -114,6 +117,14 @@ def main() -> int:
     (tmp / "runs" / "run-44.md").write_text("# RUN-44\n")
     collide = tmp / "links" / "other.md"
     os.symlink("../runs/run-43.md", collide)
+    # links/next.md -> run-45.md, later pointed at run-46.md before that file is written.
+    (tmp / "runs" / "run-45.md").write_text("# RUN-45\n")
+    dangle = tmp / "links" / "next.md"
+    os.symlink("../runs/run-45.md", dangle)
+    # A file that exists but cannot be read.
+    locked = tmp / "locked.md"
+    locked.write_text("# Locked\n")
+    os.chmod(locked, 0)
     # Two windows opened back to back: the second one's page starts cold.
     (tmp / "cold-a.md").write_text("# Cold A\n")
     (tmp / "cold-b.md").write_text("# Cold B\n")
@@ -124,7 +135,8 @@ def main() -> int:
                READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
                READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_COLLIDE_LINK=str(collide),
-               READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"))
+               READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"),
+               READOUT_SMOKE_DANGLE_LINK=str(dangle), READOUT_SMOKE_UNREADABLE=str(locked))
     # Launch Services must know the bundle for `open -b` to reach the running app.
     bundle = app.parents[2] if app.parent.name == "MacOS" else None
     if bundle is not None:
@@ -155,6 +167,17 @@ def main() -> int:
             else:
                 print("harness: the app never reported `await-agent-write`")
 
+            if wait_for(out / "await-refill", proc, 60, poll=0.05):
+                data = target.read_bytes()
+                with open(target, "wb"):
+                    pass  # emptied in place, the way `>` truncates
+                time.sleep(1.0)
+                with open(target, "wb") as f:
+                    f.write(data)
+                print("harness: emptied plan.md and wrote it back")
+            else:
+                print("harness: the app never reported `await-refill`")
+
             if wait_for(out / "await-tmp-edit", proc, 60, poll=0.05):
                 src = tmp / ".live.src"
                 src.write_text("# TMP-AFTER\n\nRewritten under /tmp.\n")
@@ -178,6 +201,18 @@ def main() -> int:
                 print("harness: pointed other.md at run-44.md (open in its own window)")
             else:
                 print("harness: the app never reported `await-collide`")
+
+            if wait_for(out / "await-dangle", proc, 30, poll=0.05):
+                staged = dangle.with_name(".next.md.tmp")
+                os.symlink("../runs/run-46.md", staged)
+                os.replace(staged, dangle)  # run-46.md does not exist yet
+                time.sleep(1.0)
+                src = tmp / ".run-46.src"
+                src.write_text("# RUN-46\n\nWritten after the link.\n")
+                agent_write(tmp / "runs" / "run-46.md", src)
+                print("harness: pointed next.md at run-46.md, then wrote run-46.md")
+            else:
+                print("harness: the app never reported `await-dangle`")
 
             if wait_for(out / "await-cli", proc, 30, poll=0.05):
                 cli = ROOT / "cli" / "readout"

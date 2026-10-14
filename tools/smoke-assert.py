@@ -56,6 +56,25 @@ check(
 )
 check("2-after-edit mermaid >= 1", (edit.get("mermaid") or 0) >= 1, edit)
 
+edit_applies = load("edit.json")
+print(f"edit: {edit_applies}")
+# The watcher reports a write at once and folds the events after it: one write, one patch.
+check("one agent write applies exactly one patch", edit_applies.get("applies") == 1, edit_applies)
+
+refill = load("refill.json")
+print(f"refill: {refill}")
+# Emptied and written back a second later: the empty version and the refill both shown...
+check("refill: the emptied file and its refill were both applied", (refill.get("applies") or 0) >= 2, refill)
+# ...and the reader is back where they were.
+rshift = refill.get("shift")
+check("refill: the reading position is restored (|shift| <= 4)",
+      isinstance(rshift, (int, float)) and abs(rshift) <= 4, refill)
+# A heading's link button copies the full path with the anchor.
+prefix = refill.get("link_prefix") or "?"
+copied = refill.get("copied_link") or ""
+check("copy link to section copies the full path#anchor",
+      prefix.startswith("/") and copied.startswith(prefix) and len(copied) > len(prefix), refill)
+
 marks = load("3-marks.json")
 print(f"3-marks: {marks}")
 # The edited table's comparison: the changed cell reads 未知 -> 不支持.
@@ -100,6 +119,32 @@ check("legacy: the newer reading position moves with the record",
 # Saving between the retarget and the new file's read must not store the old file's state under the new key.
 check("link: no record under the new key before its content is read",
       (live.get("link") or {}).get("early_record") is not True, live)
+
+chrome = (live.get("tmp") or {}).get("chrome") or {}
+# Same-named files are told apart: the tab shows the document's title, the
+# window title stays the file name, the subtitle names the folder.
+check("chrome: the window title is the file name", chrome.get("title") == "live.md", live)
+check("chrome: the tab title is the document title", chrome.get("tab_title") == "TMP-AFTER", live)
+check("chrome: the subtitle names the folder", (chrome.get("subtitle") or "").startswith("readout-live-"), live)
+item = chrome.get("change_item") or {}
+# The next-change button stays in place, enabled only with something unread.
+check("chrome: the next-change button stays in the toolbar",
+      item.get("present") is True and item.get("hidden") is False
+      and item.get("enabled") == ((chrome.get("unread") or 0) > 0), live)
+
+unreadable = live.get("unreadable") or {}
+# A failed first read says why in the title bar, not only in the (maybe hidden) sidebar.
+check("unreadable: the status is set", bool(unreadable.get("status")), live)
+check("unreadable: the subtitle shows the status",
+      bool(unreadable.get("status")) and unreadable.get("subtitle") == unreadable.get("status"), live)
+
+dangle = live.get("dangle") or {}
+# `ln -sf` to a file written only afterwards: the window follows it once it exists.
+check("dangle: the link's first target was shown", dangle.get("before") == "RUN-45", live)
+check("dangle: the file written after the link is shown", dangle.get("after") == "RUN-46", live)
+check("dangle: no stale status once it exists", dangle.get("status") == "", live)
+check("dangle: opening the link again finds the same window", dangle.get("same_window") is True, live)
+check("dangle: reading state is saved again (gate released)", dangle.get("record_at_new_target") is True, live)
 
 find = load("find-mode.json")
 print(f"find-mode: {find}")
