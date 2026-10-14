@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "313e9f05",
+   "style": "3659b8ba",
    "content": "672ad072",
    "text": "CLAUDE.md"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 116,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "ce95461c",
    "text": "项目概述"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 379,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "3981122c",
    "text": "常用命令"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 771,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "0d1a93ab",
    "text": "开发规范"
   },
@@ -105,7 +105,7 @@
    "kind": "heading",
    "top": 836,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "ca6b1cec",
    "text": "领域规格文档"
   },
@@ -249,7 +249,7 @@
    "kind": "heading",
    "top": 1908,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "ee141a44",
    "text": "开发流程与内部方案"
   },
@@ -321,7 +321,7 @@
    "kind": "heading",
    "top": 2295,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "6f9268e1",
    "text": "大型功能的本地界面审查"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 3804,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "da5ce99d",
    "text": "API 设计规范"
   },
@@ -501,7 +501,7 @@
    "kind": "heading",
    "top": 4196,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "e21a4af4",
    "text": "Pull Request 提交规范"
   },
@@ -573,7 +573,7 @@
    "kind": "heading",
    "top": 4835,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "88c3418d",
    "text": "测试"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 4986,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "ee68c0d7",
    "text": "前端验收"
   },
@@ -708,7 +708,7 @@
    "kind": "heading",
    "top": 6018,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "60d0effb",
    "text": "提交前检查"
   },
@@ -726,7 +726,7 @@
    "kind": "heading",
    "top": 6222,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "d44151db",
    "text": "代码风格"
   },
@@ -771,7 +771,7 @@
    "kind": "heading",
    "top": 6627,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "62b6ec21",
    "text": "目录规范"
   },

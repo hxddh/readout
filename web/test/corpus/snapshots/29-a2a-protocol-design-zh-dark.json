@@ -1,12 +1,12 @@
 {
- "height": 17811,
+ "height": 17751,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "ee8c365f",
+   "style": "fe259970",
    "content": "5cd9d199",
    "text": "A2A 协议 设计文档"
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 71,
    "h": 65,
-   "style": "594f81c2",
+   "style": "3db478b9",
    "content": "a3029f6f",
    "text": "概述"
   },
@@ -78,7 +78,7 @@
    "kind": "heading",
    "top": 479,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "f855c74d",
    "text": "设计决策"
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 861,
    "h": 65,
-   "style": "594f81c2",
+   "style": "3db478b9",
    "content": "4ef389f7",
    "text": "架构"
   },
@@ -159,7 +159,7 @@
    "kind": "heading",
    "top": 2149,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "3cc52816",
    "text": "数据流"
   },
@@ -168,7 +168,7 @@
    "kind": "heading",
    "top": 2191,
    "h": 36,
-   "style": "3aab637b",
+   "style": "1459bd3b",
    "content": "b04c34e4",
    "text": "Cube 调用外部 Agent"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 2872,
    "h": 36,
-   "style": "3aab637b",
+   "style": "1459bd3b",
    "content": "8a928733",
    "text": "外部 Agent 调用 Cube Agent"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 3446,
    "h": 65,
-   "style": "594f81c2",
+   "style": "3db478b9",
    "content": "a3bc5f83",
    "text": "组件与接口"
   },
@@ -213,7 +213,7 @@
    "kind": "heading",
    "top": 3511,
    "h": 42,
-   "style": "061af22a",
+   "style": "212bf93c",
    "content": "bd377fb3",
    "text": "1. A2A 协议类型定义 (shared/a2a-protocol.ts)"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 6100,
    "h": 42,
-   "style": "7e02d6be",
+   "style": "45ed2958",
    "content": "ca6b04a2",
    "text": "2. ExternalAgentNode 类型扩展 (shared/organization-s"
   },
@@ -267,7 +267,7 @@
    "kind": "heading",
    "top": 6350,
    "h": 42,
-   "style": "b4e37825",
+   "style": "b09a25d5",
    "content": "07c8ea89",
    "text": "3. A2A Client (server/core/a2a-client.ts)"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 6973,
    "h": 42,
-   "style": "18a7d74e",
+   "style": "f60db694",
    "content": "5dc366a8",
    "text": "4. A2A Server (server/core/a2a-server.ts)"
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 7757,
    "h": 42,
-   "style": "2ee40c93",
+   "style": "12be79a7",
    "content": "203d22b0",
    "text": "5. 框架适配器 (server/core/a2a-adapters/)"
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 8762,
    "h": 42,
-   "style": "4bbcc802",
+   "style": "1fc10ef4",
    "content": "0b21be3e",
    "text": "6. MessageBus A2A 路由扩展 (server/core/message-bus."
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 9412,
    "h": 42,
-   "style": "1bfad41c",
+   "style": "47c95fe6",
    "content": "4782e5af",
    "text": "7. A2A API 路由 (server/routes/a2a.ts)"
   },
@@ -420,7 +420,7 @@
    "kind": "heading",
    "top": 9595,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "fac70795",
    "text": "8. 3D 可视化组件"
   },
@@ -429,7 +429,7 @@
    "kind": "heading",
    "top": 9637,
    "h": 36,
-   "style": "2d38e6a7",
+   "style": "db80be9f",
    "content": "6397d52c",
    "text": "Zustand Store (client/src/lib/a2a-store.ts)"
   },
@@ -447,7 +447,7 @@
    "kind": "heading",
    "top": 9875,
    "h": 36,
-   "style": "64685b42",
+   "style": "2751b900",
    "content": "28e9debe",
    "text": "跨框架粒子流组件 (client/src/components/three/CrossFrame"
   },
@@ -537,7 +537,7 @@
    "kind": "heading",
    "top": 10270,
    "h": 65,
-   "style": "594f81c2",
+   "style": "3db478b9",
    "content": "7fe8d107",
    "text": "数据模型"
   },
@@ -546,7 +546,7 @@
    "kind": "heading",
    "top": 10335,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "ae5588ea",
    "text": "A2ASession 状态机"
   },
@@ -564,7 +564,7 @@
    "kind": "heading",
    "top": 10908,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "9838e741",
    "text": "ExternalAgentNode 继承关系"
   },
@@ -582,7 +582,7 @@
    "kind": "heading",
    "top": 11573,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "a910f88d",
    "text": "消息元数据扩展"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 11822,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "c2b1b89c",
    "text": "速率限制数据结构"
   },
@@ -636,7 +636,7 @@
    "kind": "heading",
    "top": 12091,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "c0109c46",
    "text": "环境变量"
   },
@@ -654,7 +654,7 @@
    "kind": "heading",
    "top": 12357,
    "h": 65,
-   "style": "594f81c2",
+   "style": "3db478b9",
    "content": "d74faff6",
    "text": "正确性属性"
   },
@@ -663,7 +663,7 @@
    "kind": "paragraph",
    "top": 12422,
    "h": 82,
-   "style": "ea204e23",
+   "style": "dd5f0c28",
    "content": "ddb17090",
    "text": "正确性属性是系统在所有有效执行中都应保持为真的特征或行为——本质上是关于系统应该做什么的形式化陈"
   },
@@ -672,7 +672,7 @@
    "kind": "heading",
    "top": 12504,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "106e2272",
    "text": "Property 1: A2AEnvelope 序列化往返一致性"
   },
@@ -680,15 +680,15 @@
    "slot": 76,
    "kind": "paragraph",
    "top": 12546,
-   "h": 78,
-   "style": "695e5eb8",
+   "h": 74,
+   "style": "0749479e",
    "content": "644fcd76",
    "text": "For any 合法的 A2AEnvelope 对象，调用 serializeEnvelope "
   },
   {
    "slot": 77,
    "kind": "paragraph",
-   "top": 12623,
+   "top": 12619,
    "h": 44,
    "style": "80f916de",
    "content": "227f2495",
@@ -697,25 +697,25 @@
   {
    "slot": 78,
    "kind": "heading",
-   "top": 12667,
+   "top": 12663,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "9f3f716f",
    "text": "Property 2: A2ASession 序列化往返一致性"
   },
   {
    "slot": 79,
    "kind": "paragraph",
-   "top": 12709,
-   "h": 78,
-   "style": "169ba558",
+   "top": 12705,
+   "h": 74,
+   "style": "559a5b22",
    "content": "b6a725f2",
    "text": "For any 合法的 A2ASession 对象，调用 serializeSession 后再"
   },
   {
    "slot": 80,
    "kind": "paragraph",
-   "top": 12786,
+   "top": 12778,
    "h": 44,
    "style": "80f916de",
    "content": "172b7b84",
@@ -724,25 +724,25 @@
   {
    "slot": 81,
    "kind": "heading",
-   "top": 12830,
+   "top": 12822,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "25d06b67",
    "text": "Property 3: 上下文长度验证"
   },
   {
    "slot": 82,
    "kind": "paragraph",
-   "top": 12872,
-   "h": 78,
-   "style": "c04872b2",
+   "top": 12864,
+   "h": 74,
+   "style": "f8154ed8",
    "content": "d1863a69",
    "text": "For any 字符串，validateContext 应在字符串长度不超过 2000 时返回 "
   },
   {
    "slot": 83,
    "kind": "paragraph",
-   "top": 12950,
+   "top": 12938,
    "h": 44,
    "style": "111234aa",
    "content": "92f8d345",
@@ -751,25 +751,25 @@
   {
    "slot": 84,
    "kind": "heading",
-   "top": 12993,
+   "top": 12981,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "f86d069b",
    "text": "Property 4: 会话失败状态标记"
   },
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 13035,
-   "h": 106,
-   "style": "24b7a1d8",
+   "top": 13023,
+   "h": 102,
+   "style": "3ddf69e8",
    "content": "24d28234",
    "text": "For any A2ASession，当调用超时或收到错误响应时，terminateTimedO"
   },
   {
    "slot": 86,
    "kind": "paragraph",
-   "top": 13141,
+   "top": 13125,
    "h": 44,
    "style": "111234aa",
    "content": "7a9d3616",
@@ -778,25 +778,25 @@
   {
    "slot": 87,
    "kind": "heading",
-   "top": 13184,
+   "top": 13168,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "7bf2a85e",
    "text": "Property 5: 并发会话数量限制"
   },
   {
    "slot": 88,
    "kind": "paragraph",
-   "top": 13226,
-   "h": 78,
-   "style": "de718af8",
+   "top": 13210,
+   "h": 74,
+   "style": "73826dda",
    "content": "acea887b",
    "text": "For any 正整数 N 作为 maxConcurrentSessions 配置值，A2A_C"
   },
   {
    "slot": 89,
    "kind": "paragraph",
-   "top": 13304,
+   "top": 13284,
    "h": 44,
    "style": "80f916de",
    "content": "d9a31ee0",
@@ -805,25 +805,25 @@
   {
    "slot": 90,
    "kind": "heading",
-   "top": 13347,
+   "top": 13327,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "a49e89c6",
    "text": "Property 6: 无效认证令牌拒绝"
   },
   {
    "slot": 91,
    "kind": "paragraph",
-   "top": 13389,
-   "h": 78,
-   "style": "0e421462",
+   "top": 13369,
+   "h": 74,
+   "style": "27865358",
    "content": "ca8a4de8",
    "text": "For any 不在已配置 API Key 列表中的字符串（包括空字符串），validateAp"
   },
   {
    "slot": 92,
    "kind": "paragraph",
-   "top": 13467,
+   "top": 13443,
    "h": 44,
    "style": "111234aa",
    "content": "d7554ed7",
@@ -832,25 +832,25 @@
   {
    "slot": 93,
    "kind": "heading",
-   "top": 13510,
+   "top": 13486,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "3267272f",
    "text": "Property 7: 不存在的 Agent 返回错误"
   },
   {
    "slot": 94,
    "kind": "paragraph",
-   "top": 13552,
-   "h": 78,
-   "style": "11f624ce",
+   "top": 13528,
+   "h": 74,
+   "style": "eca7e1ec",
    "content": "bf916fa6",
    "text": "For any 不在 AgentDirectory 中注册的 Agent ID，A2A_Serv"
   },
   {
    "slot": 95,
    "kind": "paragraph",
-   "top": 13630,
+   "top": 13602,
    "h": 44,
    "style": "80f916de",
    "content": "c81e290c",
@@ -859,25 +859,25 @@
   {
    "slot": 96,
    "kind": "heading",
-   "top": 13673,
+   "top": 13645,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "4bcb4be1",
    "text": "Property 8: 速率限制执行"
   },
   {
    "slot": 97,
    "kind": "paragraph",
-   "top": 13715,
-   "h": 106,
-   "style": "5dc196a1",
+   "top": 13687,
+   "h": 102,
+   "style": "de18911d",
    "content": "ca38937e",
    "text": "For any API Key 和正整数 R 作为 rateLimitPerMinute 配置值"
   },
   {
    "slot": 98,
    "kind": "paragraph",
-   "top": 13821,
+   "top": 13789,
    "h": 44,
    "style": "111234aa",
    "content": "03917c07",
@@ -886,25 +886,25 @@
   {
    "slot": 99,
    "kind": "heading",
-   "top": 13864,
+   "top": 13832,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "90877c1e",
    "text": "Property 9: 框架适配器请求格式正确性"
   },
   {
    "slot": 100,
    "kind": "paragraph",
-   "top": 13906,
-   "h": 134,
-   "style": "f6be3ec0",
+   "top": 13874,
+   "h": 130,
+   "style": "fb5d4653",
    "content": "6868f2b0",
    "text": "For any 合法的 A2AInvokeParams 和支持的框架类型（crewai / la"
   },
   {
    "slot": 101,
    "kind": "paragraph",
-   "top": 14040,
+   "top": 14004,
    "h": 44,
    "style": "a286a373",
    "content": "8e6891f8",
@@ -913,25 +913,25 @@
   {
    "slot": 102,
    "kind": "heading",
-   "top": 14083,
+   "top": 14047,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "c86be831",
    "text": "Property 10: 框架适配器响应归一化"
   },
   {
    "slot": 103,
    "kind": "paragraph",
-   "top": 14125,
-   "h": 78,
-   "style": "be145081",
+   "top": 14089,
+   "h": 74,
+   "style": "60b9569b",
    "content": "cd186be1",
    "text": "For any 框架适配器和合法的框架特定响应对象，adaptResponse 应返回包含 ou"
   },
   {
    "slot": 104,
    "kind": "paragraph",
-   "top": 14203,
+   "top": 14163,
    "h": 44,
    "style": "80f916de",
    "content": "8e91ecd4",
@@ -940,25 +940,25 @@
   {
    "slot": 105,
    "kind": "heading",
-   "top": 14246,
+   "top": 14206,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "ac43309e",
    "text": "Property 11: 不支持的框架类型拒绝"
   },
   {
    "slot": 106,
    "kind": "paragraph",
-   "top": 14288,
-   "h": 78,
-   "style": "f3bbb798",
+   "top": 14248,
+   "h": 74,
+   "style": "5aff54ba",
    "content": "1f42b79e",
    "text": "For any 不在 [\"crewai\", \"langgraph\", \"claude\", \"cu"
   },
   {
    "slot": 107,
    "kind": "paragraph",
-   "top": 14366,
+   "top": 14322,
    "h": 44,
    "style": "80f916de",
    "content": "8f91ee67",
@@ -967,25 +967,25 @@
   {
    "slot": 108,
    "kind": "heading",
-   "top": 14410,
+   "top": 14366,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "f2874e1d",
    "text": "Property 12: 出站信封包含认证令牌"
   },
   {
    "slot": 109,
    "kind": "paragraph",
-   "top": 14451,
-   "h": 78,
-   "style": "de718af8",
+   "top": 14407,
+   "h": 74,
+   "style": "73826dda",
    "content": "79cc015c",
    "text": "For any 配置了认证令牌的外部 Agent 调用，A2A_Client 构建的 A2AEn"
   },
   {
    "slot": 110,
    "kind": "paragraph",
-   "top": 14529,
+   "top": 14481,
    "h": 44,
    "style": "80f916de",
    "content": "f1d07c42",
@@ -994,25 +994,25 @@
   {
    "slot": 111,
    "kind": "heading",
-   "top": 14573,
+   "top": 14525,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "36883e04",
    "text": "Property 13: ExternalAgentNode 快照兼容性"
   },
   {
    "slot": 112,
    "kind": "paragraph",
-   "top": 14614,
-   "h": 106,
-   "style": "b4a3a97d",
+   "top": 14566,
+   "h": 102,
+   "style": "ef306d2d",
    "content": "78fe9993",
    "text": "For any 合法的 ExternalAgentNode，将其加入 WorkflowOrgan"
   },
   {
    "slot": 113,
    "kind": "paragraph",
-   "top": 14720,
+   "top": 14668,
    "h": 44,
    "style": "80f916de",
    "content": "33436eab",
@@ -1021,25 +1021,25 @@
   {
    "slot": 114,
    "kind": "heading",
-   "top": 14764,
+   "top": 14712,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "710e2629",
    "text": "Property 14: A2A 消息路由与元数据正确性"
   },
   {
    "slot": 115,
    "kind": "paragraph",
-   "top": 14805,
-   "h": 78,
-   "style": "3debab5c",
+   "top": 14753,
+   "h": 74,
+   "style": "d108b6c6",
    "content": "9c912fcc",
    "text": "For any 发送给 ExternalAgentNode 的消息，MessageBus 应将其"
   },
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 14883,
+   "top": 14827,
    "h": 44,
    "style": "111234aa",
    "content": "ae2751f4",
@@ -1048,25 +1048,25 @@
   {
    "slot": 117,
    "kind": "heading",
-   "top": 14927,
+   "top": 14871,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "835b352f",
    "text": "Property 15: 可调用 Agent 列表完整性"
   },
   {
    "slot": 118,
    "kind": "paragraph",
-   "top": 14969,
-   "h": 78,
-   "style": "c39c632d",
+   "top": 14913,
+   "h": 74,
+   "style": "0493a02f",
    "content": "6f6b6176",
    "text": "For any AgentDirectory 中标记为可外部调用的 Agent 集合，listE"
   },
   {
    "slot": 119,
    "kind": "paragraph",
-   "top": 15046,
+   "top": 14986,
    "h": 44,
    "style": "80f916de",
    "content": "ca1e2c32",
@@ -1075,16 +1075,16 @@
   {
    "slot": 120,
    "kind": "heading",
-   "top": 15090,
+   "top": 15030,
    "h": 65,
-   "style": "594f81c2",
+   "style": "3db478b9",
    "content": "6d3bfdfb",
    "text": "错误处理"
   },
   {
    "slot": 121,
    "kind": "table",
-   "top": 15155,
+   "top": 15095,
    "h": 696,
    "style": "afa6dc96",
    "content": "77e094d2",
@@ -1093,25 +1093,25 @@
   {
    "slot": 122,
    "kind": "heading",
-   "top": 15851,
+   "top": 15791,
    "h": 65,
-   "style": "594f81c2",
+   "style": "3db478b9",
    "content": "fd1c2b2c",
    "text": "测试策略"
   },
   {
    "slot": 123,
    "kind": "heading",
-   "top": 15916,
+   "top": 15856,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "49753d50",
    "text": "属性测试（Property-Based Testing）"
   },
   {
    "slot": 124,
    "kind": "paragraph",
-   "top": 15958,
+   "top": 15898,
    "h": 46,
    "style": "204a33d5",
    "content": "6142df10",
@@ -1120,7 +1120,7 @@
   {
    "slot": 125,
    "kind": "paragraph",
-   "top": 16004,
+   "top": 15944,
    "h": 46,
    "style": "e9159b48",
    "content": "58e83b55",
@@ -1129,7 +1129,7 @@
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 16049,
+   "top": 15989,
    "h": 59,
    "style": "a039d62b",
    "content": "ac31de15",
@@ -1138,7 +1138,7 @@
   {
    "slot": 127,
    "kind": "listItem",
-   "top": 16108,
+   "top": 16048,
    "h": 31,
    "style": "5e5e7a04",
    "content": "73e69626",
@@ -1147,7 +1147,7 @@
   {
    "slot": 128,
    "kind": "listItem",
-   "top": 16139,
+   "top": 16079,
    "h": 31,
    "style": "5e5e7a04",
    "content": "94a9a607",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "listItem",
-   "top": 16169,
+   "top": 16109,
    "h": 31,
    "style": "9dc2b8a3",
    "content": "2b53a5f8",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "listItem",
-   "top": 16200,
+   "top": 16140,
    "h": 31,
    "style": "826b98cb",
    "content": "2d526d70",
@@ -1174,7 +1174,7 @@
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 16231,
+   "top": 16171,
    "h": 31,
    "style": "7e1b98e3",
    "content": "21631d37",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "listItem",
-   "top": 16261,
+   "top": 16201,
    "h": 47,
    "style": "2ca9c26f",
    "content": "5e72a927",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "paragraph",
-   "top": 16309,
+   "top": 16249,
    "h": 46,
    "style": "e9159b48",
    "content": "c3e93f44",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "listItem",
-   "top": 16354,
+   "top": 16294,
    "h": 31,
    "style": "f792083a",
    "content": "e48ee779",
@@ -1210,7 +1210,7 @@
   {
    "slot": 135,
    "kind": "listItem",
-   "top": 16385,
+   "top": 16325,
    "h": 31,
    "style": "8ef6d1b8",
    "content": "a595cc36",
@@ -1219,7 +1219,7 @@
   {
    "slot": 136,
    "kind": "listItem",
-   "top": 16416,
+   "top": 16356,
    "h": 31,
    "style": "8ef6d1b8",
    "content": "c61a7cbe",
@@ -1228,7 +1228,7 @@
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 16446,
+   "top": 16386,
    "h": 31,
    "style": "8ef6d1b8",
    "content": "36525c18",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "listItem",
-   "top": 16477,
+   "top": 16417,
    "h": 31,
    "style": "8ef6d1b8",
    "content": "15996185",
@@ -1246,7 +1246,7 @@
   {
    "slot": 139,
    "kind": "listItem",
-   "top": 16508,
+   "top": 16448,
    "h": 31,
    "style": "8ef6d1b8",
    "content": "c6ca61d9",
@@ -1255,7 +1255,7 @@
   {
    "slot": 140,
    "kind": "listItem",
-   "top": 16539,
+   "top": 16479,
    "h": 31,
    "style": "8ef6d1b8",
    "content": "2adc86fe",
@@ -1264,7 +1264,7 @@
   {
    "slot": 141,
    "kind": "listItem",
-   "top": 16569,
+   "top": 16509,
    "h": 31,
    "style": "8ef6d1b8",
    "content": "50d1d93a",
@@ -1273,7 +1273,7 @@
   {
    "slot": 142,
    "kind": "listItem",
-   "top": 16600,
+   "top": 16540,
    "h": 31,
    "style": "8ef6d1b8",
    "content": "a8964e95",
@@ -1282,7 +1282,7 @@
   {
    "slot": 143,
    "kind": "listItem",
-   "top": 16631,
+   "top": 16571,
    "h": 31,
    "style": "1fa58ce8",
    "content": "9caee62c",
@@ -1291,7 +1291,7 @@
   {
    "slot": 144,
    "kind": "listItem",
-   "top": 16661,
+   "top": 16601,
    "h": 31,
    "style": "1fa58ce8",
    "content": "b13c2073",
@@ -1300,7 +1300,7 @@
   {
    "slot": 145,
    "kind": "listItem",
-   "top": 16692,
+   "top": 16632,
    "h": 31,
    "style": "1fa58ce8",
    "content": "10b0a334",
@@ -1309,7 +1309,7 @@
   {
    "slot": 146,
    "kind": "listItem",
-   "top": 16723,
+   "top": 16663,
    "h": 31,
    "style": "1fa58ce8",
    "content": "8b0cd37b",
@@ -1318,7 +1318,7 @@
   {
    "slot": 147,
    "kind": "listItem",
-   "top": 16753,
+   "top": 16693,
    "h": 31,
    "style": "1fa58ce8",
    "content": "f4b58b96",
@@ -1327,7 +1327,7 @@
   {
    "slot": 148,
    "kind": "listItem",
-   "top": 16784,
+   "top": 16724,
    "h": 47,
    "style": "48bbbfab",
    "content": "8d28afac",
@@ -1336,16 +1336,16 @@
   {
    "slot": 149,
    "kind": "heading",
-   "top": 16831,
+   "top": 16771,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "1c091fc9",
    "text": "单元测试"
   },
   {
    "slot": 150,
    "kind": "paragraph",
-   "top": 16873,
+   "top": 16813,
    "h": 46,
    "style": "e9159b48",
    "content": "f0d6a69b",
@@ -1354,7 +1354,7 @@
   {
    "slot": 151,
    "kind": "listItem",
-   "top": 16919,
+   "top": 16859,
    "h": 31,
    "style": "aa81fa00",
    "content": "39679b1c",
@@ -1363,7 +1363,7 @@
   {
    "slot": 152,
    "kind": "listItem",
-   "top": 16950,
+   "top": 16890,
    "h": 31,
    "style": "a2f4f47a",
    "content": "f275403f",
@@ -1372,7 +1372,7 @@
   {
    "slot": 153,
    "kind": "listItem",
-   "top": 16980,
+   "top": 16920,
    "h": 31,
    "style": "a2f4f47a",
    "content": "2f5fd828",
@@ -1381,7 +1381,7 @@
   {
    "slot": 154,
    "kind": "listItem",
-   "top": 17011,
+   "top": 16951,
    "h": 31,
    "style": "a2f4f47a",
    "content": "acf9e273",
@@ -1390,7 +1390,7 @@
   {
    "slot": 155,
    "kind": "listItem",
-   "top": 17042,
+   "top": 16982,
    "h": 31,
    "style": "a2f4f47a",
    "content": "eb3a8708",
@@ -1399,7 +1399,7 @@
   {
    "slot": 156,
    "kind": "listItem",
-   "top": 17072,
+   "top": 17012,
    "h": 47,
    "style": "f701c3d7",
    "content": "e1d25b41",
@@ -1408,16 +1408,16 @@
   {
    "slot": 157,
    "kind": "heading",
-   "top": 17120,
+   "top": 17060,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "61c745cf",
    "text": "测试不覆盖的范围"
   },
   {
    "slot": 158,
    "kind": "listItem",
-   "top": 17162,
+   "top": 17102,
    "h": 31,
    "style": "aa81fa00",
    "content": "374bc651",
@@ -1426,7 +1426,7 @@
   {
    "slot": 159,
    "kind": "listItem",
-   "top": 17192,
+   "top": 17132,
    "h": 31,
    "style": "a2f4f47a",
    "content": "c2d43c11",
@@ -1435,7 +1435,7 @@
   {
    "slot": 160,
    "kind": "listItem",
-   "top": 17223,
+   "top": 17163,
    "h": 31,
    "style": "a2f4f47a",
    "content": "c99aca7d",
@@ -1444,7 +1444,7 @@
   {
    "slot": 161,
    "kind": "listItem",
-   "top": 17254,
+   "top": 17194,
    "h": 75,
    "style": "2f4c13f3",
    "content": "48fb6285",
@@ -1453,16 +1453,16 @@
   {
    "slot": 162,
    "kind": "heading",
-   "top": 17329,
+   "top": 17269,
    "h": 42,
-   "style": "7d13e070",
+   "style": "7cedf432",
    "content": "79b57b6a",
    "text": "测试配置"
   },
   {
    "slot": 163,
    "kind": "listItem",
-   "top": 17371,
+   "top": 17311,
    "h": 31,
    "style": "67634c31",
    "content": "45051ff9",
@@ -1471,7 +1471,7 @@
   {
    "slot": 164,
    "kind": "listItem",
-   "top": 17402,
+   "top": 17342,
    "h": 31,
    "style": "a2f4f47a",
    "content": "0a085d00",
@@ -1480,7 +1480,7 @@
   {
    "slot": 165,
    "kind": "listItem",
-   "top": 17432,
+   "top": 17372,
    "h": 31,
    "style": "a2f4f47a",
    "content": "ae6c16d3",
@@ -1489,7 +1489,7 @@
   {
    "slot": 166,
    "kind": "listItem",
-   "top": 17463,
+   "top": 17403,
    "h": 31,
    "style": "788c2a73",
    "content": "8d4990d6",
@@ -1498,7 +1498,7 @@
   {
    "slot": 167,
    "kind": "listItem",
-   "top": 17494,
+   "top": 17434,
    "h": 47,
    "style": "b76f304f",
    "content": "aa93c880",

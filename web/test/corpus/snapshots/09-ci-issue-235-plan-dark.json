@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "6df2e247",
+   "style": "87907880",
    "content": "64e28c01",
    "text": "Fix GitHub issue #235: avoid redundant install+t"
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 109,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "bd317f1c",
    "text": "Context"
   },
@@ -105,7 +105,7 @@
    "kind": "heading",
    "top": 1734,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "1eab5e32",
    "text": "Plan"
   },
@@ -114,7 +114,7 @@
    "kind": "heading",
    "top": 1799,
    "h": 65,
-   "style": "f05e6ae0",
+   "style": "eb63c6bc",
    "content": "d911e315",
    "text": "1. .github/workflows/ci.yml — fix the redundant "
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 2688,
    "h": 42,
-   "style": "f1a85f02",
+   "style": "7cffec70",
    "content": "8815e568",
    "text": "2. .github/workflows/npm-test.yml — version bump"
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 2799,
    "h": 42,
-   "style": "019e94c7",
+   "style": "f7f8cf2f",
    "content": "0ad425cc",
    "text": "3. .github/workflows/release.yml — version bump "
   },
@@ -213,7 +213,7 @@
    "kind": "heading",
    "top": 2937,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "82a16ffe",
    "text": "Verification"
   },
@@ -258,7 +258,7 @@
    "kind": "heading",
    "top": 3340,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "d4066211",
    "text": "Post-approval fixes (found from an actual CI run"
   },
@@ -411,7 +411,7 @@
    "kind": "heading",
    "top": 5389,
    "h": 94,
-   "style": "99b81cbd",
+   "style": "347aeb1e",
    "content": "42ad818c",
    "text": "Fix 4 (supersedes Fix 3's root-cause theory) — t"
   },

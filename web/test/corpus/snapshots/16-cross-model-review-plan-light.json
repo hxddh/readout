@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "e03a7a4e",
+   "style": "7bfddf9f",
    "content": "066632de",
    "text": "P2 — Cross-model Adversarial Review Implementati"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 764,
    "h": 71,
-   "style": "64ea9848",
+   "style": "beefd77b",
    "content": "2dca6127",
    "text": "Shared definitions (used verbatim across tasks —"
   },
@@ -159,7 +159,7 @@
    "kind": "heading",
    "top": 1504,
    "h": 42,
-   "style": "11663a8e",
+   "style": "fe6b25d5",
    "content": "dcf1613a",
    "text": "File Structure"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 1841,
    "h": 55,
-   "style": "24a6add4",
+   "style": "16a2b425",
    "content": "d27f0c93",
    "text": "Task 1: wiki-init — generate .gitignore and docu"
   },
@@ -429,7 +429,7 @@
    "kind": "heading",
    "top": 4659,
    "h": 32,
-   "style": "b26ffd5a",
+   "style": "888ad575",
    "content": "38894a04",
    "text": "Task 2: wiki-audit — strong-mode entry and intro"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 5866,
    "h": 55,
-   "style": "66d231f9",
+   "style": "150ea6c0",
    "content": "390fffb8",
    "text": "Task 3: wiki-audit — Phase C (cross-model advers"
   },
@@ -807,7 +807,7 @@
    "kind": "heading",
    "top": 7928,
    "h": 55,
-   "style": "66d231f9",
+   "style": "150ea6c0",
    "content": "a1fb3113",
    "text": "Task 4: wiki-audit — report section, gitignore s"
   },
@@ -1086,7 +1086,7 @@
    "kind": "heading",
    "top": 10491,
    "h": 32,
-   "style": "ba957936",
+   "style": "b597b9f1",
    "content": "52bc9f99",
    "text": "Task 5: Cross-file consistency check + spec trac"
   },
@@ -1221,7 +1221,7 @@
    "kind": "heading",
    "top": 11741,
    "h": 42,
-   "style": "11663a8e",
+   "style": "fe6b25d5",
    "content": "df9d4099",
    "text": "Self-Review (completed by plan author)"
   },

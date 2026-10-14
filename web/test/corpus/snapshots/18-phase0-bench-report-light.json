@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "313e9f05",
+   "style": "3659b8ba",
    "content": "ad1fc48b",
    "text": "Phase 0 benchmark: RPS/worker"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 618,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "07245a9a",
    "text": "Environment"
   },
@@ -60,7 +60,7 @@
    "kind": "heading",
    "top": 1025,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "7a2321b0",
    "text": "Methodology"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 2300,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "9cf82695",
    "text": "Results"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 3144,
    "h": 42,
-   "style": "9d412dfe",
+   "style": "5214efb8",
    "content": "e1f1d7b9",
    "text": "Scaling sanity check (VUs=1 → VUs=10)"
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 3503,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "94d1e6df",
    "text": "Anomaly investigated: VUs=50 request failures"
   },
@@ -321,7 +321,7 @@
    "kind": "heading",
    "top": 5898,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "a8b2b8b7",
    "text": "What this does and doesn't tell you"
   },
@@ -348,7 +348,7 @@
    "kind": "heading",
    "top": 6374,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "dee4b1d9",
    "text": "Reproducing this"
   },

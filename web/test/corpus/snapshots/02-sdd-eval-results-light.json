@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "e03a7a4e",
+   "style": "7bfddf9f",
    "content": "30098953",
    "text": "SDD plan-scoped workspace — eval results"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 288,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "abfe5074",
    "text": "Scenarios"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 935,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "6eb97009",
    "text": "What RED showed (and did not show)"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 2041,
    "h": 42,
-   "style": "9d412dfe",
+   "style": "5214efb8",
    "content": "fa91186b",
    "text": "RED quote bank (verbatim, carried from the Task "
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 3318,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "2ab29de2",
    "text": "Fixture iterations"
   },
@@ -267,7 +267,7 @@
    "kind": "heading",
    "top": 3886,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "9cf82695",
    "text": "Results"
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 4456,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "736585d2",
    "text": "Disambiguation cost"
   },
@@ -321,7 +321,7 @@
    "kind": "heading",
    "top": 5102,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "966201e7",
    "text": "GREEN behavior notes"
   },
@@ -420,7 +420,7 @@
    "kind": "heading",
    "top": 6141,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "61a5e973",
    "text": "Appendix A: fixture generator (v3)"
   },
@@ -447,7 +447,7 @@
    "kind": "heading",
    "top": 11335,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "8ae5fa28",
    "text": "Appendix B: scenario prompt"
   },
@@ -474,7 +474,7 @@
    "kind": "heading",
    "top": 12124,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "6b577ff6",
    "text": "Limitations"
   },

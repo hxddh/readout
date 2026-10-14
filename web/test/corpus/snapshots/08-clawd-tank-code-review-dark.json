@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "7af26f10",
+   "style": "a520094d",
    "content": "50d8ebd7",
    "text": "Code Review: Tasks 7–11 (Python Host)"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 240,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "8cc638d8",
    "text": "Code Review Summary"
   },
@@ -60,7 +60,7 @@
    "kind": "heading",
    "top": 451,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "c9b73d9d",
    "text": "Critical Issues ⚠️"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 494,
    "h": 42,
-   "style": "b90a1abf",
+   "style": "d573d4e7",
    "content": "3335b2fb",
    "text": "1. Dict mutation during iteration in _replay_act"
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 978,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "47d63e0a",
    "text": "High Priority Issues 🔴"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 1020,
    "h": 65,
-   "style": "477ed714",
+   "style": "df39b7c8",
    "content": "6ef13173",
    "text": "2. _on_disconnect mutates asyncio.Event from a n"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1434,
    "h": 42,
-   "style": "c5665a99",
+   "style": "02d6cb91",
    "content": "2661fdf4",
    "text": "3. _shutdown_event not in __init__ — daemon.py:5"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 1713,
    "h": 42,
-   "style": "eb2deadd",
+   "style": "78c342ed",
    "content": "246950c8",
    "text": "4. asyncio.get_event_loop() deprecated — daemon."
   },
@@ -231,7 +231,7 @@
    "kind": "heading",
    "top": 1912,
    "h": 42,
-   "style": "ef3a1e47",
+   "style": "574a699f",
    "content": "310b55b4",
    "text": "5. session_id accessed with [] not .get() — prot"
   },
@@ -258,7 +258,7 @@
    "kind": "heading",
    "top": 2111,
    "h": 42,
-   "style": "5e4fd805",
+   "style": "5017b455",
    "content": "a4bfdf3c",
    "text": "6. Socket not closed on send failure — clawd-not"
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 2386,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "b64ecb54",
    "text": "Medium Priority Issues 🟡"
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 2428,
    "h": 65,
-   "style": "57698496",
+   "style": "eac2ee2a",
    "content": "d0881586",
    "text": "7. socket_server reads without length framing — "
   },
@@ -330,7 +330,7 @@
    "kind": "heading",
    "top": 2703,
    "h": 42,
-   "style": "f1e0f350",
+   "style": "58b2c21e",
    "content": "f9e3c6b9",
    "text": "8. Failed BLE write drops the message — daemon.p"
   },
@@ -357,7 +357,7 @@
    "kind": "heading",
    "top": 2988,
    "h": 42,
-   "style": "5e879103",
+   "style": "634fce63",
    "content": "1bc028af",
    "text": "9. _ble_sender dies silently on ValueError — dae"
   },
@@ -384,7 +384,7 @@
    "kind": "heading",
    "top": 3187,
    "h": 42,
-   "style": "cecff11d",
+   "style": "70d77d3d",
    "content": "02765566",
    "text": "10. Double _remove_pid() call — daemon.py:65,115"
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 3325,
    "h": 42,
-   "style": "97b96093",
+   "style": "e40d6443",
    "content": "b75c2a38",
    "text": "11. Dead code: DAEMON_MODULE — clawd-notify:24"
   },
@@ -429,7 +429,7 @@
    "kind": "heading",
    "top": 3498,
    "h": 65,
-   "style": "1b669d73",
+   "style": "12c0d6e3",
    "content": "6e8c7fb1",
    "text": "12. _connected Event in ClawdBleClient is never "
   },
@@ -456,7 +456,7 @@
    "kind": "heading",
    "top": 3706,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "afdbaae8",
    "text": "Low Priority Suggestions 🔵"
   },
@@ -465,7 +465,7 @@
    "kind": "heading",
    "top": 3748,
    "h": 42,
-   "style": "e3b2a332",
+   "style": "22602c20",
    "content": "249423f0",
    "text": "13. sys.exit(1) in hook may be too loud — clawd-"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 3886,
    "h": 65,
-   "style": "a2e02c45",
+   "style": "fb117591",
    "content": "c1b6531d",
    "text": "14. start_daemon() opens log file without try/fi"
   },
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 4122,
    "h": 65,
-   "style": "aa0948b5",
+   "style": "36b105bd",
    "content": "92d0a47b",
    "text": "15. Broad except Exception in socket_server._han"
   },
@@ -528,7 +528,7 @@
    "kind": "heading",
    "top": 4308,
    "h": 42,
-   "style": "9c75b288",
+   "style": "68900966",
    "content": "cb2c091e",
    "text": "16. Missing tests in test_protocol.py"
   },
@@ -573,7 +573,7 @@
    "kind": "heading",
    "top": 4506,
    "h": 42,
-   "style": "9c46cc32",
+   "style": "87a39790",
    "content": "9cfa8bb7",
    "text": "17. Missing tests in test_daemon.py"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 4675,
    "h": 42,
-   "style": "cb4159f4",
+   "style": "6827af8a",
    "content": "80d23198",
    "text": "18. install-hooks.sh missing set -u and executab"
   },
@@ -645,7 +645,7 @@
    "kind": "heading",
    "top": 4916,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "db12b0b3",
    "text": "Positive Highlights ✨"
   },
@@ -753,7 +753,7 @@
    "kind": "heading",
    "top": 5669,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "7e9ff507",
    "text": "Recommendations"
   },

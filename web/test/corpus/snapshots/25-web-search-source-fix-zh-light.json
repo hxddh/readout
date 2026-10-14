@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "e03a7a4e",
+   "style": "7bfddf9f",
    "content": "724c0285",
    "text": "Web Search Sources Button Fix Implementation Pla"
   },
@@ -60,7 +60,7 @@
    "kind": "heading",
    "top": 472,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "eafa5386",
    "text": "现状与根因"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 515,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "c0360751",
    "text": "按钮显示条件"
   },
@@ -114,7 +114,7 @@
    "kind": "heading",
    "top": 1156,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "df42cbff",
    "text": "已确认的问题"
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 1672,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "9049d332",
    "text": "范围"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 1715,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "7767f778",
    "text": "本次处理"
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 2016,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "45a6ad83",
    "text": "本次不处理"
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 2276,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "c5013c7d",
    "text": "关键设计"
   },
@@ -348,7 +348,7 @@
    "kind": "heading",
    "top": 2318,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "84767c49",
    "text": "搜索工具判定"
   },
@@ -384,7 +384,7 @@
    "kind": "heading",
    "top": 2725,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "1c81bee8",
    "text": "工具结果提取"
   },
@@ -420,7 +420,7 @@
    "kind": "heading",
    "top": 3008,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "5471574e",
    "text": "正文兜底提取"
   },
@@ -465,7 +465,7 @@
    "kind": "heading",
    "top": 3438,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "d5127fd1",
    "text": "Task 1: 修复 ApiHandler 来源合并与 StreamEnd 丢来源"
   },
@@ -753,7 +753,7 @@
    "kind": "heading",
    "top": 6665,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "1cebf52f",
    "text": "Task 2: 修复 Gemini 直连 grounding index"
   },
@@ -870,7 +870,7 @@
    "kind": "heading",
    "top": 7502,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "7b439df6",
    "text": "Task 3: 新增搜索工具结果提取 helper"
   },
@@ -1212,7 +1212,7 @@
    "kind": "heading",
    "top": 9214,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "2c22c33b",
    "text": "Task 4: 三个工具循环 emit WebSearchResults"
   },
@@ -1446,7 +1446,7 @@
    "kind": "heading",
    "top": 10826,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "7e8b3bab",
    "text": "Task 5: 收窄并增强正文来源兜底"
   },
@@ -1725,7 +1725,7 @@
    "kind": "heading",
    "top": 13680,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "c867fb3f",
    "text": "Task 6: 全量相关验证"
   },
@@ -1923,7 +1923,7 @@
    "kind": "heading",
    "top": 14685,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "6683b96b",
    "text": "覆盖矩阵"
   },
@@ -1950,7 +1950,7 @@
    "kind": "heading",
    "top": 15131,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "5a80e07c",
    "text": "完成标准"
   },

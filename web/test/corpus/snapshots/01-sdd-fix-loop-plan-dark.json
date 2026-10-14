@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "6df2e247",
+   "style": "87907880",
    "content": "2ca5d3a4",
    "text": "SDD Fix-Loop Redesign Implementation Plan"
   },
@@ -60,7 +60,7 @@
    "kind": "heading",
    "top": 665,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "e4b1f13e",
    "text": "Global Constraints"
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 1615,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "dcf1613a",
    "text": "File Structure"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 2421,
    "h": 32,
-   "style": "c46487b1",
+   "style": "6a252444",
    "content": "1134c188",
    "text": "Task 1: Create the scoped re-review template"
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 5263,
    "h": 55,
-   "style": "95ca4548",
+   "style": "0bcf48df",
    "content": "847ff357",
    "text": "Task 2: Align the implementer and task-reviewer "
   },
@@ -654,7 +654,7 @@
    "kind": "heading",
    "top": 7139,
    "h": 55,
-   "style": "95ca4548",
+   "style": "0bcf48df",
    "content": "ef3726cb",
    "text": "Task 3: Restructure SKILL.md by lifecycle with t"
   },
@@ -825,7 +825,7 @@
    "kind": "heading",
    "top": 21193,
    "h": 55,
-   "style": "95ca4548",
+   "style": "0bcf48df",
    "content": "9f1f74db",
    "text": "Task 4: Add the two mid-loop ledger fixture help"
   },
@@ -1140,7 +1140,7 @@
    "kind": "heading",
    "top": 29096,
    "h": 32,
-   "style": "c46487b1",
+   "style": "6a252444",
    "content": "44740715",
    "text": "Task 5: Scenario — fix rounds resume the impleme"
   },
@@ -1311,7 +1311,7 @@
    "kind": "heading",
    "top": 31735,
    "h": 55,
-   "style": "95ca4548",
+   "style": "0bcf48df",
    "content": "0fa7ee94",
    "text": "Task 6: Scenario — breaker trips at the cap, adj"
   },
@@ -1473,7 +1473,7 @@
    "kind": "heading",
    "top": 33972,
    "h": 55,
-   "style": "95ca4548",
+   "style": "0bcf48df",
    "content": "ba871e23",
    "text": "Task 7: Scenario — structural finding stops the "
   },
@@ -1644,7 +1644,7 @@
    "kind": "heading",
    "top": 36244,
    "h": 55,
-   "style": "95ca4548",
+   "style": "0bcf48df",
    "content": "e9bcbf0c",
    "text": "Task 8: Live eval campaign — RED baselines, GREE"
   },
