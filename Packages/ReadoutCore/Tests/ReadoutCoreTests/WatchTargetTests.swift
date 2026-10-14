@@ -78,6 +78,57 @@ private struct Scratch {
         #expect(!t.isTarget(s.real + "/runs/run-41.md"))
     }
 
+    /// `ln -sf ../runs/run-42.md latest.md` before run-42.md is written: the
+    /// window must watch run-42.md's folder, under its real spelling, so it
+    /// picks the file up when the agent writes it.
+    @Test func aSymlinkToAFileNotWrittenYetResolvesToWhereItWillBe() throws {
+        let s = try Scratch()
+        let fm = FileManager.default
+        try fm.createDirectory(atPath: s.real + "/runs", withIntermediateDirectories: true)
+        try fm.createDirectory(atPath: s.real + "/links", withIntermediateDirectories: true)
+        s.write("runs/run-41.md")
+        let link = s.linked + "/links/latest.md"
+        try fm.createSymbolicLink(atPath: link, withDestinationPath: "../runs/run-41.md")
+        var t = WatchTarget(path: link)
+
+        try fm.createSymbolicLink(atPath: s.real + "/links/.tmp-link", withDestinationPath: "../runs/run-42.md")
+        #expect(rename(s.real + "/links/.tmp-link", s.real + "/links/latest.md") == 0)
+        let changed = t.reresolve()
+        #expect(changed)
+        #expect(t.target == s.real + "/runs/run-42.md")
+        #expect(Set(t.directories) == [s.real + "/runs", s.real + "/links"])
+        #expect(RealPath.of(link) == s.real + "/runs/run-42.md")
+
+        // The agent writes run-42.md: same path, so no second retarget, and the event matches.
+        s.write("runs/run-42.md")
+        let again = t.reresolve()
+        #expect(!again)
+        #expect(t.isTarget(s.real + "/runs/run-42.md"))
+        // Keys agree before and after the file exists.
+        #expect(BaselineKey.key(forPath: link) == BaselineKey.key(forPath: s.real + "/runs/run-42.md"))
+    }
+
+    @Test func aDanglingAbsoluteSymlinkAndALoopStillResolve() throws {
+        let s = try Scratch()
+        let fm = FileManager.default
+        try fm.createSymbolicLink(atPath: s.real + "/abs.md", withDestinationPath: s.linked + "/later.md")
+        #expect(RealPath.of(s.linked + "/abs.md") == s.real + "/later.md")
+        try fm.createSymbolicLink(atPath: s.real + "/a.md", withDestinationPath: "b.md")
+        try fm.createSymbolicLink(atPath: s.real + "/b.md", withDestinationPath: "a.md")
+        #expect(RealPath.of(s.real + "/a.md").hasPrefix(s.real + "/"))   // terminates
+    }
+
+    @Test func aRetargetSettlesOnAReadOfEitherSpelling() throws {
+        let s = try Scratch()
+        var g = RetargetGate()
+        // Recorded through the link's spelling while the file did not exist.
+        g.retargeted(to: s.linked + "/later.md")
+        s.write("later.md")
+        let settled = g.read(from: s.real + "/later.md")
+        #expect(settled)
+        #expect(!g.isPending)
+    }
+
     @Test func aRetargetSettlesOnlyOnAReadOfTheNewTarget() {
         var g = RetargetGate()
         let r1 = g.read(from: "/r/run-41.md")

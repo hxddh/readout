@@ -11,14 +11,23 @@ public enum RealPath {
     /// (realpath(3)): FSEvents reports `/private/tmp/...` for `/tmp/...`,
     /// `/private/var/folders/...` for `$TMPDIR`, a symlinked folder's target.
     /// `URL.resolvingSymlinksInPath()` strips `/private` again, so it does not
-    /// match. A path that does not exist resolves its parent and keeps the name.
-    public static func of(_ path: String) -> String {
+    /// match. A path that does not exist resolves its parent and keeps the name;
+    /// a symlink whose target does not exist yet (`ln -sf ../runs/run-42.md
+    /// latest.md` before run 42 is written) resolves to where that target will
+    /// be: read relative to the link's folder, that folder resolved, the name kept.
+    public static func of(_ path: String) -> String { resolve(path, hops: 0) }
+
+    private static func resolve(_ path: String, hops: Int) -> String {
         if let r = realpath(path, nil) {
             defer { free(r) }
             return String(cString: r)
         }
         let ns = path as NSString
         let parent = ns.deletingLastPathComponent
+        if hops < 32, let destination = try? FileManager.default.destinationOfSymbolicLink(atPath: path) {
+            let next = destination.hasPrefix("/") ? destination : (parent as NSString).appendingPathComponent(destination)
+            return resolve(next, hops: hops + 1)
+        }
         guard !parent.isEmpty, parent != path, let r = realpath(parent, nil) else { return path }
         defer { free(r) }
         return (String(cString: r) as NSString).appendingPathComponent(ns.lastPathComponent)
@@ -86,8 +95,10 @@ public struct RetargetGate: Equatable, Sendable {
 
     /// A read from `source` (`DocumentLoader.lastSourcePath`) has filled the
     /// session. True when it is the pending target's: the retarget is settled.
+    /// Either spelling counts: a target recorded before it existed may be
+    /// spelled differently from the real path its read reports.
     public mutating func read(from source: String?) -> Bool {
-        guard let p = pending, source == p else { return false }
+        guard let p = pending, let source, source == p || RealPath.of(source) == RealPath.of(p) else { return false }
         pending = nil
         return true
     }
