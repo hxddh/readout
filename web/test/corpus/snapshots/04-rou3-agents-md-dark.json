@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "7af26f10",
+   "style": "a520094d",
    "content": "da3d45d6",
    "text": "rou3"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 459,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "8fcacbf2",
    "text": "Docs"
   },
@@ -114,7 +114,7 @@
    "kind": "heading",
    "top": 910,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "a4e2c80f",
    "text": "Core invariants"
   },
@@ -258,7 +258,7 @@
    "kind": "heading",
    "top": 2405,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "3fceefb0",
    "text": "Code conventions"
   },
@@ -321,7 +321,7 @@
    "kind": "heading",
    "top": 2838,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "634790b4",
    "text": "Bug fix workflow (regression-first)"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 3033,
    "h": 65,
-   "style": "8e2dd985",
+   "style": "638a94d6",
    "content": "b6b5540b",
    "text": "Git"
   },

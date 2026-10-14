@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "4123529a",
+   "style": "74f717b3",
    "content": "a41dc7fd",
    "text": "📊 代码变更影响分析报告"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 192,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "af18e44c",
    "text": "📁 变更文件统计"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 545,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "05ad7d0a",
    "text": "🔍 影响域分析"
   },
@@ -78,7 +78,7 @@
    "kind": "heading",
    "top": 588,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "d3c3b2dc",
    "text": "直接影响 (需要同步修改)"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 629,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "e7aec5bc",
    "text": "1. 核心服务迁移 ✅ 已完成"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 805,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "2575604d",
    "text": "2. 清单文件更新 ✅ 已完成"
   },
@@ -168,7 +168,7 @@
    "kind": "heading",
    "top": 978,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "76527574",
    "text": "3. 导入语句更新 ✅ 已完成"
   },
@@ -231,7 +231,7 @@
    "kind": "heading",
    "top": 1348,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "ef388392",
    "text": "间接影响 (可能受影响)"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 1390,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "b71ccb94",
    "text": "1. 测试文件检查 ✅ 无需修改"
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 1697,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "e8c27bfc",
    "text": "2. 应用初始化检查 ✅ 无需修改"
   },
@@ -330,7 +330,7 @@
    "kind": "heading",
    "top": 1851,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "e112e2e0",
    "text": "配置与文档影响"
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 1893,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "a49261b2",
    "text": "1. 版本号更新 ✅ 已完成"
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 2038,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "9ad9fb0e",
    "text": "2. 开发规则更新 ✅ 已完成"
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 2275,
    "h": 36,
-   "style": "9e27c59a",
+   "style": "5f2a6c60",
    "content": "3fa4aa7a",
    "text": "3. 工作空间更新 ✅ 已完成"
   },
@@ -438,7 +438,7 @@
    "kind": "heading",
    "top": 2529,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "f725e9e5",
    "text": "⚠️ 风险评估"
   },
@@ -447,7 +447,7 @@
    "kind": "heading",
    "top": 2572,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "83c0ac3e",
    "text": "风险等级: 🟢 低风险"
   },
@@ -501,7 +501,7 @@
    "kind": "heading",
    "top": 2799,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "187ab0b1",
    "text": "潜在关注点"
   },
@@ -537,7 +537,7 @@
    "kind": "heading",
    "top": 3169,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "07ea95e1",
    "text": "🧪 测试覆盖分析"
   },
@@ -546,7 +546,7 @@
    "kind": "heading",
    "top": 3212,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "d6681b36",
    "text": "现有测试覆盖"
   },
@@ -627,7 +627,7 @@
    "kind": "heading",
    "top": 3562,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "41df6e42",
    "text": "建议测试场景"
   },
@@ -672,7 +672,7 @@
    "kind": "heading",
    "top": 4122,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "7a21d494",
    "text": "💡 建议操作"
   },
@@ -681,7 +681,7 @@
    "kind": "heading",
    "top": 4164,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "d0b16a88",
    "text": "立即执行"
   },
@@ -717,7 +717,7 @@
    "kind": "heading",
    "top": 4315,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "fa807a1e",
    "text": "后续跟进"
   },
@@ -762,7 +762,7 @@
    "kind": "heading",
    "top": 4513,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "45ea172a",
    "text": "📋 验证清单"
   },

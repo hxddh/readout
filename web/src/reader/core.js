@@ -37,9 +37,9 @@ export function traceEntries() { return traceLog.slice(); }
  * block above that changed height, holding the end) are not the reader
  * moving: whoever tracks the reader's position hears of them here.
  */
-let keptScrollListener = null;
-export function onKeptScroll(f) { keptScrollListener = f; }
-export function keptScroll(dy) { if (dy && keptScrollListener) keptScrollListener(dy); }
+const keptScrollListeners = [];
+export function onKeptScroll(f) { keptScrollListeners.push(f); }
+export function keptScroll(dy) { if (dy) for (const f of keptScrollListeners) f(dy); }
 
 /** Quick Look renders statically: no marks, no rail. */
 export let quicklook = false;

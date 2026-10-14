@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "e03a7a4e",
+   "style": "7bfddf9f",
    "content": "23f19ab1",
    "text": "tsup → tsdown Migration Implementation Plan (#75"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 738,
    "h": 42,
-   "style": "11663a8e",
+   "style": "fe6b25d5",
    "content": "8c8bcf90",
    "text": "Preconditions"
   },
@@ -114,7 +114,7 @@
    "kind": "heading",
    "top": 1196,
    "h": 42,
-   "style": "9d412dfe",
+   "style": "5214efb8",
    "content": "2c5c675b",
    "text": "Task 1: Baseline capture (no commit)"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 1797,
    "h": 32,
-   "style": "ba957936",
+   "style": "b597b9f1",
    "content": "bde7673f",
    "text": "Task 2: Stage-1 migration on tsdown 0.22.14 — co"
   },
@@ -474,7 +474,7 @@
    "kind": "heading",
    "top": 4707,
    "h": 32,
-   "style": "ba957936",
+   "style": "b597b9f1",
    "content": "9deb6163",
    "text": "Task 3: Stage-2 bump to 0.23.0 — commit 2"
   },
@@ -528,7 +528,7 @@
    "kind": "heading",
    "top": 5179,
    "h": 32,
-   "style": "ba957936",
+   "style": "b597b9f1",
    "content": "cf98e286",
    "text": "Task 4: Verification battery, PR"
   },
@@ -735,7 +735,7 @@
    "kind": "heading",
    "top": 6878,
    "h": 42,
-   "style": "11663a8e",
+   "style": "fe6b25d5",
    "content": "fac89240",
    "text": "Deliberate simplifications"
   },
@@ -771,7 +771,7 @@
    "kind": "heading",
    "top": 7126,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "c1a491a2",
    "text": "Risks → where caught"
   },

@@ -624,6 +624,7 @@ const v35 = patch([
   ['code', `<div class="code-block" id="cb-diff" data-lang="diff"><pre><code>--- a/x.js\n+++ b/x.js\n-const b = 2;\n+const b = 3; // ${longLine}\n console.log(b);</code></pre></div>`],
   ['paragraph', '<p id="t-zh">中文里的<em id="t-zh-em">强调文字</em>不用斜体。</p>', { cjk: true }],
   ['paragraph', '<p id="t-ja">日本語の<em id="t-ja-em">強調</em>は傍点です。</p>', { cjk: true }],
+  ['paragraph', '<p id="t-zh-lat">中文段落里的<em id="t-zh-lat-em">a whole English sentence in italics, 例如</em>，以及<em id="t-zh-mix-em">调用 API 接口</em>。</p>', { cjk: true }],
   ['listItem', '<ol class="li-block li-first li-last" id="t-ol" start="97"><li>Ninety-seven</li><li>Ninety-eight</li><li id="t-li99">Ninety-nine</li></ol>'],
   ['listItem', '<ul class="li-block li-first li-last"><li class="task" id="t-done"><span class="task-box checked" aria-hidden="true"></span>Done parent<ul><li class="task" id="t-open"><span class="task-box" aria-hidden="true"></span>Open sub-item</li></ul></li></ul>'],
   ['paragraph', '<p>A <mark id="t-mark">highlighted phrase</mark>.</p>'],
@@ -676,6 +677,7 @@ for (const dark of [false, true]) {
     return {
       selection: rules.filter(t => /::selection/.test(t)),
       latin: em($('#t-em')), zh: em($('#t-zh-em')), ja: em($('#t-ja-em')),
+      zhLatin: em($('#t-zh-lat-em')), zhMix: em($('#t-zh-mix-em')),
       font: root.getPropertyValue('--font'), fontDisplay: root.getPropertyValue('--font-display').trim(),
       h1Font: cs($('#t-top')).fontFamily, pFont: cs($('#t-p')).fontFamily,
       del: cs($('#t-del')).color, text2: cs($('#t-p')).color, bg: root.backgroundColor,
@@ -694,6 +696,11 @@ for (const dark of [false, true]) {
   check(`Chinese emphasis: filled dots under, no synthetic italic (${th})`, /dot/.test(g.zh.mark) && !/open/.test(g.zh.mark) && /under/.test(g.zh.pos) && !/left/.test(g.zh.pos) && g.zh.synth === 'none', JSON.stringify(g.zh));
   check(`Japanese emphasis: filled sesame over (${th})`, /sesame/.test(g.ja.mark) && !/open/.test(g.ja.mark) && /over/.test(g.ja.pos) && !/left/.test(g.ja.pos) && g.ja.synth === 'none', JSON.stringify(g.ja));
   check(`Latin emphasis stays italic, without marks (${th})`, g.latin.style === 'italic' && /none/.test(g.latin.mark) && g.latin.synth !== 'none', JSON.stringify(g.latin));
+  // Only emphasis that is mostly CJK takes the dots: Latin emphasis in a CJK
+  // block stays italic; mostly-CJK emphasis with a Latin word gets dots, no slant.
+  check(`Latin emphasis in a CJK block stays italic, without dots; mostly-CJK emphasis gets them (${th})`,
+    g.zhLatin.style === 'italic' && /none/.test(g.zhLatin.mark) && g.zhLatin.synth !== 'none'
+    && /dot/.test(g.zhMix.mark) && g.zhMix.synth === 'none', JSON.stringify({ zhLatin: g.zhLatin, zhMix: g.zhMix }));
   // 7. One system font family: -apple-system gives headings SF's display optical size.
   check(`no SF Pro names and no display stack; headings use the body font (${th})`, !/SF Pro/.test(g.font) && /-apple-system/.test(g.font) && g.fontDisplay === '' && g.h1Font === g.pFont, JSON.stringify(g));
   // 8. Struck-through text and list numbers reach AA; a ticked task greys

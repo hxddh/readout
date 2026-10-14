@@ -148,14 +148,15 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 }
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
 /* CJK emphasis: no slanted Han or kana (they have no italic), but emphasis
-   dots, under the text in Chinese and sesame marks over it in Japanese.
-   Latin text in other blocks keeps its italic. */
-.blk.cjk em {
+   dots, under the text in Chinese and sesame marks over it in Japanese. Only
+   on emphasis that is mostly CJK (enhance.js marks it .cjk-em): emphasis in
+   Latin script keeps its italic, in a CJK block too. */
+em.cjk-em {
   font-synthesis-style: none;
   text-emphasis: filled dot;
   text-emphasis-position: under right;
 }
-.blk.cjk:lang(ja) em {
+:lang(ja) em.cjk-em {
   text-emphasis: filled sesame;
   text-emphasis-position: over right;
 }
@@ -207,6 +208,8 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading h5 { color: var(--text-2); }
 /* h6: smaller than h5 in the same secondary colour (AA: 6.3:1 light, 7.0:1 dark). */
 .k-heading h6 { color: var(--text-2); }
+/* Headings that wrap break into lines of even length. */
+h1, h2, h3, h4 { text-wrap: balance; }
 
 /* A quiet underline tells a link from the text in both themes (in dark the
    link colour alone is only about 2:1 against the text); full on hover. */
@@ -638,10 +641,12 @@ details ul, details ol { padding-left: 1.5em; }
   position: fixed; top: 0; right: 0; bottom: 0; width: 8px;
   pointer-events: none; z-index: 10;
 }
+/* A 3 px mark, clickable 10 px further left (transparent padding), clear of
+   the overlay scrollbar at the edge. */
 #ro-rail > button {
   position: absolute; right: 2px; width: 3px; min-height: 6px; border-radius: 2px;
-  border: 0; padding: 0;
-  background: var(--accent); pointer-events: auto; cursor: pointer;
+  box-sizing: content-box; border: 0; padding: 0 0 0 10px; background-clip: content-box;
+  background-color: var(--accent); pointer-events: auto; cursor: pointer;
 }
 #ro-rail > button.mod { opacity: 0.55; }
 
@@ -665,18 +670,20 @@ details ul, details ol { padding-left: 1.5em; }
 
 /* Heading section links */
 .k-heading { position: relative; }
-/* Inside the heading, where its first line starts (left and top stay at that
-   static position), moved out into the gutter: § sits on the heading's baseline. */
+/* Beside the heading, in the gutter on its first line: the heading's size and
+   line height, so § sits on the heading's baseline. */
 .h-link {
-  position: absolute;
-  margin-left: calc(8px - var(--gutter));
+  position: absolute; left: 8px; top: var(--h-mt);
   border: 0; padding: 0 4px; background: transparent; cursor: pointer;
-  font: inherit; color: var(--text-3);
+  font-size: var(--h-fs); font-weight: 650; line-height: 1.3;
+  color: var(--text-3);
   opacity: 0; transition: opacity 120ms;
   -webkit-user-select: none; user-select: none;
 }
 .h-link::before { font-size: 0.85rem; font-weight: 400; }
-.k-heading:hover .h-link, .k-heading:focus-within .h-link { opacity: 1; }
+.k-heading:hover .h-link, .h-link:focus { opacity: 1; }
+/* A block a jump moved the keyboard focus to shows no focus ring (it is where the jump landed). */
+#ro-doc > [tabindex="-1"]:focus { outline: none; }
 .h-link:hover { color: var(--accent); }
 
 /* Empty state */
@@ -684,6 +691,13 @@ details ul, details ol { padding-left: 1.5em; }
 
 /* QuickLook: no change UI */
 :root[data-mode="quicklook"] #ro-rail, :root[data-mode="quicklook"] .blk::before { display: none; }
+/* Nothing to copy to or load from in Quick Look: no Copy, no section links;
+   a remote image shows its placeholder's text, nothing to click. */
+:root[data-mode="quicklook"] :is(.cb-copy, .h-link) { display: none; }
+:root[data-mode="quicklook"] .remote-ph {
+  display: inline-block; font-size: 0.82rem; color: var(--text-2);
+  border: 1px dashed var(--rule); border-radius: 8px; padding: 0.6em 1em;
+}
 :root[data-mode="quicklook"] #ro-doc { padding-top: 28px; padding-bottom: 40px; }
 
 @media (prefers-reduced-motion: reduce) {

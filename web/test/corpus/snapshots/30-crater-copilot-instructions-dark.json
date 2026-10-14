@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "ee8c365f",
+   "style": "fe259970",
    "content": "e6fdeaae",
    "text": "Crater 项目通用准则"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 192,
    "h": 42,
-   "style": "ed1ea01e",
+   "style": "7b9ea0c5",
    "content": "78baacb9",
    "text": "执行等级定义 (Guideline Levels)"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 706,
    "h": 42,
-   "style": "ed1ea01e",
+   "style": "7b9ea0c5",
    "content": "fab87722",
    "text": "智能体角色行为指引 (Agent Role Guidelines)"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 748,
    "h": 42,
-   "style": "79fb5a89",
+   "style": "9c34ddc5",
    "content": "9bedc045",
    "text": "coding-agent (编码助手)"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 1419,
    "h": 42,
-   "style": "f275be60",
+   "style": "6e78d522",
    "content": "10f0b778",
    "text": "code-review (审查助手)"
   },
@@ -231,7 +231,7 @@
    "kind": "heading",
    "top": 1727,
    "h": 36,
-   "style": "3aab637b",
+   "style": "1459bd3b",
    "content": "d4394608",
    "text": "行内评论 (Inline Comments)"
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 2091,
    "h": 36,
-   "style": "3aab637b",
+   "style": "1459bd3b",
    "content": "786986dd",
    "text": "总览评论 (Overview Comment)"
   },
@@ -357,7 +357,7 @@
    "kind": "heading",
    "top": 2527,
    "h": 42,
-   "style": "ed1ea01e",
+   "style": "7b9ea0c5",
    "content": "ac574c8e",
    "text": "项目概览 (Repository Overview)"
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 2671,
    "h": 65,
-   "style": "594f81c2",
+   "style": "3db478b9",
    "content": "a2543105",
    "text": "文档来源 (Documentation Sources)"
   },

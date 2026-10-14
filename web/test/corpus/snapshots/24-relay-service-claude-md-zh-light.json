@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "313e9f05",
+   "style": "3659b8ba",
    "content": "672ad072",
    "text": "CLAUDE.md"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 140,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "ce95461c",
    "text": "项目概述"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 335,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "a56f3673",
    "text": "架构原则"
   },
@@ -51,7 +51,7 @@
    "kind": "heading",
    "top": 400,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "6767833f",
    "text": "Clean Architecture 分层映射"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 666,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "18eb3c62",
    "text": "开发原则"
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 878,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "3be3d9fb",
    "text": "安全约束"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1118,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "43f7bd39",
    "text": "项目结构"
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 1705,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "921bf9b9",
    "text": "核心请求流程"
   },
@@ -267,7 +267,7 @@
    "kind": "heading",
    "top": 2108,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "0d1a93ab",
    "text": "开发规范"
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 2173,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "d44151db",
    "text": "代码风格"
   },
@@ -330,7 +330,7 @@
    "kind": "heading",
    "top": 2385,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "2ac16a36",
    "text": "开发工作流"
   },
@@ -393,7 +393,7 @@
    "kind": "heading",
    "top": 2628,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "ca19d838",
    "text": "测试规范"
   },
@@ -429,7 +429,7 @@
    "kind": "heading",
    "top": 2778,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "3b96d45a",
    "text": "前端要求"
   },
@@ -501,7 +501,7 @@
    "kind": "heading",
    "top": 3223,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "fee0f6f8",
    "text": "代码修改原则"
   },
@@ -537,7 +537,7 @@
    "kind": "heading",
    "top": 3374,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "3981122c",
    "text": "常用命令"
   },
@@ -555,7 +555,7 @@
    "kind": "heading",
    "top": 3741,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "68065a94",
    "text": "前端命令"
   },
@@ -573,7 +573,7 @@
    "kind": "heading",
    "top": 3884,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "b4751e81",
    "text": "环境变量（必须）"
   },
@@ -618,7 +618,7 @@
    "kind": "heading",
    "top": 4104,
    "h": 65,
-   "style": "4e1d8e73",
+   "style": "6f632768",
    "content": "b1026622",
    "text": "故障排除"
   },
@@ -645,7 +645,7 @@
    "kind": "heading",
    "top": 4696,
    "h": 88,
-   "style": "e59e5819",
+   "style": "1332c343",
    "content": "498c5572",
    "text": "important-instruction-reminders"
   },

@@ -1,6 +1,6 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll } from './core.js';
-import { captureAnchor, restoreAnchor, atBottom, resizeObserver, keepPlace, isShown } from './anchor.js';
+import { captureAnchor, restoreAnchor, anchorMiss, atBottom, resizeObserver, keepPlace, isShown } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy } from './enhance.js';
@@ -57,6 +57,8 @@ export function apply(p) {
   const place = held;
   held = null;
   const anchor = isFirst ? null : place ? place.anchor : captureAnchor();
+  // A place taken now at the top of the page.
+  const fromTop = !place && document.scrollingElement.scrollTop <= 0;
   // An empty page is never following: there is no end being read. (It can
   // sit at its own bottom when it scrolls at all; following from there would
   // send the content that arrives to its end.)
@@ -168,9 +170,12 @@ export function apply(p) {
   else if (anchor) restored = restoreAnchor(anchor, changed);
   // Emptied, refilled only in part, or cut short so the page cannot scroll
   // to the reader's place (it then sits at the end, which is not following):
-  // hold on to the place until a later patch can restore it.
+  // hold on to the place until a later patch can restore it. Not a reader at
+  // the top (a short page that grew above them: they stay at the top, not
+  // carried down as soon as it scrolls), nor a place the page would have to
+  // scroll up to (it is at the top already).
   const own = anchor && slots.get(anchor.slot);
-  const cutShort = !follow && !restored && !!own && isShown(own);
+  const cutShort = !follow && !restored && !!own && isShown(own) && !fromTop && anchorMiss(anchor, changed) > 1;
   if (anchor && (slots.size === 0 || cutShort || (place && (following ? !atBottom() : !restored)))) {
     held = { anchor, following, top: document.scrollingElement.scrollTop };
   }

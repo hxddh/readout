@@ -55,6 +55,17 @@ export function restoreAnchor(a, changedSlots) {
   return back;
 }
 
+/**
+ * How far below its place the anchor's own block sits (positive: the page
+ * would have to scroll further down to put it back; negative: further up).
+ */
+export function anchorMiss(a, changedSlots) {
+  const el = a && slots.get(a.slot);
+  if (!el || !isShown(el)) return 0;
+  const r = el.getBoundingClientRect();
+  return r.top + (changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset);
+}
+
 function restoreAnchorTo(a, changedSlots) {
   if (!a) return false;
   let el = slots.get(a.slot);

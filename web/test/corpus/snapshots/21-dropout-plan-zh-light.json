@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "4123529a",
+   "style": "74f717b3",
    "content": "1b28e7cb",
    "text": "Dropout 与正则化章节实现计划"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 478,
    "h": 32,
-   "style": "50006cc5",
+   "style": "23622210",
    "content": "3c86b3e2",
    "text": "Task 1: 创建 regularization 目录和 README.md 主文件"
   },
@@ -168,7 +168,7 @@
    "kind": "heading",
    "top": 2220,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "db1a9ac1",
    "text": "2.2 Dropout：核心机制"
   },
@@ -249,7 +249,7 @@
    "kind": "heading",
    "top": 3096,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "ae96179c",
    "text": "2.3 权重衰减（L2 正则化）"
   },
@@ -312,7 +312,7 @@
    "kind": "heading",
    "top": 3698,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "f14ed2f1",
    "text": "2.4 变体演进"
   },
@@ -465,7 +465,7 @@
    "kind": "heading",
    "top": 4806,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "bdbc1f42",
    "text": "2.5 其他正则化手段（点到为止）"
   },
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 5170,
    "h": 42,
-   "style": "19e5c89f",
+   "style": "55f9326f",
    "content": "916b6fc1",
    "text": "2.6 渐进式实现"
   },
@@ -600,7 +600,7 @@
    "kind": "heading",
    "top": 7749,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "a145960c",
    "text": "3. 工程陷阱"
   },
@@ -672,7 +672,7 @@
    "kind": "heading",
    "top": 8251,
    "h": 42,
-   "style": "2ebc83e7",
+   "style": "87161ff2",
    "content": "c610782c",
    "text": "演进笔记"
   },
@@ -762,7 +762,7 @@
    "kind": "heading",
    "top": 9018,
    "h": 32,
-   "style": "50006cc5",
+   "style": "23622210",
    "content": "7d015610",
    "text": "Task 2: 更新 00-Prerequisites/README.md"
   },
@@ -897,7 +897,7 @@
    "kind": "heading",
    "top": 10066,
    "h": 32,
-   "style": "50006cc5",
+   "style": "23622210",
    "content": "dc230e9c",
    "text": "Task 3: 更新 deep-learning-basics 导航和交叉引用"
   },
@@ -1158,7 +1158,7 @@
    "kind": "heading",
    "top": 11772,
    "h": 32,
-   "style": "50006cc5",
+   "style": "23622210",
    "content": "f4b412be",
    "text": "Task 4: 精简 training 章节的 Dropout 子节并添加交叉引用"
   },
@@ -1284,7 +1284,7 @@
    "kind": "heading",
    "top": 12714,
    "h": 32,
-   "style": "50006cc5",
+   "style": "23622210",
    "content": "ce23da69",
    "text": "Task 5: 更新 Phase 01 概览"
   },
@@ -1410,7 +1410,7 @@
    "kind": "heading",
    "top": 13456,
    "h": 32,
-   "style": "50006cc5",
+   "style": "23622210",
    "content": "f92c7bc8",
    "text": "Task 6: 更新 Timeline 链接"
   },
@@ -1635,7 +1635,7 @@
    "kind": "heading",
    "top": 14735,
    "h": 32,
-   "style": "50006cc5",
+   "style": "23622210",
    "content": "7dd4fe9c",
    "text": "Task 7: 最终验证"
   },

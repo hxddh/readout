@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "e03a7a4e",
+   "style": "7bfddf9f",
    "content": "b7e381f0",
    "text": "PR #76: Docker Build and Runtime Healthcheck Con"
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 109,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "414eb5b3",
    "text": "Summary"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 321,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "448c5c7c",
    "text": "Problem"
   },
@@ -78,7 +78,7 @@
    "kind": "heading",
    "top": 740,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "0ae7b79e",
    "text": "Solution"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 805,
    "h": 42,
-   "style": "9d412dfe",
+   "style": "5214efb8",
    "content": "148cab65",
    "text": "Dockerfile HEALTHCHECK"
   },
@@ -150,7 +150,7 @@
    "kind": "heading",
    "top": 1317,
    "h": 42,
-   "style": "9d412dfe",
+   "style": "5214efb8",
    "content": "073a1953",
    "text": ".dockerignore extensions"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 1640,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "595c27ef",
    "text": "Files Modified"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 1868,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "1cab1101",
    "text": "Breaking Changes"
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 2054,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "584162cb",
    "text": "Migration"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 2163,
    "h": 65,
-   "style": "32b231b0",
+   "style": "17ac447b",
    "content": "0535d93b",
    "text": "Testing"
   },

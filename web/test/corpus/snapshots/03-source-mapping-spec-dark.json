@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "7af26f10",
+   "style": "a520094d",
    "content": "8f33a5bd",
    "text": "Reactor Source Mapping — Design Spec"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 188,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "005ef20f",
    "text": "Status"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 1572,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "a09395a5",
    "text": "How the original design fared"
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 2705,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "448c5c7c",
    "text": "Problem"
   },
@@ -150,7 +150,7 @@
    "kind": "heading",
    "top": 2969,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "aeb1dda7",
    "text": "Design Goals"
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 3842,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "cab643a7",
    "text": "Research: Approaches Investigated"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 4006,
    "h": 65,
-   "style": "f1cfd66e",
+   "style": "951bf82e",
    "content": "366ec448",
    "text": "Approach 1: CallerInfo Attributes ⚠️ Superseded "
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 5287,
    "h": 65,
-   "style": "f1cfd66e",
+   "style": "951bf82e",
    "content": "9fabdd63",
    "text": "Approach 2: WinUI Attached Properties ✅ Recommen"
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 6041,
    "h": 65,
-   "style": "f1cfd66e",
+   "style": "951bf82e",
    "content": "86591022",
    "text": "Approach 3: React-Style Compile-Time Source Tran"
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 7467,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "55e02b1b",
    "text": "Approach 4: Flutter's Kernel Transformer Pattern"
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 7752,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "3659d564",
    "text": "Approach 5: PDB + Runtime Stack Walking"
   },
@@ -447,7 +447,7 @@
    "kind": "heading",
    "top": 8157,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "a15524ec",
    "text": "Approach 6: Lazy PDB Resolution via Out-of-Proce"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 8463,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "9bfef3d7",
    "text": "Recommended Plan"
   },
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 8775,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "bf49675d",
    "text": "Phase 1: Element Source Tracking"
   },
@@ -519,7 +519,7 @@
    "kind": "heading",
    "top": 8817,
    "h": 36,
-   "style": "1be10470",
+   "style": "a727380a",
    "content": "f55c60cb",
    "text": "1.1 Add CallSite to the Element base record"
   },
@@ -564,7 +564,7 @@
    "kind": "heading",
    "top": 10887,
    "h": 36,
-   "style": "cb386bdf",
+   "style": "428eb71d",
    "content": "82790cdc",
    "text": "1.2 Populate CallSite at every factory call site"
   },
@@ -600,7 +600,7 @@
    "kind": "heading",
    "top": 11368,
    "h": 36,
-   "style": "241f41a1",
+   "style": "514cb5fb",
    "content": "4aa183de",
    "text": "1.3 Add SourceInfo attached property for WinUI c"
   },
@@ -627,7 +627,7 @@
    "kind": "heading",
    "top": 12042,
    "h": 36,
-   "style": "2d3752ce",
+   "style": "8ec8acdc",
    "content": "f8a7aba5",
    "text": "1.4 Write source info during reconciliation — RE"
   },
@@ -654,7 +654,7 @@
    "kind": "heading",
    "top": 12384,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "fafd5d29",
    "text": "Phase 2: Preview Server Integration"
   },
@@ -663,7 +663,7 @@
    "kind": "heading",
    "top": 12426,
    "h": 36,
-   "style": "1f8a68dc",
+   "style": "af1e1192",
    "content": "c06a09d3",
    "text": "2.1 Add source location to the element inspector"
   },
@@ -708,7 +708,7 @@
    "kind": "heading",
    "top": 12839,
    "h": 36,
-   "style": "1f8a68dc",
+   "style": "af1e1192",
    "content": "8502b03f",
    "text": "2.2 Add \"go to source\" endpoint"
   },
@@ -762,7 +762,7 @@
    "kind": "heading",
    "top": 13154,
    "h": 36,
-   "style": "1f8a68dc",
+   "style": "af1e1192",
    "content": "90dd7c72",
    "text": "2.3 Click-to-source in the dev tools overlay"
   },
@@ -816,7 +816,7 @@
    "kind": "heading",
    "top": 13382,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "bc33dbeb",
    "text": "Implementation Scope"
   },
@@ -852,7 +852,7 @@
    "kind": "heading",
    "top": 14534,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "1a6cf1ef",
    "text": "What does NOT change"
   },
@@ -897,7 +897,7 @@
    "kind": "heading",
    "top": 14810,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "f5a26a2b",
    "text": "Record equality note — REAL, and it needed three"
   },
@@ -933,7 +933,7 @@
    "kind": "heading",
    "top": 15693,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "0498ec40",
    "text": "Future Extensions"
   },
@@ -951,7 +951,7 @@
    "kind": "heading",
    "top": 15805,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "bb3cda40",
    "text": "Stack-based resolution for helper methods"
   },
@@ -978,7 +978,7 @@
    "kind": "heading",
    "top": 16565,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "1fcbb1d3",
    "text": "Visual Studio integration"
   },
@@ -1005,7 +1005,7 @@
    "kind": "heading",
    "top": 17359,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "0b840255",
    "text": "Source map file (out-of-band)"
   },
@@ -1041,7 +1041,7 @@
    "kind": "heading",
    "top": 18267,
    "h": 42,
-   "style": "a82307a7",
+   "style": "f2da9042",
    "content": "e03983de",
    "text": "Measured results (2026-08-26)"
   },
@@ -1077,7 +1077,7 @@
    "kind": "heading",
    "top": 19133,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "98cf537f",
    "text": "Hot Reload staleness — the deciding measurement"
   },
@@ -1113,7 +1113,7 @@
    "kind": "heading",
    "top": 19566,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "bc74c4b2",
    "text": "Known limitations at decision time — both since "
   },
@@ -1149,7 +1149,7 @@
    "kind": "heading",
    "top": 20036,
    "h": 42,
-   "style": "9e325afd",
+   "style": "b5e3b5bd",
    "content": "7c0a4e0f",
    "text": "Still open"
   },
