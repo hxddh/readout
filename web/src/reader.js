@@ -10,15 +10,15 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries } from './reader/core.js';
+import { doc, root, slots, heights, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom } from './reader/anchor.js';
 import { apply as applyPatch, findMode } from './reader/patch.js';
-import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting } from './reader/marks.js';
+import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelHeadingLinks, setCodeWrap, highlightAll } from './reader/enhance.js';
+import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
-import { remoteReady, remoteFailed } from './reader/remote.js';
-import { reportActiveHeading } from './reader/heading.js';
+import { remoteReady, remoteFailed, staticRemoteImages } from './reader/remote.js';
+import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
 
 // ---------------------------------------------------------------- Links & keys
 
@@ -48,16 +48,54 @@ doc.addEventListener('click', ev => {
   post({ type: 'open', href });
 });
 
+// A long jump aims again every frame for this long (see scrollToEdge, scrollToSlot).
+const AIM_MS = 1000;
+
+// j and k scroll as far as the arrow keys do; smoothly, as change jumps do,
+// unless the document is large (an instant scroll compensating for a block
+// laid out on the way would cut the animation short) or the reader asked for
+// less motion.
+const LINE_STEP = 40;   // WebKit's arrow-key step (macOS)
+function smooth() { return !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches; }
+
+/**
+ * To the very top or end. In a large document the blocks around the place it
+ * lands are laid out over the next frames and move the end: it aims again as
+ * they get their real heights, unless the reader scrolled away meanwhile.
+ */
+let edge = null;   // {end, y}: where the last aim left the page
+onKeptScroll(dy => { if (edge) edge.y += dy; });
+function scrollToEdge(end) {
+  const se = document.scrollingElement;
+  const mine = edge = { end, y: 0 };
+  const aim = () => { window.scrollTo(0, end ? se.scrollHeight : 0); mine.y = se.scrollTop; };
+  aim();
+  const until = performance.now() + AIM_MS;
+  const reaim = () => {
+    // Moved from where it was left, other than by the end coming closer (a
+    // page growing shorter holds the reader at its end): the reader scrolled.
+    const atEnd = se.scrollTop >= se.scrollHeight - innerHeight - 1;
+    if (edge !== mine || (Math.abs(se.scrollTop - mine.y) > 2 && !(end && atEnd))) return;
+    aim();
+    if (performance.now() < until) requestAnimationFrame(reaim);
+  };
+  requestAnimationFrame(reaim);
+}
+
 document.addEventListener('keydown', ev => {
-  if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
   if (ev.target.closest && ev.target.closest('input, textarea')) return;
-  if (ev.key === 'n') { jump(1); ev.preventDefault(); }
-  else if (ev.key === 'N') { jump(-1); ev.preventDefault(); }
-  else if (ev.key === 'j') { window.scrollBy(0, 60); }
-  else if (ev.key === 'k') { window.scrollBy(0, -60); }
-  else if (ev.key === 'g') { window.scrollTo(0, 0); }
-  else if (ev.key === 'd') { toggleDiffInView(); }
-  else if (ev.key === 'G') { window.scrollTo(0, document.scrollingElement.scrollHeight); }
+  if (ev.key === 'Escape') { if (closePopups()) ev.preventDefault(); return; }
+  if (ev.ctrlKey || ev.altKey) return;
+  // End / Home, and Command-Down / Command-Up.
+  const toEnd = ev.metaKey ? { ArrowDown: true, ArrowUp: false }[ev.key] : { End: true, Home: false }[ev.key];
+  if (toEnd !== undefined && !ev.shiftKey) { scrollToEdge(toEnd); ev.preventDefault(); return; }
+  if (ev.metaKey) return;
+  // Letters by their key whatever the case (Caps Lock), Shift by the modifier.
+  const key = ev.key.length === 1 ? ev.key.toLowerCase() : ev.key;
+  if (key === 'n') { jump(ev.shiftKey ? -1 : 1); ev.preventDefault(); }
+  else if (key === 'j' || key === 'k') { window.scrollBy({ top: key === 'j' ? LINE_STEP : -LINE_STEP, behavior: smooth() ? 'smooth' : 'auto' }); ev.preventDefault(); }
+  else if (key === 'g') { scrollToEdge(ev.shiftKey); ev.preventDefault(); }
+  else if (key === 'd' && !ev.shiftKey) { toggleDiffInView(); }
 });
 
 // ---------------------------------------------------------------- Scroll reporting (TOC sync, saved position)
@@ -143,10 +181,23 @@ function setAppearance(o) {
   const width = o.width && o.width !== root.dataset.width;
   const size = o.fontSize && root.style.getPropertyValue('--size') !== `${o.fontSize}px`;
   if (width || size) {
+    const anchor = captureAnchor(), bottom = atBottom();
     keepPlace(() => {
       if (width) root.dataset.width = o.width;
       if (size) root.style.setProperty('--size', `${o.fontSize}px`);
-    }, { ratio: true });
+      measureTables();   // the column decides which tables scroll
+    }, { ratio: true, anchor, bottom });
+    // Diagram text follows the reading size. A diagram in view is drawn
+    // again a moment later at its new size: the reader keeps the same place
+    // through that too, unless they have scrolled since.
+    if (size) {
+      const y = document.scrollingElement.scrollTop;
+      rerenderMermaid().then(() => {
+        if (document.scrollingElement.scrollTop !== y) return;
+        holdPlace(anchor, bottom, true);
+        rebaselineHeights();
+      });
+    }
   }
   if (o.strings) {
     mergeStrings(o.strings);
@@ -163,14 +214,52 @@ function setAppearance(o) {
       if (document.scrollingElement.scrollTop > 0) keepPlace(set); else { set(); rebaselineHeights(); }
     }
   }
-  if (o.mode === 'quicklook') enableQuicklook();
+  if (o.mode === 'quicklook') { enableQuicklook(); staticRemoteImages(); }
   scheduleRail();
   if (!resizeAnchor) settle();
 }
 
+/**
+ * The TOC's jump to a section: its heading 16 px under the toolbar. The TOC
+ * shows that section as the current one until the reader scrolls (the line
+ * the current heading is read at lies lower, and a document ending soon
+ * after cannot bring the heading up there). In a large document the blocks
+ * around the place it lands are laid out over the next frames and move it:
+ * it aims again as they get their real heights, unless the reader scrolled.
+ */
+const LANDING_BLOCKS = 40;
+let aiming = null;   // the TOC jump being aimed: {y}, where its last aim left the page
+onKeptScroll(dy => { if (aiming) aiming.y += dy; });
 function scrollToSlot(slot) {
   const el = slots.get(slot);
-  if (el) { window.scrollBy(0, el.getBoundingClientRect().top - 16 - topInset()); reportActiveHeading(); }
+  if (!el) return;
+  const off = () => el.getBoundingClientRect().top - 16 - topInset();
+  // The blocks it lands on are laid out at once, at their real size (a
+  // screenful and more), and handed back once a frame has rendered them.
+  const cv = doc.classList.contains('cv');
+  const forced = [];
+  if (cv) {
+    for (let e = el; e && forced.length < LANDING_BLOCKS; e = e.nextElementSibling) {
+      if (e.classList.contains('blk') && !e.style.contentVisibility) { e.style.contentVisibility = 'visible'; forced.push(e); }
+    }
+  }
+  window.scrollBy(0, off());
+  for (const e of forced) heights.set(e, e.getBoundingClientRect().height);
+  pinActiveHeading(slot);
+  if (!cv) return;
+  requestAnimationFrame(() => requestAnimationFrame(() => { for (const e of forced) e.style.contentVisibility = ''; }));
+  const se = document.scrollingElement;
+  const mine = aiming = { y: se.scrollTop };
+  const until = performance.now() + AIM_MS;
+  const reaim = () => {
+    // Another jump since, or the reader scrolled (the scroll event telling
+    // the TOC may not have run yet): leave the page where it is.
+    if (aiming !== mine || !el.isConnected || Math.abs(se.scrollTop - mine.y) > 2) return;
+    const d = off();
+    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; pinActiveHeading(slot); }
+    if (performance.now() < until) requestAnimationFrame(reaim);
+  };
+  requestAnimationFrame(reaim);
 }
 
 function scrollToAnchor(a) {

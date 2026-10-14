@@ -117,18 +117,21 @@ for (const [slot, after] of [[202, 40], [203, 202]]) {
 }
 check('append at end follows (tall block, twice)', follows.every(f => f.gap < 48 && f.height >= 600 && f.height <= 900), JSON.stringify(follows));
 
-// 5. Fragment scroll.
+// 5. Fragment scroll. (The heading is not the first block: at the top of the
+// page the first block rests 12 px under the toolbar, above the 16 px gap;
+// the heading text, not its block's top margin, lands 16 px down.)
 await page.evaluate(() => window.scrollTo(0, 0));
 await page.evaluate(p => window.readout.apply({
   version: 7, reset: true, rewrite: false,
   ops: [
-    { op: 'insert', slot: 301, after: 0, html: '<h2 id="target-section">Target</h2>', kind: 'heading', anchor: 'target-section' },
+    { op: 'insert', slot: 300, after: 0, html: '<p>before the target</p>', kind: 'paragraph' },
+    { op: 'insert', slot: 301, after: 300, html: '<h2 id="target-section">Target</h2>', kind: 'heading', anchor: 'target-section' },
     ...Array.from({ length: 30 }, (_, i) => ({ op: 'insert', slot: 302 + i, after: 301 + i, html: `<p>filler ${i}</p>`, kind: 'paragraph' })),
   ],
   marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
 }));
 await page.evaluate(() => window.readout.scrollToFragment({ fragment: 'target-section' }));
-const fragTop = await page.evaluate(() => document.querySelector('.k-heading').getBoundingClientRect().top);
+const fragTop = await page.evaluate(() => document.getElementById('target-section').getBoundingClientRect().top);
 check('fragment scroll lands on heading', Math.abs(fragTop - 16) < 4, `top=${fragTop}`);
 
 // 6. Changes-only filter: read blocks hide, headings stay, marks still navigate.
@@ -1166,15 +1169,21 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.evaluate(p => window.readout.apply(p), r);
   const named = await page.getByRole('heading', { name: 'Overview of the plan', exact: true }).count()
     + await page.getByRole('heading', { name: 'Status Passing', exact: true }).count()
-    + await page.getByRole('heading', { name: 'Build Green', exact: true }).count();
+    // Until it is loaded a remote image is a button, and the heading shows its label.
+    + await page.getByRole('heading', { name: 'Build Load image from badge.example', exact: true }).count();
   const button = page.getByRole('button', { name: 'Copy Link to Section', exact: true }).first();
   await button.focus();
   const focused = await page.evaluate(() => document.activeElement?.classList.contains('h-link'));
   await page.evaluate(() => { window.__msgs.length = 0; });
   await page.keyboard.press('Enter');
   const msg = await page.evaluate(() => window.__msgs.find(m => m.type === 'copyLink'));
-  check('a heading is named by its content alone, its link button stays reachable', named === 3 && focused && msg?.anchor === 'overview',
-    JSON.stringify({ named, focused, msg }));
+  await page.evaluate(() => {
+    document.querySelector('.remote-img[data-src="https://badge.example/b.svg"]').dataset.remoteId = 'rb';
+    window.readout.remoteReady({ id: 'rb', url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=' });
+  });
+  const loaded = await page.getByRole('heading', { name: 'Build Green', exact: true }).count();
+  check('a heading is named by its content alone, its link button stays reachable', named === 3 && loaded === 1 && focused && msg?.anchor === 'overview',
+    JSON.stringify({ named, loaded, focused, msg }));
 }
 
 // An update measures the blocks it changed once, after changing them all: one
@@ -1241,7 +1250,8 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.waitForTimeout(400);
   const ticks = () => page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => {
     const rect = b.getBoundingClientRect();
-    return { top: Math.round(rect.top), h: Math.round(rect.height), w: Math.round(rect.width), label: b.getAttribute('aria-label'), title: b.title };
+    // The mark's own width: the button reaches further left, transparent.
+    return { top: Math.round(rect.top), h: Math.round(rect.height), w: Math.round(rect.width - parseFloat(getComputedStyle(b).paddingLeft)), label: b.getAttribute('aria-label'), title: b.title };
   }));
   const before = await ticks();
   await page.evaluate(() => window.readout.setAppearance({ strings: { railTask: 'task' } }));
