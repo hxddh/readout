@@ -357,6 +357,9 @@ import Testing
         #expect(gt == "<span class=\"remote-img\" data-tag=\"img\" data-src=\"https://e.com/a.png\" data-alt=\"\"></span>")
         let lt = HTML.sanitize("<img alt=\"a < b\" src=\"https://e.com/a.png\">")
         #expect(lt == "<span class=\"remote-img\" data-tag=\"img\" data-src=\"https://e.com/a.png\" data-alt=\"\"></span>")
+        // `src=` inside a quoted value of a tag whose quotes pair up is text, not a source.
+        let titled = "<video title=\"example src=https://e/x\"><source src=\"local.mp4\"></video>"
+        #expect(HTML.sanitize(titled) == titled)
         // A tag cut short at the end of the input is still gated.
         #expect(HTML.sanitize("<img src=\"https://e.com/a.png\"").contains("remote-img"))
     }

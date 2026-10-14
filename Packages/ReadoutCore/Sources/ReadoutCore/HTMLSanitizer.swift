@@ -29,17 +29,20 @@ enum HTML {
 
     /// A media tag with a `src` or `srcset` attribute. A `>` inside a quoted
     /// value does not end it, but nothing in it runs into a following tag (a
-    /// `<` that starts one): a tag whose quotes do not pair up — `alt='it's'` —
-    /// falls back to ending at its first `>`, so it cannot swallow the text and
-    /// tags after it. Every attempt stops at the next tag, so the scan is linear.
+    /// `<` that starts one): only a tag whose quotes do not pair up —
+    /// `alt='it's'` — falls back to ending at its first `>`, so it cannot
+    /// swallow the text and tags after it (a tag whose quotes pair up never
+    /// does, so `src=` inside a quoted value stays text). Every attempt stops
+    /// at the next tag, so the scan is linear.
     private static let remoteMediaSrc: NSRegularExpression = {
         let lt = #"<(?![a-z/!?])"#                      // a `<` that does not start a tag
         let item = #"(?:[^<>"']|\#(lt)|"(?:[^"<]|\#(lt))*"|'(?:[^'<]|\#(lt))*')"#
         let plain = #"(?:[^<>]|\#(lt))"#
         let source = #"\s(?:src|srcset)\s*="#
+        let quoteAware = #"\#(item)*?\#(source)\#(item)*(?:>|$)"#
+        let unbalanced = #"(?!\#(item)*(?:>|$))\#(plain)*?\#(source)\#(plain)*>?"#
         return try! NSRegularExpression(
-            pattern: #"<(img|video|audio|source|track)\b(?:\#(item)*?\#(source)\#(item)*(?:>|$)|\#(plain)*?\#(source)\#(plain)*>?)"#,
-            options: .caseInsensitive)
+            pattern: #"<(img|video|audio|source|track)\b(?:\#(quoteAware)|\#(unbalanced))"#, options: .caseInsensitive)
     }()
     /// Each `src` and `srcset` attribute of a media tag.
     private static let sourceAttribute = try! NSRegularExpression(
