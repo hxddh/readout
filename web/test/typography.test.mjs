@@ -112,10 +112,15 @@ check('first H1 under front matter starts at the top', h1.first === 0, JSON.stri
 check('mid-document H1 has a top margin at least an H2\'s', h1.mid >= h1.h2 && h1.mid > 0, JSON.stringify(h1));
 
 // 4. Blocks nested in a list item or quote keep vertical margins.
-const nested = await page.evaluate(() => ({
-  li: parseFloat(getComputedStyle(document.querySelector('.li-block li > .code-block')).marginTop),
-  quote: parseFloat(getComputedStyle(document.querySelector('blockquote > .code-block')).marginTop),
-}));
+// (In a quote the space is the gap below the paragraph above, spaced like
+// the quote's paragraphs; the code block's own top margin is 0 there.)
+const nested = await page.evaluate(() => {
+  const qcb = document.querySelector('blockquote > .code-block');
+  return {
+    li: parseFloat(getComputedStyle(document.querySelector('.li-block li > .code-block')).marginTop),
+    quote: Math.round(qcb.getBoundingClientRect().top - qcb.previousElementSibling.getBoundingClientRect().bottom),
+  };
+});
 check('code block in a list item has space above', nested.li >= 6, JSON.stringify(nested));
 check('code block in a quote has space above', nested.quote >= 6, JSON.stringify(nested));
 
@@ -290,6 +295,310 @@ check('screen is dark before printing', screenColor === 'rgb(232, 232, 234)', sc
 check('a dark page prints dark text on white', print.text === 'rgb(29, 29, 31)' && print.bg === 'rgb(255, 255, 255)' && print.scheme === 'light', JSON.stringify(print));
 check('code prints in Shiki\'s light colours', print.code === print.light, JSON.stringify(print));
 check('a wide table wraps to the page when printed', print.tableFits, JSON.stringify(print));
+await page.close();
+
+// ---------- 3.4 visual refinements ----------
+
+// A page as the app shows it before setAppearance has run (the first paint),
+// with the system in light or dark mode.
+async function openRaw(width, scheme) {
+  const p = await browser.newPage({ viewport: { width, height: 800 }, colorScheme: scheme });
+  p.on('pageerror', e => errors.push(String(e)));
+  await p.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  return p;
+}
+const TOKENS = ['--bg', '--text', '--text-2', '--text-3', '--rule', '--fill', '--fill-2', '--link', '--accent-soft', '--mark-read',
+  '--note', '--tip', '--important', '--warning', '--caution', '--pop-bg', '--pop-shadow', '--mark-bg', 'color-scheme'];
+const tokens = pg => pg.evaluate(t => { const cs = getComputedStyle(document.documentElement); return Object.fromEntries(t.map(k => [k, cs.getPropertyValue(k).trim()])); }, TOKENS);
+
+// 2. Dark mode opens dark: no hard-coded light theme in the page, the
+//    system's dark mode applies until the app says, and the app wins both ways.
+{
+  const dark = await openRaw(600, 'dark');
+  const first = await dark.evaluate(() => ({ attr: document.documentElement.getAttribute('data-theme'), bg: getComputedStyle(document.documentElement).backgroundColor,
+    body: getComputedStyle(document.body).backgroundColor }));
+  check('the page has no theme of its own before the app sets one', first.attr === null, JSON.stringify(first));
+  check('in system dark mode the first paint is dark, not white', first.bg === 'rgb(30, 30, 31)', JSON.stringify(first));
+  const sys = await tokens(dark);
+  await dark.evaluate(() => window.readout.setAppearance({ dark: false }));
+  const forcedLight = await dark.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+  check('an app-chosen light theme wins over system dark mode', forcedLight === 'rgb(255, 255, 255)', forcedLight);
+  await dark.evaluate(() => window.readout.setAppearance({ dark: true }));
+  const explicit = await tokens(dark);
+  const differ = TOKENS.filter(k => k !== '--accent-soft' && sys[k] !== explicit[k]);
+  check('system dark and app-chosen dark use the same colours', differ.length === 0, JSON.stringify(differ.map(k => [k, sys[k], explicit[k]])));
+  await dark.close();
+  const light = await openRaw(600, 'light');
+  const l0 = await light.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+  await light.evaluate(() => window.readout.setAppearance({ dark: true }));
+  const l1 = await light.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+  check('system light paints light; an app-chosen dark theme wins over it', l0 === 'rgb(255, 255, 255)' && l1 === 'rgb(30, 30, 31)', JSON.stringify([l0, l1]));
+  await light.close();
+}
+
+const wideRow = ['Agent runtime WAL', 'append to object storage segment then ack', 'tail via conditional GET', 'merge every 64 MB',
+  'Readers may see a segment before its manifest lands; the manifest is the commit point and anything not listed there is garbage collected after one hour.',
+  'wal_segment_bytes', 'manifest_commit_interval_ms', 'compaction_parallelism', 'gc_grace_period_seconds'];
+const v34 = patch([
+  ['heading', '<h1 id="v-top">Visual</h1>', { anchor: 'v-top' }],
+  ['paragraph', '<p>Text with a <a id="lnk" href="https://example.com">link</a>, a note<sup class="fn-ref"><a href="#user-content-fn-9" id="ref9" data-footnote-ref>1</a></sup> and <code class="path-link">web/src/reader.css</code>.</p>'],
+  ['code', '<div class="code-block" data-lang="sh"><pre><code>npm test</code></pre></div>'],
+  ['paragraph', '<p id="after-code">After the code.</p>'],
+  ['paragraph', '<p id="after-p">After a paragraph.</p>'],
+  ['quote', '<blockquote><p>Quote:</p><div class="table-wrap"><table><thead><tr><th>K</th><th>V</th></tr></thead><tbody><tr><td>a</td><td>1</td></tr></tbody></table></div><p id="q-after-table">After the table.</p><p id="q-after-p">After a paragraph.</p><div class="code-block" data-lang="sh"><pre><code>make</code></pre></div></blockquote>'],
+  ['alert', '<div class="alert alert-note"><p class="alert-title">Note</p><p>Body.</p><div class="math-block" data-tex="a+b">a+b</div></div>'],
+  ['table', `<div class="table-wrap" id="wide"><table><thead><tr>${['Workload', 'Write path', 'Read path', 'Compaction', 'Notes', 'Setting A', 'Setting B', 'Setting C', 'Setting D'].map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody><tr>${wideRow.map(c => `<td>${c}</td>`).join('')}</tr></tbody></table></div>`],
+  ['table', '<div class="table-wrap" id="headless"><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>Name</td><td>Readout</td></tr></tbody></table></div>'],
+  ['table', '<div class="table-wrap" id="nums"><table><thead><tr><th>Metric</th><th class="num">ms</th></tr></thead><tbody><tr><td>update</td><td class="num">1,204.9</td></tr></tbody></table></div>'],
+  ['math', '<div class="math-block" id="m-short" data-tex="\\int_0^1 x\\,dx = \\frac{1}{2}">\\int_0^1 x\\,dx = \\frac{1}{2}</div>'],
+  ['math', `<div class="math-block" id="m-long" data-tex="${Array.from({ length: 16 }, (_, i) => `a_{${i}} x^{${i}}`).join(' + ')}">${Array.from({ length: 16 }, (_, i) => `a_{${i}} x^{${i}}`).join(' + ')}</div>`],
+  ['paragraph', '<p>After math.</p>'],
+  ['heading', '<h4 id="v4">Four</h4>', { anchor: 'v4' }],
+  ['paragraph', '<p>Body.</p>'],
+  ['heading', '<h5 id="v5">Five</h5>', { anchor: 'v5' }],
+  ['paragraph', '<p>Body.</p>'],
+  ['heading', '<h6 id="v6">Six</h6>', { anchor: 'v6' }],
+  ['paragraph', '<p>Body.</p>'],
+  ['listItem', '<ol class="li-block li-first li-last" start="1"><li>One<ol id="ol2"><li>two<ol id="ol3"><li>three</li></ol></li></ol></li></ol>'],
+  ['listItem', '<ol class="li-block li-first li-last ol-w3" id="w3" start="100"><li>Hundred</li></ol>'],
+  ['listItem', '<ol class="li-block li-first li-last ol-w4" id="w4" start="1000"><li>Thousand</li></ol>'],
+  ['listItem', '<ol class="li-block li-first li-last ol-w5" id="w5" start="10000"><li>Ten thousand</li></ol>'],
+  ['paragraph', '<p id="p-mod">Modified.</p>'],
+  ['paragraph', '<p id="p-read">Read.</p>'],
+  ['footnotes', '<section class="footnotes" data-footnotes><ol><li id="user-content-fn-9"><p>Note. <a href="#ref9" class="fn-back" data-footnote-backref aria-label="Back">↩</a></p></li></ol></section>'],
+]);
+const vslot = sel => v34.ops.findIndex(o => o.html.includes(sel)) + 1;
+const settleMath = pg => until(pg, () => document.querySelectorAll('.math-block.done').length === 3);
+
+for (const dark of [false, true]) {
+  const th = dark ? 'dark' : 'light';
+  page = await open(600, dark);
+  await page.evaluate(p => window.readout.apply(p), v34);
+  await settleMath(page);
+  await page.waitForTimeout(300);
+
+  // 1. At rest the document starts the same distance under any toolbar.
+  const tops = [];
+  for (const inset of [0, 52, 80]) {
+    await page.evaluate(i => window.readout.setAppearance({ topInset: i }), inset);
+    tops.push(await page.evaluate(() => { window.scrollTo(0, 0); return Math.round(document.getElementById('v-top').getBoundingClientRect().top); }));
+  }
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check(`first heading sits 28 px under the toolbar at insets 0/52/80 (${th})`, tops[0] === 28 && tops[1] === 80 && tops[2] === 108, JSON.stringify(tops));
+
+  const g = await page.evaluate(() => {
+    const $ = s => document.querySelector(s);
+    const gap = (a, b) => Math.round((b.getBoundingClientRect().top - a.getBoundingClientRect().bottom) * 10) / 10;
+    const cs = (e, p) => getComputedStyle(e, p);
+    const blk = id => $(`#${id}`).closest('.blk');
+    const codeBlk = $('.code-block[data-lang="sh"]').closest('.blk');
+    const q = $('blockquote');
+    const wide = $('#wide');
+    const wrapCell = [...wide.querySelectorAll('td')][1];
+    const range = document.createRange(); range.selectNodeContents(wrapCell);
+    const lines = new Set([...range.getClientRects()].map(r => Math.round(r.top))).size;
+    const link = $('#lnk');
+    const alert = $('.alert');
+    const ms = $('#m-short');
+    const h = id => { const e = $(`#${id}`); return { mt: parseFloat(cs(e).marginTop), fs: parseFloat(cs(e).fontSize), color: cs(e).color, tt: cs(e).textTransform }; };
+    return {
+      afterCode: gap(codeBlk.querySelector('.code-block'), $('#after-code')), afterP: gap($('#after-code'), $('#after-p')),
+      qTable: gap(q.querySelector('.table-wrap'), $('#q-after-table')), qP: gap($('#q-after-table'), $('#q-after-p')),
+      qCode: gap($('#q-after-p'), q.querySelector('.code-block')), qLastMb: parseFloat(cs(q.querySelector('.code-block')).marginBottom),
+      alertMathMt: parseFloat(cs(alert.querySelector('.math-block')).marginTop), alertMathGap: gap(alert.querySelector('.math-block').previousElementSibling, alert.querySelector('.math-block')),
+      wideScrolls: wide.classList.contains('scrolls'), wideTableW: Math.round(wide.querySelector('table').getBoundingClientRect().width), wideClient: wide.clientWidth,
+      wrapLines: lines, maxCell: Math.max(...[...wide.querySelectorAll('td')].map(c => c.getBoundingClientRect().width)), em30: 30 * parseFloat(cs(wrapCell).fontSize),
+      link: { line: cs(link).textDecorationLine, color: cs(link).textDecorationColor, offset: cs(link).textUnderlineOffset, text: cs(link).color },
+      fnRef: cs($('.fn-ref a')).textDecorationLine, fnBack: cs($('.fn-back')).textDecorationLine, pathLink: cs($('code.path-link')).textDecorationLine,
+      alertBorder: cs(alert).borderLeftWidth, alertShadow: cs(alert).boxShadow,
+      headless: cs($('#headless thead')).display, headed: cs($('#wide thead')).display,
+      num: [cs($('#nums td.num')).textAlign, cs($('#nums th.num')).textAlign, cs($('#nums td')).textAlign],
+      katexMargin: [cs(ms.querySelector('.katex-display')).marginTop, cs(ms.querySelector('.katex-display')).marginBottom], mathBg: cs(ms).backgroundImage,
+      longOverflows: $('#m-long').scrollWidth > $('#m-long').clientWidth,
+      h4: h('v4'), h5: h('v5'), h6: h('v6'), text3: cs(document.documentElement).getPropertyValue('--text-3').trim(), rem: parseFloat(cs(document.documentElement).fontSize),
+      pageBg: cs(document.documentElement).backgroundColor,
+      ol2: cs($('#ol2')).listStyleType, ol3: cs($('#ol3')).listStyleType,
+      w: ['w3', 'w4', 'w5'].map(id => parseFloat(cs($(`#${id}`)).paddingLeft) / parseFloat(cs($(`#${id}`)).fontSize)),
+    };
+  });
+  // 4. Below a code block the gap is the body text's, not the code font's.
+  check(`gap after a code block matches the gap after a paragraph (${th})`, Math.abs(g.afterCode - g.afterP) <= 0.5, JSON.stringify([g.afterCode, g.afterP]));
+  // 6. Inside a quote or alert, nested blocks are spaced like its paragraphs.
+  check(`in a quote, a table and a code block are spaced like paragraphs (${th})`, Math.abs(g.qTable - g.qP) <= 0.5 && Math.abs(g.qCode - g.qP) <= 0.5 && g.qLastMb === 0, JSON.stringify(g));
+  check(`in an alert, a nested block keeps no extra top margin (${th})`, g.alertMathMt === 0 && g.alertMathGap > 10, JSON.stringify([g.alertMathMt, g.alertMathGap]));
+  // 3. A table that scrolls anyway takes its natural width, each cell at most 30em.
+  check(`a wide table takes its natural width (${th})`, g.wideScrolls && g.wideTableW > g.wideClient && g.wrapLines === 1, JSON.stringify([g.wideScrolls, g.wideTableW, g.wideClient, g.wrapLines]));
+  check(`a long cell in a wide table still wraps at 30em (${th})`, g.maxCell <= g.em30 + 1, JSON.stringify([g.maxCell, g.em30]));
+  // 7. Links carry a quiet underline; footnote marks, back links and paths do not.
+  const alpha = (g.link.color.match(/[\d.]+/g) || []).map(Number)[3];
+  check(`links have a subtle underline (${th})`, g.link.line === 'underline' && alpha > 0.25 && alpha < 0.45 && parseFloat(g.link.offset) > 2, JSON.stringify(g.link));
+  check(`footnote refs, back links and path links are not underlined (${th})`, g.fnRef === 'none' && g.fnBack === 'none' && g.pathLink === 'none', JSON.stringify([g.fnRef, g.fnBack, g.pathLink]));
+  // 8. Alert edge: an inset shadow that follows the corners, no border.
+  check(`alert edge is an inset shadow, not a border (${th})`, g.alertBorder === '0px' && /inset/.test(g.alertShadow) && /3px 0px 0px/.test(g.alertShadow), JSON.stringify([g.alertBorder, g.alertShadow]));
+  // 9. An empty header row is hidden; a real one is not.
+  check(`an empty header row is hidden (${th})`, g.headless === 'none' && g.headed !== 'none', JSON.stringify([g.headless, g.headed]));
+  // 13. Numeric columns align right.
+  check(`numeric cells align right (${th})`, g.num[0] === 'right' && g.num[1] === 'right' && g.num[2] !== 'right', JSON.stringify(g.num));
+  // 5. A display formula: no KaTeX margins on top of the block's; a shade when it overflows.
+  check(`display math has no extra KaTeX margin (${th})`, g.katexMargin.every(m => m === '0px'), JSON.stringify(g.katexMargin));
+  check(`a formula block carries the overflow shade (${th})`, /gradient/.test(g.mathBg) && g.longOverflows, JSON.stringify([g.mathBg.slice(0, 60), g.longOverflows]));
+  // 10. Heading levels: h4 has room above it, h5/h6 some; h6 is quieter than h5.
+  check(`h4/h5/h6 keep space above (${th})`, Math.abs(g.h4.mt - 0.6 * g.rem) < 0.5 && Math.abs(g.h5.mt - 0.3 * g.rem) < 0.5 && Math.abs(g.h6.mt - 0.3 * g.rem) < 0.5, JSON.stringify([g.h4, g.h5, g.h6]));
+  const ratio = (a, b) => { const lum = c => { const [r, gg, bb] = c.match(/[\d.]+/g).slice(0, 3).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * gg + 0.0722 * bb; };
+    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  check(`h6 is smaller than h5, not uppercase, and meets AA (${th})`, g.h6.fs < g.h5.fs && g.h6.tt === 'none' && ratio(g.h6.color, g.pageBg) >= 4.5, JSON.stringify([g.h5, g.h6, g.pageBg]));
+  // 11, 12. Nested numbered lists: i, then a. Long numbered lists: a wider indent.
+  check(`nested numbered lists use roman, then letters (${th})`, g.ol2 === 'lower-roman' && g.ol3 === 'lower-alpha', JSON.stringify([g.ol2, g.ol3]));
+  check(`3, 4 and 5 digit numbered lists widen the indent (${th})`, [2.1, 2.6, 3.1].every((v, i) => Math.abs(g.w[i] - v) < 0.01), JSON.stringify(g.w));
+
+  // 5. Nothing to scroll, no shade: the formula block's right edge is the page.
+  const short = await page.evaluate(() => { const e = document.getElementById('m-short'); e.scrollIntoView({ block: 'center' }); const r = e.getBoundingClientRect(); return { x: r.right - 3, y: r.top + r.height / 2 }; });
+  const px = PNG.sync.read(await page.screenshot({ clip: { x: short.x, y: short.y, width: 1, height: 1 } })).data;
+  const bgc = dark ? [30, 30, 31] : [255, 255, 255];
+  check(`a formula that fits shows no shade at its edge (${th})`, [0, 1, 2].every(i => Math.abs(px[i] - bgc[i]) <= 2), JSON.stringify([...px.subarray(0, 3)]));
+
+  // 7. Hover shows the full underline.
+  await page.evaluate(() => document.getElementById('lnk').scrollIntoView({ block: 'center' }));
+  await page.hover('#lnk');
+  const hov = await page.evaluate(() => { const s = getComputedStyle(document.getElementById('lnk')); return [s.textDecorationColor, s.color]; });
+  check(`hovering a link shows the full underline (${th})`, hov[0] === hov[1], JSON.stringify(hov));
+
+  // 17. Code tools: Wrap and Copy look alike, filled under the pointer; the
+  //     language label is quieter; the fade reaches only a little over the code.
+  const cb = '.code-block[data-lang="sh"]';
+  await page.evaluate(s => document.querySelector(s).scrollIntoView({ block: 'center' }), cb);
+  await page.hover(`${cb} pre`);
+  const look = await page.evaluate(s => {
+    const k = ['border-top-width', 'border-top-left-radius', 'background-color', 'color', 'font-size', 'padding-left', 'padding-top', 'box-shadow'];
+    const st = e => Object.fromEntries(k.map(p => [p, getComputedStyle(e).getPropertyValue(p)]));
+    const c = document.querySelector(s);
+    return { wrap: st(c.querySelector('.cb-wrap')), copy: st(c.querySelector('.cb-copy')), lang: st(c.querySelector('.cb-lang')),
+      toolsPad: parseFloat(getComputedStyle(c.querySelector('.cb-tools')).paddingLeft) };
+  }, cb);
+  check(`Wrap and Copy share one style (${th})`, JSON.stringify(look.wrap) === JSON.stringify(look.copy) && look.copy['box-shadow'] === 'none' && look.copy['border-top-width'] === '0px' && parseFloat(look.copy['border-top-left-radius']) >= 9, JSON.stringify(look));
+  check(`language label is quieter than the buttons (${th})`, look.lang.color !== look.copy.color && parseFloat(look.lang['font-size']) < parseFloat(look.copy['font-size']), JSON.stringify([look.lang, look.copy]));
+  check(`code tools fade over at most 14 px of code (${th})`, look.toolsPad <= 14, String(look.toolsPad));
+  await page.hover(`${cb} .cb-copy`);
+  const hovFill = await page.evaluate(s => [getComputedStyle(document.querySelector(`${s} .cb-copy`)).backgroundColor, getComputedStyle(document.documentElement).getPropertyValue('--fill-2').trim()], cb);
+  const fill2 = await page.evaluate(c => { const d = document.createElement('div'); d.style.color = c; document.body.appendChild(d); const v = getComputedStyle(d).color; d.remove(); return v; }, hovFill[1]);
+  check(`a code button fills under the pointer (${th})`, hovFill[0] === fill2, JSON.stringify([hovFill[0], fill2]));
+
+  // 14, 16. Marks: read marks are a hairline, an edited mark in a grey accent
+  //         stays a full bar; the removed-text popover is raised and unstruck;
+  //         word diff keeps a space between a removal and its replacement.
+  await page.evaluate(() => window.readout.setAppearance({ accent: '#8c8c8c' }));
+  const [ms, rs] = [vslot('id="p-mod"'), vslot('id="p-read"')];
+  await page.evaluate(([m, r]) => window.readout.apply({ version: 2, reset: false, rewrite: false,
+    ops: [{ op: 'replace', slot: m, kind: 'paragraph', change: 'content', html: '<p id="p-mod">Modified now.</p>' }],
+    marks: [{ slot: m, kind: 'modified', diff: 'Modified <del>before</del><ins>now</ins>.' }],
+    deletions: [{ id: 5, after: r, count: 1, preview: 'Removed text.' }], toc: [], tasks: { done: 0, total: 0 } }), [ms, rs]);
+  const mk = await page.evaluate(([m, r]) => {
+    const a = document.querySelector(`.blk[data-slot="${m}"]`), b = document.querySelector(`.blk[data-slot="${r}"]`);
+    a.classList.remove('m-read'); b.classList.add('m-modified', 'm-read');
+    const s = e => { const c = getComputedStyle(e, '::before'); return { w: c.width, o: c.opacity, bg: c.backgroundColor }; };
+    return { mod: s(a), read: s(b) };
+  }, [ms, rs]);
+  check(`with a grey accent an unread edit is not drawn like a read mark (${th})`, parseFloat(mk.mod.w) >= 3 && parseFloat(mk.read.w) <= 1, JSON.stringify(mk));
+  await page.evaluate(m => window.readout.toggleDiff(m), ms);
+  await page.evaluate(() => document.querySelector('.del-mark > button').click());
+  const pop = await page.evaluate(() => {
+    const p = document.querySelector('.del-pop'), cs = getComputedStyle(p);
+    const ins = document.querySelector('.wd-body del + ins');
+    return { deco: cs.textDecorationLine, bg: cs.backgroundImage, base: cs.backgroundColor, shadow: cs.boxShadow,
+      page: getComputedStyle(document.documentElement).backgroundColor, insMl: ins ? parseFloat(getComputedStyle(ins).marginLeft) / parseFloat(getComputedStyle(ins).fontSize) : null };
+  });
+  check(`removed text is shown without strike-through, tinted (${th})`, pop.deco === 'none' && /gradient/.test(pop.bg), JSON.stringify(pop));
+  check(`the removed-text popover is raised above the page (${th})`, dark ? pop.base !== pop.page : pop.shadow !== 'none', JSON.stringify(pop));
+  check(`word diff keeps a space between a removal and its replacement (${th})`, Math.abs(pop.insMl - 0.25) < 0.01, JSON.stringify(pop.insMl));
+
+  // 15. Increase contrast. Playwright's WebKit cannot emulate
+  //     prefers-contrast, so the block's rules are applied directly.
+  await page.evaluate(() => {
+    for (const sh of document.styleSheets) for (const r of [...sh.cssRules]) {
+      if (r.media && /prefers-contrast:\s*more/.test(r.conditionText)) {
+        const st = document.createElement('style'); st.id = 'contrast-more';
+        st.textContent = [...r.cssRules].map(x => x.cssText).join('\n');
+        document.head.appendChild(st);
+      }
+    }
+  });
+  const hc = await page.evaluate(([m, r]) => {
+    const cs = getComputedStyle(document.documentElement);
+    const a = document.querySelector(`.blk[data-slot="${m}"]`), b = document.querySelector(`.blk[data-slot="${r}"]`);
+    return { found: !!document.getElementById('contrast-more'), t2: cs.getPropertyValue('--text-2').trim(), t3: cs.getPropertyValue('--text-3').trim(),
+      rule: cs.getPropertyValue('--rule').trim(), modW: getComputedStyle(a, '::before').width, modO: getComputedStyle(a, '::before').opacity,
+      readW: getComputedStyle(b, '::before').width, panel: getComputedStyle(document.querySelector('.wd-panel')).boxShadow, pop: getComputedStyle(document.querySelector('.del-pop')).boxShadow };
+  }, [ms, rs]);
+  const hcWant = dark ? { t2: '#c4c4ca', t3: '#a1a1a7', rule: '#6c6c72' } : { t2: '#46464c', t3: '#636369', rule: '#b4b4bb' };
+  check(`increase contrast strengthens secondary text and rules (${th})`, hc.found && hc.t2 === hcWant.t2 && hc.t3 === hcWant.t3 && hc.rule === hcWant.rule, JSON.stringify(hc));
+  // WebKit reports no opacity for ::before: read the bar's pixel instead
+  // (the grey accent at full strength is rgb(140, 140, 140)).
+  await page.waitForTimeout(700);   // the marks' colour transition
+  const bar = await page.evaluate(m => { const b = document.querySelector(`.blk[data-slot="${m}"]`); b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(); return { x: r.left + 12, y: r.top + 8 }; }, ms);
+  const barPx = [...PNG.sync.read(await page.screenshot({ clip: { x: bar.x, y: bar.y, width: 1, height: 1 } })).data.subarray(0, 3)];
+  check(`increase contrast: solid 4 px change marks (${th})`, hc.modW === '4px' && barPx.every(v => Math.abs(v - 140) <= 3) && parseFloat(hc.readW) >= 2, JSON.stringify({ ...hc, barPx }));
+  check(`increase contrast: the diff panel and popover have edges (${th})`, /inset/.test(hc.panel) && hc.pop !== 'none', JSON.stringify(hc));
+  await page.close();
+}
+
+// 12, 13. Real parser output (web/test/fixtures/lists-tables.md rendered by
+//         ReadoutCore to lists-tables.json): numeric columns carry class
+//         "num" and align right; long numbered lists carry ol-w3/4/5, top
+//         level and nested, and their numbers fit inside the indent.
+{
+  const real = JSON.parse(readFileSync(new URL('./fixtures/lists-tables.json', import.meta.url), 'utf8'));
+  page = await open(600);
+  await page.evaluate(p => window.readout.apply(p), real);
+  await page.waitForTimeout(300);
+  const r = await page.evaluate(() => {
+    const cs = e => getComputedStyle(e);
+    const cells = [...document.querySelectorAll('.table-wrap tr:nth-child(1) td'), ...document.querySelectorAll('.table-wrap th')]
+      .map(c => [c.tagName, c.className, cs(c).textAlign]);
+    const lists = [...document.querySelectorAll('ol.ol-w3, ol.ol-w4, ol.ol-w5')].map(ol => {
+      const li = ol.querySelector(':scope > li:last-child');
+      const n = (+ol.getAttribute('start') || 1) + ol.children.length - 1;
+      const probe = document.createElement('span');
+      probe.textContent = `${n}.`;
+      probe.style.cssText = `font: ${cs(li).font}; font-variant-numeric: tabular-nums; position: absolute; white-space: nowrap`;
+      document.body.appendChild(probe);
+      const w = probe.getBoundingClientRect().width; probe.remove();
+      return { cls: ol.className, nested: !ol.classList.contains('li-block'), pad: parseFloat(cs(ol).paddingLeft), em: parseFloat(cs(ol).fontSize), marker: Math.round(w), type: cs(ol).listStyleType };
+    });
+    return { cells, lists };
+  });
+  const numOK = r.cells.every(([, cls, align]) => (cls === 'num') === (align === 'right'));
+  check('parser-marked numeric columns align right, others do not', numOK && r.cells.filter(c => c[1] === 'num').length === 4, JSON.stringify(r.cells));
+  const want = { 'ol-w3': 2.1, 'ol-w4': 2.6, 'ol-w5': 3.1 };
+  const wOK = r.lists.length === 8 && r.lists.every(l => { const k = l.cls.match(/ol-w\d/)[0]; return Math.abs(l.pad / l.em - want[k]) < 0.01; });
+  check('parser ol-w3/4/5 lists (top level and nested) get the wider indent', wOK && r.lists.some(l => l.nested), JSON.stringify(r.lists));
+  // A number may hang a little into the gutter, as two-figure ones do with
+  // the plain 1.5em indent, but never as far as the change bar (10-13 px into
+  // the 28 px gutter): at most half an em past the indent. Without the
+  // classes the 4 and 5 figure numbers would hang 14-32 px.
+  check('their largest numbers stay clear of the change bar', r.lists.every(l => l.marker <= l.pad + 0.5 * l.em), JSON.stringify(r.lists));
+  check('a nested list numbered past 99 keeps decimal numbers', r.lists.filter(l => l.nested).every(l => l.type === 'decimal'), JSON.stringify(r.lists));
+  await page.close();
+}
+
+// 5. Printed, a formula wider than the page wraps instead of being cut off;
+//    a wide table goes back to the page's width.
+page = await open(600);
+await page.evaluate(p => window.readout.apply(p), v34);
+await settleMath(page);
+await page.emulateMedia({ media: 'print' });
+const pm = await page.evaluate(() => {
+  const m = document.getElementById('m-long'), k = m.querySelector('.katex-display > .katex');
+  const w = document.getElementById('wide');
+  return { mFits: m.scrollWidth <= m.clientWidth + 1, katexRight: Math.round(k.getBoundingClientRect().right), mRight: Math.round(m.getBoundingClientRect().right),
+    ws: getComputedStyle(k).whiteSpace, tFits: w.scrollWidth <= w.clientWidth + 1, bg: getComputedStyle(m).backgroundImage };
+});
+check('a long formula wraps to the printed page', pm.mFits && pm.katexRight <= pm.mRight + 1 && pm.ws === 'normal' && pm.bg === 'none', JSON.stringify(pm));
+check('a wide table still wraps to the printed page', pm.tFits, JSON.stringify(pm));
 await page.close();
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
