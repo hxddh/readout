@@ -3,19 +3,44 @@ import Testing
 @testable import ReadoutCore
 
 @Suite struct ReaderChromeTests {
-    @Test func theSubtitleShowsStatusFirstThenTasksThenTheFolder() {
+    @Test func theSubtitleShowsStatusFirstThenTasksAndNeverTheFolder() {
         let tasks = TaskStats(done: 2, total: 5)
-        #expect(ReaderChrome.subtitle(status: "The file was deleted.", tasks: tasks, path: "/a/runs/plan.md") == .status("The file was deleted."))
-        #expect(ReaderChrome.subtitle(status: nil, tasks: tasks, path: "/a/runs/plan.md") == .tasks(done: 2, total: 5))
-        #expect(ReaderChrome.subtitle(status: "", tasks: TaskStats(), path: "/a/runs/plan.md") == .folder("runs"))
+        #expect(ReaderChrome.subtitle(status: "The file was deleted.", tasks: tasks) == .status("The file was deleted."))
+        #expect(ReaderChrome.subtitle(status: nil, tasks: tasks) == .tasks(done: 2, total: 5))
+        // Nothing to report: no subtitle (it used to name the folder, which the tab's tooltip shows now).
+        #expect(ReaderChrome.subtitle(status: "", tasks: TaskStats()) == nil)
+        #expect(ReaderChrome.subtitle(status: nil, tasks: TaskStats()) == nil)
         // A failed first read has no tasks and must still say why the window is blank.
-        #expect(ReaderChrome.subtitle(status: "The file could not be read.", tasks: TaskStats(), path: "/a/plan.md") == .status("The file could not be read."))
+        #expect(ReaderChrome.subtitle(status: "The file could not be read.", tasks: TaskStats()) == .status("The file could not be read."))
+    }
+
+    @Test func theTabToolTipIsThePathWithHomeAsTilde() {
+        #expect(ReaderChrome.tabToolTip(path: "/Users/rust/.claude/plans/plan.md", home: "/Users/rust") == "~/.claude/plans/plan.md")
+        #expect(ReaderChrome.tabToolTip(path: "/Users/rust/.claude/plans/plan.md", home: "/Users/rust/") == "~/.claude/plans/plan.md")
+        // Only a whole folder name: /Users/rustacean is not under /Users/rust.
+        #expect(ReaderChrome.tabToolTip(path: "/Users/rustacean/plan.md", home: "/Users/rust") == "/Users/rustacean/plan.md")
+        #expect(ReaderChrome.tabToolTip(path: "/tmp/run/plan.md", home: "/Users/rust") == "/tmp/run/plan.md")
+        #expect(ReaderChrome.tabToolTip(path: "/tmp/plan.md", home: "/") == "/tmp/plan.md")
     }
 
     @Test func recentTitlesNameTheFolderOnlyWhenNamesCollide() {
         let titles = ReaderChrome.recentTitles(["/w/app/plan.md", "/w/web/PLAN.md", "/w/notes.md", "/w/x/README.md"])
         #expect(titles == ["plan.md — app", "PLAN.md — web", "notes.md", "README.md"])
         #expect(ReaderChrome.recentTitles([]) == [])
+    }
+
+    @Test func recentTitlesShowMoreOfThePathWhenFoldersCollideToo() {
+        // Every agent's plans/plan.md: the folder alone does not tell them apart.
+        let titles = ReaderChrome.recentTitles(["/w/app/plans/plan.md", "/w/web/plans/plan.md", "/w/docs/plan.md",
+                                                "/x/a/b/runs/plan.md", "/y/a/b/runs/plan.md"])
+        #expect(titles == ["plan.md — app/plans", "plan.md — web/plans", "plan.md — docs",
+                           "plan.md — x/a/b/runs", "plan.md — y/a/b/runs"])
+        // Case-insensitively alike folders count as alike.
+        #expect(ReaderChrome.recentTitles(["/a/Runs/plan.md", "/b/runs/plan.md"]) == ["plan.md — a/Runs", "plan.md — b/runs"])
+        // A file at the root next to a same-named one in a folder; the same path twice ends.
+        #expect(ReaderChrome.recentTitles(["/plan.md", "/x/plan.md"]) == ["plan.md", "plan.md — x"])
+        #expect(ReaderChrome.recentTitles(["/a/plan.md", "/a/plan.md"]) == ["plan.md — a", "plan.md — a"])
+        #expect(Set(ReaderChrome.recentTitles(["/p/q/plan.md", "/r/q/plan.md", "/s/plan.md"])).count == 3)
     }
 
     @Test func anOutlineUnderASingleTitleIndentsFromItsSections() {

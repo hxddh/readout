@@ -199,6 +199,34 @@ import Testing
         #expect(p6.deletions.last?.preview == "The plan uses Postgres 16.")
     }
 
+    @Test func reloadingWithTheBaselineFromBeforeMarkAllReadBringsTheMarksBack() throws {
+        let session = DocumentSession()
+        _ = session.load(doc("# T\n\nThe plan uses Redis.\n\nDrop me.\n\nOther text.\n"))
+        let v2 = "# T\n\nThe plan uses Postgres.\n\nOther text.\n\nNew one.\n"
+        _ = try #require(session.update(doc(v2)))
+        let unread = session.unreadCount
+        #expect(unread == 3)   // edited, removed, added
+        let before = session.baseline
+        session.markAllRead()
+        #expect(session.unreadCount == 0)
+        // Undo: the same marks as reopening the window with that baseline saved.
+        let patch = session.reload(baseline: before)
+        #expect(patch.reset)
+        #expect(session.unreadCount == unread)
+        let reopened = DocumentSession()
+        let fresh = reopened.load(doc(v2), baseline: before)
+        let kinds: [String] = patch.marks.map(\.kind.rawValue).sorted()
+        let freshKinds: [String] = fresh.marks.map(\.kind.rawValue).sorted()
+        #expect(kinds == freshKinds)
+        #expect(patch.deletions.map(\.preview) == fresh.deletions.map(\.preview))
+        #expect(patch.marks.first { $0.kind == .modified }?.diff == "The plan uses <del>Redis</del><ins>Postgres</ins>.")
+        // New slots: the page gets the whole document again.
+        #expect(patch.ops.count == session.blocks.count && patch.ops.allSatisfy { $0.op == .insert })
+        // Redo: read again.
+        session.markAllRead()
+        #expect(session.unreadCount == 0 && session.baseline != before)
+    }
+
     @Test func aTickedTaskBackToItsReadTextIsAStateChange() throws {
         let session = DocumentSession()
         _ = session.load(doc("- [ ] write the test\n"))

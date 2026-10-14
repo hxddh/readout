@@ -35,6 +35,9 @@ struct TOCView: View {
                             TOCRow(entry: entry, minLevel: minLevel)
                                 .tag(Optional(entry.slot))
                                 .id(entry.slot)
+                                // The row already selected jumps again when clicked
+                                // (a selection that does not change reports nothing).
+                                .simultaneousGesture(TapGesture().onEnded { jump(to: entry.slot) })
                         }
                     }
                     .listStyle(.sidebar)
@@ -75,10 +78,17 @@ struct TOCView: View {
             get: { model.activeSlot == 0 ? nil : model.activeSlot },
             set: { slot in
                 guard let slot else { return }
-                model.activeSlot = slot
-                model.onSelectHeading?(slot)
+                jump(to: slot)
             }
         )
+    }
+
+    /// A click or a selection in the outline. The page reports the heading
+    /// jumped to as the active one until the reader scrolls, so the highlight
+    /// stays on the row clicked.
+    private func jump(to slot: Int) {
+        model.activeSlot = slot
+        model.onSelectHeading?(slot)
     }
 }
 
@@ -100,6 +110,7 @@ private struct TOCRow: View {
             }
         }
         .padding(.leading, CGFloat(max(0, entry.level - minLevel)) * 12)
+        .contentShape(Rectangle())
         .help(entry.title)
     }
 }

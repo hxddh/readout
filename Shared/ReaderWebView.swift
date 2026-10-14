@@ -121,6 +121,14 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
 
     static let readerURL = URL(string: "readout://app/reader.html")!
 
+    /// The reader page itself (a fragment aside): the only readout: page a
+    /// navigation may load. Anything else would replace the document.
+    static func isReaderPage(_ url: URL) -> Bool {
+        guard var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return false }
+        parts.fragment = nil
+        return parts.url == readerURL
+    }
+
     init(bundle: Bundle) {
         let config = WKWebViewConfiguration()
         let schemeHandler = ReadoutSchemeHandler(bundle: bundle)
@@ -151,14 +159,30 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         load(URLRequest(url: Self.readerURL))
     }
 
-    /// Removes navigation items (Reload, Back, Forward…) that would discard the rendered document.
+    /// Context-menu items that would navigate away from the rendered document
+    /// (Reload, Back, a link opened in the web view) or hand out the page's
+    /// internal readout:// URLs (Copy Link, Download Linked File). A link is
+    /// opened by clicking it; a section link is copied from its heading.
+    static let blockedMenuItems: Set<String> = [
+        "WKMenuItemIdentifierReload", "WKMenuItemIdentifierGoBack", "WKMenuItemIdentifierGoForward",
+        "WKMenuItemIdentifierOpenLink", "WKMenuItemIdentifierOpenLinkInNewWindow", "WKMenuItemIdentifierCopyLink",
+        "WKMenuItemIdentifierDownloadLinkedFile", "WKMenuItemIdentifierOpenFrameInNewWindow",
+        "WKMenuItemIdentifierOpenImageInNewWindow", "WKMenuItemIdentifierDownloadImage",
+        "WKMenuItemIdentifierCopyImageURL", "WKMenuItemIdentifierInspectElement",
+    ]
+
+    /// Removes the blocked items, and separators left leading, trailing or doubled.
+    static func filterContextMenu(_ menu: NSMenu) {
+        for item in menu.items where blockedMenuItems.contains(item.identifier?.rawValue ?? "") { menu.removeItem(item) }
+        var previousSeparator = true
+        for item in menu.items {
+            if item.isSeparatorItem && previousSeparator { menu.removeItem(item) } else { previousSeparator = item.isSeparatorItem }
+        }
+        while let last = menu.items.last, last.isSeparatorItem { menu.removeItem(last) }
+    }
+
     override func willOpenMenu(_ menu: NSMenu, with event: NSEvent) {
-        let blocked: Set<String> = ["WKMenuItemIdentifierReload", "WKMenuItemIdentifierGoBack", "WKMenuItemIdentifierGoForward",
-                                    "WKMenuItemIdentifierOpenLinkInNewWindow", "WKMenuItemIdentifierDownloadLinkedFile",
-                                    "WKMenuItemIdentifierOpenFrameInNewWindow", "WKMenuItemIdentifierOpenImageInNewWindow",
-                                    "WKMenuItemIdentifierDownloadImage", "WKMenuItemIdentifierInspectElement"]
-        for item in menu.items where blocked.contains(item.identifier?.rawValue ?? "") { menu.removeItem(item) }
-        while let first = menu.items.first, first.isSeparatorItem { menu.removeItem(first) }
+        Self.filterContextMenu(menu)
         super.willOpenMenu(menu, with: event)
     }
 

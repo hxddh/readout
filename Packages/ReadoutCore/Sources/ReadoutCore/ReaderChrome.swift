@@ -4,32 +4,61 @@ import Foundation
 /// sidebar), decided without AppKit so it can be tested.
 public enum ReaderChrome {
     /// What the window subtitle shows, most important first: the file's
-    /// status (deleted, could not be read, decoded as…), then task progress,
-    /// then the folder the file is in (tabs of same-named files differ).
+    /// status (deleted, could not be read, decoded as…), then task progress;
+    /// nil otherwise. The folder is not repeated there: the tab's tooltip
+    /// shows the path (`tabToolTip`).
     public enum Subtitle: Equatable, Sendable {
         case status(String)
         case tasks(done: Int, total: Int)
-        case folder(String)
     }
 
-    public static func subtitle(status: String?, tasks: TaskStats, path: String) -> Subtitle {
+    public static func subtitle(status: String?, tasks: TaskStats) -> Subtitle? {
         if let status, !status.isEmpty { return .status(status) }
         if tasks.total > 0 { return .tasks(done: tasks.done, total: tasks.total) }
-        return .folder(((path as NSString).deletingLastPathComponent as NSString).lastPathComponent)
+        return nil
+    }
+
+    /// The tab's tooltip: the file's path, with the home folder as `~`, so
+    /// tabs of same-named files in different folders can be told apart.
+    public static func tabToolTip(path: String, home: String = NSHomeDirectory()) -> String {
+        let home = home.hasSuffix("/") && home.count > 1 ? String(home.dropLast()) : home
+        guard !home.isEmpty, home != "/" else { return path }
+        if path == home { return "~" }
+        if path.hasPrefix(home + "/") { return "~" + path.dropFirst(home.count) }
+        return path
     }
 
     /// Titles for File ▸ Open Recent: the file name, with " — <folder>" only
     /// for names that appear more than once (case-insensitively, as the
-    /// default volumes compare them).
+    /// default volumes compare them). When the folders have the same name
+    /// too, more of the path is shown ("a/runs", "b/runs") until the titles differ.
     public static func recentTitles(_ paths: [String]) -> [String] {
         let names = paths.map { ($0 as NSString).lastPathComponent }
+        var titles = names
         var counts: [String: Int] = [:]
         for n in names { counts[n.lowercased(), default: 0] += 1 }
-        return zip(paths, names).map { path, name in
-            guard counts[name.lowercased(), default: 0] > 1 else { return name }
-            let folder = ((path as NSString).deletingLastPathComponent as NSString).lastPathComponent
-            return folder.isEmpty ? name : "\(name) — \(folder)"
+        // The folders above each file, nearest first.
+        let folders = paths.map { path -> [String] in
+            Array((path as NSString).deletingLastPathComponent.split(separator: "/").map(String.init).reversed())
         }
+        func title(_ i: Int, depth: Int) -> String {
+            let shown = folders[i].prefix(depth).reversed().joined(separator: "/")
+            return shown.isEmpty ? names[i] : "\(names[i]) — \(shown)"
+        }
+        // Each group of same-named files: one folder more for those still alike.
+        var open = Set(names.indices.filter { counts[names[$0].lowercased(), default: 0] > 1 })
+        var depth = 1
+        while !open.isEmpty {
+            var seen: [String: Int] = [:]
+            for i in open { seen[title(i, depth: depth).lowercased(), default: 0] += 1 }
+            for i in open {
+                titles[i] = title(i, depth: depth)
+                // Told apart, or nothing more to show (the same path twice).
+                if seen[titles[i].lowercased()] == 1 || depth >= folders[i].count { open.remove(i) }
+            }
+            depth += 1
+        }
+        return titles
     }
 
     /// The heading level the outline indents from. A document whose only

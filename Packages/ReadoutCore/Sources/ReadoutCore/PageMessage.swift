@@ -24,6 +24,8 @@ public enum PageMessage: Equatable, Sendable {
     case error(message: String)
     /// The reader turned code wrapping on or off (remembered for all windows).
     case setCodeWrap(on: Bool)
+    /// A key found nothing to go to (N with no change left): the app beeps.
+    case nothing
 
     public init?(_ msg: [String: Any]) {
         func int(_ v: Any?) -> Int? { (v as? NSNumber)?.intValue ?? (v as? Int) }
@@ -58,6 +60,7 @@ public enum PageMessage: Equatable, Sendable {
         case "setCodeWrap":
             guard let on = (msg["on"] as? NSNumber)?.boolValue ?? (msg["on"] as? Bool) else { return nil }
             self = .setCodeWrap(on: on)
+        case "nothing": self = .nothing
         case "error":
             self = .error(message: msg["message"] as? String ?? "")
         default:

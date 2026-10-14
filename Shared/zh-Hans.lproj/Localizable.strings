@@ -52,8 +52,6 @@
 "Show All" = "全部显示";
 "Show Sidebar" = "显示侧边栏";
 "Smaller Text" = "缩小文字";
-"Switch between narrow and wide text" = "在窄栏和宽栏之间切换";
-"Text Width" = "文字宽度";
 "The file could not be read." = "无法读取此文件。";
 "The file was deleted." = "文件已被删除。";
 "This file is empty." = "此文件为空。";
@@ -71,6 +69,7 @@
 "Drop a Markdown file here" = "将 Markdown 文件拖到这里";
 "No headings" = "没有标题";
 "Read what your agents write." = "阅读 Agent 写下的一切。";
+"New plans in ~/.claude/plans open in Readout on their own. Add other agent folders in Settings." = "~/.claude/plans 中的新计划会自动在 Readout 中打开。其他 Agent 文件夹可在设置中添加。";
 "New Markdown documents your agents create here open in Readout on their own, in the background. The global shortcut opens the most recently written one." = "Agent 在这些文件夹里新建的 Markdown 文档会自动在 Readout 中打开，不打断你正在做的事。全局快捷键会打开其中最近写入的一个。";
 "Check for updates automatically" = "自动检查更新";
 "No folders yet" = "尚未添加文件夹";
