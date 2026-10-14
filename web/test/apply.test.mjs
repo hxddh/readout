@@ -1078,7 +1078,22 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   const a = await page.evaluate(() => window.readout.captureAnchor());
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 39 }, { op: 'remove', slot: 40 }], deletions: [{ id: 2, after: 38, count: 2, preview: 'x' }] }));
   const nextTop = await topOf(41);
+  // A block straddling the toolbar's edge grows: the share of it above the
+  // edge stays the same, so the line being read stays at the edge.
+  await toTop(20, 12);
+  await page.waitForTimeout(300);
+  const grow = await page.evaluate(() => {
+    const r = document.querySelector('.blk[data-slot="20"]').getBoundingClientRect();
+    return { slot: window.readout.captureAnchor().slot, above: (52 - r.top) / r.height };
+  });
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 20, html: `<p>para 20 ${'lorem ipsum dolor sit amet '.repeat(18)}</p>`, kind: 'paragraph', change: 'content' }] }));
+  grow.after = await page.evaluate(() => {
+    const r = document.querySelector('.blk[data-slot="20"]').getBoundingClientRect();
+    return { above: (52 - r.top) / r.height, h: r.height };
+  });
   await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('a block at the toolbar edge keeps its share above the edge when it grows',
+    grow.slot === 20 && Math.abs(grow.after.above * grow.after.h - grow.above * grow.after.h) <= 2, JSON.stringify(grow));
   check('removing a block under the toolbar leaves the text below it in place', under.slot === 29 && under.bottom <= 52 && Math.abs(kept - 30) <= 2, JSON.stringify({ under, kept }));
   check('the reading position is taken below the toolbar and kept there', a.slot === 40 && Math.abs(nextTop - 52) <= 2, JSON.stringify({ slot: a.slot, nextTop }));
 }
@@ -1108,20 +1123,23 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
 // Headings are named by their text, not by the link button inside them; the
 // button stays a named, focusable button.
 {
-  const r = fixReset(4, i => i === 1 ? '<h2>Overview of <code>the plan</code></h2>'
-    : i === 2 ? '<h2>Status <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Passing"></h2>' : `<p>para ${i}</p>`, i => i <= 2 ? 'heading' : 'paragraph');
+  const r = fixReset(5, i => i === 1 ? '<h2>Overview of <code>the plan</code></h2>'
+    : i === 2 ? '<h2>Status <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Passing"></h2>'
+    : i === 3 ? '<h2>Build <span class="remote-img" data-src="https://badge.example/b.svg" data-alt="Green"></span></h2>' : `<p>para ${i}</p>`, i => i <= 3 ? 'heading' : 'paragraph');
   r.ops[0].anchor = 'overview';
   r.ops[1].anchor = 'status';
+  r.ops[2].anchor = 'build';
   await page.evaluate(p => window.readout.apply(p), r);
   const named = await page.getByRole('heading', { name: 'Overview of the plan', exact: true }).count()
-    + await page.getByRole('heading', { name: 'Status Passing', exact: true }).count();
+    + await page.getByRole('heading', { name: 'Status Passing', exact: true }).count()
+    + await page.getByRole('heading', { name: 'Build Green', exact: true }).count();
   const button = page.getByRole('button', { name: 'Copy Link to Section', exact: true }).first();
   await button.focus();
   const focused = await page.evaluate(() => document.activeElement?.classList.contains('h-link'));
   await page.evaluate(() => { window.__msgs.length = 0; });
   await page.keyboard.press('Enter');
   const msg = await page.evaluate(() => window.__msgs.find(m => m.type === 'copyLink'));
-  check('a heading is named by its content alone, its link button stays reachable', named === 2 && focused && msg?.anchor === 'overview',
+  check('a heading is named by its content alone, its link button stays reachable', named === 3 && focused && msg?.anchor === 'overview',
     JSON.stringify({ named, focused, msg }));
 }
 

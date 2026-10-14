@@ -25,6 +25,8 @@ export function captureAnchor() {
   if (!el) return null;
   const r = el.getBoundingClientRect();
   const offset = -r.top;
+  // The share of the block above the toolbar's edge, kept when its height changes.
+  const ratio = r.height > 0 ? (topInset() - r.top) / r.height : 0;
   let heading = null;
   for (let e = el; e; e = e.previousElementSibling) {
     if (e.classList.contains('k-heading')) { heading = e.dataset.anchor || null; break; }
@@ -32,7 +34,7 @@ export function captureAnchor() {
   // The neighbours stand in for the anchor block if a patch removes it.
   const prev = shownSibling(el, 'previousElementSibling');
   const next = shownSibling(el, 'nextElementSibling');
-  return { slot: +el.dataset.slot, offset, ratio: r.height > 0 ? offset / r.height : 0, heading,
+  return { slot: +el.dataset.slot, offset, ratio, heading,
     prev: prev ? +prev.dataset.slot : null, next: next ? +next.dataset.slot : null };
 }
 
@@ -50,7 +52,7 @@ export function restoreAnchor(a, changedSlots) {
   if (el && !isShown(el)) el = nearestVisible(el);
   if (el) {
     const r = el.getBoundingClientRect();
-    const want = changedSlots.has(a.slot) ? a.ratio * r.height : a.offset;
+    const want = changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset;
     window.scrollBy(0, r.top + want);
     return;
   }

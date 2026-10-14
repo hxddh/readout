@@ -67,8 +67,8 @@ function setupHeadingLink(h) {
 }
 
 /**
- * The name a heading's content gives it: its text, with images by their alt
- * text and elements by their own label; hidden content left out.
+ * The name a heading's content gives it: its text, with images (remote ones
+ * too) by their alt text and elements by their own label; hidden content left out.
  */
 function contentName(node) {
   let out = '';
@@ -77,6 +77,7 @@ function contentName(node) {
     if (n.nodeType !== Node.ELEMENT_NODE || n.getAttribute('aria-hidden') === 'true' || n.classList.contains('h-link')) continue;
     const label = n.getAttribute('aria-label');
     if (label) out += ` ${label} `;
+    else if (n.classList.contains('remote-img')) out += n.dataset.alt || '';   // a remote image not loaded (yet): its button is not its name
     else if (n.localName === 'img') out += n.getAttribute('alt') || '';
     else out += contentName(n);
   }
