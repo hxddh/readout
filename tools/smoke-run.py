@@ -11,7 +11,7 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
   2. 50 ms after the app reports `opened`, replaces it with plan-early.md
      (an agent write racing the first load: the first capture must show it)
   3. when the app reports `await-edit`, replaces it with plan-v2.md
-  4. opens a second document while running (warm open)
+  4. opens a second document while running, three times (warm open)
   4b. when the app reports `await-agent-write` (Readout in the background,
      watching WORK_DIR/agent), writes WORK_DIR/agent/notes.md the agent way;
      the app records whether it opened on its own without activating
@@ -76,12 +76,22 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
         # Agent write (rename) to the patch on screen: FSEvents, debounce, parse, diff, apply.
         "write_to_update_ms": round((update - clock["edit"]) * 1000, 1) if update else None,
         # App already running: window request to first patch, for a 77 KB document.
+        # The median of the app's opens of it (three), so one slow moment of a
+        # shared runner does not decide; every sample is kept alongside.
         "warm_open_ms": None,
     }
-    paints = app.get("first_paint_s", {})
-    warm = paints.get(str(second.resolve()), paints.get(str(second)))
-    if warm is None:  # the app reports the standardized path; match by name
-        warm = next((v for k, v in paints.items() if k.endswith("/second.md")), None)
+    def for_second(table):
+        found = table.get(str(second.resolve()), table.get(str(second)))
+        if found is None:  # the app reports the standardized path; match by name
+            found = next((v for k, v in table.items() if k.endswith("/second.md")), None)
+        return found
+    samples = for_second(app.get("first_paint_samples_s", {})) or []
+    warm = for_second(app.get("first_paint_s", {}))
+    if samples:
+        ordered = sorted(samples)
+        mid = len(ordered) // 2
+        warm = ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+        timings["warm_open_samples_ms"] = [round(v * 1000, 1) for v in samples]
     if warm is not None:
         timings["warm_open_ms"] = round(warm * 1000, 1)
     (out / "timings.json").write_text(json.dumps(timings, indent=1, sort_keys=True) + "\n")

@@ -102,6 +102,22 @@ print(f"late-folder: {late}")
 check("late folder: a document written into a folder created later opens on its own",
       late.get("auto_opened") == ["late.md"], late)
 check("late folder: Readout was not activated", late.get("active_after") is False, late)
+# A missing folder is watched through the nearest folder above it that exists
+# (kqueue), not polled every 2 s for as long as it is missing (3.4).
+mw = late.get("missing_watch") or {}
+missing, watched = mw.get("missing") or [], mw.get("watched") or []
+check("late folder: the missing folder is watched through the folder above it",
+      len(missing) == 1 and missing[0].endswith("/late/plans") and len(watched) == 1
+      and missing[0].startswith(watched[0].rstrip("/") + "/") and not watched[0].endswith("/late"), late)
+check("late folder: nothing polls for it", mw.get("polling") is False, late)
+check("late folder: once it exists nothing is watched for it",
+      (late.get("missing_watch_after") or {}).get("watched") == [], late)
+# A folder added (or appearing, as the global shortcut finds it) is scanned:
+# meanwhile the latest file known stays, so the shortcut never finds nothing.
+rescan = late.get("rescan") or {}
+check("rescan: the latest file stays known while a new folder is scanned",
+      rescan.get("latest_during") not in (None, ""), late)
+check("rescan: the scan lands", rescan.get("latest_after") not in (None, "", "(no scan)"), late)
 
 live = load("live-updates.json")
 print(f"live-updates: {live}")
@@ -129,15 +145,27 @@ check("link: no record under the new key before its content is read",
 
 chrome = (live.get("tmp") or {}).get("chrome") or {}
 # Same-named files are told apart: the tab shows the document's title, the
-# window title stays the file name, the subtitle names the folder.
+# window title stays the file name, the tab's tooltip shows where it is.
 check("chrome: the window title is the file name", chrome.get("title") == "live.md", live)
 check("chrome: the tab title is the document title", chrome.get("tab_title") == "TMP-AFTER", live)
-check("chrome: the subtitle names the folder", (chrome.get("subtitle") or "").startswith("readout-live-"), live)
+# 3.5: the subtitle shows only status or task progress (live.md has neither),
+# never the folder (3.4 showed it there, making the top bar taller than needed).
+check("chrome: no subtitle without status or tasks", chrome.get("subtitle") == "", live)
+tip, path = chrome.get("tab_tooltip") or "", chrome.get("path") or ""
+check("chrome: the tab tooltip is the file's path", bool(tip) and (tip == path or path.endswith(tip.lstrip("~"))), live)
+# The toolbar: sidebar, next change, find; no text-width item (View ▸ Wide Text stays).
+check("chrome: no text-width toolbar item", "readout.width" not in (chrome.get("toolbar") or []), live)
+check("chrome: the next-change item and find field are in the toolbar",
+      {"readout.nextChange", "readout.search"} <= set(chrome.get("toolbar") or []), live)
+check("chrome: the find field is 160 pt wide", chrome.get("search_width") == 160, live)
+# New windows follow System Settings "Prefer tabs".
+check("chrome: windows tab as System Settings says", chrome.get("tabbing_automatic") is True, live)
 item = chrome.get("change_item") or {}
-# The next-change button stays in place, enabled only with something unread.
-check("chrome: the next-change button stays in the toolbar",
-      item.get("present") is True and item.get("hidden") is False
-      and item.get("enabled") == ((chrome.get("unread") or 0) > 0), live)
+# The next-change button shows only with something unread (hidden, nothing reflows: find stays right).
+unread_now = (chrome.get("unread") or 0) > 0
+check("chrome: the next-change button shows only with something unread",
+      item.get("present") is True and item.get("hidden") is (not unread_now)
+      and item.get("enabled") == unread_now, live)
 
 unreadable = live.get("unreadable") or {}
 # A failed first read says why in the title bar, not only in the (maybe hidden) sidebar.
@@ -145,10 +173,11 @@ check("unreadable: the status is set", bool(unreadable.get("status")), live)
 check("unreadable: the subtitle shows the status",
       bool(unreadable.get("status")) and unreadable.get("subtitle") == unreadable.get("status"), live)
 uitem = unreadable.get("change_item") or {}
-# Nothing unread: the next-change button keeps its place, disabled (it used to be hidden, reflowing the toolbar).
-check("chrome: with nothing unread the next-change button stays, disabled",
+# Nothing unread: the next-change button is hidden (3.4 kept it, disabled, so the
+# width item beside it would not move; that item is gone, so nothing reflows now).
+check("chrome: with nothing unread the next-change button is hidden",
       unreadable.get("unread") == 0 and uitem.get("present") is True
-      and uitem.get("hidden") is False and uitem.get("enabled") is False, live)
+      and uitem.get("hidden") is True and uitem.get("enabled") is False, live)
 
 dangle = live.get("dangle") or {}
 # `ln -sf` to a file written only afterwards: the window follows it once it exists.
@@ -157,6 +186,29 @@ check("dangle: the file written after the link is shown", dangle.get("after") ==
 check("dangle: no stale status once it exists", dangle.get("status") == "", live)
 check("dangle: opening the link again finds the same window", dangle.get("same_window") is True, live)
 check("dangle: reading state is saved again (gate released)", dangle.get("record_at_new_target") is True, live)
+
+undo = load("undo.json")
+print(f"undo: {undo}")
+# ⌘K is undoable: Edit ▸ Undo Mark All as Read brings the marks back (to what
+# reopening the window shows: marks read since the last catch-up come back too).
+check("undo: there were marks to mark read", (undo.get("unread_before") or 0) > 0, undo)
+check("undo: ⌘K marked everything read", undo.get("unread_after_mark") == 0, undo)
+check("undo: the Undo item names it and is enabled",
+      undo.get("undo_title") == "Undo Mark All as Read" and undo.get("undo_enabled") is True, undo)
+check("undo: undoing brings the marks back",
+      (undo.get("unread_after_undo") or 0) >= (undo.get("unread_before") or 1)
+      and (undo.get("page_marks_after_undo") or 0) > 0, undo)
+check("undo: it can be redone", undo.get("redo_title") == "Redo Mark All as Read", undo)
+
+nav = load("navigation.json")
+print(f"navigation: {nav}")
+# A readout: URL other than the reader page (a relative link opened in the web
+# view) is not loaded: the document stays (3.4 showed a blank window).
+check("navigation: the reader page stays", (nav.get("href") or "").startswith("readout://app/reader.html"), nav)
+check("navigation: the document stays", (nav.get("blocks_after") or 0) > 0 and nav.get("blocks_after") == nav.get("blocks_before"), nav)
+# No link items in the context menu (they navigated the web view or copied readout:// URLs).
+check("navigation: the context menu has no link items",
+      nav.get("context_menu") == ["WKMenuItemIdentifierCopy", "-", "WKMenuItemIdentifierLookUp"], nav)
 
 find = load("find-mode.json")
 print(f"find-mode: {find}")

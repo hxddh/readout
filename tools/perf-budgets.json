@@ -48,7 +48,11 @@
     "highest, since shared-runner runs of one commit have differed 2x (225 and 459 above).",
     "web_first_apply_1mb_painted_ms (new): first apply until the frame showing it is painted;",
     "three CI runs 3288, 2406, 1934 ms -> guard 4900 (1.5x the highest). web_first_apply_1mb_ms",
-    "measured 2361, 1610, 1266 in the same runs (unchanged code; 1017-2201 before): guard stays 3000."
+    "measured 2361, 1610, 1266 in the same runs (unchanged code; 1017-2201 before): guard stays 3000.",
+    "3.5: warm_open_ms is the median of three opens of the same document in one smoke run (each",
+    "sample is printed as warm_open_samples_ms). One 3.4 run measured 4084 ms against 1670-2287 in",
+    "the others with no app change, its cold_start 8603 ms also the slowest: the runner, not the",
+    "code. The guard stays 3900; the median keeps one slow moment from deciding."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 421, "guard": 514 },
   "update_100kb":               { "where": "mac",          "unit": "ms",     "target": 15,   "guard": 12 },

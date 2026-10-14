@@ -106,13 +106,25 @@ jobs:
           qlmanage -r >/dev/null 2>&1 || true
           START=$(date '+%Y-%m-%d %H:%M:%S')
           (qlmanage -p "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlmanage.log 2>&1 &)
-          sleep 8
+          # The extension logs one line per preview with the rendered block
+          # count: wait for it (up to ~20 s on a slow runner), not a fixed time.
+          WAIT_END=$((SECONDS + 20))
+          while :; do
+            sleep 1
+            log show --start "$START" --style compact \
+              --predicate 'subsystem == "io.github.hxddh.readout.quicklook"' > smoke-out/ql-render.log 2>&1 || true
+            if grep -qE 'preview (applied|timed out): rendered' smoke-out/ql-render.log; then
+              echo "Quick Look preview logged"
+              break
+            fi
+            if [ "$SECONDS" -ge "$WAIT_END" ]; then
+              echo "Quick Look preview not logged within 20 s"
+              break
+            fi
+          done
           pkill -f qlmanage || true
           sleep 1
           cat smoke-out/qlmanage.log || true
-          # The extension logs one line per preview with the rendered block count.
-          log show --start "$START" --style compact \
-            --predicate 'subsystem == "io.github.hxddh.readout.quicklook"' > smoke-out/ql-render.log 2>&1 || true
           cat smoke-out/ql-render.log
           # Informational: a preview-only extension does not provide thumbnails.
           qlmanage -t -s 512 -o smoke-out "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlthumb.log 2>&1 || true
