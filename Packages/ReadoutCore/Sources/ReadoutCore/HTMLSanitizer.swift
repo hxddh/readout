@@ -27,9 +27,13 @@ enum HTML {
     private static let deniedTagPattern = try! NSRegularExpression(
         pattern: "<(/?(?:" + deniedTags.joined(separator: "|") + ")(?=[\\s/>]|$))", options: .caseInsensitive)
 
+    /// A media tag with a `src` or `srcset` attribute (a `>` inside a quoted value does not end it).
     private static let remoteMediaSrc = try! NSRegularExpression(
-        pattern: #"<(img|video|audio|source|track)\b[^>]*?\s(src|srcset)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)[^>]*>?"#,
+        pattern: #"<(img|video|audio|source|track)\b(?:[^>"']|"[^"]*"|'[^']*')*?\s(?:src|srcset)\s*=(?:[^>"']|"[^"]*"|'[^']*')*>?"#,
         options: .caseInsensitive)
+    /// Each `src` and `srcset` attribute of a media tag.
+    private static let sourceAttribute = try! NSRegularExpression(
+        pattern: #"\s(src|srcset)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, options: .caseInsensitive)
 
     /// GFM tagfilter plus removal of event handlers and javascript: URLs.
     /// Remote media sources are replaced with a click-to-load placeholder so
@@ -61,31 +65,78 @@ enum HTML {
         var last = 0
         for m in matches {
             out += ns.substring(with: NSRange(location: last, length: m.range.location - last))
-            let urlValue = ns.substring(with: m.range(at: 3))
-            let unquoted = urlValue.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
-            let lower = unquoted.lowercased()
-            let isRemote = lower.hasPrefix("http://") || lower.hasPrefix("https://") || lower.hasPrefix("//")
+            let tagText = ns.substring(with: m.range)
+            let tns = tagText as NSString
+            // Every src and srcset: the value's range in the tag, which it is, the value unquoted.
+            let attributes = sourceAttribute.matches(in: tagText, range: NSRange(location: 0, length: tns.length)).map {
+                (range: $0.range(at: 2), srcset: tns.substring(with: $0.range(at: 1)).lowercased() == "srcset",
+                 value: tns.substring(with: $0.range(at: 2)).trimmingCharacters(in: CharacterSet(charactersIn: "\"'")))
+            }
+            // A remote source anywhere in the tag (src first: it is what the placeholder loads).
+            let urls = attributes.filter { !$0.srcset }.map(\.value)
+                + attributes.filter(\.srcset).flatMap { srcsetCandidates($0.value).map(\.url) }
             var end = m.range.location + m.range.length
-            if isRemote {
+            if let remote = urls.first(where: isRemote) {
                 let tag = ns.substring(with: m.range(at: 1)).lowercased()
                 // Swallow an immediately following empty close tag: <video src="…"></video>.
                 let close = "</\(tag)>"
                 if ns.substring(from: end).lowercased().hasPrefix(close) { end += close.count }
-                out += "<span class=\"remote-img\" data-tag=\"\(tag)\" data-src=\"\(escape(unquoted))\" data-alt=\"\"></span>"
-            } else if let resolver, ns.substring(with: m.range(at: 2)).lowercased() == "src", isLocalPath(lower) {
-                // A path relative to the document, not to the page: resolved as a Markdown image's.
-                let r = resolver.image(unquoted)
-                let valueRange = m.range(at: 3)
-                out += ns.substring(with: NSRange(location: m.range.location, length: valueRange.location - m.range.location))
-                out += "\"" + escape(r.url) + "\""
-                out += ns.substring(with: NSRange(location: valueRange.location + valueRange.length,
-                                                  length: m.range.location + m.range.length - valueRange.location - valueRange.length))
+                out += "<span class=\"remote-img\" data-tag=\"\(tag)\" data-src=\"\(escape(remote))\" data-alt=\"\"></span>"
+            } else if let resolver {
+                // Paths relative to the document, not to the page: each src and
+                // srcset candidate is resolved as a Markdown image's.
+                var at = 0
+                for a in attributes {
+                    let value: String
+                    if a.srcset {
+                        value = srcsetCandidates(a.value).map { c in
+                            (isLocalPath(c.url.lowercased()) ? resolver.image(c.url).url : c.url) + c.descriptor
+                        }.joined(separator: ", ")
+                    } else {
+                        guard isLocalPath(a.value.lowercased()) else { continue }
+                        value = resolver.image(a.value).url
+                    }
+                    out += tns.substring(with: NSRange(location: at, length: a.range.location - at))
+                    out += "\"" + escape(value) + "\""
+                    at = a.range.location + a.range.length
+                }
+                out += tns.substring(from: at)
             } else {
-                out += ns.substring(with: m.range)
+                out += tagText
             }
             last = end
         }
         out += ns.substring(from: last)
+        return out
+    }
+
+    private static func isRemote(_ url: String) -> Bool {
+        let lower = url.lowercased()
+        return lower.hasPrefix("http://") || lower.hasPrefix("https://") || lower.hasPrefix("//")
+    }
+
+    /// A `srcset`'s candidates: each URL and its descriptor as written (with
+    /// a leading space: `" 2x"`; empty without one), split as the HTML standard does.
+    static func srcsetCandidates(_ value: String) -> [(url: String, descriptor: String)] {
+        var out: [(url: String, descriptor: String)] = []
+        var rest = Substring(value)
+        while true {
+            rest = rest.drop(while: { $0.isWhitespace || $0 == "," })
+            guard !rest.isEmpty else { break }
+            var url = rest.prefix(while: { !$0.isWhitespace })
+            rest = rest.dropFirst(url.count)
+            var descriptor = ""
+            if url.hasSuffix(",") {
+                // Commas ending the URL end the candidate.
+                while url.hasSuffix(",") { url = url.dropLast() }
+            } else {
+                let d = rest.prefix(while: { $0 != "," })
+                rest = rest.dropFirst(d.count)
+                let trimmed = d.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { descriptor = " " + trimmed }
+            }
+            if !url.isEmpty { out.append((String(url), descriptor)) }
+        }
         return out
     }
 

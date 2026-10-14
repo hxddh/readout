@@ -20,6 +20,11 @@ let package = Package(
             dependencies: ["ReadoutCore"],
             path: "Tools/readout-dump"
         ),
+        .executableTarget(
+            name: "perf-probe",
+            dependencies: ["ReadoutCore"],
+            path: "Tools/perf-probe"
+        ),
         .testTarget(
             name: "ReadoutCoreTests",
             dependencies: ["ReadoutCore"],

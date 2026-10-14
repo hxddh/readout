@@ -160,12 +160,20 @@ struct HTMLRenderer {
         case let l as OrderedList:
             let tight = isTight(l)
             let start = l.startIndex == 1 ? "" : " start=\"\(l.startIndex)\""
-            return "<ol\(start)>" + l.listItems.map { listItem($0, tight: tight) }.joined() + "</ol>"
+            let width = Self.numberWidthClass(start: Int(l.startIndex), count: l.childCount).map { " class=\"\($0)\"" } ?? ""
+            return "<ol\(width)\(start)>" + l.listItems.map { listItem($0, tight: tight) }.joined() + "</ol>"
         case let t as Table:
             return table(t)
         default:
             return children(node)
         }
+    }
+
+    /// `ol-w3`, `ol-w4` or `ol-w5` (5 and more) for an ordered list whose
+    /// largest number has that many digits, so its markers get room; nil up to 99.
+    static func numberWidthClass(start: Int, count: Int) -> String? {
+        let digits = String(max(start, start + count - 1)).count
+        return digits >= 3 ? "ol-w\(min(digits, 5))" : nil
     }
 
     func children(_ node: Markup, tight: Bool = false) -> String {
@@ -201,8 +209,22 @@ struct HTMLRenderer {
             case .right: return " style=\"text-align:right\""
             }
         }
+        // Columns without an alignment whose body cells are all numbers (or
+        // empty, at least one a number): class "num", aligned right by the page.
+        var numeric = Set<Int>()
+        let columns = max(aligns.count, t.head.childCount)
+        for i in 0..<columns where i >= aligns.count || aligns[i] == nil {
+            var sawNumber = false, allNumbers = true
+            for row in t.body.rows {
+                guard let c = row.child(at: i) as? Table.Cell else { continue }
+                let text = c.plainText.trimmingCharacters(in: .whitespaces)
+                if text.isEmpty { continue }
+                if Self.isNumber(text) { sawNumber = true } else { allNumbers = false; break }
+            }
+            if sawNumber && allNumbers { numeric.insert(i) }
+        }
         func cellAttrs(_ c: Table.Cell, _ i: Int) -> String {
-            var s = align(i)
+            var s = numeric.contains(i) ? " class=\"num\"" : align(i)
             if c.colspan > 1 { s += " colspan=\"\(c.colspan)\"" }
             if c.rowspan > 1 { s += " rowspan=\"\(c.rowspan)\"" }
             return s
@@ -221,6 +243,17 @@ struct HTMLRenderer {
         }
         out += "</tbody></table></div>"
         return out
+    }
+
+    /// A number as tables hold them: an optional sign, currency or
+    /// approximation, digits with separators, an optional unit or `%`, and
+    /// an optional footnote star (`12 ms`, `−3%`, `$5`, `~10k`, `3 GiB`, `2.5×`).
+    private static let numberPattern = try! NSRegularExpression(
+        pattern: #"^[-+−$€£¥~≈<>]?\s*[\d.,]*\d[\d.,]*\s*(?:%|ms|[µμ]s|s|x|×|[KMGT]i?B|k|M)?\*?$"#)
+
+    static func isNumber(_ text: String) -> Bool {
+        guard text.utf8.count <= 40, text.utf8.contains(where: { $0 >= 0x30 && $0 <= 0x39 }) else { return false }
+        return numberPattern.firstMatch(in: text, range: NSRange(location: 0, length: (text as NSString).length)) != nil
     }
 
     /// cmark-gfm's tightness is not exposed by swift-markdown, so infer it from the source:

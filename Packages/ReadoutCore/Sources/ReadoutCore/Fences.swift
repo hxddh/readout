@@ -32,6 +32,9 @@ struct FenceTracker {
     private var inTable = false
     /// Content column of the list item the current line belongs to, if any.
     private var itemContent: Int? = nil
+    /// The list item inside a block quote the current line belongs to: the
+    /// quote depth and the item's content column from the quote's content.
+    private var quoteItem: (depth: Int, content: Int)? = nil
     /// Depth of the `<details>` the parser is joining top-level blocks into (0: none).
     private(set) var detailsDepth = 0
     /// The last Markdown line consumed is indented code: 4+ columns past the
@@ -115,6 +118,7 @@ struct FenceTracker {
             inParagraph = false
             inTable = false
             headerCells = nil
+            quoteItem = nil
             return false
         }
         // A paragraph in a container this line still belongs to (cmark-gfm's
@@ -133,6 +137,52 @@ struct FenceTracker {
         // A line left of the item's content that is not lazy paragraph text
         // (a fence, HTML, heading, quote or break) ends the list item.
         let outdented = itemContent != nil && indent < base
+        // Block quote markers: what follows them is indented from the quote's
+        // content column, not from the start of the line.
+        var quoteCode: Bool? = nil
+        if relative < 4 && first == 0x3E {   // >
+            var k = indent, col = indent, depth = 0, contentCol = indent
+            while k < n {
+                var s = 0
+                while s < 4, k + s < n, u[k + s] == Self.space { s += 1 }
+                guard s <= 3, k + s < n, u[k + s] == 0x3E else { break }
+                k += s + 1; col += s + 1; depth += 1; contentCol = col
+                if k < n, u[k] == Self.space { k += 1; col += 1; contentCol = col }
+                else if k < n, u[k] == Self.tab { contentCol = col + 1; break }   // one column of the tab follows the marker
+            }
+            var c = col, e = k
+            while e < n, u[e] == Self.space || u[e] == Self.tab { c = u[e] == Self.tab ? (c / 4 + 1) * 4 : c + 1; e += 1 }
+            if e == n {
+                // `>` alone: a blank line inside the quote ends its paragraph.
+                inParagraph = false
+                paragraphInQuote = false
+                inTable = false
+                headerCells = nil
+                return false
+            }
+            // List items inside the quote (spaces only after the markers).
+            var quoteItemStarted = false
+            if contentCol == col {
+                let sub = UnsafeBufferPointer(rebasing: u[k...])
+                let subIndent = e - k
+                if c - col == subIndent, let content = Self.listItem(sub, indent: subIndent, interrupting: inParagraph && paragraphInQuote) {
+                    quoteItem = (depth, content)
+                    quoteItemStarted = true
+                } else if let q = quoteItem, q.depth != depth || (c - contentCol < q.content && !inParagraph) {
+                    quoteItem = nil
+                }
+            } else {
+                quoteItem = nil
+            }
+            if !inParagraph && !quoteItemStarted {
+                let columns = c - contentCol, qBase = quoteItem?.content ?? 0
+                quoteCode = columns - (columns >= qBase ? qBase : 0) >= 4
+            } else {
+                quoteCode = false
+            }
+        } else if !inParagraph {
+            quoteItem = nil
+        }
         if relative < 4, first == 0x60 || first == 0x7E {   // ` or ~
             var run = 0
             while indent + run < n && u[indent + run] == first { run += 1 }
@@ -190,14 +240,17 @@ struct FenceTracker {
             headerCells = nil
             return false
         }
-        if !inParagraph && !itemStarted {
+        if let quoteCode {
+            indentedCode = quoteCode
+        } else if !inParagraph && !itemStarted {
             // Columns, with tabs to the next multiple of 4, as CommonMark counts them.
             var columns = 0, k = 0
             while k < n, u[k] == Self.space || u[k] == Self.tab { columns = u[k] == Self.tab ? (columns / 4 + 1) * 4 : columns + 1; k += 1 }
             indentedCode = columns - (columns >= base ? base : 0) >= 4
         }
         let wasParagraph = inParagraph
-        inParagraph = !isHeading && !isBreak && !underline && !(relative >= 4 && !inParagraph)
+        // Indented code (also tab-indented, or in a quote) is no paragraph for the next line to continue.
+        inParagraph = !isHeading && !isBreak && !underline && !(relative >= 4 && !inParagraph) && !indentedCode
         if !inParagraph { paragraphInQuote = false }
         else if relative < 4 && first == 0x3E { paragraphInQuote = true }
         else if !wasParagraph || itemStarted { paragraphInQuote = false }

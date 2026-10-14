@@ -64,4 +64,35 @@ import Testing
         _ = MarkdownParser.parse(plain, resolver: resolver, cache: cache)
         #expect(cache.lookup("\(XXHash64.hash("Plain paragraph with `code`."))|paragraph|") != nil)
     }
+
+    /// Counts the blocks rendered (each renders its inline code through the resolver).
+    final class CountingResolver: ResourceResolver, @unchecked Sendable {
+        private let lock = NSLock()
+        private var count = 0
+        var renders: Int { lock.lock(); defer { lock.unlock() }; return count }
+        func image(_ src: String) -> ResolvedImage { ResolvedImage(url: src, remote: false) }
+        func pathReference(_ code: String) -> PathReference? { lock.lock(); count += 1; lock.unlock(); return nil }
+        var identity: String { "counting" }
+    }
+
+    /// A fragment reused unchanged keeps its blocks' HTML in the cache: when
+    /// it is edited after that, only the edited block renders again.
+    @Test func reusedFragmentsKeepTheirRenderedBlocks() {
+        let resolver = CountingResolver()
+        let list = (1...6).map { "- item `k\($0)`" }
+        func source(_ items: [String], tail: String) -> String { "Intro.\n\n" + items.joined(separator: "\n") + "\n\n" + tail + "\n" }
+        let cache = MarkdownParser.RenderCache()
+        let parser = IncrementalParser()
+        var edited = list
+        edited[2] = "- item `k3` (revised)"
+        var counts: [Int] = []
+        for src in [source(list, tail: "Tail."), source(list, tail: "Tail, revised."), source(edited, tail: "Tail, revised.")] {
+            let before = resolver.renders
+            cache.beginGeneration()
+            _ = parser.parse(src, resolver: resolver, cache: cache)
+            counts.append(resolver.renders - before)
+        }
+        // All six items, then none (the list's fragment is reused), then the edited item only.
+        #expect(counts == [6, 0, 1])
+    }
 }

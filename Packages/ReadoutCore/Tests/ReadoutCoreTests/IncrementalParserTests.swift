@@ -137,6 +137,23 @@ import Testing
         #expect(after.blocks[0].html.contains("path-link"))
     }
 
+    /// Eight or more new fragments are parsed concurrently: the blocks come
+    /// out in document order, the same as a full parse, every time.
+    @Test func manyNewFragmentsParseConcurrentlyInOrder() {
+        let parser = IncrementalParser()
+        let cache = MarkdownParser.RenderCache()
+        func doc(_ v: Int) -> String {
+            (1...60).map { "## Part \($0)\n\nParagraph \($0), version \(v), with $x_\($0)$ and `code`.\n\n- item \($0)\n" }
+                .joined(separator: "\n")
+        }
+        for v in 0..<6 {
+            cache.beginGeneration()
+            let inc = parser.parse(doc(v), cache: cache)
+            #expect((parser.lastParsed ?? 0) >= 8)
+            #expect(inc.blocks == MarkdownParser.parse(doc(v)).blocks, "version \(v)")
+        }
+    }
+
     @Test func fragmentsCoverEveryLineOnce() {
         let lines = ["# A", "", "text", "", "```", "", "code", "", "```", "", "- a", "", "  b", "", "c", "", "<details>", "", "x", "", "</details>", "", "d"]
         let parts = IncrementalParser.fragments(lines)
