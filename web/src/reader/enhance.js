@@ -59,11 +59,28 @@ function setupHeadingLink(h) {
   });
   // At the start of the heading's first line (CSS moves it into the gutter).
   // Inside the heading, its label would start the heading's accessible name
-  // ("Copy Link to Section Overview"): the heading is named by its own text.
+  // ("Copy Link to Section Overview"): the heading is named by its own content.
   const hn = h.querySelector('h1, h2, h3, h4, h5, h6') || h;
-  const name = hn.textContent.replace(/\s+/g, ' ').trim();
+  const name = contentName(hn).replace(/\s+/g, ' ').trim();
   if (name) hn.setAttribute('aria-label', name);
   hn.prepend(btn);
+}
+
+/**
+ * The name a heading's content gives it: its text, with images by their alt
+ * text and elements by their own label; hidden content left out.
+ */
+function contentName(node) {
+  let out = '';
+  for (const n of node.childNodes) {
+    if (n.nodeType === Node.TEXT_NODE) { out += n.data; continue; }
+    if (n.nodeType !== Node.ELEMENT_NODE || n.getAttribute('aria-hidden') === 'true' || n.classList.contains('h-link')) continue;
+    const label = n.getAttribute('aria-label');
+    if (label) out += ` ${label} `;
+    else if (n.localName === 'img') out += n.getAttribute('alt') || '';
+    else out += contentName(n);
+  }
+  return out;
 }
 
 /**

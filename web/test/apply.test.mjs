@@ -1108,17 +1108,20 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
 // Headings are named by their text, not by the link button inside them; the
 // button stays a named, focusable button.
 {
-  const r = fixReset(3, i => i === 1 ? '<h2>Overview of <code>the plan</code></h2>' : `<p>para ${i}</p>`, i => i === 1 ? 'heading' : 'paragraph');
+  const r = fixReset(4, i => i === 1 ? '<h2>Overview of <code>the plan</code></h2>'
+    : i === 2 ? '<h2>Status <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Passing"></h2>' : `<p>para ${i}</p>`, i => i <= 2 ? 'heading' : 'paragraph');
   r.ops[0].anchor = 'overview';
+  r.ops[1].anchor = 'status';
   await page.evaluate(p => window.readout.apply(p), r);
-  const named = await page.getByRole('heading', { name: 'Overview of the plan', exact: true }).count();
-  const button = page.getByRole('button', { name: 'Copy Link to Section', exact: true });
+  const named = await page.getByRole('heading', { name: 'Overview of the plan', exact: true }).count()
+    + await page.getByRole('heading', { name: 'Status Passing', exact: true }).count();
+  const button = page.getByRole('button', { name: 'Copy Link to Section', exact: true }).first();
   await button.focus();
   const focused = await page.evaluate(() => document.activeElement?.classList.contains('h-link'));
   await page.evaluate(() => { window.__msgs.length = 0; });
   await page.keyboard.press('Enter');
   const msg = await page.evaluate(() => window.__msgs.find(m => m.type === 'copyLink'));
-  check('a heading is named by its text alone, its link button stays reachable', named === 1 && focused && msg?.anchor === 'overview',
+  check('a heading is named by its content alone, its link button stays reachable', named === 2 && focused && msg?.anchor === 'overview',
     JSON.stringify({ named, focused, msg }));
 }
 
