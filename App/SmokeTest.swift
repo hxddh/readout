@@ -303,19 +303,41 @@ enum SmokeTest {
         try? await Task.sleep(for: .milliseconds(300))
         json["unread_after_mark"] = controller.model.unread
         let edit = NSApp.mainMenu?.items.first { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") }?.submenu
-        let undo = edit?.items.first { $0.action == Selector(("undo:")) }
-        edit?.update()
-        json["undo_title"] = undo?.title ?? ""
-        json["undo_enabled"] = undo?.isEnabled ?? false
+        let undoItem = edit?.items.first { $0.action == Selector(("undo:")) }
+        let redoItem = edit?.items.first { $0.action == Selector(("redo:")) }
+        // What the menu does for the key window, walked by hand: the CI runner
+        // may not let Readout become active, and without a key window
+        // NSApp.sendAction finds no target at all.
+        func handler(_ item: NSMenuItem?) -> NSResponder? {
+            guard let action = item?.action else { return nil }
+            var r = controller.window?.firstResponder
+            while let current = r {
+                if current.responds(to: action) { return current }
+                r = current.nextResponder
+            }
+            return nil
+        }
+        func validate(_ item: NSMenuItem?) -> Bool {
+            guard let item, let target = handler(item) else { return false }
+            if let v = target as? NSMenuItemValidation { return v.validateMenuItem(item) }
+            if let v = target as? NSUserInterfaceValidations { return v.validateUserInterfaceItem(item) }
+            return true
+        }
+        json["app_active"] = NSApp.isActive
+        json["undo_handler"] = handler(undoItem).map { String(describing: type(of: $0)) } ?? ""
+        json["undo_enabled"] = validate(undoItem)
+        json["undo_title"] = undoItem?.title ?? ""
         let before = appliedCount
-        if let undo, let action = undo.action { json["undo_sent"] = NSApp.sendAction(action, to: undo.target, from: undo) }
+        if let undoItem, let action = undoItem.action, let target = handler(undoItem) {
+            json["undo_sent"] = NSApp.sendAction(action, to: target, from: undoItem)
+        }
         let deadline = Date().addingTimeInterval(5)
         while appliedCount == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
         try? await Task.sleep(for: .milliseconds(500))
         json["unread_after_undo"] = controller.model.unread
         json["page_marks_after_undo"] = (try? await webView.evaluateJavaScript(marks)) as? Int ?? -1
-        edit?.update()
-        json["redo_title"] = edit?.items.first { $0.action == Selector(("redo:")) }?.title ?? ""
+        _ = validate(redoItem)
+        json["redo_title"] = redoItem?.title ?? ""
         write(json, to: out, "undo.json")
     }
 
