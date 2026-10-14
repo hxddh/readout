@@ -10,7 +10,7 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme } from './reader/core.js';
+import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom } from './reader/anchor.js';
 import { apply as applyPatch, findMode } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting } from './reader/marks.js';
@@ -100,6 +100,7 @@ window.addEventListener('resize', () => {
   }
   if (!resizeAnchor) return;
   const hold = () => {
+    trace('resize', { slot: resizeAnchor.slot, bottom: resizeBottom, w: innerWidth, h: innerHeight });
     holdPlace(resizeAnchor, resizeBottom, true);
     rebaselineHeights();
   };
@@ -165,6 +166,7 @@ function scrollToSlot(slot) {
 
 function scrollToAnchor(a) {
   if (!a) return;
+  trace('scrollToAnchor', { slot: a.slot, offset: Math.round(a.offset) });
   restoreAnchor(a, new Set());
 }
 
@@ -181,6 +183,7 @@ window.readout = {
   scrollToAnchor,
   scrollToFragment,
   captureAnchor,
+  trace: traceEntries,
   findMode,
   preparePrint,
   nextChange: () => jump(1),
