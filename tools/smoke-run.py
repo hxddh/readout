@@ -100,6 +100,9 @@ def main() -> int:
 
     agent_dir = work / "agent"
     agent_dir.mkdir(exist_ok=True)
+    # An agent folder in Settings that is created only after launch.
+    late_dir = work / "late" / "plans"
+    shutil.rmtree(work / "late", ignore_errors=True)
 
     # Under /tmp, spelled the way users and agents spell it (not /private/tmp).
     tmp = Path(tempfile.mkdtemp(prefix="readout-live-", dir="/tmp"))
@@ -136,7 +139,7 @@ def main() -> int:
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
                READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_COLLIDE_LINK=str(collide),
                READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"),
-               READOUT_SMOKE_DANGLE_LINK=str(dangle), READOUT_SMOKE_UNREADABLE=str(locked))
+               READOUT_SMOKE_LATE_FOLDER=str(late_dir), READOUT_SMOKE_DANGLE_LINK=str(dangle), READOUT_SMOKE_UNREADABLE=str(locked))
     # Launch Services must know the bundle for `open -b` to reach the running app.
     bundle = app.parents[2] if app.parent.name == "MacOS" else None
     if bundle is not None:
@@ -166,6 +169,14 @@ def main() -> int:
                 print("harness: agent wrote notes.md")
             else:
                 print("harness: the app never reported `await-agent-write`")
+
+            if wait_for(out / "await-late-folder", proc, 30, poll=0.05):
+                time.sleep(0.5)
+                late_dir.mkdir(parents=True)
+                agent_write(late_dir / "late.md", FIXTURES / "plan.md")
+                print("harness: created the late agent folder and wrote late.md")
+            else:
+                print("harness: the app never reported `await-late-folder`")
 
             if wait_for(out / "await-refill", proc, 60, poll=0.05):
                 data = target.read_bytes()
