@@ -21,6 +21,9 @@
   --important: #8a4fd0;
   --warning: #9a5b00;         /* 5.0:1 on --fill */
   --caution: #c9342b;
+  --pop-bg: #ffffff;          /* a popover over the page */
+  --pop-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.12);
+  --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
 
   --measure: 680px;
   --size: 16px;
@@ -35,6 +38,9 @@
   color-scheme: light;
 }
 
+/* Dark: chosen by the app (setAppearance), or by the system until the app
+   has said which, so the first paint never flashes white. An explicit
+   data-theme wins either way. Keep the two blocks the same. */
 :root[data-theme="dark"] {
   --bg: #1e1e1f;
   --text: #e8e8ea;
@@ -51,7 +57,33 @@
   --important: #b48af0;
   --warning: #e0a03a;
   --caution: #ff6b5e;
+  --pop-bg: #333336;
+  --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
+  --mark-bg: color-mix(in srgb, #ffd60a 28%, transparent);
   color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1e1e1f;
+    --text: #e8e8ea;
+    --text-2: #a8a8ae;
+    --text-3: #7c7c82;
+    --rule: #38383b;
+    --fill: #2a2a2c;
+    --fill-2: #333336;
+    --link: #5aa9ff;
+    --accent-soft: rgba(10, 132, 255, 0.16);
+    --mark-read: #48484a;
+    --note: #5aa9ff;
+    --tip: #4cc27a;
+    --important: #b48af0;
+    --warning: #e0a03a;
+    --caution: #ff6b5e;
+    --pop-bg: #333336;
+    --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
+    --mark-bg: color-mix(in srgb, #ffd60a 28%, transparent);
+    color-scheme: dark;
+  }
 }
 
 :root[data-width="wide"] { --measure: 920px; }
@@ -82,7 +114,9 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 #ro-doc {
   max-width: calc(var(--measure) + var(--gutter) * 2);
   margin: 0 auto;
-  padding: 40px var(--gutter) 30vh;
+  /* The page scrolls under the window toolbar (--top-inset tall): at rest the
+     document starts the same distance below it, whatever its height. */
+  padding: calc(var(--top-inset, 0px) + 28px) var(--gutter) 30vh;
   position: relative;
   /* A long URL or word breaks rather than scrolling the page sideways. */
   overflow-wrap: break-word;
@@ -119,6 +153,8 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    above the notes), less the 1.1em the block above ends with. */
 .blk > hr { margin: 0.9em 0 2em; }
 .blk > .footnotes { margin-top: calc(2.2em - 1.1rem); }
+/* A code block's em is its smaller code size: keep the body text's gap. */
+.blk > .code-block { margin-bottom: 1.1rem; }
 
 p { margin: 0 0 1.1em; }
 
@@ -135,8 +171,9 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading:has(> h1) { --h-fs: 1.85rem; --h-mt: calc(1.6 * 1.85rem - 1.1rem); --h-mb: calc(0.7 * 1.85rem); }
 .k-heading:has(> h2) { --h-fs: 1.4rem; --h-mt: calc(1.8 * 1.4rem - 1.1rem); --h-mb: calc(0.6 * 1.4rem); }
 .k-heading:has(> h3) { --h-fs: 1.14rem; --h-mt: calc(1.5 * 1.14rem - 1.1rem); --h-mb: calc(0.5 * 1.14rem); }
-.k-heading:has(> h4) { --h-fs: 1rem; --h-mt: calc(1.3rem - 1.1rem); --h-mb: 0.4rem; }
-.k-heading:has(> :is(h5, h6)) { --h-fs: 0.94rem; --h-mt: 0rem; --h-mb: calc(0.4 * 0.94rem); }
+.k-heading:has(> h4) { --h-fs: 1rem; --h-mt: calc(1.7rem - 1.1rem); --h-mb: 0.4rem; }
+.k-heading:has(> h5) { --h-fs: 0.94rem; --h-mt: calc(1.4rem - 1.1rem); --h-mb: calc(0.4 * 0.94rem); }
+.k-heading:has(> h6) { --h-fs: 0.875rem; --h-mt: calc(1.4rem - 1.1rem); --h-mb: calc(0.4 * 0.875rem); }
 /* The first heading, or the one right under the front matter, starts at the
    top; one right under a rule leaves the rule's 2em as the gap. */
 #ro-doc > .k-heading:first-child:has(> :is(h1, h2)),
@@ -145,10 +182,19 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading > :is(h1, h2, h3, h4, h5, h6) { font-size: var(--h-fs); margin: var(--h-mt) 0 var(--h-mb); }
 .k-heading h1 { letter-spacing: -0.015em; font-weight: 700; }
 .k-heading h2 { letter-spacing: -0.01em; }
-.k-heading h5, .k-heading h6 { color: var(--text-2); }
+.k-heading h5 { color: var(--text-2); }
+/* h6: smaller than h5 in the same secondary colour (AA: 6.3:1 light, 7.0:1 dark). */
+.k-heading h6 { color: var(--text-2); }
 
-a { color: var(--link); text-decoration: none; }
-a:hover { text-decoration: underline; text-underline-offset: 2px; }
+/* A quiet underline tells a link from the text in both themes (in dark the
+   link colour alone is only about 2:1 against the text); full on hover. */
+a {
+  color: var(--link);
+  text-decoration: underline 1px;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 0.2em;
+}
+a:hover { text-decoration-color: currentColor; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
 strong { font-weight: 650; }
@@ -181,13 +227,12 @@ img { max-width: 100%; height: auto; border-radius: min(6px, 12%); }
 
 mark {
   color: inherit;
-  background: color-mix(in srgb, #ffd60a 38%, transparent);
+  background: var(--mark-bg);
   border-radius: 3px;
   padding: 0 0.1em;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
-:root[data-theme="dark"] mark { background: color-mix(in srgb, #ffd60a 28%, transparent); }
 kbd, samp { font-family: var(--mono); font-size: 0.82em; }
 kbd {
   padding: 0.05em 0.38em;
@@ -205,8 +250,12 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: 1.1em; }
 .li-block li > p { margin: 0 0 0.5em; }
 /* Code, tables, quotes, alerts, formulas and diagrams inside an item, a quote
    or an alert keep a little air above and below. */
-:is(.li-block li, blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block) {
-  margin: 0.5em 0;
+.li-block li > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block) {
+  margin: 0.5rem 0;
+}
+/* In a quote or an alert they are spaced like its paragraphs. */
+:is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block) {
+  margin: 0 0 1.1rem;
 }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):first-child { margin-top: 0; }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):last-child { margin-bottom: 0; }
@@ -216,6 +265,17 @@ li { margin: 0.12em 0; }
 #ro-doc > .blk > .li-block:not(.li-loose) > li { margin-bottom: 0.06em; }
 li::marker { color: var(--text-3); }
 ol.li-block > li::marker { font-variant-numeric: tabular-nums; }
+/* Nested numbered lists count differently from their parent: 1. › i. › a. */
+.li-block li ol { list-style-type: lower-roman; }
+.li-block li ol ol { list-style-type: lower-alpha; }
+/* A nested list numbered past 99 keeps its digits (no CMXCVIII.). */
+.li-block li ol:is(.ol-w3, .ol-w4, .ol-w5) { list-style-type: decimal; }
+/* Long numbered lists (3, 4, 5+ digit numbers) widen the indent so the
+   numbers stay inside the column: top-level items (ol.li-block) and lists
+   nested in an item, a quote, an alert or a disclosure. */
+ol.ol-w3, .li-block li > ol.ol-w3 { padding-left: 2.1em; }
+ol.ol-w4, .li-block li > ol.ol-w4 { padding-left: 2.6em; }
+ol.ol-w5, .li-block li > ol.ol-w5 { padding-left: 3.1em; }
 
 li.task { list-style: none; position: relative; }
 li.task > .task-box {
@@ -255,7 +315,9 @@ blockquote > :last-child { margin-bottom: 0; }
   padding: 0.7em 1em 0.75em;
   border-radius: 8px;
   background: var(--fill);
-  border-left: 3px solid var(--alert-c);
+  /* The colour edge follows the rounded corners (a border-left frayed there). */
+  box-shadow: inset 3px 0 0 var(--alert-c);
+  --surface: var(--fill);
 }
 .alert > :last-child { margin-bottom: 0; }
 .alert code { background: var(--fill-2); }
@@ -282,20 +344,29 @@ th:last-child, td:last-child { padding-right: 0; }
 th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; }
 td { font-variant-numeric: tabular-nums; }
 tbody tr:last-child td { border-bottom: 0; }
+/* A header row with no text (a table written only for its body) is not shown. */
+thead:not(:has(th:not(:empty))) { display: none; }
+/* Numbers line up on the right (columns the parser finds numeric). */
+td.num, th.num { text-align: right; }
 /* A table that fits keeps its header in view while you read down it; a wide
    one scrolls sideways inside its wrapper (which then cannot also pin the
    header to the page) and keeps its first column in view instead. */
 .table-wrap:not(.scrolls) { overflow-x: visible; }
 /* --top-inset: the height of the window toolbar the page scrolls under. */
-.table-wrap:not(.scrolls) thead th { position: sticky; top: var(--top-inset, 0px); background: var(--bg); z-index: 1; }
+.table-wrap:not(.scrolls) thead th { position: sticky; top: var(--top-inset, 0px); background: var(--surface, var(--bg)); z-index: 1; }
 .table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child {
-  position: sticky; left: 0; background: var(--bg); z-index: 1;
+  position: sticky; left: 0; background: var(--surface, var(--bg)); z-index: 1;
 }
-/* A soft shade at the right edge says there is more; scrolled to the end, the
-   cover that travels with the content hides it. */
-.table-wrap.scrolls {
+/* A table that scrolls anyway takes the width its text wants instead of
+   squeezing every column into a narrow stack; a long cell still wraps. */
+.table-wrap.scrolls table { width: max-content; }
+.table-wrap.scrolls :is(td, th) { max-width: 30em; }
+/* A soft shade at the right edge says there is more (a wide table, a formula
+   wider than the column); scrolled to the end, or with nothing to scroll, the
+   cover that travels with the content hides it: solid over the whole shade. */
+.table-wrap.scrolls, .math-block {
   background:
-    linear-gradient(to left, transparent, var(--bg) 70%) local right / 28px 100% no-repeat,
+    linear-gradient(to left, var(--surface, var(--bg)) 18px, transparent) local right / 28px 100% no-repeat,
     linear-gradient(to left, color-mix(in srgb, var(--text) 9%, transparent), transparent) scroll right / 18px 100% no-repeat;
 }
 
@@ -318,24 +389,25 @@ tbody tr:last-child td { border-bottom: 0; }
 .code-block pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
 .code-block .cb-tools {
   position: absolute; top: 0; right: 0;
-  display: flex; gap: 6px; align-items: center;
-  /* Over the code, the tools sit on the block's own fill, fading in from the left. */
-  padding: 6px 6px 6px 24px;
+  display: flex; gap: 2px; align-items: center;
+  /* Over the code, the tools sit on the block's own fill, fading in from the
+     left over no more of the code than it takes. */
+  padding: 8px 6px 8px 14px;
   border-top-right-radius: 8px;
-  background: linear-gradient(to right, transparent, var(--fill) 20px);
+  background: linear-gradient(to right, transparent, var(--fill) 10px);
   opacity: 0; transition: opacity 120ms;
   -webkit-user-select: none; user-select: none;
 }
 .code-block:hover .cb-tools, .code-block:focus-within .cb-tools { opacity: 1; }
-.cb-lang { font-size: 0.72rem; color: var(--text-3); }
-.cb-copy {
-  font: inherit; font-size: 0.74rem;
-  border: 0; border-radius: 5px; padding: 2px 8px;
-  background: var(--bg); color: var(--text-2);
-  box-shadow: 0 0 0 1px var(--rule);
+.cb-lang { font-size: 0.68rem; color: var(--text-3); margin-right: 4px; }
+/* Wrap and Copy: the same quiet capsule, filled under the pointer. */
+.cb-wrap, .cb-copy {
+  font: inherit; font-size: 0.72rem; line-height: 1.5;
+  border: 0; border-radius: 999px; padding: 1px 8px;
+  background: transparent; color: var(--text-2);
   cursor: pointer;
 }
-.cb-copy:hover { color: var(--text); }
+.cb-wrap:hover, .cb-copy:hover { background: var(--fill-2); color: var(--text); }
 /* Labels of the reader's own controls are generated content, so selecting and
    copying a passage never picks them up. */
 .cb-lang::before, .cb-wrap::before, .cb-copy::before, .h-link::before { content: attr(data-label); }
@@ -343,6 +415,7 @@ tbody tr:last-child td { border-bottom: 0; }
 /* Shiki dual themes */
 .shiki span { color: var(--shiki-light); }
 :root[data-theme="dark"] .shiki span { color: var(--shiki-dark); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .shiki span { color: var(--shiki-dark); } }
 /* Added and removed lines are bands from edge to edge of the block, across
    the full width a long line scrolls to. */
 .code-block[data-lang="diff"] pre code { display: inline-block; min-width: 100%; }
@@ -355,8 +428,7 @@ tbody tr:last-child td { border-bottom: 0; }
 
 /* Long code lines wrap when the reader turns wrapping on (remembered by the app). */
 :root[data-code-wrap="on"] .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-.cb-wrap { font: inherit; font-size: 0.72rem; border: 0; background: transparent; color: var(--text-3); cursor: pointer; padding: 0 2px; }
-.cb-wrap:hover, :root[data-code-wrap="on"] .cb-wrap { color: var(--text); }
+:root[data-code-wrap="on"] .cb-wrap { color: var(--text); background: var(--fill-2); }
 
 /* Disclosure (<details>) */
 details {
@@ -397,6 +469,8 @@ details ul, details ol { padding-left: 1.5em; }
 
 /* Math */
 .math-block { overflow-x: auto; overflow-y: hidden; text-align: center; padding: 0.3em 0; }
+/* The block's own margins space a formula; KaTeX's 1em above and below came on top. */
+.math-block .katex-display { margin: 0; }
 .math-block:not(.done), .math:not(.done) { font-family: var(--mono); font-size: 0.86em; color: var(--text-2); }
 .math-block:not(.done) { white-space: pre-wrap; text-align: left; }
 .math-inline.done { font-size: 1.02em; }
@@ -442,9 +516,11 @@ details ul, details ol { padding-left: 1.5em; }
 .k-listItem:has(> .li-last)::before { bottom: 1.1em; }
 .blk.m-inserted::before { background: var(--accent); }
 .blk.m-modified::before { background: var(--accent); opacity: 0.55; }
-.blk.m-read::before { background: var(--mark-read); opacity: 1; }
+/* Read marks are a hairline, so an edited mark in a grey (Graphite) accent
+   never passes for one already read. */
+.blk.m-read::before { background: var(--mark-read); opacity: 1; width: 1px; left: 11px; }
 .blk.m-state::before { background: var(--accent); width: 5px; height: 5px; bottom: auto; top: 0.7em; left: 9px; border-radius: 50%; }
-.blk.m-state.m-read::before { background: var(--mark-read); }
+.blk.m-state.m-read::before { background: var(--mark-read); width: 5px; left: 9px; }
 /* The edit mark opens the comparison: a wider target than the 3 px bar. */
 .blk.wd-has::before {
   cursor: pointer;
@@ -468,6 +544,7 @@ details ul, details ol { padding-left: 1.5em; }
 .wd-body.wd-none { font-family: inherit; color: var(--text-3); }
 .wd-body del { color: var(--caution, #cf222e); text-decoration: line-through; background: color-mix(in srgb, var(--caution, #cf222e) 10%, transparent); }
 .wd-body ins { color: var(--text); text-decoration: none; background: var(--accent-soft); border-radius: 2px; }
+.wd-body del + ins { margin-left: 0.25em; }
 
 .del-mark {
   position: relative;
@@ -494,13 +571,13 @@ details ul, details ol { padding-left: 1.5em; }
   max-height: 14em; overflow: auto;
   margin: 0; padding: 0.7em 0.9em;
   font-family: var(--mono); font-size: 0.78rem; line-height: 1.5;
-  color: var(--text-2);
   white-space: pre-wrap;
-  background: var(--bg);
   border-radius: 8px;
-  box-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.12);
-  text-decoration: line-through;
-  text-decoration-color: color-mix(in srgb, var(--caution) 55%, transparent);
+  /* Removed text, tinted red like a removal in the word comparison, on a
+     surface raised above the page; no strike-through to read through. */
+  color: var(--text-2);
+  background: linear-gradient(color-mix(in srgb, var(--caution) 8%, transparent), color-mix(in srgb, var(--caution) 8%, transparent)), var(--pop-bg);
+  box-shadow: var(--pop-shadow);
 }
 
 /* Flash for blocks that just changed while visible */
@@ -521,7 +598,7 @@ details ul, details ol { padding-left: 1.5em; }
   pointer-events: none; z-index: 10;
 }
 #ro-rail > button {
-  position: absolute; right: 2px; width: 4px; height: 3px; border-radius: 2px;
+  position: absolute; right: 2px; width: 3px; min-height: 6px; border-radius: 2px;
   border: 0; padding: 0;
   background: var(--accent); pointer-events: auto; cursor: pointer;
 }
@@ -529,7 +606,7 @@ details ul, details ol { padding-left: 1.5em; }
 
 /* Rewrite notice */
 #ro-notice {
-  position: sticky; top: 10px; z-index: 20;
+  position: sticky; top: calc(var(--top-inset, 0px) + 10px); z-index: 20;
   margin: 0 auto 1.4em; width: max-content; max-width: 100%;
   font-size: 0.8rem; color: var(--text-2);
   background: var(--bg); padding: 4px 12px; border-radius: 999px;
@@ -573,9 +650,40 @@ details ul, details ol { padding-left: 1.5em; }
   .blk::before, .code-block .cb-tools { transition: none; }
 }
 
+/* Increase contrast (System Settings › Accessibility › Display): darker
+   secondary text and rules, solid full-strength change marks, and edges on
+   the panels that float over the page. */
+@media (prefers-contrast: more) {
+  :root {
+    --text-2: #46464c;
+    --text-3: #636369;
+    --rule: #b4b4bb;
+    --mark-read: #8e8e93;
+  }
+  :root[data-theme="dark"] {
+    --text-2: #c4c4ca;
+    --text-3: #a1a1a7;
+    --rule: #6c6c72;
+    --mark-read: #8a8a90;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --text-2: #c4c4ca;
+      --text-3: #a1a1a7;
+      --rule: #6c6c72;
+      --mark-read: #8a8a90;
+    }
+  }
+  .blk::before { width: 4px; }
+  .blk.m-modified::before { opacity: 1; }
+  .blk.m-read::before { width: 2px; }
+  .wd-panel { box-shadow: inset 0 0 0 1px var(--rule); }
+  .del-pop { box-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.2); }
+}
+
 @media print {
   /* Paper is white: a page shown dark prints with the light colours. */
-  :root, :root[data-theme="dark"] {
+  :root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
     --bg: #ffffff;
     --text: #1d1d1f;
     --text-2: #5f5f66;
@@ -590,10 +698,11 @@ details ul, details ol { padding-left: 1.5em; }
     --important: #8a4fd0;
     --warning: #9a5b00;
     --caution: #c9342b;
+    --pop-bg: #ffffff;
+    --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
     color-scheme: light;
   }
-  :root[data-theme="dark"] .shiki span { color: var(--shiki-light); }
-  :root[data-theme="dark"] mark { background: color-mix(in srgb, #ffd60a 38%, transparent); }
+  :root[data-theme="dark"] .shiki span, :root:not([data-theme="light"]) .shiki span { color: var(--shiki-light); }
   #ro-rail, #ro-notice, #ro-caughtup, .cb-tools, .del-mark, .h-link { display: none !important; }
   .blk::before { display: none; }
   #ro-doc { padding: 0; max-width: none; }
@@ -607,7 +716,13 @@ details ul, details ol { padding-left: 1.5em; }
   .table-wrap, .table-wrap:not(.scrolls) { overflow: visible; }
   .table-wrap thead th, .table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child { position: static; }
   /* A wide table wraps to the page instead of being cut at its edge. */
-  .table-wrap.scrolls { background: none; }
+  .table-wrap.scrolls, .math-block { background: none; }
+  .table-wrap.scrolls table { width: auto; }
+  .table-wrap.scrolls :is(td, th) { max-width: none; }
+  /* A formula wider than the page breaks after a relation or operator
+     (between KaTeX's unbreakable pieces) rather than being cut off. */
+  .math-block { overflow: visible; }
+  .math-block .katex-display > .katex { white-space: normal; }
   table { font-size: 0.8em; }
   th { white-space: normal; }
   th, td { overflow-wrap: anywhere; padding-right: 0.6em; }

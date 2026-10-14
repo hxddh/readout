@@ -1,5 +1,8 @@
 import Foundation
 
+/// What a slug keeps beyond ASCII letters and digits (built once: building it per call is slow).
+private let slugKeep = CharacterSet.letters.union(.decimalDigits).union(.nonBaseCharacters)
+
 /// GitHub-compatible heading slugs, with per-document de-duplication.
 public struct Slugger {
     private var seen: [String: Int] = [:]
@@ -12,8 +15,8 @@ public struct Slugger {
             if scalar == " " { out += "-"; continue }
             if scalar == "-" || scalar == "_" { out.unicodeScalars.append(scalar); continue }
             // Letters, marks and numbers of every kind (², ½, Ⅻ), as GitHub keeps them.
-            if CharacterSet.letters.contains(scalar) || CharacterSet.decimalDigits.contains(scalar)
-                || CharacterSet.nonBaseCharacters.contains(scalar) || scalar.properties.numericType != nil {
+            if scalar.isASCII ? (scalar >= "a" && scalar <= "z") || (scalar >= "0" && scalar <= "9")
+                : slugKeep.contains(scalar) || scalar.properties.numericType != nil {
                 out.unicodeScalars.append(scalar)
             }
         }

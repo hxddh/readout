@@ -12,7 +12,7 @@ import http from 'node:http';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const server = http.createServer((req, res) => {
   const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
@@ -69,21 +69,27 @@ const median = xs => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)]
 
 // First apply of the whole document, timed in the page: the apply, then
 // style and layout of the page (forced by reading its height), which the
-// browser would otherwise do before the first paint.
-const firstApply = await page.evaluate(p => {
+// browser would otherwise do before the first paint; and until the frame
+// that shows it has been painted (the moment the page reports 'painted':
+// a task queued from the frame's animation callbacks runs after its paint).
+const firstApply = await page.evaluate(p => new Promise(resolve => {
   const t0 = performance.now();
   window.readout.apply(p);
   const sync = performance.now() - t0;
   void document.scrollingElement.scrollHeight;
-  return { sync, laidOut: performance.now() - t0 };
-}, big);
+  const laidOut = performance.now() - t0;
+  requestAnimationFrame(() => setTimeout(() => resolve({ sync, laidOut, painted: performance.now() - t0 }), 0));
+}), big);
 await page.waitForTimeout(1500);
 
 // A 20-block update in the middle of reading, three times, each with new
-// text: the apply plus the layout it causes.
+// text: the apply plus the layout it causes. Two frames pass after the
+// scroll, so the layout it causes is done and not counted in the update.
 const updates = [];
+const twoFrames = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 for (let i = 0; i < 3; i++) {
   await page.evaluate(y => window.scrollTo(0, y), 20000 + i * 5000);
+  await twoFrames();
   const patch = { ...edit, version: 2 + i, ops: edit.ops.map(o => ({ ...o, html: o.html.replace('(revised)', `(revised ${i + 1})`) })) };
   updates.push(await page.evaluate(p => {
     const t0 = performance.now();
@@ -122,6 +128,7 @@ const result = {
   web_doc_blocks: ops.length,
   web_first_apply_1mb_ms: Math.round(firstApply.laidOut),
   web_first_apply_1mb_sync_ms: Math.round(firstApply.sync),
+  web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
   web_scroll_frames: gaps.length,
   web_scroll_stride_px: scroll.stride,

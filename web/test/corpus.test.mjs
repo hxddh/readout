@@ -49,7 +49,7 @@ const TILE = 8000;                 // WebKit caps a capture at 32767 px
 const PIXEL_THRESHOLD = 0.1;       // per-pixel color distance (pixelmatch)
 const MAX_DIFF_RATIO = 0.0005;     // share of pixels allowed to differ
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const server = http.createServer((req, res) => {
   const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }

@@ -10,6 +10,8 @@ public struct Block: Sendable, Equatable {
     public var slot: Int = 0
     /// Mostly CJK text: rendered with CJK line height.
     public var cjk: Bool = false
+    /// Prose that reads as CJK only in a mostly CJK document (`CJK.prose`).
+    var cjkMixed: Bool = false
     public let kind: BlockKind
     /// Titles of the enclosing headings (outermost first). A heading's own path excludes itself.
     public let headingPath: [String]

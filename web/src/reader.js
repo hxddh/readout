@@ -10,8 +10,8 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook } from './reader/core.js';
-import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, rebaselineHeights, topInset } from './reader/anchor.js';
+import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme } from './reader/core.js';
+import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom } from './reader/anchor.js';
 import { apply as applyPatch, findMode } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
@@ -79,22 +79,28 @@ window.addEventListener('scroll', () => {
 // ---------------------------------------------------------------- Window resize
 
 // By the time a resize event arrives the page already has its new width, so
-// the place to keep is the one captured while the reader last sat still.
+// the place to keep is the one captured while the reader last sat still
+// (and whether they sat at the end, following the live tail: they stay there).
 let settledAnchor = null;
+let settledBottom = false;
 let settleTimer = null;
 function settle() {
   settledAnchor = null;
   clearTimeout(settleTimer);
-  settleTimer = setTimeout(() => { settledAnchor = captureAnchor(); }, 100);
+  settleTimer = setTimeout(() => { settledAnchor = captureAnchor(); settledBottom = atBottom(); }, 100);
 }
 
 let resizeAnchor = null;
+let resizeBottom = false;
 let resizeEnd = null;
 window.addEventListener('resize', () => {
-  if (!resizeAnchor) resizeAnchor = settledAnchor || captureAnchor();
+  if (!resizeAnchor) {
+    resizeBottom = settledAnchor ? settledBottom : atBottom();
+    resizeAnchor = settledAnchor || captureAnchor();
+  }
   if (!resizeAnchor) return;
   const hold = () => {
-    restoreAnchor(resizeAnchor, new Set([resizeAnchor.slot]));
+    holdPlace(resizeAnchor, resizeBottom, true);
     rebaselineHeights();
   };
   hold();
@@ -121,7 +127,7 @@ function setAppearance(o) {
   }
   if (o.accent) {
     root.style.setProperty('--accent', o.accent);
-    root.style.setProperty('--accent-soft', `color-mix(in srgb, ${o.accent} ${root.dataset.theme === 'dark' ? 18 : 12}%, transparent)`);
+    root.style.setProperty('--accent-soft', `color-mix(in srgb, ${o.accent} ${pageTheme() === 'dark' ? 18 : 12}%, transparent)`);
   }
   // Width and type size reflow every block, the one being read included.
   const width = o.width && o.width !== root.dataset.width;

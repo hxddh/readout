@@ -24,15 +24,35 @@ enum CJK {
         return letters == 0 ? 0 : Double(cjk) / Double(letters)
     }
 
-    /// Fraction of prose's units that are CJK: each CJK character is a unit
-    /// and so is each word of other letters, so a mixed sentence counts
-    /// `Swift` as much as `编写`; inline code spans (identifiers, paths,
-    /// commands) do not count. Mixed Chinese and English list items then
-    /// read the same way instead of flipping with the length of the English words.
+    /// How prose reads: CJK when more than 0.3 of its units are CJK, where
+    /// each word of other letters is a unit and so are each two CJK
+    /// characters (about a word: 编写, 保存); inline code spans
+    /// (identifiers, paths, commands) do not count. Mixed Chinese and English
+    /// list items then read the same way instead of flipping with the length
+    /// of the English words, and an English line naming a Chinese word
+    /// (`Translate 你好 as hello`) stays English.
+    ///
+    /// `mixed`: not CJK by that count, but by one unit per CJK character
+    /// (`Task 2: 更新 README.md`). Such a block follows its document
+    /// (`MarkdownParser.assemble`): CJK in a mostly Chinese document.
+    static func prose(_ text: String) -> (cjk: Bool, mixed: Bool) {
+        let (cjk, words) = proseCounts(text)
+        guard cjk > 0 else { return (false, false) }
+        if Double(cjk) / Double(cjk + 2 * words) > 0.3 { return (true, false) }
+        return (false, Double(cjk) / Double(cjk + words) > 0.3)
+    }
+
+    /// The share of prose units that are CJK (see `prose`).
     static func proseRatio(_ text: String) -> Double {
+        let (cjk, words) = proseCounts(text)
+        return cjk + words == 0 ? 0 : Double(cjk) / Double(cjk + 2 * words)
+    }
+
+    /// CJK characters and words of other letters, outside inline code.
+    static func proseCounts(_ text: String) -> (cjk: Int, words: Int) {
         var skip: [Range<Int>] = []
         if text.utf8.contains(0x60) { skip = codeSpans(Array(text.unicodeScalars)) }
-        var cjk = 0, units = 0
+        var cjk = 0, words = 0
         var inWord = false
         var next = 0   // index into skip
         var i = -1
@@ -48,15 +68,15 @@ enum CJK {
             if v < 0x80 {
                 letter = (v >= 0x41 && v <= 0x5A) || (v >= 0x61 && v <= 0x7A)
             } else if isCJK(s) {
-                cjk += 1; units += 1
+                cjk += 1
                 letter = false
             } else {
                 letter = s.properties.isAlphabetic
             }
-            if letter && !inWord { units += 1 }
+            if letter && !inWord { words += 1 }
             inWord = letter
         }
-        return units == 0 ? 0 : Double(cjk) / Double(units)
+        return (cjk, words)
     }
 
     /// Ranges of backtick code spans: a run of backticks up to the next run of the same length.

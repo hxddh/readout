@@ -91,9 +91,11 @@ struct MathProtector {
         while j < lines.count, j - i <= 500 {
             var rest = lines[j][...]
             var taken = ""
+            var quotesFound = 0
             for _ in 0..<quotes {
                 let spaces = rest.prefix(while: { $0 == " " })
                 guard spaces.count <= 3, rest.dropFirst(spaces.count).first == ">" else { break }
+                quotesFound += 1
                 taken += rest.prefix(spaces.count + 1)
                 rest = rest.dropFirst(spaces.count + 1)
                 if rest.first == " " { taken += " "; rest = rest.dropFirst() }
@@ -105,6 +107,10 @@ struct MathProtector {
             // block the other passes (footnotes, fragments) see.
             let trimmed = rest.drop(while: { $0 == " " || $0 == "\t" })
             if trimmed.isEmpty || trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") || trimmed.hasPrefix("<") { return nil }
+            // A list item or quote left of the opener's content, or outside
+            // its quote, starts a new item (or leaves the opener's): `- $$` /
+            // `  a` / `- $$` is two items.
+            if lead.count < indent || quotesFound < quotes, Self.startsContainer(trimmed) { return nil }
             prefixes.append(taken)
             if let close = rest.range(of: "$$") {
                 tex.append(String(rest[..<close.lowerBound]))
@@ -116,6 +122,28 @@ struct MathProtector {
             j += 1
         }
         return nil
+    }
+
+    /// A quote or list item that may interrupt a paragraph (the `$$` text
+    /// is one): `>`, or a bullet or `1.` / `1)`, then white space and text.
+    /// Other numbers (`2. y`) and empty items are lazy continuation lines.
+    private static func startsContainer(_ s: Substring) -> Bool {
+        guard let c = s.first else { return false }
+        if c == ">" { return true }
+        var rest = s.dropFirst()
+        if c == "-" || c == "*" || c == "+" {
+            // nothing more
+        } else if c.isASCII, c.isNumber {
+            let digits = s.prefix(while: { $0.isASCII && $0.isNumber })
+            guard digits.count <= 9, Int(digits) == 1 else { return false }
+            rest = s.dropFirst(digits.count)
+            guard let d = rest.first, d == "." || d == ")" else { return false }
+            rest = rest.dropFirst()
+        } else {
+            return false
+        }
+        guard let space = rest.first, space == " " || space == "\t" else { return false }
+        return rest.contains(where: { $0 != " " && $0 != "\t" })
     }
 
     private mutating func token(_ tex: String, display: Bool) -> String {
@@ -137,15 +165,15 @@ struct MathProtector {
         return spans[n].tex
     }
 
-    /// Whether `\(…\)` or `\[…\]` content reads as TeX rather than escaped
-    /// punctuation in prose (`\[WIP\]`, `\[x\]`, `\(sic\)`, `\[\\\]`): it has a
-    /// letter or digit and TeX syntax or an operator; inline, a single
-    /// character or a space also count.
+    /// Whether `\(…\)` or `\[…\]` content is math rather than escaped
+    /// punctuation in prose. Both need a letter or digit (`\(-:\)`, `\[\\\]`
+    /// stay text). Inline `\(…\)` is then math (`\(O(n)\)`, `\(xy\)`, as in
+    /// 3.2); `\[…\]` also needs TeX syntax or an operator, since agents
+    /// escape brackets in prose (`\[WIP\]`, `\[x\]`).
     static func looksLikeTeX(_ s: ArraySlice<Character>, display: Bool) -> Bool {
         guard s.contains(where: { $0.isLetter || $0.isNumber }) else { return false }
-        if s.contains(where: { "\\^_{}=+*/<>|".contains($0) }) { return true }
-        if display { return false }
-        return s.count == 1 || s.contains(" ")
+        if !display { return true }
+        return s.contains(where: { "\\^_{}=+*/<>|".contains($0) })
     }
 
     /// The next `\` + `closer` at or after a position, scanning each part of

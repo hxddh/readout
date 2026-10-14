@@ -9,7 +9,7 @@ const [patchFile, outDir = 'test/out'] = process.argv.slice(2);
 const patches = JSON.parse(readFileSync(patchFile, 'utf8'));
 mkdirSync(outDir, { recursive: true });
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const server = http.createServer((req, res) => {
   const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
