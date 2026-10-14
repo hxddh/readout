@@ -1,5 +1,5 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
-import { doc, slots, heights, strings, post, inViewport, trace } from './core.js';
+import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll } from './core.js';
 import { captureAnchor, restoreAnchor, atBottom, resizeObserver, keepPlace, isShown } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
 import { scheduleRail } from './rail.js';
@@ -14,6 +14,9 @@ let first = true;
 // end, when they were following), and so do the patches after it until
 // their block is back (or they reach the end), or until they move.
 let held = null;   // {anchor, following, top}
+// Only the reader moving drops it: scrolls that keep the place (a diagram or
+// formula above rendering, a restore) move the position it was left at too.
+onKeptScroll(dy => { if (held) held.top += dy; });
 
 function estimateHeight(kind, html) {
   const text = html.length;

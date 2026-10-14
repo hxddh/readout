@@ -1,6 +1,6 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
-import { doc, root, slots, heights, trace } from './core.js';
+import { doc, root, slots, heights, trace, keptScroll } from './core.js';
 import { scheduleRail } from './rail.js';
 
 export function isShown(e) { return !e.hidden && e.offsetParent !== null; }
@@ -49,6 +49,13 @@ function shownSibling(el, dir) {
  * cannot scroll that far).
  */
 export function restoreAnchor(a, changedSlots) {
+  const y = document.scrollingElement.scrollTop;
+  const back = restoreAnchorTo(a, changedSlots);
+  keptScroll(document.scrollingElement.scrollTop - y);
+  return back;
+}
+
+function restoreAnchorTo(a, changedSlots) {
   if (!a) return false;
   let el = slots.get(a.slot);
   // The anchor block may have been hidden by the changes-only filter (or
@@ -106,7 +113,11 @@ export function keepPlace(change, { ratio = false, anchor = captureAnchor(), bot
 
 /** Puts the reader back at `anchor`, or at the end when they were `bottom`. */
 export function holdPlace(anchor, bottom, ratio = false) {
-  if (bottom) window.scrollTo(0, document.scrollingElement.scrollHeight);
+  if (bottom) {
+    const y = document.scrollingElement.scrollTop;
+    window.scrollTo(0, document.scrollingElement.scrollHeight);
+    keptScroll(document.scrollingElement.scrollTop - y);
+  }
   else if (anchor) restoreAnchor(anchor, ratio ? new Set([anchor.slot]) : new Set());
 }
 
@@ -186,7 +197,9 @@ export const resizeObserver = new ResizeObserver(entries => {
     if (r.bottom - (h - prev) <= inset + 1) delta += h - prev;
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) {
+    const y = document.scrollingElement.scrollTop;
     window.scrollBy(0, delta);
+    keptScroll(document.scrollingElement.scrollTop - y);
     trace('compensate', { delta: Math.round(delta) });
   }
   // Blocks that content-visibility lays out once they come into view change

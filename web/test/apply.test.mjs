@@ -1421,6 +1421,32 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   check('a resize right after a scroll keeps the place the scroll went to', Math.abs(top40 - 40) <= 2, `top=${top40}`);
 }
 
+// Emptied, then refilled in part without the reader's block: the held place
+// survives a block above rendering taller (a diagram or formula; the page
+// compensates for it, which is not the reader moving), and the completed
+// document puts the reader back instead of following it to its end.
+{
+  // The reader's section heading (block 20) arrives in the first part: the page waits there.
+  const doc = n => {
+    const r = fixReset(n, i => i === 20 ? '<h2>Section</h2>' : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(6)}</p>`, i => i === 20 ? 'heading' : 'paragraph');
+    r.ops[19].anchor = 'section';
+    return r;
+  };
+  await page.evaluate(p => window.readout.apply(p), doc(60));
+  await toTop(30, 40);
+  await page.waitForTimeout(300);
+  const t0 = await topOf(30);
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 60 }, (_, i) => ({ op: 'remove', slot: i + 1 })), deletions: [{ id: 12, after: 0, count: 60, preview: 'x' }] }));
+  await page.evaluate(p => window.readout.apply(p), doc(25));
+  const y0 = await page.evaluate(() => scrollY);
+  await page.evaluate(() => { const d = document.createElement('div'); d.style.height = '300px'; document.querySelector('.blk[data-slot="3"]').appendChild(d); });
+  await page.waitForTimeout(300);
+  const compensated = (await page.evaluate(() => scrollY)) - y0;
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: doc(60).ops.slice(25) }));
+  const shift = (await topOf(30)) - t0;
+  check('a held place survives the page compensating for a block above, then puts the reader back', compensated >= 290 && Math.abs(shift) <= 1, JSON.stringify({ compensated, shift }));
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
