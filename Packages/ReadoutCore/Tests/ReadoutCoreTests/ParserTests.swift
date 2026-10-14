@@ -330,3 +330,74 @@ import Testing
         #expect(ImageSize.parse(gif)! == (32, 16))
     }
 }
+
+@Suite struct EdgeCaseTests35 {
+    func parse(_ s: String, resolver: ResourceResolver? = nil) -> ParsedDocument { MarkdownParser.parse(s, resolver: resolver) }
+
+    @Test func unbalancedQuoteDoesNotSwallowAcrossTags() {
+        let resolver = FileResolver(baseDirectory: URL(fileURLWithPath: "/tmp/readout-doc"))
+        let local = ReadoutURL.file("/tmp/readout-doc/local.png")
+        let h = HTML.sanitize("<p><img alt='it's fine' src=\"local.png\"> Don't miss this. <img src=\"https://x/y.png\"></p>",
+                              resolver: resolver)
+        #expect(h == "<p><img alt='it's fine' src=\"\(HTML.escape(local))\"> Don't miss this. "
+                + "<span class=\"remote-img\" data-tag=\"img\" data-src=\"https://x/y.png\" data-alt=\"\"></span></p>")
+        // An unbalanced quote after the source: the tag still ends at its `>`.
+        let after = HTML.sanitize("<img src=\"https://x/a.png\" alt='it's'> Don't <b>go</b>")
+        #expect(after == "<span class=\"remote-img\" data-tag=\"img\" data-src=\"https://x/a.png\" data-alt=\"\"></span> Don't <b>go</b>")
+        // Through the parser (in an HTML block), too: the text and the local image survive.
+        let md = parse("<div>\n<img alt='it's fine' src=\"local.png\"> Don't miss this. <img src=\"https://x/y.png\">\n</div>\n",
+                       resolver: resolver).blocks[0].html
+        #expect(md.contains("Don't miss this."))
+        #expect(md.contains("src=\"\(HTML.escape(local))\""))
+        #expect(md.components(separatedBy: "remote-img").count == 2)
+    }
+
+    @Test func quotedValuesStillHoldGtAndBareLt() {
+        let gt = HTML.sanitize("<img alt=\"x > y\" src=\"https://e.com/a.png\">")
+        #expect(gt == "<span class=\"remote-img\" data-tag=\"img\" data-src=\"https://e.com/a.png\" data-alt=\"\"></span>")
+        let lt = HTML.sanitize("<img alt=\"a < b\" src=\"https://e.com/a.png\">")
+        #expect(lt == "<span class=\"remote-img\" data-tag=\"img\" data-src=\"https://e.com/a.png\" data-alt=\"\"></span>")
+        // A tag cut short at the end of the input is still gated.
+        #expect(HTML.sanitize("<img src=\"https://e.com/a.png\"").contains("remote-img"))
+    }
+
+    @Test func unbalancedQuotesStayLinear() {
+        // Quadratic scanning would take minutes here; linear takes milliseconds.
+        let body = (0..<20000).map { _ in "<img alt=\"a\" width=\"10\">" }.joined(separator: "\n")
+        for variant in ["<img alt=\"oops>\n", "<img alt='it>\n", "<img src=\"a.png\" alt='it>\n"] {
+            let t0 = Date()
+            let out = HTML.sanitize("<div>\n" + variant + body + "\n</div>")
+            #expect(Date().timeIntervalSince(t0) < 2)
+            #expect(out.hasSuffix("</div>"))
+        }
+    }
+
+    @Test func emptyHeadingIsNoTitle() {
+        #expect(parse("#\n\ntext").title == nil)
+        #expect(parse("# <img src=\"logo.png\">\n\ntext").title == nil)
+        #expect(parse("# ![](logo.png)\n\nx").title == nil)
+        #expect(parse("#   \n## Real\n").title == nil)
+        // The first H1 with text names the document.
+        #expect(parse("# ![](logo.png)\n\n# Readout\n").title == "Readout")
+        #expect(IncrementalParser().parse("# ![](logo.png)\n\ntext").title == nil)
+    }
+
+    @Test func mathInTitleLosesDelimiters() {
+        #expect(parse("# $O(n^2)$ plan\n").title == "O(n^2) plan")
+        #expect(parse("# \\(O(n)\\) plan\n").title == "O(n) plan")
+        #expect(parse("# Cost $x$ and $y$\n").title == "Cost x and y")
+    }
+
+    @Test func versionsAndIDsAreNotNumbers() {
+        for s in ["1.0.0", "10.0.0.1", "1.", "2.", "1,23", "12,34,567", "1,2345", "1.2.3 ms", "3.4."] {
+            #expect(!HTMLRenderer.isNumber(s), "\(s)")
+        }
+        for s in ["3.4", "1,234", "12 ms", "98%", "-0.5", "1,204.5 ms", "1,234,567", ".5", "2026", "~10k", "$5", "−3%", "0.5%"] {
+            #expect(HTMLRenderer.isNumber(s), "\(s)")
+        }
+        let versions = parse("| Version | Notes |\n|---|---|\n| 1.0.0 | first |\n| 1.1.0 | second |\n").blocks[0].html
+        #expect(!versions.contains("num"))
+        let steps = parse("| Step | What |\n|---|---|\n| 1. | Do it |\n| 2. | Then |\n").blocks[0].html
+        #expect(!steps.contains("num"))
+    }
+}

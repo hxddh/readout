@@ -78,7 +78,8 @@ public enum MarkdownParser {
                     html = "<h\(level) id=\"\(HTML.escape(a))\">\(html)</h\(level)>"
                     headingStack.append((level, titleText))
                     currentPath = headingStack.map(\.title)
-                    if title == nil && level == 1 { title = titleText }
+                    // An H1 with no text (`#`, `# ![](logo.png)`) names nothing: the app falls back to the file name.
+                    if title == nil && level == 1 && !titleText.isEmpty { title = titleText }
                 } else {
                     path = b.kind == .footnotes || b.kind == .frontMatter ? [] : currentPath
                 }
