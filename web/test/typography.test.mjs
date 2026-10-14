@@ -718,9 +718,11 @@ for (const dark of [false, true]) {
     return { left: d.getBoundingClientRect().left + parseFloat(getComputedStyle(d).paddingLeft), top: r.top, h: r.height };
   });
   const strip = PNG.sync.read(await page.screenshot({ clip: { x: Math.round(col.left) - 20, y: Math.round(col.top), width: 20, height: Math.round(col.h) } }));
-  let ink = 0;
-  for (let i = 0; i < strip.data.length; i += 4) if (Math.abs(strip.data[i] - bg[0]) > 40) ink++;
-  check(`two-figure list numbers stay inside the column (${th})`, ink === 0, `ink pixels in the gutter: ${ink}`);
+  // How far ink reaches into the gutter, in px (anti-aliasing of a glyph
+  // edge at the column's own pixel boundary is allowed: 1 px).
+  let into = 0;
+  for (let y = 0; y < strip.height; y++) for (let x = 0; x < strip.width; x++) if (Math.abs(strip.data[(y * strip.width + x) * 4] - bg[0]) > 40) into = Math.max(into, strip.width - x);
+  check(`two-figure list numbers stay inside the column (${th})`, into <= 1, `ink reaches ${into} px into the gutter`);
   await page.close();
 }
 
