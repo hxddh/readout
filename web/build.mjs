@@ -32,4 +32,9 @@ cpSync('src/reader.html', `${out}/reader.html`);
 cpSync('node_modules/katex/dist/katex.min.js', `${out}/vendor/katex/katex.min.js`);
 cpSync('node_modules/katex/dist/katex.min.css', `${out}/vendor/katex/katex.min.css`);
 cpSync('node_modules/katex/dist/fonts', `${out}/vendor/katex/fonts`, { recursive: true });
-cpSync('node_modules/mermaid/dist/mermaid.min.js', `${out}/vendor/mermaid/mermaid.min.js`);
+// Mermaid's ESM build: a small entry, shared chunks and one chunk per kind of
+// diagram, each loaded when first needed (the classic mermaid.min.js is all
+// 5.5 MB at once). Everything ships in the app; the source maps do not.
+cpSync('node_modules/mermaid/dist/mermaid.esm.min.mjs', `${out}/vendor/mermaid/mermaid.esm.min.mjs`);
+cpSync('node_modules/mermaid/dist/chunks/mermaid.esm.min', `${out}/vendor/mermaid/chunks/mermaid.esm.min`,
+  { recursive: true, filter: src => !src.endsWith('.map') });

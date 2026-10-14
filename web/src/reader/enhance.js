@@ -58,7 +58,12 @@ function setupHeadingLink(h) {
     setTimeout(() => { btn.dataset.label = '§'; }, 1200);
   });
   // At the start of the heading's first line (CSS moves it into the gutter).
-  (h.querySelector('h1, h2, h3, h4, h5, h6') || h).prepend(btn);
+  // Inside the heading, its label would start the heading's accessible name
+  // ("Copy Link to Section Overview"): the heading is named by its own text.
+  const hn = h.querySelector('h1, h2, h3, h4, h5, h6') || h;
+  const name = hn.textContent.replace(/\s+/g, ' ').trim();
+  if (name) hn.setAttribute('aria-label', name);
+  hn.prepend(btn);
 }
 
 /**

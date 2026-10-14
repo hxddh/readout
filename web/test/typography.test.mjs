@@ -7,7 +7,7 @@ import { extname, join } from 'node:path';
 import { PNG } from 'pngjs';
 
 const WEB = process.env.READOUT_WEB_DIR || 'build/Web';
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
 // A solid red 16 x 16 PNG for the inline-icon check.
 const icon = new PNG({ width: 16, height: 16 });
 for (let i = 0; i < icon.data.length; i += 4) icon.data.set([220, 0, 0, 255], i);

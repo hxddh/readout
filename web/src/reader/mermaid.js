@@ -13,15 +13,15 @@ function diagramTheme() {
   return printTheme || (root.dataset.theme === 'dark' ? 'dark' : 'light');
 }
 
+// Mermaid's ESM build, bundled with the app (build.mjs copies it and its
+// chunks): the core loads on first use, and each kind of diagram loads its
+// own chunk the first time one is drawn. Resolved against the page, outside
+// the bundler.
+const MERMAID_URL = new URL('vendor/mermaid/mermaid.esm.min.mjs', document.baseURI).href;
+
 function loadMermaid() {
   if (!mermaidPromise) {
-    mermaidPromise = new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'vendor/mermaid/mermaid.min.js';
-      s.onload = () => resolve(window.mermaid);
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
+    mermaidPromise = import(MERMAID_URL).then(mod => mod.default);
   }
   return mermaidPromise.then(m => {
     const theme = diagramTheme();

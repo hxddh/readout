@@ -7,14 +7,15 @@ export function isShown(e) { return !e.hidden && e.offsetParent !== null; }
 
 function blockList() { return Array.from(doc.children).filter(e => e.classList.contains('blk') && isShown(e)); }
 
-/** First block whose bottom edge is below the top of the viewport. */
+/** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
 function topBlock() {
   const list = blockList();
+  const line = topInset() + 8;
   let lo = 0, hi = list.length - 1, found = null;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
     const r = list[mid].getBoundingClientRect();
-    if (r.bottom > 8) { found = list[mid]; hi = mid - 1; } else { lo = mid + 1; }
+    if (r.bottom > line) { found = list[mid]; hi = mid - 1; } else { lo = mid + 1; }
   }
   return found;
 }
@@ -55,15 +56,17 @@ export function restoreAnchor(a, changedSlots) {
   }
   // The anchor block is gone: the block that followed it takes its place at
   // the top (or, at the end of the document, the one before it ends there).
-  // Only then the section heading, which can be far above.
+  // Only then the section heading, which can be far above. The top is the
+  // bottom of the window toolbar the page scrolls under.
+  const inset = topInset();
   for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
     let n = slot != null ? slots.get(slot) : null;
     if (n && !isShown(n)) n = nearestVisible(n);
-    if (n) { window.scrollBy(0, n.getBoundingClientRect()[edge]); return; }
+    if (n) { window.scrollBy(0, n.getBoundingClientRect()[edge] - inset); return; }
   }
   if (a.heading) {
     const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
-    if (h) { window.scrollBy(0, h.getBoundingClientRect().top); return; }
+    if (h) { window.scrollBy(0, h.getBoundingClientRect().top - inset); return; }
   }
 }
 
@@ -84,12 +87,19 @@ export function rebaselineHeights() {
 /**
  * Runs `change` (which reflows the page) keeping the reader's place. With
  * `ratio`, the anchor block itself is expected to change height too, so the
- * place within it is kept as a fraction of its height.
+ * place within it is kept as a fraction of its height. A reader following
+ * the end of the document stays at the end (and so keeps following).
  */
-export function keepPlace(change, { ratio = false, anchor = captureAnchor() } = {}) {
+export function keepPlace(change, { ratio = false, anchor = captureAnchor(), bottom = atBottom() } = {}) {
   change();
-  if (anchor) restoreAnchor(anchor, ratio ? new Set([anchor.slot]) : new Set());
+  holdPlace(anchor, bottom, ratio);
   rebaselineHeights();
+}
+
+/** Puts the reader back at `anchor`, or at the end when they were `bottom`. */
+export function holdPlace(anchor, bottom, ratio = false) {
+  if (bottom) window.scrollTo(0, document.scrollingElement.scrollHeight);
+  else if (anchor) restoreAnchor(anchor, ratio ? new Set([anchor.slot]) : new Set());
 }
 
 /** Nearest visible block to `el` in document order (previous first, then next). */
@@ -150,6 +160,8 @@ export function resolveFragment(raw) {
     || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(lower)}"]`);
 }
 
+let settleQueued = false;
+
 // Keep blocks above the viewport from pushing content down when their height changes later
 // (diagrams, math, images, content-visibility estimates becoming real).
 export const resizeObserver = new ResizeObserver(entries => {
@@ -164,5 +176,14 @@ export const resizeObserver = new ResizeObserver(entries => {
     if (r.bottom <= 1) delta += h - prev; // entirely above the viewport
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) window.scrollBy(0, delta);
+  // Blocks that content-visibility lays out once they come into view change
+  // size again; measured at the start of the next frame, they settle before
+  // its observations. Left to the frame's own layout, WebKit reports a
+  // ResizeObserver loop. (3.3 got this measurement from redrawing the rail
+  // on every callback; the rail is now redrawn at most every 250 ms.)
+  if (!settleQueued) {
+    settleQueued = true;
+    requestAnimationFrame(() => { settleQueued = false; void document.scrollingElement.scrollHeight; });
+  }
   scheduleRail();
 });
