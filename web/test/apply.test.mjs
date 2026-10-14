@@ -1403,6 +1403,24 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   check('a document cut short below the reader, then completed, puts the reader back', shifts.every(s => s.cut > 0 && Math.abs(s.shift) <= 1), JSON.stringify(shifts));
 }
 
+// The window resizes in the frame of a scroll made just before it (the app
+// showing a window, a script scrolling): resize events run before scroll
+// events, so the place settled before that scroll is stale. The resize keeps
+// the place the scroll went to. (The smoke refill check failed this way:
+// a resize hold put the reader back where they had been seconds earlier.)
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  await toTop(10);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => {
+    window.scrollBy(0, document.querySelector('.blk[data-slot="40"]').getBoundingClientRect().top - 40);
+    window.dispatchEvent(new Event('resize'));
+  });
+  await page.waitForTimeout(500);
+  const top40 = await topOf(40);
+  check('a resize right after a scroll keeps the place the scroll went to', Math.abs(top40 - 40) <= 2, `top=${top40}`);
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
