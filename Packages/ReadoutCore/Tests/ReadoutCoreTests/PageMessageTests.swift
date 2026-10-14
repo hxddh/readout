@@ -18,6 +18,8 @@ import Testing
         #expect(PageMessage(["type": "painted", "version": NSNumber(value: 1)]) == .painted)
         #expect(PageMessage(["type": "setCodeWrap", "on": NSNumber(value: true)]) == .setCodeWrap(on: true))
         #expect(PageMessage(["type": "setCodeWrap"]) == nil)
+        // N with no change left: the page says so and the app beeps.
+        #expect(PageMessage(["type": "nothing"]) == .nothing)
     }
 
     @Test func rejectsMalformedMessages() {

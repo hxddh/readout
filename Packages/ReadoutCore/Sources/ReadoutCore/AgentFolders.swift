@@ -29,6 +29,20 @@ public enum AgentFolders {
         }
         return true
     }
+
+    /// The deepest folder above `path` that exists (`~/.claude` or `~` for a
+    /// missing `~/.claude/plans`): watched until the missing folder appears,
+    /// instead of polling for it. Nil when `path` exists or nothing above it does.
+    public static func nearestExistingAncestor(of path: String, exists: (String) -> Bool) -> String? {
+        guard !exists(path) else { return nil }
+        var current = (path as NSString).standardizingPath
+        while current != "/" && !current.isEmpty {
+            current = (current as NSString).deletingLastPathComponent
+            if current.isEmpty { return nil }
+            if exists(current) { return current }
+        }
+        return nil
+    }
 }
 
 /// Decides which Markdown documents agents create in the agent folders open on
