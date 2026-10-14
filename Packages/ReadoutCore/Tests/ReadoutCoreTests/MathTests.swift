@@ -35,7 +35,37 @@ import Testing
         #expect(html("Para\n    with $x$\n").contains("data-tex=\"x\""))
     }
 
+    /// Indented code inside a block quote (also in a quoted list item) is
+    /// code: the quote markers are not part of its indentation.
+    @Test func indentedCodeInsideAQuoteIsLeftAlone() {
+        #expect(html(">     echo $a_b$ end $c$\n").contains("<pre><code>echo $a_b$ end $c$"))
+        #expect(html("> para\n\n>     echo $a_b$ x $y$\n").contains("<pre><code>echo $a_b$ x $y$"))
+        let item = html("> - item\n>\n>       echo $a_b$ x $y$\n")
+        #expect(item.contains("<pre><code>echo $a_b$ x $y$"))
+        #expect(!item.contains("math"))
+        #expect(html(">     a $x$\n>     b $y$\n").contains("<pre><code>a $x$\nb $y$"))
+        #expect(html("> > \tdeep $z$\n").contains("<pre><code>deep $z$"))
+        // Text in a quoted list item, and a quote's continuation line, are not code.
+        #expect(html("> - item\n>\n>     para $q$\n").contains("data-tex=\"q\""))
+        #expect(html("> para\n>     more $w$\n").contains("data-tex=\"w\""))
+    }
+
+    @Test func tabIndentedCodeOverSeveralLinesIsLeftAlone() {
+        #expect(html("\tone $a$\n\ttwo $b$\n").contains("<pre><code>one $a$\ntwo $b$"))
+    }
+
     // MARK: $$ display math
+
+    /// An unclosed `$$` in a list item does not take in the next item.
+    @Test func displayMathStopsAtTheNextListItem() {
+        let doc = MarkdownParser.parse("- $$\n  a\n- $$\n")
+        #expect(doc.blocks.count == 2)
+        #expect(doc.blocks.allSatisfy { $0.kind == .listItem })
+        let outdented = MarkdownParser.parse("- $$\n  a\n> $$\n")
+        #expect(outdented.blocks.count == 2 && outdented.blocks.last?.kind == .quote)
+        // Closed inside the item it still is display math.
+        #expect(html("- $$\n  a_1\n  $$\n- next\n").contains("data-tex=\"a_1\""))
+    }
 
     @Test func displayMathAfterATextLine() {
         let h = html("The formula:\n$$\nE = m_1 c^2 + m_2\n$$\n")
@@ -135,8 +165,19 @@ import Testing
     // MARK: \( and \[
 
     @Test func escapedBracketsInProseAreNotMath() {
-        let h = html("See \\[WIP\\] and \\[x\\] done, \\(sic\\).\n")
-        #expect(h == "<p>See [WIP] and [x] done, (sic).</p>")
+        let h = html("See \\[WIP\\] and \\[x\\] done, \\(-:\\).\n")
+        #expect(h == "<p>See [WIP] and [x] done, (-:).</p>")
+    }
+
+    /// A closed `\(…\)` with a letter or digit is inline math, as in 3.2: the
+    /// TeX-likeness rule is for `\[…\]` only (3.3 left these as text).
+    @Test func closedParenMathWithALetterOrDigitIsMath() {
+        for tex in ["O(n)", "f(x)", "xy", "2n", "n-1", "sic"] {
+            #expect(html("Here \\(\(tex)\\) is.\n").contains("math-inline\" data-tex=\"\(tex)\""), "\(tex)")
+        }
+        // Without a letter or digit it is escaped punctuation.
+        #expect(html("Smile \\(-:\\) now.\n") == "<p>Smile (-:) now.</p>")
+        #expect(html("See \\[WIP\\] here.\n") == "<p>See [WIP] here.</p>")
     }
 
     @Test func texInBracketsIsStillMath() {
