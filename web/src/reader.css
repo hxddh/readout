@@ -1,7 +1,7 @@
 /*
   Readout reader stylesheet.
   One idea carries the design: the text column is quiet and the change rail is the only voice.
-  Everything else follows the system: SF Pro, the user's accent colour, native light/dark.
+  Everything else follows the system: the system font, the user's accent colour, native light/dark.
 */
 
 :root {
@@ -25,14 +25,21 @@
   --pop-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.12);
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
 
-  --measure: 680px;
+  /* In rem, so ⌘+ and ⌘− keep the characters per line (680 px at 16 px). */
+  --measure: 42.5rem;
   --size: 16px;
   --lh: 1.65;
   --lh-cjk: 1.8;
   --gutter: 28px;
+  /* The gap between blocks. Small type comes in three sizes: secondary text
+     (notes, tables, captions), code, and the reader's own small labels. */
+  --flow: 1.1rem;
+  --fs-sm: 0.875rem;
+  --fs-code: 0.84rem;
+  --fs-xs: 0.75rem;
 
-  --font: -apple-system, "SF Pro Text", "PingFang SC", "Hiragino Sans", "Helvetica Neue", sans-serif;
-  --font-display: -apple-system, "SF Pro Display", "PingFang SC", "Hiragino Sans", sans-serif;
+  /* -apple-system picks SF's optical size (Text or Display) for each size. */
+  --font: -apple-system, "PingFang SC", "Hiragino Sans", "Helvetica Neue", sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
 
   color-scheme: light;
@@ -59,7 +66,7 @@
   --caution: #ff6b5e;
   --pop-bg: #333336;
   --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
-  --mark-bg: color-mix(in srgb, #ffd60a 28%, transparent);
+  --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -81,12 +88,12 @@
     --caution: #ff6b5e;
     --pop-bg: #333336;
     --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
-    --mark-bg: color-mix(in srgb, #ffd60a 28%, transparent);
+    --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
     color-scheme: dark;
   }
 }
 
-:root[data-width="wide"] { --measure: 920px; }
+:root[data-width="wide"] { --measure: 57.5rem; }
 
 * { box-sizing: border-box; }
 
@@ -108,15 +115,14 @@ html {
 
 body { margin: 0; }
 pre, code, kbd, samp, td, th { hanging-punctuation: none; }
-
-::selection { background: var(--accent-soft); }
+/* Native selection colour: it follows the accent and greys in an inactive window. */
 
 #ro-doc {
   max-width: calc(var(--measure) + var(--gutter) * 2);
   margin: 0 auto;
   /* The page scrolls under the window toolbar (--top-inset tall): at rest the
      document starts the same distance below it, whatever its height. */
-  padding: calc(var(--top-inset, 0px) + 28px) var(--gutter) 30vh;
+  padding: calc(var(--top-inset, 0px) + 12px) var(--gutter) 30vh;
   position: relative;
   /* A long URL or word breaks rather than scrolling the page sideways. */
   overflow-wrap: break-word;
@@ -141,39 +147,55 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
   padding-inline: var(--gutter);
 }
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
+/* CJK emphasis: no slanted Han or kana (they have no italic), but emphasis
+   dots, under the text in Chinese and sesame marks over it in Japanese.
+   Latin text in other blocks keeps its italic. */
+.blk.cjk em {
+  font-synthesis-style: none;
+  text-emphasis: filled dot;
+  text-emphasis-position: under right;
+}
+.blk.cjk:lang(ja) em {
+  text-emphasis: filled sesame;
+  text-emphasis-position: over right;
+}
 /* CJK: trim the doubled space of adjacent full-width punctuation where WebKit supports it. */
 @supports (text-spacing-trim: space-first) { html { text-spacing-trim: space-first; } }
 
 .blk > p, .blk > ul, .blk > ol, .blk > blockquote, .blk > .table-wrap,
 .blk > .code-block, .blk > .alert, .blk > .math-block, .blk > .mermaid-block, .blk > hr,
 .blk > details, .blk > .footnotes {
-  margin: 0 0 1.1em;
+  margin: 0 0 var(--flow);
 }
 /* A rule and the footnotes keep their wider spacing (2em around a rule, 2.2em
-   above the notes), less the 1.1em the block above ends with. */
-.blk > hr { margin: 0.9em 0 2em; }
-.blk > .footnotes { margin-top: calc(2.2em - 1.1rem); }
-/* A code block's em is its smaller code size: keep the body text's gap. */
-.blk > .code-block { margin-bottom: 1.1rem; }
+   above the notes), less the gap the block above ends with. */
+.blk > hr { margin: calc(2em - var(--flow)) 0 2em; }
+.blk > .footnotes { margin-top: calc(2.2em - var(--flow)); }
 
-p { margin: 0 0 1.1em; }
+p { margin: 0 0 var(--flow); }
+/* Better line breaks where WebKit has them: no one-word last line. */
+p, li { text-wrap: pretty; }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
   font-weight: 650;
   line-height: 1.3;
   margin: 0;
   scroll-margin-top: 24px;
 }
-/* Top margins less the 1.1rem the block above ends with (margins between
-   blocks add up). Set on the block, so its change bar can follow the heading
-   text (--h-fs: size, --h-mt / --h-mb: margins above and below). */
-.k-heading:has(> h1) { --h-fs: 1.85rem; --h-mt: calc(1.6 * 1.85rem - 1.1rem); --h-mb: calc(0.7 * 1.85rem); }
-.k-heading:has(> h2) { --h-fs: 1.4rem; --h-mt: calc(1.8 * 1.4rem - 1.1rem); --h-mb: calc(0.6 * 1.4rem); }
-.k-heading:has(> h3) { --h-fs: 1.14rem; --h-mt: calc(1.5 * 1.14rem - 1.1rem); --h-mb: calc(0.5 * 1.14rem); }
-.k-heading:has(> h4) { --h-fs: 1rem; --h-mt: calc(1.7rem - 1.1rem); --h-mb: 0.4rem; }
-.k-heading:has(> h5) { --h-fs: 0.94rem; --h-mt: calc(1.4rem - 1.1rem); --h-mb: calc(0.4 * 0.94rem); }
-.k-heading:has(> h6) { --h-fs: 0.875rem; --h-mt: calc(1.4rem - 1.1rem); --h-mb: calc(0.4 * 0.875rem); }
+/* Each level: its size and the space above and below it in units of that
+   size (--h-above, --h-below); the top margin is less the gap the block above
+   ends with (margins between blocks add up). Set on the block, so its change
+   bar can follow the heading text (--h-fs: size, --h-mt / --h-mb: margins). */
+.k-heading:has(> h1) { --h-fs: 1.85rem; --h-above: 1.6; --h-below: 0.7; }
+.k-heading:has(> h2) { --h-fs: 1.4rem; --h-above: 1.8; --h-below: 0.6; }
+.k-heading:has(> h3) { --h-fs: 1.14rem; --h-above: 1.5; --h-below: 0.5; }
+.k-heading:has(> h4) { --h-fs: 1rem; --h-above: 1.7; --h-below: 0.4; }
+.k-heading:has(> h5) { --h-fs: 0.94rem; --h-above: 1.5; --h-below: 0.4; }
+.k-heading:has(> h6) { --h-fs: var(--fs-sm); --h-above: 1.6; --h-below: 0.4; }
+.k-heading:has(> :is(h1, h2, h3, h4, h5, h6)) {
+  --h-mt: calc(var(--h-above) * var(--h-fs) - var(--flow));
+  --h-mb: calc(var(--h-below) * var(--h-fs));
+}
 /* The first heading, or the one right under the front matter, starts at the
    top; one right under a rule leaves the rule's 2em as the gap. */
 #ro-doc > .k-heading:first-child:has(> :is(h1, h2)),
@@ -198,11 +220,14 @@ a:hover { text-decoration-color: currentColor; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
 strong { font-weight: 650; }
-del { color: var(--text-3); }
+/* Struck-through text stays readable (AA). */
+del { color: var(--text-2); }
 
+/* Inline code, keys and samples: the code size, relative to the text they sit
+   in (a heading's, a table's), so 0.84em of body text is --fs-code. */
 code {
   font-family: var(--mono);
-  font-size: 0.86em;
+  font-size: 0.84em;
   /* A long path or identifier breaks rather than running past the column. */
   overflow-wrap: break-word;
   background: var(--fill);
@@ -233,7 +258,7 @@ mark {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
-kbd, samp { font-family: var(--mono); font-size: 0.82em; }
+kbd, samp { font-family: var(--mono); font-size: 0.84em; }
 kbd {
   padding: 0.05em 0.38em;
   border-radius: 4px;
@@ -244,7 +269,10 @@ kbd {
 
 /* Lists: each item is its own block, so spacing is applied per block. */
 ul.li-block, ol.li-block { margin: 0; padding-left: 1.5em; }
-ul.li-block.li-last, ol.li-block.li-last { margin-bottom: 1.1em; }
+/* Numbered items: two-figure numbers (10.–99.) and the gap WebKit leaves
+   after a number fit inside the column, not in the gutter. */
+ol.li-block { padding-left: 2.1em; }
+ul.li-block.li-last, ol.li-block.li-last { margin-bottom: var(--flow); }
 .li-block.li-loose > li { margin-bottom: 0.5em; }
 .li-block li > ul, .li-block li > ol { padding-left: 1.4em; margin: 0.15em 0; }
 .li-block li > p { margin: 0 0 0.5em; }
@@ -255,7 +283,7 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: 1.1em; }
 }
 /* In a quote or an alert they are spaced like its paragraphs. */
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block) {
-  margin: 0 0 1.1rem;
+  margin: 0 0 var(--flow);
 }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):first-child { margin-top: 0; }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):last-child { margin-bottom: 0; }
@@ -264,6 +292,8 @@ li { margin: 0.12em 0; }
 #ro-doc > .blk > .li-block > li { margin-top: 0.06em; }
 #ro-doc > .blk > .li-block:not(.li-loose) > li { margin-bottom: 0.06em; }
 li::marker { color: var(--text-3); }
+/* Numbers are text: AA, like the secondary text (bullets stay quieter). */
+ol > li::marker { color: var(--text-2); }
 ol.li-block > li::marker { font-variant-numeric: tabular-nums; }
 /* Nested numbered lists count differently from their parent: 1. › i. › a. */
 .li-block li ol { list-style-type: lower-roman; }
@@ -300,7 +330,10 @@ li.task > .task-box.checked::after {
   border-width: 0 0.13em 0.13em 0;
   transform: rotate(45deg);
 }
+/* A ticked task greys its own text, not the sub-items under it (they keep
+   their own state). */
 li.task:has(> .task-box.checked) { color: var(--text-2); }
+li.task:has(> .task-box.checked) > :is(ul, ol) { color: var(--text); }
 
 blockquote {
   margin-left: 0;
@@ -321,7 +354,7 @@ blockquote > :last-child { margin-bottom: 0; }
 }
 .alert > :last-child { margin-bottom: 0; }
 .alert code { background: var(--fill-2); }
-.alert-title { font-weight: 650; color: var(--alert-c); margin: 0 0 0.25em; font-size: 0.93em; }
+.alert-title { font-weight: 650; color: var(--alert-c); margin: 0 0 0.25em; font-size: var(--fs-sm); }
 .alert-note { --alert-c: var(--note); }
 .alert-tip { --alert-c: var(--tip); }
 .alert-important { --alert-c: var(--important); }
@@ -331,14 +364,14 @@ blockquote > :last-child { margin-bottom: 0; }
 /* Front matter */
 .front-matter {
   display: flex; flex-wrap: wrap; gap: 4px 18px;
-  font-size: 0.82rem; color: var(--text-2);
+  font-size: var(--fs-sm); color: var(--text-2);
   margin: 0 0 1.6em;
 }
 .fm-key { color: var(--text-2); font-weight: 600; }
 
 /* Tables */
 .table-wrap { overflow-x: auto; }
-table { border-collapse: collapse; font-size: 0.92em; line-height: 1.5; min-width: 50%; }
+table { border-collapse: collapse; font-size: var(--fs-sm); line-height: 1.5; min-width: 50%; }
 th, td { padding: 0.45em 0.9em 0.45em 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
 th:last-child, td:last-child { padding-right: 0; }
 th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; }
@@ -375,16 +408,22 @@ td.num, th.num { text-align: right; }
   position: relative;
   background: var(--fill);
   border-radius: 8px;
-  font-size: 0.84rem;
+  font-size: var(--fs-code);
   line-height: 1.55;
 }
+/* A long line scrolls inside the block, with the same shade at the right
+   edge as a wide table (gone when scrolled to the end or nothing scrolls).
+   Important: Shiki sets a background on the <pre> it writes. */
 .code-block pre {
   margin: 0;
   padding: 0.9em 1.05em;
   overflow-x: auto;
   font-family: var(--mono);
   tab-size: 4;
-  background: transparent !important;
+  border-radius: inherit;
+  background:
+    linear-gradient(to left, var(--fill) 18px, transparent) local right / 28px 100% no-repeat,
+    linear-gradient(to left, color-mix(in srgb, var(--text) 9%, transparent), transparent) scroll right / 18px 100% no-repeat !important;
 }
 .code-block pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
 .code-block .cb-tools {
@@ -399,10 +438,11 @@ td.num, th.num { text-align: right; }
   -webkit-user-select: none; user-select: none;
 }
 .code-block:hover .cb-tools, .code-block:focus-within .cb-tools { opacity: 1; }
-.cb-lang { font-size: 0.68rem; color: var(--text-3); margin-right: 4px; }
+/* The language label is a step quieter than the buttons beside it. */
+.cb-lang { font-size: calc(0.9 * var(--fs-xs)); color: var(--text-3); margin-right: 4px; }
 /* Wrap and Copy: the same quiet capsule, filled under the pointer. */
 .cb-wrap, .cb-copy {
-  font: inherit; font-size: 0.72rem; line-height: 1.5;
+  font: inherit; font-size: var(--fs-xs); line-height: 1.5;
   border: 0; border-radius: 999px; padding: 1px 8px;
   background: transparent; color: var(--text-2);
   cursor: pointer;
@@ -453,7 +493,7 @@ details ul, details ol { padding-left: 1.5em; }
   margin-top: 2.2em;
   padding-top: 0.9em;
   border-top: 1px solid var(--rule);
-  font-size: 0.88em;
+  font-size: var(--fs-sm);
   color: var(--text-2);
 }
 .footnotes ol { margin: 0; padding-left: 1.6em; }
@@ -471,7 +511,8 @@ details ul, details ol { padding-left: 1.5em; }
 .math-block { overflow-x: auto; overflow-y: hidden; text-align: center; padding: 0.3em 0; }
 /* The block's own margins space a formula; KaTeX's 1em above and below came on top. */
 .math-block .katex-display { margin: 0; }
-.math-block:not(.done), .math:not(.done) { font-family: var(--mono); font-size: 0.86em; color: var(--text-2); }
+.math-block:not(.done), .math:not(.done) { font-family: var(--mono); font-size: 0.84em; color: var(--text-2); }
+.math-block:not(.done) { font-size: var(--fs-code); }
 .math-block:not(.done) { white-space: pre-wrap; text-align: left; }
 .math-inline.done { font-size: 1.02em; }
 
@@ -482,16 +523,16 @@ details ul, details ol { padding-left: 1.5em; }
 .mermaid-block svg { max-width: 100%; height: auto; }
 .mermaid-src {
   text-align: left; margin: 0; padding: 0.9em 1.05em; border-radius: 8px;
-  background: var(--fill); font-family: var(--mono); font-size: 0.82rem; color: var(--text-2);
+  background: var(--fill); font-family: var(--mono); font-size: var(--fs-code); color: var(--text-2);
   white-space: pre-wrap;
 }
 .mermaid-block.done .mermaid-src { display: none; }
-.mermaid-error { font-size: 0.8rem; color: var(--text-2); margin-top: 0.5em; text-align: left; }
+.mermaid-error { font-size: var(--fs-xs); color: var(--text-2); margin-top: 0.5em; text-align: left; }
 .mermaid-error::before { content: "⚠︎ "; color: var(--warning); }
 
 /* Remote images */
 .remote-img button {
-  font: inherit; font-size: 0.82rem;
+  font: inherit; font-size: var(--fs-sm);
   border: 1px dashed var(--rule); border-radius: 8px;
   background: transparent; color: var(--text-2);
   padding: 0.6em 1em; cursor: pointer;
@@ -504,7 +545,7 @@ details ul, details ol { padding-left: 1.5em; }
   position: absolute;
   left: 10px;   /* in the gutter the block extends over */
   top: 0.25em;
-  bottom: 1.1em;
+  bottom: var(--flow);
   width: 3px;
   border-radius: 2px;
   background: transparent;
@@ -513,7 +554,7 @@ details ul, details ol { padding-left: 1.5em; }
 /* Along the heading's text, not the space above and below it. */
 .k-heading::before { top: calc(var(--h-mt) + 0.18 * var(--h-fs)); bottom: calc(var(--h-mb) + 0.12 * var(--h-fs)); }
 .k-listItem::before { bottom: 0.3em; }
-.k-listItem:has(> .li-last)::before { bottom: 1.1em; }
+.k-listItem:has(> .li-last)::before { bottom: var(--flow); }
 .blk.m-inserted::before { background: var(--accent); }
 .blk.m-modified::before { background: var(--accent); opacity: 0.55; }
 /* Read marks are a hairline, so an edited mark in a grey (Graphite) accent
@@ -529,16 +570,16 @@ details ul, details ol { padding-left: 1.5em; }
 
 /* What changed in an edited block, under it. */
 .wd-panel {
-  margin: 0 0 1.1em;
+  margin: 0 0 var(--flow);
   padding: 0.55em 0.8em 0.65em;
   border-radius: 8px;
   background: var(--fill);
-  font-size: 0.8rem;
+  font-size: var(--fs-xs);
   line-height: 1.55;
 }
-.wd-label { font-size: 0.75rem; font-weight: 600; color: var(--text-3); margin-bottom: 0.3em; }
+.wd-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 0.3em; }
 .wd-body {
-  margin: 0; font-family: var(--mono); font-size: 0.95em;
+  margin: 0; font-family: var(--mono); font-size: var(--fs-xs);
   white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-2);
 }
 .wd-body.wd-none { font-family: inherit; color: var(--text-3); }
@@ -570,7 +611,7 @@ details ul, details ol { padding-left: 1.5em; }
   left: 0; right: 0; top: 0.2em; z-index: 5;
   max-height: 14em; overflow: auto;
   margin: 0; padding: 0.7em 0.9em;
-  font-family: var(--mono); font-size: 0.78rem; line-height: 1.5;
+  font-family: var(--mono); font-size: var(--fs-xs); line-height: 1.5;
   white-space: pre-wrap;
   border-radius: 8px;
   /* Removed text, tinted red like a removal in the word comparison, on a
@@ -586,7 +627,7 @@ details ul, details ol { padding-left: 1.5em; }
 .blk.flash { isolation: isolate; }
 .blk.flash::after {
   content: ""; position: absolute; z-index: -1; pointer-events: none;
-  left: var(--gutter); right: var(--gutter); top: 0; bottom: 1.1em;
+  left: var(--gutter); right: var(--gutter); top: 0; bottom: var(--flow);
   border-radius: 4px;
   animation: arrive 1.2s ease-out forwards;
 }
@@ -608,7 +649,7 @@ details ul, details ol { padding-left: 1.5em; }
 #ro-notice {
   position: sticky; top: calc(var(--top-inset, 0px) + 10px); z-index: 20;
   margin: 0 auto 1.4em; width: max-content; max-width: 100%;
-  font-size: 0.8rem; color: var(--text-2);
+  font-size: var(--fs-xs); color: var(--text-2);
   background: var(--bg); padding: 4px 12px; border-radius: 999px;
   box-shadow: 0 0 0 1px var(--rule);
   transition: opacity 400ms;
@@ -618,7 +659,7 @@ details ul, details ol { padding-left: 1.5em; }
 /* Changes-only empty state */
 #ro-caughtup {
   margin: 18vh auto 0; width: max-content; max-width: 100%;
-  font-size: 0.9rem; color: var(--text-3);
+  font-size: var(--fs-sm); color: var(--text-3);
 }
 #ro-caughtup[hidden] { display: none; }
 
@@ -639,7 +680,7 @@ details ul, details ol { padding-left: 1.5em; }
 .h-link:hover { color: var(--accent); }
 
 /* Empty state */
-#ro-empty { color: var(--text-3); font-size: 0.95rem; padding-top: 18vh; text-align: center; }
+#ro-empty { color: var(--text-3); font-size: var(--fs-sm); padding-top: 18vh; text-align: center; }
 
 /* QuickLook: no change UI */
 :root[data-mode="quicklook"] #ro-rail, :root[data-mode="quicklook"] .blk::before { display: none; }
@@ -705,7 +746,9 @@ details ul, details ol { padding-left: 1.5em; }
   :root[data-theme="dark"] .shiki span, :root:not([data-theme="light"]) .shiki span { color: var(--shiki-light); }
   #ro-rail, #ro-notice, #ro-caughtup, .cb-tools, .del-mark, .h-link { display: none !important; }
   .blk::before { display: none; }
-  #ro-doc { padding: 0; max-width: none; }
+  /* Room on the left for list numbers past 99, which hang a little out of
+     the column (on screen into the gutter, here past the paper's edge). */
+  #ro-doc { padding: 0 0 0 1rem; max-width: none; }
   #ro-doc.cv > .blk { content-visibility: visible; }
   #ro-doc > .blk { margin-inline: 0; padding-inline: 0; }
   .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -717,13 +760,14 @@ details ul, details ol { padding-left: 1.5em; }
   .table-wrap thead th, .table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child { position: static; }
   /* A wide table wraps to the page instead of being cut at its edge. */
   .table-wrap.scrolls, .math-block { background: none; }
+  .code-block pre { background: none !important; }
   .table-wrap.scrolls table { width: auto; }
   .table-wrap.scrolls :is(td, th) { max-width: none; }
   /* A formula wider than the page breaks after a relation or operator
      (between KaTeX's unbreakable pieces) rather than being cut off. */
   .math-block { overflow: visible; }
   .math-block .katex-display > .katex { white-space: normal; }
-  table { font-size: 0.8em; }
+  table { font-size: var(--fs-xs); }
   th { white-space: normal; }
   th, td { overflow-wrap: anywhere; padding-right: 0.6em; }
 }
