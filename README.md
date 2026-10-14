@@ -16,7 +16,7 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 - **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42` open in your editor.
 - **Outline with progress.** The sidebar lists headings and how many tasks in each section are done.
 - **Focus on what's new.** Filter the document to unread changes only (<kbd>⇧⌘K</kbd>), see task progress in the window subtitle, and copy a link to any section by hovering its heading.
-- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A new Markdown document an agent creates there opens in Readout on its own, in the background, without taking focus from your terminal (edits to files that were already there, such as a README, do not). Press <kbd>⌥⌘R</kbd> anywhere to open the newest one.
+- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A new Markdown document an agent creates there opens in Readout on its own, in the background, without taking focus from your terminal (edits to files that were already there, such as a README, do not). Press <kbd>⌃⌥⌘R</kbd> anywhere to open the most recently written one. Using Codex? Add your project folder in Settings.
 - **Quick Look.** Press Space on a `.md` file in Finder.
 - **Read-only by design.** Readout never writes to your files.
 
@@ -40,7 +40,24 @@ Readout needs no setup for agents: the folders in Settings are enough. If you al
 mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout
 ```
 
-(`~/.local/bin` must be on your `PATH`.) Then `readout plan.md` opens a file and `readout -b plan.md` opens it in the background, as a tab behind the one you are reading, without switching apps. For a Claude Code hook instead of a watched folder, add `readout --hook` as a `PostToolUse` command for `Write|Edit|MultiEdit` in `~/.claude/settings.json`; it opens `tool_input.file_path` in the background when it is a Markdown file.
+(`~/.local/bin` must be on your `PATH`.) Then `readout plan.md` opens a file and `readout -b plan.md` opens it in the background, as a tab behind the one you are reading, without switching apps.
+
+For a Claude Code hook instead of a watched folder (no `readout` link needed), add this to `~/.claude/settings.json`; it opens every Markdown file Claude Code writes or edits in the background:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "/Applications/Readout.app/Contents/Resources/readout --hook" }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ## Keyboard
 
@@ -51,7 +68,7 @@ mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/rea
 | <kbd>⌘K</kbd> | Mark all as read |
 | <kbd>⇧⌘K</kbd> | Show only changes |
 | <kbd>⇧⌘O</kbd> | Open the latest agent file |
-| <kbd>⌥⌘R</kbd> | Open the newest agent document from anywhere (global; change or turn off in Settings) |
+| <kbd>⌃⌥⌘R</kbd> | Open the latest agent file from anywhere (global; change or turn off in Settings) |
 | <kbd>⌘F</kbd>, <kbd>⌘G</kbd> | Find, find next |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Text size |
 | <kbd>⌥⌘\</kbd> | Narrow / wide text |

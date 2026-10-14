@@ -23,11 +23,22 @@ final class WorkspaceIndex {
     /// every one seen written. Touched only on `queue`.
     private final class Known: @unchecked Sendable { var paths: Set<String> = [] }
 
+    /// The folders last asked for, as given (some may not exist yet).
+    private var requested: [String] = []
+    /// Bumped on every reconfiguration: results of an earlier one (a scan, a
+    /// stream event delivered before its stream stopped) are dropped.
+    private var generation = 0
+
     func configure(_ paths: [String]) {
+        requested = paths
         let normalized = paths.map { ($0 as NSString).expandingTildeInPath }.filter { FileManager.default.fileExists(atPath: $0) }
         guard normalized != roots else { return }
         roots = normalized
-        stream?.stop()
+        generation += 1
+        let gen = generation
+        // Not stop(): it waits for the queue, which a scan of large folders
+        // can hold for seconds. The old stream's late events are dropped by generation.
+        stream?.stopAsync()
         stream = nil
         recent = []
         guard !roots.isEmpty else { return }
@@ -41,7 +52,10 @@ final class WorkspaceIndex {
         queue.async { [weak self] in
             let (newest, all) = Self.scan(rootsCopy)
             known.paths = Set(all.map { Self.givenPath($0, roots: realRoots) })
-            DispatchQueue.main.async { self?.record(newest) }
+            DispatchQueue.main.async {
+                guard let self, self.generation == gen else { return }
+                self.record(newest)
+            }
         }
         stream = FSEventsStream(paths: roots, latency: 0.3, queue: queue) { [weak self] events in
             var hits: [(URL, Date, Bool)] = []
@@ -58,18 +72,20 @@ final class WorkspaceIndex {
             }
             guard !hits.isEmpty else { return }
             DispatchQueue.main.async {
-                self?.record(hits.map { ($0.0, $0.1) })
-                self?.onWrite?(hits.map { (url: $0.0, isNew: $0.2) })
+                guard let self, self.generation == gen else { return }
+                self.record(hits.map { ($0.0, $0.1) })
+                self.onWrite?(hits.map { (url: $0.0, isNew: $0.2) })
             }
         }
     }
 
-    /// The path with symlinks and /private resolved, as FSEvents reports it.
-    nonisolated static func realPath(_ path: String) -> String {
-        guard let r = realpath(path, nil) else { return path }
-        defer { free(r) }
-        return String(cString: r)
-    }
+    /// Watches the folders asked for again: one that did not exist when they
+    /// were set (`~/.claude/plans` before the first plan) is picked up once it does.
+    func refresh() { configure(requested) }
+
+    /// The path with symlinks and /private resolved, as FSEvents reports it
+    /// (a symlink to a file not written yet: where that file will be).
+    nonisolated static func realPath(_ path: String) -> String { RealPath.of(path) }
 
     /// An FSEvents path rewritten under the root as the user added it.
     nonisolated static func givenPath(_ path: String, roots: [(given: String, real: String)]) -> String {

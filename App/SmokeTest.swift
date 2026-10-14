@@ -14,6 +14,10 @@ import WebKit
 ///                 a file under /tmp, and one reached through a symlink, are
 ///                 shown; the harness rewrites the first and points the link
 ///                 at another file (`ln -sf`)
+///   `await-refill` the harness empties the smoke file and writes it back a
+///                 second later; the reader must return to its place
+///   `await-dangle` the harness points a symlink at a file not written yet,
+///                 then writes that file
 ///   `await-cli`   the harness runs `readout -b` and `readout --hook`
 @MainActor
 enum SmokeTest {
@@ -93,6 +97,9 @@ enum SmokeTest {
             }
             // Let lazy renderers (Mermaid, KaTeX) and anchor compensation settle.
             try? await Task.sleep(for: .seconds(1.5))
+            // One write, one patch: the watcher reports a write at once and
+            // folds the events that follow it, never applying it twice.
+            write(["applies": appliedCount - before], to: out, "edit.json")
             await capture(webView, window: controller.window, to: out, name: "2-after-edit")
             _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
             try? await Task.sleep(for: .seconds(1))
@@ -143,6 +150,7 @@ enum SmokeTest {
                 }
                 NSApp.activate()
             }
+            await refill(controller: controller, webView: webView, out: out)
             await liveUpdates(app: app, out: out)
             await backgroundOpens(out: out)
             await findModeSwitches(controller: controller, out: out)
@@ -162,6 +170,45 @@ enum SmokeTest {
             writeTimings(out)
             NSApp.terminate(nil)
         }
+    }
+
+    private static func write(_ json: [String: Any], to dir: URL, _ name: String) {
+        if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: dir.appendingPathComponent(name))
+        }
+    }
+
+    /// The smoke file is emptied and written again a second later (an agent
+    /// truncating before it writes): the reader comes back to where it was.
+    /// Also: a heading's link copies the file's full path with the anchor.
+    private static func refill(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
+        controller.show()
+        _ = try? await webView.evaluateJavaScript("(() => { const b = [...document.querySelectorAll('.blk')]; const t = b[Math.floor(b.length/2)]; window.scrollBy(0, t.getBoundingClientRect().top - 40); window.__refill = {slot: +t.dataset.slot, top: t.getBoundingClientRect().top}; return 1; })()")
+        // The page reports its place a moment after scrolling settles.
+        try? await Task.sleep(for: .seconds(1.2))
+        let before = appliedCount
+        mark(out, "await-refill")
+        let deadline = Date().addingTimeInterval(15)
+        while appliedCount < before + 2 && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        try? await Task.sleep(for: .seconds(1.5))
+        let shift = try? await webView.evaluateJavaScript("(() => { const r = window.__refill; const e = r && document.querySelector('.blk[data-slot=\"' + r.slot + '\"]'); return e ? e.getBoundingClientRect().top - r.top : null; })()")
+        var json: [String: Any] = ["applies": appliedCount - before]
+        if let shift = shift as? Double { json["shift"] = shift }
+
+        NSPasteboard.general.clearContents()
+        _ = try? await webView.evaluateJavaScript("(() => { const l = document.querySelector('.k-heading .h-link'); if (l) l.click(); return !!l; })()")
+        try? await Task.sleep(for: .milliseconds(300))
+        json["copied_link"] = NSPasteboard.general.string(forType: .string) ?? ""
+        json["link_prefix"] = controller.url.path + "#"
+        write(json, to: out, "refill.json")
+    }
+
+    /// The window around a document: title, tab title, subtitle, the next-change button.
+    private static func chrome(_ reader: ReaderWindowController) -> [String: Any] {
+        let item = reader.window?.toolbar?.items.first { $0.itemIdentifier == .nextChange }
+        return ["title": reader.window?.title ?? "", "tab_title": reader.window?.tab.title ?? "",
+                "subtitle": reader.window?.subtitle ?? "", "status": reader.model.status ?? "", "unread": reader.model.unread,
+                "change_item": ["present": item != nil, "hidden": item?.isHidden ?? true, "enabled": item?.isEnabled ?? false]]
     }
 
     /// The document in front (the selected tab of the frontmost reader window).
@@ -208,6 +255,7 @@ enum SmokeTest {
             while reader.model.title == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
             var entry: [String: Any] = ["before": before, "after": reader.model.title]
             if let earlyRecord { entry["early_record"] = earlyRecord }
+            if name == "tmp" { entry["chrome"] = chrome(reader) }
             if shownBefore != WorkspaceIndex.realPath(path) {
                 // A retargeted link: the window is found through the link and no longer through the old target.
                 deadline = Date().addingTimeInterval(3)
@@ -243,6 +291,44 @@ enum SmokeTest {
                                      "target_window_kept": app?.reader(for: otherURL) === other]
             } else {
                 result["collide"] = ["error": "no window"]
+            }
+        }
+        // `ln -sf ../runs/run-46.md next.md` before run-46.md is written, then
+        // the agent writes it: the window follows, saves resume, and opening
+        // the link again finds the same window.
+        if let path = env["READOUT_SMOKE_DANGLE_LINK"] {
+            let url = URL(fileURLWithPath: path)
+            app?.open(url)
+            if let reader = app?.reader(for: url) {
+                var deadline = Date().addingTimeInterval(10)
+                while reader.model.title.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                let before = reader.model.title
+                try? await Task.sleep(for: .milliseconds(300))
+                mark(out, "await-dangle")
+                deadline = Date().addingTimeInterval(15)
+                while reader.model.title == before && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                try? await Task.sleep(for: .milliseconds(500))
+                app?.open(url, mode: .background)
+                reader.saveNow()
+                BaselineStore.flush()
+                result["dangle"] = ["before": before, "after": reader.model.title, "status": reader.model.status ?? "",
+                                    "same_window": app?.reader(for: url) === reader,
+                                    "record_at_new_target": FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).current.path)]
+            } else {
+                result["dangle"] = ["error": "no window"]
+            }
+        }
+        // A file that cannot be read says so in the title bar, not only in the sidebar.
+        if let path = env["READOUT_SMOKE_UNREADABLE"] {
+            let url = URL(fileURLWithPath: path)
+            app?.open(url, mode: .background)
+            if let reader = app?.reader(for: url) {
+                let deadline = Date().addingTimeInterval(10)
+                while reader.model.status == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                try? await Task.sleep(for: .milliseconds(200))
+                result["unreadable"] = chrome(reader)
+            } else {
+                result["unreadable"] = ["error": "no window"]
             }
         }
         // A pre-3.3 record (keyed by the path as spelled, /tmp/...) is read once and moved.

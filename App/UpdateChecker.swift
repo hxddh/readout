@@ -115,7 +115,7 @@ enum UpdateChecker {
         alert.messageText = NSLocalizedString(titleKey, comment: "Update alert title")
         alert.informativeText = body
         if let updateURL {
-            alert.addButton(withTitle: NSLocalizedString("View Full Release Notes", comment: "Button"))
+            alert.addButton(withTitle: NSLocalizedString("Download Update", comment: "Button"))
             alert.addButton(withTitle: NSLocalizedString("Later", comment: "Button"))
             NSApp.activate()
             if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(updateURL) }

@@ -27,18 +27,29 @@ struct SettingsView: View {
                             .foregroundStyle(.tertiary)
                     }
                 }
-                HStack {
-                    Button(NSLocalizedString("Add Folder…", comment: "Button"), action: addFolder)
-                    Button(NSLocalizedString("Remove", comment: "Button")) {
+                // The usual +/− pair under a list.
+                HStack(spacing: 2) {
+                    Button(action: addFolder) {
+                        Image(systemName: "plus").frame(width: 20, height: 16)
+                    }
+                    .help(NSLocalizedString("Add Folder…", comment: "Button"))
+                    .accessibilityLabel(NSLocalizedString("Add Folder…", comment: "Button"))
+                    Button {
                         if let s = selection { settings.workspaces.removeAll { $0 == s } }
                         selection = nil
+                    } label: {
+                        Image(systemName: "minus").frame(width: 20, height: 16)
                     }
                     .disabled(selection == nil)
+                    .help(NSLocalizedString("Remove", comment: "Button"))
+                    .accessibilityLabel(NSLocalizedString("Remove", comment: "Button"))
+                    Spacer()
                 }
+                .buttonStyle(.borderless)
             } header: {
                 Text(NSLocalizedString("Agent folders", comment: "Settings section"))
             } footer: {
-                Text(NSLocalizedString("New Markdown documents your agents create here open in Readout on their own, in the background. The global shortcut opens the newest one.", comment: "Settings footer"))
+                Text(NSLocalizedString("New Markdown documents your agents create here open in Readout on their own, in the background. The global shortcut opens the most recently written one.", comment: "Settings footer"))
                     .foregroundStyle(.secondary)
             }
 
@@ -46,18 +57,19 @@ struct SettingsView: View {
                 Picker(NSLocalizedString("Global shortcut", comment: "Settings label"), selection: $settings.hotKey) {
                     ForEach(AppSettings.HotKeyChoice.allCases) { Text($0.title).tag($0) }
                 }
+                Picker(NSLocalizedString("Editor for ⌘E and code references", comment: "Settings label: the app Open in Editor (⌘E) and path:line links open files in"), selection: $settings.editor) {
+                    ForEach(AppSettings.Editor.allCases) { Text($0.title).tag($0) }
+                }
+            } footer: {
                 if settings.hotKeyInUse {
                     Text(NSLocalizedString("This shortcut is in use by another app. Choose another one.", comment: "Settings note: the global shortcut could not be registered"))
-                        .font(.callout)
                         .foregroundStyle(.secondary)
-                }
-                Picker(NSLocalizedString("Open code references in", comment: "Settings label"), selection: $settings.editor) {
-                    ForEach(AppSettings.Editor.allCases) { Text($0.title).tag($0) }
                 }
             }
 
             Section {
                 Toggle(NSLocalizedString("Check for updates automatically", comment: "Settings label"), isOn: $settings.checkForUpdatesAutomatically)
+            } footer: {
                 Text(NSLocalizedString("Readout checks GitHub releases for new versions.", comment: "Settings footer"))
                     .foregroundStyle(.secondary)
             }

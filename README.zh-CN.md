@@ -16,7 +16,7 @@ Agent 会把计划、规格、分析报告和代码解释写成很长的 Markdow
 - **高质量渲染。** 完整 GFM：表格、任务列表、提示块（Alerts），针对中英混排调校的排版，Shiki 代码高亮，KaTeX 数学公式，Mermaid 图表。`src/app/main.swift:42` 这样的代码引用可直接在编辑器中打开。
 - **带进度的大纲。** 侧边栏列出标题，以及每个章节的任务完成数。
 - **聚焦新增内容。** 一键只看未读变更（<kbd>⇧⌘K</kbd>），标题栏显示任务完成进度，悬停标题可复制章节链接。
-- **自动打开 Agent 写的文档。** 在设置里添加 Agent 写入的文件夹（自动包含 Claude Code 的 `~/.claude/plans`）。Agent 在这里新建的 Markdown 文档会自动在 Readout 中打开，在后台进行，不会抢走终端的焦点（修改已有文件，比如 README，不会弹出）。在任何地方按 <kbd>⌥⌘R</kbd> 可打开最新的一个。
+- **自动打开 Agent 写的文档。** 在设置里添加 Agent 写入的文件夹（自动包含 Claude Code 的 `~/.claude/plans`）。Agent 在这里新建的 Markdown 文档会自动在 Readout 中打开，在后台进行，不会抢走终端的焦点（修改已有文件，比如 README，不会弹出）。在任何地方按 <kbd>⌃⌥⌘R</kbd> 可打开最近写入的一个。使用 Codex？在设置里添加你的项目文件夹即可。
 - **Quick Look。** 在访达中选中 `.md` 文件按空格预览。
 - **始终只读。** Readout 从不写入你的文件。
 
@@ -40,18 +40,35 @@ Readout 会检查 GitHub Releases 获取新版本（**Readout → 检查更新�
 mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout
 ```
 
-（`~/.local/bin` 需要在 `PATH` 中。）之后 `readout plan.md` 打开文件，`readout -b plan.md` 在后台打开（作为标签页排在正在阅读的文档之后），不切换应用。如果想用 Claude Code hook 代替文件夹监视，在 `~/.claude/settings.json` 里为 `Write|Edit|MultiEdit` 添加 `PostToolUse` 命令 `readout --hook`；当 `tool_input.file_path` 是 Markdown 文件时，它会在后台打开。
+（`~/.local/bin` 需要在 `PATH` 中。）之后 `readout plan.md` 打开文件，`readout -b plan.md` 在后台打开（作为标签页排在正在阅读的文档之后），不切换应用。
+
+如果想用 Claude Code hook 代替文件夹监视（不需要链接 `readout`），把下面的内容加入 `~/.claude/settings.json`；Claude Code 写入或修改的每个 Markdown 文件都会在后台打开：
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "/Applications/Readout.app/Contents/Resources/readout --hook" }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ## 快捷键
 
 | 按键 | 作用 |
 | --- | --- |
 | <kbd>N</kbd> / <kbd>⇧N</kbd>（或 <kbd>⌘]</kbd> / <kbd>⌘[</kbd>） | 下一处 / 上一处未读变更 |
-| <kbd>D</kbd> | 从上到下依次显示视野内修改段落的具体改动；全部显示后再按一次收起 |
+| <kbd>D</kbd> | 从上到下依次显示视野内修改段落的具体变更；全部显示后再按一次收起 |
 | <kbd>⌘K</kbd> | 全部标为已读 |
 | <kbd>⇧⌘K</kbd> | 只看变更 |
 | <kbd>⇧⌘O</kbd> | 打开最新的 Agent 文件 |
-| <kbd>⌥⌘R</kbd> | 在任何地方打开最新的 Agent 文档（全局快捷键，可在设置中更改或关闭） |
+| <kbd>⌃⌥⌘R</kbd> | 在任何地方打开最新的 Agent 文件（全局快捷键，可在设置中更改或关闭） |
 | <kbd>⌘F</kbd>、<kbd>⌘G</kbd> | 查找、查找下一个 |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | 文字大小 |
 | <kbd>⌥⌘\</kbd> | 窄栏 / 宽栏 |
