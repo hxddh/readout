@@ -297,6 +297,8 @@ enum SmokeTest {
         controller.show()
         try? await Task.sleep(for: .milliseconds(300))
         let marks = "document.querySelectorAll('.m-inserted, .m-modified, .m-state, .del-mark').length"
+        // Undo shows the document again with new slots: the edit check's anchor is done with.
+        _ = try? await webView.evaluateJavaScript("delete window.__smoke; 1")
         var json: [String: Any] = ["unread_before": controller.model.unread]
         json["page_marks_before"] = (try? await webView.evaluateJavaScript(marks)) as? Int ?? -1
         controller.markAllRead(nil)

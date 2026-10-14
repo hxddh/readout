@@ -885,6 +885,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         watcher?.stop()
         watcher = nil
         cancellables.removeAll()
+        // Nothing to undo in a closed window; the actions hold the controller.
+        undoStack.removeAllActions()
         AppSettings.shared.showSidebar = !sidebarItem.isCollapsed
         onClose?(self)
     }
