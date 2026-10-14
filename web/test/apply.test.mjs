@@ -1166,15 +1166,21 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.evaluate(p => window.readout.apply(p), r);
   const named = await page.getByRole('heading', { name: 'Overview of the plan', exact: true }).count()
     + await page.getByRole('heading', { name: 'Status Passing', exact: true }).count()
-    + await page.getByRole('heading', { name: 'Build Green', exact: true }).count();
+    // Until it is loaded a remote image is a button, and the heading shows its label.
+    + await page.getByRole('heading', { name: 'Build Load image from badge.example', exact: true }).count();
   const button = page.getByRole('button', { name: 'Copy Link to Section', exact: true }).first();
   await button.focus();
   const focused = await page.evaluate(() => document.activeElement?.classList.contains('h-link'));
   await page.evaluate(() => { window.__msgs.length = 0; });
   await page.keyboard.press('Enter');
   const msg = await page.evaluate(() => window.__msgs.find(m => m.type === 'copyLink'));
-  check('a heading is named by its content alone, its link button stays reachable', named === 3 && focused && msg?.anchor === 'overview',
-    JSON.stringify({ named, focused, msg }));
+  await page.evaluate(() => {
+    document.querySelector('.remote-img[data-src="https://badge.example/b.svg"]').dataset.remoteId = 'rb';
+    window.readout.remoteReady({ id: 'rb', url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=' });
+  });
+  const loaded = await page.getByRole('heading', { name: 'Build Green', exact: true }).count();
+  check('a heading is named by its content alone, its link button stays reachable', named === 3 && loaded === 1 && focused && msg?.anchor === 'overview',
+    JSON.stringify({ named, loaded, focused, msg }));
 }
 
 // An update measures the blocks it changed once, after changing them all: one
@@ -1241,7 +1247,8 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.waitForTimeout(400);
   const ticks = () => page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => {
     const rect = b.getBoundingClientRect();
-    return { top: Math.round(rect.top), h: Math.round(rect.height), w: Math.round(rect.width), label: b.getAttribute('aria-label'), title: b.title };
+    // The mark's own width: the button reaches further left, transparent.
+    return { top: Math.round(rect.top), h: Math.round(rect.height), w: Math.round(rect.width - parseFloat(getComputedStyle(b).paddingLeft)), label: b.getAttribute('aria-label'), title: b.title };
   }));
   const before = await ticks();
   await page.evaluate(() => window.readout.setAppearance({ strings: { railTask: 'task' } }));

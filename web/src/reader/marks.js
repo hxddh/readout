@@ -77,7 +77,28 @@ function showPop(mark, id) {
   mark.appendChild(pop);
 }
 
-document.addEventListener('click', () => document.querySelectorAll('.del-pop').forEach(p => p.remove()));
+// A click elsewhere closes it; one inside it is the reader selecting the text to copy.
+document.addEventListener('click', ev => {
+  if (ev.target.closest && ev.target.closest('.del-pop')) return;
+  document.querySelectorAll('.del-pop').forEach(p => p.remove());
+});
+
+/** Escape: closes the removed-text popups and the comparisons open. Returns whether there were any. */
+export function closePopups() {
+  const pops = document.querySelectorAll('.del-pop');
+  pops.forEach(p => p.remove());
+  if (!openDiffs.size) return pops.length > 0;
+  const anchor = captureAnchor();
+  for (const slot of [...openDiffs]) {
+    closeDiff(slot);
+    const el = slots.get(slot);
+    if (el) heights.set(el, el.getBoundingClientRect().height);
+  }
+  walk = [];
+  restoreAnchor(anchor, new Set());
+  scheduleRail();
+  return true;
+}
 
 // ---------------------------------------------------------------- What changed in an edited block
 
@@ -184,19 +205,31 @@ const readObserver = new IntersectionObserver(entries => {
     } else {
       clearTimeout(readTimers.get(el));
       readTimers.delete(el);
+      waiting.delete(el);
     }
   }
 }, { threshold: readThresholds });
 
+// Seen long enough while the window was in the background: they wait, in
+// view, for the reader to come back, and are read once seen for the full
+// time after that (not right away: coming back is not reading them).
+const waiting = new Set();
+function restartDwell() {
+  if (!document.hasFocus() || document.hidden) return;
+  for (const el of new Set([...waiting, ...readTimers.keys()])) {
+    clearTimeout(readTimers.get(el));
+    readTimers.delete(el);
+    if (el.isConnected) readTimers.set(el, setTimeout(() => tryRead(el), 800));
+  }
+  waiting.clear();
+}
+window.addEventListener('focus', restartDwell);
+document.addEventListener('visibilitychange', restartDwell);
+
 let pendingRead = { slots: [], deletions: [] };
 function tryRead(el) {
   readTimers.delete(el);
-  if (!document.hasFocus() || document.hidden) {
-    // Try again when focus returns.
-    // Out of view by then: drop the entry so the next intersection starts a new timer.
-    readTimers.set(el, setTimeout(() => { if (inViewport(el)) tryRead(el); else readTimers.delete(el); }, 1000));
-    return;
-  }
+  if (!document.hasFocus() || document.hidden) { waiting.add(el); return; }
   readObserver.unobserve(el);
   el.classList.add('m-read');
   if (el.classList.contains('del-mark')) pendingRead.deletions.push(+el.dataset.del);
@@ -224,7 +257,8 @@ export function unreadElements() {
 
 export function jump(dir) {
   const list = unreadElements();
-  if (!list.length) return;
+  // Nothing to go to: the app says so (a beep).
+  if (!list.length) { post({ type: 'nothing' }); return; }
   const line = window.innerHeight / 3;
   let target;
   if (dir > 0) target = list.find(e => e.getBoundingClientRect().top > line + 4) || list[0];
@@ -236,6 +270,7 @@ export function jump(dir) {
   // target have their real heights.
   const smooth = !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   window.scrollBy({ top, behavior: smooth ? 'smooth' : 'auto' });
+  focusBlock(target);
   if (!smooth) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!target.isConnected) return;
@@ -243,6 +278,15 @@ export function jump(dir) {
       if (Math.abs(off) > 2) window.scrollBy(0, off);
     }));
   }
+}
+
+/**
+ * Keyboard focus goes where a jump went, so Tab continues from there and
+ * VoiceOver reads it; the jump has scrolled already.
+ */
+export function focusBlock(el) {
+  if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+  el.focus({ preventScroll: true });
 }
 
 export function markAllRead() {

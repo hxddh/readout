@@ -1,15 +1,32 @@
 // Remote media placeholders. The page itself cannot fetch (CSP): a click asks
 // the native side, which downloads with an ephemeral, cookie-free session and
 // serves the bytes back over readout:.
-import { strings, post } from './core.js';
+import { strings, post, quicklook } from './core.js';
 
 let remoteSeq = 0;
 
+function hostOf(src) {
+  try { return new URL(src, 'https://x/').host; } catch { return src; }
+}
+
+/** Quick Look cannot load anything: the placeholder shows its text, with nothing to click. */
+function placeholder(span) {
+  const text = document.createElement('span');
+  text.className = 'remote-ph';
+  text.textContent = strings.loadImage.replace('%@', hostOf(span.dataset.src));
+  span.replaceChildren(text);
+}
+
+/** Turns the placeholders already set up into text (Quick Look's mode arrived after them). */
+export function staticRemoteImages() {
+  for (const btn of document.querySelectorAll('#ro-doc .remote-img > button')) placeholder(btn.parentElement);
+}
+
 export function setupRemoteImage(span) {
   if (span.firstChild) return;
+  if (quicklook) { placeholder(span); return; }
   const src = span.dataset.src;
-  let host = src;
-  try { host = new URL(src, 'https://x/').host; } catch { /* keep */ }
+  const host = hostOf(src);
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.textContent = strings.loadImage.replace('%@', host);

@@ -10,7 +10,7 @@ import { renderMermaid } from './mermaid.js';
 
 export function enhance(el) {
   for (const cb of el.querySelectorAll('.code-block')) setupCode(cb);
-  for (const t of el.querySelectorAll('.table-wrap')) requestAnimationFrame(() => measureTable(t));
+  for (const t of el.querySelectorAll('.table-wrap')) queueTable(t);
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
   for (const h of el.classList.contains('k-heading') ? [el] : []) setupHeadingLink(h);
   if (el.querySelector('.math, .math-block')) renderMath(el);
@@ -27,9 +27,24 @@ function setLang(el) {
   if (lang) el.lang = lang; else el.removeAttribute('lang');
 }
 
-/** A table wider than the column scrolls sideways (and pins its first column). */
-function measureTable(t) {
-  t.classList.toggle('scrolls', t.scrollWidth > t.clientWidth + 1);
+/**
+ * A table wider than the column scrolls sideways (and pins its first column).
+ * A scrolling table takes its natural width (reader.css), so it is measured
+ * without the class: otherwise one that scrolled once would never fit again.
+ * All the writes, then all the reads, then the writes: the page lays out once.
+ */
+export function measureTables(tables = doc.querySelectorAll('.table-wrap')) {
+  const list = [...tables].filter(t => t.isConnected);
+  for (const t of list) t.classList.remove('scrolls');
+  const wide = list.map(t => t.scrollWidth > t.clientWidth + 1);
+  list.forEach((t, i) => { if (wide[i]) t.classList.add('scrolls'); });
+}
+
+// New tables are measured together, in the next frame.
+const queuedTables = new Set();
+function queueTable(t) {
+  if (!queuedTables.size) requestAnimationFrame(() => { const list = [...queuedTables]; queuedTables.clear(); measureTables(list); });
+  queuedTables.add(t);
 }
 
 // The window width decides which tables scroll.
@@ -37,7 +52,7 @@ let tablesQueued = false;
 window.addEventListener('resize', () => {
   if (tablesQueued) return;
   tablesQueued = true;
-  requestAnimationFrame(() => { tablesQueued = false; doc.querySelectorAll('.table-wrap').forEach(measureTable); });
+  requestAnimationFrame(() => { tablesQueued = false; measureTables(); });
 });
 
 /** Hover link button on headings: copies a `#anchor` link for the section. */
@@ -57,33 +72,12 @@ function setupHeadingLink(h) {
     btn.dataset.label = '✓';
     setTimeout(() => { btn.dataset.label = '§'; }, 1200);
   });
-  // At the start of the heading's first line (CSS moves it into the gutter).
-  // Inside the heading, its label would start the heading's accessible name
-  // ("Copy Link to Section Overview"): the heading is named by its own content.
-  const hn = h.querySelector('h1, h2, h3, h4, h5, h6') || h;
-  const name = contentName(hn).replace(/\s+/g, ' ').trim();
-  if (name) hn.setAttribute('aria-label', name);
-  hn.prepend(btn);
-}
-
-/**
- * The name a heading's content gives it: its text, with images (remote ones
- * too) by their alt text and elements by their own label; hidden content left out.
- */
-function contentName(node) {
-  let out = '';
-  for (const n of node.childNodes) {
-    if (n.nodeType === Node.TEXT_NODE) { out += n.data; continue; }
-    if (n.nodeType !== Node.ELEMENT_NODE || n.classList.contains('h-link')) continue;
-    // Hidden (the block may not be in the page yet, so no computed style).
-    if (n.hidden || n.getAttribute('aria-hidden') === 'true' || n.style?.display === 'none' || n.style?.visibility === 'hidden') continue;
-    const label = n.getAttribute('aria-label');
-    if (label) out += ` ${label} `;
-    else if (n.classList.contains('remote-img')) out += n.dataset.alt || '';   // a remote image not loaded (yet): its button is not its name
-    else if (n.localName === 'img') out += n.getAttribute('alt') || '';
-    else out += contentName(n);
-  }
-  return out;
+  // Beside the heading, not inside it: the heading is named by its own
+  // content as the browser computes it (math by its MathML, the button's
+  // label not part of it), and an out-of-flow child does not stop WebKit
+  // balancing its lines. CSS puts it in the gutter on the first line. After
+  // the heading, so the heading stays the block's first element.
+  h.appendChild(btn);
 }
 
 /**
