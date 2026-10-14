@@ -1094,6 +1094,17 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
   check('a block at the toolbar edge keeps its share above the edge when it grows',
     grow.slot === 20 && Math.abs(grow.after.above * grow.after.h - grow.above * grow.after.h) <= 2, JSON.stringify(grow));
+  // A block under the toolbar grows later (an image, a diagram): the text below it stays put.
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  await toTop(10, 30);
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { const d = document.createElement('div'); d.id = 'grown'; d.style.height = '100px'; document.querySelector('.blk[data-slot="9"]').appendChild(d); });
+  await page.waitForTimeout(300);
+  const grown = await topOf(10);
+  await page.evaluate(() => document.getElementById('grown').remove());
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('a block growing under the toolbar leaves the text below it in place', Math.abs(grown - 30) <= 2, `top=${grown}`);
   check('removing a block under the toolbar leaves the text below it in place', under.slot === 29 && under.bottom <= 52 && Math.abs(kept - 30) <= 2, JSON.stringify({ under, kept }));
   check('the reading position is taken below the toolbar and kept there', a.slot === 40 && Math.abs(nextTop - 52) <= 2, JSON.stringify({ slot: a.slot, nextTop }));
 }
@@ -1118,6 +1129,29 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   const gap = await gapToEnd();
   check('an emptied file written again keeps the reading position', before.slot === 30 && after?.slot === 30 && Math.abs(after.offset - before.offset) <= 2 && gap <= 1,
     JSON.stringify({ before: [before.slot, before.offset], after: after && [after.slot, after.offset], gap }));
+
+  // Written again in parts: the first part does not reach the reader's block.
+  await page.evaluate(p => window.readout.apply(p), fixReset(60));
+  await toTop(30);
+  await page.waitForTimeout(300);
+  const before2 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(p => window.readout.apply(p), emptyAll());
+  await page.evaluate(p => window.readout.apply(p), fixReset(20));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: fixReset(40, undefined, undefined, 21).ops.map((o, i) => ({ ...o, after: 20 + i })) }));
+  const after2 = await page.evaluate(() => window.readout.captureAnchor());
+  // Following, and the first part fits in the window: following goes on.
+  await toEnd();
+  await page.waitForTimeout(300);
+  await page.evaluate(p => window.readout.apply(p), emptyAll());
+  await page.evaluate(p => window.readout.apply(p), fixReset(2));
+  const tail = [];
+  for (const slot of [3, 4, 5]) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'insert', slot, after: slot - 1, html: `<p>${'appended live tail text '.repeat(60)}</p>`, kind: 'paragraph' }] }));
+    tail.push(await gapToEnd());
+  }
+  check('an emptied file written again in parts keeps the reading position, or the end',
+    after2?.slot === 30 && Math.abs(after2.offset - before2.offset) <= 2 && tail.every(g => g <= 1),
+    JSON.stringify({ before: [before2.slot, before2.offset], after: after2 && [after2.slot, after2.offset], tail }));
 }
 
 // Headings are named by their text, not by the link button inside them; the
@@ -1125,7 +1159,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
 {
   const r = fixReset(5, i => i === 1 ? '<h2>Overview of <code>the plan</code></h2>'
     : i === 2 ? '<h2>Status <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Passing"></h2>'
-    : i === 3 ? '<h2>Build <span class="remote-img" data-src="https://badge.example/b.svg" data-alt="Green"></span></h2>' : `<p>para ${i}</p>`, i => i <= 3 ? 'heading' : 'paragraph');
+    : i === 3 ? '<h2>Build <span class="remote-img" data-src="https://badge.example/b.svg" data-alt="Green"></span><span hidden> secret</span></h2>' : `<p>para ${i}</p>`, i => i <= 3 ? 'heading' : 'paragraph');
   r.ops[0].anchor = 'overview';
   r.ops[1].anchor = 'status';
   r.ops[2].anchor = 'build';

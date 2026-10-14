@@ -9,9 +9,11 @@ import { reportActiveHeading, headingsChanged } from './heading.js';
 const notice = document.getElementById('ro-notice');
 let first = true;
 // The reader's place when a patch emptied the document. An agent truncates a
-// file before writing it again: the refill (a reset) brings the reader back
-// there, not to the top.
-let emptied = null;
+// file before writing it again, and a read can land in between or catch the
+// new text half written: the refill brings the reader back there (or to the
+// end, when they were following), and so do the patches after it until
+// their block is back (or they reach the end), or until they move.
+let held = null;   // {anchor, following, top}
 
 function estimateHeight(kind, html) {
   const text = html.length;
@@ -47,11 +49,12 @@ function fillBlock(el, op) {
 export function apply(p) {
   const isFirst = first;
   first = false;
-  // The document is empty (it was truncated): the place it had before counts.
-  const refill = slots.size === 0 ? emptied : null;
-  emptied = null;
-  const anchor = isFirst ? null : refill ? refill.anchor : captureAnchor();
-  const following = !isFirst && (refill ? refill.following : atBottom());
+  // The document was emptied (truncated): the place it had before counts.
+  if (held && slots.size > 0 && Math.abs(document.scrollingElement.scrollTop - held.top) > 2) held = null;   // the reader moved
+  const place = held;
+  held = null;
+  const anchor = isFirst ? null : place ? place.anchor : captureAnchor();
+  const following = !isFirst && (place ? place.following : atBottom());
   // Only follow when the change is at (or below) the viewport: an insertion
   // at the top of the document must not yank a bottom-dwelling reader.
   // The anchor block itself counts: if it was edited, restoring it keeps us
@@ -144,6 +147,7 @@ export function apply(p) {
   if (p.rewrite) showNotice(strings.rewritten);
 
   // Restore position in the same task, before the browser paints.
+  let restored = false;
   if (follow) {
     // In a large document a new block counts at its estimated height until
     // it is laid out: lay out the new ones now so the end is the real end.
@@ -155,9 +159,11 @@ export function apply(p) {
     // size: content-visibility then keeps that size (and they are on screen).
     if (forced.length) requestAnimationFrame(() => requestAnimationFrame(() => { for (const el of forced) el.style.contentVisibility = ''; }));
   }
-  else if (anchor) restoreAnchor(anchor, changed);
-  // Emptied: remember where the reader was for the refill.
-  if (slots.size === 0 && anchor) emptied = { anchor, following };
+  else if (anchor) restored = restoreAnchor(anchor, changed);
+  // Emptied, or refilled only in part: hold on to the reader's place.
+  if (anchor && (slots.size === 0 || (place && (following ? !atBottom() : !restored)))) {
+    held = { anchor, following, top: document.scrollingElement.scrollTop };
+  }
 
   for (const el of visibleChanged) {
     el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');

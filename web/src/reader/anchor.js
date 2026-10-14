@@ -43,8 +43,9 @@ function shownSibling(el, dir) {
   return null;
 }
 
+/** Returns whether the anchor's own block was there to restore to. */
 export function restoreAnchor(a, changedSlots) {
-  if (!a) return;
+  if (!a) return false;
   let el = slots.get(a.slot);
   // The anchor block may have been hidden by the changes-only filter (or
   // removed): fall back to the nearest visible block in document order,
@@ -54,7 +55,7 @@ export function restoreAnchor(a, changedSlots) {
     const r = el.getBoundingClientRect();
     const want = changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset;
     window.scrollBy(0, r.top + want);
-    return;
+    return slots.has(a.slot);
   }
   // The anchor block is gone: the block that followed it takes its place at
   // the top (or, at the end of the document, the one before it ends there).
@@ -64,12 +65,13 @@ export function restoreAnchor(a, changedSlots) {
   for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
     let n = slot != null ? slots.get(slot) : null;
     if (n && !isShown(n)) n = nearestVisible(n);
-    if (n) { window.scrollBy(0, n.getBoundingClientRect()[edge] - inset); return; }
+    if (n) { window.scrollBy(0, n.getBoundingClientRect()[edge] - inset); return false; }
   }
   if (a.heading) {
     const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
-    if (h) { window.scrollBy(0, h.getBoundingClientRect().top - inset); return; }
+    if (h) window.scrollBy(0, h.getBoundingClientRect().top - inset);
   }
+  return false;
 }
 
 /** The height of the window toolbar the page scrolls under (set by the app). */
@@ -168,6 +170,7 @@ let settleQueued = false;
 // (diagrams, math, images, content-visibility estimates becoming real).
 export const resizeObserver = new ResizeObserver(entries => {
   let delta = 0;
+  const inset = topInset();
   for (const entry of entries) {
     const el = entry.target;
     const h = el.getBoundingClientRect().height;
@@ -175,7 +178,8 @@ export const resizeObserver = new ResizeObserver(entries => {
     heights.set(el, h);
     if (prev === undefined || prev === h) continue;
     const r = el.getBoundingClientRect();
-    if (r.bottom <= 1) delta += h - prev; // entirely above the viewport
+    // Entirely above the viewport, or under the toolbar, before it resized.
+    if (r.bottom - (h - prev) <= inset + 1) delta += h - prev;
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) window.scrollBy(0, delta);
   // Blocks that content-visibility lays out once they come into view change

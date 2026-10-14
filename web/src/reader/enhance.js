@@ -74,7 +74,9 @@ function contentName(node) {
   let out = '';
   for (const n of node.childNodes) {
     if (n.nodeType === Node.TEXT_NODE) { out += n.data; continue; }
-    if (n.nodeType !== Node.ELEMENT_NODE || n.getAttribute('aria-hidden') === 'true' || n.classList.contains('h-link')) continue;
+    if (n.nodeType !== Node.ELEMENT_NODE || n.classList.contains('h-link')) continue;
+    // Hidden (the block may not be in the page yet, so no computed style).
+    if (n.hidden || n.getAttribute('aria-hidden') === 'true' || n.style?.display === 'none' || n.style?.visibility === 'hidden') continue;
     const label = n.getAttribute('aria-label');
     if (label) out += ` ${label} `;
     else if (n.classList.contains('remote-img')) out += n.dataset.alt || '';   // a remote image not loaded (yet): its button is not its name
