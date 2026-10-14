@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 97,
-   "style": "1dae8e0a",
+   "style": "3ddcca69",
    "content": "9d0a37c4",
    "text": "Deep dive: MongoDB Atlas vector search adapter"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 194,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "0aa184d0",
    "text": "TL;DR"
   },
@@ -105,7 +105,7 @@
    "kind": "heading",
    "top": 936,
    "h": 42,
-   "style": "709c47c8",
+   "style": "0ea10e97",
    "content": "6d6aa54e",
    "text": "1. The adapter contract change is zero"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 1147,
    "h": 71,
-   "style": "a9e193d6",
+   "style": "ce533841",
    "content": "3afe5f00",
    "text": "2. The query shape is identical, with a few extr"
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 1887,
    "h": 42,
-   "style": "709c47c8",
+   "style": "0ea10e97",
    "content": "3dfded2b",
    "text": "3. Filter operators — officially enumerated"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 3863,
    "h": 71,
-   "style": "a9e193d6",
+   "style": "ce533841",
    "content": "be583ba9",
    "text": "4. Operational story — much friendlier than Comm"
   },
@@ -438,7 +438,7 @@
    "kind": "heading",
    "top": 4856,
    "h": 42,
-   "style": "709c47c8",
+   "style": "0ea10e97",
    "content": "a5ec1c88",
    "text": "5. One adapter or two? The strategic call"
   },
@@ -555,7 +555,7 @@
    "kind": "heading",
    "top": 5696,
    "h": 42,
-   "style": "709c47c8",
+   "style": "0ea10e97",
    "content": "7eef8960",
    "text": "6. Concrete proposed structure (Option A)"
   },
@@ -645,7 +645,7 @@
    "kind": "heading",
    "top": 6525,
    "h": 42,
-   "style": "709c47c8",
+   "style": "0ea10e97",
    "content": "c80f5715",
    "text": "7. Recommendation & scope"
   },
@@ -789,7 +789,7 @@
    "kind": "heading",
    "top": 7500,
    "h": 71,
-   "style": "a9e193d6",
+   "style": "ce533841",
    "content": "5e771161",
    "text": "8. Development environment: local Atlas deployme"
   },
@@ -807,7 +807,7 @@
    "kind": "heading",
    "top": 7693,
    "h": 42,
-   "style": "21348ac4",
+   "style": "5deb2be4",
    "content": "882680f2",
    "text": "Why Docker, not the Atlas CLI"
   },
@@ -861,7 +861,7 @@
    "kind": "heading",
    "top": 8053,
    "h": 42,
-   "style": "21348ac4",
+   "style": "5deb2be4",
    "content": "347504e0",
    "text": "Prerequisites"
   },
@@ -915,7 +915,7 @@
    "kind": "heading",
    "top": 8321,
    "h": 42,
-   "style": "21348ac4",
+   "style": "5deb2be4",
    "content": "0837a3d6",
    "text": "Setup"
   },
@@ -942,7 +942,7 @@
    "kind": "heading",
    "top": 8600,
    "h": 42,
-   "style": "21348ac4",
+   "style": "5deb2be4",
    "content": "d7cfecef",
    "text": "Lifecycle"
   },
@@ -996,7 +996,7 @@
    "kind": "heading",
    "top": 9126,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "8067dcd9",
    "text": "What you get vs production Atlas"
   },
@@ -1032,7 +1032,7 @@
    "kind": "heading",
    "top": 9776,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "7b59d8b4",
    "text": "Wiring into the test harness"
   },
@@ -1077,7 +1077,7 @@
    "kind": "heading",
    "top": 10310,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "951a06d5",
    "text": "CI considerations (GitHub Actions)"
   },
@@ -1158,7 +1158,7 @@
    "kind": "heading",
    "top": 11202,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "b9668764",
    "text": "When to graduate to a real Atlas cluster"
   },
@@ -1212,7 +1212,7 @@
    "kind": "heading",
    "top": 11572,
    "h": 42,
-   "style": "709c47c8",
+   "style": "0ea10e97",
    "content": "a2c773d1",
    "text": "Sources"
   },

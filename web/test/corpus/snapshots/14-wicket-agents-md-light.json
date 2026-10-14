@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 59,
-   "style": "43bdb3f0",
+   "style": "ff366313",
    "content": "a283977e",
    "text": "Apache Wicket"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 374,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "b6ce1a2c",
    "text": "How a change lands"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 616,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "827e28bd",
    "text": "Commits"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 884,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "2620b54e",
    "text": "Build and test"
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 1441,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "75406731",
    "text": "Where code goes"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1867,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "e5b8758c",
    "text": "Poms"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 2110,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "1976c76b",
    "text": "API compatibility"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 2536,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "91184615",
    "text": "Javadoc"
   },
@@ -267,7 +267,7 @@
    "kind": "heading",
    "top": 2805,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "52582af7",
    "text": "Comments"
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 3293,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "9a73db9b",
    "text": "Language"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 3535,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "c2fe21db",
    "text": "Security"
   },

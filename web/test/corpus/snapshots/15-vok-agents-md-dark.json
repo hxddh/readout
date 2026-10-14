@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 59,
-   "style": "e23e186d",
+   "style": "c3093ed0",
    "content": "7c7e5943",
    "text": "Vaadin-on-Kotlin — AGENTS.md"
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 87,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "5a15f29f",
    "text": "What this is"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 325,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "3ec4c743",
    "text": "Promises"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 596,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "2fdf9eda",
    "text": "Design docs"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 1238,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "2f84ed04",
    "text": "Invariants"
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 1667,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "4a240a87",
    "text": "Module map"
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 2020,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "37644b93",
    "text": "Conventions"
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 2614,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "971550f3",
    "text": "Commands"
   },
@@ -330,7 +330,7 @@
    "kind": "heading",
    "top": 2941,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "f6b86a82",
    "text": "Skills this project follows"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 3186,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "2c42f637",
    "text": "Maintenance of this file"
   },

@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 59,
-   "style": "43bdb3f0",
+   "style": "ff366313",
    "content": "f91e20ad",
    "text": "Rust/codex-rs"
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 3510,
    "h": 65,
-   "style": "4dbafa48",
+   "style": "db397f15",
    "content": "1aef8056",
    "text": "The codex-core crate"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 4005,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "a693de57",
    "text": "Code Review Rules"
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 4070,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "e65f055b",
    "text": "Crate API surface"
   },
@@ -393,7 +393,7 @@
    "kind": "heading",
    "top": 4156,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "998809b3",
    "text": "Model visible context"
   },
@@ -465,7 +465,7 @@
    "kind": "heading",
    "top": 4531,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "3408caa1",
    "text": "Breaking changes"
   },
@@ -528,7 +528,7 @@
    "kind": "heading",
    "top": 4775,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "038b9f0e",
    "text": "Test authoring guidance"
   },
@@ -582,7 +582,7 @@
    "kind": "heading",
    "top": 5140,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "86788752",
    "text": "Change size guidance (800 lines)"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 5347,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "350f8cd0",
    "text": "TUI style conventions"
   },
@@ -627,7 +627,7 @@
    "kind": "heading",
    "top": 5456,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "f46f9a06",
    "text": "TUI code conventions"
   },
@@ -645,7 +645,7 @@
    "kind": "heading",
    "top": 5734,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "395872f4",
    "text": "TUI Styling (ratatui)"
   },
@@ -735,7 +735,7 @@
    "kind": "heading",
    "top": 6412,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "5aaccab6",
    "text": "Text wrapping"
   },
@@ -780,7 +780,7 @@
    "kind": "heading",
    "top": 6687,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "00dfd3c2",
    "text": "Tests"
   },
@@ -789,7 +789,7 @@
    "kind": "heading",
    "top": 6752,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "08b35866",
    "text": "Test module organization"
   },
@@ -825,7 +825,7 @@
    "kind": "heading",
    "top": 7106,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "01427990",
    "text": "Snapshot tests"
   },
@@ -915,7 +915,7 @@
    "kind": "heading",
    "top": 7747,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "1720366d",
    "text": "Benchmarks"
   },
@@ -942,7 +942,7 @@
    "kind": "heading",
    "top": 7928,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "e82469e6",
    "text": "Test assertions"
   },
@@ -978,7 +978,7 @@
    "kind": "heading",
    "top": 8149,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "732af4c2",
    "text": "Spawning workspace binaries in tests (Cargo vs B"
   },
@@ -1005,7 +1005,7 @@
    "kind": "heading",
    "top": 8450,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "2b4a3a10",
    "text": "Integration tests"
   },
@@ -1014,7 +1014,7 @@
    "kind": "heading",
    "top": 8492,
    "h": 36,
-   "style": "310ccb5e",
+   "style": "ec80d2e2",
    "content": "87065b04",
    "text": "codex_core integration testing"
   },
@@ -1104,7 +1104,7 @@
    "kind": "heading",
    "top": 9264,
    "h": 36,
-   "style": "310ccb5e",
+   "style": "ec80d2e2",
    "content": "ba637b82",
    "text": "app-server integration testing"
   },
@@ -1140,7 +1140,7 @@
    "kind": "heading",
    "top": 9454,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "2b40f9ef",
    "text": "App-server API Development Best Practices"
   },
@@ -1176,7 +1176,7 @@
    "kind": "heading",
    "top": 9636,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "a9217b2d",
    "text": "Core Rules"
   },
@@ -1302,7 +1302,7 @@
    "kind": "heading",
    "top": 10582,
    "h": 42,
-   "style": "4d71b908",
+   "style": "e7d6c11c",
    "content": "a3462879",
    "text": "Client->server request payloads (*Params)"
   },
@@ -1347,7 +1347,7 @@
    "kind": "heading",
    "top": 10962,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "427e1e3f",
    "text": "Development Workflow"
   },
@@ -1383,7 +1383,7 @@
    "kind": "heading",
    "top": 11209,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "4290de6a",
    "text": "Python Development Best Practices"
   },
@@ -1392,7 +1392,7 @@
    "kind": "heading",
    "top": 11274,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "94ec72a9",
    "text": "Ignore Python 2 compatibility"
   },
@@ -1419,7 +1419,7 @@
    "kind": "heading",
    "top": 11455,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "54789765",
    "text": "Platform Support"
   },

@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 59,
-   "style": "b420b4ec",
+   "style": "0eb1c2ff",
    "content": "5cd9d199",
    "text": "A2A 协议 设计文档"
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 87,
    "h": 65,
-   "style": "d8a34269",
+   "style": "680719a6",
    "content": "a3029f6f",
    "text": "概述"
   },
@@ -78,7 +78,7 @@
    "kind": "heading",
    "top": 495,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "f855c74d",
    "text": "设计决策"
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 877,
    "h": 65,
-   "style": "d8a34269",
+   "style": "680719a6",
    "content": "4ef389f7",
    "text": "架构"
   },
@@ -159,7 +159,7 @@
    "kind": "heading",
    "top": 2165,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "3cc52816",
    "text": "数据流"
   },
@@ -168,7 +168,7 @@
    "kind": "heading",
    "top": 2207,
    "h": 36,
-   "style": "8b0fd106",
+   "style": "d06b931a",
    "content": "b04c34e4",
    "text": "Cube 调用外部 Agent"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 2888,
    "h": 36,
-   "style": "8b0fd106",
+   "style": "d06b931a",
    "content": "8a928733",
    "text": "外部 Agent 调用 Cube Agent"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 3462,
    "h": 65,
-   "style": "d8a34269",
+   "style": "680719a6",
    "content": "a3bc5f83",
    "text": "组件与接口"
   },
@@ -213,7 +213,7 @@
    "kind": "heading",
    "top": 3527,
    "h": 42,
-   "style": "97ed1b74",
+   "style": "0eae31c8",
    "content": "bd377fb3",
    "text": "1. A2A 协议类型定义 (shared/a2a-protocol.ts)"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 6116,
    "h": 42,
-   "style": "c58dc073",
+   "style": "bf6b3f59",
    "content": "ca6b04a2",
    "text": "2. ExternalAgentNode 类型扩展 (shared/organization-s"
   },
@@ -267,7 +267,7 @@
    "kind": "heading",
    "top": 6366,
    "h": 42,
-   "style": "1208fa15",
+   "style": "a81ead47",
    "content": "07c8ea89",
    "text": "3. A2A Client (server/core/a2a-client.ts)"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 6989,
    "h": 42,
-   "style": "c539deba",
+   "style": "39836eb2",
    "content": "5dc366a8",
    "text": "4. A2A Server (server/core/a2a-server.ts)"
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 7773,
    "h": 42,
-   "style": "3bbf82d9",
+   "style": "2c365487",
    "content": "203d22b0",
    "text": "5. 框架适配器 (server/core/a2a-adapters/)"
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 8778,
    "h": 42,
-   "style": "c14fdf8d",
+   "style": "2cdb6ea3",
    "content": "0b21be3e",
    "text": "6. MessageBus A2A 路由扩展 (server/core/message-bus."
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 9428,
    "h": 42,
-   "style": "e633dd22",
+   "style": "a227561e",
    "content": "4782e5af",
    "text": "7. A2A API 路由 (server/routes/a2a.ts)"
   },
@@ -420,7 +420,7 @@
    "kind": "heading",
    "top": 9611,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "fac70795",
    "text": "8. 3D 可视化组件"
   },
@@ -429,7 +429,7 @@
    "kind": "heading",
    "top": 9653,
    "h": 36,
-   "style": "ecd5b43e",
+   "style": "7ba3dcb2",
    "content": "6397d52c",
    "text": "Zustand Store (client/src/lib/a2a-store.ts)"
   },
@@ -447,7 +447,7 @@
    "kind": "heading",
    "top": 9891,
    "h": 36,
-   "style": "e8e28846",
+   "style": "cb80f434",
    "content": "28e9debe",
    "text": "跨框架粒子流组件 (client/src/components/three/CrossFrame"
   },
@@ -537,7 +537,7 @@
    "kind": "heading",
    "top": 10286,
    "h": 65,
-   "style": "d8a34269",
+   "style": "680719a6",
    "content": "7fe8d107",
    "text": "数据模型"
   },
@@ -546,7 +546,7 @@
    "kind": "heading",
    "top": 10351,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "ae5588ea",
    "text": "A2ASession 状态机"
   },
@@ -564,7 +564,7 @@
    "kind": "heading",
    "top": 10924,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "9838e741",
    "text": "ExternalAgentNode 继承关系"
   },
@@ -582,7 +582,7 @@
    "kind": "heading",
    "top": 11589,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "a910f88d",
    "text": "消息元数据扩展"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 11838,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "c2b1b89c",
    "text": "速率限制数据结构"
   },
@@ -636,7 +636,7 @@
    "kind": "heading",
    "top": 12107,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "c0109c46",
    "text": "环境变量"
   },
@@ -654,7 +654,7 @@
    "kind": "heading",
    "top": 12383,
    "h": 65,
-   "style": "d8a34269",
+   "style": "680719a6",
    "content": "d74faff6",
    "text": "正确性属性"
   },
@@ -672,7 +672,7 @@
    "kind": "heading",
    "top": 12522,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "106e2272",
    "text": "Property 1: A2AEnvelope 序列化往返一致性"
   },
@@ -699,7 +699,7 @@
    "kind": "heading",
    "top": 12681,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "9f3f716f",
    "text": "Property 2: A2ASession 序列化往返一致性"
   },
@@ -726,7 +726,7 @@
    "kind": "heading",
    "top": 12840,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "25d06b67",
    "text": "Property 3: 上下文长度验证"
   },
@@ -753,7 +753,7 @@
    "kind": "heading",
    "top": 12999,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "f86d069b",
    "text": "Property 4: 会话失败状态标记"
   },
@@ -780,7 +780,7 @@
    "kind": "heading",
    "top": 13186,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "7bf2a85e",
    "text": "Property 5: 并发会话数量限制"
   },
@@ -807,7 +807,7 @@
    "kind": "heading",
    "top": 13345,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "a49e89c6",
    "text": "Property 6: 无效认证令牌拒绝"
   },
@@ -834,7 +834,7 @@
    "kind": "heading",
    "top": 13504,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "3267272f",
    "text": "Property 7: 不存在的 Agent 返回错误"
   },
@@ -861,7 +861,7 @@
    "kind": "heading",
    "top": 13663,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "4bcb4be1",
    "text": "Property 8: 速率限制执行"
   },
@@ -888,7 +888,7 @@
    "kind": "heading",
    "top": 13850,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "90877c1e",
    "text": "Property 9: 框架适配器请求格式正确性"
   },
@@ -915,7 +915,7 @@
    "kind": "heading",
    "top": 14065,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "c86be831",
    "text": "Property 10: 框架适配器响应归一化"
   },
@@ -942,7 +942,7 @@
    "kind": "heading",
    "top": 14224,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "ac43309e",
    "text": "Property 11: 不支持的框架类型拒绝"
   },
@@ -969,7 +969,7 @@
    "kind": "heading",
    "top": 14383,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "f2874e1d",
    "text": "Property 12: 出站信封包含认证令牌"
   },
@@ -996,7 +996,7 @@
    "kind": "heading",
    "top": 14542,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "36883e04",
    "text": "Property 13: ExternalAgentNode 快照兼容性"
   },
@@ -1023,7 +1023,7 @@
    "kind": "heading",
    "top": 14729,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "710e2629",
    "text": "Property 14: A2A 消息路由与元数据正确性"
   },
@@ -1050,7 +1050,7 @@
    "kind": "heading",
    "top": 14888,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "835b352f",
    "text": "Property 15: 可调用 Agent 列表完整性"
   },
@@ -1077,7 +1077,7 @@
    "kind": "heading",
    "top": 15047,
    "h": 65,
-   "style": "d8a34269",
+   "style": "680719a6",
    "content": "6d3bfdfb",
    "text": "错误处理"
   },
@@ -1095,7 +1095,7 @@
    "kind": "heading",
    "top": 15863,
    "h": 65,
-   "style": "d8a34269",
+   "style": "680719a6",
    "content": "fd1c2b2c",
    "text": "测试策略"
   },
@@ -1104,7 +1104,7 @@
    "kind": "heading",
    "top": 15928,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "49753d50",
    "text": "属性测试（Property-Based Testing）"
   },
@@ -1338,7 +1338,7 @@
    "kind": "heading",
    "top": 16843,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "1c091fc9",
    "text": "单元测试"
   },
@@ -1410,7 +1410,7 @@
    "kind": "heading",
    "top": 17132,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "61c745cf",
    "text": "测试不覆盖的范围"
   },
@@ -1455,7 +1455,7 @@
    "kind": "heading",
    "top": 17341,
    "h": 42,
-   "style": "59c8106f",
+   "style": "82616f3d",
    "content": "79b57b6a",
    "text": "测试配置"
   },

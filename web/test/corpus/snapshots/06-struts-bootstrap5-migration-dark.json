@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 97,
-   "style": "1dae8e0a",
+   "style": "3ddcca69",
    "content": "d00d2704",
    "text": "Bootstrap 5.3.x Sample-App Migration — Implement"
   },
@@ -51,7 +51,7 @@
    "kind": "heading",
    "top": 533,
    "h": 65,
-   "style": "e74b5a02",
+   "style": "12773911",
    "content": "e4b1f13e",
    "text": "Global Constraints"
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 1188,
    "h": 42,
-   "style": "21348ac4",
+   "style": "5deb2be4",
    "content": "188e6736",
    "text": "Icon mapping (glyphicon → Bootstrap Icons)"
   },
@@ -150,7 +150,7 @@
    "kind": "heading",
    "top": 1715,
    "h": 42,
-   "style": "21348ac4",
+   "style": "5deb2be4",
    "content": "4b3b15ed",
    "text": "Class / attribute mapping (Bootstrap 3 → 5)"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 2422,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "087c0e33",
    "text": "Task 1: POM / dependency wiring"
   },
@@ -438,7 +438,7 @@
    "kind": "heading",
    "top": 4662,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "8a32df64",
    "text": "Task 2: Showcase asset delivery + alert dismiss"
   },
@@ -699,7 +699,7 @@
    "kind": "heading",
    "top": 6703,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "dea646ca",
    "text": "Task 3: Showcase markup migration"
   },
@@ -960,7 +960,7 @@
    "kind": "heading",
    "top": 8619,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "529ae8d2",
    "text": "Task 4: rest-showcase asset delivery"
   },
@@ -1158,7 +1158,7 @@
    "kind": "heading",
    "top": 9964,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "db2a0b35",
    "text": "Task 5: rest-showcase markup migration"
   },
@@ -1356,7 +1356,7 @@
    "kind": "heading",
    "top": 11269,
    "h": 32,
-   "style": "0475770c",
+   "style": "5133b81d",
    "content": "d9c2b58d",
    "text": "Task 6: Full build, manual verification, draft P"
   },

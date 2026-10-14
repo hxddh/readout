@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 97,
-   "style": "9ee7da94",
+   "style": "4ebf08ef",
    "content": "05776869",
    "text": "RFC: Proxy IP TokenBucket v2（去除 terminal_id 信任边界"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 198,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "7e0b5103",
    "text": "摘要 / 动机"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 705,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "27c7daa5",
    "text": "目标与非目标"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 770,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "fa83f282",
    "text": "目标"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1214,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "00705f4e",
    "text": "非目标"
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 1424,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "88b35f8c",
    "text": "定义"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 1743,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "83fbccf1",
    "text": "现状与问题"
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 2120,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "30268521",
    "text": "拟议设计"
   },
@@ -348,7 +348,7 @@
    "kind": "heading",
    "top": 2185,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "239c048a",
    "text": "1. 信任模型"
   },
@@ -393,7 +393,7 @@
    "kind": "heading",
    "top": 2530,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "b2703f0f",
    "text": "2. 候选池与去重"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 3009,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "56a62bcc",
    "text": "3. 调度与请求流程"
   },
@@ -555,7 +555,7 @@
    "kind": "heading",
    "top": 3325,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "cada7da2",
    "text": "4. 接口收敛"
   },
@@ -636,7 +636,7 @@
    "kind": "heading",
    "top": 4072,
    "h": 42,
-   "style": "2ea26906",
+   "style": "4185e0f6",
    "content": "59b6ec84",
    "text": "5. apps/http-proxy 标签契约"
   },
@@ -672,7 +672,7 @@
    "kind": "heading",
    "top": 4223,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "206fdcd5",
    "text": "6. 关于同 IP 多 terminal 的行为"
   },
@@ -708,7 +708,7 @@
    "kind": "heading",
    "top": 4401,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "abe6504c",
    "text": "备选方案"
   },
@@ -717,7 +717,7 @@
    "kind": "heading",
    "top": 4466,
    "h": 42,
-   "style": "9ede1e1a",
+   "style": "02f82b32",
    "content": "ee9e7fcc",
    "text": "方案 A：继续保留 TRUSTED_HTTP_PROXY_TERMINAL_IDS"
   },
@@ -735,7 +735,7 @@
    "kind": "heading",
    "top": 4584,
    "h": 42,
-   "style": "3c7c4bac",
+   "style": "68ff418c",
    "content": "1a4160c1",
    "text": "方案 B：改用 terminal_id + ip 双因子"
   },
@@ -753,7 +753,7 @@
    "kind": "heading",
    "top": 4701,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "578863f5",
    "text": "方案 C：引入 host 级显式信任域配置"
   },
@@ -780,7 +780,7 @@
    "kind": "heading",
    "top": 4864,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "6c21e14b",
    "text": "数据模型与接口"
   },
@@ -789,7 +789,7 @@
    "kind": "heading",
    "top": 4929,
    "h": 42,
-   "style": "d51c25a1",
+   "style": "a3b2927f",
    "content": "e258453d",
    "text": "AcquireProxyBucketInput"
   },
@@ -843,7 +843,7 @@
    "kind": "heading",
    "top": 5287,
    "h": 42,
-   "style": "09df47be",
+   "style": "f58d52f2",
    "content": "b5f1d3f6",
    "text": "AcquireProxyBucketResult"
   },
@@ -897,7 +897,7 @@
    "kind": "heading",
    "top": 5605,
    "h": 42,
-   "style": "62eb0683",
+   "style": "6bf376f5",
    "content": "37cd0af6",
    "text": "apps/http-proxy 服务标签"
   },
@@ -933,7 +933,7 @@
    "kind": "heading",
    "top": 5755,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "0703a2d7",
    "text": "错误语义"
   },
@@ -978,7 +978,7 @@
    "kind": "heading",
    "top": 6206,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "01349bdc",
    "text": "安全考虑"
   },
@@ -987,7 +987,7 @@
    "kind": "heading",
    "top": 6271,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "39f4f5c8",
    "text": "结论"
   },
@@ -1095,7 +1095,7 @@
    "kind": "heading",
    "top": 6841,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "8f3f6e56",
    "text": "向后兼容、发布与回滚"
   },
@@ -1104,7 +1104,7 @@
    "kind": "heading",
    "top": 6906,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "bb798945",
    "text": "向后兼容"
   },
@@ -1140,7 +1140,7 @@
    "kind": "heading",
    "top": 7085,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "4ce88af4",
    "text": "发布步骤"
   },
@@ -1176,7 +1176,7 @@
    "kind": "heading",
    "top": 7235,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "6a5d9ff0",
    "text": "回滚策略"
   },
@@ -1203,7 +1203,7 @@
    "kind": "heading",
    "top": 7411,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "c59e9fad",
    "text": "验证计划"
   },
@@ -1329,7 +1329,7 @@
    "kind": "heading",
    "top": 8390,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "2c3f052d",
    "text": "开放问题"
   },
@@ -1356,7 +1356,7 @@
    "kind": "heading",
    "top": 8589,
    "h": 65,
-   "style": "17cb4b1c",
+   "style": "41fe8e5f",
    "content": "e8f5a5db",
    "text": "落地计划"
   },
@@ -1365,7 +1365,7 @@
    "kind": "heading",
    "top": 8654,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "0ae81627",
    "text": "文件变更点"
   },
@@ -1455,7 +1455,7 @@
    "kind": "heading",
    "top": 9460,
    "h": 42,
-   "style": "e757a0bc",
+   "style": "89e2183c",
    "content": "38a5d2ee",
    "text": "最小验证步骤"
   },
@@ -1500,7 +1500,7 @@
    "kind": "heading",
    "top": 9697,
    "h": 65,
-   "style": "bd048964",
+   "style": "a72d9309",
    "content": "e7f2ed02",
    "text": "发现的类似 terminal_id 依赖与处置建议"
   },

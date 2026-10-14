@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 97,
-   "style": "01a22abb",
+   "style": "0294c15a",
    "content": "b2cc9ca1",
    "text": "AIOS Interception Runtime Architecture Plan"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 220,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "667e43e9",
    "text": "Why this replaces the old plan"
   },
@@ -168,7 +168,7 @@
    "kind": "heading",
    "top": 1038,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "79c84e03",
    "text": "Definition of 1:1 mechanism parity"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 1730,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "99c4cc8f",
    "text": "Control plane vs data plane"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 2138,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "f793bad3",
    "text": "Target architecture"
   },
@@ -384,7 +384,7 @@
    "kind": "heading",
    "top": 3640,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "31ca47ed",
    "text": "New module tree"
   },
@@ -456,7 +456,7 @@
    "kind": "heading",
    "top": 5043,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "5d28e221",
    "text": "Core contracts"
   },
@@ -519,7 +519,7 @@
    "kind": "heading",
    "top": 6245,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "0fa1bbe7",
    "text": "Shell interception"
   },
@@ -699,7 +699,7 @@
    "kind": "heading",
    "top": 7141,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "28b8e7c9",
    "text": "MCP interception"
   },
@@ -780,7 +780,7 @@
    "kind": "heading",
    "top": 7775,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "2571c5a7",
    "text": "RawRefStore"
   },
@@ -906,7 +906,7 @@
    "kind": "heading",
    "top": 8382,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "03f73129",
    "text": "Client capability matrix"
   },
@@ -1050,7 +1050,7 @@
    "kind": "heading",
    "top": 9590,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "321797a0",
    "text": "Skill and native thin-shell updates"
   },
@@ -1239,7 +1239,7 @@
    "kind": "heading",
    "top": 10681,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "16f06a37",
    "text": "Implementation order"
   },
@@ -1320,7 +1320,7 @@
    "kind": "heading",
    "top": 11465,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "5821b1a7",
    "text": "Acceptance tests"
   },
@@ -1554,7 +1554,7 @@
    "kind": "heading",
    "top": 12391,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "edaee787",
    "text": "Product acceptance"
   },
@@ -1626,7 +1626,7 @@
    "kind": "heading",
    "top": 12712,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "06ded53d",
    "text": "Open risks"
   },

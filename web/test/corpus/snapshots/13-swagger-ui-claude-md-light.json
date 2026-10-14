@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 97,
-   "style": "73c4e134",
+   "style": "b028e88f",
    "content": "75628c97",
    "text": "CLAUDE.md - Swagger UI Codebase Guide"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 242,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "8b816bc2",
    "text": "Table of Contents"
   },
@@ -150,7 +150,7 @@
    "kind": "heading",
    "top": 659,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "2118ba68",
    "text": "Repository Overview"
   },
@@ -159,7 +159,7 @@
    "kind": "heading",
    "top": 702,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "861ffbda",
    "text": "What is Swagger UI?"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 839,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "09e7babf",
    "text": "Multi-Package Monorepo Structure"
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 1370,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "47fba3c2",
    "text": "OpenAPI Specification Compatibility"
   },
@@ -249,7 +249,7 @@
    "kind": "heading",
    "top": 1485,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "38e70ee4",
    "text": "License"
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 1618,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "aaeac0e5",
    "text": "Project Architecture"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 1660,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "4fd4bad7",
    "text": "Technology Stack"
   },
@@ -546,7 +546,7 @@
    "kind": "heading",
    "top": 2686,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "835fa7af",
    "text": "Plugin-Based Architecture"
   },
@@ -861,7 +861,7 @@
    "kind": "heading",
    "top": 3799,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "005cc63b",
    "text": "Development Setup"
   },
@@ -870,7 +870,7 @@
    "kind": "heading",
    "top": 3841,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "347504e0",
    "text": "Prerequisites"
   },
@@ -915,7 +915,7 @@
    "kind": "heading",
    "top": 4013,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "b0cfc3c2",
    "text": "Installation Steps"
   },
@@ -933,7 +933,7 @@
    "kind": "heading",
    "top": 4377,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "71d07519",
    "text": "Development Server"
   },
@@ -951,7 +951,7 @@
    "kind": "heading",
    "top": 4488,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "2990e21e",
    "text": "Using Local API Definitions"
   },
@@ -996,7 +996,7 @@
    "kind": "heading",
    "top": 4832,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "de9bbc98",
    "text": "Build System"
   },
@@ -1005,7 +1005,7 @@
    "kind": "heading",
    "top": 4875,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "c33393a7",
    "text": "Babel Environments"
   },
@@ -1050,7 +1050,7 @@
    "kind": "heading",
    "top": 5062,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "196d525b",
    "text": "Babel Aliases"
   },
@@ -1068,7 +1068,7 @@
    "kind": "heading",
    "top": 5226,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "c67849a2",
    "text": "Browserslist Environments"
   },
@@ -1131,7 +1131,7 @@
    "kind": "heading",
    "top": 5469,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "006806bf",
    "text": "Build Commands"
   },
@@ -1149,7 +1149,7 @@
    "kind": "heading",
    "top": 5813,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "a7299904",
    "text": "Build Output (dist/)"
   },
@@ -1221,7 +1221,7 @@
    "kind": "heading",
    "top": 6069,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "91755967",
    "text": "Webpack Configurations"
   },
@@ -1329,7 +1329,7 @@
    "kind": "heading",
    "top": 6474,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "6a4d5292",
    "text": "Testing Infrastructure"
   },
@@ -1338,7 +1338,7 @@
    "kind": "heading",
    "top": 6516,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "37ca7b3b",
    "text": "Unit Tests (Jest)"
   },
@@ -1482,7 +1482,7 @@
    "kind": "heading",
    "top": 7141,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "4bbe2bce",
    "text": "E2E Tests (Cypress)"
   },
@@ -1635,7 +1635,7 @@
    "kind": "heading",
    "top": 8043,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "029c41c6",
    "text": "Artifact Tests"
   },
@@ -1680,7 +1680,7 @@
    "kind": "heading",
    "top": 8277,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "f8a11f16",
    "text": "Complete Test Suite"
   },
@@ -1698,7 +1698,7 @@
    "kind": "heading",
    "top": 8381,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "30d949a5",
    "text": "CI/CD Testing"
   },
@@ -1761,7 +1761,7 @@
    "kind": "heading",
    "top": 8674,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "90d89bcb",
    "text": "Code Style & Conventions"
   },
@@ -1770,7 +1770,7 @@
    "kind": "heading",
    "top": 8717,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "e403eb22",
    "text": "ESLint Configuration"
   },
@@ -1914,7 +1914,7 @@
    "kind": "heading",
    "top": 9329,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "1e7e0918",
    "text": "Prettier Configuration"
   },
@@ -1968,7 +1968,7 @@
    "kind": "heading",
    "top": 9745,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "5b65b311",
    "text": "Stylelint Configuration"
   },
@@ -2022,7 +2022,7 @@
    "kind": "heading",
    "top": 9991,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "5225f39c",
    "text": "Pre-commit Hooks"
   },
@@ -2067,7 +2067,7 @@
    "kind": "heading",
    "top": 10286,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "995fb0a6",
    "text": "File Structure Conventions"
   },
@@ -2238,7 +2238,7 @@
    "kind": "heading",
    "top": 11036,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "9322f7c4",
    "text": "Git Workflow"
   },
@@ -2247,7 +2247,7 @@
    "kind": "heading",
    "top": 11078,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "17e79582",
    "text": "Branch Strategy"
   },
@@ -2310,7 +2310,7 @@
    "kind": "heading",
    "top": 11354,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "9970b618",
    "text": "Commit Conventions"
   },
@@ -2445,7 +2445,7 @@
    "kind": "heading",
    "top": 12117,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "58527d8a",
    "text": "Pull Request Process"
   },
@@ -2616,7 +2616,7 @@
    "kind": "heading",
    "top": 12777,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "86dd78e7",
    "text": "Release Process"
   },
@@ -2706,7 +2706,7 @@
    "kind": "heading",
    "top": 13189,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "fcb419c1",
    "text": "Plugin Architecture"
   },
@@ -2715,7 +2715,7 @@
    "kind": "heading",
    "top": 13231,
    "h": 42,
-   "style": "c6d9960c",
+   "style": "b3c8a514",
    "content": "d3712dd1",
    "text": "Core System (src/core/system.js)"
   },
@@ -2733,7 +2733,7 @@
    "kind": "heading",
    "top": 13342,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "16253817",
    "text": "Plugin Structure"
   },
@@ -2760,7 +2760,7 @@
    "kind": "heading",
    "top": 13770,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "fced728f",
    "text": "Key Plugin Locations"
   },
@@ -2850,7 +2850,7 @@
    "kind": "heading",
    "top": 14113,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "0452b910",
    "text": "Creating a Plugin"
   },
@@ -2868,7 +2868,7 @@
    "kind": "heading",
    "top": 14199,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "1f1f23b9",
    "text": "Cross-Plugin Import Guidelines"
   },
@@ -3030,7 +3030,7 @@
    "kind": "heading",
    "top": 15186,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "b254c0c3",
    "text": "Preset System"
   },
@@ -3075,7 +3075,7 @@
    "kind": "heading",
    "top": 15406,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "1193f8a6",
    "text": "Key Files & Directories"
   },
@@ -3084,7 +3084,7 @@
    "kind": "heading",
    "top": 15448,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "d0b8504e",
    "text": "Critical Source Files"
   },
@@ -3102,7 +3102,7 @@
    "kind": "heading",
    "top": 15832,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "42ca95f2",
    "text": "Configuration Files"
   },
@@ -3120,7 +3120,7 @@
    "kind": "heading",
    "top": 16115,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "306a6b7f",
    "text": "Build & Tooling"
   },
@@ -3138,7 +3138,7 @@
    "kind": "heading",
    "top": 16479,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "12f8f721",
    "text": "Documentation"
   },
@@ -3156,7 +3156,7 @@
    "kind": "heading",
    "top": 16883,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "0535d93b",
    "text": "Testing"
   },
@@ -3174,7 +3174,7 @@
    "kind": "heading",
    "top": 17146,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "2644f84b",
    "text": "Distribution"
   },
@@ -3201,7 +3201,7 @@
    "kind": "heading",
    "top": 17537,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "a58d132e",
    "text": "Common Workflows"
   },
@@ -3210,7 +3210,7 @@
    "kind": "heading",
    "top": 17580,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "1efe22a0",
    "text": "Making Code Changes"
   },
@@ -3255,7 +3255,7 @@
    "kind": "heading",
    "top": 18189,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "c46bc56e",
    "text": "Adding a New Component"
   },
@@ -3327,7 +3327,7 @@
    "kind": "heading",
    "top": 18445,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "2e0c1038",
    "text": "Adding a New Plugin"
   },
@@ -3390,7 +3390,7 @@
    "kind": "heading",
    "top": 18673,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "feb76c61",
    "text": "Fixing a Bug"
   },
@@ -3435,7 +3435,7 @@
    "kind": "heading",
    "top": 19203,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "c2050ccd",
    "text": "Adding a Feature"
   },
@@ -3480,7 +3480,7 @@
    "kind": "heading",
    "top": 19788,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "70925e00",
    "text": "Security Considerations"
   },
@@ -3516,7 +3516,7 @@
    "kind": "heading",
    "top": 20208,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "e45b9480",
    "text": "Working with OpenAPI Specs"
   },
@@ -3606,7 +3606,7 @@
    "kind": "heading",
    "top": 20588,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "071f0cf4",
    "text": "Important Guidelines"
   },
@@ -3615,7 +3615,7 @@
    "kind": "heading",
    "top": 20630,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "dca1493d",
    "text": "DO's ✅"
   },
@@ -3777,7 +3777,7 @@
    "kind": "heading",
    "top": 21222,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "0f29bac6",
    "text": "DON'Ts ❌"
   },
@@ -3939,7 +3939,7 @@
    "kind": "heading",
    "top": 21813,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "39614a35",
    "text": "When Working with AI Assistants"
   },
@@ -4137,7 +4137,7 @@
    "kind": "heading",
    "top": 22577,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "49b7db8e",
    "text": "Performance Considerations"
   },
@@ -4182,7 +4182,7 @@
    "kind": "heading",
    "top": 23134,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "31750047",
    "text": "Debugging Tips"
   },
@@ -4326,7 +4326,7 @@
    "kind": "heading",
    "top": 23989,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "be59c669",
    "text": "Quick Reference"
   },
@@ -4335,7 +4335,7 @@
    "kind": "heading",
    "top": 24032,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "5d431007",
    "text": "Essential Commands"
   },
@@ -4353,7 +4353,7 @@
    "kind": "heading",
    "top": 24655,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "2448f4a3",
    "text": "File Paths"
   },
@@ -4371,7 +4371,7 @@
    "kind": "heading",
    "top": 24919,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "b40aee47",
    "text": "Port Reference"
   },
@@ -4425,7 +4425,7 @@
    "kind": "heading",
    "top": 25138,
    "h": 42,
-   "style": "b887b458",
+   "style": "c439ae3f",
    "content": "853fd701",
    "text": "Additional Resources"
   },
@@ -4434,7 +4434,7 @@
    "kind": "heading",
    "top": 25181,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "12f8f721",
    "text": "Documentation"
   },
@@ -4488,7 +4488,7 @@
    "kind": "heading",
    "top": 25381,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "874f785f",
    "text": "External Links"
   },
@@ -4551,7 +4551,7 @@
    "kind": "heading",
    "top": 25609,
    "h": 42,
-   "style": "929850fc",
+   "style": "3aa4c6cc",
    "content": "d559270e",
    "text": "Community"
   },

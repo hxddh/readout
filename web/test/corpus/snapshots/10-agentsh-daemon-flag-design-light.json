@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 28,
    "h": 97,
-   "style": "8b39b309",
+   "style": "0c4e768c",
    "content": "4c6dfb02",
    "text": "Daemon install: generated units invoke a nonexis"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 194,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "448c5c7c",
    "text": "Problem"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 693,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "d5a0afe7",
    "text": "Constraint that shapes the fix"
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 949,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "e88d02ef",
    "text": "Design"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 1014,
    "h": 42,
-   "style": "23ed6226",
+   "style": "99d6520a",
    "content": "10a39ef2",
    "text": "1. Register --daemon as a hidden, deprecated no-"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1471,
    "h": 42,
-   "style": "2bde4d0e",
+   "style": "389d0752",
    "content": "ea2aceb0",
    "text": "2. Drop --daemon from both templates"
   },
@@ -213,7 +213,7 @@
    "kind": "heading",
    "top": 1766,
    "h": 42,
-   "style": "0ba752ef",
+   "style": "fe8eae9d",
    "content": "f4b8b8e8",
    "text": "3. Regression guard"
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 2326,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "82a16ffe",
    "text": "Verification"
   },
@@ -312,7 +312,7 @@
    "kind": "heading",
    "top": 2519,
    "h": 65,
-   "style": "b365bcfb",
+   "style": "726024ac",
    "content": "48620364",
    "text": "Out of scope"
   },
