@@ -22,7 +22,7 @@ public struct BlockKey: Codable, Sendable, Equatable {
         // Similarity matching only needs a prefix: token-bigram Jaccard
         // converges well before 500 characters, and the common case (exact
         // fingerprint match) needs no text at all.
-        if text.count >= 500 {
+        if text.utf8.count >= 500 && text.count >= 500 {   // fewer bytes: fewer characters
             self.text = String(text.prefix(500))
             self.full = text
         } else {
@@ -32,7 +32,7 @@ public struct BlockKey: Codable, Sendable, Equatable {
     }
 
     /// The block's whole text, or nil when only a prefix was kept (an older baseline).
-    public var wholeText: String? { full ?? (text.count < 500 ? text : nil) }
+    public var wholeText: String? { full ?? (text.utf8.count < 500 || text.count < 500 ? text : nil) }
 
     public init(_ block: Block) {
         self.init(fingerprint: block.fingerprint, kind: block.kind, text: block.text,

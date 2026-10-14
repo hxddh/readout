@@ -21,11 +21,11 @@ public enum MarkdownParser {
     static func sourceLines(_ rawSource: String) -> [String] {
         var source = rawSource
         if source.utf8.starts(with: [0xEF, 0xBB, 0xBF]) { source.removeFirst() }
-        if source.utf8.contains(0x0D) {
+        if FastBytes.contains(source, 0x0D) {
             source = source.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         }
         // Split on bytes: Character iteration is several times slower.
-        return source.utf8.split(separator: 0x0A, omittingEmptySubsequences: false).map { String(Substring($0)) }
+        return FastBytes.lines(source)
     }
 
     /// Adds document-wide context to fragments' blocks, in order: absolute
@@ -35,6 +35,10 @@ public enum MarkdownParser {
     struct Fragment: Sendable {
         var blocks: [Block]
         var notes: [Footnotes.Note] = []
+        /// Render-cache keys of its blocks' HTML: a fragment reused unchanged
+        /// keeps them alive (`RenderCache.keep`), so an edit to it later
+        /// re-renders only the blocks that changed.
+        var cacheKeys: [String] = []
     }
 
     static func assemble(_ fragments: [(offset: Int, fragment: Fragment)]) -> ParsedDocument {
@@ -97,6 +101,7 @@ public enum MarkdownParser {
     static func parseFragment(_ lines: [String], atDocumentStart: Bool, footnoteIDs: Set<String>? = nil,
                               resolver: ResourceResolver?, cache: RenderCache?) -> Fragment {
         var blocks: [Block] = []
+        var cacheKeys: [String] = []
 
         // Front matter.
         var parseLines = lines
@@ -169,12 +174,12 @@ public enum MarkdownParser {
             let refs = refsKey.isEmpty || !source.utf8.contains(0x5B) /* [ */ ? "" : refsKey
             let cacheKey = "\(XXHash64.hash(source))|\(kind.rawValue)|\(extra)\(footnoteKey)\(refs)"
             let rendered: String
-            if let cached = cache?.lookup(cacheKey) { rendered = cached }
+            if let cached = cache?.lookup(cacheKey) { rendered = cached; cacheKeys.append(cacheKey) }
             else {
                 let reads = probe?.fileSystemReads ?? 0
                 rendered = html()
                 // Not kept when it depends on files (image sizes, which paths exist).
-                if (probe?.fileSystemReads ?? 0) == reads { cache?.store(cacheKey, rendered) }
+                if let cache, (probe?.fileSystemReads ?? 0) == reads { cache.store(cacheKey, rendered); cacheKeys.append(cacheKey) }
             }
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
                           taskState: tasks, html: rendered, text: normalized,
@@ -316,7 +321,7 @@ public enum MarkdownParser {
             Footnotes.Note(id: entry.def.id, lines: entry.def.lines, text: entry.def.text,
                            html: renderer.children(Document(parsing: entry.source, options: [.disableSmartOpts])))
         }
-        return Fragment(blocks: blocks, notes: notes)
+        return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys)
     }
 
     /// Two-generation cache of rendered block HTML, keyed by exact block source and context.
@@ -333,6 +338,13 @@ public enum MarkdownParser {
         }
         func store(_ key: String, _ value: String) {
             lock.lock(); next[key] = value; lock.unlock()
+        }
+        /// Carries entries into this generation without a lookup (for fragments reused whole).
+        func keep<S: Sequence>(_ keys: S) where S.Element == String {
+            lock.lock(); defer { lock.unlock() }
+            for key in keys where next[key] == nil {
+                if let v = current[key] { next[key] = v }
+            }
         }
         /// Call before each parse of the same document.
         public func beginGeneration() {
