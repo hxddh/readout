@@ -203,6 +203,27 @@ import Testing
         #expect(doc.blocks.map(\.cjk) == [true, true, true, true, false, false])
     }
 
+    /// English lines that mention a CJK word stay Latin: a run of CJK
+    /// characters counts about one unit per two characters, like a word.
+    @Test func englishLinesMentioningACJKWordStayLatin() {
+        let doc = parse("""
+        # Glossary
+
+        - Translate 你好 as hello
+        - Click 保存 to save the file.
+        - Japanese: 日本語 means Japanese language.
+        - 用 Swift 编写
+        - 使用 `npm install` 安装依赖
+        - Save often.
+        """)
+        #expect(doc.blocks.map(\.cjk) == [false, false, false, false, true, true, false])
+        // Such a line in a Chinese document reads like its neighbours (corpus 21, 27, 29).
+        let zh = parse("## Task 2: 更新 README.md\n\n这是一个中文段落。\n\n另一个中文段落。\n\n- Translate 你好 as hello\n")
+        #expect(zh.blocks.map(\.cjk) == [true, true, true, true])
+        let en = parse("## Task 2: 更新 README.md\n\nAn English paragraph.\n")
+        #expect(en.blocks.map(\.cjk) == [false, false])
+    }
+
     @Test func tocWithSectionTasks() {
         var doc = parse("# A\n\n## B\n\n- [x] t1\n- [ ] t2\n\n## C\n\n- [ ] t3\n")
         for i in doc.blocks.indices { doc.blocks[i].slot = i + 1 }

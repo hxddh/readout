@@ -46,6 +46,16 @@ public enum MarkdownParser {
         var currentPath: [String] = []   // headingStack's titles, shared by the blocks under it
         var slugger = Slugger()
         var title: String? = nil
+        // Mixed blocks (`Task 2: 更新 README.md`) read as CJK in a document
+        // whose other prose is mostly CJK.
+        var cjkProse = 0, otherProse = 0
+        for (_, fragment) in fragments {
+            for b in fragment.blocks where !b.cjkMixed && b.kind != .code && b.kind != .mermaid && b.kind != .math
+                && b.kind != .frontMatter && b.kind != .rule {
+                if b.cjk { cjkProse += 1 } else { otherProse += 1 }
+            }
+        }
+        let mixedIsCJK = cjkProse > otherProse
         for (offset, fragment) in fragments {
             for var n in fragment.notes {
                 n.lines = (n.lines.lowerBound + offset)...(n.lines.upperBound + offset)
@@ -71,7 +81,8 @@ public enum MarkdownParser {
                 var nb = Block(kind: b.kind, headingPath: path, lines: lines, fingerprint: b.fingerprint,
                                taskState: b.taskState, html: html, text: b.text,
                                headingLevel: b.headingLevel, headingTitle: b.headingTitle, anchor: anchor)
-                nb.cjk = b.cjk
+                nb.cjk = b.cjk || (b.cjkMixed && mixedIsCJK)
+                nb.cjkMixed = b.cjkMixed
                 out.append(nb)
             }
         }
@@ -168,7 +179,11 @@ public enum MarkdownParser {
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
                           taskState: tasks, html: rendered, text: normalized,
                           headingLevel: heading?.0, headingTitle: heading?.1, anchor: heading?.2)
-            b.cjk = (kind == .code || kind == .mermaid || kind == .math ? CJK.ratio(normalized) : CJK.proseRatio(normalized)) > 0.3
+            if kind == .code || kind == .mermaid || kind == .math {
+                b.cjk = CJK.ratio(normalized) > 0.3
+            } else {
+                (b.cjk, b.cjkMixed) = CJK.prose(normalized)
+            }
             return b
         }
 
