@@ -79,6 +79,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// The tab group whose tab bar the subtitle follows.
     private weak var observedTabGroup: NSWindowTabGroup?
     private var tabBarObservations: [NSKeyValueObservation] = []
+    private var windowObservations: [NSKeyValueObservation] = []
 
     // File state (content tracking lives in `loader`)
     private var loaded = false
@@ -511,14 +512,21 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// the subtitle follows.
     func tabsChanged() { updateSubtitle() }
 
-    /// Follows the tab bar of the window's current tab group (it changes when
-    /// the window is moved into or out of tabs).
+    /// Follows the tab bar of the window's current tab group, and the window
+    /// itself: its group is made or replaced (Show Tab Bar, Merge All Windows,
+    /// a tab dragged out) while it stays key.
     private func observeTabBar() {
-        guard let group = window?.tabGroup, group !== observedTabGroup else { return }
-        observedTabGroup = group
         let changed: @Sendable () -> Void = { [weak self] in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.updateSubtitle() } }
         }
+        if windowObservations.isEmpty, let window {
+            windowObservations = [
+                window.observe(\.tabGroup) { _, _ in changed() },
+                window.observe(\.tabbedWindows) { _, _ in changed() },
+            ]
+        }
+        guard let group = window?.tabGroup, group !== observedTabGroup else { return }
+        observedTabGroup = group
         tabBarObservations = [
             group.observe(\.isTabBarVisible) { _, _ in changed() },
             group.observe(\.windows) { _, _ in changed() },
@@ -922,6 +930,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         watcher = nil
         cancellables.removeAll()
         tabBarObservations = []
+        windowObservations = []
         // Nothing to undo in a closed window; the actions hold the controller.
         undoStack.removeAllActions()
         AppSettings.shared.showSidebar = !sidebarItem.isCollapsed
