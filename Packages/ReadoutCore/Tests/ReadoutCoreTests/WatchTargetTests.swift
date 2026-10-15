@@ -263,6 +263,23 @@ private struct Scratch {
         #expect(try runScript(["a#b.md"], cwd: s.real) == "-b io.github.hxddh.readout -- a#b.md")
     }
 
+    /// `-b` takes folders and sections too (3.6.0 review: both failed with "No such file").
+    @Test func backgroundOpensTakeFoldersAndSections() throws {
+        let s = try Scratch()
+        s.write("plan.md")
+        let fm = FileManager.default
+        try fm.createDirectory(atPath: s.real + "/docs", withIntermediateDirectories: true)
+        s.write("docs/notes.md")
+        let out = try runScript(["-b", "docs", "plan.md#风险"], cwd: s.real)
+        let urls = out.split(separator: " ").dropFirst(3).compactMap { URL(string: String($0)) }.compactMap(OpenLink.parse)
+        #expect(urls == [.init(path: s.real + "/docs/notes.md", background: true),
+                         .init(path: s.real + "/plan.md", background: true, anchor: "风险")])
+        try fm.createDirectory(atPath: s.real + "/empty", withIntermediateDirectories: true)
+        let r = try runScriptWithStatus(["-b", "empty"], cwd: s.real)
+        #expect(r.output.isEmpty)
+        #expect(r.status != 0)
+    }
+
     @Test func theScriptPrintsTheVersionOfTheAppItIsIn() throws {
         let s = try Scratch()
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()

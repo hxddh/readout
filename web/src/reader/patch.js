@@ -182,6 +182,11 @@ export function apply(p) {
   for (const slot of changed) { const el = slots.get(slot); if (el) heights.set(el, el.getBoundingClientRect().height); }
   for (const el of rerendered) if (el.isConnected) heights.set(el, el.getBoundingClientRect().height);
   if (p.reset && !firstLarge) for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
+  // The first open of a large document reads no layout, but the resize
+  // compensator still needs a baseline: a block the first frame skips is its
+  // estimate, so blocks above a resumed position that are laid out at another
+  // height still keep the place.
+  if (firstLarge) for (const el of slots.values()) heights.set(el, parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0);
 
   if (p.rewrite) showNotice(strings.rewritten);
 

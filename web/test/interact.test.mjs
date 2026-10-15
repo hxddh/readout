@@ -641,6 +641,21 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
   await page.close();
 }
 
+// 19. Reopening a large document at a saved place (the app's resume calls
+//     scrollToAnchor right after the first apply): blocks above the place
+//     that the first frame lays out at another height than their estimate
+//     do not move it (3.6 first open kept no height baseline: 536 px off).
+{
+  const page = await newPage({ width: 1000, height: 800 });
+  const img = '<p class="img-only"><img width="600" height="400" alt="diagram" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="></p>';
+  const big = doc(600, i => i === 398 || i === 399 ? img : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(1 + (i % 9))}</p>`, () => 'paragraph');
+  await page.evaluate(p => { window.readout.apply(p); window.readout.scrollToAnchor({ slot: 400, offset: 0, ratio: 0 }); }, big);
+  await page.waitForTimeout(1000);
+  const top = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="400"]').getBoundingClientRect().top));
+  check('a large document reopened at a saved place stays there', Math.abs(top) <= 2, `top=${top}`);
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();
