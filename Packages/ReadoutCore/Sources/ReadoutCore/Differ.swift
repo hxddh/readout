@@ -187,8 +187,12 @@ public enum Differ {
                 work.append((lo.0..<x, lo.1..<y))
                 lo = (x + 1, y + 1)
             }
-            // Without an anchor nothing in this range is matched.
-            if !anchors.isEmpty { work.append((lo.0..<ra.upperBound, lo.1..<rb.upperBound)) }
+            if anchors.isEmpty {
+                // Only repeated fingerprints: matched greedily, in linear time.
+                pairs += greedyPairs(a[ra], b[rb])
+            } else {
+                work.append((lo.0..<ra.upperBound, lo.1..<rb.upperBound))
+            }
         }
         pairs += (0..<suffix).map { (a.count - suffix + $0, b.count - suffix + $0) }
         pairs.sort { $0.0 < $1.0 }
@@ -232,6 +236,29 @@ public enum Differ {
             }
         }
         return nil
+    }
+
+    /// A common subsequence found in one pass: each element of `a` matched
+    /// with the next occurrence of the same value in `b` after the last
+    /// match. Not always the longest, but linear (for ranges of repeated values only).
+    static func greedyPairs(_ a: ArraySlice<UInt64>, _ b: ArraySlice<UInt64>) -> [(Int, Int)] {
+        var positions: [UInt64: [Int]] = [:]
+        for j in b.indices { positions[b[j], default: []].append(j) }
+        var next: [UInt64: Int] = [:]   // per value: the first of its positions not yet passed
+        var pairs: [(Int, Int)] = []
+        var j = b.startIndex
+        for i in a.indices {
+            guard let list = positions[a[i]] else { continue }
+            var c = next[a[i]] ?? 0
+            while c < list.count && list[c] < j { c += 1 }
+            if c < list.count {
+                pairs.append((i, list[c]))
+                j = list[c] + 1
+                c += 1
+            }
+            next[a[i]] = c
+        }
+        return pairs
     }
 
     /// Elements occurring exactly once in each range, paired, as the longest

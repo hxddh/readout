@@ -84,6 +84,19 @@ import Testing
         }
     }
 
+    /// A large range of repeated blocks only (no fingerprint unique on both
+    /// sides to anchor on) still matches what survives, in bounded time.
+    @Test func repeatedBlocksWithoutAnchorsStillMatch() {
+        let a = key("Repeated block A."), b = key("Repeated block B.")
+        let old = Array(repeating: a, count: 2500) + Array(repeating: b, count: 2500)
+        let new = Array(repeating: b, count: 2500) + Array(repeating: a, count: 2500)
+        var d: DiffResult? = nil
+        let t = ms { d = Differ.diff(old: old, new: new) }
+        #expect(t < 1500, "\(Int(t)) ms")
+        #expect(d?.rewrite == false)
+        #expect((d?.equalCount ?? 0) >= 2500)
+    }
+
     /// Ordinary edits (also of long documents) get exactly the alignment they got before.
     @Test func ordinaryEditsAlignAsBefore() {
         var rng = IncrementalParserTests.SplitMix64(state: 36)
