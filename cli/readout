@@ -79,7 +79,8 @@ version() {
   fi
   [ -f "$plist" ] || return 1
   v=""
-  [ -x /usr/bin/plutil ] && v=$(/usr/bin/plutil -extract CFBundleShortVersionString raw -o - "$plist" 2>/dev/null)
+  # macOS's plutil (binary or XML); another system's plutil may not know -extract.
+  [ "$(uname)" = Darwin ] && v=$(/usr/bin/plutil -extract CFBundleShortVersionString raw -o - "$plist" 2>/dev/null)
   # An XML property list without plutil.
   [ -n "$v" ] || v=$(sed -n '/<key>CFBundleShortVersionString<\/key>/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}' "$plist")
   [ -n "$v" ] && printf '%s\n' "$v"
