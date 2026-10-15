@@ -626,6 +626,21 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
   await page.close();
 }
 
+// 18. A wide table far down a large document scrolls from the first open
+//     (its block is skipped by the first frame, which lays out the screen only).
+{
+  const page = await newPage({ width: 600, height: 700 });
+  const words = ['Implementation', 'Responsibility', 'Configuration', 'Documentation', 'Compatibility', 'Infrastructure', 'Observability'];
+  const table = `<div class="table-wrap"><table><thead><tr>${words.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody><tr>${words.map(w => `<td>${w}</td>`).join('')}</tr></tbody></table></div>`;
+  const big = doc(400, i => i === 350 || i === 3 ? table : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(6)}</p>`, i => i === 350 || i === 3 ? 'table' : 'paragraph');
+  await page.evaluate(p => window.readout.apply(p), big);
+  await page.waitForTimeout(500);
+  const r = await page.evaluate(() => ({ near: document.querySelector('.blk[data-slot="3"] .table-wrap').classList.contains('scrolls'),
+    far: document.querySelector('.blk[data-slot="350"] .table-wrap').classList.contains('scrolls') }));
+  check('a wide table scrolls from the first open, on screen or far below', r.near && r.far, JSON.stringify(r));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();

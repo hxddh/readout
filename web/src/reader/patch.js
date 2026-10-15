@@ -3,7 +3,7 @@ import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll } f
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, resizeObserver, keepPlace, isShown, scrollToElement } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
 import { scheduleRail } from './rail.js';
-import { enhance, renderLazy } from './enhance.js';
+import { enhance, renderLazy, measureTables } from './enhance.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
 
 const notice = document.getElementById('ro-notice');
@@ -243,8 +243,23 @@ export function apply(p) {
     entry.y = Math.round(se.scrollTop);
     entry.height = se.scrollHeight;
     reportActiveHeading();
+    if (firstLarge) measureSkippedTables();
     post({ type: 'painted', version: p.version });
   }, 0));
+}
+
+/**
+ * Whether a table scrolls is measured in the frame after it arrives; on a
+ * first open that no longer laid out every block, a table in a block the
+ * frame skipped (content-visibility) measured as fitting. Measured again,
+ * each such block laid out for the moment.
+ */
+function measureSkippedTables() {
+  const tables = [...doc.querySelectorAll(':scope > .blk .table-wrap')];
+  const blocks = [...new Set(tables.map(t => t.closest('#ro-doc > .blk')))].filter(b => !b.style.contentVisibility);
+  for (const b of blocks) b.style.contentVisibility = 'visible';
+  measureTables(tables);
+  for (const b of blocks) b.style.contentVisibility = '';
 }
 
 /**
