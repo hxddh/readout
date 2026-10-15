@@ -109,6 +109,14 @@ import Testing
         #expect((d?.equalCount ?? 0) >= 5000)
     }
 
+    /// Runs of repeated blocks reordered: the runs that keep their order survive.
+    @Test func reorderedRunsKeepTheRunsInOrder() {
+        func blocks(_ runs: [Int]) -> [BlockKey] { runs.flatMap { Array(repeating: key("Repeated block \($0)."), count: 300) } }
+        let d = Differ.diff(old: blocks([2, 0, 1, 2, 3, 5, 1, 0, 6, 7]), new: blocks([7, 6, 5, 6, 4, 6, 7, 6, 3, 4]))
+        #expect(!d.rewrite)
+        #expect(d.equalCount >= 900)
+    }
+
     /// Ordinary edits (also of long documents) get exactly the alignment they got before.
     @Test func ordinaryEditsAlignAsBefore() {
         var rng = IncrementalParserTests.SplitMix64(state: 36)

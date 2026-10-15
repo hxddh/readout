@@ -199,9 +199,10 @@ public enum Differ {
             }
             if anchors.isEmpty {
                 // Only repeated fingerprints: the k-th occurrence of each paired
-                // with its k-th, or a greedy pass, whichever keeps more.
-                let byOccurrence = occurrencePairs(a[ra], b[rb]), greedy = greedyPairs(a[ra], b[rb])
-                pairs += byOccurrence.count >= greedy.count ? byOccurrence : greedy
+                // with its k-th, a greedy pass, or runs of equal blocks aligned
+                // as units, whichever keeps most.
+                let candidates = [occurrencePairs(a[ra], b[rb]), greedyPairs(a[ra], b[rb]), runPairs(a[ra], b[rb])]
+                pairs += candidates.max { $0.count < $1.count } ?? []
             } else {
                 work.append((lo.0..<ra.upperBound, lo.1..<rb.upperBound))
             }
@@ -283,6 +284,44 @@ public enum Differ {
         var candidates: [(Int, Int)] = []
         for i in a.indices { if inA[a[i]] == i, let j = inB[a[i]], j >= 0 { candidates.append((i, j)) } }
         return longestIncreasing(candidates)
+    }
+
+    /// Runs of equal values aligned as units: the heaviest common subsequence
+    /// of the two run sequences (a pair of runs of one value keeps the shorter
+    /// run's length), by dynamic programming when there are few runs
+    /// (`maxPairingCells` pairs of runs at most); empty otherwise.
+    static func runPairs(_ a: ArraySlice<UInt64>, _ b: ArraySlice<UInt64>) -> [(Int, Int)] {
+        func runs(_ x: ArraySlice<UInt64>) -> [(value: UInt64, start: Int, count: Int)] {
+            var out: [(value: UInt64, start: Int, count: Int)] = []
+            for i in x.indices {
+                if let last = out.last, last.value == x[i] { out[out.count - 1].count += 1 } else { out.append((x[i], i, 1)) }
+            }
+            return out
+        }
+        let ra = runs(a), rb = runs(b)
+        guard !ra.isEmpty, !rb.isEmpty, ra.count * rb.count <= maxPairingCells * 10 else { return [] }
+        let w = rb.count + 1
+        var dp = [Int](repeating: 0, count: (ra.count + 1) * w)   // dp[i][j]: best for ra[i...], rb[j...]
+        for i in stride(from: ra.count - 1, through: 0, by: -1) {
+            for j in stride(from: rb.count - 1, through: 0, by: -1) {
+                var best = max(dp[(i + 1) * w + j], dp[i * w + j + 1])
+                if ra[i].value == rb[j].value { best = max(best, min(ra[i].count, rb[j].count) + dp[(i + 1) * w + j + 1]) }
+                dp[i * w + j] = best
+            }
+        }
+        var pairs: [(Int, Int)] = []
+        var i = 0, j = 0
+        while i < ra.count && j < rb.count {
+            if ra[i].value == rb[j].value, dp[i * w + j] == min(ra[i].count, rb[j].count) + dp[(i + 1) * w + j + 1] {
+                for k in 0..<min(ra[i].count, rb[j].count) { pairs.append((ra[i].start + k, rb[j].start + k)) }
+                i += 1; j += 1
+            } else if dp[i * w + j] == dp[(i + 1) * w + j] {
+                i += 1
+            } else {
+                j += 1
+            }
+        }
+        return pairs
     }
 
     /// Each value's k-th occurrence in `a` paired with its k-th in `b`, as the
