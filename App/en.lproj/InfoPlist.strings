@@ -1,0 +1,6 @@
+/* Info.plist strings: the document type, Finder's Kind column, and privacy prompts. */
+"Markdown Document" = "Markdown Document";
+"NSDocumentsFolderUsageDescription" = "Readout reads the Markdown files you open or add as agent folders here. It never changes them.";
+"NSDesktopFolderUsageDescription" = "Readout reads the Markdown files you open or add as agent folders here. It never changes them.";
+"NSDownloadsFolderUsageDescription" = "Readout reads the Markdown files you open or add as agent folders here. It never changes them.";
+"NSAppleEventsUsageDescription" = "Readout asks Xcode to open a file at a line when Xcode is your editor.";
