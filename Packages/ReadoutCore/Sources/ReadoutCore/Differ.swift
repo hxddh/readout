@@ -14,11 +14,16 @@ public struct BlockKey: Codable, Sendable, Equatable {
     /// fingerprint), so a box ticked while the app was closed is noticed.
     /// Nil for blocks without tasks and in baselines saved before this field existed.
     public let taskState: [Bool]?
+    /// The block's Markdown source (`Block.source`) when it differs from
+    /// the whole normalized text, "" when it does not; nil in baselines
+    /// saved before this field existed, which kept only normalized text.
+    public let source: String?
 
-    public init(fingerprint: UInt64, kind: BlockKind, text: String, taskState: [Bool]? = nil) {
+    public init(fingerprint: UInt64, kind: BlockKind, text: String, taskState: [Bool]? = nil, source: String? = "") {
         self.fingerprint = fingerprint
         self.kind = kind
         self.taskState = taskState
+        self.source = source == text ? "" : source
         // Similarity matching only needs a prefix: token-bigram Jaccard
         // converges well before 500 characters, and the common case (exact
         // fingerprint match) needs no text at all.
@@ -34,9 +39,29 @@ public struct BlockKey: Codable, Sendable, Equatable {
     /// The block's whole text, or nil when only a prefix was kept (an older baseline).
     public var wholeText: String? { full ?? (text.utf8.count < 500 || text.count < 500 ? text : nil) }
 
+    /// The block's whole Markdown source, or nil when it is not known (an older baseline).
+    public var wholeSource: String? {
+        guard let source else { return nil }
+        return source.isEmpty ? wholeText : source
+    }
+
     public init(_ block: Block) {
         self.init(fingerprint: block.fingerprint, kind: block.kind, text: block.text,
-                  taskState: block.taskState.isEmpty ? nil : block.taskState)
+                  taskState: block.taskState.isEmpty ? nil : block.taskState, source: block.source)
+    }
+
+    private init(fingerprint: UInt64, kind: BlockKind, text: String, full: String?, taskState: [Bool]?, source: String?) {
+        self.fingerprint = fingerprint
+        self.kind = kind
+        self.text = text
+        self.full = full
+        self.taskState = taskState
+        self.source = source
+    }
+
+    /// The same key with other checkbox states (as they were read).
+    func with(taskState: [Bool]?) -> BlockKey {
+        BlockKey(fingerprint: fingerprint, kind: kind, text: text, full: full, taskState: taskState, source: source)
     }
 }
 
@@ -64,23 +89,21 @@ public enum Differ {
     /// block of distinct words) to a few milliseconds of a release build.
     public static let maxPairingCells = 10_000
 
+    /// Rewritten: almost nothing of the smaller version survives unchanged.
+    /// Measured against the smaller one, so a skeleton that grows into a
+    /// full document (every old block kept) or a document cut down to a
+    /// few of its blocks is an edit, not a rewrite.
+    static func isRewrite(equal: Int, old: Int, new: Int) -> Bool {
+        old >= 5 && new >= 1 && Double(equal) / Double(min(old, new)) < 0.2
+    }
+
     public static func diff(old: [BlockKey], new: [BlockKey]) -> DiffResult {
-        // Step 1: exact matches via Myers diff on fingerprints.
+        // Step 1: exact matches via Myers diff on fingerprints (bounded, see `equalPairs`).
         let oldFP = old.map(\.fingerprint), newFP = new.map(\.fingerprint)
-        let difference = newFP.difference(from: oldFP)
-        var removedOld = Set<Int>(), insertedNew = Set<Int>()
-        for change in difference {
-            switch change {
-            case let .remove(offset, _, _): removedOld.insert(offset)
-            case let .insert(offset, _, _): insertedNew.insert(offset)
-            }
-        }
-        var equalPairs: [(Int, Int)] = []
-        var oi = 0, ni = 0
-        while oi < old.count && ni < new.count {
-            if removedOld.contains(oi) { oi += 1; continue }
-            if insertedNew.contains(ni) { ni += 1; continue }
-            equalPairs.append((oi, ni)); oi += 1; ni += 1
+        guard let equalPairs = Self.equalPairs(oldFP, newFP) else {
+            // So little can match that it is a rewrite whatever the alignment: not worth computing.
+            return DiffResult(changes: [DiffResult.Change](repeating: .inserted, count: new.count),
+                              removed: Array(old.indices), rewrite: true)
         }
 
         var changes = [DiffResult.Change](repeating: .inserted, count: new.count)
@@ -101,13 +124,138 @@ public enum Differ {
         }
 
         let removed = (0..<old.count).filter { !matchedOld.contains($0) }
-        // Rewritten: almost nothing of the smaller version survives unchanged.
-        // Measured against the smaller one, so a skeleton that grows into a
-        // full document (every old block kept) or a document cut down to a
-        // few of its blocks is an edit, not a rewrite.
-        let rewrite = old.count >= 5 && new.count >= 1
-            && Double(equalPairs.count) / Double(min(old.count, new.count)) < 0.2
+        let rewrite = isRewrite(equal: equalPairs.count, old: old.count, new: new.count)
         return DiffResult(changes: changes, removed: removed, rewrite: rewrite)
+    }
+
+    /// Cells of the edit graph Myers' algorithm may visit in one diff: its
+    /// time and memory grow with (N + M) × D, which a rewrite of a
+    /// 10,000-block document made seconds and gigabytes. A few milliseconds.
+    static let maxMyersWork = 4_000_000
+
+    /// Pairs of equal fingerprints in order (old index, new index), or nil
+    /// when so few can match that the diff is a rewrite.
+    ///
+    /// A count of the fingerprints both sides hold gives an upper bound for
+    /// what can match: below the rewrite threshold, nil at once. When Myers'
+    /// work is small (the usual edit: few blocks differ), the result is
+    /// exactly the alignment of the standard library's Myers diff over the
+    /// whole sequences, as before it was bounded. Otherwise the shared start
+    /// and end are matched and the middle is diffed with Myers where its
+    /// edit distance turns out small, else anchored on fingerprints that
+    /// occur once on each side (patience diff), the gaps between them diffed the same way.
+    static func equalPairs(_ a: [UInt64], _ b: [UInt64]) -> [(Int, Int)]? {
+        var prefix = 0
+        while prefix < a.count && prefix < b.count && a[prefix] == b[prefix] { prefix += 1 }
+        var suffix = 0
+        while suffix < a.count - prefix && suffix < b.count - prefix && a[a.count - 1 - suffix] == b[b.count - 1 - suffix] { suffix += 1 }
+        let aMid = a[prefix..<(a.count - suffix)], bMid = b[prefix..<(b.count - suffix)]
+        if isRewrite(equal: prefix + suffix + min(aMid.count, bMid.count), old: a.count, new: b.count) {
+            var counts: [UInt64: Int] = [:]
+            counts.reserveCapacity(aMid.count)
+            for x in aMid { counts[x, default: 0] += 1 }
+            var shared = 0
+            for x in bMid { if let c = counts[x], c > 0 { counts[x] = c - 1; shared += 1 } }
+            if isRewrite(equal: prefix + suffix + shared, old: a.count, new: b.count) { return nil }
+        }
+        // Myers over the whole sequences costs (N + M) × D: affordable for the usual edit (D small).
+        let budget = maxMyersWork / max(1, a.count + b.count)
+        if aMid.count + bMid.count <= budget || editDistance(aMid, bMid, limit: budget) != nil {
+            return myersPairs(a[...], b[...])
+        }
+
+        var pairs: [(Int, Int)] = (0..<prefix).map { ($0, $0) }
+        var work: [(a: Range<Int>, b: Range<Int>)] = [(aMid.indices, bMid.indices)]
+        while var (ra, rb) = work.popLast() {
+            // The shared start and end of this range.
+            while !ra.isEmpty && !rb.isEmpty && a[ra.lowerBound] == b[rb.lowerBound] {
+                pairs.append((ra.lowerBound, rb.lowerBound)); ra = ra.dropFirst(); rb = rb.dropFirst()
+            }
+            while !ra.isEmpty && !rb.isEmpty && a[ra.upperBound - 1] == b[rb.upperBound - 1] {
+                pairs.append((ra.upperBound - 1, rb.upperBound - 1)); ra = ra.dropLast(); rb = rb.dropLast()
+            }
+            if ra.isEmpty || rb.isEmpty { continue }
+            let size = ra.count + rb.count
+            if size * size <= maxMyersWork || editDistance(a[ra], b[rb], limit: maxMyersWork / size) != nil {
+                pairs += myersPairs(a[ra], b[rb])
+                continue
+            }
+            let anchors = uniqueAnchors(a[ra], b[rb])
+            var lo = (ra.lowerBound, rb.lowerBound)
+            for (x, y) in anchors {
+                pairs.append((x, y))
+                work.append((lo.0..<x, lo.1..<y))
+                lo = (x + 1, y + 1)
+            }
+            // Without an anchor nothing in this range is matched.
+            if !anchors.isEmpty { work.append((lo.0..<ra.upperBound, lo.1..<rb.upperBound)) }
+        }
+        pairs += (0..<suffix).map { (a.count - suffix + $0, b.count - suffix + $0) }
+        pairs.sort { $0.0 < $1.0 }
+        return pairs
+    }
+
+    /// The standard library's Myers diff of two ranges, as pairs of equal elements (indices of the ranges' base).
+    private static func myersPairs(_ a: ArraySlice<UInt64>, _ b: ArraySlice<UInt64>) -> [(Int, Int)] {
+        let difference = Array(b).difference(from: Array(a))
+        var removed = Set<Int>(), inserted = Set<Int>()
+        for change in difference {
+            switch change {
+            case let .remove(offset, _, _): removed.insert(offset)
+            case let .insert(offset, _, _): inserted.insert(offset)
+            }
+        }
+        var pairs: [(Int, Int)] = []
+        var oi = 0, ni = 0
+        while oi < a.count && ni < b.count {
+            if removed.contains(oi) { oi += 1; continue }
+            if inserted.contains(ni) { ni += 1; continue }
+            pairs.append((a.startIndex + oi, b.startIndex + ni)); oi += 1; ni += 1
+        }
+        return pairs
+    }
+
+    /// The Myers edit distance of `a` and `b` if it is at most `limit` (nil
+    /// otherwise), in O((N + M) × limit) time and O(limit) memory.
+    static func editDistance(_ a: ArraySlice<UInt64>, _ b: ArraySlice<UInt64>, limit: Int) -> Int? {
+        let n = a.count, m = b.count, ai = a.startIndex, bi = b.startIndex
+        let maxD = min(limit, n + m)
+        let offset = maxD + 1
+        var v = [Int](repeating: 0, count: 2 * maxD + 3)
+        for d in 0...maxD {
+            for k in stride(from: -d, through: d, by: 2) {
+                var x = k == -d || (k != d && v[offset + k - 1] < v[offset + k + 1]) ? v[offset + k + 1] : v[offset + k - 1] + 1
+                var y = x - k
+                while x < n && y < m && a[ai + x] == b[bi + y] { x += 1; y += 1 }
+                v[offset + k] = x
+                if x >= n && y >= m { return d }
+            }
+        }
+        return nil
+    }
+
+    /// Elements occurring exactly once in each range, paired, as the longest
+    /// run of such pairs in order on both sides (patience diff's anchors).
+    static func uniqueAnchors(_ a: ArraySlice<UInt64>, _ b: ArraySlice<UInt64>) -> [(Int, Int)] {
+        var inA: [UInt64: Int] = [:], inB: [UInt64: Int] = [:]   // index, or -1 when repeated
+        inA.reserveCapacity(a.count); inB.reserveCapacity(b.count)
+        for i in a.indices { inA[a[i]] = inA[a[i]] == nil ? i : -1 }
+        for j in b.indices { inB[b[j]] = inB[b[j]] == nil ? j : -1 }
+        var candidates: [(Int, Int)] = []
+        for i in a.indices { if inA[a[i]] == i, let j = inB[a[i]], j >= 0 { candidates.append((i, j)) } }
+        // Longest increasing run of new indices (old indices already increase): patience sorting.
+        var tails: [Int] = []                 // candidate index ending the best run of each length
+        var previous = [Int](repeating: -1, count: candidates.count)
+        for (c, pair) in candidates.enumerated() {
+            var lo = 0, hi = tails.count
+            while lo < hi { let mid = (lo + hi) / 2; if candidates[tails[mid]].1 < pair.1 { lo = mid + 1 } else { hi = mid } }
+            if lo > 0 { previous[c] = tails[lo - 1] }
+            if lo == tails.count { tails.append(c) } else { tails[lo] = c }
+        }
+        var out: [(Int, Int)] = []
+        var c = tails.last ?? -1
+        while c >= 0 { out.append(candidates[c]); c = previous[c] }
+        return out.reversed()
     }
 
     /// Order-preserving maximum-weight matching over pairs with similarity above the threshold.
@@ -140,7 +288,11 @@ public enum Differ {
         var sim = [Double](repeating: 0, count: a * b)
         for i in 0..<a {
             for j in 0..<b {
-                sim[i * b + j] = similarity(old[i], os[i], new[j], ns[j])
+                var s = similarity(old[i], os[i], new[j], ns[j])
+                // A block written half-way that grew (and split into several
+                // blocks) is edited, not removed: its text is in the new one.
+                if s < similarityThreshold, contained(old[i], os[i], in: new[j], ns[j]) { s = similarityThreshold }
+                sim[i * b + j] = s
             }
         }
         // dp[i][j] = best total for old[i...], new[j...]
@@ -167,6 +319,19 @@ public enum Differ {
             }
         }
         return pairs
+    }
+
+    /// `x` is the start of `y`, or nearly all of `x`'s shingles are in `y`
+    /// (a block of the same kind that grew, as one being streamed in does).
+    static func contained(_ x: BlockKey, _ xs: [Int64], in y: BlockKey, _ ys: [Int64]) -> Bool {
+        guard x.kind == y.kind, !x.text.isEmpty, x.text.utf8.count <= y.text.utf8.count else { return false }
+        if y.text.hasPrefix(x.text) { return true }
+        guard xs.count >= 4, xs.count <= ys.count else { return false }
+        var p = 0, q = 0, inter = 0
+        while p < xs.count && q < ys.count {
+            if xs[p] == ys[q] { inter += 1; p += 1; q += 1 } else if xs[p] < ys[q] { p += 1 } else { q += 1 }
+        }
+        return Double(inter) >= 0.9 * Double(xs.count)
     }
 
     /// `similarity` over precomputed sorted shingle ids.
