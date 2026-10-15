@@ -89,6 +89,8 @@ import Testing
         #expect(resolve("main.swift:42", existing: ["/work/plans/main.swift"]) == .source(URL(fileURLWithPath: "/work/plans/main.swift"), line: 42, column: 0))
         #expect(resolve("Makefile:12", existing: ["/work/plans/Makefile"]) == .source(URL(fileURLWithPath: "/work/plans/Makefile"), line: 12, column: 0))
         #expect(resolve("tel:5551234", existing: []) == .external(URL(string: "tel:5551234")!))
+        // A custom scheme with a dot stays a URL unless such a file is there.
+        #expect(resolve("com.example.viewer:42", existing: []) == .external(URL(string: "com.example.viewer:42")!))
         // Not a line fragment: the file, opened by the system.
         #expect(resolve("src/a.ts#intro", existing: [a]) == .file(file))
         #expect(resolve("src/a.ts#L0", existing: [a]) == .file(file))
@@ -104,7 +106,7 @@ import Testing
         #expect(resolve("shot.png#L3", existing: ["/work/plans/shot.png"]) == .file(URL(fileURLWithPath: "/work/plans/shot.png")))
         #expect(resolve("doc.pdf:2", existing: ["/work/plans/doc.pdf"]) == .file(URL(fileURLWithPath: "/work/plans/doc.pdf")))
         #expect(resolve("src:4", existing: [], folders: ["/work/plans/src"]) == .file(URL(fileURLWithPath: "/work/plans/src")))
-        #expect(resolve("other.md:12", existing: []) == .markdown(URL(fileURLWithPath: "/work/plans/other.md"), fragment: nil))
+        #expect(resolve("other.md:12", existing: ["/work/plans/other.md"]) == .markdown(URL(fileURLWithPath: "/work/plans/other.md"), fragment: nil))
         #expect(resolve("other.md#L12", existing: []) == .markdown(URL(fileURLWithPath: "/work/plans/other.md"), fragment: "L12"))
     }
 }

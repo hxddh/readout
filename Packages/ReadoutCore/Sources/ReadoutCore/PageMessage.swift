@@ -105,13 +105,11 @@ public enum LinkTarget: Equatable, Sendable {
                 : documentURL.deletingLastPathComponent().appendingPathComponent(p).standardizedFileURL
         }
         // "main.swift:42" and "Makefile:12" parse as URLs with the schemes
-        // "main.swift" and "makefile": a file name with a line. A scheme has
-        // no dot; "tel:5551234" stays a URL unless a file "tel" is there.
+        // "main.swift" and "makefile": a file name with a line when that file
+        // is there. Otherwise a URL: "tel:5551234", "com.example.viewer:42".
         if let u = URL(string: href), let scheme = u.scheme?.lowercased(), scheme != "file" {
-            let suffix = SourceLine.pathSuffix(href)
-            let isPath = suffix.map { s in
-                scheme.contains(".") || fileExists(url(s.path.removingPercentEncoding ?? s.path))
-                    || fileExists(url(href.removingPercentEncoding ?? href))
+            let isPath = SourceLine.pathSuffix(href).map { s in
+                fileExists(url(s.path.removingPercentEncoding ?? s.path)) || fileExists(url(href.removingPercentEncoding ?? href))
             } ?? false
             if !isPath { return .external(u) }
         }

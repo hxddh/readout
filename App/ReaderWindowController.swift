@@ -698,7 +698,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                                                   return fm.fileExists(atPath: u.path, isDirectory: &dir) && dir.boolValue
                                               }) else { return }
         switch target {
-        case .external(let u), .file(let u): NSWorkspace.shared.open(u)
+        case .external(let u), .file(let u):
+            // No app for it (a file name with a line that is not there, "main.swift:42"): say so.
+            if !NSWorkspace.shared.open(u) { NSSound.beep() }
         case .source(let u, let line, let column): EditorOpener.open(path: u.path, line: line, column: column)
         case .sameDocument(let fragment): scrollToAnchor(fragment: fragment)
         case .markdown(let u, let fragment): (NSApp.delegate as? AppDelegate)?.open(u, anchor: fragment)

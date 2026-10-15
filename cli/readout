@@ -119,7 +119,7 @@ case "$1" in
   *)
     [ "$1" = "--" ] && shift
     status=0
-    urls=""
+    anchored=0
     for f do
       shift
       if [ -d "$f" ]; then
@@ -131,13 +131,23 @@ case "$1" in
           status=1
         fi
       elif [ ! -e "$f" ] && [ "${f%#*}" != "$f" ] && [ -f "${f%#*}" ] && is_markdown "${f%#*}"; then
-        urls="$urls $(anchor_url "${f%#*}" "${f##*#}")"
+        set -- "$@" "$(anchor_url "${f%#*}" "${f##*#}")"
+        anchored=1
       else
         set -- "$@" "$f"
       fi
     done
-    if [ $# -gt 0 ]; then "$OPEN" -b "$APP_ID" -- "$@" || status=$?; fi
-    # The URLs are percent-encoded: no spaces to split wrongly.
-    for u in $urls; do "$OPEN" -b "$APP_ID" "$u" || status=$?; done
+    [ $# -gt 0 ] || exit "$status"
+    if [ "$anchored" = 0 ]; then
+      "$OPEN" -b "$APP_ID" -- "$@" || status=$?
+    else
+      # One at a time, in order: the last one ends up in front, as with files alone.
+      for f do
+        case "$f" in
+          readout-open://*) "$OPEN" -b "$APP_ID" "$f" || status=$? ;;
+          *) "$OPEN" -b "$APP_ID" -- "$f" || status=$? ;;
+        esac
+      done
+    fi
     exit "$status" ;;
 esac

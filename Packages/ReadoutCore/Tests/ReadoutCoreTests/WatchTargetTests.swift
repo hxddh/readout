@@ -250,9 +250,12 @@ private struct Scratch {
     @Test func theScriptPassesASectionThrough() throws {
         let s = try Scratch()
         s.write("plan.md")
-        let out = try runScript(["plan.md#风险", "plan.md"], cwd: s.real)
+        s.write("other.md")
+        // In order: the last one ends up in front.
+        let out = try runScript(["other.md", "plan.md#风险"], cwd: s.real)
         let lines = out.split(separator: "\n").map(String.init)
-        #expect(lines.first == "-b io.github.hxddh.readout -- plan.md")
+        #expect(lines.count == 2)
+        #expect(lines.first == "-b io.github.hxddh.readout -- other.md")
         let url = lines.last?.split(separator: " ").last.flatMap { URL(string: String($0)) }
         #expect(url.flatMap(OpenLink.parse) == .init(path: s.real + "/plan.md", background: false, anchor: "风险"))
         // A file really named with a # is that file.
