@@ -43,6 +43,11 @@ a user can see, feel or rely on, in their words:
 - Group entries under `## New`, `## Improved`, `## Fixed`, `## Privacy` as
   applicable; leave out empty headings. If a release has no user-visible
   change, it should not be a release.
+- Start with the summary sentence, not a `## X.Y.Z` heading: the file is the
+  GitHub release body, which GitHub titles already, and the in-app update
+  alert shows the release name right above the notes. (The alert drops such
+  a heading and HTML tags such as `<kbd>`, so 3.5.0 and earlier read fine;
+  new notes should not rely on it.)
 
 ## What CI and preflight block
 

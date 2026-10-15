@@ -31,11 +31,16 @@ targets:
     platform: macOS
     sources:
       - path: App
+        excludes: ["Help/**"]
       - path: Shared
       - path: web/build/Web
         type: folder
         buildPhase: resources
       - path: cli/readout
+        buildPhase: resources
+      # Help ▸ Readout Help opens these in Readout itself (Contents/Resources/Help).
+      - path: App/Help
+        type: folder
         buildPhase: resources
     dependencies:
       - package: ReadoutCore
@@ -56,6 +61,13 @@ targets:
         NSPrincipalClass: NSApplication
         NSSupportsAutomaticTermination: false
         NSSupportsSuddenTermination: false
+        # Shown when a document (or an agent folder) is in a protected folder.
+        # Localized in App/<lang>.lproj/InfoPlist.strings.
+        NSDocumentsFolderUsageDescription: Readout reads the Markdown files you open or add as agent folders here. It never changes them.
+        NSDesktopFolderUsageDescription: Readout reads the Markdown files you open or add as agent folders here. It never changes them.
+        NSDownloadsFolderUsageDescription: Readout reads the Markdown files you open or add as agent folders here. It never changes them.
+        # Settings ▸ Editor ▸ Xcode runs /usr/bin/xed, which asks Xcode over Apple Events to open the file at a line.
+        NSAppleEventsUsageDescription: Readout asks Xcode to open a file at a line when Xcode is your editor.
         # `readout -b` / `readout --hook` open through readout-open://open?path=…&background=1.
         # Not `readout:`, which is the reader page's own scheme inside its web view.
         CFBundleURLTypes:
@@ -65,6 +77,7 @@ targets:
         CFBundleDocumentTypes:
           - CFBundleTypeName: Markdown Document
             CFBundleTypeRole: Viewer
+            CFBundleTypeIconSystemGenerated: 1
             LSHandlerRank: Alternate
             LSItemContentTypes:
               - net.daringfireball.markdown
@@ -79,7 +92,9 @@ targets:
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: io.github.hxddh.readout.markdown
             UTTypeDescription: Markdown Document
-            UTTypeConformsTo: [public.plain-text]
+            # Markdown under its less common extensions: still Markdown to
+            # other apps (and to Quick Look), not only plain text.
+            UTTypeConformsTo: [net.daringfireball.markdown, public.plain-text]
             UTTypeTagSpecification:
               public.filename-extension: [mdown, mkd, mkdn, mdwn, mdtxt, mdtext]
     settings:

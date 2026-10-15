@@ -171,6 +171,9 @@ private struct Scratch {
         #expect(OpenLink.parse(URL(string: "readout-open://open?path=a.md")!) == nil)     // relative
         #expect(OpenLink.parse(URL(string: "readout-open://open")!) == nil)
         #expect(OpenLink.parse(URL(string: "readout-open://open?path=%2Fa.md")!) == .init(path: "/a.md", background: false))
+        // `readout plan.md#risks`: the section rides along.
+        #expect(OpenLink.parse(URL(string: "readout-open://open?path=%2Fa.md&anchor=%E9%A3%8E%E9%99%A9")!) == .init(path: "/a.md", background: false, anchor: "风险"))
+        #expect(OpenLink.parse(URL(string: "readout-open://open?path=%2Fa.md&anchor=")!)?.anchor == nil)
     }
 
     /// The `readout` script (cli/readout) with `open` replaced by `echo`.
@@ -224,6 +227,72 @@ private struct Scratch {
         let s = try Scratch()
         s.write("plan.md")
         #expect(try runScript(["plan.md"], cwd: s.real) == "-b io.github.hxddh.readout -- plan.md")
+    }
+
+    /// `readout DIR` opens the newest Markdown file in it (3.5 handed the folder to the app, which beeped).
+    @Test func theScriptOpensTheNewestMarkdownFileInAFolder() throws {
+        let s = try Scratch()
+        let fm = FileManager.default
+        s.write("old.md")
+        s.write("new.md")
+        s.write("newer.txt")
+        try fm.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -60)], ofItemAtPath: s.real + "/old.md")
+        try fm.setAttributes([.modificationDate: Date(timeIntervalSinceNow: 60)], ofItemAtPath: s.real + "/newer.txt")
+        #expect(try runScript([s.real], cwd: "/") == "-b io.github.hxddh.readout -- \(s.real)/new.md")
+        #expect(try runScript([s.real + "/"], cwd: "/") == "-b io.github.hxddh.readout -- \(s.real)/new.md")
+        try fm.createDirectory(atPath: s.real + "/empty", withIntermediateDirectories: true)
+        let r = try runScriptWithStatus(["empty"], cwd: s.real)
+        #expect(r.output.isEmpty)
+        #expect(r.status != 0)
+    }
+
+    /// `readout plan.md#risks` opens the file at the section (3.5 asked for a file named "plan.md#risks").
+    @Test func theScriptPassesASectionThrough() throws {
+        let s = try Scratch()
+        s.write("plan.md")
+        s.write("other.md")
+        // In order: the last one ends up in front.
+        let out = try runScript(["other.md", "plan.md#风险"], cwd: s.real)
+        let lines = out.split(separator: "\n").map(String.init)
+        #expect(lines.count == 2)
+        #expect(lines.first == "-b io.github.hxddh.readout -- other.md")
+        let url = lines.last?.split(separator: " ").last.flatMap { URL(string: String($0)) }
+        #expect(url.flatMap(OpenLink.parse) == .init(path: s.real + "/plan.md", background: false, anchor: "风险"))
+        // A file really named with a # is that file.
+        s.write("a#b.md")
+        #expect(try runScript(["a#b.md"], cwd: s.real) == "-b io.github.hxddh.readout -- a#b.md")
+    }
+
+    @Test func theScriptPrintsTheVersionOfTheAppItIsIn() throws {
+        let s = try Scratch()
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let fm = FileManager.default
+        let resources = s.real + "/Readout.app/Contents/Resources"
+        try fm.createDirectory(atPath: resources, withIntermediateDirectories: true)
+        try fm.copyItem(atPath: root.appendingPathComponent("cli/readout").path, toPath: resources + "/readout")
+        let plist = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <plist version="1.0">
+            <dict>
+            \t<key>CFBundleShortVersionString</key>
+            \t<string>3.6.0</string>
+            </dict>
+            </plist>
+            """
+        try plist.write(toFile: s.real + "/Readout.app/Contents/Info.plist", atomically: true, encoding: .utf8)
+        // Through a symlink, as ~/.local/bin/readout is.
+        try fm.createSymbolicLink(atPath: s.real + "/readout", withDestinationPath: resources + "/readout")
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/sh")
+        p.arguments = [s.real + "/readout", "--version"]
+        let out = Pipe()
+        p.standardOutput = out
+        try p.run()
+        let data = out.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        #expect(String(decoding: data, as: UTF8.self) == "readout 3.6.0\n")
+        #expect(p.terminationStatus == 0)
     }
 
     #if os(macOS)

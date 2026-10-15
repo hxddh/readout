@@ -42,6 +42,10 @@ enum MainMenu {
         file.addItem(recent)
         file.addItem(.separator())
         file.addItem(item(NSLocalizedString("Close", comment: "Menu"), #selector(NSWindow.performClose(_:)), "w"))
+        // Shown in place of Close while Option is held.
+        let closeAll = item(NSLocalizedString("Close All", comment: "Menu"), #selector(AppDelegate.closeAll(_:)), "w", [.command, .option])
+        closeAll.isAlternate = true
+        file.addItem(closeAll)
         file.addItem(.separator())
         file.addItem(item(NSLocalizedString("Reveal in Finder", comment: "Menu"), #selector(ReaderWindowController.revealInFinder(_:)), "r", [.command, .shift]))
         file.addItem(item(NSLocalizedString("Open in Editor", comment: "Menu"), #selector(ReaderWindowController.openInEditor(_:)), "e"))
@@ -68,6 +72,8 @@ enum MainMenu {
         findMenu.addItem(item(NSLocalizedString("Find…", comment: "Menu"), #selector(ReaderWindowController.showFind(_:)), "f"))
         findMenu.addItem(item(NSLocalizedString("Find Next", comment: "Menu"), #selector(ReaderWindowController.findNext(_:)), "g"))
         findMenu.addItem(item(NSLocalizedString("Find Previous", comment: "Menu"), #selector(ReaderWindowController.findPrevious(_:)), "g", [.command, .shift]))
+        // No ⌘E: that is Open in Editor here.
+        findMenu.addItem(item(NSLocalizedString("Use Selection for Find", comment: "Menu"), #selector(ReaderWindowController.useSelectionForFind(_:))))
         find.submenu = findMenu
         edit.addItem(find)
         add(edit, to: main)
@@ -81,6 +87,8 @@ enum MainMenu {
         view.addItem(item(NSLocalizedString("Previous Change", comment: "Menu"), #selector(ReaderWindowController.previousChange(_:)), "["))
         view.addItem(item(NSLocalizedString("Mark All as Read", comment: "Menu"), #selector(ReaderWindowController.markAllRead(_:)), "k"))
         view.addItem(item(NSLocalizedString("Show Only Changes", comment: "Menu"), #selector(ReaderWindowController.toggleChangesOnly(_:)), "K", [.command, .shift]))
+        // The page's D key, findable in the menu (a single letter is no menu key equivalent).
+        view.addItem(item(NSLocalizedString("Show What Changed", comment: "Menu: show the word-level comparison of the edited blocks in view (the D key)"), #selector(ReaderWindowController.showWhatChanged(_:))))
         view.addItem(.separator())
         view.addItem(item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "+"))
         let bigger2 = item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "=")
@@ -106,7 +114,7 @@ enum MainMenu {
 
         // Help
         let help = NSMenu(title: NSLocalizedString("Help", comment: "Menu"))
-        help.addItem(item(NSLocalizedString("Readout Help", comment: "Menu"), #selector(HelpTarget.openHelp(_:)), "?", target: HelpTarget.shared))
+        help.addItem(item(NSLocalizedString("Readout Help", comment: "Menu"), #selector(AppDelegate.openHelp(_:)), "?"))
         NSApp.helpMenu = help
         add(help, to: main)
 
@@ -114,10 +122,9 @@ enum MainMenu {
     }
 
     private static func item(_ title: String, _ action: Selector?, _ key: String = "",
-                             _ modifiers: NSEvent.ModifierFlags = [.command], target: AnyObject? = nil) -> NSMenuItem {
+                             _ modifiers: NSEvent.ModifierFlags = [.command]) -> NSMenuItem {
         let i = NSMenuItem(title: title, action: action, keyEquivalent: key)
         i.keyEquivalentModifierMask = key.isEmpty ? [] : modifiers
-        i.target = target
         return i
     }
 
@@ -125,15 +132,6 @@ enum MainMenu {
         let i = NSMenuItem(title: menu.title, action: nil, keyEquivalent: "")
         i.submenu = menu
         main.addItem(i)
-    }
-}
-
-@MainActor
-final class HelpTarget: NSObject {
-    static let shared = HelpTarget()
-    /// The keyboard section of the README, in the language the app is shown in.
-    @objc func openHelp(_ sender: Any?) {
-        NSWorkspace.shared.open(ReaderChrome.helpURL(preferredLanguages: Bundle.main.preferredLocalizations))
     }
 }
 

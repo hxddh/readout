@@ -157,6 +157,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
 
     func reloadReader() {
         isReady = false
+        pendingCalls = []   // for the page that is gone
         load(URLRequest(url: Self.readerURL))
     }
 
@@ -221,7 +222,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
 
     /// Calls `window.readout.<function>(<json>)`.
     func call(_ function: String, json: String = "") {
-        evaluateJavaScript("window.readout.\(function)(\(json))", completionHandler: nil)
+        run("window.readout.\(function)(\(json))")
     }
 
     func call<T: Encodable>(_ function: String, _ value: T) {
@@ -229,9 +230,55 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         call(function, json: json)
     }
 
+    /// A script, run after every call made before it (including one whose
+    /// argument is still being encoded off the main thread).
+    func run(_ script: String, completion: (@MainActor (Any?, Error?) -> Void)? = nil) {
+        if pendingCalls.isEmpty {
+            evaluateJavaScript(script, completionHandler: completion)
+        } else {
+            let call = PendingCall()
+            call.script = script
+            call.completion = completion
+            pendingCalls.append(call)
+        }
+    }
+
+    /// For a large argument (a whole document): encoded on a background
+    /// queue, the main thread free meanwhile; calls made after it wait for it.
+    func callEncodingOffMain<T: Encodable & Sendable>(_ function: String, _ value: T) {
+        let call = PendingCall()
+        pendingCalls.append(call)
+        Self.encodeQueue.async { [weak self] in
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.withoutEscapingSlashes]
+            let json = (try? encoder.encode(value)).flatMap { String(data: $0, encoding: .utf8) }
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    call.script = json.map { "window.readout.\(function)(\($0))" } ?? ""
+                    self?.drainCalls()
+                }
+            }
+        }
+    }
+
+    private final class PendingCall {
+        /// nil while encoding; "" when there is nothing to run.
+        var script: String?
+        var completion: (@MainActor (Any?, Error?) -> Void)?
+    }
+    private var pendingCalls: [PendingCall] = []
+    private static let encodeQueue = DispatchQueue(label: "Readout.encode", qos: .userInitiated)
+
+    private func drainCalls() {
+        while let first = pendingCalls.first, let script = first.script {
+            pendingCalls.removeFirst()
+            if !script.isEmpty { evaluateJavaScript(script, completionHandler: first.completion) }
+        }
+    }
+
     func setAppearance(dark: Bool? = nil, accent: NSColor? = nil, width: String? = nil, fontSize: Double? = nil,
                        strings: [String: String]? = nil, changesOnly: Bool? = nil, codeWrap: Bool? = nil,
-                       mode: String? = nil, topInset: Double? = nil) {
+                       mode: String? = nil) {
         var o: [String: Any] = [:]
         if let dark { o["dark"] = dark }
         if let accent { o["accent"] = accent.hexString }
@@ -241,7 +288,6 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         if let changesOnly { o["changesOnly"] = changesOnly }
         if let codeWrap { o["codeWrap"] = codeWrap }
         if let mode { o["mode"] = mode }
-        if let topInset { o["topInset"] = topInset }
         guard let data = try? JSONSerialization.data(withJSONObject: o), let json = String(data: data, encoding: .utf8) else { return }
         call("setAppearance", json: json)
     }
