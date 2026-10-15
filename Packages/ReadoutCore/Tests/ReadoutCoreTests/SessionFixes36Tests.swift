@@ -181,6 +181,25 @@ import Testing
         #expect(o.marks.isEmpty)
     }
 
+    /// Removals from several updates that end up in one place keep the order
+    /// they were read in: B deleted, then A, of A B C is A B before C.
+    @Test func removalsFromSeveralUpdatesKeepTheirOrder() throws {
+        let s = DocumentSession()
+        _ = s.load(parse("Alpha paragraph.\n\nBravo paragraph.\n\nCharlie paragraph.\n"))
+        _ = s.update(parse("Alpha paragraph.\n\nCharlie paragraph.\n"))
+        _ = s.update(parse("Charlie paragraph.\n"))
+        #expect(s.baseline.map(\.text) == ["Alpha paragraph.", "Bravo paragraph.", "Charlie paragraph."])
+        let reopened = DocumentSession()
+        let o = reopened.load(parse("Charlie paragraph.\n"), baseline: s.baseline)
+        #expect(o.deletions.map(\.preview) == ["Alpha paragraph.\n\nBravo paragraph."])
+        // Removed in the middle of an earlier removal's place: still in reading order.
+        let t = DocumentSession()
+        _ = t.load(parse("One.\n\nTwo.\n\nThree.\n\nFour.\n\nFive.\n"))
+        _ = t.update(parse("One.\n\nTwo.\n\nFour.\n\nFive.\n"))
+        _ = t.update(parse("One.\n\nFive.\n"))
+        #expect(t.baseline.map(\.text) == ["One.", "Two.", "Three.", "Four.", "Five."])
+    }
+
     /// Baselines saved by 3.5 (no `source`) still load and mark as before.
     @Test func olderBaselinesStillLoad() throws {
         let v1 = "# T\n\n1. First step of the plan.\n2. Second step of the plan.\n\nClosing words.\n"

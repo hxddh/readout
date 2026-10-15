@@ -86,8 +86,9 @@ public final class DocumentSession {
     /// (a change back is no change) and, when an older baseline kept only
     /// the start of its text, that start.
     private var readKey: [Int: BlockKey] = [:]
-    /// The removed blocks of each unread deletion, as last read (by deletion id).
-    private var deletionKeys: [Int: [BlockKey]] = [:]
+    /// The removed blocks of unread deletions as last read, by the slot they
+    /// sit after (0: the top), in the order they were read; each with its deletion's id.
+    private var removedKeys: [Int: [(id: Int, key: BlockKey)]] = [:]
     /// Keys of `blocks`, once computed for them (nil: not yet).
     private var blockKeys: [BlockKey]? = nil
     /// Task states of those blocks when last read (known after a live update, not after a relaunch).
@@ -154,7 +155,7 @@ public final class DocumentSession {
     private struct State {
         var blocks: [Block], title: String?, marks: [Int: MarkKind], deletions: [RenderPatch.Deletion]
         var baseline: [BlockKey], readText: [Int: String?], readKey: [Int: BlockKey], readTasks: [Int: [Bool]]
-        var diffs: [Int: String], readNormalized: Set<Int>, deletionKeys: [Int: [BlockKey]]
+        var diffs: [Int: String], readNormalized: Set<Int>, removedKeys: [Int: [(id: Int, key: BlockKey)]]
     }
     private var beforeEmpty: State?
 
@@ -164,14 +165,14 @@ public final class DocumentSession {
             if beforeEmpty == nil && !blocks.isEmpty {
                 beforeEmpty = State(blocks: blocks, title: title, marks: marks, deletions: deletions, baseline: baseline,
                                     readText: readText, readKey: readKey, readTasks: readTasks, diffs: diffs,
-                                    readNormalized: readNormalized, deletionKeys: deletionKeys)
+                                    readNormalized: readNormalized, removedKeys: removedKeys)
             }
         } else if let s = beforeEmpty {
             beforeEmpty = nil
             blocks = s.blocks; title = s.title; marks = s.marks; deletions = s.deletions; baseline = s.baseline
             blockKeys = nil
             readText = s.readText; readKey = s.readKey; readTasks = s.readTasks; diffs = s.diffs
-            readNormalized = s.readNormalized; deletionKeys = s.deletionKeys
+            readNormalized = s.readNormalized; removedKeys = s.removedKeys
             // The page shows the empty version: it gets the whole document, marked against the one before.
             if let p = apply(doc), p.reset { return p }
             return fullPayload(rewrite: false)
@@ -308,7 +309,7 @@ public final class DocumentSession {
         }
 
         var newDeletions: [Int: RenderPatch.Deletion] = [:]  // keyed by anchor slot
-        var newDeletionKeys: [Int: [BlockKey]] = [:]          // the same, the removed blocks as last read
+        var newRemoved: [(after: Int, index: Int, key: BlockKey)] = []   // the removed blocks as last read
         for o in d.removed {
             if let s = oldSlotForIndex(o), marks[s] == .inserted {
                 // Inserted and removed before it was read: nothing to report.
@@ -331,7 +332,7 @@ public final class DocumentSession {
                 marks[s] = nil
             }
             let after = anchorBefore(o)
-            newDeletionKeys[after, default: []].append(removedKey)
+            newRemoved.append((after, o, removedKey))
             // Only the start is known for a long block in an older baseline: marked as cut.
             let preview = Self.bounded(lastRead ?? oldTexts[o] ?? (oldKeys[o].text + " …"))
             if var existing = newDeletions[after] {
@@ -363,14 +364,35 @@ public final class DocumentSession {
             }
             reanchored.append(del)
         }
+        var newIDs: [Int: Int] = [:]   // anchor slot -> the new deletion's id
         for (anchor, var del) in newDeletions.sorted(by: { $0.key < $1.key }) {
             del = .init(id: allocDeletionID(), after: del.after, count: del.count, preview: del.preview)
-            deletionKeys[del.id] = newDeletionKeys[anchor] ?? []
+            newIDs[anchor] = del.id
             reanchored.append(del)
         }
         deletions = reanchored
-        let liveDeletions = Set(deletions.map(\.id))
-        deletionKeys = deletionKeys.filter { liveDeletions.contains($0.key) }
+        // The removed blocks after each anchor, in the order of the old version:
+        // those removed before sit right after the block they sat after, those
+        // removed now at their own place (deleting B, then A, of A B C keeps A before B).
+        if !removedKeys.isEmpty || !newRemoved.isEmpty {
+            var oldIndex: [Int: Int] = [:]
+            if !removedKeys.isEmpty { for (i, b) in oldBlocks.enumerated() { oldIndex[b.slot] = i } }
+            var merged: [Int: [(position: Double, order: Int, id: Int, key: BlockKey)]] = [:]
+            var order = 0
+            for (anchor, entries) in removedKeys {
+                let i = anchor == 0 ? -1 : (oldIndex[anchor] ?? -1)
+                let to = anchor == 0 || newSlots.contains(anchor) ? anchor : (i >= 0 ? anchorBefore(i) : 0)
+                for e in entries { merged[to, default: []].append((Double(i) + 0.5, order, e.id, e.key)); order += 1 }
+            }
+            for r in newRemoved {
+                guard let id = newIDs[r.after] else { continue }
+                merged[r.after, default: []].append((Double(r.index), order, id, r.key)); order += 1
+            }
+            let live = Set(deletions.map(\.id))
+            removedKeys = merged.mapValues { entries in
+                entries.sorted { ($0.position, $0.order) < ($1.position, $1.order) }.filter { live.contains($0.id) }.map { ($0.id, $0.key) }
+            }.filter { !$0.value.isEmpty }
+        }
         marks = marks.filter { newSlots.contains($0.key) }
         readText = readText.filter { marks[$0.key] == .modified }
         readKey = readKey.filter { marks[$0.key] == .modified }
@@ -381,7 +403,7 @@ public final class DocumentSession {
 
     private func resetMarks() {
         marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]; sentDiffs = []; sentDeletions = []
-        readNormalized = []; deletionKeys = [:]
+        readNormalized = []; removedKeys = [:]
     }
 
     /// The baseline for what is unread now (see `baseline`). `keys`: the current blocks' keys, when at hand.
@@ -389,9 +411,8 @@ public final class DocumentSession {
         let keys = keys ?? blockKeys ?? blocks.map(BlockKey.init)
         blockKeys = keys
         guard !marks.isEmpty || !deletions.isEmpty else { baseline = keys; return }
-        var removedAfter: [Int: [BlockKey]] = [:]   // by the slot the removed blocks sat after (0: the top)
-        for del in deletions { removedAfter[del.after, default: []] += deletionKeys[del.id] ?? [] }
-        var out: [BlockKey] = removedAfter[0] ?? []
+        func removedAfter(_ slot: Int) -> [BlockKey] { removedKeys[slot]?.map(\.key) ?? [] }
+        var out: [BlockKey] = removedAfter(0)
         out.reserveCapacity(keys.count + deletions.count)
         for (i, b) in blocks.enumerated() {
             switch marks[b.slot] {
@@ -405,7 +426,7 @@ public final class DocumentSession {
             case nil:
                 out.append(keys[i])
             }
-            out += removedAfter[b.slot] ?? []
+            out += removedAfter(b.slot)
         }
         baseline = out
     }
@@ -419,7 +440,7 @@ public final class DocumentSession {
         // no longer a passing truncation to look past.
         if blocks.isEmpty && deletions.contains(where: { ids.contains($0.id) }) { beforeEmpty = nil }
         deletions.removeAll { ids.contains($0.id) }
-        for id in ids { deletionKeys[id] = nil }
+        if !ids.isEmpty { removedKeys = removedKeys.mapValues { $0.filter { !ids.contains($0.id) } }.filter { !$0.value.isEmpty } }
         readNormalized.subtract(slots)
         rebuildBaseline()
         dropBeforeEmptyIfRead()
