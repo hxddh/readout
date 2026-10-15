@@ -138,14 +138,25 @@ public enum MarkdownParser {
         // A node without a source range (cmark-gfm's table extension leaves
         // the text before a table without one) takes the line where the next
         // node starts, else where the previous one ended.
+        // An empty ATX heading after indentation (` #`) has no range either:
+        // it is the first non-blank line after the previous node (what
+        // follows it may lie outside this run of lines).
         var lastLine = 1
+        var previousEnd = 0
         var nextStart: Int? = nil
         func lineRange(_ node: Markup) -> ClosedRange<Int> {
             guard let r = node.range else {
-                let l = nextStart ?? lastLine
+                var l = nextStart ?? lastLine
+                if node is Heading {
+                    l = previousEnd + 1
+                    while l < parseLines.count, parseLines[l - 1].allSatisfy({ $0 == " " || $0 == "\t" }) { l += 1 }
+                    l = max(1, min(l, parseLines.count))
+                    previousEnd = l
+                }
                 return l...l
             }
             lastLine = max(r.lowerBound.line, r.upperBound.line)
+            previousEnd = lastLine
             return r.lowerBound.line...lastLine
         }
 

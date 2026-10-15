@@ -37,6 +37,11 @@ import Testing
         #expect(h.contains("cp $SRC/$NAME.md $DEST/"), "\(h)")
     }
 
+    @Test func dollarsInQuotedFenceInListItemStayCode() {
+        let h = html("1. > ```bash\n   > cp $SRC/$NAME.md $DEST/\n   > ```\n")
+        #expect(h.contains("cp $SRC/$NAME.md $DEST/"), "\(h)")
+    }
+
     @Test func dollarsInFenceInQuotedListItemStayCode() {
         let h = html("> - ```bash\n>   cp $SRC/$NAME.md $DEST/\n>   ```\n")
         #expect(h.contains("cp $SRC/$NAME.md $DEST/"), "\(h)")
@@ -130,6 +135,35 @@ import Testing
         expectIncrementalMatchesFull("[^n]\n[^n]:\n#\n-\t1\n<g c=\"\">\n$$ $$")          // a tab after the marker
         expectIncrementalMatchesFull("-\t\tcode\n<g c=\"\">\n$x$\n\nend")                 // a tab after the marker, then code
         expectIncrementalMatchesFull("> 1.     code\n> <g c=\"\">\n> $x$\n\nend")             // `1.     code` in a quote
+        expectIncrementalMatchesFull("1. ---\nd\n<e>\n<!X\n\na")                           // an item holding a break
+        expectIncrementalMatchesFull("- # Title\nd\n<e>\n<!X\n\na")                        // an item holding a heading
+        expectIncrementalMatchesFull(" #\n\nn")                                             // an empty heading after a space
+        expectIncrementalMatchesFull("- -\n>\n  ~~~\nd\n[^n]:\n#")                          // `>` alone ends the item
+        expectIncrementalMatchesFull("d\n>     d\ne\n<r>\n```\n\ne")                        // indented code in a new quote
+        expectIncrementalMatchesFull("- 1.\nd\n  ```\n]\n\nn")                              // an empty item in an item
+        expectIncrementalMatchesFull(">-\nd\n<r>\n```\n\ne")                                // an empty item in a quote
+        expectIncrementalMatchesFull(">#\n.\n<e>\n```\n\n#")                                // a heading in a quote
+        expectIncrementalMatchesFull(">d\n>-\nd\n<e>\n```\n\n#")                           // a setext underline in a quote
+        expectIncrementalMatchesFull("[^n]:\n<r>\n<!X\n\n#\n<e>\n[^n]:")                     // a footnote definition, then raw HTML
+        expectIncrementalMatchesFull("[^n]:\n<m>\n<!--\n\ne\n<?\n-->\n[^n]:")
+        expectIncrementalMatchesFull("1.\r\n    1. <v>\r\n#######\r\n<i>\r\nd\r\n<!A\r\n\r\n#")    // a nested item indented 4
+        // A line left of a nested item's content may still be in the outer item.
+        expectIncrementalMatchesFull("-\n  -\n  ```\n```\n\n#")
+        expectIncrementalMatchesFull("- Step one\n  - detail\n  ```bash\n  make $X\n\n  # not a heading\n  ```\n- Step two\n")
+        // A block quote right after a list marker.
+        expectIncrementalMatchesFull("1. >```\nx\n<t>\n```\n\n\u{8667}")
+        expectIncrementalMatchesFull("1. >\n\u{FF1A}\n<m>\n<!E\n\n#")
+        // Raw HTML in a block quote ends with the quote.
+        expectIncrementalMatchesFull("[^n]\n[^n]:\n#\n><!A\n>$]")
+        expectIncrementalMatchesFull("><!A\nD\n<t>\n```\n\ne")
+        expectIncrementalMatchesFull("[^n]\n[^n]:\na\n><p\n\t$$ $$")
+        expectIncrementalMatchesFull("> <details>\n> <summary>More</summary>\n>\n> Price $x$ inside.\n>\n> </details>\n\nAfter $y$.\n")
+    }
+
+    /// A nested item indented past 3 columns (under `1. `) with a fence on its marker line.
+    @Test func dollarsInFenceAfterDeeplyNestedMarkerStayCode() {
+        let h = html("1. Install:\n    - ```bash\n      cp $SRC/$NAME.md $DEST/\n      ```\n")
+        #expect(h.contains("cp $SRC/$NAME.md $DEST/"), "\(h)")
     }
 
     @Test func tabIndentedLineInListItemFence() {

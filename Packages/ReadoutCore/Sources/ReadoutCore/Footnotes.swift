@@ -58,6 +58,8 @@ enum Footnotes {
                 }
             }
             for k in i...end { lines[k] = "" }
+            // What the parser sees there: blank lines (the tracker took the first as text).
+            _ = fences.consume("")
             if seen.insert(id).inserted {
                 out.append(Definition(id: id, text: body.joined(separator: "\n"), lines: (i + 1)...(end + 1)))
             }
