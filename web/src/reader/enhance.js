@@ -260,7 +260,8 @@ export function highlightAll() {
   for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) highlightBlock(cb);
 }
 
-export function renderLazy() {
+/** `near`: whether a code block counts as on screen (a first open estimates it without layout). */
+export function renderLazy(near = inViewport) {
   const blocks = fresh;
   fresh = [];
   // Blocks on screen now are highlighted before the next paint (no flash of
@@ -268,7 +269,7 @@ export function renderLazy() {
   const onScreen = [];
   for (const cb of blocks) {
     if (!cb.isConnected || cb.dataset.hl !== 'pending') continue;
-    if (inViewport(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
+    if (near(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
   }
   for (const cb of onScreen) highlightBlock(cb);
   for (const m of doc.querySelectorAll('.mermaid-block:not(.done):not(.busy)')) lazyObserver.observe(m);

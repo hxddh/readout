@@ -25,6 +25,17 @@ public enum ExcerptAnchor {
         return nil
     }
 
+    /// The block to resume reading at: the saved excerpt's block, else the
+    /// saved index (records written before excerpts existed). A document
+    /// rewritten since it was read has no index fallback: the index points
+    /// into unrelated text, and the reader starts at the top (nil).
+    public static func resumeIndex(excerpt: String?, index: Int?, in texts: [String], rewritten: Bool) -> Int? {
+        if let excerpt, let i = self.index(of: excerpt, in: texts, near: index), i < texts.count { return i }
+        if rewritten { return nil }
+        if let index, index >= 0, index < texts.count { return index }
+        return nil
+    }
+
     private static func nearestMatch(in texts: [String], near: Int, by matches: (String) -> Bool) -> Int? {
         var best: Int?
         for (i, t) in texts.enumerated() where matches(t) {

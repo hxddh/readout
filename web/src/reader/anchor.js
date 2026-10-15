@@ -9,8 +9,23 @@ function blockList() { return Array.from(doc.children).filter(e => e.classList.c
 
 /** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
 function topBlock() {
-  const list = blockList();
   const line = topInset() + 8;
+  // Nothing hidden (the usual case): a binary search over the page's
+  // children themselves, with no list of every block and no offsetParent
+  // read for each (a layout question per block, in every patch).
+  if (!doc.querySelector(':scope > .blk[hidden]')) {
+    const kids = doc.children;
+    const blkFrom = i => { for (let j = i; j < kids.length; j++) if (kids[j].classList.contains('blk')) return kids[j]; return null; };
+    let lo = 0, hi = kids.length - 1, found = null;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const el = blkFrom(mid);
+      if (!el) { hi = mid - 1; continue; }
+      if (el.getBoundingClientRect().bottom > line) { found = el; hi = mid - 1; } else { lo = mid + 1; }
+    }
+    return found;
+  }
+  const list = blockList();
   let lo = 0, hi = list.length - 1, found = null;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;

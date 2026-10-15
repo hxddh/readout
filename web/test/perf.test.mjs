@@ -1,7 +1,7 @@
 // Page-side performance of a large document, in WebKit.
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
-// measures: the first apply, a 20-block update patch on top of it, and frame
+// measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it, and frame
 // pacing while scrolling through the whole page. Writes the numbers to
 // test/out/perf-web.json; tools/perf-assert.py checks them against
 // tools/perf-budgets.json.
@@ -11,6 +11,7 @@ import { webkit } from 'playwright';
 import http from 'node:http';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import { collectPageErrors } from './pageerrors.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const server = http.createServer((req, res) => {
@@ -53,10 +54,7 @@ edit.marks = edit.ops.map(o => ({ slot: o.slot, kind: 'modified' }));
 const browser = await webkit.launch();
 const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
 const errors = [];
-// WebKit reports a ResizeObserver loop when observed blocks change size again
-// while it delivers (here: content-visibility blocks laid out by the forced
-// layout this test adds after each apply). It is a notice, not a failure.
-page.on('pageerror', e => { if (!/ResizeObserver loop/.test(String(e))) errors.push(String(e)); });
+collectPageErrors(page, errors);
 await page.addInitScript(() => {
   window.__msgs = [];
   window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -67,18 +65,17 @@ await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#
 
 const median = xs => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
-// First apply of the whole document, timed in the page: the apply, then
-// style and layout of the page (forced by reading its height), which the
-// browser would otherwise do before the first paint; and until the frame
-// that shows it has been painted (the moment the page reports 'painted':
-// a task queued from the frame's animation callbacks runs after its paint).
+// First apply of the whole document, timed in the page: the apply itself
+// (which reads no layout: the first frame lays out only what is on screen),
+// and until the frame that shows it has been painted (the moment the page
+// reports 'painted': a task queued from the frame's animation callbacks runs
+// after its paint). Nothing is measured in between: forcing a layout there
+// would lay out every block, which the page no longer does.
 const firstApply = await page.evaluate(p => new Promise(resolve => {
   const t0 = performance.now();
   window.readout.apply(p);
   const sync = performance.now() - t0;
-  void document.scrollingElement.scrollHeight;
-  const laidOut = performance.now() - t0;
-  requestAnimationFrame(() => setTimeout(() => resolve({ sync, laidOut, painted: performance.now() - t0 }), 0));
+  requestAnimationFrame(() => setTimeout(() => resolve({ sync, painted: performance.now() - t0 }), 0));
 }), big);
 await page.waitForTimeout(1500);
 
@@ -126,8 +123,7 @@ const sorted = gaps.slice().sort((a, b) => a - b);
 const result = {
   web_doc_bytes: bytes,
   web_doc_blocks: ops.length,
-  web_first_apply_1mb_ms: Math.round(firstApply.laidOut),
-  web_first_apply_1mb_sync_ms: Math.round(firstApply.sync),
+  web_first_apply_1mb_ms: Math.round(firstApply.sync),
   web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
   web_scroll_frames: gaps.length,

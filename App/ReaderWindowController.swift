@@ -388,7 +388,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 // Cross-file link target: the fragment wins over the saved position.
                 self.pendingAnchor = nil
                 self.scrollToAnchor(fragment: pending)
-            } else if let slot = self.resumeSlot(from: record) {
+            } else if let slot = self.resumeSlot(from: record, rewritten: patch.rewrite) {
                 let anchor = ["slot": slot, "offset": record?.topOffset ?? 0, "ratio": 0] as [String: Any]
                 if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
                     self.webView.call("scrollToAnchor", json: json)
@@ -397,18 +397,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
     }
 
-    /// Restores the reading position. Block indices shift as agents edit, so the
-    /// saved text excerpt is matched first; the saved index is a fallback for
-    /// records written before excerpts existed.
-    private func resumeSlot(from record: BaselineStore.Record?) -> Int? {
+    /// Restores the reading position (see ExcerptAnchor.resumeIndex).
+    private func resumeSlot(from record: BaselineStore.Record?, rewritten: Bool) -> Int? {
         guard let record else { return nil }
-        let texts = session.blocks.map(\.text)
-        if let excerpt = record.topExcerpt,
-           let i = ExcerptAnchor.index(of: excerpt, in: texts, near: record.topBlockIndex), i < session.blocks.count {
-            return session.blocks[i].slot
-        }
-        if let idx = record.topBlockIndex, idx < session.blocks.count { return session.blocks[idx].slot }
-        return nil
+        let i = ExcerptAnchor.resumeIndex(excerpt: record.topExcerpt, index: record.topBlockIndex,
+                                          in: session.blocks.map(\.text), rewritten: rewritten)
+        return i.map { session.blocks[$0].slot }
     }
 
     /// Reads the file again when its first read failed.
