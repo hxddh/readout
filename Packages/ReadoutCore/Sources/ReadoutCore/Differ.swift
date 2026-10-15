@@ -265,7 +265,7 @@ public enum Differ {
         if a == 1 && b == 1 {
             // A one-for-one replacement of the same kind of block is almost always an edit.
             if old[0].kind == new[0].kind { return [(0, 0)] }
-            return similarity(old[0], new[0]) >= similarityThreshold ? [(0, 0)] : []
+            return similarity(old[0], new[0]) >= similarityThreshold || grew(old[0], into: new[0]) ? [(0, 0)] : []
         }
         // Each block's shingles are built once (a + b sets, not 2ab), as
         // sorted ids (a token's id, or a pair of them for a bigram), so a
@@ -321,12 +321,18 @@ public enum Differ {
         return pairs
     }
 
-    /// `x` is the start of `y`, or nearly all of `x`'s shingles are in `y`
-    /// (a block of the same kind that grew, as one being streamed in does).
+    /// `x` is the start of `y`: a block being streamed in that grew. Of the
+    /// same kind, or a paragraph that became another kind once complete (a
+    /// table row before its delimiter row, the first backtick of a fence).
+    static func grew(_ x: BlockKey, into y: BlockKey) -> Bool {
+        guard x.kind == y.kind || x.kind == .paragraph, !x.text.isEmpty, x.text.utf8.count <= y.text.utf8.count else { return false }
+        return y.text.hasPrefix(x.text)
+    }
+
+    /// `x` grew into `y`, or nearly all of `x`'s shingles are in `y`, a block of the same kind.
     static func contained(_ x: BlockKey, _ xs: [Int64], in y: BlockKey, _ ys: [Int64]) -> Bool {
-        guard x.kind == y.kind, !x.text.isEmpty, x.text.utf8.count <= y.text.utf8.count else { return false }
-        if y.text.hasPrefix(x.text) { return true }
-        guard xs.count >= 4, xs.count <= ys.count else { return false }
+        if grew(x, into: y) { return true }
+        guard x.kind == y.kind, xs.count >= 4, xs.count <= ys.count else { return false }
         var p = 0, q = 0, inter = 0
         while p < xs.count && q < ys.count {
             if xs[p] == ys[q] { inter += 1; p += 1; q += 1 } else if xs[p] < ys[q] { p += 1 } else { q += 1 }

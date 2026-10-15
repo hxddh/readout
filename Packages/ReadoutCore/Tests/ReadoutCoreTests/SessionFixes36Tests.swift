@@ -230,6 +230,12 @@ import Testing
         let q = try #require(t.update(parse(head + "- Step one: configure the bucket policy, the lifecycle rules and the replication target for every region we serve.\n- Step two: test it.\n- Step three: ship it.\n")))
         #expect(q.deletions.isEmpty, "\(q.deletions)")
         #expect(q.marks.map(\.kind) == [.modified, .inserted, .inserted])
+        // A table row written before its delimiter row is a paragraph until then.
+        let w = DocumentSession()
+        _ = w.load(parse(head + "| File | Original Methods | Adapta"))
+        let x = try #require(w.update(parse(head + "| File | Original Methods | Adaptation |\n| --- | --- | --- |\n| a.ts | 12 | none |\n\nAfter the table.\n")))
+        #expect(x.deletions.isEmpty, "\(x.deletions)")
+        #expect(x.marks.map(\.kind) == [.modified, .inserted])
         // Unrelated blocks still read as removed and inserted.
         let u = DocumentSession()
         _ = u.load(parse(head + "Completely different words here.\n\nTail text."))
