@@ -7,6 +7,7 @@
 #   readout -b FILE...         open files in the background, behind the one you are reading
 #   readout --hook             for agent hooks: read hook JSON on stdin and open
 #                              tool_input.file_path in the background if it is Markdown
+#                              (paths in it are also looked up in the hook's cwd)
 #   readout --version          print Readout's version
 #
 # Bundle identifier of the Readout app.
@@ -14,7 +15,7 @@ APP_ID="io.github.hxddh.readout"
 OPEN="${READOUT_OPEN_COMMAND:-/usr/bin/open}"
 
 usage() {
-  sed -n '3,11p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '3,12p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 is_markdown() {
@@ -39,9 +40,14 @@ absolute() {
 # readout-open://open?background=1&path=<absolute path, every byte percent-encoded>.
 # `open -g` alone only keeps Readout from activating: the file would still be
 # opened as a request and its tab brought to the front. The URL asks Readout to
-# leave the tab being read alone.
+# leave the tab being read alone. A second argument, an existing absolute
+# folder, goes along as `root`: the project the file's paths are relative to.
 background_url() {
   printf 'readout-open://open?background=1&path=%s' "$(encode "$(absolute "$1")")"
+  case "$2" in
+    /*) [ -d "$2" ] && printf '&root=%s' "$(encode "$2")" ;;
+  esac
+  return 0
 }
 
 # A file at a section (`plan.md#risks`): Launch Services drops a file URL's fragment.
@@ -96,7 +102,9 @@ case "$1" in
   --hook)
     input=$(cat)
     path=$(printf '%s' "$input" | /usr/bin/plutil -extract tool_input.file_path raw -o - - 2>/dev/null)
-    [ -n "$path" ] && is_markdown "$path" && [ -f "$path" ] && exec "$OPEN" -g -b "$APP_ID" "$(background_url "$path")"
+    # The folder the agent works in: plans (~/.claude/plans) name paths relative to it.
+    root=$(printf '%s' "$input" | /usr/bin/plutil -extract cwd raw -o - - 2>/dev/null)
+    [ -n "$path" ] && is_markdown "$path" && [ -f "$path" ] && exec "$OPEN" -g -b "$APP_ID" "$(background_url "$path" "$root")"
     exit 0 ;;
   -b|--background)
     shift

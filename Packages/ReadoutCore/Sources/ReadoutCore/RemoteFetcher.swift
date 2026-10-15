@@ -193,6 +193,11 @@ public struct RemoteImageCache {
     public private(set) var totalBytes = 0
     private var entries: [String: RemoteFetcher.Image] = [:]
     private var order: [String] = []   // least recent first
+    /// The image each address was loaded as, while its bytes are kept: the
+    /// reader agreed to load that address, so a block drawn again (an edit,
+    /// a reopened window) shows it without asking again.
+    private var tokenForURL: [String: String] = [:]
+    private var urlForToken: [String: String] = [:]
 
     public init(capacity: Int = RemoteImageCache.defaultCapacity) {
         self.capacity = capacity
@@ -208,6 +213,7 @@ public struct RemoteImageCache {
         while totalBytes + size > capacity, let oldest = order.first {
             order.removeFirst()
             totalBytes -= entries.removeValue(forKey: oldest)?.data.count ?? 0
+            if let url = urlForToken.removeValue(forKey: oldest), tokenForURL[url] == oldest { tokenForURL[url] = nil }
         }
         let token = UUID().uuidString
         entries[token] = image
@@ -215,6 +221,24 @@ public struct RemoteImageCache {
         totalBytes += size
         return token
     }
+
+    /// Stores `image`, loaded from `url`, and returns its new token.
+    public mutating func insert(_ image: RemoteFetcher.Image, url: String) -> String? {
+        guard let token = insert(image) else { return nil }
+        if let old = tokenForURL[url] { urlForToken[old] = nil }
+        tokenForURL[url] = token
+        urlForToken[token] = url
+        return token
+    }
+
+    /// The token of the image loaded from `url`, while its bytes are kept.
+    public func token(forURL url: String) -> String? {
+        guard let token = tokenForURL[url], entries[token] != nil else { return nil }
+        return token
+    }
+
+    /// Every address loaded whose bytes are kept, with its token.
+    public var known: [String: String] { tokenForURL }
 
     /// Looks up a token and marks it most recently used.
     public mutating func image(for token: String) -> RemoteFetcher.Image? {

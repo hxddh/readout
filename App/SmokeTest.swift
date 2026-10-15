@@ -19,7 +19,9 @@ import WebKit
 ///                 second later; the reader must return to its place
 ///   `await-dangle` the harness points a symlink at a file not written yet,
 ///                 then writes that file
-///   `await-cli`   the harness runs `readout -b` and `readout --hook`
+///   `await-cli`   the harness runs `readout -b` and `readout --hook` (one
+///                 hook names the project folder its plan's paths are in), then
+///                 adds a section to the file opened with `readout -b`
 @MainActor
 enum SmokeTest {
     static var outputDirectory: URL? {
@@ -222,6 +224,7 @@ enum SmokeTest {
                 aux["welcome_in_window_menu"] = !welcome.isExcludedFromWindowsMenu
             }
             write(aux, to: out, "aux-windows.json")
+            await tabDot(controller: controller, out: out)
             writeTimings(out)
             NSApp.terminate(nil)
         }
@@ -382,6 +385,12 @@ enum SmokeTest {
         try? await Task.sleep(for: .milliseconds(500))
         json["unread_after_undo"] = controller.model.unread
         json["page_marks_after_undo"] = (try? await webView.evaluateJavaScript(marks)) as? Int ?? -1
+        // The outline shows where the unread changes are: a dot on those sections' rows.
+        json["outline_entries"] = controller.model.toc.count
+        json["outline_unread"] = controller.model.toc.filter { controller.model.unreadSections.contains($0.slot) }.map(\.title)
+        json["tab_dot"] = controller.window?.tab.accessoryView != nil
+        try? await Task.sleep(for: .milliseconds(300))
+        windowShot(controller.window, out, "sidebar-unread")
         _ = validate(redoItem)
         json["redo_title"] = redoItem?.title ?? ""
         write(json, to: out, "undo.json")
@@ -598,7 +607,7 @@ enum SmokeTest {
         let before = reading()
         mark(out, "await-cli")
         var deadline = Date().addingTimeInterval(15)
-        while backgroundRequests.count < 2 && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        while backgroundRequests.count < 4 && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
         deadline = Date().addingTimeInterval(5)
         let name = URL(fileURLWithPath: file).lastPathComponent
         while !NSApp.windows.contains(where: { $0.title == name }) && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
@@ -610,9 +619,44 @@ enum SmokeTest {
                                    "in_recents": NSDocumentController.shared.recentDocumentURLs.contains { $0.lastPathComponent == name }]
         // Opened as a tab: with the tab bar showing, the subtitle leaves the folder to the tab's tooltip.
         if let reader = (NSApp.delegate as? AppDelegate)?.reader(for: URL(fileURLWithPath: file)) { json["chrome"] = chrome(reader) }
+        // A plan outside its project (hooked.md), opened by the hook without a
+        // folder and then with the project's: its code reference resolves there,
+        // and the folder is kept for the next launch.
+        if let plan = ProcessInfo.processInfo.environment["READOUT_SMOKE_HOOK_PLAN"],
+           let reader = (NSApp.delegate as? AppDelegate)?.reader(for: URL(fileURLWithPath: plan)),
+           let web = reader.window?.contentView?.firstDescendant(ofType: WKWebView.self) {
+            let link = "document.querySelector('code.path-link')?.dataset.path ?? ''"
+            var resolved = ""
+            deadline = Date().addingTimeInterval(10)
+            while resolved.isEmpty && Date() < deadline {
+                resolved = (try? await web.evaluateJavaScript(link)) as? String ?? ""
+                if resolved.isEmpty { try? await Task.sleep(for: .milliseconds(100)) }
+            }
+            BaselineStore.flush()
+            json["hook_root"] = ["resolved": resolved, "kept": BaselineStore.projectRoot(for: URL(fileURLWithPath: plan)) ?? "",
+                                 "marks": (try? await web.evaluateJavaScript("document.querySelectorAll('.m-inserted, .m-modified').length")) as? Int ?? -1]
+        }
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: out.appendingPathComponent("background-opens.json"))
         }
+    }
+
+    /// The document opened with `readout -b`, given a new section since, in a
+    /// tab behind the smoke document: its tab carries the unread dot; the
+    /// tab being read only while it has unread changes of its own.
+    private static func tabDot(controller: ReaderWindowController, out: URL) async {
+        guard let file = ProcessInfo.processInfo.environment["READOUT_SMOKE_CLI_FILE"],
+              let behind = (NSApp.delegate as? AppDelegate)?.reader(for: URL(fileURLWithPath: file)),
+              let main = controller.window, let other = behind.window else { return }
+        controller.show()
+        if other.tabGroup !== main.tabGroup || main.tabGroup == nil { main.addTabbedWindow(other, ordered: .above) }
+        main.tabGroup?.selectedWindow = main
+        try? await Task.sleep(for: .seconds(1))
+        write(["behind_unread": behind.model.unread, "behind_dot": other.tab.accessoryView != nil,
+               "behind_outline_unread": behind.model.toc.filter { behind.model.unreadSections.contains($0.slot) }.map(\.title),
+               "front_unread": controller.model.unread, "front_dot": main.tab.accessoryView != nil,
+               "tab_bar_visible": main.tabGroup?.isTabBarVisible ?? false], to: out, "tab-dot.json")
+        windowShot(main, out, "tabs-unread")
     }
 
     /// Find-mode switches the page was sent (each re-lays out the document).

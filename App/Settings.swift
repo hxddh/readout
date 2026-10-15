@@ -199,6 +199,20 @@ enum BaselineStore {
         return record
     }
 
+    /// The project folder an agent named for the file (`readout --hook`
+    /// passes its working folder), beside the file's record, while it exists.
+    private static func rootFile(for url: URL) -> URL { dir.appendingPathComponent("\(key(for: url)).root") }
+
+    static func projectRoot(for url: URL) -> String? {
+        guard let data = try? Data(contentsOf: rootFile(for: url)) else { return nil }
+        return ProjectRoot.validated(String(decoding: data, as: UTF8.self))
+    }
+
+    static func saveProjectRoot(_ root: String, for url: URL) {
+        let target = rootFile(for: url)
+        queue.async { try? Data(root.utf8).write(to: target, options: .atomic) }
+    }
+
     /// Where the records for `url` live under the current and the pre-3.3 key (smoke test).
     static func recordFiles(for url: URL) -> (current: URL, legacy: URL, legacyPosition: URL) {
         let legacy = BaselineKey.legacyKey(forPath: url.path)

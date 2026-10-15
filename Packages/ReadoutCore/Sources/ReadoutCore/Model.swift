@@ -75,8 +75,11 @@ public struct ParsedDocument: Sendable {
         return s
     }
 
+    /// The deepest heading level the outline lists.
+    public static let tocMaxLevel = 4
+
     /// Table of contents (levels 1–4). Requires slots to be assigned.
-    public func toc(maxLevel: Int = 4) -> [TocEntry] {
+    public func toc(maxLevel: Int = tocMaxLevel) -> [TocEntry] {
         var result: [TocEntry] = []
         for (i, b) in blocks.enumerated() {
             guard b.kind == .heading, let level = b.headingLevel, level <= maxLevel else { continue }

@@ -96,19 +96,31 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var changesOnly = false
     /// Fragment from a cross-file link (other.md#section), scrolled to after load.
     private var pendingAnchor: String?
+    /// The project folder the document's paths are relative to (an agent's
+    /// working folder, from `readout --hook`), read by the loader's resolver.
+    private final class ProjectRootBox { var path: String? }
+    private let projectRoot: ProjectRootBox
+    /// A project folder arrived: the next read renders the same bytes again.
+    private var rereadForRoot = false
 
     /// When the window was asked for, for the open-to-first-paint measurement.
     private let openedAt = Date()
     private var painted = false
     private let openSignpost: OSSignpostIntervalState
 
-    init(url: URL, pendingAnchor: String? = nil) {
+    init(url: URL, pendingAnchor: String? = nil, projectRoot root: String? = nil) {
         openSignpost = ReaderPerf.signposter.beginInterval("open")
         self.url = url.standardizedFileURL
         let base = self.url.deletingLastPathComponent()
+        // The folder given now, else the one kept from an earlier open (across relaunches).
+        let stored = BaselineStore.projectRoot(for: self.url)
+        if let root, root != stored { BaselineStore.saveProjectRoot(root, for: self.url) }
+        let project = ProjectRootBox()
+        project.path = root ?? stored
+        self.projectRoot = project
         self.loader = DocumentLoader(url: self.url) {
             FileResolver(baseDirectory: base,
-                         searchRoots: AppSettings.shared.workspaces.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) })
+                         searchRoots: ProjectRoot.searchRoots(project: project.path, workspaces: AppSettings.shared.workspaces))
         }
         self.webView = WebViewPool.shared.take()
         self.pendingAnchor = pendingAnchor
@@ -237,6 +249,15 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // Quick Look never sets this, so remote loading stays disabled there.
         webView.remoteProvider = { RemoteImageLoader.shared.entry(for: $0).map { (data: $0.data, contentType: $0.contentType) } }
         applyAppearance()
+        // Images the reader loaded before show without asking again: those
+        // known now, before the document arrives, and those loaded later in any window.
+        sendKnownImages()
+        NotificationCenter.default.publisher(for: RemoteImageLoader.didLoad)
+            .sink { [weak self] note in
+                guard let self, let url = note.userInfo?["url"] as? String, let local = note.userInfo?["local"] as? String else { return }
+                self.webView.whenReady { [weak self] in self?.webView.call("remoteKnown", [url: local]) }
+            }
+            .store(in: &cancellables)
         NotificationCenter.default.publisher(for: NSColor.systemColorsDidChangeNotification)
             .sink { [weak self] _ in self?.applyAppearance() }
             .store(in: &cancellables)
@@ -250,6 +271,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 .sink { [weak self] _ in self?.updateTopInset() }
                 .store(in: &cancellables)
         }
+    }
+
+    private func sendKnownImages() {
+        let known = RemoteImageLoader.shared.known
+        guard !known.isEmpty else { return }
+        webView.whenReady { [weak self] in self?.webView.call("remoteKnown", known) }
     }
 
     private var lastTopInset: Double = -1
@@ -311,6 +338,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         self.webView.whenReady { [weak self] in
             guard let self else { return }
             self.applyAppearance()
+            self.sendKnownImages()
             self.webView.callEncodingOffMain("apply", self.session.fullPayload(rewrite: false))
             // The new page starts out of find mode, and switches queued before
             // the crash have run by now: send the state the window is in.
@@ -405,6 +433,16 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         return i.map { session.blocks[$0].slot }
     }
 
+    /// An agent named the folder it works in (`readout --hook`): paths in the
+    /// document are looked up there too, now and when the file is opened again.
+    func setProjectRoot(_ root: String) {
+        guard root != projectRoot.path else { return }
+        projectRoot.path = root
+        BaselineStore.saveProjectRoot(root, for: url)
+        rereadForRoot = true
+        if loaded { fileChanged(.modified) } else { editedWhileLoading = true }
+    }
+
     /// Reads the file again when its first read failed.
     func retryLoadIfFailed() {
         guard !loaded, loadFailed else { return }
@@ -433,6 +471,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             deleted = true
             model.status = NSLocalizedString("The file was deleted.", comment: "Status")
             return
+        }
+        if rereadForRoot {
+            rereadForRoot = false
+            loader.forgetContent()
         }
         loader.readChange { [weak self] change in
             guard let self else { return }
@@ -503,7 +545,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded?) {
         model.toc = patch.toc
         model.tasks = patch.tasks
-        model.unread = session.unreadCount
+        refreshUnread()
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
         // Tabs of same-named files (every agent's plan.md) show the document's
         // title; the window title stays the file name.
@@ -586,6 +628,18 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         ]
     }
 
+    /// The unread count, the outline entries with an unread change, and the tab's dot.
+    private func refreshUnread() {
+        let n = session.unreadCount
+        if model.unread != n { model.unread = n }
+        let sections = session.unreadSections
+        if model.unreadSections != sections { model.unreadSections = sections }
+        // On the tab, in the tab bar only: the document has unread changes.
+        if let tab = window?.tab, (tab.accessoryView != nil) != (n > 0) {
+            tab.accessoryView = n > 0 ? UnreadDotView() : nil
+        }
+    }
+
     private func updateChangeItem(_ n: Int) {
         guard let item = changeItem else { return }
         item.isEnabled = n > 0
@@ -630,7 +684,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         switch msg {
         case .read(let slots, let deletions):
             session.markRead(slots: slots, deletionIDs: deletions)
-            model.unread = session.unreadCount
+            refreshUnread()
             scheduleSave()
         case .activeHeading(let slot):
             if slot != model.activeSlot { model.activeSlot = slot }
@@ -798,7 +852,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         guard session.unreadCount > 0 else { return }
         let before = session.baseline
         session.markAllRead()
-        model.unread = 0
+        refreshUnread()
         webView.call("markAllRead")
         scheduleSave()
         // ⌘Z brings the marks back.
@@ -899,10 +953,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
     }
 
-    /// View ▸ Show What Changed: the page's D key (the comparisons of the edited blocks in view).
-    @objc func showWhatChanged(_ sender: Any?) {
-        webView.run("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true })); 1")
-    }
+    /// View ▸ Show What Changed: what the page's D key does (the comparisons of the edited blocks in view).
+    @objc func showWhatChanged(_ sender: Any?) { webView.call("toggleDiffInView") }
 
     @objc func copyFilePath(_ sender: Any?) {
         NSPasteboard.general.clearContents()
@@ -1080,5 +1132,40 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         updateSubtitle()
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
+    }
+}
+
+/// The dot on a window's tab while its document has unread changes, in the
+/// accent colour, as the outline's. Shown only where the tab bar is.
+final class UnreadDotView: NSView {
+    private static let diameter: CGFloat = 6
+
+    init() {
+        super.init(frame: NSRect(x: 0, y: 0, width: 12, height: 12))
+        translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([widthAnchor.constraint(equalToConstant: 12), heightAnchor.constraint(equalToConstant: 12)])
+        setAccessibilityElement(true)
+        setAccessibilityRole(.image)
+        setAccessibilityLabel(NSLocalizedString("Unread changes", comment: "Accessibility label of the change rail beside the page"))
+        // A new accent colour chosen in System Settings.
+        NotificationCenter.default.addObserver(self, selector: #selector(redraw), name: NSColor.systemColorsDidChangeNotification, object: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
+
+    override var intrinsicContentSize: NSSize { NSSize(width: 12, height: 12) }
+
+    @objc private func redraw() { needsDisplay = true }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsDisplay = true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let d = Self.diameter
+        NSColor.controlAccentColor.setFill()
+        NSBezierPath(ovalIn: NSRect(x: bounds.midX - d / 2, y: bounds.midY - d / 2, width: d, height: d)).fill()
     }
 }

@@ -68,6 +68,35 @@ final class ResolverProbe: ResourceResolver, @unchecked Sendable {
     }
 }
 
+/// The project folder an agent worked in when it wrote a document (Claude
+/// Code's hook passes its `cwd`). Plans live in ~/.claude/plans and name
+/// paths relative to that folder, which the document's own folder and the
+/// folders above it never reach.
+public enum ProjectRoot {
+    /// `path` when it is an existing directory given as an absolute path
+    /// (standardized), else nil. The file system root is no project.
+    public static func validated(_ path: String?) -> String? {
+        guard let path, path.hasPrefix("/") else { return nil }
+        let p = URL(fileURLWithPath: path).standardizedFileURL.path
+        guard p != "/" else { return nil }
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: p, isDirectory: &isDir), isDir.boolValue else { return nil }
+        return p
+    }
+
+    /// The folders a document's path references are also looked up in: its
+    /// project first, then the agent folders (`~/` expanded), each once.
+    public static func searchRoots(project: String?, workspaces: [String]) -> [URL] {
+        var seen: Set<String> = []
+        var out: [URL] = []
+        for p in (project.map { [$0] } ?? []) + workspaces.map({ NSString(string: $0).expandingTildeInPath }) {
+            let u = URL(fileURLWithPath: p).standardizedFileURL
+            if seen.insert(u.path).inserted { out.append(u) }
+        }
+        return out
+    }
+}
+
 /// Default resolver backed by the file system, relative to the document's directory.
 public struct FileResolver: ResourceResolver {
     public let baseDirectory: URL?

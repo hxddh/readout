@@ -13,6 +13,8 @@ final class ReaderModel: ObservableObject {
     @Published var activeSlot: Int = 0
     @Published var tasks = TaskStats()
     @Published var unread = 0
+    /// Outline entries (heading slots) whose section has an unread change.
+    @Published var unreadSections: Set<Int> = []
     @Published var title = ""
     @Published var status: String? = nil
     var onSelectHeading: ((Int) -> Void)?
@@ -37,7 +39,7 @@ struct TOCView: View {
                 ScrollViewReader { proxy in
                     List(selection: selection) {
                         ForEach(model.toc) { entry in
-                            TOCRow(entry: entry, minLevel: model.baseLevel)
+                            TOCRow(entry: entry, minLevel: model.baseLevel, unread: model.unreadSections.contains(entry.slot))
                                 .tag(Optional(entry.slot))
                                 .id(entry.slot)
                                 // The row already selected jumps again when clicked
@@ -87,6 +89,23 @@ struct TOCView: View {
 private struct TOCRow: View {
     let entry: TocEntry
     let minLevel: Int
+    /// The section has an unread change.
+    let unread: Bool
+    /// Increased on a selected row drawn in the accent colour.
+    @Environment(\.backgroundProminence) private var prominence
+
+    private var tasksLabel: String {
+        // VoiceOver: "2 of 5 tasks done", not "2 slash 5".
+        String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), entry.tasks.done, entry.tasks.total)
+    }
+
+    /// One element per row: the heading, its tasks, then whether it has unread changes.
+    private var accessibilityText: String {
+        var parts = [entry.title.isEmpty ? "—" : entry.title]
+        if entry.tasks.total > 0 { parts.append(tasksLabel) }
+        if unread { parts.append(NSLocalizedString("Unread changes", comment: "Accessibility label of the change rail beside the page")) }
+        return parts.joined(separator: ", ")
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -99,12 +118,17 @@ private struct TOCRow: View {
                 Text("\(entry.tasks.done)/\(entry.tasks.total)")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(entry.tasks.done == entry.tasks.total ? .secondary : .tertiary)
-                    // VoiceOver: "2 of 5 tasks done", not "2 slash 5".
-                    .accessibilityLabel(String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), entry.tasks.done, entry.tasks.total))
             }
+            // Unread changes in the section: a dot at the trailing edge, in
+            // the same place on every row, its space kept when there is none
+            // so the title never moves.
+            Circle()
+                .fill(prominence == .increased ? AnyShapeStyle(HierarchicalShapeStyle.primary) : AnyShapeStyle(Color.accentColor))
+                .frame(width: 6, height: 6)
+                .opacity(unread ? 1 : 0)
         }
-        // One element per row: the heading, then its tasks.
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
         .padding(.leading, CGFloat(max(0, entry.level - minLevel)) * 12)
         .contentShape(Rectangle())
         .help(entry.title)

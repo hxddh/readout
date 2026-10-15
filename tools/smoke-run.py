@@ -148,11 +148,19 @@ def main() -> int:
     (tmp / "cold-b.md").write_text("# Cold B\n")
     cli_file = work / "background.md"
     cli_file.write_text("# Opened with readout -b\n")
+    # A plan outside its project, as Claude Code keeps them (~/.claude/plans),
+    # naming a file relative to the project the hook reports as its cwd.
+    project = tmp / "project"
+    (project / "src" / "app").mkdir(parents=True)
+    (project / "src" / "app" / "feature.swift").write_text("// feature\n")
+    (tmp / "plans").mkdir()
+    hook_plan = tmp / "plans" / "hooked.md"
+    hook_plan.write_text("# Hooked plan\n\nChange `src/app/feature.swift:3` first.\n")
 
     env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
                READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
-               READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_COLLIDE_LINK=str(collide),
+               READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_HOOK_PLAN=str(hook_plan), READOUT_SMOKE_COLLIDE_LINK=str(collide),
                READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"),
                READOUT_SMOKE_LATE_FOLDER=str(late_dir), READOUT_SMOKE_DANGLE_LINK=str(dangle), READOUT_SMOKE_UNREADABLE=str(locked))
     # Launch Services must know the bundle for `open -b` to reach the running app.
@@ -247,6 +255,21 @@ def main() -> int:
                 hook = json.dumps({"tool_input": {"file_path": str(target)}})
                 r = subprocess.run(["/bin/sh", str(cli), "--hook"], input=hook, capture_output=True, text=True)
                 print(f"harness: readout --hook exited {r.returncode} {r.stdout}{r.stderr}")
+                # The plan opened by a hook without a folder (before 3.6), then
+                # with the project folder Claude Code reports as its cwd.
+                hook = json.dumps({"tool_input": {"file_path": str(hook_plan)}})
+                r = subprocess.run(["/bin/sh", str(cli), "--hook"], input=hook, capture_output=True, text=True)
+                print(f"harness: readout --hook (no cwd) exited {r.returncode} {r.stdout}{r.stderr}")
+                time.sleep(1.5)
+                hook = json.dumps({"cwd": str(project), "tool_input": {"file_path": str(hook_plan)}})
+                r = subprocess.run(["/bin/sh", str(cli), "--hook"], input=hook, capture_output=True, text=True)
+                print(f"harness: readout --hook (cwd) exited {r.returncode} {r.stdout}{r.stderr}")
+                # The file opened behind gets a new section: its tab shows the unread dot.
+                time.sleep(1.0)
+                src = work / ".background.src"
+                src.write_text("# Opened with readout -b\n\n## Added later\n\nA section written after it was opened.\n")
+                agent_write(cli_file, src)
+                print("harness: added a section to background.md")
             else:
                 print("harness: the app never reported `await-cli`")
 

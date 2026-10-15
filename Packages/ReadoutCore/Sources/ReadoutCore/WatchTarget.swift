@@ -118,9 +118,10 @@ public enum BaselineKey {
     }
 }
 
-/// `readout-open://open?path=<percent-encoded absolute path>&background=1[&anchor=<section>]`:
+/// `readout-open://open?path=<percent-encoded absolute path>&background=1[&anchor=<section>][&root=<folder>]`:
 /// how the `readout` script asks for a file in the background (`readout -b`,
-/// `readout --hook`). `open -g` alone only keeps Readout from activating; the
+/// `readout --hook`). `root`: the project the agent worked in (the hook's
+/// `cwd`), where the paths a plan names are found. `open -g` alone only keeps Readout from activating; the
 /// open itself still reaches the app as an ordinary request, which brings the
 /// window forward and selects its tab. A scheme of its own, distinct from the
 /// `readout:` scheme the reader page loads from inside its web view.
@@ -132,6 +133,9 @@ public enum OpenLink {
         public let background: Bool
         /// A section to scroll to (`readout plan.md#risks`).
         public var anchor: String? = nil
+        /// The project folder the agent worked in (absolute; whether it exists
+        /// is checked where it is used, `ProjectRoot.validated`).
+        public var root: String? = nil
     }
 
     public static func parse(_ url: URL) -> Request? {
@@ -140,6 +144,8 @@ public enum OpenLink {
               let path = c.queryItems?.first(where: { $0.name == "path" })?.value, path.hasPrefix("/") else { return nil }
         let bg = c.queryItems?.first(where: { $0.name == "background" })?.value?.lowercased()
         let anchor = c.queryItems?.first(where: { $0.name == "anchor" })?.value
-        return Request(path: path, background: bg == "1" || bg == "true" || bg == "yes", anchor: anchor?.isEmpty == false ? anchor : nil)
+        let root = c.queryItems?.first(where: { $0.name == "root" })?.value
+        return Request(path: path, background: bg == "1" || bg == "true" || bg == "yes", anchor: anchor?.isEmpty == false ? anchor : nil,
+                       root: root?.hasPrefix("/") == true ? root : nil)
     }
 }
