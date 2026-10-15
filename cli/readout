@@ -2,16 +2,19 @@
 # readout — open Markdown files in Readout.
 #
 #   readout FILE...            open files and bring Readout forward
+#   readout FILE.md#section    open a file at a section
+#   readout FOLDER             open the newest Markdown file in a folder
 #   readout -b FILE...         open files in the background, behind the one you are reading
 #   readout --hook             for agent hooks: read hook JSON on stdin and open
 #                              tool_input.file_path in the background if it is Markdown
+#   readout --version          print Readout's version
 #
 # Bundle identifier of the Readout app.
 APP_ID="io.github.hxddh.readout"
 OPEN="${READOUT_OPEN_COMMAND:-/usr/bin/open}"
 
 usage() {
-  sed -n '3,8p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '3,11p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 is_markdown() {
@@ -21,21 +24,75 @@ is_markdown() {
   esac
 }
 
+# Every byte percent-encoded.
+encode() {
+  printf '%s' "$1" | od -An -v -tx1 | tr -d ' \n' | sed 's/../%&/g'
+}
+
+absolute() {
+  case "$1" in
+    /*) printf '%s' "$1" ;;
+    *) printf '%s' "$PWD/$1" ;;
+  esac
+}
+
 # readout-open://open?background=1&path=<absolute path, every byte percent-encoded>.
 # `open -g` alone only keeps Readout from activating: the file would still be
 # opened as a request and its tab brought to the front. The URL asks Readout to
 # leave the tab being read alone.
 background_url() {
-  case "$1" in
-    /*) p=$1 ;;
-    *) p="$PWD/$1" ;;
-  esac
-  printf 'readout-open://open?background=1&path=%s' \
-    "$(printf '%s' "$p" | od -An -v -tx1 | tr -d ' \n' | sed 's/../%&/g')"
+  printf 'readout-open://open?background=1&path=%s' "$(encode "$(absolute "$1")")"
+}
+
+# A file at a section (`plan.md#risks`): Launch Services drops a file URL's fragment.
+anchor_url() {
+  printf 'readout-open://open?path=%s&anchor=%s' "$(encode "$(absolute "$1")")" "$(encode "$2")"
+}
+
+# The most recently modified Markdown file directly in a folder.
+newest_markdown() {
+  dir=${1%/}
+  [ -n "$dir" ] || dir=/
+  ls -t -- "$dir" 2>/dev/null | while IFS= read -r name; do
+    if is_markdown "$name" && [ -f "$dir/$name" ]; then
+      printf '%s\n' "$dir/$name"
+      break
+    fi
+  done
+}
+
+# CFBundleShortVersionString of the Readout.app this script is in (through a
+# symlink such as ~/.local/bin/readout), else of the installed one.
+version() {
+  self=$0
+  while [ -L "$self" ]; do
+    link=$(readlink "$self")
+    case "$link" in
+      /*) self=$link ;;
+      *) self=$(dirname "$self")/$link ;;
+    esac
+  done
+  plist="$(dirname "$self")/../Info.plist"
+  if [ ! -f "$plist" ] && [ -x /usr/bin/mdfind ]; then
+    app=$(/usr/bin/mdfind "kMDItemCFBundleIdentifier == '$APP_ID'" 2>/dev/null | head -n 1)
+    [ -n "$app" ] && plist="$app/Contents/Info.plist"
+  fi
+  [ -f "$plist" ] || return 1
+  v=""
+  # macOS's plutil (binary or XML); another system's plutil may not know -extract.
+  [ "$(uname)" = Darwin ] && v=$(/usr/bin/plutil -extract CFBundleShortVersionString raw -o - "$plist" 2>/dev/null)
+  # An XML property list without plutil.
+  [ -n "$v" ] || v=$(sed -n '/<key>CFBundleShortVersionString<\/key>/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}' "$plist")
+  [ -n "$v" ] && printf '%s\n' "$v"
 }
 
 case "$1" in
   -h|--help) usage; exit 0 ;;
+  -v|--version)
+    v=$(version) || v=""
+    [ -n "$v" ] || { echo "readout: Readout.app not found" >&2; exit 1; }
+    echo "readout $v"
+    exit 0 ;;
   --hook)
     input=$(cat)
     path=$(printf '%s' "$input" | /usr/bin/plutil -extract tool_input.file_path raw -o - - 2>/dev/null)
@@ -59,5 +116,38 @@ case "$1" in
     "$OPEN" -g -b "$APP_ID" "$@" || status=$?
     exit "$status" ;;
   "") exec "$OPEN" -b "$APP_ID" ;;
-  *) exec "$OPEN" -b "$APP_ID" -- "$@" ;;
+  *)
+    [ "$1" = "--" ] && shift
+    status=0
+    anchored=0
+    for f do
+      shift
+      if [ -d "$f" ]; then
+        newest=$(newest_markdown "$f")
+        if [ -n "$newest" ]; then
+          set -- "$@" "$newest"
+        else
+          echo "readout: $f: No Markdown files in this folder" >&2
+          status=1
+        fi
+      elif [ ! -e "$f" ] && [ "${f%#*}" != "$f" ] && [ -f "${f%#*}" ] && is_markdown "${f%#*}"; then
+        set -- "$@" "$(anchor_url "${f%#*}" "${f##*#}")"
+        anchored=1
+      else
+        set -- "$@" "$f"
+      fi
+    done
+    [ $# -gt 0 ] || exit "$status"
+    if [ "$anchored" = 0 ]; then
+      "$OPEN" -b "$APP_ID" -- "$@" || status=$?
+    else
+      # One at a time, in order: the last one ends up in front, as with files alone.
+      for f do
+        case "$f" in
+          readout-open://*) "$OPEN" -b "$APP_ID" "$f" || status=$? ;;
+          *) "$OPEN" -b "$APP_ID" -- "$f" || status=$? ;;
+        esac
+      done
+    fi
+    exit "$status" ;;
 esac

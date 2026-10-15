@@ -4,7 +4,12 @@ import ReadoutCore
 /// Observable state shared between a reader window's sidebar, toolbar and controller.
 @MainActor
 final class ReaderModel: ObservableObject {
-    @Published var toc: [TocEntry] = []
+    @Published var toc: [TocEntry] = [] {
+        // Once per outline, not per row.
+        didSet { baseLevel = ReaderChrome.outlineBaseLevel(toc.map(\.level)) }
+    }
+    /// The level outline rows indent from: under a lone H1 title, its sections' level.
+    private(set) var baseLevel = 1
     @Published var activeSlot: Int = 0
     @Published var tasks = TaskStats()
     @Published var unread = 0
@@ -32,7 +37,7 @@ struct TOCView: View {
                 ScrollViewReader { proxy in
                     List(selection: selection) {
                         ForEach(model.toc) { entry in
-                            TOCRow(entry: entry, minLevel: minLevel)
+                            TOCRow(entry: entry, minLevel: model.baseLevel)
                                 .tag(Optional(entry.slot))
                                 .id(entry.slot)
                                 // The row already selected jumps again when clicked
@@ -41,6 +46,8 @@ struct TOCView: View {
                         }
                     }
                     .listStyle(.sidebar)
+                    // One surface with the sidebar above the list (behind the window buttons).
+                    .scrollContentBackground(.hidden)
                     .onChange(of: model.activeSlot) { _, slot in
                         // No anchor: a row already in view stays where it is
                         // (the outline does not re-center on every heading);
@@ -55,22 +62,7 @@ struct TOCView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom) {
-            VStack(alignment: .leading, spacing: 2) {
-                if let status = model.status {
-                    Text(status)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
     }
-
-    /// The level rows indent from: under a lone H1 title, its sections' level.
-    private var minLevel: Int { ReaderChrome.outlineBaseLevel(model.toc.map(\.level)) }
 
     /// Programmatic changes (from scrolling) only move the highlight; user clicks also scroll the document.
     private var selection: Binding<Int?> {
@@ -107,8 +99,12 @@ private struct TOCRow: View {
                 Text("\(entry.tasks.done)/\(entry.tasks.total)")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(entry.tasks.done == entry.tasks.total ? .secondary : .tertiary)
+                    // VoiceOver: "2 of 5 tasks done", not "2 slash 5".
+                    .accessibilityLabel(String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), entry.tasks.done, entry.tasks.total))
             }
         }
+        // One element per row: the heading, then its tasks.
+        .accessibilityElement(children: .combine)
         .padding(.leading, CGFloat(max(0, entry.level - minLevel)) * 12)
         .contentShape(Rectangle())
         .help(entry.title)

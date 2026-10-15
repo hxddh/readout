@@ -99,14 +99,11 @@ public enum ReaderChrome {
         return levels.dropFirst().min() ?? top
     }
 
-    /// Where Help ▸ Readout Help goes: the keyboard section of the README in
+    /// Where Help ▸ Readout Help goes: the keyboard shortcuts bundled with
+    /// the app (Help/Keyboard*.md), opened in Readout itself, offline, in
     /// the reader's language.
-    public static func helpURL(preferredLanguages: [String]) -> URL {
-        if preferredLanguages.first?.lowercased().hasPrefix("zh") == true {
-            // "## 快捷键", percent-encoded.
-            return URL(string: "https://github.com/hxddh/readout/blob/main/README.zh-CN.md#%E5%BF%AB%E6%8D%B7%E9%94%AE")!
-        }
-        return URL(string: "https://github.com/hxddh/readout#keyboard")!
+    public static func helpFileName(preferredLanguages: [String]) -> String {
+        preferredLanguages.first?.lowercased().hasPrefix("zh") == true ? "Keyboard.zh-Hans.md" : "Keyboard.md"
     }
 }
 

@@ -64,7 +64,7 @@
 "Add Folder…" = "添加文件夹…";
 "Remove" = "移除";
 "Global shortcut" = "全局快捷键";
-"Editor for ⌘E and code references" = "⌘E 和代码引用的打开方式";
+"Editor" = "编辑器";
 "Agent folders" = "Agent 文件夹";
 "Drop a Markdown file here" = "将 Markdown 文件拖到这里";
 "No headings" = "没有标题";
@@ -81,7 +81,7 @@
 "A New Version Is Available" = "有新版本可用";
 "You're Up to Date" = "已是最新版本";
 "Readout %@ is the latest version." = "Readout %@ 已是最新版本。";
-"Readout checks GitHub releases for new versions." = "Readout 会检查 GitHub releases 获取新版本。";
+"Readout checks GitHub releases for new versions." = "Readout 会通过 GitHub Releases 检查新版本。";
 "Show Only Changes" = "只看变更";
 "Copy Link to Section" = "复制章节链接";
 "All caught up" = "已全部读完";
@@ -114,3 +114,8 @@
 "Delete" = "删除";
 "This shortcut is in use by another app. Choose another one." = "此快捷键已被其他应用占用，请选择其他快捷键。";
 "GitHub's limit on update checks from this network was reached. Please try again in an hour." = "当前网络向 GitHub 检查更新的次数已达上限，请一小时后再试。";
+"Close All" = "全部关闭";
+"Use Selection for Find" = "使用所选内容查找";
+"Show What Changed" = "显示具体变更";
+"%@ could not be found." = "找不到“%@”。";
+"Unread changes: %d" = "未读变更：%d 处";

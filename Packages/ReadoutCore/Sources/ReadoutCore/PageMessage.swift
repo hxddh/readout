@@ -26,6 +26,8 @@ public enum PageMessage: Equatable, Sendable {
     case setCodeWrap(on: Bool)
     /// A key found nothing to go to (N with no change left): the app beeps.
     case nothing
+    /// N went past the last change and wrapped around to the first: the app beeps.
+    case wrapped
 
     public init?(_ msg: [String: Any]) {
         func int(_ v: Any?) -> Int? { (v as? NSNumber)?.intValue ?? (v as? Int) }
@@ -61,6 +63,7 @@ public enum PageMessage: Equatable, Sendable {
             guard let on = (msg["on"] as? NSNumber)?.boolValue ?? (msg["on"] as? Bool) else { return nil }
             self = .setCodeWrap(on: on)
         case "nothing": self = .nothing
+        case "wrapped": self = .wrapped
         case "error":
             self = .error(message: msg["message"] as? String ?? "")
         default:
@@ -77,19 +80,38 @@ public enum LinkTarget: Equatable, Sendable {
     case sameDocument(fragment: String)
     /// Another Markdown file, optionally at a section: opened in Readout.
     case markdown(URL, fragment: String?)
-    /// Any other local file: opened by the system.
+    /// A file at a line (`src/a.ts#L42`, `#L42C3`, `#L42-L50`, `src/a.ts:42:3`):
+    /// opened in the editor chosen in Settings, at that line. `column` 0: none.
+    case source(URL, line: Int, column: Int)
+    /// Any other local file (an image, a PDF, a folder, a file without a
+    /// line): opened by the system.
     case file(URL)
     /// A local path that does not exist.
-    case missing
+    case missing(URL)
+
+    /// Files the system opens even with a line in the link: a line means nothing to them.
+    static let systemOpened: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "tif", "tiff", "heic",
+                                            "avif", "ico", "pdf", "mov", "mp4", "m4v", "mp3", "m4a", "wav", "zip"]
 
     /// - Parameters:
     ///   - documentURL: the file the link appears in (relative paths resolve against its folder).
     ///   - markdownExtensions: lowercased extensions Readout opens itself.
     ///   - fileExists: existence check for non-Markdown targets.
+    ///   - isDirectory: whether an existing target is a folder (opened by the system, line or not).
     public static func resolve(_ href: String, from documentURL: URL, markdownExtensions: Set<String>,
-                               fileExists: (URL) -> Bool) -> LinkTarget? {
+                               fileExists: (URL) -> Bool, isDirectory: (URL) -> Bool = { _ in false }) -> LinkTarget? {
+        func url(_ p: String) -> URL {
+            p.hasPrefix("/") ? URL(fileURLWithPath: p)
+                : documentURL.deletingLastPathComponent().appendingPathComponent(p).standardizedFileURL
+        }
+        // "main.swift:42" and "Makefile:12" parse as URLs with the schemes
+        // "main.swift" and "makefile": a file name with a line when that file
+        // is there. Otherwise a URL: "tel:5551234", "com.example.viewer:42".
         if let u = URL(string: href), let scheme = u.scheme?.lowercased(), scheme != "file" {
-            return .external(u)
+            let isPath = SourceLine.pathSuffix(href).map { s in
+                fileExists(url(s.path.removingPercentEncoding ?? s.path)) || fileExists(url(href.removingPercentEncoding ?? href))
+            } ?? false
+            if !isPath { return .external(u) }
         }
         // Split off the fragment first: other.md#section should open the file
         // AND scroll to the section.
@@ -109,9 +131,41 @@ public enum LinkTarget: Equatable, Sendable {
             // Same-document anchor: scroll in place.
             return fragment.map { .sameDocument(fragment: $0) }
         }
-        let target = path.hasPrefix("/") ? URL(fileURLWithPath: path)
-            : documentURL.deletingLastPathComponent().appendingPathComponent(path).standardizedFileURL
+        var target = url(path)
+        var line: (line: Int, column: Int)? = fragment.flatMap(SourceLine.fragment)
+        // path:42[:3], unless a file is really named that way.
+        if let (stripped, l) = SourceLine.pathSuffix(path), !fileExists(target) {
+            target = url(stripped)
+            line = l
+            if markdownExtensions.contains(target.pathExtension.lowercased()) { return .markdown(target, fragment: nil) }
+        }
         if markdownExtensions.contains(target.pathExtension.lowercased()) { return .markdown(target, fragment: fragment) }
-        return fileExists(target) ? .file(target) : .missing
+        guard fileExists(target) else { return .missing(target) }
+        if let line, !isDirectory(target), !systemOpened.contains(target.pathExtension.lowercased()) {
+            return .source(target, line: line.line, column: line.column)
+        }
+        return .file(target)
+    }
+}
+
+/// Line references in links to source files.
+public enum SourceLine {
+    /// GitHub's line fragments: `L42`, `L42C3`, `L42-L50`, `L42C3-L50C1`, `L42-50`.
+    public static func fragment(_ fragment: String) -> (line: Int, column: Int)? {
+        guard let m = match(#"^L(\d+)(?:C(\d+))?(?:-L?\d+(?:C\d+)?)?$"#, fragment), let line = m[1].flatMap({ Int($0) }), line > 0 else { return nil }
+        return (line, m[2].flatMap { Int($0) } ?? 0)
+    }
+
+    /// `path:42` or `path:42:3`: the path without the suffix, and the line.
+    public static func pathSuffix(_ path: String) -> (path: String, line: (line: Int, column: Int))? {
+        guard let m = match(#"^(.+?):(\d+)(?::(\d+))?$"#, path), let p = m[1], let line = m[2].flatMap({ Int($0) }), line > 0,
+              !p.hasSuffix("/"), !p.isEmpty else { return nil }
+        return (p, (line, m[3].flatMap { Int($0) } ?? 0))
+    }
+
+    private static func match(_ pattern: String, _ s: String) -> [String?]? {
+        guard let re = try? NSRegularExpression(pattern: pattern),
+              let m = re.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)) else { return nil }
+        return (0..<m.numberOfRanges).map { i in Range(m.range(at: i), in: s).map { String(s[$0]) } }
     }
 }

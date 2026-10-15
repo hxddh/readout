@@ -198,7 +198,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case .nextChange:
             let item = NSToolbarItem(itemIdentifier: id)
             item.label = NSLocalizedString("Next Change", comment: "Toolbar")
-            item.image = NSImage(systemSymbolName: "arrow.down", accessibilityDescription: item.label)
             item.target = self
             item.action = #selector(nextChange(_:))
             item.isBordered = true
@@ -217,6 +216,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             item.searchField.sendsSearchStringImmediately = false
             item.searchField.sendsWholeSearchString = true
             item.preferredWidthForSearchField = 160
+            // macOS 26 grows the field into the free toolbar space whatever
+            // the preferred width says: hold it at that width.
+            let width = item.searchField.widthAnchor.constraint(lessThanOrEqualToConstant: 160)
+            width.isActive = true
             searchItem = item
             return item
         default:
@@ -241,7 +244,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             .dropFirst()
             .sink { [weak self] _ in self?.applyAppearance() }
             .store(in: &cancellables)
-        // The page scrolls under the toolbar; sticky table headers stop below it.
+        // The page scrolls under the toolbar's glass (obscuredContentInsets).
         for name in [NSWindow.didResizeNotification, NSWindow.didEnterFullScreenNotification, NSWindow.didExitFullScreenNotification] {
             NotificationCenter.default.publisher(for: name, object: window)
                 .sink { [weak self] _ in self?.updateTopInset() }
@@ -252,13 +255,16 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var lastTopInset: Double = -1
 
     /// How much of the web view's top the window toolbar covers, in points.
+    /// WebKit lays the page out below it (scroll position, sticky headers,
+    /// anchors) while the content scrolls on under the toolbar's glass, with
+    /// the system's scroll edge effect; the page itself needs no inset.
     private func updateTopInset() {
         guard let window else { return }
         let web = webView.convert(webView.bounds, to: nil)
         let inset = max(0, Double(web.maxY - window.contentLayoutRect.maxY)).rounded()
         guard inset != lastTopInset else { return }
         lastTopInset = inset
-        webView.whenReady { [weak self] in self?.webView.setAppearance(topInset: inset) }
+        webView.obscuredContentInsets = NSEdgeInsets(top: CGFloat(inset), left: 0, bottom: 0, right: 0)
     }
 
     private func applyAppearance() {
@@ -305,7 +311,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         self.webView.whenReady { [weak self] in
             guard let self else { return }
             self.applyAppearance()
-            self.webView.call("apply", self.session.fullPayload(rewrite: false))
+            self.webView.callEncodingOffMain("apply", self.session.fullPayload(rewrite: false))
             // The new page starts out of find mode, and switches queued before
             // the crash have run by now: send the state the window is in.
             self.webView.call("findMode", json: self.findModeOn ? "true" : "false")
@@ -315,6 +321,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     // MARK: Loading
 
     private func load() {
+        // The reading state is read and decoded (JSON ~1.6× the document's
+        // size) off the main thread, while the document parses.
+        let saved = BaselineStore.prefetch(url)
         loader.loadInitial { [weak self] result in
             guard let self else { return }
             guard let result else {
@@ -329,35 +338,60 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 self.deleted = gone
                 self.model.status = gone ? NSLocalizedString("The file was deleted.", comment: "Status")
                                          : NSLocalizedString("The file could not be read.", comment: "Status")
+                self.showLoadFailure()
                 return
             }
-            let record = BaselineStore.load(self.url, realPath: result.sourcePath)   // the file this read came from
-            let patch = self.session.load(result.doc, baseline: record?.baseline)
-            // What is on disk already: an unchanged baseline is not written again.
-            self.lastSavedBaseline = record?.baseline
-            self.loaded = true
-            self.contentPath = result.sourcePath
-            self.deleted = false
-            self.updateModel(patch, decoded: result.decoded)
-            self.webView.whenReady { [weak self] in
-                guard let self else { return }
-                self.webView.call("apply", patch)
-                SmokeTest.run(controller: self, webView: self.webView)
-                // An agent write that landed mid-load: re-read now that the
-                // first patch is applied, so the fresh content wins.
-                if self.editedWhileLoading {
-                    self.editedWhileLoading = false
-                    self.fileChanged(.modified)
-                }
-                if let pending = self.pendingAnchor {
-                    // Cross-file link target: the fragment wins over the saved position.
-                    self.pendingAnchor = nil
-                    self.scrollToAnchor(fragment: pending)
-                } else if let slot = self.resumeSlot(from: record, rewritten: patch.rewrite) {
-                    let anchor = ["slot": slot, "offset": record?.topOffset ?? 0, "ratio": 0] as [String: Any]
-                    if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
-                        self.webView.call("scrollToAnchor", json: json)
-                    }
+            saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from
+                self?.didLoad(result, record: record)
+            }
+        }
+    }
+
+    /// The first read failed: the page says why in its empty state, instead of staying blank.
+    private var showsLoadFailure = false
+    private func showLoadFailure() {
+        guard let status = model.status else { return }
+        showsLoadFailure = true
+        webView.whenReady { [weak self] in
+            guard let self, self.showsLoadFailure, !self.loaded else { return }
+            self.webView.setAppearance(strings: ["empty": status])
+            self.webView.call("apply", json: Self.emptyPatch)
+        }
+    }
+    private static let emptyPatch = #"{"version":0,"reset":true,"rewrite":false,"ops":[],"marks":[],"deletions":[],"toc":[],"tasks":{"done":0,"total":0}}"#
+
+    private func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?) {
+        let patch = self.session.load(result.doc, baseline: record?.baseline)
+        // What is on disk already: an unchanged baseline is not written again.
+        self.lastSavedBaseline = record?.baseline
+        self.loaded = true
+        self.contentPath = result.sourcePath
+        self.deleted = false
+        self.updateModel(patch, decoded: result.decoded)
+        self.webView.whenReady { [weak self] in
+            guard let self else { return }
+            if self.showsLoadFailure {
+                // The empty state says "empty" again.
+                self.showsLoadFailure = false
+                self.webView.setAppearance(strings: ReaderStrings.all)
+            }
+            // A whole document: encoded off the main thread, still delivered before the calls below.
+            self.webView.callEncodingOffMain("apply", patch)
+            SmokeTest.run(controller: self, webView: self.webView)
+            // An agent write that landed mid-load: re-read now that the
+            // first patch is applied, so the fresh content wins.
+            if self.editedWhileLoading {
+                self.editedWhileLoading = false
+                self.fileChanged(.modified)
+            }
+            if let pending = self.pendingAnchor {
+                // Cross-file link target: the fragment wins over the saved position.
+                self.pendingAnchor = nil
+                self.scrollToAnchor(fragment: pending)
+            } else if let slot = self.resumeSlot(from: record, rewritten: patch.rewrite) {
+                let anchor = ["slot": slot, "offset": record?.topOffset ?? 0, "ratio": 0] as [String: Any]
+                if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
+                    self.webView.call("scrollToAnchor", json: json)
                 }
             }
         }
@@ -383,6 +417,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             if change == .deleted {
                 deleted = true
                 model.status = NSLocalizedString("The file was deleted.", comment: "Status")
+                showLoadFailure()
             } else {
                 retryLoadIfFailed()
             }
@@ -420,7 +455,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 if emptiedNow {
                     // Asked before the empty patch is applied (calls run in
                     // order): whether the reader sat at the end, following.
-                    self.webView.evaluateJavaScript(Self.atBottomScript) { [weak self] value, _ in
+                    self.webView.run(Self.atBottomScript) { [weak self] value, _ in
                         self?.followingBeforeEmpty = (value as? Bool) ?? false
                     }
                 }
@@ -461,7 +496,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func restorePlace(_ a: (slot: Int, offset: Double)) {
         let anchor = ["slot": a.slot, "offset": a.offset, "ratio": 0] as [String: Any]
         guard let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) else { return }
-        webView.evaluateJavaScript("requestAnimationFrame(() => window.readout.scrollToAnchor(\(json))); 1", completionHandler: nil)
+        webView.run("requestAnimationFrame(() => window.readout.scrollToAnchor(\(json))); 1")
     }
 
     /// `decoded`: how the content was read (sets the status); nil keeps the status.
@@ -492,6 +527,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func updateSubtitle(status: String?? = nil) {
         let status = status ?? model.status
         observeTabBar()
+        if let flash = flashText, status == nil {
+            window?.subtitle = flash
+            return
+        }
         let showsTabBar = window?.tabGroup?.isTabBarVisible ?? false
         switch ReaderChrome.subtitle(status: status, tasks: model.tasks, path: url.path, showsTabBar: showsTabBar) {
         case .status(let s): window?.subtitle = s
@@ -500,6 +539,26 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case .folder(let name): window?.subtitle = name
         case nil: window?.subtitle = ""
         }
+    }
+
+    /// A passing message in the subtitle (a link to a file that is not
+    /// there), for a few seconds; the file's own status wins.
+    private var flashText: String?
+    private var flashWork: DispatchWorkItem?
+    private func flashStatus(_ text: String) {
+        flashText = text
+        updateSubtitle()
+        if let window {
+            NSAccessibility.post(element: window, notification: .announcementRequested,
+                                 userInfo: [.announcement: text, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+        }
+        flashWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.flashText = nil
+            self?.updateSubtitle()
+        }
+        flashWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: work)
     }
 
     /// The window joined or left tabs, or its tab bar was shown or hidden:
@@ -531,10 +590,37 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         guard let item = changeItem else { return }
         item.isEnabled = n > 0
         item.isHidden = n == 0
-        item.badge = n > 0 ? .count(n) : nil
+        if n > 0 { item.image = Self.changeImage(count: n) }
         item.toolTip = n > 0
             ? String(format: NSLocalizedString("Unread changes: %d. Press N for the next change, D to see what changed.", comment: "Toolbar tooltip; %d is the number of unread changes"), n)
             : NSLocalizedString("No unread changes", comment: "Toolbar tooltip")
+    }
+
+    /// The next-change button: the arrow with the unread count in a badge of
+    /// the accent colour. NSItemBadge is always red, which reads as an error;
+    /// unread changes are not one. Drawn when shown, in the window's appearance.
+    static func changeImage(count: Int) -> NSImage {
+        let text = count > 99 ? "99+" : String(count)
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold)
+        let textSize = (text as NSString).size(withAttributes: [.font: font])
+        let badge = NSSize(width: max(13, ceil(textSize.width) + 6), height: 13)
+        let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
+        let arrow = NSImage(systemSymbolName: "arrow.down", accessibilityDescription: nil)?.withSymbolConfiguration(config) ?? NSImage()
+        let a = arrow.size
+        // The badge sits over the arrow's top right, as the system's does.
+        let size = NSSize(width: ceil(a.width / 2 + 3 + badge.width), height: ceil(max(a.height + 5, badge.height + 6)))
+        let image = NSImage(size: size, flipped: false) { rect in
+            let tinted = arrow.withSymbolConfiguration(config.applying(NSImage.SymbolConfiguration(paletteColors: [.secondaryLabelColor]))) ?? arrow
+            tinted.draw(in: NSRect(x: 0, y: 0, width: a.width, height: a.height))
+            let b = NSRect(x: rect.width - badge.width, y: rect.height - badge.height, width: badge.width, height: badge.height)
+            NSColor.controlAccentColor.setFill()
+            NSBezierPath(roundedRect: b, xRadius: badge.height / 2, yRadius: badge.height / 2).fill()
+            (text as NSString).draw(at: NSPoint(x: b.midX - textSize.width / 2, y: b.midY - textSize.height / 2),
+                                    withAttributes: [.font: font, .foregroundColor: NSColor.white])
+            return true
+        }
+        image.accessibilityDescription = String(format: NSLocalizedString("Unread changes: %d", comment: "Next-change button for VoiceOver; %d is the number"), count)
+        return image
     }
 
     // MARK: Messages from the page
@@ -577,8 +663,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             EditorOpener.open(path: path, line: line, column: column)
         case .setCodeWrap(let on):
             if AppSettings.shared.codeWrap != on { AppSettings.shared.codeWrap = on }
-        case .nothing:
-            // A key with nothing to go to (N past the last change).
+        case .nothing, .wrapped:
+            // A key with nothing to go to (N with no change left), or N
+            // wrapping past the last change back to the first.
             NSSound.beep()
         case .ready, .error:
             break   // handled by ReaderWebView
@@ -590,23 +677,30 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             switch result {
             case .success(let local):
                 self?.webView.call("remoteReady", ["id": id, "url": local])
-            case .failure(let error):
-                let reason: String
-                if case RemoteImageLoader.LoadError.rejected(let r) = error { reason = r }
-                else { reason = "could not be loaded" }
+            case .failure(.rejected(let reason)):
                 self?.webView.call("remoteFailed", ["id": id, "error": reason])
             }
         }
     }
 
     private func openLink(_ href: String) {
+        let fm = FileManager.default
         guard let target = LinkTarget.resolve(href, from: url, markdownExtensions: WorkspaceIndex.markdownExtensions,
-                                              fileExists: { FileManager.default.fileExists(atPath: $0.path) }) else { return }
+                                              fileExists: { fm.fileExists(atPath: $0.path) },
+                                              isDirectory: { u in
+                                                  var dir: ObjCBool = false
+                                                  return fm.fileExists(atPath: u.path, isDirectory: &dir) && dir.boolValue
+                                              }) else { return }
         switch target {
-        case .external(let u), .file(let u): NSWorkspace.shared.open(u)
+        case .external(let u), .file(let u):
+            // No app for it (a file name with a line that is not there, "main.swift:42"): say so.
+            if !NSWorkspace.shared.open(u) { NSSound.beep() }
+        case .source(let u, let line, let column): EditorOpener.open(path: u.path, line: line, column: column)
         case .sameDocument(let fragment): scrollToAnchor(fragment: fragment)
         case .markdown(let u, let fragment): (NSApp.delegate as? AppDelegate)?.open(u, anchor: fragment)
-        case .missing: NSSound.beep()
+        case .missing(let u):
+            NSSound.beep()
+            flashStatus(String(format: NSLocalizedString("%@ could not be found.", comment: "Subtitle for a few seconds after a link to a missing file; %@ is the file name"), u.lastPathComponent))
         }
     }
 
@@ -735,7 +829,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         if let restore { lastAnchor = restore }
         webView.whenReady { [weak self] in
             guard let self else { return }
-            self.webView.call("apply", patch)
+            self.webView.callEncodingOffMain("apply", patch)
             if let restore { self.restorePlace(restore) }
         }
         scheduleSave()
@@ -770,7 +864,45 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     @objc func revealInFinder(_ sender: Any?) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
 
-    @objc func openInEditor(_ sender: Any?) { EditorOpener.open(path: url.path, line: 0, column: 0) }
+    /// ⌘E: the editor at the source line of the selection, or else of the block at the top of the view.
+    @objc func openInEditor(_ sender: Any?) {
+        webView.run(Self.editorSlotScript) { [weak self] value, _ in
+            guard let self else { return }
+            let slot = (value as? NSNumber)?.intValue ?? self.lastAnchor?.slot ?? 0
+            let line = self.session.blocks.first { $0.slot == slot }?.lines.lowerBound ?? 0
+            EditorOpener.open(path: self.url.path, line: line, column: 0)
+        }
+    }
+
+    /// The slot of the block the selection starts in, else of the block at the top of the view.
+    private static let editorSlotScript = """
+        (() => {
+          const s = getSelection();
+          const n = s && !s.isCollapsed ? s.anchorNode : null;
+          const e = n && (n.nodeType === 1 ? n : n.parentElement);
+          const b = e && e.closest('.blk[data-slot]');
+          if (b) return +b.dataset.slot;
+          const a = window.readout && window.readout.captureAnchor();
+          return a ? a.slot : null;
+        })()
+        """
+
+    /// Edit ▸ Find ▸ Use Selection for Find: the selection becomes what ⌘G finds.
+    @objc func useSelectionForFind(_ sender: Any?) {
+        webView.run("getSelection().toString()") { [weak self] value, _ in
+            let text = ((value as? String) ?? "").split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            guard let self, !text.isEmpty else { return NSSound.beep() }
+            self.searchItem?.searchField.stringValue = text
+            let find = NSPasteboard(name: .find)
+            find.clearContents()
+            find.setString(text, forType: .string)
+        }
+    }
+
+    /// View ▸ Show What Changed: the page's D key (the comparisons of the edited blocks in view).
+    @objc func showWhatChanged(_ sender: Any?) {
+        webView.run("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true })); 1")
+    }
 
     @objc func copyFilePath(_ sender: Any?) {
         NSPasteboard.general.clearContents()
@@ -899,6 +1031,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         switch item.action {
         case #selector(nextChange(_:)), #selector(previousChange(_:)), #selector(markAllRead(_:)):
             return session.unreadCount > 0
+        case #selector(showWhatChanged(_:)):
+            return session.unreadCount > 0
         case #selector(toggleChangesOnly(_:)):
             item.state = changesOnly ? .on : .off
             return session.unreadCount > 0 || changesOnly
@@ -927,11 +1061,23 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         windowObservations = []
         // Nothing to undo in a closed window; the actions hold the controller.
         undoStack.removeAllActions()
+        flashWork?.cancel()
         AppSettings.shared.showSidebar = !sidebarItem.isCollapsed
         onClose?(self)
     }
 
+    /// Whether Open Recent lists the document yet: only once its window has
+    /// been in front, not for every file an agent opened in the background.
+    private var notedRecent = false
+
     func windowDidBecomeKey(_ notification: Notification) {
+        if !notedRecent {
+            notedRecent = true
+            // Not the help files inside the app.
+            if !url.path.hasPrefix(Bundle.main.bundleURL.standardizedFileURL.path + "/") {
+                NSDocumentController.shared.noteNewRecentDocumentURL(url)
+            }
+        }
         updateSubtitle()
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
     }
