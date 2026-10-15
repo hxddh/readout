@@ -42,8 +42,9 @@ import Testing
         sub(#"\[( |x)\] ?"#, "[$1] ")
         // Alignment: align="x" and style="text-align:x" are the same.
         sub(#"style="text-align:(\w+)""#, #"align="$1""#)
-        // Presentation-only wrappers.
+        // Presentation-only wrappers, and the break opportunities in long autolinks' text.
         sub(#"</?(div|span)\b[^>]*>"#, "")
+        sub("<wbr>", "")
         // Keep only meaningful attributes, in a fixed order.
         s = keepAttributes(s)
         // One list per list-item block: merge adjacent lists of the same kind.
