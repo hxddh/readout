@@ -9,6 +9,7 @@ private let log = Logger(subsystem: "io.github.hxddh.readout.quicklook", categor
 /// Quick Look preview: the same renderer as the app, static, without change tracking.
 final class PreviewViewController: NSViewController, QLPreviewingController {
     private var webView: ReaderWebView?
+    private var appearanceObservation: NSKeyValueObservation?
 
     override var nibName: NSNib.Name? { nil }
 
@@ -18,6 +19,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         webView = w
         view = w
         preferredContentSize = NSSize(width: 820, height: 900)
+    }
+
+    private var isDark: Bool {
+        (webView?.effectiveAppearance ?? NSApp.effectiveAppearance).bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
     }
 
     func preparePreviewOfFile(at url: URL) async throws {
@@ -44,9 +49,18 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                     }
                 }
                 webView.whenReady {
-                    let dark = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-                    webView.setAppearance(dark: dark, accent: .controlAccentColor, width: "narrow", fontSize: 15,
+                    // The app's default text size (Actual Size), in the preview's appearance.
+                    webView.setAppearance(dark: self.isDark, accent: .controlAccentColor, width: "narrow", fontSize: 16,
                                           strings: ReaderStrings.all, mode: "quicklook")
+                    // Light or dark switched while the preview is open: it follows.
+                    self.appearanceObservation = webView.observe(\.effectiveAppearance) { [weak self] _, _ in
+                        DispatchQueue.main.async {
+                            MainActor.assumeIsolated {
+                                guard let self, let webView = self.webView else { return }
+                                webView.setAppearance(dark: self.isDark, accent: .controlAccentColor)
+                            }
+                        }
+                    }
                     webView.onMessage = { msg in if msg["type"] as? String == "applied" { finish("applied") } }
                     webView.call("apply", patch)
                 }

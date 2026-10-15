@@ -23,7 +23,7 @@ final class RemoteImageLoader {
     /// Downloads `urlString` and completes on the main actor with the
     /// `readout://remote/<token>` URL string, or a `LoadError` whose message
     /// is shown in the placeholder.
-    func load(_ urlString: String, completion: @escaping @MainActor (Result<String, Error>) -> Void) {
+    func load(_ urlString: String, completion: @escaping @MainActor (Result<String, LoadError>) -> Void) {
         fetcher.fetch(urlString) { [self] result in
             Task { @MainActor in
                 switch result {

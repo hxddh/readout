@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
@@ -10,7 +11,7 @@ struct SettingsView: View {
                 List(selection: $selection) {
                     ForEach(settings.workspaces, id: \.self) { path in
                         HStack(spacing: 8) {
-                            Image(nsImage: NSWorkspace.shared.icon(forFile: (path as NSString).expandingTildeInPath))
+                            Image(nsImage: Self.icon(path))
                                 .resizable()
                                 .frame(width: 16, height: 16)
                             Text(abbreviate(path))
@@ -21,6 +22,8 @@ struct SettingsView: View {
                     }
                 }
                 .frame(minHeight: 96)
+                // ⌫ removes the selected folder, as the − button does.
+                .onDeleteCommand(perform: removeSelected)
                 .overlay {
                     if settings.workspaces.isEmpty {
                         Text(NSLocalizedString("No folders yet", comment: "Settings empty"))
@@ -34,10 +37,7 @@ struct SettingsView: View {
                     }
                     .help(NSLocalizedString("Add Folder…", comment: "Button"))
                     .accessibilityLabel(NSLocalizedString("Add Folder…", comment: "Button"))
-                    Button {
-                        if let s = selection { settings.workspaces.removeAll { $0 == s } }
-                        selection = nil
-                    } label: {
+                    Button(action: removeSelected) {
                         Image(systemName: "minus").frame(width: 20, height: 16)
                     }
                     .disabled(selection == nil)
@@ -57,7 +57,7 @@ struct SettingsView: View {
                 Picker(NSLocalizedString("Global shortcut", comment: "Settings label"), selection: $settings.hotKey) {
                     ForEach(AppSettings.HotKeyChoice.allCases) { Text($0.title).tag($0) }
                 }
-                Picker(NSLocalizedString("Editor for ⌘E and code references", comment: "Settings label: the app Open in Editor (⌘E) and path:line links open files in"), selection: $settings.editor) {
+                Picker(NSLocalizedString("Editor", comment: "Settings label: the app Open in Editor (⌘E) and path:line links open files in"), selection: $settings.editor) {
                     ForEach(AppSettings.Editor.allCases) { Text($0.title).tag($0) }
                 }
             } footer: {
@@ -77,6 +77,22 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// The folder's own icon; a plain folder icon for one that does not exist
+    /// yet (~/.claude/plans before the first plan), not a blank document.
+    private static func icon(_ path: String) -> NSImage {
+        let full = (path as NSString).expandingTildeInPath
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: full, isDirectory: &isDir), isDir.boolValue else {
+            return NSWorkspace.shared.icon(for: .folder)
+        }
+        return NSWorkspace.shared.icon(forFile: full)
+    }
+
+    private func removeSelected() {
+        if let s = selection { settings.workspaces.removeAll { $0 == s } }
+        selection = nil
     }
 
     private func abbreviate(_ path: String) -> String {

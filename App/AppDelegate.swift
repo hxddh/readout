@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 import ReadoutCore
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windows: [String: ReaderWindowController] = [:]
     /// Windows whose symlink was retargeted to a file another window already
     /// shows: no longer found by path, still owned here until they close.
@@ -75,8 +75,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             if url.isFileURL {
                 open(url)
             } else if let request = OpenLink.parse(url) {
-                // `readout -b` and `readout --hook`: open behind the document being read.
-                open(URL(fileURLWithPath: request.path), mode: request.background ? .background : .request)
+                // `readout -b` and `readout --hook`: open behind the document being
+                // read. `readout plan.md#risks`: open at the section.
+                open(URL(fileURLWithPath: request.path), anchor: request.anchor, mode: request.background ? .background : .request)
                 if request.background { SmokeTest.noteBackgroundRequest(request.path) }
             }
         }
@@ -88,9 +89,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     /// first plan) is watched from now on.
     func applicationDidBecomeActive(_ notification: Notification) { WorkspaceIndex.shared.refresh() }
 
+    /// A click on the Dock icon with no window showing: the last minimized
+    /// window comes back; the welcome window only when there is none.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if !flag { showWelcome(nil) }
-        return true
+        guard !flag else { return true }
+        if let minimized = NSApp.orderedWindows.first(where: { $0.isMiniaturized })
+            ?? NSApp.windows.first(where: { $0.isMiniaturized }) {
+            minimized.deminiaturize(nil)
+        } else {
+            showWelcome(nil)
+        }
+        return false
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -116,14 +125,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     func open(_ url: URL, anchor: String? = nil, mode: OpenMode = .request) {
-        let url = url.standardizedFileURL
+        var url = url.standardizedFileURL
         var isDir: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
-              WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else {
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else {
             NSSound.beep()
             return
         }
-        NSDocumentController.shared.noteNewRecentDocumentURL(url)
+        // A folder (`readout DIR`, one dropped on the Dock icon): its newest Markdown file.
+        if isDir.boolValue {
+            guard let newest = Self.newestMarkdown(in: url) else {
+                NSSound.beep()
+                return
+            }
+            url = newest
+        }
+        guard WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else {
+            NSSound.beep()
+            return
+        }
+        // Open Recent and the Dock menu list a document once its window has
+        // been in front (ReaderWindowController.windowDidBecomeKey), not every
+        // file an agent opened in the background.
         // Keyed by the real path: the same file reached through a symlink, or
         // reported by FSEvents under /private, is the same window.
         let key = WorkspaceIndex.realPath(url.path)
@@ -176,6 +198,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     /// that file, so opening the link again finds it and opening the old target
     /// does not. When another window already shows the new file, that one keeps
     /// the key, and this one stays open in `displaced` until it closes.
+    /// The most recently modified Markdown file directly in `folder`.
+    static func newestMarkdown(in folder: URL) -> URL? {
+        let keys: [URLResourceKey] = [.contentModificationDateKey, .isRegularFileKey]
+        let items = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles])) ?? []
+        return items.filter { WorkspaceIndex.markdownExtensions.contains($0.pathExtension.lowercased()) }
+            .compactMap { u -> (URL, Date)? in
+                guard let v = try? u.resourceValues(forKeys: Set(keys)), v.isRegularFile == true else { return nil }
+                return (u, v.contentModificationDate ?? .distantPast)
+            }
+            .max { $0.1 < $1.1 }?.0
+    }
+
     private func rekey(_ controller: ReaderWindowController) {
         let key = WorkspaceIndex.realPath(controller.url.path)
         guard windows[key] !== controller else { return }
@@ -259,7 +293,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             let w = NSWindow(contentViewController: host)
             w.styleMask = [.titled, .closable, .fullSizeContentView]
             w.titlebarAppearsTransparent = true
+            // Named for VoiceOver and Mission Control; Window ▸ Welcome is its menu item.
+            w.title = NSLocalizedString("Welcome", comment: "Window title")
             w.titleVisibility = .hidden
+            w.isExcludedFromWindowsMenu = true
+            // A fixed panel: never a tab, nothing to minimize or zoom.
+            w.tabbingMode = .disallowed
+            w.standardWindowButton(.miniaturizeButton)?.isHidden = true
+            w.standardWindowButton(.zoomButton)?.isHidden = true
             w.isMovableByWindowBackground = true
             w.isReleasedWhenClosed = false
             w.setContentSize(NSSize(width: 460, height: WelcomeView.height))
@@ -276,6 +317,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             let w = NSWindow(contentViewController: host)
             w.title = NSLocalizedString("Settings", comment: "Window title")
             w.styleMask = [.titled, .closable]
+            // Never a tab of a reader window ("Prefer tabs: Always").
+            w.tabbingMode = .disallowed
             w.isReleasedWhenClosed = false
             w.center()
             settingsWindow = w
@@ -311,9 +354,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         if let url = pendingUpdateURL { NSWorkspace.shared.open(url) }
     }
 
-    func validateMenuItem(_ item: NSMenuItem) -> Bool {
-        if item.action == #selector(openLatest(_:)) { return true }
-        return true
+    /// File ▸ Close All (⌥⌘W, the alternate of Close).
+    @objc func closeAll(_ sender: Any?) {
+        for w in NSApp.windows where (w.isVisible || w.isMiniaturized) && w.styleMask.contains(.closable) { w.performClose(sender) }
+    }
+
+    /// Help ▸ Readout Help: the keyboard shortcuts bundled with the app, in
+    /// Readout itself, in the reader's language.
+    @objc func openHelp(_ sender: Any?) {
+        let name = ReaderChrome.helpFileName(preferredLanguages: Bundle.main.preferredLocalizations)
+        guard let url = Bundle.main.resourceURL?.appendingPathComponent("Help/\(name)") else { return NSSound.beep() }
+        open(url)
     }
 }
 

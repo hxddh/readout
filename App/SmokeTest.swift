@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import WebKit
 
 /// Read-only state export used by CI (tools/smoke-run.py). Enabled only when
@@ -107,6 +108,11 @@ enum SmokeTest {
             await capture(webView, window: controller.window, to: out, name: "2-after-edit")
             _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
             try? await Task.sleep(for: .seconds(1))
+            // The window alone, for the README: light, the edited document from the top, its changes marked.
+            windowShot(controller.window, out, "window-light")
+            // The next-change button's image as drawn in an active window (the
+            // CI runner's windows are inactive, which greys toolbar items).
+            badgeShot(out)
             // Open what changed in the edited table (the edit mark's action).
             _ = try? await webView.evaluateJavaScript("(() => { const t = document.querySelector('.blk.k-table.m-modified'); return t ? window.readout.toggleDiff(+t.dataset.slot) : false; })()")
             try? await Task.sleep(for: .milliseconds(300))
@@ -119,6 +125,9 @@ enum SmokeTest {
             _ = try? await webView.evaluateJavaScript("(() => { const m = document.querySelector('.mermaid-block'); if (m) m.scrollIntoView({block: 'center'}); return 1; })()")
             try? await Task.sleep(for: .seconds(2.5))
             await capture(webView, window: controller.window, to: out, name: "4-dark")
+            _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
+            try? await Task.sleep(for: .seconds(1))
+            windowShot(controller.window, out, "window-dark")
             NSApp.appearance = nil
             let app = NSApp.delegate as? AppDelegate
             // Open a second file while running: the warm open-to-first-paint path.
@@ -195,22 +204,53 @@ enum SmokeTest {
             await liveUpdates(app: app, out: out)
             await backgroundOpens(out: out)
             await findModeSwitches(controller: controller, out: out)
-            if let edit = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") })?.submenu {
-                let items = edit.items.compactMap { i in i.action.map { NSStringFromSelector($0) + (i.keyEquivalent.isEmpty ? "" : " " + i.keyEquivalent) } }
-                if let data = try? JSONSerialization.data(withJSONObject: ["edit_menu": items], options: [.prettyPrinted, .sortedKeys]) {
-                    try? data.write(to: out.appendingPathComponent("menus.json"))
-                }
-            }
+            writeMenus(out)
             app?.showSettings(nil)
             try? await Task.sleep(for: .seconds(1.5))
             screen(out, "5-settings")
-            NSApp.keyWindow?.close()
+            let settingsWindow = NSApp.windows.first { $0.contentViewController is NSHostingController<SettingsView> }
+            var aux: [String: Any] = ["settings_tabbing_disallowed": settingsWindow?.tabbingMode == .disallowed]
+            settingsWindow?.close()
             app?.showWelcome(nil)
             try? await Task.sleep(for: .seconds(1.5))
             screen(out, "6-welcome")
+            if let welcome = NSApp.windows.first(where: { $0.contentViewController is NSHostingController<WelcomeView> }) {
+                aux["welcome_tabbing_disallowed"] = welcome.tabbingMode == .disallowed
+                aux["welcome_minimize_hidden"] = welcome.standardWindowButton(.miniaturizeButton)?.isHidden ?? false
+                aux["welcome_zoom_hidden"] = welcome.standardWindowButton(.zoomButton)?.isHidden ?? false
+                aux["welcome_title"] = welcome.title
+                aux["welcome_in_window_menu"] = !welcome.isExcludedFromWindowsMenu
+            }
+            write(aux, to: out, "aux-windows.json")
             writeTimings(out)
             NSApp.terminate(nil)
         }
+    }
+
+    /// The whole menu bar: every item's title, action, key and modifiers,
+    /// submenus nested (menus.json), and the Edit menu's actions as before.
+    private static func writeMenus(_ out: URL) {
+        func modifiers(_ m: NSEvent.ModifierFlags) -> String {
+            [(NSEvent.ModifierFlags.control, "⌃"), (.option, "⌥"), (.shift, "⇧"), (.command, "⌘")]
+                .filter { m.contains($0.0) }.map { $0.1 }.joined()
+        }
+        func tree(_ menu: NSMenu) -> [[String: Any]] {
+            menu.items.map { i -> [String: Any] in
+                if i.isSeparatorItem { return ["separator": true] }
+                var e: [String: Any] = ["title": i.title]
+                if let a = i.action { e["action"] = NSStringFromSelector(a) }
+                if !i.keyEquivalent.isEmpty { e["key"] = modifiers(i.keyEquivalentModifierMask) + i.keyEquivalent }
+                if i.isAlternate { e["alternate"] = true }
+                if i.isHidden { e["hidden"] = true }
+                if let sub = i.submenu { e["items"] = tree(sub) }
+                return e
+            }
+        }
+        var json: [String: Any] = ["menus": NSApp.mainMenu.map(tree) ?? []]
+        if let edit = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") })?.submenu {
+            json["edit_menu"] = edit.items.compactMap { i in i.action.map { NSStringFromSelector($0) + (i.keyEquivalent.isEmpty ? "" : " " + i.keyEquivalent) } }
+        }
+        write(json, to: out, "menus.json")
     }
 
     private static func write(_ json: [String: Any], to dir: URL, _ name: String) {
@@ -287,6 +327,8 @@ enum SmokeTest {
                 "subtitle": reader.window?.subtitle ?? "", "status": reader.model.status ?? "", "unread": reader.model.unread,
                 "toolbar": items.map(\.itemIdentifier.rawValue),
                 "search_width": search.map { Double($0.preferredWidthForSearchField) } ?? -1,
+                // What the field is drawn at (macOS 26 grew it past the preferred width).
+                "search_field_width": search.map { Double($0.searchField.frame.width) } ?? -1,
                 "tabbing_automatic": reader.window?.tabbingMode == .automatic,
                 "tab_bar_visible": reader.window?.tabGroup?.isTabBarVisible ?? false,
                 "folder": reader.url.deletingLastPathComponent().lastPathComponent,
@@ -499,7 +541,17 @@ enum SmokeTest {
                 let deadline = Date().addingTimeInterval(10)
                 while reader.model.status == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
                 try? await Task.sleep(for: .milliseconds(200))
-                result["unreadable"] = chrome(reader)
+                var entry = chrome(reader)
+                // The page says why in its empty state, not a blank page.
+                let readerWeb = reader.window?.contentView?.firstDescendant(ofType: WKWebView.self)
+                for _ in 0..<40 {
+                    if let text = (try? await readerWeb?.evaluateJavaScript("document.getElementById('ro-empty')?.textContent ?? ''")) as? String, !text.isEmpty {
+                        entry["page_empty_text"] = text
+                        break
+                    }
+                    try? await Task.sleep(for: .milliseconds(100))
+                }
+                result["unreadable"] = entry
             } else {
                 result["unreadable"] = ["error": "no window"]
             }
@@ -553,7 +605,9 @@ enum SmokeTest {
         try? await Task.sleep(for: .seconds(1))
         var json: [String: Any] = ["requests": backgroundRequests.map { URL(fileURLWithPath: $0).lastPathComponent },
                                    "reading_before": before, "reading_after": reading(),
-                                   "opened": NSApp.windows.contains { $0.title == name }]
+                                   "opened": NSApp.windows.contains { $0.title == name },
+                                   // Opened behind and never in front: not in Open Recent.
+                                   "in_recents": NSDocumentController.shared.recentDocumentURLs.contains { $0.lastPathComponent == name }]
         // Opened as a tab: with the tab bar showing, the subtitle leaves the folder to the tab's tooltip.
         if let reader = (NSApp.delegate as? AppDelegate)?.reader(for: URL(fileURLWithPath: file)) { json["chrome"] = chrome(reader) }
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
@@ -616,6 +670,36 @@ enum SmokeTest {
         try? Data().write(to: dir.appendingPathComponent(name))
     }
 
+    private static func badgeShot(_ out: URL) {
+        for (name, appearance) in [("badge-light", NSAppearance.Name.aqua), ("badge-dark", .darkAqua)] {
+            NSAppearance(named: appearance)?.performAsCurrentDrawingAppearance {
+                let image = ReaderWindowController.changeImage(count: 5)
+                let scale: CGFloat = 4
+                guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(image.size.width * scale), pixelsHigh: Int(image.size.height * scale),
+                                                 bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                                 colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return }
+                rep.size = image.size
+                NSGraphicsContext.saveGraphicsState()
+                NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+                (appearance == .aqua ? NSColor.white : NSColor(white: 0.12, alpha: 1)).setFill()
+                NSRect(origin: .zero, size: image.size).fill()
+                image.draw(in: NSRect(origin: .zero, size: image.size))
+                NSGraphicsContext.restoreGraphicsState()
+                try? rep.representation(using: .png, properties: [:])?.write(to: out.appendingPathComponent("\(name).png"))
+            }
+        }
+    }
+
+    /// One window, without its shadow: `screencapture -l` (no desktop around it).
+    private static func windowShot(_ window: NSWindow?, _ dir: URL, _ name: String) {
+        guard let window else { return }
+        let shot = Process()
+        shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+        shot.arguments = ["-x", "-o", "-l", String(window.windowNumber), dir.appendingPathComponent("\(name).png").path]
+        try? shot.run()
+        shot.waitUntilExit()
+    }
+
     private static func screen(_ dir: URL, _ name: String) {
         let shot = Process()
         shot.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
@@ -635,6 +719,10 @@ enum SmokeTest {
               deletions: document.querySelectorAll('.del-mark').length,
               anchorShift: window.__smoke ? (document.querySelector('.blk[data-slot="' + window.__smoke.slot + '"]').getBoundingClientRect().top - window.__smoke.top) : null,
               theme: document.documentElement.dataset.theme,
+              firstTop: (() => { const b = document.querySelector('.blk'); return b ? Math.round(b.getBoundingClientRect().top) : null; })(),
+              scrollY: Math.round(scrollY),
+              innerHeight,
+              topInsetVar: getComputedStyle(document.documentElement).getPropertyValue('--top-inset'),
               title: document.title,
               early: document.body.innerText.includes('EARLY-EDIT-OK'),
               diffDel: [...document.querySelectorAll('.wd-panel del')].map(e => e.textContent),
@@ -655,5 +743,15 @@ enum SmokeTest {
             let info = "frame=\(NSStringFromRect(window.frame)) title=\(window.title) subtitle=\(window.subtitle)"
             try? info.write(to: dir.appendingPathComponent("\(name).window.txt"), atomically: true, encoding: .utf8)
         }
+    }
+}
+
+extension NSView {
+    /// The first view of `type` in this view's subtree (the smoke test finds a window's web view).
+    func firstDescendant<T: NSView>(ofType type: T.Type) -> T? {
+        for sub in subviews {
+            if let match = sub as? T ?? sub.firstDescendant(ofType: type) { return match }
+        }
+        return nil
     }
 }

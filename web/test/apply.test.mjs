@@ -6,6 +6,7 @@ import { chromium, webkit, firefox } from 'playwright';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import { collectPageErrors, benign } from './pageerrors.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
 const server = http.createServer((req, res) => {
@@ -28,7 +29,7 @@ const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROM
 const browser = await engines[engineName].launch(launchOpts);
 const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
 const errors = [];
-page.on('pageerror', e => errors.push(String(e)));
+collectPageErrors(page, errors);
 await page.addInitScript(() => {
   window.__msgs = [];
   window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -41,6 +42,28 @@ let failures = 0;
 function check(name, cond, extra = '') {
   if (cond) console.log(`ok: ${name}`);
   else { console.log(`FAIL: ${name} ${extra}`); failures++; }
+}
+
+// Waits until the page has stopped moving: the reading position is the same
+// two frames running (resize compensations, lazy work and the observers'
+// notifications have run), instead of a fixed time a loaded machine overruns.
+async function settled() {
+  await until(() => new Promise(resolve => {
+    const at = () => JSON.stringify([document.scrollingElement.scrollTop, document.scrollingElement.scrollHeight]);
+    const a = at();
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve(at() === a)));
+  }));
+}
+
+// Polls `fn` in the page (with `arg`) until it returns true, or `ms` pass.
+// (page.waitForFunction evaluates a string, which the page's CSP refuses.)
+async function until(fn, arg, ms = 5000) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (await page.evaluate(fn, arg)) return true;
+    await page.waitForTimeout(25);
+  }
+  return false;
 }
 
 // Build a reset patch with N paragraph blocks.
@@ -414,10 +437,13 @@ await page.evaluate(p => window.readout.apply(p), {
 await page.evaluate(() => window.readout.setAppearance({ strings: {
   railChange: '未读变更 %d / %d：%@', railAdded: '新增', railEdited: '修改', railRemoved: '删除',
 } }));
-await page.waitForTimeout(300);
+// The rail redraws at most every 250 ms, then in a frame: wait for the
+// labels rather than a fixed time a loaded machine can overrun.
+const wantLabels = ['未读变更 1 / 2：新增', '未读变更 2 / 2：修改'];
+await until(w => JSON.stringify([...document.querySelectorAll('#ro-rail button')].map(b => b.getAttribute('aria-label'))) === JSON.stringify(w), wantLabels);
 const railLabels = await page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => b.getAttribute('aria-label')));
 check('rail labels use the localized template',
-  JSON.stringify(railLabels) === JSON.stringify(['未读变更 1 / 2：新增', '未读变更 2 / 2：修改']), JSON.stringify(railLabels));
+  JSON.stringify(railLabels) === JSON.stringify(wantLabels), JSON.stringify(railLabels));
 
 // The first highlight with a grammar pays for compiling its patterns, and
 // Shiki's 500 ms per-line guard may cut it short. If that cold highlight was
@@ -581,7 +607,7 @@ check('rail labels use the localized template',
   await page.evaluate(p => window.readout.apply(p), { version: 120, reset: true, rewrite: false,
     ops: [{ op: 'insert', slot: 1601, after: 0, kind: 'html', html: '<details><summary>More</summary><div class="code-block" data-lang="js"><pre><code>const answer = 42;</code></pre></div></details>' }],
     marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
-  await page.waitForTimeout(300);
+  await settled();   // the observers have seen the closed block
   const before = await page.evaluate(() => document.querySelector('.blk[data-slot="1601"] .code-block').dataset.hl);
   await page.evaluate(() => { document.querySelector('.blk[data-slot="1601"] details').open = true; });
   let after = '';
@@ -693,7 +719,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
 {
   await page.evaluate(p => window.readout.apply(p), fixReset(100));
   await toTop(80);
-  await page.waitForTimeout(300);
+  await settled();
   const a0 = await page.evaluate(() => window.readout.captureAnchor());
   await page.evaluate(() => window.readout.setAppearance({ fontSize: 20 }));
   const sync = await page.evaluate(() => window.readout.captureAnchor());
@@ -1303,7 +1329,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
 // system's appearance, print light, and the attribute is left absent.
 {
   const sys = await browser.newPage({ viewport: { width: 900, height: 700 }, colorScheme: 'dark' });
-  sys.on('pageerror', e => errors.push(String(e)));
+  collectPageErrors(sys, errors);
   await sys.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -1337,7 +1363,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
 // shows from the top, not from its end.
 {
   const short = await browser.newPage({ viewport: { width: 900, height: 160 } });
-  short.on('pageerror', e => errors.push(String(e)));
+  collectPageErrors(short, errors);
   await short.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -1457,6 +1483,10 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   check('a held place survives the page compensating for a block above, then puts the reader back', compensated >= 290 && Math.abs(shift) <= 1, JSON.stringify({ compensated, shift }));
 }
 
+// Every suite shares the one filter: WebKit's ResizeObserver loop notice is
+// not a page error (it decided whether a run failed by how frames fell).
+check('a ResizeObserver loop notice is not a page error, anything else is',
+  benign('ResizeObserver loop completed with undelivered notifications.') && !benign('TypeError: undefined is not an object'));
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
