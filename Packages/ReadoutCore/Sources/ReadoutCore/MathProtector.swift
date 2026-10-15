@@ -31,7 +31,9 @@ struct MathProtector {
     mutating func protect(_ source: String) -> String {
         var out: [String] = []
         var fences = FenceTracker()
-        let lines = source.split(separator: "\n", omittingEmptySubsequences: false)
+        // Split on bytes (the source has LF line endings): a Character split
+        // runs grapheme breaking over every line.
+        let lines = FastBytes.lineSlices(source)
         var i = 0
         while i < lines.count {
             let line = lines[i]
