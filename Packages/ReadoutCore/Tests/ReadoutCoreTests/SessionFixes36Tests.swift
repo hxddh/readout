@@ -213,6 +213,27 @@ import Testing
         #expect(t.baseline.map(\.text) == ["One.", "Two.", "Three.", "Four.", "Five."])
     }
 
+    /// A task ticked (not yet read) and then removed: the removal shows the
+    /// task as it was read, unticked, live and after a relaunch.
+    @Test func removedTaskShowsTheCheckboxAsRead() throws {
+        let s = DocumentSession()
+        _ = s.load(parse("# T\n\n- [ ] write the test\n\nOther text.\n\nMore text.\n"))
+        _ = s.update(parse("# T\n\n- [x] write the test\n\nOther text.\n\nMore text.\n"))
+        #expect(s.marks.values.map(\.self) == [.state])
+        let p = try #require(s.update(parse("# T\n\nOther text.\n\nMore text.\n")))
+        #expect(p.deletions.map(\.preview) == ["- [ ] write the test"])
+        let reopened = DocumentSession()
+        let o = reopened.load(parse("# T\n\nOther text.\n\nMore text.\n"), baseline: s.baseline)
+        #expect(o.deletions.map(\.preview) == ["- [ ] write the test"])
+        // Ticked, unread, then edited: compared with the task as read.
+        let t = DocumentSession()
+        _ = t.load(parse("# T\n\n- [ ] write the test\n\nOther text.\n"))
+        _ = t.update(parse("# T\n\n- [x] write the test\n\nOther text.\n"))
+        let q = try #require(t.update(parse("# T\n\n- [x] write the tests\n\nOther text.\n")))
+        #expect(q.marks.first?.kind == .modified)
+        #expect(q.marks.first?.diff == "- [<del> </del><ins>x</ins>] write the <del>test</del><ins>tests</ins>")
+    }
+
     /// Baselines saved by 3.5 (no `source`) still load and mark as before.
     @Test func olderBaselinesStillLoad() throws {
         let v1 = "# T\n\n1. First step of the plan.\n2. Second step of the plan.\n\nClosing words.\n"

@@ -440,16 +440,23 @@ struct FenceTracker {
 
     /// Where the content starts after `depth` block quote markers (each up to
     /// 3 spaces, `>` and one optional space), past `outer` columns of list
-    /// item indentation; nil when the line has fewer markers (or is blank).
+    /// item indentation (tabs to the next multiple of 4; what a tab gives past
+    /// them counts as spaces before the first `>`); nil when the line has
+    /// fewer markers (or is blank).
     private static func afterQuotes(_ u: UnsafeBufferPointer<UInt8>, depth: Int, outer: Int) -> Int? {
         let n = u.count
-        var k = 0
-        while k < outer, k < n, u[k] == space { k += 1 }
-        if k < outer { return nil }
+        var k = 0, column = 0
+        while column < outer, k < n, u[k] == space || u[k] == tab {
+            column = u[k] == tab ? (column / 4 + 1) * 4 : column + 1
+            k += 1
+        }
+        if column < outer { return nil }
+        var extra = column - outer   // columns of a tab past the item's indentation
         for _ in 0..<depth {
             var s = 0
             while s < 4, k + s < n, u[k + s] == space { s += 1 }
-            guard s <= 3, k + s < n, u[k + s] == 0x3E else { return nil }
+            guard s + extra <= 3, k + s < n, u[k + s] == 0x3E else { return nil }
+            extra = 0
             k += s + 1
             if k < n, u[k] == space { k += 1 }
         }

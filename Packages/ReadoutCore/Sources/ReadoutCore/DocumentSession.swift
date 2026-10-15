@@ -255,7 +255,8 @@ public final class DocumentSession {
             case let .modified(o):
                 if marks[slot] != .inserted {
                     // Compared with the text as last read: the first change since then keeps it.
-                    if marks[slot] != .modified {
+                    // (A checkbox change still unread already recorded the version read.)
+                    if marks[slot] != .modified && marks[slot] != .state {
                         readText[slot] = oldTexts[o]
                         readKey[slot] = oldKeys[o]
                         if oldNormalized(o) { readNormalized.insert(slot) } else { readNormalized.remove(slot) }
@@ -269,7 +270,9 @@ public final class DocumentSession {
                         // but a checkbox that differs from what was read is still news.
                         let readState = readTasks[slot] ?? oldTasks(o)
                         marks[slot] = readState.map { $0 != blocks[n].taskState } == true ? .state : nil
-                        readText[slot] = nil; readKey[slot] = nil; diffs[slot] = nil
+                        diffs[slot] = nil
+                        // A state mark keeps the version read (its source shows the checkboxes as read).
+                        if marks[slot] != .state { readText[slot] = nil; readKey[slot] = nil }
                         // A state mark keeps the checkboxes as read, so unticking clears it.
                         readTasks[slot] = marks[slot] == .state ? readState : nil
                     } else if let read = readText[slot] ?? nil {
@@ -287,6 +290,10 @@ public final class DocumentSession {
                 if let read = oldTasks(o), read != blocks[n].taskState, marks[slot] == nil {
                     marks[slot] = .state
                     readTasks[slot] = read   // the checkboxes as read
+                    // And the block as read, should it be removed before this is read.
+                    readText[slot] = oldTexts[o]
+                    readKey[slot] = oldKeys[o]
+                    if oldNormalized(o) { readNormalized.insert(slot) } else { readNormalized.remove(slot) }
                 } else if marks[slot] == .state, let read = readTasks[slot], read == blocks[n].taskState {
                     // Ticked and unticked again before it was read: nothing new.
                     marks[slot] = nil; readTasks[slot] = nil
@@ -320,14 +327,14 @@ public final class DocumentSession {
             // An unread edit is never shown as what was removed: when only the start of
             // the read text is known (an older baseline), that start is shown, marked as cut.
             let lastRead: String? = oldSlotForIndex(o).flatMap { slot -> String? in
-                guard marks[slot] == .modified else { return nil }
+                guard marks[slot] == .modified || marks[slot] == .state else { return nil }
                 if let text = readText[slot] ?? nil { return text }
                 return readKey[slot].map { $0.text + " …" }
             }
             // The block as last read: before an unread edit, with the checkboxes as read.
             var removedKey = oldKeys[o]
             if let s = oldSlotForIndex(o) {
-                if marks[s] == .modified, let k = readKey[s] { removedKey = k }
+                if marks[s] == .modified || marks[s] == .state, let k = readKey[s] { removedKey = k }
                 if marks[s] == .modified || marks[s] == .state, let t = readTasks[s] { removedKey = removedKey.with(taskState: t) }
                 marks[s] = nil
             }
@@ -394,9 +401,9 @@ public final class DocumentSession {
             }.filter { !$0.value.isEmpty }
         }
         marks = marks.filter { newSlots.contains($0.key) }
-        readText = readText.filter { marks[$0.key] == .modified }
-        readKey = readKey.filter { marks[$0.key] == .modified }
-        readNormalized = readNormalized.filter { marks[$0] == .modified }
+        readText = readText.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
+        readKey = readKey.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
+        readNormalized = readNormalized.filter { marks[$0] == .modified || marks[$0] == .state }
         readTasks = readTasks.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
         diffs = diffs.filter { marks[$0.key] == .modified }
     }
@@ -422,7 +429,8 @@ public final class DocumentSession {
                 let read = readKey[b.slot] ?? keys[i]
                 out.append(readTasks[b.slot].map { read.with(taskState: $0) } ?? read)
             case .state?:
-                out.append(readTasks[b.slot].map { keys[i].with(taskState: $0) } ?? keys[i])
+                let read = readKey[b.slot] ?? keys[i]
+                out.append(readTasks[b.slot].map { read.with(taskState: $0) } ?? read)
             case nil:
                 out.append(keys[i])
             }

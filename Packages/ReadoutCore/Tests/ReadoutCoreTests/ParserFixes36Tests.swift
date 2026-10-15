@@ -42,6 +42,13 @@ import Testing
         #expect(h.contains("cp $SRC/$NAME.md $DEST/"), "\(h)")
     }
 
+    /// The list indentation before a quoted fence's lines may be a tab.
+    @Test func quotedFenceInListItemWithTabIndentation() {
+        let h = html("- > ```sh\n\t> cp $SRC/$NAME.md $DEST/\n\t> ```\n")
+        #expect(h.contains("cp $SRC/$NAME.md $DEST/"), "\(h)")
+        expectIncrementalMatchesFull("- > ```sh\n\t> cp $SRC/$NAME\n\t>\n\t> # not a heading\n\t> ```\n\n<div>\n\nafter\n")
+    }
+
     @Test func dollarsInFenceInQuotedListItemStayCode() {
         let h = html("> - ```bash\n>   cp $SRC/$NAME.md $DEST/\n>   ```\n")
         #expect(h.contains("cp $SRC/$NAME.md $DEST/"), "\(h)")
