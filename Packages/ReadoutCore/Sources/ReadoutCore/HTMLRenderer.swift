@@ -9,6 +9,9 @@ struct HTMLRenderer {
     var sourceLines: [Substring] = []
     /// Bare URLs become links, except inside a link (GFM never nests them).
     var autolinks = true
+    /// What a soft line break renders as: a line break in the HTML source
+    /// (a space on the page), or `<br>` in a paragraph of `Key: value` lines.
+    var softBreak = "\n"
 
     func isBlank(_ line: Int) -> Bool {
         guard line >= 1, line <= sourceLines.count else { return false }
@@ -57,7 +60,7 @@ struct HTMLRenderer {
         case let img as Image:
             return image(img)
         case is SoftBreak:
-            return "\n"
+            return softBreak
         case is LineBreak:
             return "<br>"
         case let h as InlineHTML:
@@ -130,11 +133,69 @@ struct HTMLRenderer {
             }
             let href = url.hasPrefix("www.") ? "http://" + url
                 : (url.contains("@") && !url.contains("://") ? "mailto:" + url : url)
-            out += "<a href=\"\(HTML.escape(href))\">\(HTML.escape(url))</a>"
+            out += "<a href=\"\(HTML.escape(href))\">\(Self.breakable(url))</a>"
             last = end
         }
         out += HTML.escape(ns.substring(from: last))
         return out
+    }
+
+    /// A long URL's visible text with break opportunities (`<wbr>`) after
+    /// `/`, `?`, `&` and `=` past the scheme, so it wraps at its parts
+    /// instead of overflowing or breaking anywhere. The link itself is unchanged.
+    static func breakable(_ url: String) -> String {
+        guard url.count > 40 else { return HTML.escape(url) }
+        var out = ""
+        let start = url.range(of: "://")?.upperBound ?? url.startIndex
+        var i = url.startIndex
+        while i < url.endIndex {
+            let c = url[i]
+            out += HTML.escape(String(c))
+            let next = url.index(after: i)
+            if i >= start, next < url.endIndex, c == "/" || c == "?" || c == "&" || c == "=" { out += "<wbr>" }
+            i = next
+        }
+        return out
+    }
+
+    /// Every line of the paragraph (at least two) reads `Key: value`
+    /// (`Run: make test` / `Expected: ok`, `状态：完成`, `**Key:** value`): a
+    /// short label, then an ASCII colon and white space, or a fullwidth colon.
+    static func isKeyValueLines(_ p: Paragraph) -> Bool {
+        // One source line: no line break (cheap, before walking the inlines).
+        if let r = p.range, r.upperBound.line <= r.lowerBound.line { return false }
+        guard p.children.contains(where: { $0 is SoftBreak || $0 is LineBreak }) else { return false }
+        var lines = [""]
+        for child in p.children {
+            if child is SoftBreak || child is LineBreak { lines.append("") } else { lines[lines.count - 1] += MarkdownParser.headingText(child) }
+        }
+        return lines.count >= 2 && lines.allSatisfy(isKeyValueLine)
+    }
+
+    static func isKeyValueLine(_ line: String) -> Bool {
+        let t = line.trimmingCharacters(in: .whitespaces)
+        guard let colon = t.firstIndex(where: { $0 == ":" || $0 == "：" }) else { return false }
+        let key = t[..<colon].trimmingCharacters(in: .whitespaces)
+        guard !key.isEmpty, key.count <= 24, key.split(separator: " ").count <= 4,
+              key.contains(where: { $0.isLetter || $0.isNumber }),
+              !key.contains(where: { ",;!?。，；！？、".contains($0) }), !key.contains(". ") else { return false }
+        if t[colon] == "：" { return true }
+        let after = t.index(after: colon)
+        return after == t.endIndex || t[after] == " " || t[after] == "\t"
+    }
+
+    /// The paragraph holds one image and nothing else (a link around it allowed).
+    static func isImageOnly(_ p: Paragraph) -> Bool {
+        func content(_ m: Markup) -> [Markup] {
+            m.children.filter { !($0 is SoftBreak) && !(($0 as? Text)?.string.allSatisfy(\.isWhitespace) ?? false) }
+        }
+        guard p.childCount <= 3 else { return false }   // an image, and white space or breaks around it
+        let kids = content(p)
+        guard kids.count == 1 else { return false }
+        if kids[0] is Image { return true }
+        guard let link = kids[0] as? Link else { return false }
+        let inner = content(link)
+        return inner.count == 1 && inner[0] is Image
     }
 
     // MARK: Blocks
@@ -142,8 +203,11 @@ struct HTMLRenderer {
     func block(_ node: Markup, tight: Bool = false) -> String {
         switch node {
         case let p as Paragraph:
-            let body = inline(p)
-            return tight ? body : "<p>\(body)</p>"
+            var r = self
+            if Self.isKeyValueLines(p) { r.softBreak = "<br>" }
+            let body = r.inline(p)
+            if tight { return body }
+            return Self.isImageOnly(p) ? "<p class=\"img-only\">\(body)</p>" : "<p>\(body)</p>"
         case let h as Heading:
             return "<h\(h.level)>\(inline(h))</h\(h.level)>"
         case let q as BlockQuote:
@@ -195,6 +259,8 @@ struct HTMLRenderer {
         let lang = (language ?? "").split(separator: " ").first.map(String.init) ?? ""
         var code = code
         if code.hasSuffix("\n") { code.removeLast() }
+        // Terminal colours pasted from a shell (`ESC[1;32m`) are not text.
+        if code.utf8.contains(0x1B) { code = code.replacingOccurrences(of: "\u{1B}\\[[0-9;:]*m", with: "", options: .regularExpression) }
         let langAttr = lang.isEmpty ? "" : " data-lang=\"\(HTML.escape(lang.lowercased()))\""
         return "<div class=\"code-block\"\(langAttr)><pre><code>\(HTML.escape(code))</code></pre></div>"
     }
@@ -210,7 +276,7 @@ struct HTMLRenderer {
             }
         }
         // Columns without an alignment whose body cells are all numbers (or
-        // empty, at least one a number): class "num", aligned right by the page.
+        // empty or a placeholder, at least one a number): class "num", aligned right by the page.
         var numeric = Set<Int>()
         let columns = max(aligns.count, t.head.childCount)
         for i in 0..<columns where i >= aligns.count || aligns[i] == nil {
@@ -218,7 +284,7 @@ struct HTMLRenderer {
             for row in t.body.rows {
                 guard let c = row.child(at: i) as? Table.Cell else { continue }
                 let text = c.plainText.trimmingCharacters(in: .whitespaces)
-                if text.isEmpty { continue }
+                if text.isEmpty || Self.isPlaceholder(text) { continue }
                 if Self.isNumber(text) { sawNumber = true } else { allNumbers = false; break }
             }
             if sawNumber && allNumbers { numeric.insert(i) }
@@ -253,6 +319,12 @@ struct HTMLRenderer {
     /// `10.0.0.1`, `1.`) are not numbers.
     private static let numberPattern = try! NSRegularExpression(
         pattern: #"^[-+−$€£¥~≈<>]?\s*(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)\s*(?:%|ms|[µμ]s|s|x|×|[KMGT]i?B|k|M)?\*?$"#)
+
+    /// What a table puts where a number is missing: `-`, `–`, `—`, `N/A`, `TBD`.
+    static func isPlaceholder(_ text: String) -> Bool {
+        text == "-" || text == "–" || text == "—" || text.caseInsensitiveCompare("N/A") == .orderedSame
+            || text.caseInsensitiveCompare("TBD") == .orderedSame
+    }
 
     static func isNumber(_ text: String) -> Bool {
         guard text.utf8.count <= 40, text.utf8.contains(where: { $0 >= 0x30 && $0 <= 0x39 }) else { return false }

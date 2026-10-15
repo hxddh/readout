@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 572,
    "h": 54,
-   "style": "3d738c40",
+   "style": "b714e3d1",
    "content": "43237f5d",
    "text": "Always collapse if statements per https://rust-l"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 626,
    "h": 54,
-   "style": "3385cac6",
+   "style": "304505b3",
    "content": "c91ce8fe",
    "text": "Always inline format! args when possible per htt"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 681,
    "h": 80,
-   "style": "a5c21ef5",
+   "style": "4521b0ab",
    "content": "8f298e06",
    "text": "Use method references over closures when possibl"
   },

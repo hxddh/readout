@@ -43,10 +43,11 @@ struct MathProtector {
             // Indented code is left alone: 4+ columns past the content of
             // the list item the line is in, and not continuing a paragraph.
             if fences.indentedCode { out.append(String(line)); i += 1; continue }
-            if let block = displayBlock(lines, at: i) {
+            if let block = Self.displayBlock(lines, at: i) {
                 out.append(block.opener + token(block.tex, display: true))
                 for (k, prefix) in block.prefixes.enumerated() {
-                    _ = fences.consume(lines[i + 1 + k])
+                    // The Markdown parser sees paragraph text (a filler) on these lines.
+                    fences.continueParagraph()
                     let isLast = k == block.prefixes.count - 1
                     out.append(prefix + String(MathProtector.filler) + (isLast ? protectLine(block.rest) : ""))
                 }
@@ -68,9 +69,9 @@ struct MathProtector {
     /// lines, which may hold what would otherwise be Markdown (`+ b`).
     /// Returns the opener's prefix, the TeX, the index of the closing line,
     /// each following line's container prefix and the text after the closing `$$`.
-    private func displayBlock(_ lines: [Substring], at i: Int)
+    static func displayBlock<S: StringProtocol>(_ lines: [S], at i: Int)
         -> (opener: String, tex: String, end: Int, prefixes: [String], rest: String)? {
-        guard lines[i].utf8.contains(0x24) /* $ */ else { return nil }
+        guard lines[i].utf8.contains(0x24) /* $ */, i + 1 < lines.count else { return nil }
         let line = String(lines[i])
         guard line.contains("$$") else { return nil }
         let ns = line as NSString
@@ -89,7 +90,7 @@ struct MathProtector {
         var prefixes: [String] = []
         var j = i + 1
         while j < lines.count, j - i <= 500 {
-            var rest = lines[j][...]
+            var rest = Substring(lines[j])
             var taken = ""
             var quotesFound = 0
             for _ in 0..<quotes {
