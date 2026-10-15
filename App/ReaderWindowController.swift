@@ -339,7 +339,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             guard let self else { return }
             self.applyAppearance()
             self.sendKnownImages()
-            self.webView.callEncodingOffMain("apply", self.session.fullPayload(rewrite: false))
+            self.webView.callEncodingOffMain("apply", self.session.fullPayload(rewrite: false).page)
             // The new page starts out of find mode, and switches queued before
             // the crash have run by now: send the state the window is in.
             self.webView.call("findMode", json: self.findModeOn ? "true" : "false")
@@ -386,7 +386,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             self.webView.call("apply", json: Self.emptyPatch)
         }
     }
-    private static let emptyPatch = #"{"version":0,"reset":true,"rewrite":false,"ops":[],"marks":[],"deletions":[],"toc":[],"tasks":{"done":0,"total":0}}"#
+    private static let emptyPatch = #"{"version":0,"reset":true,"rewrite":false,"ops":[],"marks":[],"deletions":[]}"#
 
     private func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?) {
         let patch = self.session.load(result.doc, baseline: record?.baseline)
@@ -404,7 +404,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 self.webView.setAppearance(strings: ReaderStrings.all)
             }
             // A whole document: encoded off the main thread, still delivered before the calls below.
-            self.webView.callEncodingOffMain("apply", patch)
+            self.webView.callEncodingOffMain("apply", patch.page)
             SmokeTest.run(controller: self, webView: self.webView)
             // An agent write that landed mid-load: re-read now that the
             // first patch is applied, so the fresh content wins.
@@ -501,7 +501,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                         self?.followingBeforeEmpty = (value as? Bool) ?? false
                     }
                 }
-                self.webView.call("apply", patch)
+                self.webView.call("apply", patch.page)
                 if let restore { self.restorePlace(restore) }
             }
             self.scheduleSave()
@@ -543,8 +543,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     /// `decoded`: how the content was read (sets the status); nil keeps the status.
     private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded?) {
-        model.toc = patch.toc
-        model.tasks = patch.tasks
+        // Assigned only when changed: each assignment has SwiftUI compare the
+        // whole sidebar again, and most patches leave the outline as it was.
+        if model.toc != patch.toc { model.toc = patch.toc }
+        if model.tasks != patch.tasks { model.tasks = patch.tasks }
         refreshUnread()
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
         // Tabs of same-named files (every agent's plan.md) show the document's
@@ -883,7 +885,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         if let restore { lastAnchor = restore }
         webView.whenReady { [weak self] in
             guard let self else { return }
-            self.webView.callEncodingOffMain("apply", patch)
+            self.webView.callEncodingOffMain("apply", patch.page)
             if let restore { self.restorePlace(restore) }
         }
         scheduleSave()

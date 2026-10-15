@@ -1501,6 +1501,26 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   check('a held place survives the page compensating for a block above, then puts the reader back', compensated >= 290 && Math.abs(shift) <= 1, JSON.stringify({ compensated, shift }));
 }
 
+// The app sends the page only what it reads (RenderPatch.Page): no outline,
+// task counts or title. A whole document and an update without them apply.
+{
+  const n0 = await page.evaluate(() => window.__msgs.filter(m => m.type === 'applied').length);
+  const reset = resetPatch(3, 'page-only');
+  delete reset.toc; delete reset.tasks;
+  reset.version = 300;
+  await page.evaluate(p => window.readout.apply(p), reset);
+  await page.evaluate(p => window.readout.apply(p), {
+    version: 301, reset: false, rewrite: false,
+    ops: [{ op: 'insert', slot: 4, after: 3, html: '<p>page-only 4</p>', kind: 'paragraph', cjk: false }],
+    marks: [{ slot: 4, kind: 'inserted' }], deletions: [],
+  });
+  const texts = await page.evaluate(() => [...document.querySelectorAll('.blk')].map(e => e.textContent.trim()));
+  const applied = await page.evaluate(() => window.__msgs.filter(m => m.type === 'applied').length);
+  check('a patch without outline, task counts and title applies',
+    JSON.stringify(texts) === JSON.stringify(['page-only 1', 'page-only 2', 'page-only 3', 'page-only 4']) && applied - n0 === 2,
+    JSON.stringify({ texts, applied: applied - n0 }));
+}
+
 // Every suite shares the one filter: WebKit's ResizeObserver loop notice is
 // not a page error (it decided whether a run failed by how frames fell).
 check('a ResizeObserver loop notice is not a page error, anything else is',

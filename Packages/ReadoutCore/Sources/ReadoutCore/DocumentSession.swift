@@ -48,6 +48,24 @@ public struct RenderPatch: Codable, Sendable {
     public var toc: [TocEntry]
     public var tasks: TaskStats
     public var title: String?
+
+    /// What the reader page reads of a patch (web/src/reader/patch.js
+    /// `apply`): the same JSON without the outline, task counts and title,
+    /// which only the app's sidebar and title bar use. Every patch carried
+    /// the whole outline (142 KB of a 1 MB document's one-paragraph append).
+    public struct Page: Encodable, Sendable {
+        public let version: Int
+        public let reset: Bool
+        public let rewrite: Bool
+        public let ops: [Op]
+        public let marks: [Mark]
+        public let deletions: [Deletion]
+    }
+
+    /// The patch as sent to the page.
+    public var page: Page {
+        Page(version: version, reset: reset, rewrite: rewrite, ops: ops, marks: marks, deletions: deletions)
+    }
 }
 
 /// Per-open-file state: slot identities, unread change marks and the reading baseline.
@@ -148,7 +166,7 @@ public final class DocumentSession {
             if !d.rewrite {
                 // A baseline saved before sources were kept has only the normalized text.
                 applyMarks(d, oldKeys: persisted, oldSlotForIndex: { _ in nil }, oldTasks: { persisted[$0].taskState },
-                           oldTexts: persisted.map { $0.wholeSource ?? $0.wholeText },
+                           oldTexts: { persisted[$0].wholeSource ?? persisted[$0].wholeText },
                            oldNormalized: { persisted[$0].source == nil })
             }
             rebuildBaseline(keys)
@@ -213,7 +231,7 @@ public final class DocumentSession {
         let oldBlocks = blocks
         let oldKeys = blockKeys ?? oldBlocks.map(BlockKey.init)
         var newBlocks = doc.blocks
-        let newKeys = newBlocks.map(BlockKey.init)
+        let newKeys = Self.keys(newBlocks, reusing: oldBlocks, oldKeys)
         let d = Differ.diff(old: oldKeys, new: newKeys)
         title = doc.title
 
@@ -261,14 +279,14 @@ public final class DocumentSession {
         blocks = newBlocks
         applyMarks(d, oldKeys: oldKeys, oldSlotForIndex: oldSlotForIndex, oldBlocks: oldBlocks,
                    oldTasks: { oldBlocks[$0].taskState },
-                   oldTexts: oldBlocks.map(\.source), oldNormalized: { _ in false })
+                   oldTexts: { oldBlocks[$0].source }, oldNormalized: { _ in false })
         rebuildBaseline(newKeys)
         if ops.isEmpty { return nil }
         return payload(ops: ops, reset: false, rewrite: false)
     }
 
     private func applyMarks(_ d: DiffResult, oldKeys: [BlockKey], oldSlotForIndex: (Int) -> Int?,
-                            oldBlocks: [Block] = [], oldTasks: (Int) -> [Bool]?, oldTexts: [String?],
+                            oldBlocks: [Block] = [], oldTasks: (Int) -> [Bool]?, oldTexts: (Int) -> String?,
                             oldNormalized: (Int) -> Bool) {
         let newSlots = Set(blocks.map(\.slot))
         // One comparison budget for the update: many large edited blocks cost
@@ -284,7 +302,7 @@ public final class DocumentSession {
                     // Compared with the text as last read: the first change since then keeps it.
                     // (A checkbox change still unread already recorded the version read.)
                     if marks[slot] != .modified && marks[slot] != .state {
-                        readText[slot] = oldTexts[o]
+                        readText[slot] = oldTexts(o)
                         readKey[slot] = oldKeys[o]
                         if oldNormalized(o) { readNormalized.insert(slot) } else { readNormalized.remove(slot) }
                         // Unless a checkbox change since reading already recorded them.
@@ -318,7 +336,7 @@ public final class DocumentSession {
                     marks[slot] = .state
                     readTasks[slot] = read   // the checkboxes as read
                     // And the block as read, should it be removed before this is read.
-                    readText[slot] = oldTexts[o]
+                    readText[slot] = oldTexts(o)
                     readKey[slot] = oldKeys[o]
                     if oldNormalized(o) { readNormalized.insert(slot) } else { readNormalized.remove(slot) }
                 } else if marks[slot] == .state, let read = readTasks[slot], read == blocks[n].taskState {
@@ -368,7 +386,7 @@ public final class DocumentSession {
             let after = anchorBefore(o)
             newRemoved.append((after, o, removedKey))
             // Only the start is known for a long block in an older baseline: marked as cut.
-            let preview = Self.bounded(lastRead ?? oldTexts[o] ?? (oldKeys[o].text + " …"))
+            let preview = Self.bounded(lastRead ?? oldTexts(o) ?? (oldKeys[o].text + " …"))
             if var existing = newDeletions[after] {
                 existing.count += 1
                 // Grouped removals keep every block up to a bound; past it the
@@ -513,6 +531,45 @@ public final class DocumentSession {
     }
 
     // MARK: Helpers
+
+    /// The keys of `blocks`: an old block's key where the block is the same
+    /// (most of a document from one version to the next), built only for new
+    /// and changed blocks. A key is built from the fingerprint, kind, text,
+    /// source and checkbox states alone; building one counts the characters
+    /// of a long text, which for every block of a large document costs more
+    /// than the comparison does.
+    static func keys(_ blocks: [Block], reusing old: [Block], _ oldKeys: [BlockKey]) -> [BlockKey] {
+        guard old.count == oldKeys.count, !old.isEmpty else { return blocks.map(BlockKey.init) }
+        func same(_ o: Int, _ n: Int) -> Bool {
+            old[o].fingerprint == blocks[n].fingerprint && old[o].kind == blocks[n].kind
+                && old[o].taskState == blocks[n].taskState && old[o].text == blocks[n].text
+                && old[o].source == blocks[n].source
+        }
+        var out: [BlockKey] = []
+        out.reserveCapacity(blocks.count)
+        var byFingerprint: [UInt64: Int]? = nil   // built when the blocks do not line up nearby
+        var next = 0   // the old block after the last one reused
+        for n in blocks.indices {
+            // In place, or a few blocks on (blocks removed before it).
+            if let o = (next..<min(next + 3, old.count)).first(where: { same($0, n) }) {
+                out.append(oldKeys[o]); next = o + 1; continue
+            }
+            out.append(BlockKey(blocks[n]))
+            // A new or edited block: where does the next one line up?
+            guard next < old.count, n + 1 < blocks.count else { continue }
+            if next + 1 < old.count, same(next + 1, n + 1) { next += 1; continue }   // edited in place
+            if same(next, n + 1) { continue }   // inserted
+            // Anything else (a larger removal, a move): by fingerprint.
+            if byFingerprint == nil {
+                var map: [UInt64: Int] = [:]
+                map.reserveCapacity(old.count)
+                for o in old.indices where map[old[o].fingerprint] == nil { map[old[o].fingerprint] = o }
+                byFingerprint = map
+            }
+            if let o = byFingerprint?[blocks[n + 1].fingerprint] { next = o }
+        }
+        return out
+    }
 
     private func allocSlot() -> Int { defer { nextSlot += 1 }; return nextSlot }
     private func allocDeletionID() -> Int { defer { nextDeletionID += 1 }; return nextDeletionID }

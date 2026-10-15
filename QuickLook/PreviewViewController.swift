@@ -62,7 +62,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                         }
                     }
                     webView.onMessage = { msg in if msg["type"] as? String == "applied" { finish("applied") } }
-                    webView.call("apply", patch)
+                    webView.call("apply", patch.page)
                 }
                 // Never hang Quick Look if the page fails to report back.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) { finish("timed out") }

@@ -58,7 +58,7 @@ final class ResolverProbe: ResourceResolver, @unchecked Sendable {
         let r = base.pathReference(code)
         // What could name a file was looked up, found or not (a file
         // resolver without folders looks up absolute and ~/ paths only).
-        var looked = r != nil || (code.count <= 300 && !code.contains(" ") && (code.contains(".") || code.contains("/")))
+        var looked = r != nil || FileResolver.mayBePath(code)
         if looked, let f = base as? FileResolver, f.baseDirectory == nil, f.searchRoots.isEmpty,
            !code.hasPrefix("/"), !code.hasPrefix("~") {
             looked = false
@@ -137,8 +137,17 @@ public struct FileResolver: ResourceResolver {
     private static let pathPattern = try! NSRegularExpression(
         pattern: #"^(~?[\w@.\-/]*[\w\-]\.[A-Za-z0-9]{1,10}|[\w@.\-]+/[\w@.\-/]+)(?::(\d+))?(?::(\d+))?$"#)
 
+    /// Could name a file (what `pathPattern` can match): no space, a dot or a
+    /// slash, at most 300 characters. Byte checks, run for every code span:
+    /// a space, dot or slash byte is that character (UTF-8), and the pattern
+    /// matches none of the characters a combining mark could join to a space.
+    static func mayBePath(_ code: String) -> Bool {
+        !FastBytes.contains(code, 0x20) && (FastBytes.contains(code, 0x2E) || FastBytes.contains(code, 0x2F))
+            && (code.utf8.count <= 300 || code.count <= 300)
+    }
+
     public func pathReference(_ code: String) -> PathReference? {
-        guard code.count <= 300, !code.contains(" "), code.contains(".") || code.contains("/") else { return nil }
+        guard Self.mayBePath(code) else { return nil }
         let ns = code as NSString
         guard let m = FileResolver.pathPattern.firstMatch(in: code, range: NSRange(location: 0, length: ns.length)) else { return nil }
         let raw = ns.substring(with: m.range(at: 1))

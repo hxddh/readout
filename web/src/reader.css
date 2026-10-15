@@ -37,6 +37,8 @@
   --fs-sm: 0.875rem;
   --fs-code: 0.84rem;
   --fs-xs: 0.75rem;
+  /* Code block fill: a step darker inside an alert, which has the same fill. */
+  --cb-bg: var(--fill);
 
   /* -apple-system picks SF's optical size (Text or Display) for each size. */
   --font: -apple-system, "PingFang SC", "Hiragino Sans", "Helvetica Neue", sans-serif;
@@ -143,23 +145,62 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    for margins that do not collapse between blocks. */
 #ro-doc > .blk {
   display: flow-root;
-  margin-inline: calc(-1 * var(--gutter));
-  padding-inline: var(--gutter);
+  margin-inline: calc(-1 * (var(--gutter) + var(--out)));
+  padding-inline: calc(var(--gutter) + var(--out));
 }
+
+/* Wide code and tables. In a window with room to spare, a code block whose
+   lines run past the column, and a table too wide for it, widen into the
+   margins on both sides, up to 1.35 times the column, centred on it (the
+   text column stays as it is). Only with the whole of that room: never up to
+   the window's edge. The block itself widens (--out on each side), so its
+   change bar, flash and edit mark stay beside it as on any other block.
+   A code block widens all the way or not at all (enhance.js gives its longest
+   line in columns, --cb-cols): a fill a few pixels wider than the text reads
+   as a misalignment. A table widens as far as it needs (--tb-w, measured). */
+@property --out { syntax: "<length>"; inherits: true; initial-value: 0px; }
+#ro-doc > .blk:is(.k-code, .k-table) {
+  --bleed: clamp(0px, (100vw - 8rem - 1.35 * var(--measure)) * 1000, 0.175 * var(--measure));
+}
+/* In the code's own font: 1ch is a column (the code is 0.84 of this size, --fs-code). */
+#ro-doc > .blk.k-code {
+  font-family: var(--mono);
+  --out: clamp(0px, ((var(--cb-cols, 0) * 1ch + 2.1em) * 0.84 - var(--measure)) * 1000, var(--bleed));
+}
+:root[data-code-wrap="on"] #ro-doc > .blk.k-code { --out: 0px; }
+#ro-doc > .blk.k-table:has(> .table-wrap.scrolls) {
+  --out: clamp(0px, (var(--tb-w, 0px) - var(--measure)) / 2, var(--bleed));
+}
+#ro-doc > .blk.k-code > .code-block, #ro-doc > .blk.k-table > .table-wrap.scrolls { margin-inline: calc(-1 * var(--out)); }
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
-/* CJK emphasis: no slanted Han or kana (they have no italic), but emphasis
-   dots, under the text in Chinese and sesame marks over it in Japanese. Only
-   on emphasis that is mostly CJK (enhance.js marks it .cjk-em): emphasis in
-   Latin script keeps its italic, in a CJK block too. */
-em.cjk-em {
-  font-synthesis-style: none;
-  text-emphasis: filled dot;
-  text-emphasis-position: under right;
+/* CJK emphasis: upright (Han and kana have no italic), with emphasis dots
+   under the text in Chinese and sesame marks over it in Japanese. Only on
+   emphasis that is mostly CJK (enhance.js marks it .cjk-em): emphasis in
+   Latin script keeps its italic, in a CJK block too. Each Han, kana or Hangul
+   character is a span of its own (.em-dot), punctuation is not: the mark
+   hangs outside the line box (text-emphasis made the line ~5 px taller and
+   marked 。 and —— too, which clreq and jlreq forbid), and as generated
+   content it is never copied or read aloud. */
+em:is(.cjk-em, .cjk-em-long) { font-style: normal; font-synthesis-style: none; }
+.em-dot { position: relative; }
+.em-dot::after {
+  content: "";
+  position: absolute; left: 50%; top: 100%;
+  width: 0.17em; height: 0.17em; margin: 0.04em 0 0 -0.085em;
+  border-radius: 50%; background: currentColor;
+  pointer-events: none;
 }
-:lang(ja) em.cjk-em {
-  text-emphasis: filled sesame;
-  text-emphasis-position: over right;
+/* Japanese: a filled sesame (﹅), a short slanted teardrop, over the text. */
+:lang(ja) .em-dot::after {
+  top: auto; bottom: 100%;
+  width: 0.13em; height: 0.24em; margin: 0 0 0.03em -0.065em;
+  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+  rotate: -35deg;
 }
+/* A long run of emphasis (a sentence or a whole paragraph) is set a step
+   heavier instead of dotted under every character: still marked, not noisy. */
+em.cjk-em-long { font-weight: 500; }
+:is(strong, b, h1, h2, h3, h4, h5, h6, th, summary, .alert-title) em.cjk-em-long { font-weight: inherit; }
 /* CJK: trim the doubled space of adjacent full-width punctuation where WebKit supports it. */
 @supports (text-spacing-trim: space-first) { html { text-spacing-trim: space-first; } }
 
@@ -205,6 +246,8 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading > :is(h1, h2, h3, h4, h5, h6) { font-size: var(--h-fs); margin: var(--h-mt) 0 var(--h-mb); }
 .k-heading h1 { letter-spacing: -0.015em; font-weight: 700; }
 .k-heading h2 { letter-spacing: -0.01em; }
+/* Han and kana are set solid: tracking them in pulls the characters together. */
+.k-heading:is(:lang(zh), :lang(ja)) :is(h1, h2) { letter-spacing: 0; }
 .k-heading h5 { color: var(--text-2); }
 /* h6: smaller than h5 in the same secondary colour (AA: 6.3:1 light, 7.0:1 dark). */
 .k-heading h6 { color: var(--text-2); }
@@ -223,6 +266,8 @@ a:hover { text-decoration-color: currentColor; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
 strong { font-weight: 650; }
+/* Superscripts and subscripts never open up the line they sit in. */
+sup, sub { line-height: 0; }
 /* Struck-through text stays readable (AA). */
 del { color: var(--text-2); }
 
@@ -315,12 +360,14 @@ li.task { list-style: none; position: relative; }
 li.task > .task-box {
   position: absolute;
   left: -1.4em;
-  top: 0.32em;
+  /* On the first line: as high in a taller CJK line as in a Latin one. */
+  top: calc((var(--lh) - 1.01) * 0.5em);
   width: 0.95em;
   height: 0.95em;
   border-radius: 4px;
   box-shadow: inset 0 0 0 1.25px var(--text-3);
 }
+.blk.cjk li.task > .task-box { top: calc((var(--lh-cjk) - 1.01) * 0.5em); }
 li.task > .task-box.checked {
   background: var(--accent);
   box-shadow: none;
@@ -358,6 +405,7 @@ blockquote > :last-child { margin-bottom: 0; }
 }
 .alert > :last-child { margin-bottom: 0; }
 .alert code { background: var(--fill-2); }
+.alert { --cb-bg: var(--fill-2); }
 .alert-title { font-weight: 650; color: var(--alert-c); margin: 0 0 0.25em; font-size: var(--fs-sm); }
 .alert-note { --alert-c: var(--note); }
 .alert-tip { --alert-c: var(--tip); }
@@ -380,6 +428,10 @@ th, td { padding: 0.45em 0.9em 0.45em 0; text-align: left; vertical-align: top; 
 th:last-child, td:last-child { padding-right: 0; }
 th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; }
 td { font-variant-numeric: tabular-nums; }
+/* Code in a cell: a little larger than in body text (the cell's text is smaller). */
+td code, th code { font-size: 0.9em; }
+/* Short cells and identifiers stay on one line while the table fits (enhance.js). */
+:is(td, th)[data-nw], :is(td, th) code[data-nw] { white-space: nowrap; }
 tbody tr:last-child td { border-bottom: 0; }
 /* A header row with no text (a table written only for its body) is not shown. */
 thead:not(:has(th:not(:empty))) { display: none; }
@@ -410,11 +462,14 @@ td.num, th.num { text-align: right; }
 /* Code */
 .code-block {
   position: relative;
-  background: var(--fill);
+  background: var(--cb-bg);
   border-radius: 8px;
+  font-family: var(--mono);
   font-size: var(--fs-code);
   line-height: 1.55;
 }
+/* A directory tree or box drawing: lines close enough for the strokes to join. */
+.code-block.cb-tree { line-height: 1.3; }
 /* A long line scrolls inside the block, with the same shade at the right
    edge as a wide table (gone when scrolled to the end or nothing scrolls).
    Important: Shiki sets a background on the <pre> it writes. */
@@ -426,7 +481,7 @@ td.num, th.num { text-align: right; }
   tab-size: 4;
   border-radius: inherit;
   background:
-    linear-gradient(to left, var(--fill) 18px, transparent) local right / 28px 100% no-repeat,
+    linear-gradient(to left, var(--cb-bg) 18px, transparent) local right / 28px 100% no-repeat,
     linear-gradient(to left, color-mix(in srgb, var(--text) 9%, transparent), transparent) scroll right / 18px 100% no-repeat !important;
 }
 .code-block pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
@@ -437,7 +492,8 @@ td.num, th.num { text-align: right; }
      left over no more of the code than it takes. */
   padding: 8px 6px 8px 14px;
   border-top-right-radius: 8px;
-  background: linear-gradient(to right, transparent, var(--fill) 10px);
+  background: linear-gradient(to right, transparent, var(--cb-bg) 10px);
+  font-family: var(--font);
   opacity: 0; transition: opacity 120ms;
   -webkit-user-select: none; user-select: none;
 }
@@ -481,7 +537,7 @@ details {
   border-radius: 8px;
 }
 details > summary { cursor: pointer; font-weight: 600; color: var(--text); }
-details > summary::marker { color: var(--text-3); }
+details > summary::marker, details > summary::-webkit-details-marker { color: var(--text-3); }
 details[open] > summary { margin-bottom: 0.65em; }
 details > p, details > ul, details > ol, details > blockquote, details > .table-wrap,
 details > .code-block, details > .alert, details > .math-block, details > .mermaid-block, details > hr {
@@ -527,7 +583,7 @@ details ul, details ol { padding-left: 1.5em; }
 .mermaid-block svg { max-width: 100%; height: auto; }
 .mermaid-src {
   text-align: left; margin: 0; padding: 0.9em 1.05em; border-radius: 8px;
-  background: var(--fill); font-family: var(--mono); font-size: var(--fs-code); color: var(--text-2);
+  background: var(--cb-bg); font-family: var(--mono); font-size: var(--fs-code); color: var(--text-2);
   white-space: pre-wrap;
 }
 .mermaid-block.done .mermaid-src { display: none; }
@@ -574,6 +630,7 @@ details ul, details ol { padding-left: 1.5em; }
 
 /* What changed in an edited block, under it. */
 .wd-panel {
+  font-family: var(--font);
   margin: 0 0 var(--flow);
   padding: 0.55em 0.8em 0.65em;
   border-radius: 8px;
@@ -668,7 +725,7 @@ details ul, details ol { padding-left: 1.5em; }
 /* Changes-only empty state */
 #ro-caughtup {
   margin: 18vh auto 0; width: max-content; max-width: 100%;
-  font-size: var(--fs-sm); color: var(--text-3);
+  font-size: var(--fs-sm); color: var(--text-2);
 }
 #ro-caughtup[hidden] { display: none; }
 
@@ -691,7 +748,7 @@ details ul, details ol { padding-left: 1.5em; }
 .h-link:hover { color: var(--accent); }
 
 /* Empty state */
-#ro-empty { color: var(--text-3); font-size: var(--fs-sm); padding-top: 18vh; text-align: center; }
+#ro-empty { color: var(--text-2); font-size: var(--fs-sm); padding-top: 18vh; text-align: center; }
 
 /* QuickLook: no change UI */
 :root[data-mode="quicklook"] #ro-rail, :root[data-mode="quicklook"] .blk::before { display: none; }
@@ -769,6 +826,8 @@ details ul, details ol { padding-left: 1.5em; }
   #ro-doc { padding: 0 0 0 1rem; max-width: none; }
   #ro-doc.cv > .blk { content-visibility: visible; }
   #ro-doc > .blk { margin-inline: 0; padding-inline: 0; }
+  #ro-doc > .blk:is(.k-code, .k-table) { --bleed: 0px; }
+  :is(td, th)[data-nw], :is(td, th) code[data-nw] { white-space: normal; }
   .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
   /* Never cut a code block, table row, diagram, formula, image or alert across pages. */
   .code-block, tr, .mermaid-block, .math-block, img, .alert, details, .footnotes li { break-inside: avoid; }
