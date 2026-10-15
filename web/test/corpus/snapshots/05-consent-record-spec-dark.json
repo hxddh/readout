@@ -1,12 +1,12 @@
 {
- "height": 8607,
+ "height": 8583,
  "blocks": [
   {
    "slot": 1,
    "kind": "frontMatter",
    "top": 12,
    "h": 0,
-   "style": "8cf4757a",
+   "style": "56140111",
    "content": "811c9dc5",
    "text": ""
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "a520094d",
+   "style": "3f73b804",
    "content": "f9fdf07a",
    "text": "The pattern's proper names"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 70,
-   "style": "7c2949d6",
+   "style": "f613bc81",
    "content": "f3d789e9",
    "text": "A consent/acknowledgment record, a well-establis"
   },
@@ -33,7 +33,7 @@
    "kind": "listItem",
    "top": 140,
    "h": 184,
-   "style": "55af1d55",
+   "style": "de864fbc",
    "content": "27cb2c30",
    "text": "Terms-of-service acceptance records — the closes"
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 325,
    "h": 158,
-   "style": "fb02da79",
+   "style": "961174d6",
    "content": "c4859146",
    "text": "Policy acknowledgment systems — in HR/IT (e.g., "
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 483,
    "h": 106,
-   "style": "93df575d",
+   "style": "fcc5fd12",
    "content": "389101f4",
    "text": "GDPR consent records — the same shape. Art. 7(1)"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 589,
    "h": 253,
-   "style": "9badb670",
+   "style": "1d3681fd",
    "content": "85e1905f",
    "text": "Fair use policies (FUP/AUP) — the commercial fra"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 842,
    "h": 65,
-   "style": "638a94d6",
+   "style": "a5e8146d",
    "content": "021e9955",
    "text": "What the prior art says your design should get r"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 907,
    "h": 139,
-   "style": "897a5e8f",
+   "style": "f36cf12a",
    "content": "152a1377",
    "text": "It's a legal artifact, not an application artifa"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 1047,
    "h": 139,
-   "style": "ac1d8ce2",
+   "style": "37e70147",
    "content": "401354a8",
    "text": "Immutability. The record should be append-only. "
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 1186,
    "h": 139,
-   "style": "797c4130",
+   "style": "1282323f",
    "content": "600280c2",
    "text": "Record the rendered text, or its exact version, "
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1325,
    "h": 139,
-   "style": "4342594e",
+   "style": "958f576b",
    "content": "cef00529",
    "text": "One confirmation per org per policy is standard "
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 1465,
    "h": 123,
-   "style": "acd0610a",
+   "style": "d0b931f1",
    "content": "beeae5fa",
    "text": "Precedence over approval. Acknowledgment must no"
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 1588,
    "h": 65,
-   "style": "638a94d6",
+   "style": "a5e8146d",
    "content": "b0668d10",
    "text": "What you might be missing"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1653,
    "h": 158,
-   "style": "ab16f4f1",
+   "style": "96774f58",
    "content": "2f9ffc01",
    "text": "Legal review of the acknowledgment text itself. "
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1811,
    "h": 158,
-   "style": "05cdfa01",
+   "style": "4a686958",
    "content": "f519fd3b",
    "text": "Onboarding vs. threshold semantics. Prior art su"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1969,
    "h": 80,
-   "style": "a7a2d496",
+   "style": "bfeced5b",
    "content": "c2a9386a",
    "text": "Export/discovery. Support and legal need to answ"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 2050,
    "h": 123,
-   "style": "15fdca76",
+   "style": "74bcb547",
    "content": "dd9fa340",
    "text": "Don't overengineer. Your note rejecting a generi"
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 2173,
    "h": 122,
-   "style": "915f0c92",
+   "style": "f8138e0d",
    "content": "b69a7120",
    "text": "Sources: [^a] Stripe ToS acceptance — https://do"
   },
@@ -177,7 +177,7 @@
    "kind": "paragraph",
    "top": 2294,
    "h": 44,
-   "style": "286e06ff",
+   "style": "df63d630",
    "content": "dc0b6beb",
    "text": "References"
   },
@@ -186,7 +186,7 @@
    "kind": "rule",
    "top": 2338,
    "h": 47,
-   "style": "ca7f6531",
+   "style": "ff26dca4",
    "content": "811c9dc5",
    "text": ""
   },
@@ -195,7 +195,7 @@
    "kind": "heading",
    "top": 2385,
    "h": 59,
-   "style": "a520094d",
+   "style": "3f73b804",
    "content": "3ed79281",
    "text": "What to avoid"
   },
@@ -204,7 +204,7 @@
    "kind": "paragraph",
    "top": 2444,
    "h": 122,
-   "style": "cf755b2b",
+   "style": "6c9dbf46",
    "content": "31f83aff",
    "text": "It means a \"fair use\" threshold set at a level t"
   },
@@ -213,7 +213,7 @@
    "kind": "heading",
    "top": 2565,
    "h": 65,
-   "style": "638a94d6",
+   "style": "a5e8146d",
    "content": "48b5991f",
    "text": "The mechanics"
   },
@@ -222,7 +222,7 @@
    "kind": "paragraph",
    "top": 2631,
    "h": 44,
-   "style": "03266f29",
+   "style": "c29f3c90",
    "content": "6ce5f78b",
    "text": "The tell-tale pattern works like this:"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2674,
    "h": 54,
-   "style": "05dc543c",
+   "style": "df84ba1b",
    "content": "1b4c235f",
    "text": "The plan is advertised as \"unlimited.\" That's th"
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 2729,
    "h": 132,
-   "style": "b4cc0064",
+   "style": "08d1ecfd",
    "content": "7413bc5a",
    "text": "The threshold is set at or below typical healthy"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2861,
    "h": 97,
-   "style": "88c677a1",
+   "style": "b057b3ec",
    "content": "8d97b99d",
    "text": "Crossing it triggers a commercial event, not a c"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 2958,
    "h": 70,
-   "style": "52428d82",
+   "style": "c5419bad",
    "content": "7e082ebb",
    "text": "So the \"limit\" isn't calibrated to what the infr"
   },
@@ -267,7 +267,7 @@
    "kind": "heading",
    "top": 3027,
    "h": 65,
-   "style": "638a94d6",
+   "style": "a5e8146d",
    "content": "61785d88",
    "text": "Why it's a problem"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 3093,
    "h": 106,
-   "style": "4787ef9b",
+   "style": "b874e07e",
    "content": "7e11a2a6",
    "text": "It's a bait-and-switch on the decision variable."
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 3199,
    "h": 80,
-   "style": "ad7b12ec",
+   "style": "16935b0d",
    "content": "820d6f9e",
    "text": "It taxes success. Growth is exactly what you wan"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 3279,
    "h": 80,
-   "style": "74245e9a",
+   "style": "98fd5873",
    "content": "922e658d",
    "text": "The asymmetry is dishonest. Genuine abuse protec"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 3359,
    "h": 123,
-   "style": "778ce820",
+   "style": "56d5db15",
    "content": "73e35cf3",
    "text": "Legal/UX exposure. \"Unlimited\" with an undisclos"
   },
@@ -312,7 +312,7 @@
    "kind": "heading",
    "top": 3482,
    "h": 65,
-   "style": "638a94d6",
+   "style": "a5e8146d",
    "content": "18d730d1",
    "text": "How to tell them apart in your own design"
   },
@@ -321,7 +321,7 @@
    "kind": "table",
    "top": 3548,
    "h": 329,
-   "style": "1d333195",
+   "style": "c79fab4d",
    "content": "8fb8e333",
    "text": "SignalGenuine fair useDisguised revenue triggerT"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 3877,
    "h": 200,
-   "style": "b822b146",
+   "style": "7b99f905",
    "content": "faef80fb",
    "text": "This is why your design choice matters: your sel"
   },
@@ -339,7 +339,7 @@
    "kind": "rule",
    "top": 4076,
    "h": 47,
-   "style": "ca7f6531",
+   "style": "ff26dca4",
    "content": "811c9dc5",
    "text": ""
   },
@@ -348,7 +348,7 @@
    "kind": "heading",
    "top": 4124,
    "h": 59,
-   "style": "a520094d",
+   "style": "3f73b804",
    "content": "0129c05d",
    "text": "Technical landscape"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 4182,
    "h": 44,
-   "style": "03266f29",
+   "style": "c29f3c90",
    "content": "2a7d444d",
    "text": "Here's the conventional landscape, mapped onto y"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 4226,
    "h": 65,
-   "style": "638a94d6",
+   "style": "a5e8146d",
    "content": "ff1e8693",
    "text": "The canonical structure"
   },
@@ -375,7 +375,7 @@
    "kind": "paragraph",
    "top": 4291,
    "h": 96,
-   "style": "3b7ecd76",
+   "style": "de9d8331",
    "content": "2b891af9",
    "text": "The mature pattern across GDPR-driven systems is"
   },
@@ -384,7 +384,7 @@
    "kind": "code",
    "top": 4387,
    "h": 542,
-   "style": "43d66922",
+   "style": "6d9891d8",
    "content": "fa5ea2b7",
    "text": "-- Versioned text: the source of truth for what "
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 4928,
    "h": 44,
-   "style": "c1d20ed5",
+   "style": "1a647836",
    "content": "5fab6519",
    "text": "Three properties define this shape everywhere it"
   },
@@ -402,7 +402,7 @@
    "kind": "listItem",
    "top": 4972,
    "h": 106,
-   "style": "0fe0f36f",
+   "style": "fabd3250",
    "content": "bc20827a",
    "text": "Append-only events. \"Never update a consent reco"
   },
@@ -411,7 +411,7 @@
    "kind": "listItem",
    "top": 5078,
    "h": 132,
-   "style": "c7d79a3c",
+   "style": "838797e3",
    "content": "1c9b5bac",
    "text": "Text versioning is a separate entity. The acknow"
   },
@@ -420,7 +420,7 @@
    "kind": "listItem",
    "top": 5211,
    "h": 71,
-   "style": "577d7591",
+   "style": "eabd96c4",
    "content": "63024fb5",
    "text": "Current state is a view/projection. Regulators a"
   },
@@ -429,7 +429,7 @@
    "kind": "paragraph",
    "top": 5282,
    "h": 148,
-   "style": "0e501ab8",
+   "style": "c40b241d",
    "content": "12b8f772",
    "text": "The conventional field set (who, when, what text"
   },
@@ -438,7 +438,7 @@
    "kind": "paragraph",
    "top": 5429,
    "h": 148,
-   "style": "d2818d8f",
+   "style": "db4448aa",
    "content": "cb247fe4",
    "text": "One design note from the prior art that applies "
   },
@@ -447,7 +447,7 @@
    "kind": "heading",
    "top": 5577,
    "h": 65,
-   "style": "638a94d6",
+   "style": "a5e8146d",
    "content": "962bbf5d",
    "text": "Model relationships"
   },
@@ -456,7 +456,7 @@
    "kind": "paragraph",
    "top": 5642,
    "h": 44,
-   "style": "a2f7ddd8",
+   "style": "ef05a5e3",
    "content": "6eca1dac",
    "text": "The relationship pattern is deliberately loose:"
   },
@@ -465,7 +465,7 @@
    "kind": "listItem",
    "top": 5686,
    "h": 54,
-   "style": "a156da98",
+   "style": "33da67b9",
    "content": "b10a0ce0",
    "text": "acknowledgment → policy_text (many-to-one, FK to"
   },
@@ -474,7 +474,7 @@
    "kind": "listItem",
    "top": 5740,
    "h": 28,
-   "style": "ac039250",
+   "style": "ab2121f3",
    "content": "0e329352",
    "text": "acknowledgment → org (many-to-one) — the scope"
   },
@@ -483,7 +483,7 @@
    "kind": "listItem",
    "top": 5768,
    "h": 80,
-   "style": "484d3a51",
+   "style": "db9f1b30",
    "content": "fbe079f8",
    "text": "acknowledgment → actor (many-to-one, or pseudony"
   },
@@ -492,7 +492,7 @@
    "kind": "listItem",
    "top": 5848,
    "h": 71,
-   "style": "7fc46e87",
+   "style": "6e9e5aea",
    "content": "44ffef2a",
    "text": "No FK to subscription/entitlement tables at all."
   },
@@ -501,7 +501,7 @@
    "kind": "paragraph",
    "top": 5919,
    "h": 174,
-   "style": "4ea31be1",
+   "style": "594e7b3c",
    "content": "771b22f2",
    "text": "There's a standard conceptual model for this: th"
   },
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 6093,
    "h": 65,
-   "style": "638a94d6",
+   "style": "a5e8146d",
    "content": "210205bd",
    "text": "Evolution, roughly 2008–2026"
   },
@@ -519,7 +519,7 @@
    "kind": "listItem",
    "top": 6158,
    "h": 106,
-   "style": "54bdbfd7",
+   "style": "d3872430",
    "content": "c35b35b9",
    "text": "~2008–2015 — ToS checkbox era. A tos_accepted_at"
   },
@@ -528,7 +528,7 @@
    "kind": "listItem",
    "top": 6264,
    "h": 106,
-   "style": "43c107b7",
+   "style": "f36c5390",
    "content": "a20a63c2",
    "text": "2016–2018 — GDPR forces event-grade records. Art"
   },
@@ -537,7 +537,7 @@
    "kind": "listItem",
    "top": 6371,
    "h": 80,
-   "style": "5565e3a1",
+   "style": "c54a37f0",
    "content": "3b16004d",
    "text": "2019–2022 — Standardization and semantics. ISO/I"
   },
@@ -546,7 +546,7 @@
    "kind": "listItem",
    "top": 6451,
    "h": 158,
-   "style": "5307c57d",
+   "style": "46d0ac96",
    "content": "736f859c",
    "text": "2020–present — Developer-first and enforcement-a"
   },
@@ -555,7 +555,7 @@
    "kind": "listItem",
    "top": 6609,
    "h": 149,
-   "style": "1fc1e9da",
+   "style": "c49cb95b",
    "content": "9efb813f",
    "text": "2025–present — API-first and domain proliferatio"
   },
@@ -564,7 +564,7 @@
    "kind": "heading",
    "top": 6758,
    "h": 94,
-   "style": "347aeb1e",
+   "style": "d616ffc5",
    "content": "d875d815",
    "text": "Modern tooling worth knowing (and probably not a"
   },
@@ -573,7 +573,7 @@
    "kind": "table",
    "top": 6852,
    "h": 503,
-   "style": "fec01bc9",
+   "style": "5cb9ee4d",
    "content": "018ecb22",
    "text": "OptionWhat it isFit for youOneTrust CMPEnterpris"
   },
@@ -582,7 +582,7 @@
    "kind": "paragraph",
    "top": 7356,
    "h": 226,
-   "style": "a2dbe385",
+   "style": "b62093c4",
    "content": "e35428a2",
    "text": "For your scope — one policy, org-scoped, confirm"
   },
@@ -591,7 +591,7 @@
    "kind": "paragraph",
    "top": 7581,
    "h": 44,
-   "style": "286e06ff",
+   "style": "df63d630",
    "content": "dc0b6beb",
    "text": "References"
   },
@@ -599,8 +599,8 @@
    "slot": 67,
    "kind": "footnotes",
    "top": 7625,
-   "h": 712,
-   "style": "f82db321",
+   "h": 688,
+   "style": "67b4c68b",
    "content": "9aaa8635",
    "text": "SOC 2 Compliance: The Complete Introduction (8%)"
   }

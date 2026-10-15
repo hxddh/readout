@@ -1,0 +1,212 @@
+{
+ "height": 2216,
+ "blocks": [
+  {
+   "slot": 1,
+   "kind": "heading",
+   "top": 12,
+   "h": 59,
+   "style": "3f73b804",
+   "content": "9a39d04a",
+   "text": "Typesetting cases"
+  },
+  {
+   "slot": 2,
+   "kind": "paragraph",
+   "top": 71,
+   "h": 96,
+   "style": "c4e840a2",
+   "content": "542d9844",
+   "text": "Synthetic: written for Readout's rendering basel"
+  },
+  {
+   "slot": 3,
+   "kind": "heading",
+   "top": 166,
+   "h": 65,
+   "style": "a5e8146d",
+   "content": "c29ab271",
+   "text": "Code inside an alert"
+  },
+  {
+   "slot": 4,
+   "kind": "alert",
+   "top": 231,
+   "h": 175,
+   "style": "0506015e",
+   "content": "9b520699",
+   "text": "NoteBuild the reader before running the tests:cd"
+  },
+  {
+   "slot": 5,
+   "kind": "alert",
+   "top": 407,
+   "h": 93,
+   "style": "93ab3879",
+   "content": "a69b819c",
+   "text": "WarningBaselines come from CI's WebKit, not a de"
+  },
+  {
+   "slot": 6,
+   "kind": "heading",
+   "top": 500,
+   "h": 65,
+   "style": "a5e8146d",
+   "content": "9c8014c6",
+   "text": "A terminal transcript"
+  },
+  {
+   "slot": 7,
+   "kind": "code",
+   "top": 565,
+   "h": 122,
+   "style": "21806dd2",
+   "content": "cefa7893",
+   "text": "$ npm run corpus ok: 01-sdd-fix-loop-plan-light "
+  },
+  {
+   "slot": 8,
+   "kind": "heading",
+   "top": 687,
+   "h": 65,
+   "style": "a5e8146d",
+   "content": "bf28170d",
+   "text": "A directory tree"
+  },
+  {
+   "slot": 9,
+   "kind": "code",
+   "top": 752,
+   "h": 178,
+   "style": "ce24f556",
+   "content": "e6fd53e2",
+   "text": "web/ ├── src/ │ ├── reader/ │ │ ├── enhance.js │"
+  },
+  {
+   "slot": 10,
+   "kind": "heading",
+   "top": 930,
+   "h": 65,
+   "style": "a5e8146d",
+   "content": "b0b9e079",
+   "text": "Short cells and identifiers"
+  },
+  {
+   "slot": 11,
+   "kind": "table",
+   "top": 995,
+   "h": 239,
+   "style": "856a382e",
+   "content": "fb2714a9",
+   "text": "ActionCurrentLatestRiskNotesactions/configure-pa"
+  },
+  {
+   "slot": 12,
+   "kind": "heading",
+   "top": 1234,
+   "h": 65,
+   "style": "a5e8146d",
+   "content": "d3e2c464",
+   "text": "Superscripts and footnotes"
+  },
+  {
+   "slot": 13,
+   "kind": "paragraph",
+   "top": 1299,
+   "h": 70,
+   "style": "27beb792",
+   "content": "b9303a9b",
+   "text": "The cost grows as n2 with the number of blocks, "
+  },
+  {
+   "slot": 14,
+   "kind": "heading",
+   "top": 1369,
+   "h": 65,
+   "style": "aa108274",
+   "content": "c65c33ff",
+   "text": "中文排版"
+  },
+  {
+   "slot": 15,
+   "kind": "paragraph",
+   "top": 1434,
+   "h": 74,
+   "style": "15cc4e9f",
+   "content": "55e014e1",
+   "text": "这一段测试着重号：强调文字不用斜体，标点不加点。——也不加，混排的调用 API 接口只在汉字下加"
+  },
+  {
+   "slot": 16,
+   "kind": "paragraph",
+   "top": 1507,
+   "h": 74,
+   "style": "7d382d85",
+   "content": "9df8e94b",
+   "text": "长的强调：正确性属性是系统在所有有效执行中都应保持为真的特征或行为，本质上是关于系统应该做什么的"
+  },
+  {
+   "slot": 17,
+   "kind": "paragraph",
+   "top": 1581,
+   "h": 46,
+   "style": "e5e77ddd",
+   "content": "c9975091",
+   "text": "整段强调的段落不加着重号，而是略微加重字重。"
+  },
+  {
+   "slot": 18,
+   "kind": "listItem",
+   "top": 1627,
+   "h": 30,
+   "style": "9c58a9aa",
+   "content": "2c9cf511",
+   "text": "已完成：检查复选框与这一行居中"
+  },
+  {
+   "slot": 19,
+   "kind": "listItem",
+   "top": 1656,
+   "h": 45,
+   "style": "8face775",
+   "content": "ef23225f",
+   "text": "未完成：Latin task item in a CJK list"
+  },
+  {
+   "slot": 20,
+   "kind": "paragraph",
+   "top": 1701,
+   "h": 46,
+   "style": "622a3a9a",
+   "content": "b2b5a8f2",
+   "text": "日本語の段落：強調は傍点で示します。"
+  },
+  {
+   "slot": 21,
+   "kind": "heading",
+   "top": 1747,
+   "h": 65,
+   "style": "a5e8146d",
+   "content": "51213cae",
+   "text": "Code that runs past the column"
+  },
+  {
+   "slot": 22,
+   "kind": "code",
+   "top": 1812,
+   "h": 62,
+   "style": "50928a5a",
+   "content": "826ac941",
+   "text": "const result = await client.send(new GetObjectCo"
+  },
+  {
+   "slot": 23,
+   "kind": "footnotes",
+   "top": 1873,
+   "h": 72,
+   "style": "cd7ba562",
+   "content": "bb47eb4b",
+   "text": "A footnote reference sits on the same line pitch"
+  }
+ ]
+}

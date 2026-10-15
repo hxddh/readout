@@ -1,5 +1,5 @@
 // Mermaid diagrams, loaded on first use and rendered one at a time.
-import { doc, root, strings, inViewport, pageTheme } from './core.js';
+import { doc, root, strings, inViewport, pageTheme, quicklook } from './core.js';
 import { lazyObserver } from './enhance.js';
 
 const mermaidCache = new Map();   // look+source -> {svg, id} or {error}
@@ -94,6 +94,73 @@ function diagramError(err) {
   return [line ? `line ${line[1]}` : '', reason].filter(Boolean).join(': ') || 'syntax error';
 }
 
+// A flowchart, the most common diagram, needs Mermaid, its flowchart chunk
+// and the ELK layout engine (1.6 MB): once a page with one has painted, a
+// tiny flowchart is drawn and thrown away in idle time, so the page's own
+// draw at once when they come near (they render lazily).
+const FLOWCHART = /^(?:\s*%%[^\n]*\n|\s*\n)*\s*(?:flowchart|graph)\b/;
+let warmed = false;
+function isFlowchart(src) {
+  return FLOWCHART.test(src.replace(/^\s*---\n[\s\S]*?\n---\s*\n/, ''));
+}
+function prefetchFlowcharts() {
+  if (warmed || quicklook) return;
+  warmed = true;
+  const idle = window.requestIdleCallback || (fn => setTimeout(fn, 300));
+  requestAnimationFrame(() => setTimeout(() => idle(warmUp, { timeout: 3000 }), 0));
+}
+async function warmUp() {
+  if (mermaidBusy || mermaidQueue.length) return;   // a diagram is being drawn: that loads what it needs
+  mermaidBusy = true;
+  try {
+    const m = await loadMermaid();
+    await m.render('mmd-warm', 'flowchart LR\n  a --> b');
+  } catch {
+    // Only a head start: the page's diagrams load what they need anyway.
+  } finally {
+    document.querySelectorAll('#dmmd-warm, #mmd-warm').forEach(e => e.remove());
+    mermaidBusy = false;
+    pumpMermaid();
+  }
+}
+
+// An agent writing a diagram replaces its block with every few characters
+// it adds. Drawn each time, the diagram flickers between drawings and parse
+// errors: a diagram whose source changes is drawn again only once it has
+// been still for a moment, and its last good drawing stays until then.
+const QUIET_MS = 400;
+const drawnIn = new WeakMap();   // .blk -> [{src, node, timer}], one per diagram in it
+
+function diagramSlot(block) {
+  const blk = block.closest('.blk');
+  if (!blk) return null;
+  const list = drawnIn.get(blk) || [];
+  drawnIn.set(blk, list);
+  const i = [...blk.querySelectorAll('.mermaid-block')].indexOf(block);
+  return list[i] ||= { src: null, node: null, timer: 0 };
+}
+
+/** Called for every diagram block set up (enhance.js). */
+export function setupMermaid(block) {
+  const src = block.querySelector('.mermaid-src')?.textContent || '';
+  if (isFlowchart(src)) prefetchFlowcharts();
+  const slot = diagramSlot(block);
+  if (!slot || slot.src === null || slot.src === src) return;   // new, or as it was (the cache has it)
+  if (mermaidLook && mermaidCache.has(mermaidLook + '\u0000' + src)) return;   // drawn before: at once
+  if (slot.node) {
+    block.appendChild(slot.node);
+    block.classList.add('done');
+    block.dataset.stale = '1';   // drawn from another source: printing draws it again
+  }
+  block.dataset.waiting = '1';   // not drawn until the source is still (renderLazy skips it)
+  clearTimeout(slot.timer);
+  slot.timer = setTimeout(() => {
+    if (!block.isConnected) return;
+    delete block.dataset.waiting;
+    if (inViewport(block, window.innerHeight)) renderMermaid(block); else lazyObserver.observe(block);
+  }, QUIET_MS);
+}
+
 const mermaidQueue = [];
 let mermaidBusy = false;
 export function renderMermaid(block) {
@@ -152,7 +219,10 @@ async function pumpMermaid() {
       else block.appendChild(fresh);
       block.classList.toggle('done', !!out.svg);
       delete block.dataset.stale;
+      delete block.dataset.waiting;
       block.classList.remove('busy');
+      const slot = diagramSlot(block);
+      if (slot) { slot.src = src; if (out.svg) slot.node = fresh; }
     }
   } finally {
     mermaidBusy = false;

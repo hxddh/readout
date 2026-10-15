@@ -1,0 +1,77 @@
+// The grammars the reader ships (shiki-grammars.mjs: precompiled where
+// TextMate allows it) highlight exactly as Shiki's own grammars do, on every
+// code block of the corpus and on patterns that depend on what precompiling
+// would break (\G anchors, back-references from an end pattern).
+// Usage: node test/grammars.test.mjs   (Node only, no browser)
+import * as esbuild from 'esbuild';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { createHighlighterCore } from 'shiki/core';
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
+import { shikiGrammars } from '../shiki-grammars.mjs';
+import { resolveLang } from '../src/highlight.js';
+
+let failures = 0;
+function check(name, cond, extra = '') {
+  if (cond) console.log(`ok: ${name}`);
+  else { console.log(`FAIL: ${name} ${extra}`); failures++; }
+}
+
+// Every grammar highlight.js can load.
+const ids = [...readFileSync('src/highlight.js', 'utf8').matchAll(/import\('@shikijs\/langs\/([\w-]+)'\)/g)].map(m => m[1]);
+const entry = ids.map((id, i) => `import g${i} from '@shikijs/langs/${id}';`).join('\n')
+  + `\nexport default {${ids.map((id, i) => `${JSON.stringify(id)}: g${i}`).join(',')}};`;
+const out = await esbuild.build({
+  stdin: { contents: entry, resolveDir: process.cwd(), loader: 'js' },
+  bundle: true, format: 'esm', platform: 'node', write: false, plugins: [shikiGrammars], logLevel: 'error',
+});
+mkdirSync('test/out', { recursive: true });
+writeFileSync('test/out/grammars.mjs', out.outputFiles[0].text);
+const shipped = (await import(pathToFileURL('test/out/grammars.mjs').href)).default;
+
+// Most patterns arrive compiled (else the plugin is doing nothing).
+let compiled = 0, source = 0;
+const count = v => {
+  if (v instanceof RegExp) compiled++;
+  else if (Array.isArray(v)) v.forEach(count);
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) { if (typeof x === 'string' && /^(match|begin|end|while)$/.test(k)) source++; else count(x); }
+};
+for (const id of ids) count(shipped[id].at(-1));
+check('most grammar patterns ship precompiled', compiled > 4 * source, JSON.stringify({ compiled, source }));
+
+async function highlighter(grammars) {
+  const h = await createHighlighterCore({ themes: [import('@shikijs/themes/github-light-default'), import('@shikijs/themes/github-dark-default')], langs: [], engine: createJavaScriptRegexEngine({ forgiving: true }) });
+  for (const id of ids) await h.loadLanguage(grammars[id]);
+  return h;
+}
+const runtime = {};
+for (const id of ids) runtime[id] = (await import(`@shikijs/langs/${id}`)).default;
+const [a, b] = [await highlighter(runtime), await highlighter(shipped)];
+const html = (h, code, id) => h.codeToHtml(code, { lang: id, themes: { light: 'github-light-default', dark: 'github-dark-default' }, defaultColor: false, tokenizeTimeLimit: 0 });
+
+// Code that precompiling every pattern gets wrong.
+const samples = [
+  ['shellscript', 'grep -n "2.2 Dropout" -A 5 README.md\ngit commit -m "content: update"'],   // \G: arguments
+  ['shellscript', 'cat <<EOF > out.txt\nhello $USER\nEOF\necho done'],                         // end refers to begin
+  ['python', 'def f(a: int) -> str:\n    return "x" + f"{a}"'],
+  ['java', 'public class A { private int x = 1; void f() { return; } }'],
+  ['markdown', '# Title\n\n```bash\nnpm test\n```\n\n- item `code`'],
+  ['yaml', 'on:\n  push:\n    branches: [main]\nrun: |\n  npm ci\n  npm test'],
+];
+for (const [id, code] of samples) check(`${id} sample highlights as with Shiki's grammar`, html(a, code, id) === html(b, code, id), code.split('\n')[0]);
+
+// Every fenced block of the corpus.
+const FENCE = /^([ \t]*)(`{3,}|~{3,})[ \t]*([^\s`{]*)[^\n]*\n([\s\S]*?)\n\1\2/gm;
+let blocks = 0, differ = [];
+for (const f of readdirSync('test/corpus').filter(f => f.endsWith('.md'))) {
+  for (const m of readFileSync(`test/corpus/${f}`, 'utf8').matchAll(FENCE)) {
+    const id = resolveLang(m[3]);
+    if (!id) continue;
+    blocks++;
+    if (html(a, m[4], id) !== html(b, m[4], id)) differ.push(`${f} (${id})`);
+  }
+}
+check(`corpus code blocks highlight as with Shiki's grammars (${blocks})`, blocks > 200 && differ.length === 0, differ.slice(0, 10).join(', '));
+
+console.log(failures ? `${failures} failure(s)` : 'all grammar checks passed');
+process.exit(failures ? 1 : 0);
