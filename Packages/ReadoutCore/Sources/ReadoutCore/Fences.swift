@@ -99,10 +99,16 @@ struct FenceTracker {
         }
         let first: UInt8 = indent < n ? u[indent] : 0
         /// Columns of leading white space (tabs to the next multiple of 4) and where it ends.
-        func lead(from start: Int) -> (columns: Int, end: Int) {
-            var c = 0, k = start
+        /// `column`: the column of `start` (tabs stop at multiples of 4 from the line's start).
+        func lead(from start: Int, column: Int = 0) -> (columns: Int, end: Int) {
+            var c = column, k = start
             while k < n, u[k] == Self.space || u[k] == Self.tab { c = u[k] == Self.tab ? (c / 4 + 1) * 4 : c + 1; k += 1 }
-            return (c, k)
+            return (c - column, k)
+        }
+        /// White space after quote markers, without the column of a tab right after the last `>` that stands for its space.
+        func lead(after q: (at: Int, column: Int, tabSpace: Bool)) -> (columns: Int, end: Int) {
+            let l = lead(from: q.at, column: q.column)
+            return (q.tabSpace ? l.columns - 1 : l.columns, l.end)
         }
         /// A closing fence for `f` at `p`: the fence character, at least as many, nothing after.
         func closes(_ f: Fence, at p: Int) -> Bool {
@@ -114,8 +120,8 @@ struct FenceTracker {
         let cols = lead(from: 0)
 
         if let h = html, h.quote > 0 {
-            if let p = Self.afterQuotes(u, depth: h.quote, outer: h.outer) {
-                let l = lead(from: p)
+            if let q = Self.afterQuotes(u, depth: h.quote, outer: h.outer) {
+                let l = lead(after: q)
                 if let c = h.container, l.end < n, l.columns < c {
                     endHTML()   // the quoted list item ended, and the block with it
                     quoteItem = nil
@@ -161,8 +167,8 @@ struct FenceTracker {
         }
         if let f = open, f.quote > 0 {
             // A line without the quote's markers ends the quote, and the fence in it.
-            if let p = Self.afterQuotes(u, depth: f.quote, outer: f.outer) {
-                let l = lead(from: p)
+            if let q = Self.afterQuotes(u, depth: f.quote, outer: f.outer) {
+                let l = lead(after: q)
                 if let c = f.container, l.end < n, l.columns < c {
                     open = nil      // the quoted list item ended, and the fence with it
                     quoteItem = nil
@@ -442,8 +448,9 @@ struct FenceTracker {
     /// 3 spaces, `>` and one optional space), past `outer` columns of list
     /// item indentation (tabs to the next multiple of 4; what a tab gives past
     /// them counts as spaces before the first `>`); nil when the line has
-    /// fewer markers (or is blank).
-    private static func afterQuotes(_ u: UnsafeBufferPointer<UInt8>, depth: Int, outer: Int) -> Int? {
+    /// fewer markers (or is blank). Also its column, and whether a tab right
+    /// after the last `>` gives its first column as the marker's space.
+    private static func afterQuotes(_ u: UnsafeBufferPointer<UInt8>, depth: Int, outer: Int) -> (at: Int, column: Int, tabSpace: Bool)? {
         let n = u.count
         var k = 0, column = 0
         while column < outer, k < n, u[k] == space || u[k] == tab {
@@ -452,15 +459,18 @@ struct FenceTracker {
         }
         if column < outer { return nil }
         var extra = column - outer   // columns of a tab past the item's indentation
+        var tabSpace = false
         for _ in 0..<depth {
             var s = 0
             while s < 4, k + s < n, u[k + s] == space { s += 1 }
             guard s + extra <= 3, k + s < n, u[k + s] == 0x3E else { return nil }
             extra = 0
             k += s + 1
-            if k < n, u[k] == space { k += 1 }
+            column += s + 1
+            tabSpace = false
+            if k < n, u[k] == space { k += 1; column += 1 } else if k < n, u[k] == tab { tabSpace = true }
         }
-        return k
+        return (k, column, tabSpace)
     }
 
     /// Cells in a table row: `|`-separated (a `\|` does not separate), outer pipes optional.

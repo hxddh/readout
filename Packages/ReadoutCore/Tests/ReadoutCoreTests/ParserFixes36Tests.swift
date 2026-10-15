@@ -49,6 +49,13 @@ import Testing
         expectIncrementalMatchesFull("- > ```sh\n\t> cp $SRC/$NAME\n\t>\n\t> # not a heading\n\t> ```\n\n<div>\n\nafter\n")
     }
 
+    /// A tab right after `>` gives one column as the marker's space: `>\t```` closes the fence.
+    @Test func quotedFenceWithTabsAfterTheMarker() {
+        let h = html(">\t```\n>\tcode\n>\t```\n> Price $x$ here\n")
+        #expect(h.contains("class=\"math"), "\(h)")
+        expectIncrementalMatchesFull(">\t```\n>\tcode\n>\t```\n> $x$\n\n<div>\n\nafter\n")
+    }
+
     @Test func dollarsInFenceInQuotedListItemStayCode() {
         let h = html("> - ```bash\n>   cp $SRC/$NAME.md $DEST/\n>   ```\n")
         #expect(h.contains("cp $SRC/$NAME.md $DEST/"), "\(h)")
