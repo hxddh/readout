@@ -90,8 +90,6 @@ enum SmokeTest {
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(3))
             await capture(webView, window: controller.window, to: out, name: "1-initial")
-            // The window alone, for the README (light, at the top of the document).
-            windowShot(controller.window, out, "window-light")
 
             // Scroll into the middle and remember where a block sits, then let
             // the harness rewrite the file (temp file + rename, like agents).
@@ -110,6 +108,11 @@ enum SmokeTest {
             await capture(webView, window: controller.window, to: out, name: "2-after-edit")
             _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
             try? await Task.sleep(for: .seconds(1))
+            // The window alone, for the README: light, the edited document from the top, its changes marked.
+            windowShot(controller.window, out, "window-light")
+            // The next-change button's image as drawn in an active window (the
+            // CI runner's windows are inactive, which greys toolbar items).
+            badgeShot(out)
             // Open what changed in the edited table (the edit mark's action).
             _ = try? await webView.evaluateJavaScript("(() => { const t = document.querySelector('.blk.k-table.m-modified'); return t ? window.readout.toggleDiff(+t.dataset.slot) : false; })()")
             try? await Task.sleep(for: .milliseconds(300))
@@ -205,7 +208,7 @@ enum SmokeTest {
             app?.showSettings(nil)
             try? await Task.sleep(for: .seconds(1.5))
             screen(out, "5-settings")
-            let settingsWindow = NSApp.keyWindow
+            let settingsWindow = NSApp.windows.first { $0.contentViewController is NSHostingController<SettingsView> }
             var aux: [String: Any] = ["settings_tabbing_disallowed": settingsWindow?.tabbingMode == .disallowed]
             settingsWindow?.close()
             app?.showWelcome(nil)
@@ -665,6 +668,26 @@ enum SmokeTest {
 
     private static func mark(_ dir: URL, _ name: String) {
         try? Data().write(to: dir.appendingPathComponent(name))
+    }
+
+    private static func badgeShot(_ out: URL) {
+        for (name, appearance) in [("badge-light", NSAppearance.Name.aqua), ("badge-dark", .darkAqua)] {
+            NSAppearance(named: appearance)?.performAsCurrentDrawingAppearance {
+                let image = ReaderWindowController.changeImage(count: 5)
+                let scale: CGFloat = 4
+                guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(image.size.width * scale), pixelsHigh: Int(image.size.height * scale),
+                                                 bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                                 colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return }
+                rep.size = image.size
+                NSGraphicsContext.saveGraphicsState()
+                NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+                (appearance == .aqua ? NSColor.white : NSColor(white: 0.12, alpha: 1)).setFill()
+                NSRect(origin: .zero, size: image.size).fill()
+                image.draw(in: NSRect(origin: .zero, size: image.size))
+                NSGraphicsContext.restoreGraphicsState()
+                try? rep.representation(using: .png, properties: [:])?.write(to: out.appendingPathComponent("\(name).png"))
+            }
+        }
     }
 
     /// One window, without its shadow: `screencapture -l` (no desktop around it).

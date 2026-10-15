@@ -596,7 +596,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         guard let item = changeItem else { return }
         item.isEnabled = n > 0
         item.isHidden = n == 0
-        if n > 0 { item.image = Self.changeImage(count: n, label: item.label) }
+        if n > 0 { item.image = Self.changeImage(count: n) }
         item.toolTip = n > 0
             ? String(format: NSLocalizedString("Unread changes: %d. Press N for the next change, D to see what changed.", comment: "Toolbar tooltip; %d is the number of unread changes"), n)
             : NSLocalizedString("No unread changes", comment: "Toolbar tooltip")
@@ -605,7 +605,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// The next-change button: the arrow with the unread count in a badge of
     /// the accent colour. NSItemBadge is always red, which reads as an error;
     /// unread changes are not one. Drawn when shown, in the window's appearance.
-    private static func changeImage(count: Int, label: String) -> NSImage {
+    static func changeImage(count: Int) -> NSImage {
         let text = count > 99 ? "99+" : String(count)
         let font = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold)
         let textSize = (text as NSString).size(withAttributes: [.font: font])
