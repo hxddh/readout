@@ -128,7 +128,7 @@ public enum MarkdownParser {
         let document = Document(parsing: protected, options: [.disableSmartOpts])
         let probe = resolver.map(ResolverProbe.init)
         var renderer = HTMLRenderer(math: math, resolver: probe)
-        renderer.sourceLines = protected.split(separator: "\n", omittingEmptySubsequences: false)
+        renderer.sourceLines = FastBytes.lineSlices(protected)
 
         func sourceSlice(_ range: ClosedRange<Int>) -> ArraySlice<String> {
             let lo = max(range.lowerBound - 1, 0), hi = min(range.upperBound - 1, lines.count - 1)
@@ -177,8 +177,12 @@ public enum MarkdownParser {
             let slice = sourceSlice(range)
             let normalized = normalize(slice, kind: kind)
             var tasks: [Bool] = []
-            if let node { collectTasks(node, into: &tasks) }
-            for n in taskNodes { collectTasks(n, into: &tasks) }
+            // A checkbox needs `[ ]`, `[x]` or `[X]` in the block's source:
+            // without one, no walk over its Markdown tree (most blocks have none).
+            if slice.contains(where: FastBytes.mayHaveCheckbox) {
+                if let node { collectTasks(node, into: &tasks) }
+                for n in taskNodes { collectTasks(n, into: &tasks) }
+            }
             // Kind participates in the fingerprint so a paragraph and a heading with the same text differ.
             let fp = XXHash64.hash(kind.rawValue + "\u{1F}" + normalized)
             // The rendered HTML depends on the exact source (incl. task state) plus positional context.
@@ -332,7 +336,7 @@ public enum MarkdownParser {
         let notes = protectedDefinitions.map { entry in
             // A list in the note is tight or loose by the note's own lines, not the document's.
             var noteRenderer = renderer
-            noteRenderer.sourceLines = entry.source.split(separator: "\n", omittingEmptySubsequences: false)
+            noteRenderer.sourceLines = FastBytes.lineSlices(entry.source)
             return Footnotes.Note(id: entry.def.id, lines: entry.def.lines, text: entry.def.text,
                                   html: noteRenderer.children(Document(parsing: entry.source, options: [.disableSmartOpts])))
         }
