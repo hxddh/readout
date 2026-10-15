@@ -1,6 +1,7 @@
 // Bundles the reader into dist/ for the app and the Quick Look extension.
 import * as esbuild from 'esbuild';
 import { cpSync, mkdirSync, rmSync } from 'node:fs';
+import { shikiGrammars } from './shiki-grammars.mjs';
 
 const out = 'build/Web';
 rmSync(out, { recursive: true, force: true });
@@ -9,6 +10,7 @@ mkdirSync(`${out}/vendor/mermaid`, { recursive: true });
 
 await esbuild.build({
   entryPoints: ['src/reader.js'],
+  plugins: [shikiGrammars],
   bundle: true,
   splitting: true,
   format: 'esm',

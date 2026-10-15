@@ -59,6 +59,9 @@ CI prints the actual values before asserting. The thresholds come from the
 specs, reports, AGENTS.md / CLAUDE.md files; 20 English, 10 Chinese or
 mixed), each a byte-for-byte copy pinned to a commit of a permissively
 licensed repository. `SOURCES.md` lists source, license and agent evidence.
+One more, `31-readout-typesetting-cases.md`, is synthetic: written for these
+baselines, for constructs the real documents lack (code in an alert, a
+console transcript, CJK emphasis, short table cells).
 
 - `CorpusTests` (Core) renders every document to patch JSON
   (`corpus/patches/`) and fails when parser output changes. Regenerate with
