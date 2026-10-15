@@ -23,13 +23,17 @@ public struct Block: Sendable, Equatable {
     public let html: String
     /// Normalized plain-ish text used for similarity matching.
     public let text: String
+    /// The block's Markdown source as written (list markers, numbers and
+    /// checkboxes included; trailing white space left out): what a
+    /// comparison or a removed block shows.
+    public let source: String
     /// Heading metadata.
     public let headingLevel: Int?
     public let headingTitle: String?
     public let anchor: String?
 
     public init(kind: BlockKind, headingPath: [String], lines: ClosedRange<Int>, fingerprint: UInt64,
-                taskState: [Bool], html: String, text: String,
+                taskState: [Bool], html: String, text: String, source: String? = nil,
                 headingLevel: Int? = nil, headingTitle: String? = nil, anchor: String? = nil) {
         self.kind = kind
         self.headingPath = headingPath
@@ -38,6 +42,8 @@ public struct Block: Sendable, Equatable {
         self.taskState = taskState
         self.html = html
         self.text = text
+        // The same string when nothing was normalized away (shares its storage).
+        self.source = source.map { $0 == text ? text : $0 } ?? text
         self.headingLevel = headingLevel
         self.headingTitle = headingTitle
         self.anchor = anchor

@@ -9,7 +9,11 @@ import Foundation
 ///   backtick fence's info string may not contain a backtick), closed by a
 ///   line of the same character, at least as long, with nothing after it.
 ///   A fence opened inside a list item also ends where the item ends: at
-///   the first non-blank line indented less than the item's content.
+///   the first non-blank line indented less than the item's content (tabs
+///   counted to the next multiple of 4 columns). A fence may open right
+///   after the list marker (`2. ```bash`) or after block quote markers
+///   (`> ```bash`, `> - ```bash`); a quoted fence ends with the quote, at
+///   the first line with fewer `>` (fenced code has no lazy lines).
 /// - HTML blocks: `<!--` … `-->`, `<pre>`/`<script>`/`<style>`/`<textarea>`
 ///   … their closing tag, `<?` … `?>`, `<![CDATA[` … `]]>`; a block-level tag
 ///   (`<div>`, `<details>`, …) up to the next blank line; and any other tag
@@ -18,7 +22,12 @@ import Foundation
 /// - `<details>` opened by HTML blocks: the parser joins everything up to
 ///   the closing tag into one block, so its depth is tracked too.
 struct FenceTracker {
-    private(set) var open: (char: UInt8, count: Int, container: Int?)? = nil
+    /// The open fence: its character and length; the content column of the
+    /// list item holding it (from the quote's content inside a quote); the
+    /// number of `>` before it (0: not in a quote) and the indentation of
+    /// the first `>` when the quote sits in a list item.
+    private struct Fence { var char: UInt8, count: Int, container: Int?, quote: Int = 0, outer: Int = 0 }
+    private var open: Fence? = nil
     /// The open HTML block: the marker that ends it (nil: the next blank
     /// line), the content column of the list item holding it, and its text.
     private var html: (until: String?, container: Int?, text: String)? = nil
@@ -80,6 +89,20 @@ struct FenceTracker {
             return true
         }
         let first: UInt8 = indent < n ? u[indent] : 0
+        /// Columns of leading white space (tabs to the next multiple of 4) and where it ends.
+        func lead(from start: Int) -> (columns: Int, end: Int) {
+            var c = 0, k = start
+            while k < n, u[k] == Self.space || u[k] == Self.tab { c = u[k] == Self.tab ? (c / 4 + 1) * 4 : c + 1; k += 1 }
+            return (c, k)
+        }
+        /// A closing fence for `f` at `p`: the fence character, at least as many, nothing after.
+        func closes(_ f: Fence, at p: Int) -> Bool {
+            guard p < n, u[p] == f.char else { return false }
+            var run = 0
+            while p + run < n && u[p + run] == f.char { run += 1 }
+            return run >= f.count && restBlank(p + run)
+        }
+        let cols = lead(from: 0)
 
         if let h = html {
             if let c = h.container, !blank, indent < c {
@@ -100,16 +123,29 @@ struct FenceTracker {
                 return true
             }
         }
-        if let f = open {
-            if let c = f.container, !blank, indent < c {
+        if let f = open, f.quote > 0 {
+            // A line without the quote's markers ends the quote, and the fence in it.
+            if let p = Self.afterQuotes(u, depth: f.quote, outer: f.outer) {
+                let l = lead(from: p)
+                if let c = f.container, l.end < n, l.columns < c {
+                    open = nil      // the quoted list item ended, and the fence with it
+                    quoteItem = nil
+                } else {
+                    if l.columns < (f.container ?? 0) + 4, closes(f, at: l.end) { open = nil }
+                    inParagraph = false
+                    return true
+                }
+            } else {
+                open = nil
+                quoteItem = nil
+            }
+        } else if let f = open {
+            let l = cols
+            if let c = f.container, !blank, l.columns < c {
                 open = nil      // the list item ended, and the fence with it
                 itemContent = nil
             } else {
-                if indent < (f.container ?? 0) + 4, first == f.char {
-                    var run = 0
-                    while indent + run < n && u[indent + run] == f.char { run += 1 }
-                    if run >= f.count && restBlank(indent + run) { open = nil }
-                }
+                if l.columns < (f.container ?? 0) + 4, closes(f, at: l.end) { open = nil }
                 inParagraph = false
                 return true
             }
@@ -123,14 +159,47 @@ struct FenceTracker {
         }
         // A paragraph in a container this line still belongs to (cmark-gfm's
         // rule for what may interrupt it).
-        let continues = inParagraph && !(itemContent.map { indent < $0 } ?? false) && !paragraphInQuote
+        let continues = inParagraph && !(itemContent.map { cols.columns < $0 } ?? false) && !paragraphInQuote
         let itemStarted: Bool
-        if let content = Self.listItem(u, indent: indent, interrupting: continues) {
-            itemContent = content
+        var emptyItem = false, itemCode = false
+        if let item = Self.listItem(u, indent: indent, interrupting: continues) {
+            itemContent = item.column
             itemStarted = true
+            emptyItem = item.at == n
+            itemCode = item.code
+            // A fence right after the marker (`2. ```bash`, `- - ```text`) opens in the item.
+            var content = item.column, at = item.at
+            while !itemCode, at < n, let inner = Self.listItem(UnsafeBufferPointer(rebasing: u[at...]), indent: 0, interrupting: false, column: content) {
+                if inner.code { at = n; break }
+                content += inner.column
+                at += inner.at
+            }
+            if !itemCode, let fence = Self.fenceRun(u, at: at) {
+                open = Fence(char: fence.char, count: fence.count, container: content)
+                itemContent = content
+                inParagraph = false
+                paragraphInQuote = false
+                inTable = false
+                headerCells = nil
+                return true
+            }
+            // Raw HTML right after the marker (`1. <div>`) starts an HTML block in the item.
+            if !itemCode, at < n, u[at] == 0x3C {
+                let rest = String(decoding: UnsafeBufferPointer(rebasing: u[at...]), as: UTF8.self)
+                if let until = Self.htmlStart(rest, continuesParagraph: false) {
+                    itemContent = content
+                    html = (until, content, String(line))
+                    if let until, Self.ends(String(rest.lowercased().dropFirst()), until) { endHTML() }
+                    inParagraph = false
+                    paragraphInQuote = false
+                    inTable = false
+                    headerCells = nil
+                    return true
+                }
+            }
         } else {
             itemStarted = false
-            if let c = itemContent, indent < c, !inParagraph { itemContent = nil }
+            if let c = itemContent, cols.columns < c, !inParagraph { itemContent = nil }
         }
         let base = itemContent ?? 0
         let relative = indent - (indent >= base ? base : 0)
@@ -161,47 +230,67 @@ struct FenceTracker {
                 return false
             }
             // List items inside the quote (spaces only after the markers).
-            var quoteItemStarted = false
+            var quoteItemStarted = false, quoteItemAt = 0, quoteItemCode = false
             if contentCol == col {
                 let sub = UnsafeBufferPointer(rebasing: u[k...])
                 let subIndent = e - k
-                if c - col == subIndent, let content = Self.listItem(sub, indent: subIndent, interrupting: inParagraph && paragraphInQuote) {
-                    quoteItem = (depth, content)
+                if c - col == subIndent, let item = Self.listItem(sub, indent: subIndent, interrupting: inParagraph && paragraphInQuote, column: col) {
+                    quoteItem = (depth, item.column)
                     quoteItemStarted = true
+                    quoteItemAt = item.at
+                    quoteItemCode = item.code
                 } else if let q = quoteItem, q.depth != depth || (c - contentCol < q.content && !inParagraph) {
                     quoteItem = nil
                 }
             } else {
                 quoteItem = nil
             }
-            if !inParagraph && !quoteItemStarted {
-                let columns = c - contentCol, qBase = quoteItem?.content ?? 0
-                quoteCode = columns - (columns >= qBase ? qBase : 0) >= 4
+            let columns = c - contentCol, qBase = quoteItem?.content ?? 0
+            let qRelative = columns - (columns >= qBase ? qBase : 0)
+            if quoteItemStarted {
+                quoteCode = quoteItemCode   // `> 1.     code`
+            } else if !inParagraph {
+                quoteCode = qRelative >= 4
             } else {
                 quoteCode = false
             }
-        } else if !inParagraph {
-            quoteItem = nil
-        }
-        if relative < 4, first == 0x60 || first == 0x7E {   // ` or ~
-            var run = 0
-            while indent + run < n && u[indent + run] == first { run += 1 }
-            var backtickInInfo = false
-            if first == 0x60 { for k in (indent + run)..<n where u[k] == 0x60 { backtickInInfo = true; break } }
-            if run >= 3 && !backtickInInfo {
+            // A fence in the quote (`> ```bash`), or right after a list marker in it (`> - ```bash`).
+            var fenceAt: Int? = nil, container: Int? = nil
+            if quoteItemStarted, let q = quoteItem {
+                fenceAt = quoteItemCode ? nil : k + quoteItemAt
+                container = q.content
+            } else if qRelative < 4 {
+                fenceAt = e
+                container = quoteItem != nil && columns >= qBase ? qBase : nil
+            }
+            if let at = fenceAt, let fence = Self.fenceRun(u, at: at) {
                 if outdented { itemContent = nil }
-                open = (first, run, itemContent != nil ? base : nil)
+                open = Fence(char: fence.char, count: fence.count, container: container, quote: depth,
+                             outer: itemContent != nil && indent >= base ? base : 0)
                 inParagraph = false
+                paragraphInQuote = false
                 inTable = false
                 headerCells = nil
                 return true
             }
+        } else if !inParagraph {
+            quoteItem = nil
+        }
+        // Columns from the item's content (a tab-indented line may be in the item).
+        let leadRelative = cols.columns - (cols.columns >= base ? base : 0)
+        if leadRelative < 4, let fence = Self.fenceRun(u, at: cols.end) {
+            if cols.columns < base { itemContent = nil }
+            open = Fence(char: fence.char, count: fence.count, container: itemContent != nil ? base : nil)
+            inParagraph = false
+            inTable = false
+            headerCells = nil
+            return true
         }
         // A kind-7 tag line cannot interrupt such a paragraph.
-        if relative < 4, first == 0x3C {   // <
-            let trimmed = line.drop(while: { $0 == " " })
+        if leadRelative < 4, cols.end < n, u[cols.end] == 0x3C {   // <
+            let trimmed = line.drop(while: { $0 == " " || $0 == "\t" })
             if let until = Self.htmlStart(trimmed, continuesParagraph: continues) {
-                if outdented { itemContent = nil }
+                if cols.columns < base { itemContent = nil }
                 html = (until, itemContent != nil ? base : nil, String(line))
                 if let until, Self.ends(String(trimmed.lowercased().dropFirst()), until) { endHTML() }
                 inParagraph = false
@@ -225,6 +314,10 @@ struct FenceTracker {
             var k = indent
             while k < n && u[k] == 0x3D { k += 1 }
             underline = restBlank(k)
+        } else if continues && !itemStarted && relative < 4 && first == 0x2D {   // - (`-`, `--`: `---` is a break too)
+            var k = indent
+            while k < n && u[k] == 0x2D { k += 1 }
+            underline = restBlank(k)
         }
         if inTable {
             if isHeading || isBreak || first == 0x3E || itemStarted || relative >= 4 {
@@ -242,6 +335,8 @@ struct FenceTracker {
         }
         if let quoteCode {
             indentedCode = quoteCode
+        } else if itemStarted {
+            indentedCode = itemCode   // `1.     code`
         } else if !inParagraph && !itemStarted {
             // Columns, with tabs to the next multiple of 4, as CommonMark counts them.
             var columns = 0, k = 0
@@ -251,11 +346,50 @@ struct FenceTracker {
         let wasParagraph = inParagraph
         // Indented code (also tab-indented, or in a quote) is no paragraph for the next line to continue.
         inParagraph = !isHeading && !isBreak && !underline && !(relative >= 4 && !inParagraph) && !indentedCode
+            && !emptyItem   // an empty item holds no paragraph
         if !inParagraph { paragraphInQuote = false }
         else if relative < 4 && first == 0x3E { paragraphInQuote = true }
         else if !wasParagraph || itemStarted { paragraphInQuote = false }
         headerCells = inParagraph && u.contains(0x7C) ? Self.cells(u, from: indent) : nil
         return false
+    }
+
+    /// Takes a line the Markdown parser reads as paragraph text whatever it
+    /// holds: a line inside multi-line display math (`MathProtector` puts a
+    /// filler there), so `- 2x` in it opens no list item.
+    mutating func continueParagraph() {
+        indentedCode = false
+        inParagraph = true
+        headerCells = nil
+    }
+
+    /// A fence opening at `p`: 3+ backticks (none in the info string) or tildes.
+    private static func fenceRun(_ u: UnsafeBufferPointer<UInt8>, at p: Int) -> (char: UInt8, count: Int)? {
+        guard p < u.count, u[p] == 0x60 || u[p] == 0x7E else { return nil }   // ` or ~
+        let c = u[p]
+        var run = 0
+        while p + run < u.count && u[p + run] == c { run += 1 }
+        guard run >= 3 else { return nil }
+        if c == 0x60 { for k in (p + run)..<u.count where u[k] == 0x60 { return nil } }
+        return (c, run)
+    }
+
+    /// Where the content starts after `depth` block quote markers (each up to
+    /// 3 spaces, `>` and one optional space), past `outer` columns of list
+    /// item indentation; nil when the line has fewer markers (or is blank).
+    private static func afterQuotes(_ u: UnsafeBufferPointer<UInt8>, depth: Int, outer: Int) -> Int? {
+        let n = u.count
+        var k = 0
+        while k < outer, k < n, u[k] == space { k += 1 }
+        if k < outer { return nil }
+        for _ in 0..<depth {
+            var s = 0
+            while s < 4, k + s < n, u[k + s] == space { s += 1 }
+            guard s <= 3, k + s < n, u[k + s] == 0x3E else { return nil }
+            k += s + 1
+            if k < n, u[k] == space { k += 1 }
+        }
+        return k
     }
 
     /// Cells in a table row: `|`-separated (a `\|` does not separate), outer pipes optional.
@@ -304,7 +438,7 @@ struct FenceTracker {
         guard let h = html else { return }
         html = nil
         guard h.container == nil, h.text.contains("<") else { return }
-        let d = MarkdownParser.detailsDepth(h.text)
+        let d = MarkdownParser.detailsDepth(h.text + "\n")   // the parser's raw HTML ends with the line break
         if detailsDepth == 0 {
             if d > 0 { detailsDepth = d }
         } else {
@@ -355,11 +489,17 @@ struct FenceTracker {
         return count >= 3
     }
 
-    /// The content column of a list item starting this line: up to 3 spaces,
-    /// a bullet or 1-9 digits and `.` or `)`, then 1-4 spaces before text.
+    /// A list item starting this line: up to 3 spaces, a bullet or 1-9
+    /// digits and `.` or `)`, then white space (tabs to the next multiple of
+    /// 4 columns, from `column`, the column of the buffer's start). Returns
+    /// the content column (from the buffer's start) and where the content
+    /// starts. 1-4 columns of white space before it; with 5 or more the
+    /// content is indented code (`code`), one column past the marker; with
+    /// nothing after the marker the item is empty (`at` is the end).
     /// When the line would interrupt a paragraph, only a bullet or a list
-    /// starting at 1 counts.
-    private static func listItem(_ u: UnsafeBufferPointer<UInt8>, indent: Int, interrupting: Bool) -> Int? {
+    /// starting at 1 counts, and not an empty item.
+    private static func listItem(_ u: UnsafeBufferPointer<UInt8>, indent: Int, interrupting: Bool,
+                                 column start: Int = 0) -> (column: Int, at: Int, code: Bool)? {
         let n = u.count
         guard indent <= 3, indent < n else { return nil }
         var k = indent
@@ -376,17 +516,20 @@ struct FenceTracker {
         } else {
             return nil
         }
-        var spaces = 0
-        while k + spaces < n && u[k + spaces] == space { spaces += 1 }
-        guard spaces >= 1 && spaces <= 4, k + spaces < n else { return nil }
-        let next = u[k + spaces]
-        if next == tab || next == 0x0A || next == 0x0B || next == 0x0C || next == 0x0D { return nil }
+        var col = start + k, p = k
+        while p < n, u[p] == space || u[p] == tab { col = u[p] == tab ? (col / 4 + 1) * 4 : col + 1; p += 1 }
+        if p == n { return interrupting ? nil : (k + 1, n, false) }
+        let width = col - (start + k)
+        guard width >= 1 else { return nil }
+        let next = u[p]
+        if next == 0x0A || next == 0x0B || next == 0x0C || next == 0x0D { return nil }
         if next >= 0x80 {
             // Unicode white space (no-break space, ideographic space) is not text.
-            var it = String(decoding: UnsafeBufferPointer(rebasing: u[(k + spaces)...]), as: UTF8.self).unicodeScalars.makeIterator()
+            var it = String(decoding: UnsafeBufferPointer(rebasing: u[p...]), as: UTF8.self).unicodeScalars.makeIterator()
             if let scalar = it.next(), scalar.properties.isWhitespace { return nil }
         }
         if interrupting, let number, number != 1 { return nil }
-        return k + spaces
+        if width >= 5 { return (k + 1, k, true) }
+        return (col - start, p, false)
     }
 }

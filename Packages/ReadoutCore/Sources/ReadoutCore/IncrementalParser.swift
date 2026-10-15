@@ -201,6 +201,13 @@ public final class IncrementalParser: @unchecked Sendable {
                 i += 1
                 continue
             }
+            // Multi-line display math: its lines are paragraph text to the
+            // Markdown parser (`MathProtector.protect`), whatever they hold.
+            if !fences.indentedCode, FastBytes.contains(line, 0x24, 0x24), let block = MathProtector.displayBlock(lines, at: i) {
+                for _ in (i + 1)...block.end { fences.continueParagraph() }
+                i = block.end + 1
+                continue
+            }
             // A neutral boundary: this line is blank, the next non-blank line
             // starts fresh, and nothing is open (code, raw HTML, <details>).
             if line.allSatisfy({ $0 == " " || $0 == "\t" }) && !fences.isOpen {

@@ -84,7 +84,7 @@ public enum MarkdownParser {
                     path = b.kind == .footnotes || b.kind == .frontMatter ? [] : currentPath
                 }
                 var nb = Block(kind: b.kind, headingPath: path, lines: lines, fingerprint: b.fingerprint,
-                               taskState: b.taskState, html: html, text: b.text,
+                               taskState: b.taskState, html: html, text: b.text, source: b.source,
                                headingLevel: b.headingLevel, headingTitle: b.headingTitle, anchor: anchor)
                 nb.cjk = b.cjk || (b.cjkMixed && mixedIsCJK)
                 nb.cjkMixed = b.cjkMixed
@@ -183,7 +183,7 @@ public enum MarkdownParser {
                 if let cache, (probe?.fileSystemReads ?? 0) == reads { cache.store(cacheKey, rendered); cacheKeys.append(cacheKey) }
             }
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
-                          taskState: tasks, html: rendered, text: normalized,
+                          taskState: tasks, html: rendered, text: normalized, source: shownSource(slice, source),
                           headingLevel: heading?.0, headingTitle: heading?.1, anchor: heading?.2)
             if kind == .code || kind == .mermaid || kind == .math {
                 b.cjk = CJK.ratio(normalized) > 0.3
@@ -319,8 +319,11 @@ public enum MarkdownParser {
 
         // Definitions are numbered and shown by `assemble`, which sees every reference.
         let notes = protectedDefinitions.map { entry in
-            Footnotes.Note(id: entry.def.id, lines: entry.def.lines, text: entry.def.text,
-                           html: renderer.children(Document(parsing: entry.source, options: [.disableSmartOpts])))
+            // A list in the note is tight or loose by the note's own lines, not the document's.
+            var noteRenderer = renderer
+            noteRenderer.sourceLines = entry.source.split(separator: "\n", omittingEmptySubsequences: false)
+            return Footnotes.Note(id: entry.def.id, lines: entry.def.lines, text: entry.def.text,
+                                  html: noteRenderer.children(Document(parsing: entry.source, options: [.disableSmartOpts])))
         }
         return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys)
     }
@@ -407,9 +410,17 @@ public enum MarkdownParser {
     /// It must read as YAML: right after the opening `---`, and with a
     /// `key: value` line (or a `#` comment) before the close. Otherwise `---` is a thematic
     /// break (and `---` / text / `---` a setext heading), as in CommonMark.
+    /// The fences may carry trailing spaces or tabs.
     static func frontMatterEnd(_ lines: [String]) -> Int? {
-        guard lines.first == "---", lines.count > 2, !lines[1].allSatisfy({ $0 == " " || $0 == "\t" }) else { return nil }
-        guard let end = lines.indices.dropFirst().prefix(300).first(where: { lines[$0] == "---" || lines[$0] == "..." }) else { return nil }
+        func fence(_ line: String, _ marks: String...) -> Bool {
+            guard line.utf8.count >= 3, line.utf8.count < 64 else { return false }
+            var s = Substring(line)
+            while let last = s.last, last == " " || last == "\t" { s.removeLast() }
+            return marks.contains { s == $0 }
+        }
+        guard let first = lines.first, fence(first, "---"), lines.count > 2,
+              !lines[1].allSatisfy({ $0 == " " || $0 == "\t" }) else { return nil }
+        guard let end = lines.indices.dropFirst().prefix(300).first(where: { fence(lines[$0], "---", "...") }) else { return nil }
         return lines[1..<end].contains(where: { looksLikeYAMLKey($0) || $0.hasPrefix("#") }) ? end : nil
     }
 
@@ -422,17 +433,55 @@ public enum MarkdownParser {
         return after.isEmpty || after.first == " " || after.first == "\t"
     }
 
+    /// Top-level `key: value` pairs. A block scalar (`key: >` folded, `key: |`
+    /// literal) takes the indented lines under it, and a key with no value
+    /// takes the items of a YAML list under it (`- Read`), joined with commas.
     static func frontMatterBlock(_ body: [String], lines: ClosedRange<Int>) -> Block {
         var items = ""
-        for line in body {
-            guard let colon = line.firstIndex(of: ":"), !line.hasPrefix(" "), !line.hasPrefix("#") else { continue }
+        var i = 0
+        while i < body.count {
+            let line = body[i]
+            i += 1
+            guard let colon = line.firstIndex(of: ":"), !line.hasPrefix(" "), !line.hasPrefix("\t"), !line.hasPrefix("#") else { continue }
             let key = line[..<colon].trimmingCharacters(in: .whitespaces)
             var value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            // Lines under the key: indented, or list items (YAML allows `- x` at the key's indentation), or blank.
+            var nested: [String] = []
+            while i < body.count, body[i].hasPrefix(" ") || body[i].hasPrefix("\t") || body[i].hasPrefix("- ") || body[i] == "-"
+                    || (body[i].allSatisfy({ $0 == " " || $0 == "\t" }) && i + 1 < body.count && body[i + 1].hasPrefix(" ")) {
+                nested.append(body[i])
+                i += 1
+            }
+            let trimmed = nested.map { $0.trimmingCharacters(in: .whitespaces) }
+            var html: String? = nil
+            if let indicator = value.first, indicator == ">" || indicator == "|",
+               value.dropFirst().allSatisfy({ $0 == "-" || $0 == "+" || $0.isNumber }) {
+                // Block scalar: folded lines join with spaces (a blank line is a break), literal lines keep their breaks.
+                var paragraphs: [[String]] = [[]]
+                for t in trimmed { if t.isEmpty { paragraphs.append([]) } else { paragraphs[paragraphs.count - 1].append(t) } }
+                let parts = paragraphs.filter { !$0.isEmpty }
+                html = parts.map { p in
+                    indicator == ">" ? HTML.escape(p.joined(separator: " ")) : p.map(HTML.escape).joined(separator: "<br>")
+                }.joined(separator: "<br>")
+                value = ""
+            } else if value.isEmpty {
+                let list = trimmed.filter { $0.hasPrefix("- ") }.map { item -> String in
+                    var v = item.dropFirst(2).trimmingCharacters(in: .whitespaces)
+                    if v.count > 1, (v.hasPrefix("\"") && v.hasSuffix("\"")) || (v.hasPrefix("'") && v.hasSuffix("'")) {
+                        v = String(v.dropFirst().dropLast())
+                    }
+                    return v
+                }.filter { !$0.isEmpty }
+                if !list.isEmpty, list.count == trimmed.filter({ !$0.isEmpty }).count {
+                    html = HTML.escape(list.joined(separator: ", "))
+                }
+            }
             if value.count > 1, (value.hasPrefix("\"") && value.hasSuffix("\"")) || (value.hasPrefix("'") && value.hasSuffix("'")) {
                 value = String(value.dropFirst().dropLast())
             }
-            guard !key.isEmpty, !value.isEmpty else { continue }
-            items += "<span class=\"fm-item\"><span class=\"fm-key\">\(HTML.escape(key))</span> \(HTML.escape(value))</span>"
+            let shown = html ?? HTML.escape(value)
+            guard !key.isEmpty, !shown.isEmpty else { continue }
+            items += "<span class=\"fm-item\"><span class=\"fm-key\">\(HTML.escape(key))</span> \(shown)</span>"
         }
         let text = body.joined(separator: "\n")
         let html = items.isEmpty ? "" : "<div class=\"front-matter\">\(items)</div>"
@@ -452,6 +501,16 @@ public enum MarkdownParser {
     static func collectTasks(_ node: Markup, into out: inout [Bool]) {
         if let li = node as? ListItem, let cb = li.checkbox { out.append(cb == .checked) }
         for c in node.children { collectTasks(c, into: &out) }
+    }
+
+    /// A block's source as shown and compared: its lines without trailing white space.
+    static func shownSource(_ lines: ArraySlice<String>, _ joined: String) -> String {
+        guard lines.contains(where: { $0.last == " " || $0.last == "\t" }) else { return joined }
+        return lines.map { line -> Substring in
+            var l = Substring(line)
+            while let last = l.last, last == " " || last == "\t" { l.removeLast() }
+            return l
+        }.joined(separator: "\n")
     }
 
     private static let listMarker = try! NSRegularExpression(pattern: #"^(\s*)(?:[-*+]|\d{1,9}[.)])(\s+)(?:\[[ xX]\]\s)?"#)
