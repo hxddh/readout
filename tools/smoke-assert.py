@@ -160,6 +160,9 @@ check("chrome: no text-width toolbar item", "readout.width" not in (chrome.get("
 check("chrome: the next-change item and find field are in the toolbar",
       {"readout.nextChange", "readout.search"} <= set(chrome.get("toolbar") or []), live)
 check("chrome: the find field is 160 pt wide", chrome.get("search_width") == 160, live)
+# ...as drawn too: macOS 26 grew it into the free toolbar space (3.5: ~325 pt).
+check("chrome: the find field is drawn no wider than 160 pt",
+      0 < (chrome.get("search_field_width") or -1) <= 160.5, live)
 # New windows follow System Settings "Prefer tabs".
 check("chrome: windows tab as System Settings says", chrome.get("tabbing_automatic") is True, live)
 item = chrome.get("change_item") or {}
@@ -174,6 +177,9 @@ unreadable = live.get("unreadable") or {}
 check("unreadable: the status is set", bool(unreadable.get("status")), live)
 check("unreadable: the subtitle shows the status",
       bool(unreadable.get("status")) and unreadable.get("subtitle") == unreadable.get("status"), live)
+# ...and the page says it too, in its empty state, instead of staying blank.
+check("unreadable: the page shows the status in its empty state",
+      bool(unreadable.get("status")) and unreadable.get("page_empty_text") == unreadable.get("status"), live)
 uitem = unreadable.get("change_item") or {}
 # Nothing unread: the next-change button is hidden (3.4 kept it, disabled, so the
 # width item beside it would not move; that item is gone, so nothing reflows now).
@@ -243,6 +249,8 @@ bgc = bg.get("chrome") or {}
 # readout -b adds a tab: with the tab bar showing, no folder in the subtitle (3.5 rule).
 check("cli: the background tab shows a tab bar and no folder subtitle",
       bgc.get("tab_bar_visible") is True and bgc.get("subtitle") == "", bg)
+# Open Recent lists documents that were in front, not every file opened behind.
+check("cli: a document opened in the background is not in Open Recent", bg.get("in_recents") is False, bg)
 check("cli: the document being read stays in front",
       bg.get("reading_before") not in (None, "", "background.md", "plan.md") and bg.get("reading_after") == bg.get("reading_before"), bg)
 
@@ -251,6 +259,40 @@ print(f"menus: {menus}")
 edit_menu = menus.get("edit_menu") or []
 for entry in ["undo: z", "redo: z", "cut: x", "paste: v", "delete:"]:
     check(f"edit menu has {entry}", entry in edit_menu, edit_menu)
+
+
+def menu_items(items, path=()):
+    for i in items:
+        if i.get("separator"):
+            continue
+        yield path + (i.get("title"),), i
+        yield from menu_items(i.get("items") or [], path + (i.get("title"),))
+
+
+tree = list(menu_items(menus.get("menus") or []))
+check("menus.json has the whole menu bar", len(tree) > 40, len(tree))
+by_action = {i.get("action"): i for _, i in tree if i.get("action")}
+close_all = by_action.get("closeAll:") or {}
+check("File has Close All as the ⌥⌘W alternate of Close",
+      close_all.get("key") == "⌥⌘w" and close_all.get("alternate") is True, close_all)
+use_sel = by_action.get("useSelectionForFind:") or {}
+check("Find has Use Selection for Find, without ⌘E", bool(use_sel) and "key" not in use_sel, use_sel)
+check("⌘E stays Open in Editor", (by_action.get("openInEditor:") or {}).get("key") == "⌘e", by_action.get("openInEditor:"))
+what = by_action.get("showWhatChanged:") or {}
+check("View has Show What Changed, without a key", bool(what) and "key" not in what, what)
+check("Help opens the bundled shortcuts", "openHelp:" in by_action, sorted(by_action))
+
+aux = load("aux-windows.json")
+print(f"aux-windows: {aux}")
+check("settings: never a tab", aux.get("settings_tabbing_disallowed") is True, aux)
+check("welcome: never a tab, no minimize or zoom button",
+      aux.get("welcome_tabbing_disallowed") is True and aux.get("welcome_minimize_hidden") is True
+      and aux.get("welcome_zoom_hidden") is True, aux)
+check("welcome: named, and not listed twice in the Window menu",
+      bool(aux.get("welcome_title")) and aux.get("welcome_in_window_menu") is False, aux)
+
+for name in ["window-light.png", "window-dark.png"]:
+    check(f"{name} captured", (OUT / name).exists() and (OUT / name).stat().st_size > 10000)
 
 logp = OUT / "smoke-out.log"
 log = logp.read_text() if logp.exists() else ""

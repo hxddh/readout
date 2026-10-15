@@ -1,0 +1,6 @@
+/* Info.plist 字符串：文稿类型、访达“种类”一栏和隐私提示。 */
+"Markdown Document" = "Markdown 文稿";
+"NSDocumentsFolderUsageDescription" = "Readout 会读取你在此打开的 Markdown 文件，或你添加为 Agent 文件夹的内容。它从不修改这些文件。";
+"NSDesktopFolderUsageDescription" = "Readout 会读取你在此打开的 Markdown 文件，或你添加为 Agent 文件夹的内容。它从不修改这些文件。";
+"NSDownloadsFolderUsageDescription" = "Readout 会读取你在此打开的 Markdown 文件，或你添加为 Agent 文件夹的内容。它从不修改这些文件。";
+"NSAppleEventsUsageDescription" = "当你选择 Xcode 作为编辑器时，Readout 会请 Xcode 打开文件并定位到指定行。";

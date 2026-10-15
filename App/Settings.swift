@@ -97,7 +97,7 @@ enum BaselineStore {
         var savedAt: Date
     }
 
-    private static let queue = DispatchQueue(label: "Readout.BaselineStore", qos: .utility)
+    fileprivate static let queue = DispatchQueue(label: "Readout.BaselineStore", qos: .utility)
 
     private static var dir: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -134,6 +134,52 @@ enum BaselineStore {
             for f in old { try? FileManager.default.removeItem(at: f) }
         }
         return record
+    }
+
+    /// The record of `url`, read and decoded off the main thread (behind any
+    /// save still queued for it) while the caller does other work.
+    @MainActor static func prefetch(_ url: URL) -> Prefetch {
+        let prefetch = Prefetch(key: key(for: url), url: url)
+        queue.async(qos: .userInitiated) {
+            let record = load(url)
+            DispatchQueue.main.async { MainActor.assumeIsolated { prefetch.finish(record) } }
+        }
+        return prefetch
+    }
+
+    @MainActor
+    final class Prefetch {
+        fileprivate let key: String
+        fileprivate let url: URL
+        private var result: Record??
+        private var waiting: [(Record?) -> Void] = []
+
+        fileprivate init(key: String, url: URL) {
+            self.key = key
+            self.url = url
+        }
+
+        fileprivate func finish(_ record: Record?) {
+            result = .some(record)
+            let w = waiting
+            waiting = []
+            w.forEach { $0(record) }
+        }
+
+        /// The record for the file the content was read from, on the main
+        /// thread: the prefetched one, or, when a symlink pointed elsewhere by
+        /// the time it was read, that file's, also read off the main thread.
+        func record(forSourcePath source: String, _ completion: @escaping (Record?) -> Void) {
+            guard BaselineKey.key(forPath: source) == key else {
+                let url = self.url
+                BaselineStore.queue.async(qos: .userInitiated) {
+                    let record = BaselineStore.load(url, realPath: source)
+                    DispatchQueue.main.async { MainActor.assumeIsolated { completion(record) } }
+                }
+                return
+            }
+            if let result { completion(result) } else { waiting.append(completion) }
+        }
     }
 
     /// Waits for every queued save: called when the app quits, which would

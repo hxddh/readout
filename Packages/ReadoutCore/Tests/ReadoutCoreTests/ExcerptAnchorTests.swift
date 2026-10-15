@@ -48,4 +48,16 @@ import Testing
         #expect(ExcerptAnchor.index(of: "- [ ] write the conditional-write case", in: texts, near: 2) == 2)
         #expect(ExcerptAnchor.index(of: "- [ ] write the conditional-write case", in: texts, near: 1) == 0)
     }
+
+    @Test func resumeFallsBackToTheIndexUnlessRewritten() {
+        let texts = ["first block of the new text", "second block", "third block"]
+        // The excerpt is found: rewritten or not, that block.
+        #expect(ExcerptAnchor.resumeIndex(excerpt: "second block", index: 0, in: texts, rewritten: false) == 1)
+        #expect(ExcerptAnchor.resumeIndex(excerpt: "second block", index: 0, in: texts, rewritten: true) == 1)
+        // Not found: the saved index, except in a rewritten document (the top).
+        #expect(ExcerptAnchor.resumeIndex(excerpt: "gone", index: 2, in: texts, rewritten: false) == 2)
+        #expect(ExcerptAnchor.resumeIndex(excerpt: "gone", index: 2, in: texts, rewritten: true) == nil)
+        #expect(ExcerptAnchor.resumeIndex(excerpt: nil, index: 2, in: texts, rewritten: true) == nil)
+        #expect(ExcerptAnchor.resumeIndex(excerpt: nil, index: 5, in: texts, rewritten: false) == nil)
+    }
 }

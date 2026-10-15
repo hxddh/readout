@@ -297,6 +297,7 @@ hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
 
 /* Rounded corners, but not so round that a small inline icon becomes a blob. */
 img { max-width: 100%; height: auto; border-radius: min(6px, 12%); }
+p.img-only img { display: block; }
 
 mark {
   color: inherit;
@@ -692,6 +693,9 @@ details ul, details ol { padding-left: 1.5em; }
   animation: arrive 1.2s ease-out forwards;
 }
 .k-heading.flash::after { bottom: 0.2em; }
+/* A flash still running restarts under a second name (patch.js), without forcing a layout. */
+@keyframes arrive2 { from { background: var(--accent-soft); } to { background: transparent; } }
+.blk.flash.flash-alt::after { animation-name: arrive2; }
 
 /* The rail: a thin track on the right edge that maps unread changes onto the document. */
 #ro-rail {

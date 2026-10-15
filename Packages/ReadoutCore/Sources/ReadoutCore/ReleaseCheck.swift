@@ -43,10 +43,23 @@ public enum ReleaseCheck {
     }
 
     /// Strips Markdown formatting for alert text: links keep their text,
-    /// headings lose their #'s, emphasis/code ticks go away. Capped at
-    /// `limit` characters so a long changelog cannot blow up the dialog.
+    /// headings lose their #'s, emphasis/code ticks go away, HTML tags
+    /// (`<kbd>⌥⌘\</kbd>`) keep only their text. A first heading that is only
+    /// the version (`## 3.5.0`) is dropped: the alert already names the
+    /// release above the notes. Capped at `limit` characters so a long
+    /// changelog cannot blow up the dialog.
     public static func plainNotes(_ markdown: String, limit: Int = 600) -> String {
         var s = markdown
+        s = replacing(#"\A\s*#{1,6}[ \t]*(Readout[ \t]+)?[vV]?\d+(\.\d+)*(-[0-9A-Za-z.-]+)?[ \t]*#*[ \t]*(\n|\z)"#, in: s, with: "")
+        // Outside code spans only: "`<details>` renders as…" keeps its tag.
+        s = s.split(separator: "`", omittingEmptySubsequences: false).enumerated().map { i, part in
+            guard i % 2 == 0 else { return String(part) }
+            let t = replacing(#"<!--[\s\S]*?-->"#, in: String(part), with: "")
+            return replacing(#"</?[A-Za-z][A-Za-z0-9-]*(\s[^<>]*)?/?>"#, in: t, with: "")
+        }.joined(separator: "`")
+        for (entity, char) in [("&lt;", "<"), ("&gt;", ">"), ("&quot;", "\""), ("&#39;", "'"), ("&nbsp;", " "), ("&amp;", "&")] {
+            s = s.replacingOccurrences(of: entity, with: char)
+        }
         s = replacing(#"\[([^\]]*)\]\([^)]*\)"#, in: s, with: "$1")
         s = replacing(#"^#{1,6}\s*"#, in: s, with: "", anchorsMatchLines: true)
         s = replacing(#"(\*\*|__)(.*?)\1"#, in: s, with: "$2")

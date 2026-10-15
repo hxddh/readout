@@ -129,3 +129,22 @@ import Testing
         #expect(edited.components(separatedBy: "(revised:").count - 1 == 20)
     }
 }
+
+/// tools/perf-budgets.json is consistent: a run that meets a metric's
+/// target never fails its guard (the regression limit is at or above the goal).
+@Suite struct CorePerfBudgetFile {
+    @Test func everyGuardIsAtLeastItsTarget() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()   // ReadoutCoreTests
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()   // Tests, ReadoutCore, Packages
+            .deletingLastPathComponent().appendingPathComponent("tools/perf-budgets.json")
+        let budgets = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        var checked = 0
+        for (name, value) in budgets {
+            guard let metric = value as? [String: Any], let target = metric["target"] as? Double,
+                  let guardValue = metric["guard"] as? Double else { continue }
+            #expect(guardValue >= target, "\(name): guard \(guardValue) is below its target \(target)")
+            checked += 1
+        }
+        #expect(checked >= 4)
+    }
+}

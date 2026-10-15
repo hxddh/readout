@@ -76,22 +76,25 @@ import Testing
         #expect(ReaderChrome.outlineBaseLevel([]) == 1)
     }
 
-    @Test func helpOpensTheKeyboardSectionInTheReadersLanguage() {
-        #expect(ReaderChrome.helpURL(preferredLanguages: ["zh-Hans-CN", "en"]).absoluteString
-                == "https://github.com/hxddh/readout/blob/main/README.zh-CN.md#%E5%BF%AB%E6%8D%B7%E9%94%AE")
-        #expect(ReaderChrome.helpURL(preferredLanguages: ["zh-Hant"]).fragment == "快捷键" || ReaderChrome.helpURL(preferredLanguages: ["zh-Hant"]).fragment == "%E5%BF%AB%E6%8D%B7%E9%94%AE")
-        #expect(ReaderChrome.helpURL(preferredLanguages: ["en-US"]).absoluteString == "https://github.com/hxddh/readout#keyboard")
-        #expect(ReaderChrome.helpURL(preferredLanguages: []).fragment == "keyboard")
+    /// Help opens the shortcuts bundled with the app, in Readout, offline
+    /// (3.5 opened the README on GitHub in the browser).
+    @Test func helpOpensTheKeyboardShortcutsInTheReadersLanguage() {
+        #expect(ReaderChrome.helpFileName(preferredLanguages: ["zh-Hans-CN", "en"]) == "Keyboard.zh-Hans.md")
+        #expect(ReaderChrome.helpFileName(preferredLanguages: ["zh-Hans"]) == "Keyboard.zh-Hans.md")
+        #expect(ReaderChrome.helpFileName(preferredLanguages: ["en-US"]) == "Keyboard.md")
+        #expect(ReaderChrome.helpFileName(preferredLanguages: []) == "Keyboard.md")
     }
 
-    /// The anchors the help link uses exist in the READMEs (GitHub slugs).
-    @Test func theHelpAnchorsExist() throws {
+    /// The bundled help files exist and list the menu shortcuts.
+    @Test func theHelpFilesExist() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let en = try String(contentsOf: root.appendingPathComponent("README.md"), encoding: .utf8)
-        let zh = try String(contentsOf: root.appendingPathComponent("README.zh-CN.md"), encoding: .utf8)
-        #expect(en.contains("\n## Keyboard\n"))
-        #expect(zh.contains("\n## 快捷键\n"))
+        for name in ["Keyboard.md", "Keyboard.zh-Hans.md"] {
+            let text = try String(contentsOf: root.appendingPathComponent("App/Help/\(name)"), encoding: .utf8)
+            for key in ["⌘E", "⇧⌘R", "⌥⌘C", "⌘P", "⌥⌘W", "⌘K", "⇧⌘K", "⌥⌘\\"] {
+                #expect(text.contains(key), "\(name) lacks \(key)")
+            }
+        }
     }
 
     @Test func aWriteAfterAQuietSpellIsReportedAtOnce() {

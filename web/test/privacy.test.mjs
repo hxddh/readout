@@ -7,6 +7,7 @@ import { chromium, webkit, firefox } from 'playwright';
 import http from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import { collectPageErrors } from './pageerrors.mjs';
 
 const TRACK = process.argv[2] || 'track.example';
 
@@ -26,7 +27,7 @@ const browser = await engines[engineName].launch(launchOpts);
 // deviceScaleFactor 2: every Mac is 2x, and srcset picks the remote candidate there.
 const page = await browser.newPage({ viewport: { width: 900, height: 700 }, deviceScaleFactor: 2 });
 const errors = [];
-page.on('pageerror', e => errors.push(String(e)));
+collectPageErrors(page, errors);
 
 let escaped = 0;
 await page.route(/.*/, route => {

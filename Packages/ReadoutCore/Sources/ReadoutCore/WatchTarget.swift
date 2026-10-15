@@ -118,7 +118,7 @@ public enum BaselineKey {
     }
 }
 
-/// `readout-open://open?path=<percent-encoded absolute path>&background=1`:
+/// `readout-open://open?path=<percent-encoded absolute path>&background=1[&anchor=<section>]`:
 /// how the `readout` script asks for a file in the background (`readout -b`,
 /// `readout --hook`). `open -g` alone only keeps Readout from activating; the
 /// open itself still reaches the app as an ordinary request, which brings the
@@ -130,6 +130,8 @@ public enum OpenLink {
     public struct Request: Equatable, Sendable {
         public let path: String
         public let background: Bool
+        /// A section to scroll to (`readout plan.md#risks`).
+        public var anchor: String? = nil
     }
 
     public static func parse(_ url: URL) -> Request? {
@@ -137,6 +139,7 @@ public enum OpenLink {
               let c = URLComponents(url: url, resolvingAgainstBaseURL: false), c.host?.lowercased() == "open",
               let path = c.queryItems?.first(where: { $0.name == "path" })?.value, path.hasPrefix("/") else { return nil }
         let bg = c.queryItems?.first(where: { $0.name == "background" })?.value?.lowercased()
-        return Request(path: path, background: bg == "1" || bg == "true" || bg == "yes")
+        let anchor = c.queryItems?.first(where: { $0.name == "anchor" })?.value
+        return Request(path: path, background: bg == "1" || bg == "true" || bg == "yes", anchor: anchor?.isEmpty == false ? anchor : nil)
     }
 }

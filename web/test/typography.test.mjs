@@ -5,6 +5,7 @@ import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { PNG } from 'pngjs';
+import { collectPageErrors } from './pageerrors.mjs';
 
 const WEB = process.env.READOUT_WEB_DIR || 'build/Web';
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.png': 'image/png' };
@@ -35,7 +36,7 @@ const errors = [];
 
 async function open(width, dark = false) {
   const page = await browser.newPage({ viewport: { width, height: 800 } });
-  page.on('pageerror', e => errors.push(String(e)));
+  collectPageErrors(page, errors);
   await page.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -306,7 +307,7 @@ await page.close();
 // with the system in light or dark mode.
 async function openRaw(width, scheme) {
   const p = await browser.newPage({ viewport: { width, height: 800 }, colorScheme: scheme });
-  p.on('pageerror', e => errors.push(String(e)));
+  collectPageErrors(p, errors);
   await p.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };

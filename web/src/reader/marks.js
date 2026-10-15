@@ -1,7 +1,7 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes, and the "Show Only Changes" filter.
 import { doc, slots, heights, strings, quicklook, post, inViewport } from './core.js';
-import { captureAnchor, restoreAnchor, isShown } from './anchor.js';
+import { captureAnchor, restoreAnchor, isShown, atBottom } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -193,6 +193,26 @@ doc.addEventListener('click', ev => {
 // than two screens, half a screen of it) has been visible for 800 ms while
 // the window is focused. The fine thresholds report a tall block's visible
 // part as it grows.
+//
+// A window on screen but not focused is the reader watching an agent from
+// the terminal beside it: what arrives at the end they follow is read too,
+// once it has been in view for 1.5 s while they still follow the end. Read
+// anywhere else, or in a window hidden or minimised, a change waits for the
+// window to come back.
+const DWELL_MS = 800;
+const DWELL_UNFOCUSED_MS = 1500;
+const readSince = new Map();   // element -> when its dwell started
+function armRead(el, ms = DWELL_MS) {
+  waiting.delete(el);
+  readSince.set(el, performance.now());
+  readTimers.set(el, setTimeout(() => tryRead(el), ms));
+}
+function disarmRead(el) {
+  clearTimeout(readTimers.get(el));
+  readTimers.delete(el);
+  readSince.delete(el);
+  waiting.delete(el);
+}
 const readThresholds = [0];
 for (let i = 1; i <= 10; i++) readThresholds.push(i / 100);
 for (let i = 3; i <= 20; i++) readThresholds.push(i / 20);
@@ -201,41 +221,61 @@ const readObserver = new IntersectionObserver(entries => {
     const el = e.target;
     const screen = e.rootBounds ? e.rootBounds.height : window.innerHeight;
     if (e.isIntersecting && (e.intersectionRatio >= 0.5 || e.intersectionRect.height >= screen / 2)) {
-      if (!readTimers.has(el)) readTimers.set(el, setTimeout(() => tryRead(el), 800));
+      if (!readTimers.has(el)) armRead(el);
     } else {
-      clearTimeout(readTimers.get(el));
-      readTimers.delete(el);
-      waiting.delete(el);
+      disarmRead(el);
     }
   }
 }, { threshold: readThresholds });
 
-// Seen long enough while the window was in the background: they wait, in
-// view, for the reader to come back, and are read once seen for the full
-// time after that (not right away: coming back is not reading them).
+/** On screen, but another window has the focus: read only at the end the reader follows. */
+const watching = () => !document.hidden && !document.hasFocus();
+
+// Seen long enough while the window was in the background (or away from
+// the end): they wait, in view, for the reader to come back, and are read
+// once seen for the full time after that (not right away: coming back is
+// not reading them). Back at the end of an unfocused window counts as
+// coming back, for the longer time.
 const waiting = new Set();
 function restartDwell() {
-  if (!document.hasFocus() || document.hidden) return;
+  if (document.hidden) return;
+  if (!document.hasFocus()) {
+    if (!waiting.size || !atBottom()) return;
+    for (const el of waiting) if (el.isConnected) armRead(el, DWELL_UNFOCUSED_MS);
+    waiting.clear();
+    return;
+  }
   for (const el of new Set([...waiting, ...readTimers.keys()])) {
-    clearTimeout(readTimers.get(el));
-    readTimers.delete(el);
-    if (el.isConnected) readTimers.set(el, setTimeout(() => tryRead(el), 800));
+    disarmRead(el);
+    if (el.isConnected) armRead(el);
   }
   waiting.clear();
 }
 window.addEventListener('focus', restartDwell);
 document.addEventListener('visibilitychange', restartDwell);
+window.addEventListener('scroll', () => { if (waiting.size && watching()) restartDwell(); }, { passive: true });
 
-let pendingRead = { slots: [], deletions: [] };
 function tryRead(el) {
   readTimers.delete(el);
-  if (!document.hasFocus() || document.hidden) { waiting.add(el); return; }
+  if (document.hidden) { waiting.add(el); return; }
+  if (!document.hasFocus()) {
+    if (!atBottom()) { waiting.add(el); return; }
+    const left = DWELL_UNFOCUSED_MS - (performance.now() - (readSince.get(el) ?? 0));
+    if (left > 1) { readTimers.set(el, setTimeout(() => tryRead(el), left)); return; }
+  }
+  markRead(el);
+}
+
+let pendingRead = { slots: [], deletions: [] };
+function markRead(el) {
+  if (el.classList.contains('m-read')) return;
+  disarmRead(el);
   readObserver.unobserve(el);
   el.classList.add('m-read');
   if (el.classList.contains('del-mark')) pendingRead.deletions.push(+el.dataset.del);
   else { pendingRead.slots.push(+el.dataset.slot); marked.delete(+el.dataset.slot); }
-  clearTimeout(tryRead.flush);
-  tryRead.flush = setTimeout(() => {
+  clearTimeout(markRead.flush);
+  markRead.flush = setTimeout(() => {
     post({ type: 'read', ...pendingRead });
     pendingRead = { slots: [], deletions: [] };
     scheduleRail();
@@ -248,6 +288,39 @@ function tryRead(el) {
   }, 10000);
 }
 
+// A change N, Shift-N or a rail tick went to is read once it has been on
+// screen for 300 ms, or when N leaves it after 250 ms: pressing through the
+// changes is reading them, faster than the dwell above.
+const VISIT_READ_MS = 300;
+const VISIT_LEAVE_MS = 250;
+const VISIT_POLL_MS = 50;
+const VISIT_GIVE_UP_MS = 3000;   // a scroll that never brings it on screen
+let visited = null;   // {el, at, shown, timer}
+
+/** The reader went to change `el` (N or a rail tick). */
+export function visit(el) {
+  leaveVisit();
+  const v = visited = { el, at: performance.now(), shown: null, timer: 0 };
+  const check = () => {
+    if (visited !== v) return;
+    const now = performance.now();
+    if (!el.isConnected || el.classList.contains('m-read') || now - v.at > VISIT_GIVE_UP_MS) { visited = null; return; }
+    if (!inViewport(el)) v.shown = null;
+    else if (v.shown === null) v.shown = now;
+    if (v.shown !== null && now - v.shown >= VISIT_READ_MS) { visited = null; markRead(el); return; }
+    v.timer = setTimeout(check, VISIT_POLL_MS);
+  };
+  v.timer = setTimeout(check, VISIT_POLL_MS);
+}
+
+function leaveVisit() {
+  const v = visited;
+  if (!v) return;
+  visited = null;
+  clearTimeout(v.timer);
+  if (v.el.isConnected && performance.now() - v.at >= VISIT_LEAVE_MS) markRead(v.el);
+}
+
 export function unreadElements() {
   // `offsetParent === null` covers `hidden` blocks in changes-only mode, so the
   // rail, jumps and the caught-up state all ignore filtered-out blocks.
@@ -256,13 +329,18 @@ export function unreadElements() {
 }
 
 export function jump(dir) {
+  leaveVisit();
   const list = unreadElements();
   // Nothing to go to: the app says so (a beep).
   if (!list.length) { post({ type: 'nothing' }); return; }
   const line = window.innerHeight / 3;
-  let target;
-  if (dir > 0) target = list.find(e => e.getBoundingClientRect().top > line + 4) || list[0];
-  else target = list.slice().reverse().find(e => e.getBoundingClientRect().top < line - 4) || list[list.length - 1];
+  let target = dir > 0 ? list.find(e => e.getBoundingClientRect().top > line + 4)
+    : list.slice().reverse().find(e => e.getBoundingClientRect().top < line - 4);
+  // Past the last change, back to the first (or the other way): the app says so too.
+  if (!target) {
+    target = dir > 0 ? list[0] : list[list.length - 1];
+    post({ type: 'wrapped' });
+  }
   const top = target.getBoundingClientRect().top - line;
   // In a large document the blocks a smooth scroll passes are laid out on
   // the way and change height, and the compensation for them fights the
@@ -271,6 +349,7 @@ export function jump(dir) {
   const smooth = !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   window.scrollBy({ top, behavior: smooth ? 'smooth' : 'auto' });
   focusBlock(target);
+  visit(target);
   if (!smooth) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!target.isConnected) return;
@@ -315,13 +394,23 @@ const caughtup = document.getElementById('ro-caughtup');
  * markers (and headings) are kept. Hidden blocks leave the anchor and jump
  * math untouched — `unreadElements()` already skips them via offsetParent.
  */
+let filtered = false;   // the filter may have hidden blocks
 export function applyChangesOnly() {
+  const on = changesOnly && !printing;
+  // Off, and nothing hidden by it: no walk over every block (each patch of
+  // a large document comes here).
+  if (!on && !filtered) {
+    if (caughtup && !caughtup.hidden) { caughtup.textContent = ''; caughtup.hidden = true; }
+    scheduleRail();
+    return;
+  }
+  filtered = on;
   const toggled = [];
   for (const el of slots.values()) {
     const keep = el.classList.contains('k-heading')
       || el.classList.contains('m-inserted') || el.classList.contains('m-modified')
       || el.classList.contains('m-state') || el.nextElementSibling?.classList.contains('del-mark');
-    const hide = changesOnly && !printing && !keep;
+    const hide = on && !keep;
     if (el.hidden !== hide) { el.hidden = hide; toggled.push(el); }
   }
   // Hiding/showing is a filter, not a content change: re-baseline the
@@ -331,7 +420,7 @@ export function applyChangesOnly() {
   for (const el of toggled) heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
   for (const m of doc.querySelectorAll('.del-mark')) m.hidden = false;
   if (caughtup) {
-    const anyVisible = changesOnly && !printing && unreadElements().length === 0 && slots.size > 0;
+    const anyVisible = on && unreadElements().length === 0 && slots.size > 0;
     caughtup.textContent = anyVisible ? (strings.caughtUp || 'All caught up') : '';
     caughtup.hidden = !anyVisible;
   }
