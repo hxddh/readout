@@ -4,7 +4,8 @@
 #   readout FILE...            open files and bring Readout forward
 #   readout FILE.md#section    open a file at a section
 #   readout FOLDER             open the newest Markdown file in a folder
-#   readout -b FILE...         open files in the background, behind the one you are reading
+#   readout -b FILE...         open files (or a folder's newest, or FILE.md#section) in the
+#                              background, behind the one you are reading
 #   readout --hook             for agent hooks: read hook JSON on stdin and open
 #                              tool_input.file_path in the background if it is Markdown
 #                              (paths in it are also looked up in the hook's cwd)
@@ -15,7 +16,7 @@ APP_ID="io.github.hxddh.readout"
 OPEN="${READOUT_OPEN_COMMAND:-/usr/bin/open}"
 
 usage() {
-  sed -n '3,12p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '3,13p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 is_markdown() {
@@ -112,8 +113,18 @@ case "$1" in
     status=0
     for f do
       shift
-      if [ -f "$f" ]; then
+      if [ -d "$f" ]; then
+        newest=$(newest_markdown "$f")
+        if [ -n "$newest" ]; then
+          set -- "$@" "$(background_url "$newest")"
+        else
+          echo "readout: $f: No Markdown files in this folder" >&2
+          status=1
+        fi
+      elif [ -f "$f" ]; then
         set -- "$@" "$(background_url "$f")"
+      elif [ "${f%#*}" != "$f" ] && [ -f "${f%#*}" ] && is_markdown "${f%#*}"; then
+        set -- "$@" "$(background_url "${f%#*}")&anchor=$(encode "${f##*#}")"
       else
         echo "readout: $f: No such file" >&2
         status=1
