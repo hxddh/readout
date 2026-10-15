@@ -6,6 +6,7 @@ import { chromium, webkit, firefox } from 'playwright';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import { collectPageErrors } from './pageerrors.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2' };
 const server = http.createServer((req, res) => {
@@ -34,7 +35,7 @@ let pages = 0;
 async function newPage({ width = 900, height = 700, appearance = {} } = {}) {
   const page = await browser.newPage({ viewport: { width, height } });
   const n = ++pages;
-  page.on('pageerror', e => errors.push(`page ${n}: ${e}`));
+  collectPageErrors(page, errors, `page ${n}: `);
   await page.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -383,6 +384,245 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
     return { visual: Math.round(rect.width - parseFloat(getComputedStyle(b).paddingLeft)), right: Math.round(innerWidth - rect.right), at4: at(rect.right - 1 - 4), at10: at(rect.right - 1 - 11), clip: getComputedStyle(b).backgroundClip, v: visual };
   });
   check('a rail tick is clickable 10 px left of its 3 px mark, the mark itself unchanged', hit.visual === 3 && hit.right === 2 && hit.at4 && hit.at10 && hit.clip === 'content-box', JSON.stringify(hit));
+  await page.close();
+}
+
+// 11. A window on screen but not focused (Readout beside the terminal the
+//     agent runs in): what arrives at the end the reader follows is read
+//     after 1.5 s; elsewhere in the document, or in a hidden window, it waits.
+{
+  const page = await newPage();
+  const tall = doc(40, i => `<p style="min-height:60px">para ${i}</p>`);
+  await page.evaluate(p => window.readout.apply(p), tall);
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  await page.waitForTimeout(100);
+  await page.evaluate(() => { window.__focused = false; document.hasFocus = () => window.__focused; window.dispatchEvent(new Event('blur')); window.__msgs.length = 0; });
+  const read = slot => page.evaluate(s => window.__msgs.some(m => m.type === 'read' && m.slots.includes(s)), slot);
+  const append = (v, slot, after) => page.evaluate(p => window.readout.apply(p), patch(v, [{ op: 'insert', slot, after, kind: 'paragraph', html: `<p>the agent wrote ${slot}</p>` }],
+    { marks: [{ slot, kind: 'inserted' }] }));
+  await append(2, 41, 40);
+  await page.waitForTimeout(1000);
+  const early = await read(41);
+  await page.waitForTimeout(900);
+  const following = await read(41);
+  const atEnd = await page.evaluate(() => { const s = document.scrollingElement; return s.scrollHeight - s.scrollTop - innerHeight < 48; });
+  // Away from the end: it waits for the reader.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(p => window.readout.apply(p), patch(3, [{ op: 'insert', slot: 42, after: 1, kind: 'paragraph', html: '<p>inserted near the top</p>' }],
+    { marks: [{ slot: 41, kind: 'inserted' }, { slot: 42, kind: 'inserted' }] }));
+  await page.waitForTimeout(2000);
+  const away = await read(42);
+  // Hidden (minimised, another space): it waits too, even at the end.
+  await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); window.scrollTo(0, document.scrollingElement.scrollHeight); });
+  await append(4, 43, 41);
+  await page.waitForTimeout(2000);
+  const hidden = await read(43);
+  check('unfocused but on screen: a change at the end the reader follows is read after 1.5 s, not elsewhere or hidden',
+    atEnd && !early && following && !away && !hidden, JSON.stringify({ atEnd, early, following, away, hidden }));
+  await page.close();
+}
+
+// 12. A change N went to is read once it has been on screen for 300 ms, or
+//     when N leaves it after 250 ms; going past the last one says so.
+{
+  const page = await newPage();
+  const r = doc(60, i => `<p style="min-height:100px">para ${i}</p>`);
+  // The first on screen already: its own 800 ms dwell starts with the patch.
+  r.marks = [{ slot: 4, kind: 'inserted' }, { slot: 30, kind: 'modified' }, { slot: 50, kind: 'inserted' }];
+  await page.evaluate(p => { window.scrollTo(0, 0); window.__msgs.length = 0; window.readout.apply(p); }, r);
+  const readSlots = () => page.evaluate(() => window.__msgs.filter(m => m.type === 'read').flatMap(m => m.slots));
+  await key(page, 'n');
+  await page.waitForTimeout(600);
+  const dwell = await readSlots();
+  // Pressing on: each change left after 250 ms is read.
+  await key(page, 'n');
+  await page.waitForTimeout(260);
+  await key(page, 'n');
+  await page.waitForTimeout(200);
+  const pressed = await readSlots();
+  check('a change N went to is read after 300 ms on screen, or when N leaves it after 250 ms',
+    dwell.includes(4) && !dwell.includes(30) && pressed.includes(30), JSON.stringify({ dwell, pressed }));
+  // Past the last change: back to the first unread one, and the app hears of it.
+  const r2 = doc(60, i => `<p style="min-height:100px">para ${i}</p>`);
+  r2.version = 5;
+  r2.marks = [{ slot: 10, kind: 'inserted' }, { slot: 20, kind: 'inserted' }];
+  await page.evaluate(p => window.readout.apply(p), r2);
+  await page.evaluate(() => { window.scrollTo(0, document.scrollingElement.scrollHeight); window.__msgs.length = 0; });
+  await page.waitForTimeout(100);
+  await key(page, 'n');
+  const wrap = await page.evaluate(() => ({ wrapped: window.__msgs.filter(m => m.type === 'wrapped').length, nothing: window.__msgs.filter(m => m.type === 'nothing').length, at: document.activeElement?.dataset?.slot }));
+  check('N past the last change wraps to the first and posts "wrapped"', wrap.wrapped === 1 && wrap.nothing === 0 && wrap.at === '10', JSON.stringify(wrap));
+  await page.close();
+}
+
+// 13. The "Rewritten" notice counts down only while the window is focused
+//     and visible: one that arrived in the background is still there.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(10));
+  await page.evaluate(() => { window.__focused = false; document.hasFocus = () => window.__focused; window.dispatchEvent(new Event('blur')); });
+  const rw = doc(10, i => `<p>rewritten ${i}</p>`);
+  rw.version = 2; rw.rewrite = true;
+  rw.ops.forEach(o => { o.slot += 100; o.after = o.after ? o.after + 100 : 0; });
+  await page.evaluate(p => window.readout.apply(p), rw);
+  const shown = () => page.evaluate(() => !document.getElementById('ro-notice').hidden);
+  await page.waitForTimeout(6800);
+  const background = await shown();
+  await page.evaluate(() => { window.__focused = true; window.dispatchEvent(new Event('focus')); });
+  await page.waitForTimeout(3000);
+  const soon = await shown();
+  await page.waitForTimeout(3800);
+  const later = await shown();
+  check('the Rewritten notice waits in the background and counts down once focused', background && soon && !later, JSON.stringify({ background, soon, later }));
+  await page.close();
+}
+
+// 14. On a rewrite the reader goes to the section they were in, if it is
+//     still there, else to the top (not where the old offset lands).
+{
+  const page = await newPage({ appearance: { topInset: 52 } });
+  const sections = (base, names) => {
+    const ops = [];
+    let slot = base;
+    for (const name of names) {
+      ops.push({ op: 'insert', slot: ++slot, after: slot - 1 === base ? 0 : slot - 1, kind: 'heading', anchor: name, html: `<h2 id="${name}">${name}</h2>` });
+      for (let i = 0; i < 12; i++) ops.push({ op: 'insert', slot: ++slot, after: slot - 1, kind: 'paragraph', html: `<p>${name} ${i} ${'lorem ipsum dolor sit amet '.repeat(5)}</p>` });
+    }
+    return ops;
+  };
+  await page.evaluate(p => window.readout.apply(p), patch(1, sections(0, ['alpha', 'beta', 'gamma']), { reset: true }));
+  const intoBeta = () => page.evaluate(() => { const h = document.querySelector('[data-anchor="beta"]'); window.scrollBy(0, h.getBoundingClientRect().top + 300); });
+  await intoBeta();
+  await page.waitForTimeout(100);
+  await page.evaluate(p => window.readout.apply(p), patch(2, sections(1000, ['intro', 'beta', 'delta']), { reset: true, rewrite: true }));
+  const kept = await page.evaluate(() => Math.round(document.querySelector('[data-anchor="beta"]').getBoundingClientRect().top));
+  await intoBeta();
+  await page.waitForTimeout(100);
+  await page.evaluate(p => window.readout.apply(p), patch(3, sections(2000, ['one', 'two', 'three', 'four']), { reset: true, rewrite: true }));
+  const top = await scrollTop(page);
+  check('a rewrite keeps the reader in their section if it is still there, else goes to the top', kept === 52 + 16 && top === 0, JSON.stringify({ kept, top }));
+  await page.close();
+}
+
+// 15. Copying: the panels open in the document stay out, math copies as its
+//     TeX, task boxes as [ ] / [x], footnote references as [^n] without the
+//     ↩ links back. A selection inside a panel copies as it is.
+{
+  const page = await newPage();
+  const r = patch(1, [
+    { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'plan', html: '<h2 id="plan">Plan</h2>' },
+    { op: 'insert', slot: 2, after: 1, kind: 'paragraph', html: '<p>The cache uses Postgres.<sup class="fn-ref"><a href="#user-content-fn-1" id="user-content-fnref-1" data-footnote-ref>1</a></sup> Energy is <span class="math math-inline" data-tex="E=mc^2">E=mc^2</span> here.</p>' },
+    { op: 'insert', slot: 3, after: 2, kind: 'math', html: '<div class="math-block" data-tex="\\int_0^1 x\\,dx">\\int_0^1 x\\,dx</div>' },
+    { op: 'insert', slot: 4, after: 3, kind: 'listItem', html: '<ul class="li-block"><li class="task"><span class="task-box" aria-hidden="true"></span>Step one</li><li class="task"><span class="task-box checked" aria-hidden="true"></span>Step two</li></ul>' },
+    { op: 'insert', slot: 5, after: 4, kind: 'paragraph', html: '<p>Last words.</p>' },
+    { op: 'insert', slot: 6, after: 5, kind: 'footnotes', html: '<section class="footnotes" data-footnotes><ol><li id="user-content-fn-1"><p>The note. <a href="#user-content-fnref-1" class="fn-back" data-footnote-backref aria-label="Back">↩</a></p></li></ol></section>' },
+  ], { reset: true, marks: [{ slot: 2, kind: 'modified', diff: 'The cache uses <del>Redis</del><ins>Postgres</ins>.' }],
+       deletions: [{ id: 1, after: 4, count: 1, preview: 'A removed paragraph.' }] });
+  await page.evaluate(p => window.readout.apply(p), r);
+  for (let i = 0; i < 100 && !(await page.evaluate(() => document.querySelectorAll('.katex').length === 2)); i++) await page.waitForTimeout(50);
+  await page.evaluate(() => { window.readout.toggleDiff(2); document.querySelector('.del-mark > button').click(); });
+  const copy = sel => page.evaluate(sel => {
+    const out = {};
+    const grab = e => { out.text = e.clipboardData.getData('text/plain'); out.html = e.clipboardData.getData('text/html'); out.handled = e.defaultPrevented; };
+    window.addEventListener('copy', grab);
+    const range = document.createRange();
+    range.selectNodeContents(document.querySelector(sel));
+    getSelection().removeAllRanges();
+    getSelection().addRange(range);
+    out.native = getSelection().toString();
+    document.execCommand('copy');
+    window.removeEventListener('copy', grab);
+    return out;
+  }, sel);
+  const all = await copy('#ro-doc');
+  const t = all.text || '';
+  const want = ['Plan', 'The cache uses Postgres.[^1] Energy is $E=mc^2$ here.', '$$\\int_0^1 x\\,dx$$', '[ ] Step one', '[x] Step two', 'Last words.', '[^1]: The note.'];
+  const unwanted = ['Changes since', 'Redis', 'A removed paragraph', '↩', 'mc2'];
+  check('copy writes math as TeX, tasks as [ ]/[x], footnotes as [^n], without the open panels',
+    all.handled && want.every(w => t.includes(w)) && !unwanted.some(u => t.includes(u)),
+    JSON.stringify({ missing: want.filter(w => !t.includes(w)), present: unwanted.filter(u => t.includes(u)), t }));
+  check('the copied rich text carries the same cleaned-up content',
+    !/wd-panel|del-pop|katex|<button|data-slot/.test(all.html || '') && (all.html || '').includes('$E=mc^2$'), (all.html || '').slice(0, 400));
+  const inPop = await copy('.del-pop');
+  check('a selection inside the removed-text popup copies as it is', !inPop.handled && inPop.native === 'A removed paragraph.', JSON.stringify(inPop));
+  await page.close();
+}
+
+// 16. A link's tooltip says where it goes: the address, the path as written,
+//     the section; an author's title stays, footnote links get none.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), patch(1, [
+    { op: 'insert', slot: 1, after: 0, kind: 'paragraph', html: '<p><a href="https://example.com/a%20b">web</a> <a href="docs/setup%20guide.md#L42">file</a> <a href="#install">section</a> <a href="https://x.dev" title="Author title">titled</a> <a href="readout://file/Users/me/notes.md">own</a><sup class="fn-ref"><a href="#user-content-fn-1" data-footnote-ref>1</a></sup></p>' },
+  ], { reset: true }));
+  const titles = await page.evaluate(() => [...document.querySelectorAll('#ro-doc a')].map(a => a.title));
+  check('link tooltips show the destination, never readout: internals',
+    JSON.stringify(titles) === JSON.stringify(['https://example.com/a b', 'docs/setup guide.md#L42', '#install', 'Author title', '/Users/me/notes.md', '']), JSON.stringify(titles));
+  await page.close();
+}
+
+// 17. The first open of a large document reads no layout before its first
+//     frame, and a patch to it forces none of the layouts it used to
+//     (offsetParent for every block, a reflow to restart the flash, the
+//     trace's scroll height); heights still come in, from the resize observer.
+{
+  const page = await newPage();
+  await page.evaluate(() => {
+    const counts = window.__layoutReads = {};
+    window.__counting = false;
+    const count = name => { if (window.__counting) counts[name] = (counts[name] || 0) + 1; };
+    const wrapGetter = (proto, name) => {
+      const d = Object.getOwnPropertyDescriptor(proto, name);
+      Object.defineProperty(proto, name, { ...d, get() { count(name); return d.get.call(this); } });
+    };
+    for (const n of ['offsetParent', 'offsetWidth', 'offsetHeight', 'offsetTop']) wrapGetter(HTMLElement.prototype, n);
+    for (const n of ['scrollTop', 'scrollHeight', 'clientHeight', 'clientWidth']) wrapGetter(Element.prototype, n);
+    const gbcr = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () { count('getBoundingClientRect'); return gbcr.call(this); };
+    const gcs = window.getComputedStyle;
+    window.getComputedStyle = function (...a) { count('getComputedStyle'); return gcs.apply(this, a); };
+  });
+  const big = doc(600, i => i % 50 === 1 ? `<h2 id="s${i}">Section ${i}</h2>` : i % 7 === 0
+    ? '<div class="code-block" data-lang="js"><pre><code>const answer = 42;</code></pre></div>'
+    : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(6)}</p>`, i => i % 50 === 1 ? 'heading' : i % 7 === 0 ? 'code' : 'paragraph');
+  big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
+  const first = await page.evaluate(p => {
+    window.__counting = true;
+    window.readout.apply(p);
+    window.__counting = false;
+    const reads = { ...window.__layoutReads };
+    const code7 = document.querySelector('.blk[data-slot="7"] .code-block').dataset.hl;
+    return new Promise(r => requestAnimationFrame(() => setTimeout(() => setTimeout(() => r({ reads, code7,
+      active: window.__msgs.filter(m => m.type === 'activeHeading').length }), 50), 0)));
+  }, big);
+  check('the first open of a large document reads no layout before its first frame',
+    Object.keys(first.reads).length === 0 && first.code7 !== 'pending' && first.active >= 1, JSON.stringify(first));
+  // Heights from the resize observer: a block above the reader that grows does not push them down.
+  await page.evaluate(() => window.scrollBy(0, document.querySelector('.blk[data-slot="300"]').getBoundingClientRect().top));
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="300"]').getBoundingClientRect().top));
+  await page.evaluate(() => { document.querySelector('.blk[data-slot="250"] p').style.paddingTop = '200px'; });
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="300"]').getBoundingClientRect().top));
+  check('heights taken from the resize observer still keep the place', Math.abs(after - before) <= 1, JSON.stringify({ before, after }));
+  // A patch in the middle of reading.
+  const edit = (v, text) => patch(v, [301, 302, 450].map(slot => ({ op: 'replace', slot, kind: 'paragraph', change: 'content', html: `<p>${text} ${slot}</p>` })),
+    { marks: [301, 302, 450].map(slot => ({ slot, kind: 'modified' })) });
+  const reads = await page.evaluate(p => {
+    for (const k of Object.keys(window.__layoutReads)) delete window.__layoutReads[k];
+    window.__counting = true;
+    window.readout.apply(p);
+    window.__counting = false;
+    return { ...window.__layoutReads };
+  }, edit(2, 'edited'));
+  const flash1 = await page.evaluate(() => document.querySelector('.blk[data-slot="301"]').className);
+  await page.evaluate(p => window.readout.apply(p), edit(3, 'edited again'));
+  const flash2 = await page.evaluate(() => document.querySelector('.blk[data-slot="301"]').className);
+  // (The anchor block's own offsetParent, and the scroll height that tells
+  // whether the reader follows the end, read before the patch changes anything.)
+  check('a patch reads no offsetParent per block, forces no reflow for the flash, and no scroll height after it',
+    (reads.offsetParent || 0) <= 4 && !reads.offsetWidth && (reads.scrollHeight || 0) <= 1, JSON.stringify(reads));
+  check('a flash running restarts under the other name', /\bflash\b/.test(flash1) && !/flash-alt/.test(flash1) && /flash-alt/.test(flash2), JSON.stringify({ flash1, flash2 }));
   await page.close();
 }
 

@@ -1,6 +1,6 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll } from './core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, atBottom, resizeObserver, keepPlace, isShown } from './anchor.js';
+import { captureAnchor, restoreAnchor, anchorMiss, atBottom, resizeObserver, keepPlace, isShown, scrollToElement } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy } from './enhance.js';
@@ -39,11 +39,34 @@ function makeBlock(op) {
 }
 
 function fillBlock(el, op) {
+  // A flash running stays (apply restarts it under its other name).
+  const flash = ['flash', 'flash-alt'].filter(c => el.classList.contains(c));
   el.className = `blk k-${op.kind}${op.cjk ? ' cjk' : ''}`;   // drops marks and wd-has; renderMarks restores them
+  if (flash.length) el.classList.add(...flash);
   if (op.anchor) el.dataset.anchor = op.anchor; else delete el.dataset.anchor;
   el.style.containIntrinsicSize = `auto ${estimateHeight(op.kind, op.html)}px`;
   el.innerHTML = op.html;
   enhance(el);
+  titleLinks(el);
+}
+
+/**
+ * A link's tooltip says where it goes: the address of a web page, the path
+ * of a file as written (the app resolves it), the section of this document.
+ * A title the author gave stays; footnote links say nothing (their number
+ * is the point).
+ */
+function titleLinks(el) {
+  for (const a of el.querySelectorAll('a[href]')) {
+    if (a.hasAttribute('title') || a.matches('[data-footnote-ref], [data-footnote-backref]')) continue;
+    let href = a.getAttribute('href');
+    if (!href) continue;
+    // Never the page's own scheme: what is behind it is a file path.
+    const own = /^readout:\/\/[^/]*(\/.*)$/i.exec(href);
+    if (own) href = own[1];
+    try { href = decodeURI(href); } catch { /* keep it as written */ }
+    a.title = href;
+  }
 }
 
 /**
@@ -58,7 +81,7 @@ export function apply(p) {
   held = null;
   const anchor = isFirst ? null : place ? place.anchor : captureAnchor();
   // A place taken now at the top of the page.
-  const fromTop = !place && document.scrollingElement.scrollTop <= 0;
+  const fromTop = !place && (isFirst || document.scrollingElement.scrollTop <= 0);
   // An empty page is never following: there is no end being read. (It can
   // sit at its own bottom when it scrolls at all; following from there would
   // send the content that arrives to its end.)
@@ -132,6 +155,14 @@ export function apply(p) {
   for (const el of maybeVisible) if (el.isConnected && inViewport(el)) visibleChanged.push(el);
 
   updateCv();
+  // The first open of a large document reads no layout before its first
+  // frame: in that frame WebKit lays out only the blocks on screen (the rest
+  // are skipped, content-visibility), where a layout forced before it would
+  // lay out every block. Block heights then come from the resize observer's
+  // first notifications, the code highlighted at once is what an estimate
+  // of the heights puts on screen, and the current section is told after
+  // the frame.
+  const firstLarge = isFirst && p.reset && doc.classList.contains('cv');
   // Content can arrive in a patch that is not a reset (a file that was empty).
   const empty = document.getElementById('ro-empty');
   if (slots.size > 0) empty?.remove();
@@ -150,7 +181,7 @@ export function apply(p) {
   // Re-baseline heights of touched blocks so the resize compensator does not count this patch twice.
   for (const slot of changed) { const el = slots.get(slot); if (el) heights.set(el, el.getBoundingClientRect().height); }
   for (const el of rerendered) if (el.isConnected) heights.set(el, el.getBoundingClientRect().height);
-  if (p.reset) for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
+  if (p.reset && !firstLarge) for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
 
   if (p.rewrite) showNotice(strings.rewritten);
 
@@ -167,6 +198,13 @@ export function apply(p) {
     // size: content-visibility then keeps that size (and they are on screen).
     if (forced.length) requestAnimationFrame(() => requestAnimationFrame(() => { for (const el of forced) el.style.contentVisibility = ''; }));
   }
+  // Rewritten: none of the old blocks is left to keep the place by. The
+  // reader goes to the section they were in, if it is still there, else to
+  // the top (not wherever the old offset lands in the new text).
+  else if (p.rewrite && anchor) {
+    const h = anchor.heading && doc.querySelector(`.k-heading[data-anchor="${CSS.escape(anchor.heading)}"]`);
+    if (h) scrollToElement(h, { gap: 16 }); else window.scrollTo(0, 0);
+  }
   else if (anchor) restored = restoreAnchor(anchor, changed);
   // Emptied, refilled only in part, or cut short so the page cannot scroll
   // to the reader's place (it then sits at the end, which is not following):
@@ -176,35 +214,79 @@ export function apply(p) {
   // scroll up to (it is at the top already).
   const own = anchor && slots.get(anchor.slot);
   const cutShort = !follow && !restored && !!own && isShown(own) && !fromTop && anchorMiss(anchor, changed) > 1;
-  if (anchor && (slots.size === 0 || cutShort || (place && (following ? !atBottom() : !restored)))) {
+  if (anchor && !p.rewrite && (slots.size === 0 || cutShort || (place && (following ? !atBottom() : !restored)))) {
     held = { anchor, following, top: document.scrollingElement.scrollTop };
   }
-  trace('apply', { version: p.version, reset: !!p.reset, ops: p.ops.length, blocks: slots.size, place: !!place,
+  // Where the page stands is filled in once it is painted (read now, it
+  // would lay the page out once more).
+  const entry = trace('apply', { y: null, version: p.version, reset: !!p.reset, ops: p.ops.length, blocks: slots.size, place: !!place,
     anchor: anchor && { slot: anchor.slot, offset: Math.round(anchor.offset) }, following, follow, restored, held: !!held,
-    height: document.scrollingElement.scrollHeight });
+    height: null });
 
+  // A flash still running restarts under the other animation name
+  // (reader.css), without a forced style and layout to restart it.
   for (const el of visibleChanged) {
-    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    const again = el.classList.contains('flash') && !el.classList.contains('flash-alt');
+    el.classList.add('flash');
+    el.classList.toggle('flash-alt', again);
   }
 
-  renderLazy();
+  renderLazy(firstLarge ? estimatedOnScreen() : undefined);
   scheduleRail();
   if (p.reset || p.ops.length) headingsChanged();
-  reportActiveHeading();
   post({ type: 'applied', version: p.version });
   // After the frame that shows it: rAF runs before the paint, the task it
-  // queues runs after.
-  requestAnimationFrame(() => setTimeout(() => post({ type: 'painted', version: p.version }), 0));
+  // queues runs after. The current section is found then too: the page is
+  // laid out by that frame, so asking costs no layout of its own.
+  requestAnimationFrame(() => setTimeout(() => {
+    const se = document.scrollingElement;
+    entry.y = Math.round(se.scrollTop);
+    entry.height = se.scrollHeight;
+    reportActiveHeading();
+    post({ type: 'painted', version: p.version });
+  }, 0));
+}
+
+/**
+ * Which code blocks a first open counts as on screen, from the blocks'
+ * estimated heights (their intrinsic size) instead of a layout: those from
+ * the top of the document through two screens.
+ */
+function estimatedOnScreen() {
+  const near = new Set();
+  let y = 0;
+  for (let e = doc.firstElementChild; e && y < innerHeight * 2; e = e.nextElementSibling) {
+    near.add(e);
+    y += parseFloat(e.style.containIntrinsicSize.replace('auto ', '')) || 0;
+  }
+  return cb => near.has(cb.closest('#ro-doc > .blk'));
 }
 
 const NOTICE_MS = 6000;
 const NOTICE_FADE_MS = 400;   // reader.css: #ro-notice's opacity transition
+
+// The notice counts down only while the reader can see it: a rewrite that
+// lands while Readout is in the background is still there when they come
+// back to it.
+let noticeWaiting = false;
+const noticeSeen = () => !document.hidden && document.hasFocus();
 
 function showNotice(text) {
   notice.textContent = text;
   notice.hidden = false;
   notice.style.opacity = '';
   clearTimeout(showNotice.t);
+  noticeWaiting = !noticeSeen();
+  if (!noticeWaiting) countDownNotice();
+}
+
+function noticeMaybeSeen() {
+  if (noticeWaiting && noticeSeen()) { noticeWaiting = false; countDownNotice(); }
+}
+window.addEventListener('focus', noticeMaybeSeen);
+document.addEventListener('visibilitychange', noticeMaybeSeen);
+
+function countDownNotice() {
   // It fades out, then leaves the flow above the document: hiding it keeps
   // the reader's place.
   showNotice.t = setTimeout(() => {

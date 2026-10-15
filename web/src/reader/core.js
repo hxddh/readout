@@ -27,8 +27,12 @@ export function pageTheme() {
  */
 const traceLog = [];
 export function trace(type, data) {
-  traceLog.push({ t: Math.round(performance.now()), type, y: Math.round(document.scrollingElement.scrollTop), ...data });
+  // A caller that gives `y` (null: filled in later) spares the layout reading it costs.
+  const y = data && 'y' in data ? data.y : Math.round(document.scrollingElement.scrollTop);
+  const entry = { t: Math.round(performance.now()), type, ...data, y };
+  traceLog.push(entry);
   if (traceLog.length > 80) traceLog.shift();
+  return entry;
 }
 export function traceEntries() { return traceLog.slice(); }
 
