@@ -12,8 +12,10 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/ja
 const icon = new PNG({ width: 16, height: 16 });
 for (let i = 0; i < icon.data.length; i += 4) icon.data.set([220, 0, 0, 255], i);
 const ICON = PNG.sync.write(icon);
+const requests = [];   // every path the pages asked for, in order
 const server = http.createServer((req, res) => {
   const u = decodeURIComponent(req.url.split('?')[0]);
+  requests.push(u);
   if (u === '/icon.png') { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(ICON); }
   const p = join(WEB, u);
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
@@ -671,8 +673,12 @@ for (const dark of [false, true]) {
     const $ = s => document.querySelector(s), cs = (e, p) => getComputedStyle(e, p);
     const rules = [];
     for (const sh of document.styleSheets) for (const r of sh.cssRules) rules.push(r.cssText);
-    const em = e => ({ style: cs(e).fontStyle, synth: cs(e).getPropertyValue('font-synthesis-style'), mark: cs(e).getPropertyValue('text-emphasis-style') || cs(e).getPropertyValue('-webkit-text-emphasis-style'),
-      pos: cs(e).getPropertyValue('text-emphasis-position') || cs(e).getPropertyValue('-webkit-text-emphasis-position') });
+    const em = e => {
+      const dot = e.querySelector('.em-dot'), after = dot && cs(dot, '::after');
+      return { style: cs(e).fontStyle, synth: cs(e).getPropertyValue('font-synthesis-style'), mark: cs(e).getPropertyValue('text-emphasis-style') || cs(e).getPropertyValue('-webkit-text-emphasis-style'),
+        dots: e.querySelectorAll('.em-dot').length, text: e.textContent,
+        after: after && { content: after.content, position: after.position, top: after.top, bottom: after.bottom, bg: after.backgroundColor } };
+    };
     const root = cs(document.documentElement);
     return {
       selection: rules.filter(t => /::selection/.test(t)),
@@ -691,16 +697,20 @@ for (const dark of [false, true]) {
   });
   // 4. Native selection colour (follows the accent, greys in an inactive window).
   check(`no custom ::selection colour (${th})`, g.selection.length === 0, JSON.stringify(g.selection));
-  // 5. CJK emphasis: dots under Chinese, sesame over Japanese, no synthetic
-  //    slant; Latin emphasis stays italic without marks.
-  check(`Chinese emphasis: filled dots under, no synthetic italic (${th})`, /dot/.test(g.zh.mark) && !/open/.test(g.zh.mark) && /under/.test(g.zh.pos) && !/left/.test(g.zh.pos) && g.zh.synth === 'none', JSON.stringify(g.zh));
-  check(`Japanese emphasis: filled sesame over (${th})`, /sesame/.test(g.ja.mark) && !/open/.test(g.ja.mark) && /over/.test(g.ja.pos) && !/left/.test(g.ja.pos) && g.ja.synth === 'none', JSON.stringify(g.ja));
-  check(`Latin emphasis stays italic, without marks (${th})`, g.latin.style === 'italic' && /none/.test(g.latin.mark) && g.latin.synth !== 'none', JSON.stringify(g.latin));
+  // 5. CJK emphasis: upright, a dot under each Chinese character and a sesame
+  //    over each Japanese one (3.6: drawn per character by .em-dot::after,
+  //    not text-emphasis, which grew the line and marked punctuation);
+  //    Latin emphasis stays italic without marks.
+  const dotted = (e, n) => e.style === 'normal' && e.synth === 'none' && /none/.test(e.mark) && e.dots === n && e.after?.position === 'absolute';
+  check(`Chinese emphasis: upright, a dot under each character (${th})`, dotted(g.zh, 4) && g.zh.after.content === '""' && g.zh.after.top !== 'auto' && g.zh.after.bg !== 'rgba(0, 0, 0, 0)', JSON.stringify(g.zh));
+  check(`Japanese emphasis: upright, a sesame over each character (${th})`, dotted(g.ja, 2) && g.ja.after.content === '""' && g.ja.after.bottom !== 'auto', JSON.stringify(g.ja));
+  check(`Latin emphasis stays italic, without marks (${th})`, g.latin.style === 'italic' && /none/.test(g.latin.mark) && g.latin.synth !== 'none' && g.latin.dots === 0, JSON.stringify(g.latin));
   // Only emphasis that is mostly CJK takes the dots: Latin emphasis in a CJK
-  // block stays italic; mostly-CJK emphasis with a Latin word gets dots, no slant.
+  // block stays italic; mostly-CJK emphasis with a Latin word gets dots (on
+  // its Han characters only), no slant.
   check(`Latin emphasis in a CJK block stays italic, without dots; mostly-CJK emphasis gets them (${th})`,
-    g.zhLatin.style === 'italic' && /none/.test(g.zhLatin.mark) && g.zhLatin.synth !== 'none'
-    && /dot/.test(g.zhMix.mark) && g.zhMix.synth === 'none', JSON.stringify({ zhLatin: g.zhLatin, zhMix: g.zhMix }));
+    g.zhLatin.style === 'italic' && /none/.test(g.zhLatin.mark) && g.zhLatin.synth !== 'none' && g.zhLatin.dots === 0
+    && dotted(g.zhMix, 4), JSON.stringify({ zhLatin: g.zhLatin, zhMix: g.zhMix }));
   // 7. One system font family: -apple-system gives headings SF's display optical size.
   check(`no SF Pro names and no display stack; headings use the body font (${th})`, !/SF Pro/.test(g.font) && /-apple-system/.test(g.font) && g.fontDisplay === '' && g.h1Font === g.pFont, JSON.stringify(g));
   // 8. Struck-through text and list numbers reach AA; a ticked task greys
@@ -824,6 +834,286 @@ for (const dark of [false, true]) {
   const h1 = await page.evaluate(() => document.querySelector('.mermaid-block svg').getBoundingClientRect().height);
   const g1 = await gap();
   check('reading at the end, a diagram redrawn at the new size keeps the reader at the end', g0 <= 1 && g1 <= 1 && h1 > h0 + 5, JSON.stringify({ g0, g1, h0, h1 }));
+  await page.close();
+}
+
+// ---------- 3.6 typesetting ----------
+
+// A paragraph's line boxes: [top, bottom] of each line of its text.
+const lineBoxes = (pg, sel) => pg.evaluate(s => {
+  const el = document.querySelector(s), r = document.createRange();
+  r.selectNodeContents(el);
+  const lines = [];
+  for (const b of r.getClientRects()) {
+    if (b.width < 1) continue;
+    const l = lines.find(x => b.top < x[1] - 2 && b.bottom > x[0] + 2);
+    if (l) { l[0] = Math.min(l[0], b.top); l[1] = Math.max(l[1], b.bottom); } else lines.push([b.top, b.bottom]);
+  }
+  return { h: el.getBoundingClientRect().height, n: lines.length };
+}, sel);
+
+const zhLong = '下一行的行距应当与上一行完全相同，不因为着重号而变大；这一段足够长，可以折成两三行来检查行距，再多写几个字。';
+const v36 = patch([
+  ['paragraph', `<p id="e-zh">中文里的<em id="e-em">强调文字</em>不用斜体，标点<em id="e-punct">不加点。——也不加</em>，<em id="e-mix">调用 API 接口</em>。${zhLong}</p>`, { cjk: true }],
+  ['paragraph', `<p id="e-plain">中文里的强调文字不用斜体，标点不加点。——也不加，调用 API 接口。${zhLong}</p>`, { cjk: true }],
+  ['paragraph', '<p id="e-ja">日本語の<em id="e-ja-em">強調は傍点</em>です。</p>', { cjk: true }],
+  ['paragraph', '<p>长强调：<em id="e-long">正确性属性是系统在所有有效执行中都应保持为真的特征或行为本质上是关于系统应该做什么的陈述</em>。</p>', { cjk: true }],
+  ['paragraph', '<p><em id="e-whole">整段强调不加着重号</em></p>', { cjk: true }],
+  ['paragraph', '<p id="s-sup">E = mc<sup>2</sup>, H<sub>2</sub>O and a note<sup>[3]</sup> in a paragraph long enough to wrap onto a second line in the column at this width.</p>'],
+  ['paragraph', '<p id="s-plain">E = mc2, H2O and a note[3] in a paragraph long enough to wrap onto a second line in the column at this width.</p>'],
+  ['listItem', '<ul class="li-block li-first li-last"><li class="task" id="k-zh"><span class="task-box" aria-hidden="true"></span>检查复选框是否与这一行居中</li></ul>', { cjk: true }],
+  ['listItem', '<ul class="li-block li-first li-last"><li class="task" id="k-en"><span class="task-box" aria-hidden="true"></span>A Latin task item</li></ul>'],
+  ['heading', '<h1 id="h-zh">中文标题</h1>', { anchor: 'h-zh', cjk: true }],
+  ['heading', '<h2 id="h-ja">日本語の見出し</h2>', { anchor: 'h-ja', cjk: true }],
+  ['heading', '<h1 id="h-en">Latin title</h1>', { anchor: 'h-en' }],
+  ['paragraph', '<details id="d-sum"><summary>Details</summary><p>Inside.</p></details>'],
+  ['alert', '<div class="alert alert-note" id="a-note"><p class="alert-title">Note</p><p>Run:</p><div class="code-block" id="a-cb" data-lang="sh"><pre><code>npm ci &amp;&amp; npm run build</code></pre></div></div>'],
+  ['code', '<div class="code-block" id="c-plain" data-lang="sh"><pre><code>npm test</code></pre></div>'],
+  ['code', '<div class="code-block" id="c-tree"><pre><code>web/\n├── src/\n│   └── reader.css\n└── test/</code></pre></div>'],
+  ['code', '<div class="code-block" id="c-console" data-lang="console"><pre><code>$ npm test\nall checks passed</code></pre></div>'],
+  ['table', '<div class="table-wrap"><table id="t-cells"><thead><tr><th>Action</th><th>Status</th><th>Notes</th></tr></thead><tbody>'
+    + '<tr><td><code id="t-code">actions/configure-pages</code></td><td id="t-short">S1 / GREEN</td><td id="t-long">A longer note that is allowed to wrap onto more than one line in a narrow column like this one.</td></tr>'
+    + '<tr><td><code id="t-path">src/a/very/long/path/to/some/deeply/nested/module.ts</code></td><td id="t-zh">部分覆盖</td><td id="t-br">one<br>two</td></tr></tbody></table></div>'],
+]);
+
+{
+  page = await open(600);
+  await page.evaluate(p => window.readout.apply(p), v36);
+  await until(page, () => [...document.querySelectorAll('.code-block[data-lang]')].every(c => c.dataset.hl === 'done'));
+
+  // T1. Emphasis dots never change the line pitch, and never mark punctuation or Latin.
+  const [withEm, without] = [await lineBoxes(page, '#e-zh'), await lineBoxes(page, '#e-plain')];
+  check('CJK emphasis dots keep the line pitch', withEm.n >= 2 && withEm.n === without.n && Math.abs(withEm.h - without.h) < 0.5, JSON.stringify({ withEm, without }));
+  const marks = await page.evaluate(() => {
+    const dots = id => [...document.getElementById(id).querySelectorAll('.em-dot')].map(d => d.textContent).join('');
+    const p = document.getElementById('e-zh'), sel = getSelection(), r = document.createRange();
+    r.selectNodeContents(p); sel.removeAllRanges(); sel.addRange(r);
+    const copied = sel.toString(); sel.removeAllRanges();
+    return { em: dots('e-em'), punct: dots('e-punct'), mix: dots('e-mix'), ja: dots('e-ja-em'), copied, text: p.textContent };
+  });
+  check('a dot on each Han and kana character, none on punctuation or Latin', marks.em === '强调文字' && marks.punct === '不加点也不加' && marks.mix === '调用接口' && marks.ja === '強調は傍点', JSON.stringify(marks));
+  check('emphasis dots are not copied', marks.copied.replace(/\s+$/, '') === marks.text, JSON.stringify(marks));
+  // Under the characters in Chinese, inside the line; over them in Japanese.
+  // Found in pixels: the marks are painted red, the text black.
+  const style = await page.addStyleTag({ content: '.em-dot { color: #000 !important } .em-dot::after { background: #f00 !important }' });
+  const place = {};
+  for (const [k, id] of [['zh', 'e-em'], ['ja', 'e-ja-em']]) {
+    const r = await page.evaluate(i => { const d = document.querySelector(`#${i} .em-dot`); d.scrollIntoView({ block: 'center' }); const b = d.getBoundingClientRect(), lh = parseFloat(getComputedStyle(d.closest('p')).lineHeight);
+      const p = d.closest('p').getBoundingClientRect(); const line = Math.floor((b.top - p.top) / lh); return { x: b.left, w: b.width, lineTop: p.top + line * lh, lh }; }, id);
+    const y0 = Math.round(r.lineTop - r.lh / 2), shot = PNG.sync.read(await page.screenshot({ clip: { x: Math.round(r.x), y: y0, width: Math.round(r.w), height: Math.round(r.lh * 2) } }));
+    const red = [], ink = [];
+    for (let y = 0; y < shot.height; y++) for (let x = 0; x < shot.width; x++) { const [R, G, B] = shot.data.subarray((y * shot.width + x) * 4, (y * shot.width + x) * 4 + 3); if (R - G > 70 && R - B > 70) red.push(y + y0); else if (R < 110 && G < 110 && B < 110 && y + y0 >= r.lineTop && y + y0 < r.lineTop + r.lh) ink.push(y + y0); }
+    place[k] = { line: [r.lineTop, r.lineTop + r.lh], ink: [Math.min(...ink), Math.max(...ink)], mark: red.length ? [Math.min(...red), Math.max(...red)] : null };
+  }
+  await style.evaluate(e => e.remove());
+  check('Chinese dots sit under the text, inside its line', place.zh.mark && place.zh.mark[0] > place.zh.ink[1] && place.zh.mark[1] < place.zh.line[1], JSON.stringify(place.zh));
+  check('Japanese sesames sit over the text, clear of the line above', place.ja.mark && place.ja.mark[1] < place.ja.ink[0] && place.ja.mark[0] > place.ja.line[0] - 0.4 * 16, JSON.stringify(place.ja));
+  // A long run or a whole paragraph: a step heavier, no dots, upright.
+  const long = await page.evaluate(() => ['e-long', 'e-whole'].map(id => { const e = document.getElementById(id), cs = getComputedStyle(e); return { id, cls: e.className, dots: e.querySelectorAll('.em-dot').length, weight: cs.fontWeight, style: cs.fontStyle }; }));
+  check('long or whole-paragraph CJK emphasis is upright and a step heavier, without dots', long.every(l => l.dots === 0 && l.weight === '500' && l.style === 'normal' && /cjk-em-long/.test(l.cls)), JSON.stringify(long));
+
+  // T5. Superscripts and subscripts keep the line pitch.
+  const [sup, plain] = [await lineBoxes(page, '#s-sup'), await lineBoxes(page, '#s-plain')];
+  check('sup and sub keep the line pitch', sup.n >= 2 && sup.n === plain.n && Math.abs(sup.h - plain.h) < 0.5, JSON.stringify({ sup, plain }));
+
+  // T9. A task box is centred on its first line, Latin or CJK (taller lines).
+  const boxes = await page.evaluate(() => ['k-zh', 'k-en'].map(id => {
+    const li = document.getElementById(id), b = li.querySelector('.task-box').getBoundingClientRect();
+    const lh = parseFloat(getComputedStyle(li).lineHeight), top = li.getBoundingClientRect().top;
+    return { id, off: +((b.top + b.bottom) / 2 - (top + lh / 2)).toFixed(2), boxTop: +(b.top - top).toFixed(2), lh };
+  }));
+  // As high on a taller CJK line as on a Latin one (the Latin place, 0.32em, as before).
+  check('task boxes sit alike on a CJK and a Latin first line', Math.abs(boxes[0].off - boxes[1].off) < 0.25 && Math.abs(boxes[1].boxTop - 0.32 * 16) < 0.05, JSON.stringify(boxes));
+  // T9. Han and kana headings are not tracked in; Latin ones still are.
+  const track = await page.evaluate(() => ['h-zh', 'h-ja', 'h-en'].map(id => getComputedStyle(document.getElementById(id)).letterSpacing));
+  check('CJK h1/h2 have no negative tracking; Latin h1 keeps it', track[0] === 'normal' || parseFloat(track[0]) === 0 ? (parseFloat(track[1]) || 0) === 0 && parseFloat(track[2]) < 0 : false, JSON.stringify(track));
+  // T9. The disclosure triangle is quiet (--text-3), not text-coloured.
+  const tri = await page.evaluate(() => { const s = document.querySelector('#d-sum summary'); s.scrollIntoView({ block: 'center' }); const r = s.getBoundingClientRect(); return { x: r.left, y: r.top, h: r.height, text3: getComputedStyle(document.documentElement).getPropertyValue('--text-3').trim(), color: getComputedStyle(s).color }; });
+  const triShot = PNG.sync.read(await page.screenshot({ clip: { x: Math.round(tri.x), y: Math.round(tri.y), width: 14, height: Math.round(tri.h) } }));
+  let darkest = 255;
+  for (let i = 0; i < triShot.data.length; i += 4) darkest = Math.min(darkest, triShot.data[i]);
+  check('the disclosure triangle is drawn in --text-3', darkest > 100 && darkest < 200, `darkest red channel ${darkest}, ${JSON.stringify(tri)}`);
+
+  // T3. A code block inside an alert stands off the alert's fill (--cb-bg), its shade and toolbar too.
+  const cbg = await page.evaluate(() => {
+    const v = n => { const d = document.createElement('div'); d.style.color = `var(${n})`; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c; };
+    const cs = s => getComputedStyle(document.querySelector(s));
+    return { alert: cs('#a-note').backgroundColor, inAlert: cs('#a-cb').backgroundColor, plain: cs('#c-plain').backgroundColor, fill: v('--fill'), fill2: v('--fill-2'),
+      shade: cs('#a-cb pre').backgroundImage, tools: cs('#a-cb .cb-tools').backgroundImage };
+  });
+  check('a code block in an alert takes --fill-2, off the alert\'s --fill', cbg.alert === cbg.fill && cbg.inAlert === cbg.fill2 && cbg.plain === cbg.fill && cbg.inAlert !== cbg.alert, JSON.stringify(cbg));
+  check('its right-edge shade and toolbar fade into --fill-2', cbg.shade.includes(cbg.fill2) && cbg.tools.includes(cbg.fill2), JSON.stringify(cbg));
+
+  // TD. Box drawing: tighter lines. TI: code in a cell at 0.9 of the cell's size.
+  const misc = await page.evaluate(() => {
+    const cs = s => getComputedStyle(document.querySelector(s));
+    return { tree: document.getElementById('c-tree').className, treeLh: parseFloat(cs('#c-tree').lineHeight) / parseFloat(cs('#c-tree').fontSize), plainLh: parseFloat(cs('#c-plain').lineHeight) / parseFloat(cs('#c-plain').fontSize),
+      td: parseFloat(cs('#t-short').fontSize), tdCode: parseFloat(cs('#t-code').fontSize) };
+  });
+  check('a code block with box drawing has class cb-tree and line height 1.3', /cb-tree/.test(misc.tree) && Math.abs(misc.treeLh - 1.3) < 0.01 && Math.abs(misc.plainLh - 1.55) < 0.01, JSON.stringify(misc));
+  check('code in a table cell is 0.9 of the cell\'s text', Math.abs(misc.tdCode - 0.9 * misc.td) < 0.05, JSON.stringify(misc));
+
+  // T7. A console transcript highlights as a shell session: the command, not its output.
+  const sess = await page.evaluate(() => { const lines = [...document.querySelectorAll('#c-console .line')]; return lines.map(l => [...l.querySelectorAll('span')].map(s => [s.textContent, getComputedStyle(s).color])); });
+  const colours = sess.flat().filter(([t]) => t.trim());
+  const npm = colours.find(([t]) => t.includes('npm')), out = colours.find(([t]) => t.includes('passed'));
+  check('a console block highlights the command apart from its output', npm && out && npm[1] !== out[1], JSON.stringify(sess));
+
+  // T2. Short cells and identifiers stay on one line while the table fits; a
+  //     long path may break after a slash; a cell with a <br> may wrap.
+  const cells = await page.evaluate(() => {
+    const lines = el => { const r = document.createRange(); r.selectNodeContents(el); return new Set([...r.getClientRects()].filter(b => b.width > 0).map(b => Math.round(b.top))).size; };
+    const $ = id => document.getElementById(id);
+    return { code: lines($('t-code')), short: lines($('t-short')), zh: lines($('t-zh')), long: lines($('t-long')), wbr: $('t-path').querySelectorAll('wbr').length,
+      codeNw: getComputedStyle($('t-code')).whiteSpace, brNw: getComputedStyle($('t-br')).whiteSpace, scrolls: $('t-cells').parentElement.classList.contains('scrolls') };
+  });
+  check('short cells and identifiers in a table stay on one line', cells.code === 1 && cells.short === 1 && cells.zh === 1 && cells.codeNw === 'nowrap', JSON.stringify(cells));
+  check('a long cell still wraps, a cell with a line break is left alone, a long path may break after its slashes', cells.long > 1 && cells.brNw !== 'nowrap' && cells.wbr === 9 && !cells.scrolls, JSON.stringify(cells));
+  await page.close();
+}
+
+// T2. Short cells that no longer fit make the table scroll, as any wide table does.
+{
+  page = await open(600);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['table', `<div class="table-wrap"><table><thead><tr>${Array.from({ length: 9 }, (_, i) => `<th>K${i}</th>`).join('')}</tr></thead><tbody><tr>${Array.from({ length: 9 }, (_, i) => `<td><code>pkg/module-${i}</code></td>`).join('')}</tr></tbody></table></div>`],
+  ]));
+  await page.waitForTimeout(100);
+  const t = await page.evaluate(() => { const w = document.querySelector('.table-wrap'); return { scrolls: w.classList.contains('scrolls'), page: document.scrollingElement.scrollWidth - innerWidth }; });
+  check('a table of short cells too wide for the column scrolls', t.scrolls && t.page <= 0, JSON.stringify(t));
+  await page.close();
+}
+
+// TB. In a wide window, a code block whose lines run past the column widens
+//     to 1.35 columns (centred, the text column unchanged); one that fits
+//     does not; nor in a narrower window, with wrapping on, or in print. A
+//     wide table widens as far as it needs. Change bars stay beside them.
+{
+  const tb = patch([
+    ['paragraph', '<p id="b-p">The text column stays as it is.</p>'],
+    ['code', `<div class="code-block" id="b-long" data-lang="ts"><pre><code>${'const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key, Range: range }));'}</code></pre></div>`],
+    ['code', `<div class="code-block" id="b-huge" data-lang="ts"><pre><code>${longLine} ${longLine}</code></pre></div>`],
+    ['code', '<div class="code-block" id="b-short" data-lang="sh"><pre><code>npm test</code></pre></div>'],
+    ['listItem', `<ul class="li-block li-first li-last"><li>In a list:<div class="code-block" id="b-li"><pre><code>${longLine}</code></pre></div></li></ul>`],
+    ['table', `<div class="table-wrap" id="b-table"><table><thead><tr>${Array.from({ length: 10 }, (_, i) => `<th>Column ${i + 1}</th>`).join('')}</tr></thead><tbody><tr>${Array.from({ length: 10 }, (_, i) => `<td>value ${i}</td>`).join('')}</tr></tbody></table></div>`],
+  ]);
+  tb.marks = [{ slot: 2, kind: 'inserted' }, { slot: 1, kind: 'inserted' }];
+  const measure = pg => pg.evaluate(() => {
+    const r = id => document.getElementById(id).getBoundingClientRect();
+    const col = r('b-p'), bar = blk => { const b = blk.getBoundingClientRect(); return b.left + parseFloat(getComputedStyle(blk, '::before').left); };
+    const blk = id => document.getElementById(id).closest('.blk');
+    const pre = document.querySelector('#b-long pre'), huge = document.querySelector('#b-huge pre');
+    return { col: [col.left, col.width], long: [r('b-long').left, r('b-long').width], huge: [r('b-huge').left, r('b-huge').width], short: [r('b-short').left, r('b-short').width],
+      li: r('b-li').width, table: [r('b-table').left, r('b-table').width], tableScrolls: document.getElementById('b-table').classList.contains('scrolls'),
+      longScrolls: pre.scrollWidth > pre.clientWidth, hugeScrolls: huge.scrollWidth > huge.clientWidth,
+      barGap: { long: r('b-long').left - bar(blk('b-long')), para: col.left - bar(blk('b-p')) },
+      sideways: document.scrollingElement.scrollWidth - innerWidth };
+  });
+  page = await open(1600);
+  await page.evaluate(p => window.readout.apply(p), tb);
+  await until(page, () => [...document.querySelectorAll('.code-block[data-lang]')].every(c => c.dataset.hl === 'done'));
+  await page.waitForTimeout(100);
+  const w = await measure(page);
+  const M = w.col[1], centre = w.col[0] + M / 2;
+  const centred = ([l, wd]) => Math.abs(l + wd / 2 - centre) < 1;
+  check('at 1600 px a long code block widens to 1.35 columns, centred, and no longer scrolls', Math.abs(w.long[1] - 1.35 * M) < 1 && centred(w.long) && !w.longScrolls, JSON.stringify(w));
+  check('a longer one widens as far and scrolls (with its shade)', Math.abs(w.huge[1] - 1.35 * M) < 1 && centred(w.huge) && w.hugeScrolls, JSON.stringify(w));
+  check('a code block that fits, and one in a list, keep the column', Math.abs(w.short[1] - M) < 0.5 && w.short[0] === w.col[0] && w.li < M, JSON.stringify(w));
+  check('a wide table widens as far as it needs, centred', w.tableScrolls && w.table[1] > M + 10 && w.table[1] <= 1.35 * M + 1 && centred(w.table), JSON.stringify(w));
+  check('the change bar stays beside a widened block, as beside text', Math.abs(w.barGap.long - w.barGap.para) < 0.5 && w.sideways <= 0, JSON.stringify(w));
+  const tbPrint = await (async () => { await page.emulateMedia({ media: 'print' }); const m = await page.evaluate(() => [document.getElementById('b-long').getBoundingClientRect().width, document.getElementById('b-p').getBoundingClientRect().width]); await page.emulateMedia({ media: 'screen' }); return m; })();
+  check('printed, a long code block keeps the text width', Math.abs(tbPrint[0] - tbPrint[1]) < 0.5, JSON.stringify(tbPrint));
+  await page.evaluate(() => window.readout.setAppearance({ codeWrap: true }));
+  const wrapped = await measure(page);
+  check('with code wrapping on, code blocks keep the column', Math.abs(wrapped.long[1] - wrapped.col[1]) < 0.5, JSON.stringify(wrapped));
+  await page.evaluate(() => window.readout.setAppearance({ codeWrap: false, width: 'wide' }));
+  await page.waitForTimeout(100);
+  const wide = await measure(page);
+  check('the wide column (57.5 rem) widens code that runs past it to 1.35 columns too', Math.abs(wide.col[1] - 920) < 0.5 && Math.abs(wide.long[1] - 920) < 0.5 && Math.abs(wide.huge[1] - 1.35 * 920) < 1, JSON.stringify(wide));
+  await page.close();
+  for (const width of [900, 1200]) {
+    page = await open(width);
+    await page.evaluate(p => window.readout.apply(p), tb);
+    await page.waitForTimeout(150);
+    const n = await measure(page);
+    const fits = width === 1200;   // 1.35 x 680 px and 4 rem each side fit in 1200 px, not in 900
+    check(`at ${width} px code ${fits ? 'widens' : 'keeps the column'}`, fits ? Math.abs(n.long[1] - 1.35 * n.col[1]) < 1 : Math.abs(n.long[1] - n.col[1]) < 0.5 && n.sideways <= 0, JSON.stringify(n));
+    await page.close();
+  }
+}
+
+// P11. Quick Look loads no grammar (nor Shiki) before a code block needs one;
+//      the app preloads the common ones.
+{
+  const grammarRequests = () => requests.filter(u => /\/chunks\/(shellscript|json|typescript|python|swift|go|rust|yaml|diff|markdown|sql)-/.test(u));
+  const openQuick = async quick => {
+    const pg = await browser.newPage({ viewport: { width: 800, height: 700 } });
+    pg.on('pageerror', e => errors.push(String(e)));
+    await pg.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+    requests.length = 0;
+    await pg.goto(`${base}/reader.html`);
+    await until(pg, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
+    await pg.evaluate(q => window.readout.setAppearance({ dark: false, width: 'narrow', fontSize: 15, ...(q ? { mode: 'quicklook' } : {}) }), quick);
+    await pg.evaluate(p => window.readout.apply(p), patch([['paragraph', '<p>No code here.</p>']]));
+    await pg.waitForTimeout(1500);
+    return pg;
+  };
+  page = await openQuick(true);
+  const ql = grammarRequests().length;
+  await page.evaluate(p => window.readout.apply(p), patch([['code', '<div class="code-block" id="q-cb" data-lang="go"><pre><code>package main</code></pre></div>']], 2));
+  const qlDone = await until(page, () => document.getElementById('q-cb')?.dataset.hl === 'done');
+  const qlAfter = grammarRequests();
+  check('Quick Look loads no grammar before a code block needs one', ql === 0, `${ql} requested`);
+  check('Quick Look highlights the code it shows, loading only its grammar', qlDone && qlAfter.length === 1 && /go-/.test(qlAfter[0]), JSON.stringify(qlAfter));
+  await page.close();
+  page = await openQuick(false);
+  check('the app preloads the common grammars', grammarRequests().length >= 10, JSON.stringify(grammarRequests()));
+  await page.close();
+}
+
+// P10. A diagram whose source keeps changing (an agent writing it) keeps its
+//      last drawing and is drawn again once the source has been still; a page
+//      with a flowchart loads Mermaid and ELK in idle time, before it is reached.
+{
+  page = await open(900);
+  const mm = (label, version) => patch([['mermaid', `<div class="mermaid-block"><pre class="mermaid-src">flowchart LR\n  A[${label}] --> B[End]</pre></div>`]], version);
+  await page.evaluate(p => window.readout.apply(p), mm('First', 1));
+  await until(page, () => document.querySelector('.mermaid-block.done svg'));
+  const label = () => page.evaluate(() => document.querySelector('.mermaid-block svg')?.textContent.includes('Second') ? 'Second' : document.querySelector('.mermaid-block svg')?.textContent.includes('First') ? 'First' : null);
+  const replace = (l, v) => page.evaluate(([l, v]) => window.readout.apply({ version: v, reset: false, rewrite: false, ops: [{ op: 'replace', slot: 1, kind: 'mermaid', cjk: false, change: 'content', html: `<div class="mermaid-block"><pre class="mermaid-src">flowchart LR\n  A[${l}] --&gt; B[End</pre></div>` }], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } }), [l, v]);
+  const seen = [];
+  // Streamed: a broken diagram growing every 100 ms.
+  for (let i = 0; i < 6; i++) { await replace(`Sec${'o'.repeat(i)}`, 2 + i); await page.waitForTimeout(100); seen.push(await label()); }
+  const errorsShown = await page.evaluate(() => document.querySelectorAll('.mermaid-error').length);
+  check('while its source keeps changing, a diagram keeps its last drawing', seen.every(l => l === 'First') && errorsShown === 0, JSON.stringify({ seen, errorsShown }));
+  await page.evaluate(() => window.readout.apply({ version: 20, reset: false, rewrite: false, ops: [{ op: 'replace', slot: 1, kind: 'mermaid', cjk: false, change: 'content', html: '<div class="mermaid-block"><pre class="mermaid-src">flowchart LR\n  A[Second] --&gt; B[End]</pre></div>' }], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } }));
+  await page.waitForTimeout(150);
+  const before = await label();
+  const redrawn = await until(page, async () => document.querySelector('.mermaid-block svg')?.textContent.includes('Second'), 5000);
+  check('once its source is still, the diagram is drawn again', before === 'First' && redrawn, JSON.stringify({ before, redrawn }));
+  await page.close();
+
+  requests.length = 0;
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ...Array.from({ length: 60 }, (_, i) => ['paragraph', `<p>Paragraph ${i} above the diagram, long enough to fill the column at this width.</p>`]),
+    ['mermaid', '<div class="mermaid-block" id="far"><pre class="mermaid-src">flowchart TD\n  A[Far below] --> B[The fold]</pre></div>'],
+  ]));
+  const prefetched = await (async () => { for (let i = 0; i < 100; i++) { if (requests.some(u => /mermaid\/chunks\/.*elk-/.test(u))) return true; await page.waitForTimeout(50); } return false; })();
+  const drawn = await page.evaluate(() => document.getElementById('far').classList.contains('done'));
+  check('a page with a flowchart loads Mermaid and ELK in idle time, before the diagram is reached', prefetched && !drawn, JSON.stringify({ prefetched, drawn, mermaid: requests.filter(u => /mermaid/.test(u)).length }));
+  await page.close();
+}
+
+// T9. The empty state and the changes-only notice reach AA (--text-2).
+{
+  page = await open(600);
+  await page.evaluate(p => window.readout.apply(p), patch([]));
+  const c = await page.evaluate(() => {
+    const e = document.getElementById('ro-empty'), u = document.getElementById('ro-caughtup');
+    return { empty: e && getComputedStyle(e).color, caught: getComputedStyle(u).color, bg: getComputedStyle(document.documentElement).backgroundColor };
+  });
+  check('the empty and caught-up notes reach 4.5:1', (!c.empty || contrastOf(parseColor(c.empty), parseColor(c.bg)) >= 4.5) && contrastOf(parseColor(c.caught), parseColor(c.bg)) >= 4.5, JSON.stringify(c));
   await page.close();
 }
 

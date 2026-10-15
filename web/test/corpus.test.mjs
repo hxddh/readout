@@ -63,6 +63,14 @@ const docs = readdirSync(`${CORPUS}/patches`).filter(f => f.endsWith('.json') &&
 let failures = 0;
 const summary = [];
 
+// Polls from Node: page.waitForFunction evaluates its function as a string
+// after the first try, which the reader's CSP forbids (it then fails as if
+// it had timed out).
+async function until(page, fn, ms) {
+  for (const end = Date.now() + ms; Date.now() < end; await page.waitForTimeout(50)) if (await page.evaluate(fn)) return;
+  throw new Error('timeout');
+}
+
 async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   const page = await browser.newPage({ viewport: { width: WIDTH, height: 900 }, deviceScaleFactor: 1 });
   const errors = [];
@@ -84,7 +92,7 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
   }, debug);
   await page.goto(`${base}/reader.html`);
-  await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'), 30000);
   await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), dark);
   await page.evaluate(p => window.readout.apply(p), patch);
   // Large documents use content-visibility, so blocks never scrolled into
@@ -116,12 +124,12 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
     if (!waiting) break;
     await page.waitForTimeout(50);
   }
-  await page.waitForFunction(() =>
+  await until(page, () =>
     ![...document.querySelectorAll('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"], .mermaid-block.busy')]
       .some(e => !e.closest('details:not([open])'))
     && [...document.querySelectorAll('.mermaid-block')].every(b => b.classList.contains('done') || b.querySelector('.mermaid-error') || b.closest('details:not([open])'))
     && !document.querySelector('.math:not(.done), .math-block:not(.done)'),
-  null, { timeout: 30000 }).catch(async () => {
+  30000).catch(async () => {
     const left = await page.evaluate(() => [...document.querySelectorAll('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .mermaid-block:not(.done), .math:not(.done), .math-block:not(.done)')]
       .slice(0, 5).map(e => `${e.className}${e.dataset.lang ? ` (${e.dataset.lang}: ${e.dataset.hl})` : ''}`));
     errors.push(`lazy rendering did not settle within 30 s: ${left.join('; ')}`);

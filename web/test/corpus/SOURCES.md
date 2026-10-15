@@ -1,6 +1,6 @@
 # Corpus sources
 
-Every file is a byte-for-byte copy of the pinned blob. Each was checked with `cmp` against `raw.githubusercontent.com/<repo>/<sha>/<path>`. Nothing was truncated. Licenses were read from the LICENSE file at the pinned SHA and confirmed against the license that GitHub detects for the repository.
+Every file but 31 is a byte-for-byte copy of the pinned blob. Each was checked with `cmp` against `raw.githubusercontent.com/<repo>/<sha>/<path>`. Nothing was truncated. Licenses were read from the LICENSE file at the pinned SHA and confirmed against the license that GitHub detects for the repository.
 
 | nn | file | language | kind | source | license | agent evidence | size | truncated? | notable syntax |
 |---|---|---|---|---|---|---|---|---|---|
@@ -34,3 +34,4 @@ Every file is a byte-for-byte copy of the pinned blob. Each was checked with `cm
 | 28 | [28-tokenbucket-pr-body-zh.md](28-tokenbucket-pr-body-zh.md) | zh | PR description | https://github.com/No-Trade-No-Life/Yuan/blob/10695de722479316a837b28d51101c96e699d1c1/.legion/tasks/vendor-tokenbucket-proxy-ip/docs/pr-body.md | MIT | Same as 27 (`.legion/tasks/…/docs/pr-body.md`, an agent-drafted PR body). | 1,156 B | no | CJK punctuation |
 | 29 | [29-a2a-protocol-design-zh.md](29-a2a-protocol-design-zh.md) | zh | design spec | https://github.com/xiaojilele-glitch/WhyBuddy/blob/f4a3cbf0b85d07158cfb75c9bbd3031c12c3ea90/.kiro/specs/a2a-protocol/design.md | MIT | Agent-output folder `.kiro/specs/`. Later edit fc35f5d0 carries `Co-Authored-By: Claude Fable 5`. | 24,441 B | no | table (3 cols); code: mermaid, typescript; mermaid; CJK punctuation |
 | 30 | [30-crater-copilot-instructions.md](30-crater-copilot-instructions.md) | mixed | agent instructions (copilot-instructions.md) | https://github.com/raids-lab/crater/blob/7435489929ba355d5e7c07a13c8ce732494aacca/.github/copilot-instructions.md | Apache-2.0 | Copilot agent instructions. Edit 2db91359 carries `Co-authored-by: Copilot`. | 7,680 B | no | nested list; CJK punctuation |
+| 31 | [31-readout-typesetting-cases.md](31-readout-typesetting-cases.md) | mixed | synthetic test cases (not from a repository) | Written for Readout's own baselines (3.6), for constructs the real documents above lack. | same as Readout | none: synthetic | 2,357 B | no | GitHub alert with code; console transcript; box-drawing tree; table with short cells and identifiers; sup/sub; footnote; CJK emphasis (short, long, whole paragraph; zh and ja); task list; long code line |

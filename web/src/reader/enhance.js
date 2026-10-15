@@ -6,12 +6,13 @@ import { doc, root, strings, post, inViewport } from './core.js';
 import { captureAnchor, restoreAnchor } from './anchor.js';
 import { setupRemoteImage } from './remote.js';
 import { renderMath } from './math.js';
-import { renderMermaid } from './mermaid.js';
+import { renderMermaid, setupMermaid } from './mermaid.js';
 
 export function enhance(el) {
   for (const cb of el.querySelectorAll('.code-block')) setupCode(cb);
-  for (const t of el.querySelectorAll('.table-wrap')) queueTable(t);
+  for (const t of el.querySelectorAll('.table-wrap')) { setupTable(t); queueTable(t); }
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
+  for (const m of el.querySelectorAll('.mermaid-block')) setupMermaid(m);
   for (const h of el.classList.contains('k-heading') ? [el] : []) setupHeadingLink(h);
   if (el.querySelector('.math, .math-block')) renderMath(el);
   setLang(el);
@@ -29,14 +30,86 @@ function setLang(el) {
 }
 
 // Emphasis that is mostly CJK (at least as many CJK characters as Latin
-// letters) takes emphasis dots instead of a slant (reader.css: em.cjk-em).
-const CJK_CHARS = /[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]/g;
-const LATIN_LETTERS = /[A-Za-z\u00c0-\u024f]/g;
+// letters) is upright and takes emphasis dots instead of a slant (reader.css:
+// em.cjk-em). The dots are drawn by CSS, one per Han, kana or Hangul
+// character, each in a span of its own (.em-dot): never on punctuation
+// (clreq, jlreq), outside the line box (text-emphasis made the line taller),
+// and never part of copied text. A long run (more than 20 such characters,
+// or a whole paragraph) takes a slightly heavier weight instead: a line of
+// dots under a whole sentence is noise, not emphasis (.cjk-em-long).
+const CJK_CHARS = /[぀-ヿㇰ-ㇿｦ-ﾟ㐀-鿿豈-﫿가-힯]/g;
+const LATIN_LETTERS = /[A-Za-zÀ-ɏ]/g;
+const DOTTED = /[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Hangul}ー]/u;
+const DOTTED_ALL = /[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Hangul}ー]/gu;
+const LONG_EMPHASIS = 20;
 function markCjkEmphasis(el) {
   for (const em of el.querySelectorAll('em')) {
+    if (em.classList.contains('cjk-em') || em.classList.contains('cjk-em-long')) continue;
     const text = em.textContent;
     const cjk = (text.match(CJK_CHARS) || []).length;
-    em.classList.toggle('cjk-em', cjk > 0 && cjk >= (text.match(LATIN_LETTERS) || []).length);
+    if (!cjk || cjk < (text.match(LATIN_LETTERS) || []).length) continue;
+    const dotted = (text.match(DOTTED_ALL) || []).length;
+    const para = em.parentElement.closest('p, li, td, th, h1, h2, h3, h4, h5, h6');
+    const whole = para && para.textContent.trim() === text.trim();
+    if (dotted > LONG_EMPHASIS || whole) { em.classList.add('cjk-em-long'); continue; }
+    em.classList.add('cjk-em');
+    const walker = document.createTreeWalker(em, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (DOTTED.test(n.data) && !n.parentElement.closest('code, kbd, samp, .katex, .math')) nodes.push(n);
+    }
+    for (const n of nodes) {
+      const frag = document.createDocumentFragment();
+      let plain = '';
+      for (const ch of n.data) {
+        if (!DOTTED.test(ch)) { plain += ch; continue; }
+        if (plain) { frag.append(plain); plain = ''; }
+        const dot = document.createElement('span');
+        dot.className = 'em-dot';
+        dot.textContent = ch;
+        frag.append(dot);
+      }
+      if (plain) frag.append(plain);
+      n.replaceWith(frag);
+    }
+  }
+}
+
+// Table cells. A short cell (16 columns or fewer, a CJK character counting
+// two) and a short identifier in code (32 characters or fewer) stay on one
+// line while the column has room: "S1 / GREEN" or `actions/configure-pages`
+// broken in two read badly. A longer identifier may break after a slash.
+// A table that no longer fits then scrolls, as any wide table does.
+const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦\u{1f000}-\u{1faff}\u{20000}-\u{3fffd}]/u;
+function columns(s) {
+  let n = 0;
+  for (const ch of s) n += WIDE.test(ch) ? 2 : 1;
+  return n;
+}
+
+function setupTable(t) {
+  for (const c of t.querySelectorAll('td code, th code')) {
+    const s = c.textContent;
+    if (s.length <= 32) c.dataset.nw = '';
+    else if (s.includes('/')) breakAfterSlashes(c);
+  }
+  for (const cell of t.querySelectorAll('td, th')) {
+    const n = columns(cell.textContent.trim());
+    if (n && n <= 16 && !cell.querySelector('br')) cell.dataset.nw = '';
+  }
+}
+
+function breakAfterSlashes(el) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.includes('/')) nodes.push(n);
+  for (const n of nodes) {
+    const frag = document.createDocumentFragment();
+    n.data.split('/').forEach((part, i, all) => {
+      if (part) frag.append(part);
+      if (i < all.length - 1) frag.append('/', document.createElement('wbr'));
+    });
+    n.replaceWith(frag);
   }
 }
 
@@ -51,6 +124,11 @@ export function measureTables(tables = doc.querySelectorAll('.table-wrap')) {
   for (const t of list) t.classList.remove('scrolls');
   const wide = list.map(t => t.scrollWidth > t.clientWidth + 1);
   list.forEach((t, i) => { if (wide[i]) t.classList.add('scrolls'); });
+  // A scrolling table of its own block may widen into the margins (reader.css):
+  // its width, read once it takes it.
+  const own = list.filter((t, i) => wide[i] && t.parentElement.matches('#ro-doc > .blk.k-table'));
+  const widths = own.map(t => t.firstElementChild.getBoundingClientRect().width);
+  own.forEach((t, i) => t.parentElement.style.setProperty('--tb-w', `${Math.ceil(widths[i])}px`));
 }
 
 // New tables are measured together, in the next frame.
@@ -166,8 +244,28 @@ function setupCode(cb) {
   });
   tools.appendChild(btn);
   cb.appendChild(tools);
+  const text = cb.querySelector('pre').textContent;
+  // Box-drawing characters (a directory tree, a diagram): tighter lines, so
+  // the vertical strokes join up.
+  if (/[\u2500-\u257f]/.test(text)) cb.classList.add('cb-tree');
+  // Its longest line, in columns: reader.css widens a code block of its own
+  // whose lines run past the column into the margins, when the window has room.
+  if (cb.parentElement.classList.contains('k-code')) cb.parentElement.style.setProperty('--cb-cols', codeColumns(text));
   cb.dataset.hl = 'pending';
   fresh.push(cb);
+}
+
+// The width of the longest line in monospace columns: a tab to the next
+// stop of 4, a CJK character about 5/3 (it is 1em wide, a column 0.6em).
+function codeColumns(text) {
+  let max = 0;
+  for (const line of text.split('\n')) {
+    let n = 0;
+    if (/^[\x20-\x7e]*$/.test(line)) n = line.length;
+    else for (const ch of line) n = ch === '\t' ? (Math.floor(n / 4) + 1) * 4 : n + (WIDE.test(ch) ? 5 / 3 : 1);
+    if (n > max) max = n;
+  }
+  return Math.ceil(max);
 }
 
 // Code blocks set up since the last renderLazy(): only these are looked at
@@ -271,5 +369,5 @@ export function renderLazy() {
     if (inViewport(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
   }
   for (const cb of onScreen) highlightBlock(cb);
-  for (const m of doc.querySelectorAll('.mermaid-block:not(.done):not(.busy)')) lazyObserver.observe(m);
+  for (const m of doc.querySelectorAll('.mermaid-block:not(.done):not(.busy):not([data-waiting])')) lazyObserver.observe(m);
 }
