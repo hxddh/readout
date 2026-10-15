@@ -162,6 +162,8 @@ struct HTMLRenderer {
     /// (`Run: make test` / `Expected: ok`, `状态：完成`, `**Key:** value`): a
     /// short label, then an ASCII colon and white space, or a fullwidth colon.
     static func isKeyValueLines(_ p: Paragraph) -> Bool {
+        // One source line: no line break (cheap, before walking the inlines).
+        if let r = p.range, r.upperBound.line <= r.lowerBound.line { return false }
         guard p.children.contains(where: { $0 is SoftBreak || $0 is LineBreak }) else { return false }
         var lines = [""]
         for child in p.children {
@@ -187,6 +189,7 @@ struct HTMLRenderer {
         func content(_ m: Markup) -> [Markup] {
             m.children.filter { !($0 is SoftBreak) && !(($0 as? Text)?.string.allSatisfy(\.isWhitespace) ?? false) }
         }
+        guard p.childCount <= 3 else { return false }   // an image, and white space or breaks around it
         let kids = content(p)
         guard kids.count == 1 else { return false }
         if kids[0] is Image { return true }
