@@ -164,6 +164,10 @@ function apply(p) {
 // ---------------------------------------------------------------- Native API
 
 function setAppearance(o) {
+  // The highlighter starts with the first appearance (or the app's warm-up),
+  // which tells Quick Look apart: a preview loads only the grammars it shows.
+  if (o.mode === 'quicklook') hl.noPreload();
+  hl.init();
   if (o.dark !== undefined) {
     const t = o.dark ? 'dark' : 'light';
     if (root.dataset.theme !== t) {
@@ -293,7 +297,6 @@ window.readout = {
   warm: () => hl.init(),
 };
 
-hl.init();
 post({ type: 'ready' });
 
 // ---------------------------------------------------------------- Printing

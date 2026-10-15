@@ -1,10 +1,17 @@
 // Syntax highlighting with Shiki (JavaScript regex engine, no WASM).
-// Grammars are loaded on demand; common ones are preloaded during warm-up.
-import { createHighlighterCore } from 'shiki/core';
-import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
+// Grammars are loaded on demand; common ones are preloaded during warm-up
+// (not in Quick Look, which loads only what the preview shows). Shiki itself
+// is loaded on first use.
+//
+// The grammars come mostly precompiled: the build (shiki-grammars.mjs) serves
+// each '@shikijs/langs/<id>' import with its patterns already converted to
+// JavaScript regexes, except the few TextMate rewrites before matching, which
+// stay Oniguruma source and are converted here, as before. The highlighting
+// is the same (test/grammars.test.mjs); a grammar's first use is faster.
 
 const LANGS = {
   shellscript: () => import('@shikijs/langs/shellscript'),
+  shellsession: () => import('@shikijs/langs/shellsession'),
   javascript: () => import('@shikijs/langs/javascript'),
   typescript: () => import('@shikijs/langs/typescript'),
   tsx: () => import('@shikijs/langs/tsx'),
@@ -55,7 +62,9 @@ const LANGS = {
 };
 
 const ALIASES = {
-  sh: 'shellscript', bash: 'shellscript', zsh: 'shellscript', shell: 'shellscript', console: 'shellscript',
+  sh: 'shellscript', bash: 'shellscript', zsh: 'shellscript', shell: 'shellscript',
+  // A terminal transcript: prompts, commands and their output.
+  console: 'shellsession', 'shell-session': 'shellsession', terminal: 'shellsession',
   js: 'javascript', mjs: 'javascript', cjs: 'javascript', ts: 'typescript', mts: 'typescript',
   py: 'python', python3: 'python', rs: 'rust', golang: 'go', kt: 'kotlin', 'c++': 'cpp', h: 'c', hpp: 'cpp',
   cs: 'csharp', 'c#': 'csharp', objc: 'objective-c', rb: 'ruby', yml: 'yaml', md: 'markdown',
@@ -68,6 +77,7 @@ const PRELOAD = ['shellscript', 'json', 'typescript', 'javascript', 'python', 's
 
 let highlighter = null;
 let ready = null;
+let preload = true;        // Quick Look turns it off: it loads only the grammars a preview needs
 let initialized = false;   // the preloaded grammars are all registered
 const loading = new Map();
 const failed = new Set();  // grammars that could not be loaded (never waited for again)
@@ -80,9 +90,14 @@ export function resolveLang(lang) {
   return LANGS[id] ? id : null;
 }
 
+/** Quick Look: no grammars are loaded ahead of need (call before init). */
+export function noPreload() { preload = false; }
+
 export function init() {
   if (ready) return ready;
   ready = (async () => {
+    const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] =
+      await Promise.all([import('shiki/core'), import('shiki/engine/javascript')]);
     highlighter = await createHighlighterCore({
       themes: [import('@shikijs/themes/github-light-default'), import('@shikijs/themes/github-dark-default')],
       langs: [],
@@ -90,7 +105,7 @@ export function init() {
     });
     // Fetch every preloaded grammar at once; ensureLang registers them one
     // at a time, in this order.
-    await Promise.all(PRELOAD.map(id => ensureLang(id)));
+    if (preload) await Promise.all(PRELOAD.map(id => ensureLang(id)));
     initialized = true;
   })();
   return ready;
