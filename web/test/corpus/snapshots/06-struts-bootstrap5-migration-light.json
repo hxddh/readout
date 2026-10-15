@@ -1,5 +1,5 @@
 {
- "height": 12761,
+ "height": 12917,
  "blocks": [
   {
    "slot": 1,
@@ -392,15 +392,15 @@
    "slot": 44,
    "kind": "paragraph",
    "top": 4144,
-   "h": 122,
-   "style": "3b64f866",
-   "content": "7840f705",
+   "h": 148,
+   "style": "3bfda5d3",
+   "content": "e5f160cd",
    "text": "Run: mvn -q -pl apps/showcase,apps/rest-showcase"
   },
   {
    "slot": 45,
    "kind": "paragraph",
-   "top": 4266,
+   "top": 4292,
    "h": 96,
    "style": "560885c6",
    "content": "2b78325b",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "listItem",
-   "top": 4362,
+   "top": 4388,
    "h": 45,
    "style": "558671d9",
    "content": "3ebd93fa",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "code",
-   "top": 4406,
+   "top": 4432,
    "h": 122,
    "style": "aa31c159",
    "content": "4720424c",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "rule",
-   "top": 4528,
+   "top": 4554,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "heading",
-   "top": 4575,
+   "top": 4601,
    "h": 32,
    "style": "93ce84b6",
    "content": "8a32df64",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 4608,
+   "top": 4634,
    "h": 44,
    "style": "5cf539a9",
    "content": "dcd190be",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "listItem",
-   "top": 4651,
+   "top": 4677,
    "h": 28,
    "style": "6d4953b0",
    "content": "c91402ac",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 4679,
+   "top": 4705,
    "h": 28,
    "style": "b6078499",
    "content": "de12af7c",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 4708,
+   "top": 4734,
    "h": 80,
    "style": "5140eecc",
    "content": "b8a0c447",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "listItem",
-   "top": 4788,
+   "top": 4814,
    "h": 71,
    "style": "36561a7b",
    "content": "27691b7c",
@@ -490,7 +490,7 @@
   {
    "slot": 55,
    "kind": "paragraph",
-   "top": 4859,
+   "top": 4885,
    "h": 44,
    "style": "42e99eaf",
    "content": "a2cb5599",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "listItem",
-   "top": 4903,
+   "top": 4929,
    "h": 35,
    "style": "efe0fbf5",
    "content": "e4700571",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "listItem",
-   "top": 4938,
+   "top": 4964,
    "h": 35,
    "style": "0749da7b",
    "content": "58e03db2",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 4973,
+   "top": 4999,
    "h": 45,
    "style": "9781bf86",
    "content": "cfb530b7",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "paragraph",
-   "top": 5018,
+   "top": 5044,
    "h": 70,
    "style": "cf8029b9",
    "content": "abd7b45f",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "code",
-   "top": 5087,
+   "top": 5113,
    "h": 362,
    "style": "49e0905e",
    "content": "26f1eedd",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "paragraph",
-   "top": 5449,
+   "top": 5475,
    "h": 96,
    "style": "e9f4a84d",
    "content": "fdc3bc05",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "listItem",
-   "top": 5545,
+   "top": 5571,
    "h": 45,
    "style": "4277284d",
    "content": "2589e60b",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "paragraph",
-   "top": 5589,
+   "top": 5615,
    "h": 44,
    "style": "7d310239",
    "content": "f0a42fa9",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "code",
-   "top": 5633,
+   "top": 5659,
    "h": 102,
    "style": "36744dc1",
    "content": "738e7ecb",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "paragraph",
-   "top": 5735,
+   "top": 5761,
    "h": 44,
    "style": "7d310239",
    "content": "f95a9911",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "listItem",
-   "top": 5778,
+   "top": 5804,
    "h": 45,
    "style": "31a57350",
    "content": "5bc906ec",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "paragraph",
-   "top": 5823,
+   "top": 5849,
    "h": 44,
    "style": "2fa27a08",
    "content": "ce526950",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "code",
-   "top": 5866,
+   "top": 5892,
    "h": 62,
    "style": "5e90812c",
    "content": "212fe103",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "listItem",
-   "top": 5928,
+   "top": 5954,
    "h": 45,
    "style": "fa567119",
    "content": "ad98e0ba",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "code",
-   "top": 5973,
+   "top": 5999,
    "h": 202,
    "style": "e9b67a88",
    "content": "7efec5fe",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 6174,
+   "top": 6200,
    "h": 45,
    "style": "1e0e6581",
    "content": "4111474e",
@@ -643,16 +643,16 @@
   {
    "slot": 72,
    "kind": "paragraph",
-   "top": 6219,
-   "h": 70,
-   "style": "3d51c759",
-   "content": "ea4cc0b5",
+   "top": 6245,
+   "h": 96,
+   "style": "0130410c",
+   "content": "78ebd8bf",
    "text": "Run: grep -rn \"bootstrap.css\\|bootstrap.min.js\\|"
   },
   {
    "slot": 73,
    "kind": "listItem",
-   "top": 6289,
+   "top": 6341,
    "h": 45,
    "style": "df4801d9",
    "content": "42dc5e99",
@@ -661,16 +661,16 @@
   {
    "slot": 74,
    "kind": "paragraph",
-   "top": 6333,
-   "h": 70,
-   "style": "2a40e9bb",
-   "content": "43f21efa",
+   "top": 6385,
+   "h": 96,
+   "style": "fe5cfd78",
+   "content": "539f10e2",
    "text": "Run: mvn -q -pl apps/showcase -am package -Dskip"
   },
   {
    "slot": 75,
    "kind": "listItem",
-   "top": 6403,
+   "top": 6481,
    "h": 45,
    "style": "558671d9",
    "content": "62ee2751",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "code",
-   "top": 6447,
+   "top": 6525,
    "h": 122,
    "style": "eb183ef3",
    "content": "f2e504aa",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "rule",
-   "top": 6569,
+   "top": 6647,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "heading",
-   "top": 6616,
+   "top": 6694,
    "h": 32,
    "style": "93ce84b6",
    "content": "dea646ca",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "paragraph",
-   "top": 6649,
+   "top": 6727,
    "h": 44,
    "style": "5cf539a9",
    "content": "dcd190be",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "listItem",
-   "top": 6692,
+   "top": 6770,
    "h": 97,
    "style": "3f036ab0",
    "content": "23b06c98",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "paragraph",
-   "top": 6789,
+   "top": 6867,
    "h": 44,
    "style": "42e99eaf",
    "content": "a2cb5599",
@@ -733,7 +733,7 @@
   {
    "slot": 82,
    "kind": "listItem",
-   "top": 6833,
+   "top": 6911,
    "h": 35,
    "style": "efe0fbf5",
    "content": "94a25ed5",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "listItem",
-   "top": 6868,
+   "top": 6946,
    "h": 35,
    "style": "e6c70ac7",
    "content": "af9d8d03",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "listItem",
-   "top": 6903,
+   "top": 6981,
    "h": 45,
    "style": "d75f9bbf",
    "content": "ec0ab33e",
@@ -760,7 +760,7 @@
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 6948,
+   "top": 7026,
    "h": 44,
    "style": "7d310239",
    "content": "239c499d",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "code",
-   "top": 6992,
+   "top": 7070,
    "h": 62,
    "style": "09adfe3d",
    "content": "2c277ff6",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "paragraph",
-   "top": 7053,
+   "top": 7131,
    "h": 44,
    "style": "7d310239",
    "content": "d2c37b11",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "listItem",
-   "top": 7097,
+   "top": 7175,
    "h": 45,
    "style": "5a42cc25",
    "content": "f5d46f5c",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "paragraph",
-   "top": 7141,
+   "top": 7219,
    "h": 96,
    "style": "b11dd3f9",
    "content": "a511f453",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "code",
-   "top": 7237,
+   "top": 7315,
    "h": 62,
    "style": "a42d7893",
    "content": "1eb54e67",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "listItem",
-   "top": 7299,
+   "top": 7377,
    "h": 45,
    "style": "e5dec636",
    "content": "598512fd",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "paragraph",
-   "top": 7343,
+   "top": 7421,
    "h": 96,
    "style": "85a92adf",
    "content": "3262afe1",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "code",
-   "top": 7439,
+   "top": 7517,
    "h": 122,
    "style": "d8699bdf",
    "content": "9ba14709",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 7561,
+   "top": 7639,
    "h": 45,
    "style": "c732003b",
    "content": "afd0e87d",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "paragraph",
-   "top": 7605,
+   "top": 7683,
    "h": 96,
    "style": "6991b56b",
    "content": "b2949dac",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "listItem",
-   "top": 7701,
+   "top": 7779,
    "h": 45,
    "style": "76f66e00",
    "content": "c3b93549",
@@ -868,7 +868,7 @@
   {
    "slot": 97,
    "kind": "paragraph",
-   "top": 7745,
+   "top": 7823,
    "h": 70,
    "style": "4b40c8fa",
    "content": "af24e31b",
@@ -877,7 +877,7 @@
   {
    "slot": 98,
    "kind": "code",
-   "top": 7815,
+   "top": 7893,
    "h": 102,
    "style": "45089299",
    "content": "3620b8ca",
@@ -886,7 +886,7 @@
   {
    "slot": 99,
    "kind": "paragraph",
-   "top": 7917,
+   "top": 7995,
    "h": 122,
    "style": "0398d6c4",
    "content": "53579716",
@@ -895,7 +895,7 @@
   {
    "slot": 100,
    "kind": "listItem",
-   "top": 8038,
+   "top": 8116,
    "h": 45,
    "style": "2a240b8a",
    "content": "486c638b",
@@ -904,16 +904,16 @@
   {
    "slot": 101,
    "kind": "paragraph",
-   "top": 8083,
+   "top": 8161,
    "h": 122,
-   "style": "12108194",
-   "content": "de5b94a5",
+   "style": "2dceea3a",
+   "content": "4d92608f",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
   },
   {
    "slot": 102,
    "kind": "listItem",
-   "top": 8205,
+   "top": 8283,
    "h": 45,
    "style": "ce81b7c5",
    "content": "44efc64c",
@@ -922,16 +922,16 @@
   {
    "slot": 103,
    "kind": "paragraph",
-   "top": 8249,
-   "h": 70,
-   "style": "2a40e9bb",
-   "content": "43f21efa",
+   "top": 8327,
+   "h": 96,
+   "style": "fe5cfd78",
+   "content": "539f10e2",
    "text": "Run: mvn -q -pl apps/showcase -am package -Dskip"
   },
   {
    "slot": 104,
    "kind": "listItem",
-   "top": 8319,
+   "top": 8423,
    "h": 45,
    "style": "558671d9",
    "content": "a2cd63e4",
@@ -940,7 +940,7 @@
   {
    "slot": 105,
    "kind": "code",
-   "top": 8363,
+   "top": 8467,
    "h": 122,
    "style": "a0df824f",
    "content": "38c7c392",
@@ -949,7 +949,7 @@
   {
    "slot": 106,
    "kind": "rule",
-   "top": 8485,
+   "top": 8589,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -958,7 +958,7 @@
   {
    "slot": 107,
    "kind": "heading",
-   "top": 8532,
+   "top": 8636,
    "h": 32,
    "style": "93ce84b6",
    "content": "529ae8d2",
@@ -967,7 +967,7 @@
   {
    "slot": 108,
    "kind": "paragraph",
-   "top": 8565,
+   "top": 8669,
    "h": 44,
    "style": "5cf539a9",
    "content": "dcd190be",
@@ -976,7 +976,7 @@
   {
    "slot": 109,
    "kind": "listItem",
-   "top": 8608,
+   "top": 8712,
    "h": 106,
    "style": "3feccd75",
    "content": "456623f1",
@@ -985,7 +985,7 @@
   {
    "slot": 110,
    "kind": "listItem",
-   "top": 8714,
+   "top": 8818,
    "h": 28,
    "style": "ac85e055",
    "content": "dfa4c060",
@@ -994,7 +994,7 @@
   {
    "slot": 111,
    "kind": "listItem",
-   "top": 8743,
+   "top": 8847,
    "h": 97,
    "style": "c5cf70f0",
    "content": "c26850b5",
@@ -1003,7 +1003,7 @@
   {
    "slot": 112,
    "kind": "paragraph",
-   "top": 8840,
+   "top": 8944,
    "h": 44,
    "style": "42e99eaf",
    "content": "a2cb5599",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "listItem",
-   "top": 8883,
+   "top": 8987,
    "h": 35,
    "style": "efe0fbf5",
    "content": "e4700571",
@@ -1021,7 +1021,7 @@
   {
    "slot": 114,
    "kind": "listItem",
-   "top": 8919,
+   "top": 9023,
    "h": 35,
    "style": "0749da7b",
    "content": "87ec72cc",
@@ -1030,7 +1030,7 @@
   {
    "slot": 115,
    "kind": "listItem",
-   "top": 8954,
+   "top": 9058,
    "h": 45,
    "style": "7ecae2ef",
    "content": "47f4ca94",
@@ -1039,7 +1039,7 @@
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 8998,
+   "top": 9102,
    "h": 70,
    "style": "40135e8a",
    "content": "c0d4ec4d",
@@ -1048,7 +1048,7 @@
   {
    "slot": 117,
    "kind": "code",
-   "top": 9068,
+   "top": 9172,
    "h": 82,
    "style": "e016ae18",
    "content": "8fd8cf3f",
@@ -1057,7 +1057,7 @@
   {
    "slot": 118,
    "kind": "paragraph",
-   "top": 9150,
+   "top": 9254,
    "h": 44,
    "style": "08e8abd4",
    "content": "3769bd2d",
@@ -1066,7 +1066,7 @@
   {
    "slot": 119,
    "kind": "listItem",
-   "top": 9193,
+   "top": 9297,
    "h": 45,
    "style": "42b6f01d",
    "content": "91890a1c",
@@ -1075,7 +1075,7 @@
   {
    "slot": 120,
    "kind": "paragraph",
-   "top": 9238,
+   "top": 9342,
    "h": 44,
    "style": "51fe3bae",
    "content": "aec54a8e",
@@ -1084,7 +1084,7 @@
   {
    "slot": 121,
    "kind": "code",
-   "top": 9282,
+   "top": 9386,
    "h": 62,
    "style": "93b0af2b",
    "content": "500ff1d3",
@@ -1093,7 +1093,7 @@
   {
    "slot": 122,
    "kind": "listItem",
-   "top": 9343,
+   "top": 9447,
    "h": 45,
    "style": "f7d529b6",
    "content": "eb9f5f97",
@@ -1102,7 +1102,7 @@
   {
    "slot": 123,
    "kind": "code",
-   "top": 9388,
+   "top": 9492,
    "h": 162,
    "style": "f7c4fb3d",
    "content": "9bbaf24e",
@@ -1111,7 +1111,7 @@
   {
    "slot": 124,
    "kind": "listItem",
-   "top": 9550,
+   "top": 9654,
    "h": 45,
    "style": "fa567119",
    "content": "23dd2778",
@@ -1120,16 +1120,16 @@
   {
    "slot": 125,
    "kind": "paragraph",
-   "top": 9594,
+   "top": 9698,
    "h": 70,
-   "style": "081d86ff",
-   "content": "03a6ea79",
+   "style": "cee7c731",
+   "content": "9e4ed801",
    "text": "Run: grep -rn \"css/bootstrap\\|bootstrap-theme\" a"
   },
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 9664,
+   "top": 9768,
    "h": 45,
    "style": "558671d9",
    "content": "c5f9adef",
@@ -1138,7 +1138,7 @@
   {
    "slot": 127,
    "kind": "code",
-   "top": 9708,
+   "top": 9812,
    "h": 122,
    "style": "5d4d8d16",
    "content": "5d1d14c0",
@@ -1147,7 +1147,7 @@
   {
    "slot": 128,
    "kind": "rule",
-   "top": 9830,
+   "top": 9934,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "heading",
-   "top": 9878,
+   "top": 9982,
    "h": 32,
    "style": "93ce84b6",
    "content": "db2a0b35",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "paragraph",
-   "top": 9910,
+   "top": 10014,
    "h": 44,
    "style": "5cf539a9",
    "content": "dcd190be",
@@ -1174,7 +1174,7 @@
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 9953,
+   "top": 10057,
    "h": 71,
    "style": "ab0ee9c9",
    "content": "596debad",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "paragraph",
-   "top": 10024,
+   "top": 10128,
    "h": 44,
    "style": "42e99eaf",
    "content": "a2cb5599",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "listItem",
-   "top": 10068,
+   "top": 10172,
    "h": 35,
    "style": "efe0fbf5",
    "content": "b1164af7",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "listItem",
-   "top": 10103,
+   "top": 10207,
    "h": 35,
    "style": "e6c70ac7",
    "content": "4c79dd0f",
@@ -1210,7 +1210,7 @@
   {
    "slot": 135,
    "kind": "listItem",
-   "top": 10138,
+   "top": 10242,
    "h": 45,
    "style": "e3b2880e",
    "content": "c22eb784",
@@ -1219,16 +1219,16 @@
   {
    "slot": 136,
    "kind": "paragraph",
-   "top": 10183,
-   "h": 96,
-   "style": "21f1aeff",
-   "content": "13cd0e49",
+   "top": 10287,
+   "h": 122,
+   "style": "f587bb6a",
+   "content": "b0c88f33",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
   },
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 10279,
+   "top": 10409,
    "h": 45,
    "style": "f6c45b29",
    "content": "dae54a3d",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "paragraph",
-   "top": 10323,
+   "top": 10453,
    "h": 44,
    "style": "c25b07ac",
    "content": "eab5368e",
@@ -1246,7 +1246,7 @@
   {
    "slot": 139,
    "kind": "code",
-   "top": 10367,
+   "top": 10497,
    "h": 102,
    "style": "19d0ecc6",
    "content": "9b9c0994",
@@ -1255,7 +1255,7 @@
   {
    "slot": 140,
    "kind": "paragraph",
-   "top": 10469,
+   "top": 10599,
    "h": 44,
    "style": "b68bc1d9",
    "content": "a35b87f0",
@@ -1264,7 +1264,7 @@
   {
    "slot": 141,
    "kind": "listItem",
-   "top": 10512,
+   "top": 10642,
    "h": 45,
    "style": "3231d96e",
    "content": "9535e29a",
@@ -1273,7 +1273,7 @@
   {
    "slot": 142,
    "kind": "paragraph",
-   "top": 10557,
+   "top": 10687,
    "h": 96,
    "style": "27ea4b8f",
    "content": "50e14528",
@@ -1282,7 +1282,7 @@
   {
    "slot": 143,
    "kind": "code",
-   "top": 10652,
+   "top": 10782,
    "h": 62,
    "style": "4f6132a2",
    "content": "42d424e4",
@@ -1291,7 +1291,7 @@
   {
    "slot": 144,
    "kind": "listItem",
-   "top": 10714,
+   "top": 10844,
    "h": 45,
    "style": "e8170c12",
    "content": "03b24a70",
@@ -1300,16 +1300,16 @@
   {
    "slot": 145,
    "kind": "paragraph",
-   "top": 10759,
+   "top": 10889,
    "h": 96,
-   "style": "4521bfbb",
-   "content": "fde4cae2",
+   "style": "d9507969",
+   "content": "a54e2664",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
   },
   {
    "slot": 146,
    "kind": "listItem",
-   "top": 10854,
+   "top": 10984,
    "h": 45,
    "style": "08ae118f",
    "content": "bd94061a",
@@ -1318,16 +1318,16 @@
   {
    "slot": 147,
    "kind": "paragraph",
-   "top": 10899,
-   "h": 70,
-   "style": "2a40e9bb",
-   "content": "fffaa32f",
+   "top": 11029,
+   "h": 96,
+   "style": "c163479c",
+   "content": "e9c519b5",
    "text": "Run: mvn -q -pl apps/rest-showcase -am package -"
   },
   {
    "slot": 148,
    "kind": "listItem",
-   "top": 10968,
+   "top": 11124,
    "h": 45,
    "style": "558671d9",
    "content": "3ebd93fa",
@@ -1336,7 +1336,7 @@
   {
    "slot": 149,
    "kind": "code",
-   "top": 11013,
+   "top": 11169,
    "h": 122,
    "style": "c407d341",
    "content": "40a1415c",
@@ -1345,7 +1345,7 @@
   {
    "slot": 150,
    "kind": "rule",
-   "top": 11135,
+   "top": 11291,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -1354,7 +1354,7 @@
   {
    "slot": 151,
    "kind": "heading",
-   "top": 11182,
+   "top": 11338,
    "h": 32,
    "style": "93ce84b6",
    "content": "d9c2b58d",
@@ -1363,7 +1363,7 @@
   {
    "slot": 152,
    "kind": "paragraph",
-   "top": 11214,
+   "top": 11370,
    "h": 44,
    "style": "5cf539a9",
    "content": "a0568ba3",
@@ -1372,7 +1372,7 @@
   {
    "slot": 153,
    "kind": "paragraph",
-   "top": 11258,
+   "top": 11414,
    "h": 44,
    "style": "42e99eaf",
    "content": "a2cb5599",
@@ -1381,7 +1381,7 @@
   {
    "slot": 154,
    "kind": "listItem",
-   "top": 11301,
+   "top": 11457,
    "h": 35,
    "style": "efe0fbf5",
    "content": "26eacd39",
@@ -1390,7 +1390,7 @@
   {
    "slot": 155,
    "kind": "listItem",
-   "top": 11337,
+   "top": 11493,
    "h": 45,
    "style": "99562648",
    "content": "843bed53",
@@ -1399,16 +1399,16 @@
   {
    "slot": 156,
    "kind": "paragraph",
-   "top": 11381,
+   "top": 11537,
    "h": 96,
-   "style": "3d83f9e8",
-   "content": "b6d10f2b",
+   "style": "4a8e8010",
+   "content": "0ba19ef3",
    "text": "Run: mvn clean install -DskipAssembly 2>&1 | tai"
   },
   {
    "slot": 157,
    "kind": "listItem",
-   "top": 11477,
+   "top": 11633,
    "h": 45,
    "style": "d7e57c9c",
    "content": "7bd7f56d",
@@ -1417,7 +1417,7 @@
   {
    "slot": 158,
    "kind": "paragraph",
-   "top": 11521,
+   "top": 11677,
    "h": 70,
    "style": "2788c451",
    "content": "54577d60",
@@ -1426,7 +1426,7 @@
   {
    "slot": 159,
    "kind": "listItem",
-   "top": 11591,
+   "top": 11747,
    "h": 61,
    "style": "dd9b715d",
    "content": "484dc115",
@@ -1435,7 +1435,7 @@
   {
    "slot": 160,
    "kind": "listItem",
-   "top": 11652,
+   "top": 11808,
    "h": 35,
    "style": "e6c70ac7",
    "content": "bc1ca603",
@@ -1444,7 +1444,7 @@
   {
    "slot": 161,
    "kind": "listItem",
-   "top": 11688,
+   "top": 11844,
    "h": 35,
    "style": "e6c70ac7",
    "content": "56d65e15",
@@ -1453,7 +1453,7 @@
   {
    "slot": 162,
    "kind": "listItem",
-   "top": 11723,
+   "top": 11879,
    "h": 35,
    "style": "e6c70ac7",
    "content": "3c5bd537",
@@ -1462,7 +1462,7 @@
   {
    "slot": 163,
    "kind": "listItem",
-   "top": 11758,
+   "top": 11914,
    "h": 61,
    "style": "3a5b894c",
    "content": "d9ec30b0",
@@ -1471,7 +1471,7 @@
   {
    "slot": 164,
    "kind": "listItem",
-   "top": 11820,
+   "top": 11976,
    "h": 61,
    "style": "5d18f47f",
    "content": "27c6fef8",
@@ -1480,7 +1480,7 @@
   {
    "slot": 165,
    "kind": "listItem",
-   "top": 11881,
+   "top": 12037,
    "h": 45,
    "style": "488ba971",
    "content": "db7f9d89",
@@ -1489,7 +1489,7 @@
   {
    "slot": 166,
    "kind": "paragraph",
-   "top": 11926,
+   "top": 12082,
    "h": 96,
    "style": "fd655e2c",
    "content": "56ce6e81",
@@ -1498,7 +1498,7 @@
   {
    "slot": 167,
    "kind": "listItem",
-   "top": 12021,
+   "top": 12177,
    "h": 45,
    "style": "2db38314",
    "content": "ea217b2c",
@@ -1507,7 +1507,7 @@
   {
    "slot": 168,
    "kind": "code",
-   "top": 12066,
+   "top": 12222,
    "h": 382,
    "style": "d457d911",
    "content": "56e3e218",
@@ -1516,7 +1516,7 @@
   {
    "slot": 169,
    "kind": "paragraph",
-   "top": 12448,
+   "top": 12604,
    "h": 44,
    "style": "a9506b72",
    "content": "e49ec312",

@@ -1,5 +1,5 @@
 {
- "height": 5162,
+ "height": 5190,
  "blocks": [
   {
    "slot": 1,
@@ -14,15 +14,15 @@
    "slot": 2,
    "kind": "paragraph",
    "top": 71,
-   "h": 74,
-   "style": "5a3c27dc",
-   "content": "c2fa2279",
-   "text": "生成时间: 2026-01-15 16:09:47 分析者: Claude Code - 代码变"
+   "h": 102,
+   "style": "96de7755",
+   "content": "19433cd7",
+   "text": "生成时间: 2026-01-15 16:09:47分析者: Claude Code - 代码变更"
   },
   {
    "slot": 3,
    "kind": "rule",
-   "top": 144,
+   "top": 172,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -31,7 +31,7 @@
   {
    "slot": 4,
    "kind": "heading",
-   "top": 192,
+   "top": 220,
    "h": 42,
    "style": "bd085edc",
    "content": "af18e44c",
@@ -40,7 +40,7 @@
   {
    "slot": 5,
    "kind": "table",
-   "top": 234,
+   "top": 262,
    "h": 176,
    "style": "2a9ac15b",
    "content": "846e11e8",
@@ -49,7 +49,7 @@
   {
    "slot": 6,
    "kind": "paragraph",
-   "top": 410,
+   "top": 438,
    "h": 46,
    "style": "ac61dbb3",
    "content": "4155f09c",
@@ -58,7 +58,7 @@
   {
    "slot": 7,
    "kind": "rule",
-   "top": 456,
+   "top": 484,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -67,7 +67,7 @@
   {
    "slot": 8,
    "kind": "heading",
-   "top": 503,
+   "top": 531,
    "h": 42,
    "style": "bd085edc",
    "content": "05ad7d0a",
@@ -76,7 +76,7 @@
   {
    "slot": 9,
    "kind": "heading",
-   "top": 546,
+   "top": 574,
    "h": 42,
    "style": "22c91c6d",
    "content": "d3c3b2dc",
@@ -85,7 +85,7 @@
   {
    "slot": 10,
    "kind": "heading",
-   "top": 587,
+   "top": 615,
    "h": 36,
    "style": "1c0ec052",
    "content": "e7aec5bc",
@@ -94,7 +94,7 @@
   {
    "slot": 11,
    "kind": "listItem",
-   "top": 623,
+   "top": 651,
    "h": 31,
    "style": "bccb4f59",
    "content": "03bfad22",
@@ -103,7 +103,7 @@
   {
    "slot": 12,
    "kind": "listItem",
-   "top": 654,
+   "top": 682,
    "h": 31,
    "style": "f8655eaa",
    "content": "61083055",
@@ -112,7 +112,7 @@
   {
    "slot": 13,
    "kind": "listItem",
-   "top": 685,
+   "top": 713,
    "h": 31,
    "style": "a3a676c8",
    "content": "d41f82b5",
@@ -121,7 +121,7 @@
   {
    "slot": 14,
    "kind": "listItem",
-   "top": 715,
+   "top": 743,
    "h": 47,
    "style": "03593d93",
    "content": "aaab4c46",
@@ -130,7 +130,7 @@
   {
    "slot": 15,
    "kind": "heading",
-   "top": 763,
+   "top": 791,
    "h": 36,
    "style": "1c0ec052",
    "content": "2575604d",
@@ -139,7 +139,7 @@
   {
    "slot": 16,
    "kind": "listItem",
-   "top": 799,
+   "top": 827,
    "h": 31,
    "style": "0502d31c",
    "content": "427bb4ae",
@@ -148,7 +148,7 @@
   {
    "slot": 17,
    "kind": "listItem",
-   "top": 830,
+   "top": 858,
    "h": 59,
    "style": "f0668405",
    "content": "21fb213d",
@@ -157,7 +157,7 @@
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 888,
+   "top": 916,
    "h": 47,
    "style": "03593d93",
    "content": "57700878",
@@ -166,7 +166,7 @@
   {
    "slot": 19,
    "kind": "heading",
-   "top": 936,
+   "top": 964,
    "h": 36,
    "style": "1c0ec052",
    "content": "76527574",
@@ -175,7 +175,7 @@
   {
    "slot": 20,
    "kind": "paragraph",
-   "top": 972,
+   "top": 1000,
    "h": 46,
    "style": "6f260fd9",
    "content": "61c00b59",
@@ -184,7 +184,7 @@
   {
    "slot": 21,
    "kind": "listItem",
-   "top": 1017,
+   "top": 1045,
    "h": 28,
    "style": "21c3f37d",
    "content": "23c581c7",
@@ -193,7 +193,7 @@
   {
    "slot": 22,
    "kind": "listItem",
-   "top": 1045,
+   "top": 1073,
    "h": 28,
    "style": "6d565378",
    "content": "475785d3",
@@ -202,7 +202,7 @@
   {
    "slot": 23,
    "kind": "listItem",
-   "top": 1074,
+   "top": 1102,
    "h": 45,
    "style": "5c0e4802",
    "content": "a1133a33",
@@ -211,7 +211,7 @@
   {
    "slot": 24,
    "kind": "paragraph",
-   "top": 1119,
+   "top": 1147,
    "h": 46,
    "style": "0f2d8138",
    "content": "bf7e0676",
@@ -220,7 +220,7 @@
   {
    "slot": 25,
    "kind": "code",
-   "top": 1164,
+   "top": 1192,
    "h": 142,
    "style": "d2e3becc",
    "content": "b37d194e",
@@ -229,7 +229,7 @@
   {
    "slot": 26,
    "kind": "heading",
-   "top": 1306,
+   "top": 1334,
    "h": 42,
    "style": "22c91c6d",
    "content": "ef388392",
@@ -238,7 +238,7 @@
   {
    "slot": 27,
    "kind": "heading",
-   "top": 1348,
+   "top": 1376,
    "h": 36,
    "style": "1c0ec052",
    "content": "b71ccb94",
@@ -247,7 +247,7 @@
   {
    "slot": 28,
    "kind": "paragraph",
-   "top": 1384,
+   "top": 1412,
    "h": 46,
    "style": "6f260fd9",
    "content": "3586d69e",
@@ -256,7 +256,7 @@
   {
    "slot": 29,
    "kind": "listItem",
-   "top": 1429,
+   "top": 1457,
    "h": 54,
    "style": "76b6bdba",
    "content": "c658721e",
@@ -265,7 +265,7 @@
   {
    "slot": 30,
    "kind": "listItem",
-   "top": 1484,
+   "top": 1512,
    "h": 54,
    "style": "164b5814",
    "content": "5b424e0d",
@@ -274,7 +274,7 @@
   {
    "slot": 31,
    "kind": "listItem",
-   "top": 1538,
+   "top": 1566,
    "h": 71,
    "style": "8a880600",
    "content": "eff52c79",
@@ -283,7 +283,7 @@
   {
    "slot": 32,
    "kind": "paragraph",
-   "top": 1609,
+   "top": 1637,
    "h": 46,
    "style": "6968c2c1",
    "content": "98fc8b8a",
@@ -292,7 +292,7 @@
   {
    "slot": 33,
    "kind": "heading",
-   "top": 1655,
+   "top": 1683,
    "h": 36,
    "style": "1c0ec052",
    "content": "e8c27bfc",
@@ -301,7 +301,7 @@
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 1691,
+   "top": 1719,
    "h": 28,
    "style": "a6012af2",
    "content": "4b37fba8",
@@ -310,7 +310,7 @@
   {
    "slot": 35,
    "kind": "listItem",
-   "top": 1719,
+   "top": 1747,
    "h": 45,
    "style": "57b72874",
    "content": "a0354520",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "paragraph",
-   "top": 1764,
+   "top": 1792,
    "h": 46,
    "style": "ac61dbb3",
    "content": "6adf1206",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "heading",
-   "top": 1809,
+   "top": 1837,
    "h": 42,
    "style": "22c91c6d",
    "content": "e112e2e0",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "heading",
-   "top": 1851,
+   "top": 1879,
    "h": 36,
    "style": "1c0ec052",
    "content": "a49261b2",
@@ -346,7 +346,7 @@
   {
    "slot": 39,
    "kind": "listItem",
-   "top": 1887,
+   "top": 1915,
    "h": 31,
    "style": "f4398649",
    "content": "0973b0a8",
@@ -355,7 +355,7 @@
   {
    "slot": 40,
    "kind": "listItem",
-   "top": 1918,
+   "top": 1946,
    "h": 31,
    "style": "a3a676c8",
    "content": "1e3db7b6",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "listItem",
-   "top": 1949,
+   "top": 1977,
    "h": 47,
    "style": "03593d93",
    "content": "195f1f47",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "heading",
-   "top": 1996,
+   "top": 2024,
    "h": 36,
    "style": "1c0ec052",
    "content": "9ad9fb0e",
@@ -382,7 +382,7 @@
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 2032,
+   "top": 2060,
    "h": 31,
    "style": "a2c5f31c",
    "content": "548a72b6",
@@ -391,7 +391,7 @@
   {
    "slot": 44,
    "kind": "listItem",
-   "top": 2063,
+   "top": 2091,
    "h": 171,
    "style": "5ec44731",
    "content": "f2751042",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "heading",
-   "top": 2233,
+   "top": 2261,
    "h": 36,
    "style": "1c0ec052",
    "content": "3fa4aa7a",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "listItem",
-   "top": 2269,
+   "top": 2297,
    "h": 31,
    "style": "2f61bc55",
    "content": "6de9cfd6",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "listItem",
-   "top": 2300,
+   "top": 2328,
    "h": 140,
    "style": "03316367",
    "content": "a680d46b",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "rule",
-   "top": 2440,
+   "top": 2468,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "heading",
-   "top": 2487,
+   "top": 2515,
    "h": 42,
    "style": "bd085edc",
    "content": "f725e9e5",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "heading",
-   "top": 2530,
+   "top": 2558,
    "h": 42,
    "style": "22c91c6d",
    "content": "83c0ac3e",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "paragraph",
-   "top": 2572,
+   "top": 2600,
    "h": 46,
    "style": "0f2d8138",
    "content": "a369aaf4",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 2617,
+   "top": 2645,
    "h": 31,
    "style": "b9e4388a",
    "content": "7b90d6cc",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 2648,
+   "top": 2676,
    "h": 31,
    "style": "bfbb4d34",
    "content": "f52d0eee",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "listItem",
-   "top": 2679,
+   "top": 2707,
    "h": 31,
    "style": "bfbb4d34",
    "content": "75b24938",
@@ -490,7 +490,7 @@
   {
    "slot": 55,
    "kind": "listItem",
-   "top": 2709,
+   "top": 2737,
    "h": 47,
    "style": "4413d613",
    "content": "092080b8",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "heading",
-   "top": 2757,
+   "top": 2785,
    "h": 42,
    "style": "22c91c6d",
    "content": "187ab0b1",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "listItem",
-   "top": 2799,
+   "top": 2827,
    "h": 136,
    "style": "2a5282df",
    "content": "da28dcd6",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 2935,
+   "top": 2963,
    "h": 146,
    "style": "076dcfef",
    "content": "2d3ef29e",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "rule",
-   "top": 3080,
+   "top": 3108,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "heading",
-   "top": 3127,
+   "top": 3155,
    "h": 42,
    "style": "bd085edc",
    "content": "07ea95e1",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "heading",
-   "top": 3170,
+   "top": 3198,
    "h": 42,
    "style": "22c91c6d",
    "content": "d6681b36",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "paragraph",
-   "top": 3212,
+   "top": 3240,
    "h": 46,
    "style": "0f2d8138",
    "content": "7871448a",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "listItem",
-   "top": 3257,
+   "top": 3285,
    "h": 31,
    "style": "aa27a439",
    "content": "5e2c9dc8",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "listItem",
-   "top": 3288,
+   "top": 3316,
    "h": 31,
    "style": "3967cc6e",
    "content": "bda8a62a",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "listItem",
-   "top": 3319,
+   "top": 3347,
    "h": 47,
    "style": "a1cfb712",
    "content": "b21d3991",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "paragraph",
-   "top": 3366,
+   "top": 3394,
    "h": 46,
    "style": "b91e0fb2",
    "content": "87caea74",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "listItem",
-   "top": 3412,
+   "top": 3440,
    "h": 31,
    "style": "a42d754f",
    "content": "b0f415ee",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "listItem",
-   "top": 3442,
+   "top": 3470,
    "h": 31,
    "style": "7195e313",
    "content": "ca3e6845",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "listItem",
-   "top": 3473,
+   "top": 3501,
    "h": 47,
    "style": "95dc7854",
    "content": "742e8d33",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "heading",
-   "top": 3520,
+   "top": 3548,
    "h": 42,
    "style": "22c91c6d",
    "content": "41df6e42",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 3562,
+   "top": 3590,
    "h": 163,
    "style": "0fdae8bf",
    "content": "e465c7fb",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "listItem",
-   "top": 3726,
+   "top": 3754,
    "h": 134,
    "style": "94aeb9f8",
    "content": "d313f22f",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "listItem",
-   "top": 3859,
+   "top": 3887,
    "h": 173,
    "style": "47351adc",
    "content": "1c9622b5",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "rule",
-   "top": 4032,
+   "top": 4060,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "heading",
-   "top": 4080,
+   "top": 4108,
    "h": 42,
    "style": "bd085edc",
    "content": "7a21d494",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "heading",
-   "top": 4122,
+   "top": 4150,
    "h": 42,
    "style": "22c91c6d",
    "content": "d0b16a88",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "listItem",
-   "top": 4164,
+   "top": 4192,
    "h": 31,
    "style": "61efe4fb",
    "content": "e12157f1",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "listItem",
-   "top": 4195,
+   "top": 4223,
    "h": 31,
    "style": "686361a5",
    "content": "b0aaed29",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "listItem",
-   "top": 4225,
+   "top": 4253,
    "h": 47,
    "style": "d6a05eb2",
    "content": "d2471904",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "heading",
-   "top": 4273,
+   "top": 4301,
    "h": 42,
    "style": "22c91c6d",
    "content": "fa807a1e",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "listItem",
-   "top": 4315,
+   "top": 4343,
    "h": 31,
    "style": "16e6b740",
    "content": "bea368d6",
@@ -733,7 +733,7 @@
   {
    "slot": 82,
    "kind": "listItem",
-   "top": 4345,
+   "top": 4373,
    "h": 31,
    "style": "bfbb4d34",
    "content": "20efa6d7",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "listItem",
-   "top": 4376,
+   "top": 4404,
    "h": 47,
    "style": "4413d613",
    "content": "0097477d",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "rule",
-   "top": 4423,
+   "top": 4451,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -760,7 +760,7 @@
   {
    "slot": 85,
    "kind": "heading",
-   "top": 4471,
+   "top": 4499,
    "h": 42,
    "style": "bd085edc",
    "content": "45ea172a",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "listItem",
-   "top": 4513,
+   "top": 4541,
    "h": 30,
    "style": "9c58a9aa",
    "content": "88df4a78",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 4543,
+   "top": 4571,
    "h": 30,
    "style": "5881159e",
    "content": "c9c921f3",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "listItem",
-   "top": 4573,
+   "top": 4601,
    "h": 30,
    "style": "5881159e",
    "content": "5568ee68",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "listItem",
-   "top": 4603,
+   "top": 4631,
    "h": 30,
    "style": "5881159e",
    "content": "fbdfef81",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "listItem",
-   "top": 4633,
+   "top": 4661,
    "h": 30,
    "style": "5881159e",
    "content": "d970008b",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "listItem",
-   "top": 4663,
+   "top": 4691,
    "h": 30,
    "style": "c6b14960",
    "content": "29b89367",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "listItem",
-   "top": 4693,
+   "top": 4721,
    "h": 30,
    "style": "c6b14960",
    "content": "45e288aa",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "listItem",
-   "top": 4723,
+   "top": 4751,
    "h": 30,
    "style": "c6b14960",
    "content": "e3e93eb3",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 4753,
+   "top": 4781,
    "h": 47,
    "style": "5f6ca8e9",
    "content": "83b93e49",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "rule",
-   "top": 4799,
+   "top": 4827,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "paragraph",
-   "top": 4846,
+   "top": 4874,
    "h": 46,
    "style": "0f2d8138",
    "content": "21786ae6",

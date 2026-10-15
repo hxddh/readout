@@ -1,5 +1,5 @@
 {
- "height": 38850,
+ "height": 39032,
  "blocks": [
   {
    "slot": 1,
@@ -357,23 +357,23 @@
    "kind": "paragraph",
    "top": 4924,
    "h": 96,
-   "style": "c273752a",
-   "content": "11205a9e",
+   "style": "0e85c67b",
+   "content": "4f551dd8",
    "text": "Run: grep -c '^\\[MODEL' skills/subagent-driven-d"
   },
   {
    "slot": 41,
    "kind": "paragraph",
    "top": 5019,
-   "h": 70,
-   "style": "1c18061e",
-   "content": "ef5c8a50",
+   "h": 96,
+   "style": "62e84f2b",
+   "content": "912ddfe0",
    "text": "Run: grep -n 'FIX_BASE_SHA' skills/subagent-driv"
   },
   {
    "slot": 42,
    "kind": "listItem",
-   "top": 5089,
+   "top": 5115,
    "h": 45,
    "style": "7f71529f",
    "content": "794963ed",
@@ -382,7 +382,7 @@
   {
    "slot": 43,
    "kind": "code",
-   "top": 5134,
+   "top": 5160,
    "h": 82,
    "style": "81abe9b1",
    "content": "3b95a758",
@@ -391,7 +391,7 @@
   {
    "slot": 44,
    "kind": "rule",
-   "top": 5215,
+   "top": 5241,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "heading",
-   "top": 5263,
+   "top": 5289,
    "h": 55,
    "style": "872c71a6",
    "content": "847ff357",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "paragraph",
-   "top": 5318,
+   "top": 5344,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "listItem",
-   "top": 5362,
+   "top": 5388,
    "h": 54,
    "style": "726ced04",
    "content": "df1850ba",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "listItem",
-   "top": 5416,
+   "top": 5442,
    "h": 54,
    "style": "ecd6b9ad",
    "content": "93679655",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "listItem",
-   "top": 5470,
+   "top": 5496,
    "h": 71,
    "style": "5d827efe",
    "content": "cff61a8e",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 5541,
+   "top": 5567,
    "h": 44,
    "style": "f47d2a37",
    "content": "a2cb5599",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "listItem",
-   "top": 5585,
+   "top": 5611,
    "h": 35,
    "style": "9fa50c00",
    "content": "e810ddf9",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 5620,
+   "top": 5646,
    "h": 61,
    "style": "f9a6198e",
    "content": "4958b4aa",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 5681,
+   "top": 5707,
    "h": 71,
    "style": "7bd9ddc1",
    "content": "e9524def",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "paragraph",
-   "top": 5752,
+   "top": 5778,
    "h": 44,
    "style": "c29f3c90",
    "content": "d376fce3",
@@ -490,7 +490,7 @@
   {
    "slot": 55,
    "kind": "code",
-   "top": 5795,
+   "top": 5821,
    "h": 142,
    "style": "083cce4c",
    "content": "e5746650",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "paragraph",
-   "top": 5937,
+   "top": 5963,
    "h": 44,
    "style": "c29f3c90",
    "content": "3367e7f8",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "code",
-   "top": 5981,
+   "top": 6007,
    "h": 202,
    "style": "4476d3e9",
    "content": "55cc0c75",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 6183,
+   "top": 6209,
    "h": 71,
    "style": "d3aab65d",
    "content": "cf3c2679",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "paragraph",
-   "top": 6253,
+   "top": 6279,
    "h": 44,
    "style": "c29f3c90",
    "content": "e271a32a",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "code",
-   "top": 6297,
+   "top": 6323,
    "h": 82,
    "style": "aa138f58",
    "content": "57a08d96",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "paragraph",
-   "top": 6379,
+   "top": 6405,
    "h": 70,
    "style": "05ce3cc2",
    "content": "6613fd08",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "listItem",
-   "top": 6448,
+   "top": 6474,
    "h": 71,
    "style": "d34d9872",
    "content": "c76a7d0f",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "paragraph",
-   "top": 6519,
+   "top": 6545,
    "h": 44,
    "style": "c29f3c90",
    "content": "6ee49fec",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "code",
-   "top": 6562,
+   "top": 6588,
    "h": 62,
    "style": "0bb5e1bf",
    "content": "da88307e",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "paragraph",
-   "top": 6624,
+   "top": 6650,
    "h": 44,
    "style": "c29f3c90",
    "content": "3367e7f8",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "code",
-   "top": 6668,
+   "top": 6694,
    "h": 62,
    "style": "00e620ed",
    "content": "9cf0837f",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "listItem",
-   "top": 6729,
+   "top": 6755,
    "h": 45,
    "style": "0c3f8d4e",
    "content": "fa8b4baf",
@@ -607,25 +607,25 @@
   {
    "slot": 68,
    "kind": "paragraph",
-   "top": 6774,
+   "top": 6800,
    "h": 96,
-   "style": "8939ce77",
-   "content": "74c5beb3",
+   "style": "250b82dc",
+   "content": "0b5edfc9",
    "text": "Run: grep -rn \"fix subagent\" skills/subagent-dri"
   },
   {
    "slot": 69,
    "kind": "paragraph",
-   "top": 6870,
-   "h": 96,
-   "style": "fc138250",
-   "content": "439447b6",
+   "top": 6896,
+   "h": 122,
+   "style": "5522ce03",
+   "content": "acf97698",
    "text": "Run: grep -rn \"fix subagent\" skills/subagent-dri"
   },
   {
    "slot": 70,
    "kind": "listItem",
-   "top": 6965,
+   "top": 7017,
    "h": 45,
    "style": "7f71529f",
    "content": "c5f9adef",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "code",
-   "top": 7010,
+   "top": 7062,
    "h": 82,
    "style": "74dfc97e",
    "content": "c02d88bf",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "rule",
-   "top": 7091,
+   "top": 7143,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "heading",
-   "top": 7139,
+   "top": 7191,
    "h": 55,
    "style": "872c71a6",
    "content": "ef3726cb",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "paragraph",
-   "top": 7194,
+   "top": 7246,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "listItem",
-   "top": 7238,
+   "top": 7290,
    "h": 71,
    "style": "472993af",
    "content": "6290c45d",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "paragraph",
-   "top": 7309,
+   "top": 7361,
    "h": 44,
    "style": "f47d2a37",
    "content": "a2cb5599",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "listItem",
-   "top": 7352,
+   "top": 7404,
    "h": 61,
    "style": "ed7abc37",
    "content": "e914c665",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "listItem",
-   "top": 7413,
+   "top": 7465,
    "h": 61,
    "style": "09e1e74b",
    "content": "0a8e8f87",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "listItem",
-   "top": 7475,
+   "top": 7527,
    "h": 45,
    "style": "eabfbabb",
    "content": "15c6f2f7",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "code",
-   "top": 7519,
+   "top": 7571,
    "h": 9682,
    "style": "825259ad",
    "content": "181fe026",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "listItem",
-   "top": 17201,
+   "top": 17253,
    "h": 45,
    "style": "b9a563cc",
    "content": "6065ba24",
@@ -733,7 +733,7 @@
   {
    "slot": 82,
    "kind": "paragraph",
-   "top": 17246,
+   "top": 17298,
    "h": 122,
    "style": "6c9dbf46",
    "content": "b3dac1e0",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "table",
-   "top": 17367,
+   "top": 17419,
    "h": 3335,
    "style": "43672a7b",
    "content": "5296df68",
@@ -751,34 +751,34 @@
   {
    "slot": 84,
    "kind": "paragraph",
-   "top": 20702,
+   "top": 20754,
    "h": 96,
-   "style": "f3776601",
-   "content": "4d84d097",
+   "style": "edf88d53",
+   "content": "372cdfcf",
    "text": "Run: grep -n \"fix subagent\" skills/subagent-driv"
   },
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 20798,
+   "top": 20850,
    "h": 70,
-   "style": "a25ab6f6",
-   "content": "7c3236a0",
+   "style": "e55699c9",
+   "content": "a7f51de8",
    "text": "Run: grep -c \"Task <N>\" skills/subagent-driven-d"
   },
   {
    "slot": 86,
    "kind": "paragraph",
-   "top": 20867,
+   "top": 20919,
    "h": 70,
-   "style": "79cb2a73",
-   "content": "c9a0a164",
+   "style": "d6cd92a4",
+   "content": "1bb0cf3e",
    "text": "Run: grep -n \"same subagent\" skills/subagent-dri"
   },
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 20937,
+   "top": 20989,
    "h": 45,
    "style": "4551e6d2",
    "content": "c81a7513",
@@ -787,16 +787,16 @@
   {
    "slot": 88,
    "kind": "paragraph",
-   "top": 20981,
-   "h": 122,
-   "style": "3e86d89d",
-   "content": "18dc62d2",
+   "top": 21033,
+   "h": 148,
+   "style": "128baa6f",
+   "content": "5b382c3c",
    "text": "Run: awk '/```dot/,/```/' skills/subagent-driven"
   },
   {
    "slot": 89,
    "kind": "listItem",
-   "top": 21103,
+   "top": 21181,
    "h": 45,
    "style": "7f71529f",
    "content": "e799c660",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "code",
-   "top": 21148,
+   "top": 21226,
    "h": 82,
    "style": "71cb0328",
    "content": "2ae593ff",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "rule",
-   "top": 21229,
+   "top": 21307,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "heading",
-   "top": 21277,
+   "top": 21355,
    "h": 55,
    "style": "872c71a6",
    "content": "9f1f74db",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "paragraph",
-   "top": 21332,
+   "top": 21410,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 21375,
+   "top": 21453,
    "h": 54,
    "style": "461e1963",
    "content": "5bd8467a",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "listItem",
-   "top": 21430,
+   "top": 21508,
    "h": 28,
    "style": "7d2741b7",
    "content": "b2d4d59b",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "listItem",
-   "top": 21458,
+   "top": 21536,
    "h": 45,
    "style": "eed4c8ae",
    "content": "a8349354",
@@ -868,7 +868,7 @@
   {
    "slot": 97,
    "kind": "paragraph",
-   "top": 21503,
+   "top": 21581,
    "h": 44,
    "style": "f47d2a37",
    "content": "a2cb5599",
@@ -877,7 +877,7 @@
   {
    "slot": 98,
    "kind": "listItem",
-   "top": 21547,
+   "top": 21625,
    "h": 54,
    "style": "f2e2b8ad",
    "content": "22123d38",
@@ -886,7 +886,7 @@
   {
    "slot": 99,
    "kind": "listItem",
-   "top": 21601,
+   "top": 21679,
    "h": 149,
    "style": "4c90932f",
    "content": "d46915ac",
@@ -895,7 +895,7 @@
   {
    "slot": 100,
    "kind": "paragraph",
-   "top": 21750,
+   "top": 21828,
    "h": 44,
    "style": "c2b27bb0",
    "content": "aa7ab4aa",
@@ -904,7 +904,7 @@
   {
    "slot": 101,
    "kind": "listItem",
-   "top": 21793,
+   "top": 21871,
    "h": 45,
    "style": "461801b6",
    "content": "22784fdb",
@@ -913,7 +913,7 @@
   {
    "slot": 102,
    "kind": "code",
-   "top": 21838,
+   "top": 21916,
    "h": 82,
    "style": "e31f4f1f",
    "content": "04b0802e",
@@ -922,7 +922,7 @@
   {
    "slot": 103,
    "kind": "listItem",
-   "top": 21920,
+   "top": 21998,
    "h": 45,
    "style": "d0ace3b6",
    "content": "54a79fe3",
@@ -931,7 +931,7 @@
   {
    "slot": 104,
    "kind": "paragraph",
-   "top": 21964,
+   "top": 22042,
    "h": 70,
    "style": "e5eb6de5",
    "content": "f76c18e9",
@@ -940,7 +940,7 @@
   {
    "slot": 105,
    "kind": "code",
-   "top": 22034,
+   "top": 22112,
    "h": 1002,
    "style": "86ae62ed",
    "content": "be9894f2",
@@ -949,7 +949,7 @@
   {
    "slot": 106,
    "kind": "paragraph",
-   "top": 23036,
+   "top": 23114,
    "h": 44,
    "style": "e8dce370",
    "content": "a37307a0",
@@ -958,7 +958,7 @@
   {
    "slot": 107,
    "kind": "listItem",
-   "top": 23079,
+   "top": 23157,
    "h": 45,
    "style": "10e5ef5e",
    "content": "1721b0f5",
@@ -967,16 +967,16 @@
   {
    "slot": 108,
    "kind": "paragraph",
-   "top": 23124,
+   "top": 23202,
    "h": 96,
-   "style": "3f587f4e",
-   "content": "0fad44ed",
+   "style": "fe650c4c",
+   "content": "0a1d8267",
    "text": "Run: cd evals && bun test test/setup-helpers-sdd"
   },
   {
    "slot": 109,
    "kind": "listItem",
-   "top": 23219,
+   "top": 23297,
    "h": 45,
    "style": "04cbae59",
    "content": "4da8e187",
@@ -985,7 +985,7 @@
   {
    "slot": 110,
    "kind": "paragraph",
-   "top": 23264,
+   "top": 23342,
    "h": 44,
    "style": "7ccf8989",
    "content": "732c00e2",
@@ -994,7 +994,7 @@
   {
    "slot": 111,
    "kind": "code",
-   "top": 23307,
+   "top": 23385,
    "h": 4742,
    "style": "87a69aee",
    "content": "21ca3853",
@@ -1003,7 +1003,7 @@
   {
    "slot": 112,
    "kind": "paragraph",
-   "top": 28049,
+   "top": 28127,
    "h": 96,
    "style": "0b790369",
    "content": "9eda712f",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "listItem",
-   "top": 28145,
+   "top": 28223,
    "h": 45,
    "style": "9c4b0b54",
    "content": "03283f82",
@@ -1021,7 +1021,7 @@
   {
    "slot": 114,
    "kind": "paragraph",
-   "top": 28189,
+   "top": 28267,
    "h": 44,
    "style": "25a6422b",
    "content": "980e0e2f",
@@ -1030,7 +1030,7 @@
   {
    "slot": 115,
    "kind": "code",
-   "top": 28233,
+   "top": 28311,
    "h": 222,
    "style": "4a3a69b5",
    "content": "d1625635",
@@ -1039,7 +1039,7 @@
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 28455,
+   "top": 28533,
    "h": 44,
    "style": "671fe016",
    "content": "7836d450",
@@ -1048,7 +1048,7 @@
   {
    "slot": 117,
    "kind": "code",
-   "top": 28498,
+   "top": 28576,
    "h": 82,
    "style": "606b872c",
    "content": "3f27037b",
@@ -1057,7 +1057,7 @@
   {
    "slot": 118,
    "kind": "listItem",
-   "top": 28580,
+   "top": 28658,
    "h": 45,
    "style": "72f70a76",
    "content": "973bcd0a",
@@ -1066,25 +1066,25 @@
   {
    "slot": 119,
    "kind": "paragraph",
-   "top": 28625,
-   "h": 96,
-   "style": "32430461",
-   "content": "dd61a664",
+   "top": 28703,
+   "h": 122,
+   "style": "601cdeff",
+   "content": "f71c4c14",
    "text": "Run: cd evals && bun test test/setup-helpers-sdd"
   },
   {
    "slot": 120,
    "kind": "paragraph",
-   "top": 28720,
-   "h": 70,
-   "style": "22bba26e",
-   "content": "77ea146a",
-   "text": "Run: cd evals && bun run check Expected: PASS (b"
+   "top": 28824,
+   "h": 96,
+   "style": "34d53488",
+   "content": "8023f71c",
+   "text": "Run: cd evals && bun run checkExpected: PASS (bi"
   },
   {
    "slot": 121,
    "kind": "listItem",
-   "top": 28790,
+   "top": 28920,
    "h": 45,
    "style": "d210831e",
    "content": "3e5de5de",
@@ -1093,7 +1093,7 @@
   {
    "slot": 122,
    "kind": "code",
-   "top": 28834,
+   "top": 28964,
    "h": 82,
    "style": "8c253360",
    "content": "771fab2b",
@@ -1102,7 +1102,7 @@
   {
    "slot": 123,
    "kind": "paragraph",
-   "top": 28916,
+   "top": 29046,
    "h": 70,
    "style": "d8ab40c7",
    "content": "30d340d5",
@@ -1111,7 +1111,7 @@
   {
    "slot": 124,
    "kind": "listItem",
-   "top": 28986,
+   "top": 29116,
    "h": 45,
    "style": "375e2fbe",
    "content": "ea39c7ef",
@@ -1120,7 +1120,7 @@
   {
    "slot": 125,
    "kind": "code",
-   "top": 29030,
+   "top": 29160,
    "h": 102,
    "style": "379fd64f",
    "content": "2796bc5f",
@@ -1129,7 +1129,7 @@
   {
    "slot": 126,
    "kind": "rule",
-   "top": 29132,
+   "top": 29262,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1138,7 +1138,7 @@
   {
    "slot": 127,
    "kind": "heading",
-   "top": 29180,
+   "top": 29310,
    "h": 32,
    "style": "701bc613",
    "content": "44740715",
@@ -1147,7 +1147,7 @@
   {
    "slot": 128,
    "kind": "paragraph",
-   "top": 29212,
+   "top": 29342,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "listItem",
-   "top": 29255,
+   "top": 29385,
    "h": 28,
    "style": "998e03b5",
    "content": "d082f156",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "listItem",
-   "top": 29284,
+   "top": 29414,
    "h": 28,
    "style": "77420cf7",
    "content": "e72b3494",
@@ -1174,7 +1174,7 @@
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 29312,
+   "top": 29442,
    "h": 45,
    "style": "dd86bbba",
    "content": "37f3ff40",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "paragraph",
-   "top": 29357,
+   "top": 29487,
    "h": 44,
    "style": "f47d2a37",
    "content": "a2cb5599",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "listItem",
-   "top": 29400,
+   "top": 29530,
    "h": 61,
    "style": "ac41a2ce",
    "content": "bc285fd0",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "listItem",
-   "top": 29462,
+   "top": 29592,
    "h": 61,
    "style": "2325ec43",
    "content": "6e018fdf",
@@ -1210,7 +1210,7 @@
   {
    "slot": 135,
    "kind": "listItem",
-   "top": 29523,
+   "top": 29653,
    "h": 45,
    "style": "a08626e2",
    "content": "d6f86463",
@@ -1219,7 +1219,7 @@
   {
    "slot": 136,
    "kind": "code",
-   "top": 29568,
+   "top": 29698,
    "h": 1222,
    "style": "299f2bb6",
    "content": "4e7df03e",
@@ -1228,7 +1228,7 @@
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 30789,
+   "top": 30919,
    "h": 45,
    "style": "fb0a0253",
    "content": "5c5f88fc",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "code",
-   "top": 30834,
+   "top": 30964,
    "h": 102,
    "style": "f3612e55",
    "content": "7d217f52",
@@ -1246,7 +1246,7 @@
   {
    "slot": 139,
    "kind": "listItem",
-   "top": 30936,
+   "top": 31066,
    "h": 71,
    "style": "4c05d124",
    "content": "e8515806",
@@ -1255,7 +1255,7 @@
   {
    "slot": 140,
    "kind": "code",
-   "top": 31006,
+   "top": 31136,
    "h": 402,
    "style": "721eb4ba",
    "content": "e396a076",
@@ -1264,7 +1264,7 @@
   {
    "slot": 141,
    "kind": "paragraph",
-   "top": 31408,
+   "top": 31538,
    "h": 148,
    "style": "b16963da",
    "content": "d5156482",
@@ -1273,7 +1273,7 @@
   {
    "slot": 142,
    "kind": "listItem",
-   "top": 31556,
+   "top": 31686,
    "h": 45,
    "style": "a99deabc",
    "content": "37b5c299",
@@ -1282,16 +1282,16 @@
   {
    "slot": 143,
    "kind": "paragraph",
-   "top": 31600,
+   "top": 31730,
    "h": 70,
-   "style": "d5645f84",
-   "content": "7038d8aa",
-   "text": "Run: cd evals && bun run quorum check Expected: "
+   "style": "0a4885fa",
+   "content": "57368b82",
+   "text": "Run: cd evals && bun run quorum checkExpected: P"
   },
   {
    "slot": 144,
    "kind": "code",
-   "top": 31670,
+   "top": 31800,
    "h": 102,
    "style": "e4bb0514",
    "content": "dac0e7df",
@@ -1300,7 +1300,7 @@
   {
    "slot": 145,
    "kind": "rule",
-   "top": 31772,
+   "top": 31902,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1309,7 +1309,7 @@
   {
    "slot": 146,
    "kind": "heading",
-   "top": 31819,
+   "top": 31949,
    "h": 55,
    "style": "872c71a6",
    "content": "0fa7ee94",
@@ -1318,7 +1318,7 @@
   {
    "slot": 147,
    "kind": "paragraph",
-   "top": 31874,
+   "top": 32004,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -1327,7 +1327,7 @@
   {
    "slot": 148,
    "kind": "listItem",
-   "top": 31918,
+   "top": 32048,
    "h": 28,
    "style": "f6f0dacf",
    "content": "aaa11421",
@@ -1336,7 +1336,7 @@
   {
    "slot": 149,
    "kind": "listItem",
-   "top": 31946,
+   "top": 32076,
    "h": 28,
    "style": "db4b9395",
    "content": "5b73b0a7",
@@ -1345,7 +1345,7 @@
   {
    "slot": 150,
    "kind": "listItem",
-   "top": 31974,
+   "top": 32104,
    "h": 45,
    "style": "3a904afb",
    "content": "a8ecd209",
@@ -1354,7 +1354,7 @@
   {
    "slot": 151,
    "kind": "paragraph",
-   "top": 32019,
+   "top": 32149,
    "h": 44,
    "style": "f47d2a37",
    "content": "a2cb5599",
@@ -1363,7 +1363,7 @@
   {
    "slot": 152,
    "kind": "listItem",
-   "top": 32063,
+   "top": 32193,
    "h": 61,
    "style": "9eedee91",
    "content": "ee43ed6d",
@@ -1372,7 +1372,7 @@
   {
    "slot": 153,
    "kind": "listItem",
-   "top": 32124,
+   "top": 32254,
    "h": 35,
    "style": "39786a07",
    "content": "a7630f50",
@@ -1381,7 +1381,7 @@
   {
    "slot": 154,
    "kind": "listItem",
-   "top": 32159,
+   "top": 32289,
    "h": 45,
    "style": "a08626e2",
    "content": "d6f86463",
@@ -1390,7 +1390,7 @@
   {
    "slot": 155,
    "kind": "code",
-   "top": 32204,
+   "top": 32334,
    "h": 1002,
    "style": "417e9dca",
    "content": "a9142794",
@@ -1399,7 +1399,7 @@
   {
    "slot": 156,
    "kind": "listItem",
-   "top": 33206,
+   "top": 33336,
    "h": 45,
    "style": "fb0a0253",
    "content": "5c5f88fc",
@@ -1408,7 +1408,7 @@
   {
    "slot": 157,
    "kind": "code",
-   "top": 33250,
+   "top": 33380,
    "h": 102,
    "style": "433885d7",
    "content": "f09508eb",
@@ -1417,7 +1417,7 @@
   {
    "slot": 158,
    "kind": "listItem",
-   "top": 33352,
+   "top": 33482,
    "h": 45,
    "style": "7bf65b14",
    "content": "a563481c",
@@ -1426,7 +1426,7 @@
   {
    "slot": 159,
    "kind": "code",
-   "top": 33397,
+   "top": 33527,
    "h": 422,
    "style": "7844cfba",
    "content": "8267a618",
@@ -1435,7 +1435,7 @@
   {
    "slot": 160,
    "kind": "listItem",
-   "top": 33818,
+   "top": 33948,
    "h": 45,
    "style": "a99deabc",
    "content": "37b5c299",
@@ -1444,16 +1444,16 @@
   {
    "slot": 161,
    "kind": "paragraph",
-   "top": 33863,
-   "h": 44,
-   "style": "c00fa4b7",
-   "content": "3edfdc00",
-   "text": "Run: cd evals && bun run quorum check Expected: "
+   "top": 33993,
+   "h": 70,
+   "style": "0a4885fa",
+   "content": "abfa28e8",
+   "text": "Run: cd evals && bun run quorum checkExpected: P"
   },
   {
    "slot": 162,
    "kind": "code",
-   "top": 33907,
+   "top": 34063,
    "h": 102,
    "style": "b4f20ea9",
    "content": "10424479",
@@ -1462,7 +1462,7 @@
   {
    "slot": 163,
    "kind": "rule",
-   "top": 34008,
+   "top": 34164,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1471,7 +1471,7 @@
   {
    "slot": 164,
    "kind": "heading",
-   "top": 34056,
+   "top": 34212,
    "h": 55,
    "style": "872c71a6",
    "content": "ba871e23",
@@ -1480,7 +1480,7 @@
   {
    "slot": 165,
    "kind": "paragraph",
-   "top": 34111,
+   "top": 34267,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -1489,7 +1489,7 @@
   {
    "slot": 166,
    "kind": "listItem",
-   "top": 34154,
+   "top": 34310,
    "h": 28,
    "style": "e5daaf3a",
    "content": "f51ed841",
@@ -1498,7 +1498,7 @@
   {
    "slot": 167,
    "kind": "listItem",
-   "top": 34183,
+   "top": 34339,
    "h": 28,
    "style": "6592f90c",
    "content": "6f44a647",
@@ -1507,7 +1507,7 @@
   {
    "slot": 168,
    "kind": "listItem",
-   "top": 34211,
+   "top": 34367,
    "h": 45,
    "style": "229565dc",
    "content": "cce82ba9",
@@ -1516,7 +1516,7 @@
   {
    "slot": 169,
    "kind": "paragraph",
-   "top": 34256,
+   "top": 34412,
    "h": 44,
    "style": "f47d2a37",
    "content": "a2cb5599",
@@ -1525,7 +1525,7 @@
   {
    "slot": 170,
    "kind": "listItem",
-   "top": 34300,
+   "top": 34456,
    "h": 35,
    "style": "9cb5e215",
    "content": "6959380d",
@@ -1534,7 +1534,7 @@
   {
    "slot": 171,
    "kind": "listItem",
-   "top": 34335,
+   "top": 34491,
    "h": 35,
    "style": "0c194942",
    "content": "b550c9e0",
@@ -1543,7 +1543,7 @@
   {
    "slot": 172,
    "kind": "listItem",
-   "top": 34370,
+   "top": 34526,
    "h": 45,
    "style": "a08626e2",
    "content": "d6f86463",
@@ -1552,7 +1552,7 @@
   {
    "slot": 173,
    "kind": "code",
-   "top": 34415,
+   "top": 34571,
    "h": 1022,
    "style": "e8daa3e7",
    "content": "d8571af8",
@@ -1561,7 +1561,7 @@
   {
    "slot": 174,
    "kind": "listItem",
-   "top": 35437,
+   "top": 35593,
    "h": 45,
    "style": "fb0a0253",
    "content": "5c5f88fc",
@@ -1570,7 +1570,7 @@
   {
    "slot": 175,
    "kind": "code",
-   "top": 35481,
+   "top": 35637,
    "h": 102,
    "style": "6190c6b2",
    "content": "eaef5431",
@@ -1579,7 +1579,7 @@
   {
    "slot": 176,
    "kind": "listItem",
-   "top": 35583,
+   "top": 35739,
    "h": 45,
    "style": "7bf65b14",
    "content": "a563481c",
@@ -1588,7 +1588,7 @@
   {
    "slot": 177,
    "kind": "code",
-   "top": 35627,
+   "top": 35783,
    "h": 342,
    "style": "716bc8b4",
    "content": "627278a1",
@@ -1597,7 +1597,7 @@
   {
    "slot": 178,
    "kind": "paragraph",
-   "top": 35969,
+   "top": 36125,
    "h": 122,
    "style": "6c9dbf46",
    "content": "3cb070b9",
@@ -1606,7 +1606,7 @@
   {
    "slot": 179,
    "kind": "listItem",
-   "top": 36091,
+   "top": 36247,
    "h": 45,
    "style": "a99deabc",
    "content": "37b5c299",
@@ -1615,16 +1615,16 @@
   {
    "slot": 180,
    "kind": "paragraph",
-   "top": 36135,
-   "h": 44,
-   "style": "c00fa4b7",
-   "content": "3edfdc00",
-   "text": "Run: cd evals && bun run quorum check Expected: "
+   "top": 36291,
+   "h": 70,
+   "style": "0a4885fa",
+   "content": "abfa28e8",
+   "text": "Run: cd evals && bun run quorum checkExpected: P"
   },
   {
    "slot": 181,
    "kind": "code",
-   "top": 36179,
+   "top": 36361,
    "h": 102,
    "style": "b7aacf7a",
    "content": "732bd7a9",
@@ -1633,7 +1633,7 @@
   {
    "slot": 182,
    "kind": "rule",
-   "top": 36281,
+   "top": 36463,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1642,7 +1642,7 @@
   {
    "slot": 183,
    "kind": "heading",
-   "top": 36328,
+   "top": 36510,
    "h": 55,
    "style": "872c71a6",
    "content": "e9bcbf0c",
@@ -1651,7 +1651,7 @@
   {
    "slot": 184,
    "kind": "paragraph",
-   "top": 36383,
+   "top": 36565,
    "h": 174,
    "style": "017cb3dc",
    "content": "42d45278",
@@ -1660,7 +1660,7 @@
   {
    "slot": 185,
    "kind": "paragraph",
-   "top": 36557,
+   "top": 36739,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -1669,7 +1669,7 @@
   {
    "slot": 186,
    "kind": "listItem",
-   "top": 36600,
+   "top": 36782,
    "h": 45,
    "style": "6d51d778",
    "content": "c3509d68",
@@ -1678,7 +1678,7 @@
   {
    "slot": 187,
    "kind": "paragraph",
-   "top": 36645,
+   "top": 36827,
    "h": 44,
    "style": "f47d2a37",
    "content": "a2cb5599",
@@ -1687,7 +1687,7 @@
   {
    "slot": 188,
    "kind": "listItem",
-   "top": 36689,
+   "top": 36871,
    "h": 61,
    "style": "b241bd45",
    "content": "34cf11b4",
@@ -1696,7 +1696,7 @@
   {
    "slot": 189,
    "kind": "listItem",
-   "top": 36750,
+   "top": 36932,
    "h": 35,
    "style": "1e6e9a5e",
    "content": "a6a362bf",
@@ -1705,7 +1705,7 @@
   {
    "slot": 190,
    "kind": "listItem",
-   "top": 36786,
+   "top": 36968,
    "h": 45,
    "style": "8612e19a",
    "content": "984e2d3f",
@@ -1714,7 +1714,7 @@
   {
    "slot": 191,
    "kind": "code",
-   "top": 36830,
+   "top": 37012,
    "h": 102,
    "style": "fed2a2ea",
    "content": "a8688688",
@@ -1723,7 +1723,7 @@
   {
    "slot": 192,
    "kind": "paragraph",
-   "top": 36932,
+   "top": 37114,
    "h": 96,
    "style": "4ec4d8dd",
    "content": "3e59df98",
@@ -1732,7 +1732,7 @@
   {
    "slot": 193,
    "kind": "listItem",
-   "top": 37028,
+   "top": 37210,
    "h": 45,
    "style": "6ebe7214",
    "content": "b7ab0455",
@@ -1741,7 +1741,7 @@
   {
    "slot": 194,
    "kind": "code",
-   "top": 37072,
+   "top": 37254,
    "h": 142,
    "style": "f680b209",
    "content": "2a827992",
@@ -1750,7 +1750,7 @@
   {
    "slot": 195,
    "kind": "paragraph",
-   "top": 37214,
+   "top": 37396,
    "h": 200,
    "style": "b7c613a2",
    "content": "507a38af",
@@ -1759,7 +1759,7 @@
   {
    "slot": 196,
    "kind": "listItem",
-   "top": 37414,
+   "top": 37596,
    "h": 45,
    "style": "beada3af",
    "content": "dfdaf64f",
@@ -1768,7 +1768,7 @@
   {
    "slot": 197,
    "kind": "code",
-   "top": 37458,
+   "top": 37640,
    "h": 142,
    "style": "f680b209",
    "content": "9c1e5ee2",
@@ -1777,7 +1777,7 @@
   {
    "slot": 198,
    "kind": "paragraph",
-   "top": 37600,
+   "top": 37782,
    "h": 122,
    "style": "813deffb",
    "content": "053c5bcb",
@@ -1786,7 +1786,7 @@
   {
    "slot": 199,
    "kind": "listItem",
-   "top": 37721,
+   "top": 37903,
    "h": 71,
    "style": "d3aab65d",
    "content": "dd55ee98",
@@ -1795,7 +1795,7 @@
   {
    "slot": 200,
    "kind": "code",
-   "top": 37792,
+   "top": 37974,
    "h": 142,
    "style": "95e2a672",
    "content": "ec00200e",
@@ -1804,7 +1804,7 @@
   {
    "slot": 201,
    "kind": "paragraph",
-   "top": 37934,
+   "top": 38116,
    "h": 96,
    "style": "c4e840a2",
    "content": "7069e809",
@@ -1813,7 +1813,7 @@
   {
    "slot": 202,
    "kind": "listItem",
-   "top": 38029,
+   "top": 38211,
    "h": 45,
    "style": "908a5575",
    "content": "8edbc52f",
@@ -1822,7 +1822,7 @@
   {
    "slot": 203,
    "kind": "paragraph",
-   "top": 38074,
+   "top": 38256,
    "h": 174,
    "style": "88edd649",
    "content": "1ea960bf",
@@ -1831,7 +1831,7 @@
   {
    "slot": 204,
    "kind": "listItem",
-   "top": 38247,
+   "top": 38429,
    "h": 45,
    "style": "06dc3afb",
    "content": "89c0d43f",
@@ -1840,7 +1840,7 @@
   {
    "slot": 205,
    "kind": "code",
-   "top": 38292,
+   "top": 38474,
    "h": 122,
    "style": "5d4fcd51",
    "content": "0cb138cd",
@@ -1849,7 +1849,7 @@
   {
    "slot": 206,
    "kind": "listItem",
-   "top": 38414,
+   "top": 38596,
    "h": 45,
    "style": "08bd7196",
    "content": "c4e80a2c",
@@ -1858,7 +1858,7 @@
   {
    "slot": 207,
    "kind": "paragraph",
-   "top": 38458,
+   "top": 38640,
    "h": 122,
    "style": "ff04651a",
    "content": "c9ff8e9b",

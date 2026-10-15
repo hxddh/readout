@@ -1,5 +1,5 @@
 {
- "height": 12569,
+ "height": 12751,
  "blocks": [
   {
    "slot": 1,
@@ -239,15 +239,15 @@
    "slot": 27,
    "kind": "paragraph",
    "top": 2045,
-   "h": 122,
-   "style": "c96b3794",
-   "content": "2ddc9d70",
+   "h": 148,
+   "style": "ff4cb328",
+   "content": "211fecc2",
    "text": "Run: sed -n '29,41p' skills/wiki-init/SKILL.md &"
   },
   {
    "slot": 28,
    "kind": "listItem",
-   "top": 2167,
+   "top": 2193,
    "h": 45,
    "style": "c7df6102",
    "content": "51185aea",
@@ -256,7 +256,7 @@
   {
    "slot": 29,
    "kind": "paragraph",
-   "top": 2212,
+   "top": 2238,
    "h": 44,
    "style": "c29f3c90",
    "content": "c1761036",
@@ -265,7 +265,7 @@
   {
    "slot": 30,
    "kind": "code",
-   "top": 2255,
+   "top": 2281,
    "h": 195,
    "style": "e321bf86",
    "content": "af4588c5",
@@ -274,7 +274,7 @@
   {
    "slot": 31,
    "kind": "paragraph",
-   "top": 2450,
+   "top": 2476,
    "h": 44,
    "style": "c29f3c90",
    "content": "89c73e35",
@@ -283,7 +283,7 @@
   {
    "slot": 32,
    "kind": "code",
-   "top": 2494,
+   "top": 2520,
    "h": 212,
    "style": "96c4e87c",
    "content": "2f883dfc",
@@ -292,7 +292,7 @@
   {
    "slot": 33,
    "kind": "listItem",
-   "top": 2705,
+   "top": 2731,
    "h": 45,
    "style": "49c665ef",
    "content": "50eabe1e",
@@ -301,7 +301,7 @@
   {
    "slot": 34,
    "kind": "paragraph",
-   "top": 2750,
+   "top": 2776,
    "h": 44,
    "style": "c29f3c90",
    "content": "c393e626",
@@ -310,7 +310,7 @@
   {
    "slot": 35,
    "kind": "code",
-   "top": 2794,
+   "top": 2820,
    "h": 62,
    "style": "9c21428b",
    "content": "59cd3489",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "paragraph",
-   "top": 2855,
+   "top": 2881,
    "h": 44,
    "style": "c29f3c90",
    "content": "cb1c0ce5",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "code",
-   "top": 2899,
+   "top": 2925,
    "h": 362,
    "style": "5898903d",
    "content": "16fafbe9",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "listItem",
-   "top": 3261,
+   "top": 3287,
    "h": 45,
    "style": "2f6b35c0",
    "content": "b105d9cc",
@@ -346,7 +346,7 @@
   {
    "slot": 39,
    "kind": "paragraph",
-   "top": 3305,
+   "top": 3331,
    "h": 44,
    "style": "c29f3c90",
    "content": "0cac8cd5",
@@ -355,7 +355,7 @@
   {
    "slot": 40,
    "kind": "code",
-   "top": 3349,
+   "top": 3375,
    "h": 182,
    "style": "5243e579",
    "content": "5b4f25ba",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "paragraph",
-   "top": 3531,
+   "top": 3557,
    "h": 44,
    "style": "c29f3c90",
    "content": "89c73e35",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "code",
-   "top": 3574,
+   "top": 3600,
    "h": 622,
    "style": "c66afb55",
    "content": "1b9380d5",
@@ -382,7 +382,7 @@
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 4196,
+   "top": 4222,
    "h": 45,
    "style": "04cbae59",
    "content": "7ba03623",
@@ -391,16 +391,16 @@
   {
    "slot": 44,
    "kind": "paragraph",
-   "top": 4241,
+   "top": 4267,
    "h": 148,
-   "style": "d5a6fbe3",
-   "content": "cd305c36",
+   "style": "bd474e18",
+   "content": "bedbedbc",
    "text": "Run: rg -n 'wiki/pages/audit-\\*\\.md|\\.gitignore|"
   },
   {
    "slot": 45,
    "kind": "listItem",
-   "top": 4388,
+   "top": 4414,
    "h": 45,
    "style": "7f71529f",
    "content": "3ebd93fa",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "code",
-   "top": 4433,
+   "top": 4459,
    "h": 122,
    "style": "ce5d03a1",
    "content": "d43fbd78",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "rule",
-   "top": 4554,
+   "top": 4580,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "heading",
-   "top": 4602,
+   "top": 4628,
    "h": 32,
    "style": "04302fd5",
    "content": "38894a04",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "paragraph",
-   "top": 4634,
+   "top": 4660,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "listItem",
-   "top": 4678,
+   "top": 4704,
    "h": 61,
    "style": "8a7462ad",
    "content": "677a769f",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "listItem",
-   "top": 4739,
+   "top": 4765,
    "h": 45,
    "style": "f1c3207c",
    "content": "f891fe79",
@@ -463,16 +463,16 @@
   {
    "slot": 52,
    "kind": "paragraph",
-   "top": 4783,
+   "top": 4809,
    "h": 122,
-   "style": "4661345f",
-   "content": "44fa6372",
+   "style": "ad35dc99",
+   "content": "b6c75d64",
    "text": "Run: sed -n '8,8p' skills/wiki-audit/SKILL.md &&"
   },
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 4905,
+   "top": 4931,
    "h": 45,
    "style": "c081ad4a",
    "content": "4d8208e8",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "paragraph",
-   "top": 4950,
+   "top": 4976,
    "h": 44,
    "style": "c29f3c90",
    "content": "a0bc0fcb",
@@ -490,7 +490,7 @@
   {
    "slot": 55,
    "kind": "code",
-   "top": 4993,
+   "top": 5019,
    "h": 62,
    "style": "abd66145",
    "content": "eea2af4a",
@@ -499,7 +499,7 @@
   {
    "slot": 56,
    "kind": "paragraph",
-   "top": 5055,
+   "top": 5081,
    "h": 44,
    "style": "c29f3c90",
    "content": "89c73e35",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "code",
-   "top": 5099,
+   "top": 5125,
    "h": 62,
    "style": "71ecd10e",
    "content": "9709eece",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 5160,
+   "top": 5186,
    "h": 71,
    "style": "896fbd51",
    "content": "84d6d867",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "paragraph",
-   "top": 5231,
+   "top": 5257,
    "h": 44,
    "style": "c29f3c90",
    "content": "791fc189",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "code",
-   "top": 5274,
+   "top": 5300,
    "h": 62,
    "style": "ac44a84a",
    "content": "96894b7a",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "paragraph",
-   "top": 5336,
+   "top": 5362,
    "h": 44,
    "style": "c29f3c90",
    "content": "89c73e35",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "code",
-   "top": 5380,
+   "top": 5406,
    "h": 102,
    "style": "2440adbb",
    "content": "4d859ef0",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "listItem",
-   "top": 5482,
+   "top": 5508,
    "h": 45,
    "style": "04cbae59",
    "content": "d9cc2c56",
@@ -571,16 +571,16 @@
   {
    "slot": 64,
    "kind": "paragraph",
-   "top": 5526,
+   "top": 5552,
    "h": 70,
-   "style": "aa46d283",
-   "content": "5cb68ceb",
+   "style": "399c8b38",
+   "content": "b61cd213",
    "text": "Run: rg -n 'strong mode|wiki-audit strong|Phase "
   },
   {
    "slot": 65,
    "kind": "listItem",
-   "top": 5596,
+   "top": 5622,
    "h": 45,
    "style": "7f71529f",
    "content": "c5f9adef",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "code",
-   "top": 5640,
+   "top": 5666,
    "h": 122,
    "style": "fd5e36d2",
    "content": "c0c0e05b",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "rule",
-   "top": 5762,
+   "top": 5788,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "heading",
-   "top": 5809,
+   "top": 5835,
    "h": 55,
    "style": "81f17b62",
    "content": "390fffb8",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "paragraph",
-   "top": 5865,
+   "top": 5891,
    "h": 96,
    "style": "142c9195",
    "content": "cc493204",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "paragraph",
-   "top": 5960,
+   "top": 5986,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 6004,
+   "top": 6030,
    "h": 61,
    "style": "45b36d3d",
    "content": "23efccd2",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "listItem",
-   "top": 6065,
+   "top": 6091,
    "h": 45,
    "style": "11ad86a7",
    "content": "a6372103",
@@ -652,16 +652,16 @@
   {
    "slot": 73,
    "kind": "paragraph",
-   "top": 6110,
-   "h": 96,
-   "style": "3552767f",
-   "content": "307e3726",
+   "top": 6136,
+   "h": 122,
+   "style": "1a19e26c",
+   "content": "73558860",
    "text": "Run: sed -n '106,112p' skills/wiki-audit/SKILL.m"
   },
   {
    "slot": 74,
    "kind": "listItem",
-   "top": 6205,
+   "top": 6257,
    "h": 45,
    "style": "3df040c6",
    "content": "21133160",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "paragraph",
-   "top": 6250,
+   "top": 6302,
    "h": 44,
    "style": "de3f6305",
    "content": "1f377a1c",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "code",
-   "top": 6293,
+   "top": 6345,
    "h": 382,
    "style": "be2cd8d9",
    "content": "866c4cf8",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "paragraph",
-   "top": 6675,
+   "top": 6727,
    "h": 122,
    "style": "6c9dbf46",
    "content": "21ca0ff1",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "listItem",
-   "top": 6797,
+   "top": 6849,
    "h": 28,
    "style": "6cc44c68",
    "content": "3d750959",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "listItem",
-   "top": 6825,
+   "top": 6877,
    "h": 28,
    "style": "89f1ebd6",
    "content": "c39ba217",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "listItem",
-   "top": 6853,
+   "top": 6905,
    "h": 97,
    "style": "fc454d3a",
    "content": "80455c5b",
@@ -724,7 +724,7 @@
   {
    "slot": 81,
    "kind": "code",
-   "top": 6950,
+   "top": 7002,
    "h": 262,
    "style": "618ac541",
    "content": "0d4bede3",
@@ -733,16 +733,16 @@
   {
    "slot": 82,
    "kind": "paragraph",
-   "top": 7212,
-   "h": 122,
-   "style": "a2615b29",
-   "content": "fd7bd01d",
-   "text": "review: model: codex # gemini | claude-sonnet, p"
+   "top": 7264,
+   "h": 174,
+   "style": "c201c0c0",
+   "content": "76972d0d",
+   "text": "review:model: codex # gemini | claude-sonnet, pe"
   },
   {
    "slot": 83,
    "kind": "code",
-   "top": 7334,
+   "top": 7438,
    "h": 62,
    "style": "0714d160",
    "content": "776761b3",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "listItem",
-   "top": 7395,
+   "top": 7499,
    "h": 45,
    "style": "d86a5fcb",
    "content": "9555a3e4",
@@ -760,25 +760,25 @@
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 7440,
+   "top": 7544,
    "h": 122,
-   "style": "ce4fb2dd",
-   "content": "d7657639",
+   "style": "9bb153d4",
+   "content": "e50c32cb",
    "text": "Run: rg -n '### 3b. Phase C|provider chain|comma"
   },
   {
    "slot": 86,
    "kind": "paragraph",
-   "top": 7562,
-   "h": 96,
-   "style": "0868e9f4",
-   "content": "c1a583ec",
-   "text": "Run: rg -n '^### ' skills/wiki-audit/SKILL.md Ex"
+   "top": 7666,
+   "h": 122,
+   "style": "89b4c039",
+   "content": "bc30cd3c",
+   "text": "Run: rg -n '^### ' skills/wiki-audit/SKILL.mdExp"
   },
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 7657,
+   "top": 7787,
    "h": 45,
    "style": "7f71529f",
    "content": "e799c660",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "code",
-   "top": 7702,
+   "top": 7832,
    "h": 122,
    "style": "33508d55",
    "content": "39d54e8e",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "rule",
-   "top": 7824,
+   "top": 7954,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "heading",
-   "top": 7871,
+   "top": 8001,
    "h": 55,
    "style": "81f17b62",
    "content": "a1fb3113",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "paragraph",
-   "top": 7926,
+   "top": 8056,
    "h": 44,
    "style": "5e291b41",
    "content": "dcd190be",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "listItem",
-   "top": 7970,
+   "top": 8100,
    "h": 61,
    "style": "63c6de3f",
    "content": "1879dc6e",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "listItem",
-   "top": 8031,
+   "top": 8161,
    "h": 45,
    "style": "e9361ce6",
    "content": "f929d2e0",
@@ -841,16 +841,16 @@
   {
    "slot": 94,
    "kind": "paragraph",
-   "top": 8075,
-   "h": 122,
-   "style": "3780d571",
-   "content": "180f4eb2",
+   "top": 8205,
+   "h": 148,
+   "style": "1b0aac28",
+   "content": "3d8fc842",
    "text": "Run: sed -n '124,151p' skills/wiki-audit/SKILL.m"
   },
   {
    "slot": 95,
    "kind": "listItem",
-   "top": 8197,
+   "top": 8353,
    "h": 45,
    "style": "8465f249",
    "content": "2af556bd",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "paragraph",
-   "top": 8242,
+   "top": 8398,
    "h": 44,
    "style": "c29f3c90",
    "content": "1eccf75e",
@@ -868,7 +868,7 @@
   {
    "slot": 97,
    "kind": "code",
-   "top": 8285,
+   "top": 8441,
    "h": 122,
    "style": "69e6580d",
    "content": "fa903e04",
@@ -877,7 +877,7 @@
   {
    "slot": 98,
    "kind": "paragraph",
-   "top": 8407,
+   "top": 8563,
    "h": 44,
    "style": "c29f3c90",
    "content": "89c73e35",
@@ -886,7 +886,7 @@
   {
    "slot": 99,
    "kind": "code",
-   "top": 8451,
+   "top": 8607,
    "h": 142,
    "style": "dc533516",
    "content": "60f2505e",
@@ -895,7 +895,7 @@
   {
    "slot": 100,
    "kind": "listItem",
-   "top": 8592,
+   "top": 8748,
    "h": 45,
    "style": "0d6b61c0",
    "content": "ddb2caef",
@@ -904,7 +904,7 @@
   {
    "slot": 101,
    "kind": "paragraph",
-   "top": 8637,
+   "top": 8793,
    "h": 44,
    "style": "c29f3c90",
    "content": "5570176e",
@@ -913,7 +913,7 @@
   {
    "slot": 102,
    "kind": "code",
-   "top": 8681,
+   "top": 8837,
    "h": 102,
    "style": "76087e60",
    "content": "c43340ef",
@@ -922,7 +922,7 @@
   {
    "slot": 103,
    "kind": "paragraph",
-   "top": 8782,
+   "top": 8938,
    "h": 44,
    "style": "c29f3c90",
    "content": "89c73e35",
@@ -931,7 +931,7 @@
   {
    "slot": 104,
    "kind": "code",
-   "top": 8826,
+   "top": 8982,
    "h": 282,
    "style": "340faa28",
    "content": "23bad5aa",
@@ -940,7 +940,7 @@
   {
    "slot": 105,
    "kind": "listItem",
-   "top": 9108,
+   "top": 9264,
    "h": 71,
    "style": "7ab51c43",
    "content": "300c075a",
@@ -949,7 +949,7 @@
   {
    "slot": 106,
    "kind": "paragraph",
-   "top": 9178,
+   "top": 9334,
    "h": 44,
    "style": "c29f3c90",
    "content": "f89762b0",
@@ -958,7 +958,7 @@
   {
    "slot": 107,
    "kind": "code",
-   "top": 9222,
+   "top": 9378,
    "h": 62,
    "style": "253bdba3",
    "content": "da4a498c",
@@ -967,7 +967,7 @@
   {
    "slot": 108,
    "kind": "paragraph",
-   "top": 9284,
+   "top": 9440,
    "h": 44,
    "style": "c29f3c90",
    "content": "89c73e35",
@@ -976,7 +976,7 @@
   {
    "slot": 109,
    "kind": "code",
-   "top": 9327,
+   "top": 9483,
    "h": 62,
    "style": "60534dd5",
    "content": "81a5b0b1",
@@ -985,7 +985,7 @@
   {
    "slot": 110,
    "kind": "listItem",
-   "top": 9389,
+   "top": 9545,
    "h": 45,
    "style": "94f21812",
    "content": "283ca31f",
@@ -994,7 +994,7 @@
   {
    "slot": 111,
    "kind": "paragraph",
-   "top": 9434,
+   "top": 9590,
    "h": 44,
    "style": "c29f3c90",
    "content": "9f631b10",
@@ -1003,7 +1003,7 @@
   {
    "slot": 112,
    "kind": "code",
-   "top": 9477,
+   "top": 9633,
    "h": 222,
    "style": "67e8ebbd",
    "content": "00d77a97",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "paragraph",
-   "top": 9699,
+   "top": 9855,
    "h": 44,
    "style": "c29f3c90",
    "content": "89c73e35",
@@ -1021,7 +1021,7 @@
   {
    "slot": 114,
    "kind": "code",
-   "top": 9742,
+   "top": 9898,
    "h": 242,
    "style": "c415ec55",
    "content": "3d701e55",
@@ -1030,7 +1030,7 @@
   {
    "slot": 115,
    "kind": "listItem",
-   "top": 9984,
+   "top": 10140,
    "h": 45,
    "style": "04cbae59",
    "content": "9a4f9708",
@@ -1039,25 +1039,25 @@
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 10029,
+   "top": 10185,
    "h": 122,
-   "style": "b7b35420",
-   "content": "d36ce54f",
+   "style": "7c4b1ba0",
+   "content": "f89a5d59",
    "text": "Run: rg -n '🧪 Cross-model disagreements|## 🧪 C"
   },
   {
    "slot": 117,
    "kind": "paragraph",
-   "top": 10150,
+   "top": 10306,
    "h": 70,
-   "style": "267baca7",
-   "content": "62a00fd9",
+   "style": "d9749cb8",
+   "content": "cd1e4e91",
    "text": "Run: rg -n 'Add the report to .wiki/index.md' sk"
   },
   {
    "slot": 118,
    "kind": "listItem",
-   "top": 10220,
+   "top": 10376,
    "h": 45,
    "style": "7f71529f",
    "content": "62ee2751",
@@ -1066,7 +1066,7 @@
   {
    "slot": 119,
    "kind": "code",
-   "top": 10265,
+   "top": 10421,
    "h": 122,
    "style": "0b36aa97",
    "content": "d40c5b6f",
@@ -1075,7 +1075,7 @@
   {
    "slot": 120,
    "kind": "rule",
-   "top": 10386,
+   "top": 10542,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1084,7 +1084,7 @@
   {
    "slot": 121,
    "kind": "heading",
-   "top": 10434,
+   "top": 10590,
    "h": 32,
    "style": "701bc613",
    "content": "52bc9f99",
@@ -1093,7 +1093,7 @@
   {
    "slot": 122,
    "kind": "paragraph",
-   "top": 10466,
+   "top": 10622,
    "h": 70,
    "style": "95aa4835",
    "content": "602ea54e",
@@ -1102,7 +1102,7 @@
   {
    "slot": 123,
    "kind": "listItem",
-   "top": 10535,
+   "top": 10691,
    "h": 45,
    "style": "0188c221",
    "content": "06660512",
@@ -1111,16 +1111,16 @@
   {
    "slot": 124,
    "kind": "paragraph",
-   "top": 10580,
+   "top": 10736,
    "h": 122,
-   "style": "4d706f17",
-   "content": "411f1caa",
+   "style": "1da720e3",
+   "content": "afba9054",
    "text": "Run: rg -n 'wiki/pages/audit-\\*\\.md' skills/wiki"
   },
   {
    "slot": 125,
    "kind": "listItem",
-   "top": 10702,
+   "top": 10858,
    "h": 71,
    "style": "a359e282",
    "content": "4445bfaa",
@@ -1129,16 +1129,16 @@
   {
    "slot": 126,
    "kind": "paragraph",
-   "top": 10772,
+   "top": 10928,
    "h": 174,
-   "style": "d2c747a2",
-   "content": "eba1efb1",
+   "style": "4e8c5212",
+   "content": "2f781927",
    "text": "Run: rg -n 'model: codex|provider: openai|status"
   },
   {
    "slot": 127,
    "kind": "listItem",
-   "top": 10946,
+   "top": 11102,
    "h": 45,
    "style": "26fae3bc",
    "content": "ef48778c",
@@ -1147,16 +1147,16 @@
   {
    "slot": 128,
    "kind": "paragraph",
-   "top": 10990,
+   "top": 11146,
    "h": 96,
-   "style": "525ccf0c",
-   "content": "e190add2",
+   "style": "d29429de",
+   "content": "be347068",
    "text": "Run: rg -n 'codex|gemini|claude-sonnet' skills/w"
   },
   {
    "slot": 129,
    "kind": "listItem",
-   "top": 11086,
+   "top": 11242,
    "h": 45,
    "style": "d56b7609",
    "content": "5a36fd8c",
@@ -1165,16 +1165,16 @@
   {
    "slot": 130,
    "kind": "paragraph",
-   "top": 11130,
-   "h": 96,
-   "style": "c053cb1e",
-   "content": "bf5e2407",
-   "text": "Run: rg -n '^### ' skills/wiki-audit/SKILL.md Ex"
+   "top": 11286,
+   "h": 122,
+   "style": "1f93192d",
+   "content": "20ab3697",
+   "text": "Run: rg -n '^### ' skills/wiki-audit/SKILL.mdExp"
   },
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 11226,
+   "top": 11408,
    "h": 45,
    "style": "c4a18a8a",
    "content": "286b2278",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "paragraph",
-   "top": 11271,
+   "top": 11453,
    "h": 200,
    "style": "912274df",
    "content": "fd2211ce",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "listItem",
-   "top": 11470,
+   "top": 11652,
    "h": 45,
    "style": "f793c559",
    "content": "70b7944c",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "code",
-   "top": 11515,
+   "top": 11697,
    "h": 122,
    "style": "e75bff6c",
    "content": "7bf70dc7",
@@ -1210,7 +1210,7 @@
   {
    "slot": 135,
    "kind": "rule",
-   "top": 11636,
+   "top": 11818,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1219,7 +1219,7 @@
   {
    "slot": 136,
    "kind": "heading",
-   "top": 11684,
+   "top": 11866,
    "h": 42,
    "style": "4cb67bdd",
    "content": "df9d4099",
@@ -1228,7 +1228,7 @@
   {
    "slot": 137,
    "kind": "paragraph",
-   "top": 11726,
+   "top": 11908,
    "h": 278,
    "style": "e5e0a640",
    "content": "a0b5d335",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "paragraph",
-   "top": 12004,
+   "top": 12186,
    "h": 122,
    "style": "cd01ebfe",
    "content": "051d032d",
@@ -1246,7 +1246,7 @@
   {
    "slot": 139,
    "kind": "paragraph",
-   "top": 12125,
+   "top": 12307,
    "h": 174,
    "style": "a48d5364",
    "content": "5e1e9510",
