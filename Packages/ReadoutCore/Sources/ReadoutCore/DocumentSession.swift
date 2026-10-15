@@ -115,7 +115,18 @@ public final class DocumentSession {
         let keys = blocks.map(BlockKey.init)
         var rewrite = false
         if let persisted, persisted != keys {
-            let d = Differ.diff(old: persisted, new: keys)
+            var d = Differ.diff(old: persisted, new: keys)
+            // A block of an unread deletion stays removed: what replaced it was inserted.
+            if !d.rewrite, persisted.contains(where: { $0.removed == true }) {
+                for (n, c) in d.changes.enumerated() {
+                    switch c {
+                    case let .equal(o), let .modified(o):
+                        if persisted[o].removed == true { d.changes[n] = .inserted; d.removed.append(o) }
+                    case .inserted: break
+                    }
+                }
+                d.removed.sort()
+            }
             rewrite = d.rewrite
             // Checkbox states come from the baseline (nil in one saved before they were kept).
             if !d.rewrite {
@@ -332,7 +343,7 @@ public final class DocumentSession {
                 return readKey[slot].map { $0.text + " …" }
             }
             // The block as last read: before an unread edit, with the checkboxes as read.
-            var removedKey = oldKeys[o]
+            var removedKey = oldKeys[o].with(removed: false)
             if let s = oldSlotForIndex(o) {
                 if marks[s] == .modified || marks[s] == .state, let k = readKey[s] { removedKey = k }
                 if marks[s] == .modified || marks[s] == .state, let t = readTasks[s] { removedKey = removedKey.with(taskState: t) }
@@ -418,7 +429,7 @@ public final class DocumentSession {
         let keys = keys ?? blockKeys ?? blocks.map(BlockKey.init)
         blockKeys = keys
         guard !marks.isEmpty || !deletions.isEmpty else { baseline = keys; return }
-        func removedAfter(_ slot: Int) -> [BlockKey] { removedKeys[slot]?.map(\.key) ?? [] }
+        func removedAfter(_ slot: Int) -> [BlockKey] { removedKeys[slot]?.map { $0.key.with(removed: true) } ?? [] }
         var out: [BlockKey] = removedAfter(0)
         out.reserveCapacity(keys.count + deletions.count)
         for (i, b) in blocks.enumerated() {

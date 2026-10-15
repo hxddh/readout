@@ -97,6 +97,18 @@ import Testing
         #expect((d?.equalCount ?? 0) >= 2500)
     }
 
+    /// Rotated runs of repeated blocks keep what survives (A…F runs of 1,000 each, then B…F, A).
+    @Test func rotatedRunsOfRepeatedBlocksStillMatch() {
+        let letters = ["A", "B", "C", "D", "E", "F"].map { key("Repeated block \($0).") }
+        let old = letters.flatMap { Array(repeating: $0, count: 1000) }
+        let new = (letters.dropFirst() + [letters[0]]).flatMap { Array(repeating: $0, count: 1000) }
+        var d: DiffResult? = nil
+        let t = ms { d = Differ.diff(old: old, new: new) }
+        #expect(t < 1500, "\(Int(t)) ms")
+        #expect(d?.rewrite == false)
+        #expect((d?.equalCount ?? 0) >= 5000)
+    }
+
     /// Ordinary edits (also of long documents) get exactly the alignment they got before.
     @Test func ordinaryEditsAlignAsBefore() {
         var rng = IncrementalParserTests.SplitMix64(state: 36)
@@ -232,6 +244,21 @@ import Testing
         let q = try #require(t.update(parse("# T\n\n- [x] write the tests\n\nOther text.\n")))
         #expect(q.marks.first?.kind == .modified)
         #expect(q.marks.first?.diff == "- [<del> </del><ins>x</ins>] write the <del>test</del><ins>tests</ins>")
+    }
+
+    /// A block removed, then an unrelated one inserted in its place, both
+    /// unread: a relaunch shows the insertion and the removal, not an edit.
+    @Test func removalThenInsertionAtTheSamePlaceSurvivesRelaunch() throws {
+        let s = DocumentSession()
+        _ = s.load(parse("Keep one.\n\nRemoved paragraph about caching.\n\nKeep two.\n\nKeep three.\n"))
+        _ = s.update(parse("Keep one.\n\nKeep two.\n\nKeep three.\n"))
+        _ = s.update(parse("Keep one.\n\nEntirely new words here.\n\nKeep two.\n\nKeep three.\n"))
+        #expect(s.marks.values.map(\.self) == [.inserted] && s.deletions.count == 1)
+        let reopened = DocumentSession()
+        let o = reopened.load(parse("Keep one.\n\nEntirely new words here.\n\nKeep two.\n\nKeep three.\n"), baseline: s.baseline)
+        #expect(o.marks.map(\.kind) == [.inserted])
+        #expect(o.deletions.map(\.preview) == ["Removed paragraph about caching."])
+        #expect(reopened.unreadCount == s.unreadCount)
     }
 
     /// Baselines saved by 3.5 (no `source`) still load and mark as before.

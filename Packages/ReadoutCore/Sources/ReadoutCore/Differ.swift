@@ -18,12 +18,16 @@ public struct BlockKey: Codable, Sendable, Equatable {
     /// the whole normalized text, "" when it does not; nil in baselines
     /// saved before this field existed, which kept only normalized text.
     public let source: String?
+    /// In a baseline: a block of an unread deletion (`DocumentSession.baseline`),
+    /// kept removed when the document is opened against it. Nil otherwise.
+    public let removed: Bool?
 
     public init(fingerprint: UInt64, kind: BlockKind, text: String, taskState: [Bool]? = nil, source: String? = "") {
         self.fingerprint = fingerprint
         self.kind = kind
         self.taskState = taskState
         self.source = source == text ? "" : source
+        self.removed = nil
         // Similarity matching only needs a prefix: token-bigram Jaccard
         // converges well before 500 characters, and the common case (exact
         // fingerprint match) needs no text at all.
@@ -50,18 +54,24 @@ public struct BlockKey: Codable, Sendable, Equatable {
                   taskState: block.taskState.isEmpty ? nil : block.taskState, source: block.source)
     }
 
-    private init(fingerprint: UInt64, kind: BlockKind, text: String, full: String?, taskState: [Bool]?, source: String?) {
+    private init(fingerprint: UInt64, kind: BlockKind, text: String, full: String?, taskState: [Bool]?, source: String?, removed: Bool?) {
         self.fingerprint = fingerprint
         self.kind = kind
         self.text = text
         self.full = full
         self.taskState = taskState
         self.source = source
+        self.removed = removed
     }
 
     /// The same key with other checkbox states (as they were read).
     func with(taskState: [Bool]?) -> BlockKey {
-        BlockKey(fingerprint: fingerprint, kind: kind, text: text, full: full, taskState: taskState, source: source)
+        BlockKey(fingerprint: fingerprint, kind: kind, text: text, full: full, taskState: taskState, source: source, removed: removed)
+    }
+
+    /// The same key marked as (or no longer) a block of an unread deletion.
+    func with(removed: Bool) -> BlockKey {
+        BlockKey(fingerprint: fingerprint, kind: kind, text: text, full: full, taskState: taskState, source: source, removed: removed ? true : nil)
     }
 }
 
@@ -188,8 +198,10 @@ public enum Differ {
                 lo = (x + 1, y + 1)
             }
             if anchors.isEmpty {
-                // Only repeated fingerprints: matched greedily, in linear time.
-                pairs += greedyPairs(a[ra], b[rb])
+                // Only repeated fingerprints: the k-th occurrence of each paired
+                // with its k-th, or a greedy pass, whichever keeps more.
+                let byOccurrence = occurrencePairs(a[ra], b[rb]), greedy = greedyPairs(a[ra], b[rb])
+                pairs += byOccurrence.count >= greedy.count ? byOccurrence : greedy
             } else {
                 work.append((lo.0..<ra.upperBound, lo.1..<rb.upperBound))
             }
@@ -270,7 +282,28 @@ public enum Differ {
         for j in b.indices { inB[b[j]] = inB[b[j]] == nil ? j : -1 }
         var candidates: [(Int, Int)] = []
         for i in a.indices { if inA[a[i]] == i, let j = inB[a[i]], j >= 0 { candidates.append((i, j)) } }
-        // Longest increasing run of new indices (old indices already increase): patience sorting.
+        return longestIncreasing(candidates)
+    }
+
+    /// Each value's k-th occurrence in `a` paired with its k-th in `b`, as the
+    /// longest run of such pairs in order on both sides (rotated or shifted
+    /// runs of repeated blocks keep what survives).
+    static func occurrencePairs(_ a: ArraySlice<UInt64>, _ b: ArraySlice<UInt64>) -> [(Int, Int)] {
+        var positions: [UInt64: [Int]] = [:]
+        for j in b.indices { positions[b[j], default: []].append(j) }
+        var used: [UInt64: Int] = [:]
+        var candidates: [(Int, Int)] = []
+        for i in a.indices {
+            guard let list = positions[a[i]] else { continue }
+            let k = used[a[i]] ?? 0
+            if k < list.count { candidates.append((i, list[k])); used[a[i]] = k + 1 }
+        }
+        return longestIncreasing(candidates)
+    }
+
+    /// The longest run of `candidates` (in increasing old index) whose new
+    /// indices increase too: patience sorting, O(n log n).
+    static func longestIncreasing(_ candidates: [(Int, Int)]) -> [(Int, Int)] {
         var tails: [Int] = []                 // candidate index ending the best run of each length
         var previous = [Int](repeating: -1, count: candidates.count)
         for (c, pair) in candidates.enumerated() {
