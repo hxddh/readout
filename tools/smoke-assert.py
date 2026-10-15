@@ -242,8 +242,14 @@ check("collide: the link's window is still owned (saved on quit)", col.get("owne
 bg = load("background-opens.json")
 print(f"background-opens: {bg}")
 # `readout -b` and `readout --hook` open behind the tab being read, never in front of it.
-check("cli: both opens arrived as background requests",
-      sorted(bg.get("requests") or []) == sorted(["background.md", "plan.md"]), bg)
+check("cli: every open arrived as a background request",
+      sorted(bg.get("requests") or []) == sorted(["background.md", "plan.md", "hooked.md", "hooked.md"]), bg)
+# A plan outside its project: the hook's cwd is where its code references resolve (U2).
+hr = bg.get("hook_root") or {}
+check("cli: the hook's project folder resolves the plan's code reference",
+      (hr.get("resolved") or "").endswith("/project/src/app/feature.swift"), bg)
+check("cli: the project folder is kept for the next launch", (hr.get("kept") or "").endswith("/project"), bg)
+check("cli: rendering the plan again for its folder marks nothing", hr.get("marks") == 0, bg)
 check("cli: readout -b opened the file", bg.get("opened") is True, bg)
 bgc = bg.get("chrome") or {}
 # readout -b adds a tab: with the tab bar showing, no folder in the subtitle (3.5 rule).
@@ -252,7 +258,18 @@ check("cli: the background tab shows a tab bar and no folder subtitle",
 # Open Recent lists documents that were in front, not every file opened behind.
 check("cli: a document opened in the background is not in Open Recent", bg.get("in_recents") is False, bg)
 check("cli: the document being read stays in front",
-      bg.get("reading_before") not in (None, "", "background.md", "plan.md") and bg.get("reading_after") == bg.get("reading_before"), bg)
+      bg.get("reading_before") not in (None, "", "background.md", "plan.md", "hooked.md") and bg.get("reading_after") == bg.get("reading_before"), bg)
+
+# Where the unread changes are (U6): dots on the outline's sections and on the tab.
+check("outline: sections with unread changes are marked",
+      0 < len(undo.get("outline_unread") or []) < (undo.get("outline_entries") or 0), undo)
+td = load("tab-dot.json")
+print(f"tab-dot: {td}")
+check("tabs: a tab behind with unread changes shows the dot",
+      td.get("tab_bar_visible") is True and (td.get("behind_unread") or 0) > 0 and td.get("behind_dot") is True, td)
+check("tabs: its outline marks the section added", td.get("behind_outline_unread") == ["Added later"], td)
+check("tabs: the tab in front has the dot exactly when it has unread changes",
+      td.get("front_dot") == ((td.get("front_unread") or 0) > 0), td)
 
 menus = load("menus.json")
 print(f"menus: {menus}")

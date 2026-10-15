@@ -100,6 +100,11 @@ public final class DocumentLoader {
         }
     }
 
+    /// The next `readChange` reports the file's content even when its bytes
+    /// are the same: what the resolver finds changed (a project folder given
+    /// for the document), so the same text renders differently.
+    public func forgetContent() { lastHash = nil }
+
     private func read(_ completion: @escaping (ReadResult?) -> Void) {
         // Coalesce: if a parse is already running, queue the completion for
         // the follow-up read instead of queueing another full parse behind it.

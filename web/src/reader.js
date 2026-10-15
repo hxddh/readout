@@ -17,7 +17,7 @@ import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleD
 import { scheduleRail } from './reader/rail.js';
 import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
-import { remoteReady, remoteFailed, staticRemoteImages } from './reader/remote.js';
+import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
 
 // ---------------------------------------------------------------- Links & keys
@@ -350,8 +350,11 @@ window.readout = {
   previousChange: () => jump(-1),
   markAllRead,
   toggleDiff,
+  // View ▸ Show What Changed: what D does.
+  toggleDiffInView,
   remoteReady,
   remoteFailed,
+  remoteKnown,
   warm: () => hl.init(),
 };
 

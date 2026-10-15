@@ -121,6 +121,22 @@ public final class DocumentSession {
 
     public var unreadCount: Int { marks.count + deletions.count }
 
+    /// The outline entries (heading slots) whose own section holds an unread
+    /// change: a marked block, or a deletion after one of its blocks. A
+    /// section runs from its heading to the next outline heading of any
+    /// level, so a change is shown once, at the heading nearest above it.
+    public var unreadSections: Set<Int> {
+        guard unreadCount > 0 else { return [] }
+        let deletedAfter = Set(deletions.map(\.after))
+        var out: Set<Int> = []
+        var section = 0   // before the first heading: no outline entry
+        for b in blocks {
+            if b.kind == .heading, let level = b.headingLevel, level <= ParsedDocument.tocMaxLevel { section = b.slot }
+            if section != 0, marks[b.slot] != nil || deletedAfter.contains(b.slot) { out.insert(section) }
+        }
+        return out
+    }
+
     // MARK: Loading
 
     /// First render. When a persisted baseline is supplied, changes made since then are marked.

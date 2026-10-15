@@ -305,5 +305,19 @@ private struct Scratch {
         #expect(words.count == 4)
         #expect(words.last.flatMap { URL(string: $0) }.flatMap(OpenLink.parse) == .init(path: s.real + "/plan.md", background: true))
     }
+
+    /// The hook's `cwd` (the project Claude Code works in) rides along as the
+    /// document's root; one that is not a folder is left out.
+    @Test func theHookPassesTheProjectFolder() throws {
+        let s = try Scratch()
+        s.write("plan.md")
+        try FileManager.default.createDirectory(atPath: s.real + "/my app", withIntermediateDirectories: true)
+        func hook(cwd: String) throws -> OpenLink.Request? {
+            let out = try runScript(["--hook"], cwd: "/", stdin: #"{"cwd":"\#(cwd)","tool_input":{"file_path":"\#(s.real)/plan.md"}}"#)
+            return out.split(separator: " ").last.flatMap { URL(string: String($0)) }.flatMap(OpenLink.parse)
+        }
+        #expect(try hook(cwd: s.real + "/my app") == .init(path: s.real + "/plan.md", background: true, root: s.real + "/my app"))
+        #expect(try hook(cwd: s.real + "/missing")?.root == nil)
+    }
     #endif
 }

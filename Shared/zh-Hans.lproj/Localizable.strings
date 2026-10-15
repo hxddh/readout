@@ -30,6 +30,7 @@
 "Hide %@" = "隐藏 %@";
 "Hide Others" = "隐藏其他";
 "Load image from %@" = "加载来自 %@ 的图片";
+"Load all images from %@" = "加载来自 %@ 的全部图片";
 "Mark All as Read" = "全部标为已读";
 "Minimize" = "最小化";
 "Next Change" = "下一处变更";

@@ -657,6 +657,24 @@ check('rail labels use the localized template',
   check('D opens the top comparison, then the next, then closes both',
     JSON.stringify(steps) === JSON.stringify([[1801], [1801, 1802], []]), JSON.stringify(steps));
 }
+// View ▸ Show What Changed calls the page's D directly (no synthetic key press).
+{
+  const base = { rewrite: false, toc: [], tasks: { done: 0, total: 0 }, deletions: [] };
+  await page.evaluate(p => window.readout.apply(p), { ...base, version: 145, reset: true,
+    ops: [{ op: 'insert', slot: 1851, after: 0, kind: 'paragraph', html: '<p>First edited.</p>' },
+          { op: 'insert', slot: 1852, after: 1851, kind: 'paragraph', html: '<p>Second edited.</p>' }],
+    marks: [{ slot: 1851, kind: 'modified', diff: '<ins>First</ins> edited.' },
+            { slot: 1852, kind: 'modified', diff: '<ins>Second</ins> edited.' }] });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const menu = () => page.evaluate(() => {
+    if (typeof window.readout.toggleDiffInView !== 'function') return 'missing';
+    window.readout.toggleDiffInView();
+    return [1851, 1852].filter(s => document.querySelector(`.blk[data-slot="${s}"] > .wd-panel`));
+  });
+  const steps = [await menu(), await menu(), await menu()];
+  check('Show What Changed walks the comparisons in view as D does',
+    JSON.stringify(steps) === JSON.stringify([[1851], [1851, 1852], []]), JSON.stringify(steps));
+}
 // A tall comparison that pushes the next edited block off screen does not
 // stop D from reaching it: the press after still opens that block.
 {

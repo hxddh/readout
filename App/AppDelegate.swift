@@ -76,8 +76,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 open(url)
             } else if let request = OpenLink.parse(url) {
                 // `readout -b` and `readout --hook`: open behind the document being
-                // read. `readout plan.md#risks`: open at the section.
-                open(URL(fileURLWithPath: request.path), anchor: request.anchor, mode: request.background ? .background : .request)
+                // read. `readout plan.md#risks`: open at the section. The hook's
+                // project folder: where the paths in the document are found.
+                open(URL(fileURLWithPath: request.path), anchor: request.anchor, mode: request.background ? .background : .request,
+                     projectRoot: ProjectRoot.validated(request.root))
                 if request.background { SmokeTest.noteBackgroundRequest(request.path) }
             }
         }
@@ -124,7 +126,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case background
     }
 
-    func open(_ url: URL, anchor: String? = nil, mode: OpenMode = .request) {
+    /// `projectRoot`: the folder an agent worked in when it wrote the file
+    /// (an existing absolute folder), kept with the file's reading state.
+    func open(_ url: URL, anchor: String? = nil, mode: OpenMode = .request, projectRoot: String? = nil) {
         var url = url.standardizedFileURL
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else {
@@ -154,11 +158,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // only for a request, and never activates Readout. A window whose
             // first read failed reads again.
             existing.retryLoadIfFailed()
+            if let projectRoot { existing.setProjectRoot(projectRoot) }
             if mode == .request { existing.show() }
             if let anchor { existing.scrollToAnchor(fragment: anchor) }
             return
         }
-        let controller = ReaderWindowController(url: url, pendingAnchor: anchor)
+        let controller = ReaderWindowController(url: url, pendingAnchor: anchor, projectRoot: projectRoot)
         controller.onClose = { [weak self] c in
             guard let self else { return }
             self.windows = self.windows.filter { $0.value !== c }   // by identity: a retarget may have re-keyed it

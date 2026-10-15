@@ -79,6 +79,62 @@ const loadMsg = await page.evaluate(() => window.__msgs.find(m => m.type === 'lo
 check('placeholder click posts loadRemote', !!loadMsg && loadMsg.url === `${T}/a.png`, JSON.stringify(loadMsg));
 check('still no direct requests after click', escaped === 0, `escaped=${escaped}`);
 
+// An image loaded once is drawn again from its kept bytes when its block is
+// (an edit, Undo, the window opened again): no new click, no request. One
+// click on a placeholder offers the host's other placeholders, and one more
+// loads them all, and only them; nothing is fetched by the page meanwhile.
+{
+  const GIF = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  const ph = (slot, src) => ({ op: 'insert', slot, after: slot - 1, kind: 'paragraph',
+    html: `<p><span class="remote-img" data-src="${src}" data-alt="i${slot}"></span></p>` });
+  const draw = (version, ops) => page.evaluate(([version, ops]) => window.readout.apply({
+    version, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } }), [version, ops]);
+  const state = () => page.evaluate(() => [...document.querySelectorAll('#ro-doc .remote-img')].map(s => {
+    const img = s.querySelector('img'), btn = s.querySelector('button');
+    return img ? `img:${img.src.slice(0, 22)}` : btn ? `${btn.disabled ? 'busy' : 'btn'}:${btn.textContent}` : s.textContent;
+  }));
+  const loads = () => page.evaluate(() => window.__msgs.filter(m => m.type === 'loadRemote').map(m => m.url));
+  const reset = () => page.evaluate(() => { window.__msgs.length = 0; });
+
+  await draw(10, [ph(1, `${T}/a.png`), ph(2, `https://other.example/x.png`)]);
+  await reset();
+  // The reader clicks the first; the app answers with its kept bytes.
+  await page.evaluate(() => document.querySelector('.remote-img[data-src$="/a.png"] button').click());
+  const id = await page.evaluate(() => document.querySelector('.remote-img[data-src$="/a.png"]').dataset.remoteId);
+  await page.evaluate(([id, url]) => window.readout.remoteReady({ id, url }), [id, GIF]);
+  // The block is drawn again (an agent's edit): the image, not the button.
+  await draw(11, [ph(1, `${T}/a.png`), ph(2, `https://other.example/x.png`), ph(3, `${T}/a.png`)]);
+  const redrawn = await state();
+  check('an image loaded once is drawn again without asking',
+    redrawn[0] === `img:${GIF.slice(0, 22)}` && redrawn[2] === redrawn[0] && redrawn[1].startsWith('btn:'), JSON.stringify(redrawn));
+  check('drawing it again asks the app for nothing', (await loads()).length === 1, JSON.stringify(await loads()));
+
+  // Images known to the app from another window (remoteKnown) show at once,
+  // and whenever their block is drawn again; others stay placeholders.
+  await page.evaluate(([src, url]) => window.readout.remoteKnown({ [src]: url }), ['https://other.example/x.png', GIF]);
+  await draw(12, [ph(1, 'https://other.example/x.png'), ph(2, `https://${TRACK}/new.png`)]);
+  const fromApp = await state();
+  check('an image the app already holds shows without a click',
+    fromApp[0].startsWith('img:') && fromApp[1].startsWith('btn:'), JSON.stringify(fromApp));
+
+  // Several placeholders of one host: the first click loads that one and
+  // offers the rest; the offer loads every one of that host, none of another.
+  await draw(13, [ph(1, `${T}/1.png`), ph(2, `${T}/2.png`), ph(3, 'https://cdn.example/3.png'), ph(4, `${T}/4.png`)]);
+  await reset();
+  await page.evaluate(() => document.querySelector('.remote-img[data-src$="/1.png"] button').click());
+  const offer = await state();
+  check('one click loads one image', JSON.stringify(await loads()) === JSON.stringify([`${T}/1.png`]), JSON.stringify(await loads()));
+  check('the host\'s other placeholders offer to load them all',
+    offer[0].startsWith('busy:') && offer[1] === `btn:Load all images from ${TRACK}` && offer[3] === offer[1] && offer[2] === 'btn:Load image from cdn.example',
+    JSON.stringify(offer));
+  await reset();
+  await page.evaluate(() => document.querySelector('.remote-img[data-src$="/4.png"] button').click());
+  check('one more click loads all of that host and nothing else',
+    JSON.stringify((await loads()).sort()) === JSON.stringify([`${T}/2.png`, `${T}/4.png`]), JSON.stringify(await loads()));
+  await page.waitForTimeout(500);
+  check('no direct requests from remembered or offered images', escaped === 0, `escaped=${escaped}`);
+}
+
 // Diagrams: Mermaid and every chunk it loads come from the app's own files,
 // never the network. A flowchart loads the core and the flowchart's chunks,
 // not every kind of diagram.
