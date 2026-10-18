@@ -179,6 +179,10 @@ jobs:
       version: ${{ needs.preflight.outputs.version }}
       build: ${{ needs.preflight.outputs.build }}
       configuration: Release
+      # Notarized only once the signing secrets exist (docs/RELEASING.md);
+      # until then verify signs ad hoc exactly as before.
+      notarize: true
+    secrets: inherit
 
   publish:
     name: Publish the verified artifact
@@ -189,6 +193,8 @@ jobs:
       TAG: v${{ needs.preflight.outputs.version }}
       VERSION: ${{ needs.preflight.outputs.version }}
       EXPECTED_SHA: ${{ needs.verify.outputs.sha256 }}
+      # Set only when verify notarized the DMG (then it is in the artifact).
+      EXPECTED_DMG_SHA: ${{ needs.verify.outputs.dmg_sha256 }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -211,13 +217,23 @@ jobs:
 
       - name: Unpack, build DMG, write SHA256SUMS
         run: |
-          rm -rf dist/Readout.app
-          ditto -x -k dist/readout-app-"$VERSION".zip dist/
-          cd dist
-          mv "readout-app-$VERSION.zip" "Readout-$VERSION.zip"
-          mkdir dmg && cp -R Readout.app dmg/ && ln -s /Applications dmg/Applications
-          hdiutil create -volname "Readout" -srcfolder dmg -ov -format UDZO "Readout-$VERSION.dmg"
-          rm -rf dmg
+          if [ -f "dist/Readout-$VERSION.dmg" ]; then
+            # Notarized and stapled in verify: ship that disk image as tested.
+            GOT=$(shasum -a 256 "dist/Readout-$VERSION.dmg" | cut -d' ' -f1)
+            echo "verify said: $EXPECTED_DMG_SHA"
+            echo "downloaded:  $GOT"
+            [ -n "$EXPECTED_DMG_SHA" ] && [ "$GOT" = "$EXPECTED_DMG_SHA" ] || { echo "FAIL: DMG changed after verify"; exit 1; }
+            cd dist
+            mv "readout-app-$VERSION.zip" "Readout-$VERSION.zip"
+          else
+            rm -rf dist/Readout.app
+            ditto -x -k dist/readout-app-"$VERSION".zip dist/
+            cd dist
+            mv "readout-app-$VERSION.zip" "Readout-$VERSION.zip"
+            mkdir dmg && cp -R Readout.app dmg/ && ln -s /Applications dmg/Applications
+            hdiutil create -volname "Readout" -srcfolder dmg -ov -format UDZO "Readout-$VERSION.dmg"
+            rm -rf dmg
+          fi
           shasum -a 256 "Readout-$VERSION.dmg" "Readout-$VERSION.zip" > SHA256SUMS
           cat SHA256SUMS
 

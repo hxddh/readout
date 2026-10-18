@@ -27,6 +27,12 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
   5. waits for the app to exit on its own (90 s), with its log in OUT_DIR/smoke-out.log
   6. writes OUT_DIR/timings.json: cold start, warm open and write-to-update
      times, from its own clock readings and the app's (timings-app.json)
+  7. launches it again in Chinese (-AppleLanguages '(zh-Hans)', READOUT_SMOKE_PASS=zh):
+     the app writes menus-zh.json and Settings/welcome shots, then quits (log: smoke-zh.log)
+
+Scroll bars show only while scrolling during the run (the global
+AppleShowScrollBars default is set to WhenScrolling and put back afterwards),
+so screenshots look as they do with a trackpad.
 """
 import json
 import os
@@ -99,6 +105,12 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
         print(f"harness: {len(samples)} of {WARM_OPENS} warm opens painted")
     if warm is not None:
         timings["warm_open_ms"] = round(warm * 1000, 1)
+    # Readout's own share of those opens: window request to the page's first
+    # apply, without the frame the system paints it in (also the median).
+    applied_samples = for_second(app.get("first_apply_samples_s", {})) or []
+    timings["warm_open_to_applied_samples_ms"] = [round(v * 1000, 1) for v in applied_samples]
+    timings["warm_open_to_applied_ms"] = (round(sorted(applied_samples)[len(applied_samples) // 2] * 1000, 1)
+                                          if len(applied_samples) == WARM_OPENS else None)
     (out / "timings.json").write_text(json.dumps(timings, indent=1, sort_keys=True) + "\n")
     print(f"harness: timings {timings}")
 
@@ -156,19 +168,55 @@ def main() -> int:
     (tmp / "plans").mkdir()
     hook_plan = tmp / "plans" / "hooked.md"
     hook_plan.write_text("# Hooked plan\n\nChange `src/app/feature.swift:3` first.\n")
+    # Two documents with the same title, in different files: their tabs say which file.
+    dups = [tmp / "dup-a" / "fix.md", tmp / "dup-b" / "refactor.md"]
+    for d in dups:
+        d.parent.mkdir()
+        d.write_text("# Same plan\n\nTwo agents titled their plans alike.\n")
 
     env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
                READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
                READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_HOOK_PLAN=str(hook_plan), READOUT_SMOKE_COLLIDE_LINK=str(collide),
                READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"),
-               READOUT_SMOKE_LATE_FOLDER=str(late_dir), READOUT_SMOKE_DANGLE_LINK=str(dangle), READOUT_SMOKE_UNREADABLE=str(locked))
+               READOUT_SMOKE_LATE_FOLDER=str(late_dir), READOUT_SMOKE_DANGLE_LINK=str(dangle), READOUT_SMOKE_UNREADABLE=str(locked),
+               READOUT_SMOKE_DUP_FILES=":".join(str(d) for d in dups))
     # Launch Services must know the bundle for `open -b` to reach the running app.
     bundle = app.parents[2] if app.parent.name == "MacOS" else None
     if bundle is not None:
         subprocess.run(["/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
                         "-f", str(bundle)], check=False)
-    clock = {}
+    scroll_bars = subprocess.run(["defaults", "read", "-g", "AppleShowScrollBars"], capture_output=True, text=True)
+    subprocess.run(["defaults", "write", "-g", "AppleShowScrollBars", "-string", "WhenScrolling"], check=False)
+    try:
+        code = run(app, target, out, env, {}, second, cli_file, hook_plan, project, tmp, tmp_file, link, collide, dangle, agent_dir, late_dir, work)
+        if code == 0:
+            code = locale_pass(app, target, out)
+        return code
+    finally:
+        if scroll_bars.returncode == 0:
+            subprocess.run(["defaults", "write", "-g", "AppleShowScrollBars", "-string", scroll_bars.stdout.strip()], check=False)
+        else:
+            subprocess.run(["defaults", "delete", "-g", "AppleShowScrollBars"], check=False)
+
+
+def locale_pass(app: Path, target: Path, out: Path) -> int:
+    """The app again, in Chinese: it writes menus-zh.json and two shots, then quits."""
+    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out), READOUT_SMOKE_PASS="zh")
+    with open(out / "smoke-zh.log", "wb") as log:
+        proc = subprocess.Popen([str(app), "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"],
+                                env=env, stdout=log, stderr=subprocess.STDOUT)
+        try:
+            code = proc.wait(timeout=60)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            print("FAIL: the Chinese pass did not exit on its own within 60 seconds")
+            return 1
+    print(f"Chinese pass exited with code {code}")
+    return code
+
+
+def run(app, target, out, env, clock, second, cli_file, hook_plan, project, tmp, tmp_file, link, collide, dangle, agent_dir, late_dir, work) -> int:
     with open(out / "smoke-out.log", "wb") as log:
         clock["spawn"] = time.time()
         proc = subprocess.Popen([str(app)], env=env, stdout=log, stderr=subprocess.STDOUT)

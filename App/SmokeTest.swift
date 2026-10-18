@@ -68,10 +68,25 @@ enum SmokeTest {
         firstPaintSamples[url.path, default: []].append(seconds)
     }
 
+    /// Window request to the page's first apply, per file, every open
+    /// (Readout's own share of an open, without the frame the system paints).
+    private static var firstApplySamples: [String: [Double]] = [:]
+    static func noteFirstApply(_ url: URL, seconds: Double) {
+        guard outputDirectory != nil else { return }
+        firstApplySamples[url.path, default: []].append(seconds)
+    }
+
+    /// Where keyboard focus landed on an unread change (VoiceOver's announcement).
+    private static var landed: [[String: Any]] = []
+    static func noteLanded(index: Int, total: Int, kind: String) {
+        guard outputDirectory != nil else { return }
+        landed.append(["index": index, "total": total, "kind": kind])
+    }
+
     /// Timings for tools/smoke-run.py, which adds its own clock readings.
     private static func writeTimings(_ dir: URL) {
         let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint,
-                                   "first_paint_samples_s": firstPaintSamples]
+                                   "first_paint_samples_s": firstPaintSamples, "first_apply_samples_s": firstApplySamples]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: dir.appendingPathComponent("timings-app.json"))
         }
@@ -90,8 +105,15 @@ enum SmokeTest {
 
         NSApp.activate()
         Task { @MainActor in
+            // The second, Chinese pass (tools/smoke-run.py): menus and windows only.
+            if ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "zh" {
+                await localePass(controller: controller, out: out)
+                NSApp.terminate(nil)
+                return
+            }
             try? await Task.sleep(for: .seconds(3))
             await capture(webView, window: controller.window, to: out, name: "1-initial")
+            await typesetting(webView: webView, out: out)
 
             // Scroll into the middle and remember where a block sits, then let
             // the harness rewrite the file (temp file + rename, like agents).
@@ -112,6 +134,13 @@ enum SmokeTest {
             try? await Task.sleep(for: .seconds(1))
             // The window alone, for the README: light, the edited document from the top, its changes marked.
             windowShot(controller.window, out, "window-light")
+            // The Chinese and Japanese lines of the fixture: where PingFang and
+            // Hiragino put the emphasis dots, the quotes, the spacing.
+            _ = try? await webView.evaluateJavaScript("(() => { const e = [...document.querySelectorAll('.blk')].find(b => b.textContent.includes('日本語の確認')); if (e) window.scrollBy(0, e.getBoundingClientRect().top - 160); return 1; })()")
+            try? await Task.sleep(for: .seconds(1))
+            windowShot(controller.window, out, "cjk-light")
+            _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
+            try? await Task.sleep(for: .milliseconds(500))
             // The next-change button's image as drawn in an active window (the
             // CI runner's windows are inactive, which greys toolbar items).
             badgeShot(out)
@@ -127,6 +156,7 @@ enum SmokeTest {
             _ = try? await webView.evaluateJavaScript("(() => { const m = document.querySelector('.mermaid-block'); if (m) m.scrollIntoView({block: 'center'}); return 1; })()")
             try? await Task.sleep(for: .seconds(2.5))
             await capture(webView, window: controller.window, to: out, name: "4-dark")
+            await scrollEdge(controller: controller, webView: webView, out: out)
             _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
             try? await Task.sleep(for: .seconds(1))
             windowShot(controller.window, out, "window-dark")
@@ -225,6 +255,7 @@ enum SmokeTest {
             }
             write(aux, to: out, "aux-windows.json")
             await tabDot(controller: controller, out: out)
+            await landing(controller: controller, webView: webView, out: out)
             writeTimings(out)
             NSApp.terminate(nil)
         }
@@ -232,7 +263,7 @@ enum SmokeTest {
 
     /// The whole menu bar: every item's title, action, key and modifiers,
     /// submenus nested (menus.json), and the Edit menu's actions as before.
-    private static func writeMenus(_ out: URL) {
+    private static func writeMenus(_ out: URL, name: String = "menus.json") {
         func modifiers(_ m: NSEvent.ModifierFlags) -> String {
             [(NSEvent.ModifierFlags.control, "⌃"), (.option, "⌥"), (.shift, "⇧"), (.command, "⌘")]
                 .filter { m.contains($0.0) }.map { $0.1 }.joined()
@@ -253,7 +284,127 @@ enum SmokeTest {
         if let edit = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") })?.submenu {
             json["edit_menu"] = edit.items.compactMap { i in i.action.map { NSStringFromSelector($0) + (i.keyEquivalent.isEmpty ? "" : " " + i.keyEquivalent) } }
         }
-        write(json, to: out, "menus.json")
+        write(json, to: out, name)
+    }
+
+    /// Launched with `-AppleLanguages (zh-Hans)`: the menu bar (menus-zh.json),
+    /// Settings and the welcome window in Chinese.
+    private static func localePass(controller: ReaderWindowController, out: URL) async {
+        try? await Task.sleep(for: .seconds(2))
+        windowShot(controller.window, out, "window-zh")
+        writeMenus(out, name: "menus-zh.json")
+        let app = NSApp.delegate as? AppDelegate
+        app?.showSettings(nil)
+        try? await Task.sleep(for: .seconds(1.5))
+        screen(out, "5-settings-zh")
+        NSApp.windows.first { $0.contentViewController is NSHostingController<SettingsView> }?.close()
+        app?.showWelcome(nil)
+        try? await Task.sleep(for: .seconds(1.5))
+        screen(out, "6-welcome-zh")
+    }
+
+    /// What this WebKit supports of the CJK typesetting the reader asks for
+    /// (reader.css), and what the page's paragraphs get (css-supports.json).
+    private static func typesetting(webView: WKWebView, out: URL) async {
+        let script = """
+            (() => {
+              const p = document.querySelector('.blk p') || document.body;
+              const cs = getComputedStyle(p), root = getComputedStyle(document.documentElement);
+              return JSON.stringify({
+                supports: {
+                  'text-autospace: normal': CSS.supports('text-autospace', 'normal'),
+                  'text-spacing-trim: space-first': CSS.supports('text-spacing-trim', 'space-first'),
+                  'hanging-punctuation: allow-end': CSS.supports('hanging-punctuation', 'allow-end'),
+                  'text-wrap-style: pretty': CSS.supports('text-wrap-style', 'pretty'),
+                  'text-wrap: pretty': CSS.supports('text-wrap', 'pretty'),
+                },
+                computed: {
+                  'text-autospace': cs.getPropertyValue('text-autospace'),
+                  'text-spacing-trim': root.getPropertyValue('text-spacing-trim'),
+                  'hanging-punctuation': cs.getPropertyValue('hanging-punctuation'),
+                  'text-wrap-style': cs.getPropertyValue('text-wrap-style'),
+                  'font-family': cs.getPropertyValue('font-family'),
+                },
+                emphasis: { dots: document.querySelectorAll('.em-dot').length, long: document.querySelectorAll('.cjk-em-long').length },
+              });
+            })()
+            """
+        guard let text = try? await webView.evaluateJavaScript(script) as? String,
+              let data = text.data(using: .utf8), let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        write(json, to: out, "css-supports.json")
+    }
+
+    /// The soft scroll edge under the toolbar: the web view's top scroll
+    /// pocket (WebKit SPI, read only if it answers), and the rows of a window
+    /// shot just above the toolbar's edge with a dark code block 10 pt under
+    /// it. A hard pocket paints those rows one solid colour; the soft edge
+    /// lets the block show through, fading.
+    private static func scrollEdge(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
+        var json: [String: Any] = controller.topInsetState
+        func has(_ name: String) -> Bool { webView.responds(to: NSSelectorFromString(name)) }
+        json["fill_settable"] = has("_setUsesAutomaticContentInsetBackgroundFill:")
+        if has("_usesAutomaticContentInsetBackgroundFill") {
+            let fill = (webView.value(forKey: "_usesAutomaticContentInsetBackgroundFill") as? NSNumber)?.boolValue
+            json["automatic_fill"] = fill.map { $0 as Any } ?? NSNull()
+        }
+        let rect = "(() => { const c = document.querySelector('.code-block'); if (!c) return null; window.scrollBy(0, c.getBoundingClientRect().top + 10); const r = c.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; })()"
+        let r = (try? await webView.evaluateJavaScript(rect)) as? [NSNumber]
+        try? await Task.sleep(for: .seconds(1.2))
+        if has("_topScrollPocket"), let pocket = webView.value(forKey: "_topScrollPocket") as? NSObject {
+            var p: [String: Any] = ["class": String(describing: type(of: pocket))]
+            if pocket.responds(to: NSSelectorFromString("style")) { p["style"] = (pocket.value(forKey: "style") as? NSNumber)?.intValue ?? -1 }
+            if let v = pocket as? NSView { p["hidden"] = v.isHidden; p["frame"] = NSStringFromRect(v.frame) }
+            json["pocket"] = p
+        } else {
+            json["pocket"] = NSNull()
+        }
+        guard let window = controller.window, let r, r.count == 4 else {
+            json["error"] = "no code block"
+            write(json, to: out, "scroll-edge.json")
+            return
+        }
+        json["code_top"] = r[1].doubleValue
+        windowShot(window, out, "scroll-edge-dark")
+        // Rows of the shot from 20 pt above the toolbar's edge to 12 pt below,
+        // across the code block (4 pt in from its sides): mean and spread of luminance.
+        if let rep = NSBitmapImageRep(data: (try? Data(contentsOf: out.appendingPathComponent("scroll-edge-dark.png"))) ?? Data()) {
+            let scale = CGFloat(rep.pixelsWide) / window.frame.width
+            let web = webView.convert(webView.bounds, to: nil)
+            let edge = window.frame.height - web.maxY + CGFloat(webView.obscuredContentInsets.top)   // from the window's top
+            let x0 = Int(((web.minX + CGFloat(r[0].doubleValue) + 4) * scale).rounded()), x1 = Int(((web.minX + CGFloat(r[2].doubleValue) - 4) * scale).rounded())
+            var rows: [[String: Double]] = []
+            for rel in -20...12 {
+                let y = Int(((edge + CGFloat(rel)) * scale).rounded())
+                guard y >= 0, y < rep.pixelsHigh, x0 < x1 else { continue }
+                var values: [Double] = []
+                for x in stride(from: max(0, x0), to: min(rep.pixelsWide, x1), by: 1) {
+                    guard let c = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { continue }
+                    values.append((0.299 * c.redComponent + 0.587 * c.greenComponent + 0.114 * c.blueComponent) * 255)
+                }
+                guard !values.isEmpty else { continue }
+                let mean = values.reduce(0, +) / Double(values.count)
+                let sd = (values.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(values.count)).squareRoot()
+                rows.append(["rel": Double(rel), "mean": (mean * 10).rounded() / 10, "sd": (sd * 10).rounded() / 10])
+            }
+            json["rows"] = rows
+            json["scale"] = Double(scale)
+        }
+        write(json, to: out, "scroll-edge.json")
+        _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
+    }
+
+    /// Next Change from the menu: focus lands on the change it went to, and
+    /// the page reports which one it is (for VoiceOver).
+    private static func landing(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
+        controller.show()
+        landed = []
+        let unread = controller.model.unread
+        controller.nextChange(nil)
+        let deadline = Date().addingTimeInterval(3)
+        while landed.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        let focused = (try? await webView.evaluateJavaScript("(() => { const e = document.activeElement; return e ? e.className : ''; })()")) as? String ?? ""
+        write(["unread": unread, "landed": landed, "focused_class": focused, "app_active": NSApp.isActive,
+               "key": controller.window?.isKeyWindow ?? false], to: out, "landed.json")
     }
 
     private static func write(_ json: [String: Any], to dir: URL, _ name: String) {
@@ -635,6 +786,9 @@ enum SmokeTest {
             BaselineStore.flush()
             json["hook_root"] = ["resolved": resolved, "kept": BaselineStore.projectRoot(for: URL(fileURLWithPath: plan)) ?? "",
                                  "marks": (try? await web.evaluateJavaScript("document.querySelectorAll('.m-inserted, .m-modified').length")) as? Int ?? -1]
+            // Opened behind, never looked at, nothing unread: its tab still has the dot.
+            json["hook_tab"] = ["unread": reader.model.unread, "dot": reader.window?.tab.accessoryView != nil,
+                                "noted_recent": reader.notedRecent, "key": reader.window?.isKeyWindow ?? false]
         }
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: out.appendingPathComponent("background-opens.json"))
@@ -652,10 +806,26 @@ enum SmokeTest {
         if other.tabGroup !== main.tabGroup || main.tabGroup == nil { main.addTabbedWindow(other, ordered: .above) }
         main.tabGroup?.selectedWindow = main
         try? await Task.sleep(for: .seconds(1))
+        // Two documents with the same title (H1) in the same tab group: their tabs name the files.
+        let app = NSApp.delegate as? AppDelegate
+        let dups = (ProcessInfo.processInfo.environment["READOUT_SMOKE_DUP_FILES"] ?? "").split(separator: ":").map { URL(fileURLWithPath: String($0)) }
+        for d in dups { app?.open(d, mode: .background) }
+        let deadline = Date().addingTimeInterval(10)
+        while dups.contains(where: { app?.reader(for: $0)?.documentTitle.hasPrefix("Same") != true }) && Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        try? await Task.sleep(for: .milliseconds(500))
+        let group = main.tabGroup?.windows ?? [main]
         write(["behind_unread": behind.model.unread, "behind_dot": other.tab.accessoryView != nil,
                "behind_outline_unread": behind.model.toc.filter { behind.model.unreadSections.contains($0.slot) }.map(\.title),
                "front_unread": controller.model.unread, "front_dot": main.tab.accessoryView != nil,
-               "tab_bar_visible": main.tabGroup?.isTabBarVisible ?? false], to: out, "tab-dot.json")
+               "front_noted_recent": controller.notedRecent,
+               "tab_bar_visible": main.tabGroup?.isTabBarVisible ?? false,
+               // With the tab bar showing, the page's inset follows the toolbar's edge (contentLayoutRect).
+               "inset": controller.topInsetState,
+               "tab_titles": group.map(\.tab.title),
+               "dup_titles": dups.compactMap { app?.reader(for: $0)?.window?.tab.title },
+               "dup_in_group": dups.allSatisfy { d in group.contains { $0 === app?.reader(for: d)?.window } }], to: out, "tab-dot.json")
         windowShot(main, out, "tabs-unread")
     }
 

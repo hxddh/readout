@@ -26,9 +26,11 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 
 Download `Readout-x.y.z.dmg` from [Releases](https://github.com/hxddh/readout/releases), open it and drag Readout to Applications. Requires macOS 26 or later; one universal app for Apple silicon and Intel Macs.
 
-Every release is ad-hoc signed, not notarized, so macOS refuses to open it the first time. Open **System Settings → Privacy & Security**, find the message about Readout and click **Open Anyway**. You need to do this once per release.
+Every release is ad-hoc signed, not notarized, so macOS refuses to open it the first time. Open **System Settings → Privacy & Security**, find the message about Readout and click **Open Anyway**. You need to do this once per release. For the same reason macOS asks again after each update before Readout may read files in Documents, Desktop or Downloads, and before it may ask Xcode to open a file at a line (Apple Events): it ties those permissions to the app's signature, which an ad-hoc signature changes with every build. Notarized releases will keep them.
 
-Readout checks GitHub Releases for new versions (**Readout → Check for Updates…**).
+To check a download, put `SHA256SUMS` from the release next to the DMG and ZIP and run `shasum -a 256 -c SHA256SUMS` (only the DMG: `grep dmg SHA256SUMS | shasum -a 256 -c`).
+
+Readout checks GitHub Releases for new versions (**Readout → Check for Updates…**). **Download Update** saves the new DMG to your Downloads folder and shows it in Finder; Readout installs nothing itself.
 
 ## Privacy
 
@@ -62,6 +64,18 @@ For a Claude Code hook instead of a watched folder (no `readout` link needed), a
 ```
 
 The hook also passes the folder Claude Code works in, so file paths in a plan kept in `~/.claude/plans` link to the files in that project.
+
+### The `readout-open:` URL
+
+`readout -b` and `readout --hook` open files through a URL, which other tools can use too:
+
+```
+readout-open://open?path=<absolute path>&background=1&anchor=<section>&root=<folder>
+```
+
+Every value is percent-encoded. `path` is required: a Markdown file, or a folder to open its newest Markdown file. `background=1` opens it behind the document you are reading, without bringing Readout forward. `anchor` scrolls to a section (a heading's slug, as in `plan.md#risks`). `root`, an existing absolute folder, is the project the document's relative paths belong to: code references, links and images in that document are also looked up there, and Readout keeps the folder for the file.
+
+Any app or web page can open such a URL (browsers ask you first), as it can ask Finder to open a file, so Readout does not trust it more than that: `root` only changes which files that document's paths point to, never what Readout may read, and nothing is sent anywhere. (A marker only the `readout` script sets would not prove where a URL came from: any caller could add it.)
 
 ## Keyboard
 
