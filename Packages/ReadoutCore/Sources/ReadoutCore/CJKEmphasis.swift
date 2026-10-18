@@ -115,9 +115,11 @@ enum CJKEmphasis {
         return best.map { ($0.0, $0.1) }
     }
 
-    /// Whether the lines hold a marker character themselves (then none is
-    /// inserted: the renderer could not tell them apart). Byte scan first.
-    static func containsMarker(_ lines: [String]) -> Bool {
+    /// Whether the lines hold a marker character themselves. Such a line gets
+    /// no marker, and a block holding one keeps what is in it: markers could
+    /// not be told apart from it. Decided per line and per block, so the full
+    /// and the incremental parse agree. Byte scan first.
+    static func containsMarker<C: Collection>(_ lines: C) -> Bool where C.Element: StringProtocol {
         lines.contains { line in
             line.utf8.contains { $0 == 0xEE || $0 == 0xF0 }
                 && line.unicodeScalars.contains { $0 == neutral || $0 == punctuation }

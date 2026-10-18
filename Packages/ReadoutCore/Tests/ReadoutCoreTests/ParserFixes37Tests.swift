@@ -107,12 +107,18 @@ import Testing
         #expect(doc.blocks.contains { $0.html.contains("<strong>脚注：</strong>内容") })
     }
 
-    /// A document holding a marker character itself keeps it (and keeps
-    /// CommonMark's emphasis rule).
+    /// A block holding a marker character itself keeps it; a line holding
+    /// one keeps CommonMark's rule. Decided per line and block, so the
+    /// incremental parse agrees with the full one.
     @Test func literalMarkerCharactersSurvive() {
-        let doc = MarkdownParser.parse("**注意：**这里\n\n```\n\u{1BC9F} and \u{E005}\n```")
+        let text = "**注意：**这里\n\n```\n\u{1BC9F} and \u{E005}\n```\n\n- **一：**甲\n- **二：**乙 \u{E005}"
+        let doc = MarkdownParser.parse(text)
+        #expect(doc.blocks[0].html == "<p><strong>注意：</strong>这里</p>")
         #expect(doc.blocks[1].html.contains("\u{1BC9F} and \u{E005}"))
-        #expect(doc.blocks[0].html == "<p>**注意：**这里</p>")
+        #expect(doc.blocks[2].html.contains("<strong>一：</strong>甲"))
+        #expect(doc.blocks[3].html.contains("**二：**乙 \u{E005}"))
+        expectIncrementalMatchesFull(text)
+        expectIncrementalMatchesFull("Intro.\n\n[x]: /u\n\n" + text)
     }
 
     /// Code, math, links and HTML keep their text exactly.

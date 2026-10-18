@@ -29,9 +29,6 @@ struct MathProtector {
     private(set) var spans: [Span] = []
     /// CJK-friendly emphasis markers inserted (`CJKEmphasis`): the renderer strips them.
     private(set) var emphasisMarks = 0
-    /// Off when the source holds a marker character itself: stripping the
-    /// markers would remove it too.
-    var emphasisAllowed = true
 
     mutating func protect(_ source: String) -> String {
         var out: [String] = []
@@ -309,7 +306,9 @@ struct MathProtector {
 
     private mutating func protectLine(_ line: String) -> String {
         let mayHaveFootnote = !footnoteIDs.isEmpty && Footnotes.mentions(line)
-        let cjkEmphasis = emphasisAllowed && CJKEmphasis.mayApply(line)
+        // A line holding a marker character itself gets none (`MarkdownParser`
+        // leaves the markers in a block whose source has one).
+        let cjkEmphasis = CJKEmphasis.mayApply(line) && !CJKEmphasis.containsMarker(CollectionOfOne(line))
         // Fast path: nothing that could start math or a footnote reference, or need a CJK emphasis marker.
         if !mayHaveFootnote && !cjkEmphasis && !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
         let chars = Array(line)
