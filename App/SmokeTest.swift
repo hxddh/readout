@@ -354,6 +354,28 @@ enum SmokeTest {
             var p: [String: Any] = ["class": String(describing: type(of: pocket))]
             if pocket.responds(to: NSSelectorFromString("style")) { p["style"] = (pocket.value(forKey: "style") as? NSNumber)?.intValue ?? -1 }
             if let v = pocket as? NSView { p["hidden"] = v.isHidden; p["frame"] = NSStringFromRect(v.frame) }
+            // Every scalar or object property AppKit declares on the pocket (SPI), to see what it decided.
+            var props: [String: String] = [:]
+            var cls: AnyClass? = type(of: pocket)
+            while let c = cls, c != NSView.self {
+                var count: UInt32 = 0
+                if let list = class_copyPropertyList(c, &count) {
+                    for i in 0..<Int(count) {
+                        let name = String(cString: property_getName(list[i]))
+                        let attrs = property_getAttributes(list[i]).map { String(cString: $0) } ?? ""
+                        guard props[name] == nil, attrs.hasPrefix("Tc") || attrs.hasPrefix("TB") || attrs.hasPrefix("Tq") || attrs.hasPrefix("TQ")
+                                || attrs.hasPrefix("Td") || attrs.hasPrefix("T@\"NSColor") else { continue }
+                        // Only getters KVC finds by the name (name or is<Name>), so value(forKey:) cannot throw.
+                        let getter = attrs.split(separator: ",").first { $0.hasPrefix("G") }.map { String($0.dropFirst()) } ?? name
+                        let isName = "is" + name.prefix(1).uppercased() + name.dropFirst()
+                        guard getter == name || getter == isName, pocket.responds(to: NSSelectorFromString(getter)) else { continue }
+                        props[name] = String(describing: pocket.value(forKey: name) ?? "nil")
+                    }
+                    free(list)
+                }
+                cls = class_getSuperclass(c)
+            }
+            p["properties"] = props
             json["pocket"] = p
         } else {
             json["pocket"] = NSNull()
@@ -364,6 +386,8 @@ enum SmokeTest {
             return
         }
         json["code_top"] = r[1].doubleValue
+        json["window_key"] = window.isKeyWindow
+        json["app_active"] = NSApp.isActive
         windowShot(window, out, "scroll-edge-dark")
         // Rows of the shot from 20 pt above the toolbar's edge to 12 pt below,
         // across the code block (4 pt in from its sides): mean and spread of luminance.
