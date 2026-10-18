@@ -537,7 +537,7 @@
    "kind": "listItem",
    "top": 4376,
    "h": 54,
-   "style": "65a30024",
+   "style": "539df332",
    "content": "f8075506",
    "text": "clear event path in daemon_message_to_ble_payloa"
   },
@@ -546,7 +546,7 @@
    "kind": "listItem",
    "top": 4430,
    "h": 28,
-   "style": "1e121386",
+   "style": "a86b395a",
    "content": "08eaa457",
    "text": "Unknown event raises ValueError"
   },
@@ -555,7 +555,7 @@
    "kind": "listItem",
    "top": 4459,
    "h": 28,
-   "style": "370f5bb8",
+   "style": "799c8f63",
    "content": "2950cf80",
    "text": "cwd=\"\" yields project=\"unknown\""
   },
@@ -564,7 +564,7 @@
    "kind": "listItem",
    "top": 4487,
    "h": 45,
-   "style": "6dcdaf28",
+   "style": "26a95df6",
    "content": "c54c6987",
    "text": "Missing session_id field (defaults to \"\")"
   },
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 4574,
    "h": 28,
-   "style": "f2c0c35a",
+   "style": "93337bfa",
    "content": "14f5765e",
    "text": "_replay_active behavior (especially that it send"
   },
@@ -591,7 +591,7 @@
    "kind": "listItem",
    "top": 4602,
    "h": 28,
-   "style": "302f06d6",
+   "style": "15166777",
    "content": "dd216518",
    "text": "BLE write failure → reconnect → replay path"
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 4630,
    "h": 71,
-   "style": "82a785ba",
+   "style": "f273868a",
    "content": "b7db1b00",
    "text": "Snapshot behavior: new add arriving during repla"
   },
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 4984,
    "h": 80,
-   "style": "433271d4",
+   "style": "00912888",
    "content": "3f4156bb",
    "text": "protocol.py is a clean pure-function module. No "
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 5065,
    "h": 54,
-   "style": "c0b52994",
+   "style": "929cfdea",
    "content": "c3a11975",
    "text": "ble_client.py lock usage is correct. asyncio.Loc"
   },
@@ -672,7 +672,7 @@
    "kind": "listItem",
    "top": 5119,
    "h": 80,
-   "style": "97af96be",
+   "style": "961f19f8",
    "content": "fd2fbba4",
    "text": "is_daemon_running() handles stale PID files grac"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 5199,
    "h": 54,
-   "style": "b87c0193",
+   "style": "c66f34db",
    "content": "659fd1fd",
    "text": "socket_server.py sets 0o600 on the Unix socket. "
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 5254,
    "h": 54,
-   "style": "3e3a9437",
+   "style": "ec9a48ba",
    "content": "1e45bef3",
    "text": "socket_server.py unlinks the socket on both star"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 5308,
    "h": 80,
-   "style": "319f2450",
+   "style": "48624748",
    "content": "83344575",
    "text": "daemon.py replay-on-reconnect design is solid. T"
   },
@@ -708,7 +708,7 @@
    "kind": "listItem",
    "top": 5388,
    "h": 54,
-   "style": "b892ea5a",
+   "style": "e2e8aff1",
    "content": "08d8ab44",
    "text": "Signal handling for SIGTERM/SIGINT is correct. U"
   },
@@ -717,7 +717,7 @@
    "kind": "listItem",
    "top": 5442,
    "h": 54,
-   "style": "2dab81a3",
+   "style": "a349f2ea",
    "content": "a1f83dcf",
    "text": "clawd-notify lazy-start pattern is clean. Check "
   },
@@ -726,7 +726,7 @@
    "kind": "listItem",
    "top": 5497,
    "h": 80,
-   "style": "84e623a0",
+   "style": "20f2935b",
    "content": "988cfd01",
    "text": "test_daemon.py tests behavior, not mocks. Callin"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 5577,
    "h": 71,
-   "style": "2c6db0f8",
+   "style": "fcd665e9",
    "content": "f109c954",
    "text": "install-hooks.sh is correctly conservative — out"
   },

@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 513,
    "h": 54,
-   "style": "3344cda4",
+   "style": "4242e522",
    "content": "e6603b3c",
    "text": "ci.yml test job: checkout → setup-node → yarn &&"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 567,
    "h": 132,
-   "style": "f43a15ec",
+   "style": "3c55a720",
    "content": "1d055c18",
    "text": "ci.yml deploy job (gated on github.ref == 'refs/"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 699,
    "h": 80,
-   "style": "21b88936",
+   "style": "cc968ece",
    "content": "612e105a",
    "text": "yarn test:ci = vitest --run --coverage; there's "
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 780,
    "h": 201,
-   "style": "5df235b1",
+   "style": "4d12d21e",
    "content": "6370fe18",
    "text": "Verified via JS-DevTools/npm-publish's own READM"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2918,
    "h": 54,
-   "style": "b3c8e048",
+   "style": "7d233c07",
    "content": "dacc130a",
    "text": "Review the edited YAML carefully for indentation"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2972,
    "h": 80,
-   "style": "fe5e5450",
+   "style": "ad1c73e6",
    "content": "922263ae",
    "text": "Push to a branch / open a PR first: confirm the "
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 3052,
    "h": 132,
-   "style": "af419691",
+   "style": "81146b05",
    "content": "18e74e3d",
    "text": "Merge to master (or use workflow_dispatch) and w"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 3185,
    "h": 71,
-   "style": "31b66c23",
+   "style": "99efe4cc",
    "content": "d8ee382c",
    "text": "Separately trigger npm-test.yml (workflow_dispat"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 3715,
    "h": 80,
-   "style": "8bc1a89f",
+   "style": "d020a458",
    "content": "06873a9c",
    "text": "ci.yml's test job: removed registry-url: 'https:"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 3796,
    "h": 71,
-   "style": "5a4c462b",
+   "style": "64087ff6",
    "content": "d9ff6610",
    "text": "npm-test.yml: removed the same registry-url line"
   },

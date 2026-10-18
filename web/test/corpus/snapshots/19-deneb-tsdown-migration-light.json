@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 781,
    "h": 54,
-   "style": "7f551af3",
+   "style": "1eac2311",
    "content": "bd435eb6",
    "text": "Branch chore/750-tsdown off main at 5838d2f2 (po"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 835,
    "h": 54,
-   "style": "f33b30a8",
+   "style": "d4fc9d67",
    "content": "e1a9c7e0",
    "text": "Commits: (1) stage-1 migration on 0.22.14 (confi"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 889,
    "h": 132,
-   "style": "a0e97f04",
+   "style": "a826d17a",
    "content": "29822372",
    "text": "Current state, verified 2026-09-14: both package"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1021,
    "h": 175,
-   "style": "b2e3cc38",
+   "style": "e0e4d67a",
    "content": "e15c2ad0",
    "text": "The consumer contract that must survive unchange"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1238,
    "h": 45,
-   "style": "686e4d0c",
+   "style": "3e94d8f7",
    "content": "4891fa3a",
    "text": "Step 1: Certified baseline package (PowerShell)"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1554,
    "h": 45,
-   "style": "d4df0097",
+   "style": "bc27a1bc",
    "content": "f935c684",
    "text": "Step 2: Record the two packages' current dist in"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1873,
    "h": 61,
-   "style": "35b55f43",
+   "style": "b1fbf7a5",
    "content": "4a408940",
    "text": "Modify: packages/app-core/package.json, packages"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 1934,
    "h": 113,
-   "style": "81287f64",
+   "style": "fe42c6b3",
    "content": "75d04104",
    "text": "Modify/Rename: packages/app-core/tsup.config.ts,"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2048,
    "h": 35,
-   "style": "18a7956e",
+   "style": "c3b2521e",
    "content": "cc0b289a",
    "text": "Modify: package.json (root — remove tsup devDepe"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2083,
    "h": 45,
-   "style": "171ffdbe",
+   "style": "a8431465",
    "content": "242b39f6",
    "text": "Step 1: Dry-run the migrator and review"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 2259,
    "h": 71,
-   "style": "96fdd4b1",
+   "style": "68a13eac",
    "content": "ab10a8dd",
    "text": "Step 2: Run it for real (no auto-install; deps a"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2617,
    "h": 45,
-   "style": "83dd4bc6",
+   "style": "e071e945",
    "content": "da65d219",
    "text": "Step 3: Port the raw worker-text loader in both "
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 3103,
    "h": 45,
-   "style": "0114f8e0",
+   "style": "7e123deb",
    "content": "5c75ebc8",
    "text": "Step 4: Pin worker output filenames in both work"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 3344,
    "h": 45,
-   "style": "2005ed3d",
+   "style": "3d9bce4e",
    "content": "b7b9a5f3",
    "text": "Step 5: PNG loader decision (app-core main confi"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 3848,
    "h": 45,
-   "style": "fc551fd8",
+   "style": "0d2c488b",
    "content": "d215f17f",
    "text": "Step 6: Build to zero deprecation warnings"
   },
@@ -411,7 +411,7 @@
    "kind": "listItem",
    "top": 4050,
    "h": 61,
-   "style": "9d51057c",
+   "style": "a2e316a9",
    "content": "58bef493",
    "text": "Entries unchanged (app-core: src/index.ts + src/"
   },
@@ -420,7 +420,7 @@
    "kind": "listItem",
    "top": 4111,
    "h": 61,
-   "style": "4b7a450f",
+   "style": "9fea8103",
    "content": "b7a610b5",
    "text": "format esm (main) / iife (workers); dts on for m"
   },
@@ -429,7 +429,7 @@
    "kind": "listItem",
    "top": 4173,
    "h": 139,
-   "style": "c80ce6ae",
+   "style": "5b35107f",
    "content": "286c8e91",
    "text": "Every external entry survives as an equivalent d"
   },
@@ -438,7 +438,7 @@
    "kind": "listItem",
    "top": 4312,
    "h": 61,
-   "style": "3c0e3dc8",
+   "style": "d30dfd62",
    "content": "045dd2f3",
    "text": "json-processing's splitting: false is dropped (t"
   },
@@ -447,7 +447,7 @@
    "kind": "listItem",
    "top": 4373,
    "h": 45,
-   "style": "a5a874e8",
+   "style": "7b407543",
    "content": "62ee2751",
    "text": "Step 7: Commit"
   },
@@ -483,7 +483,7 @@
    "kind": "listItem",
    "top": 4739,
    "h": 45,
-   "style": "4d98d522",
+   "style": "9441b489",
    "content": "adebd946",
    "text": "Step 1: Bump both packages"
   },
@@ -501,7 +501,7 @@
    "kind": "listItem",
    "top": 4905,
    "h": 45,
-   "style": "558671d9",
+   "style": "644db7b2",
    "content": "8f75d976",
    "text": "Step 2: Commit"
   },
@@ -537,7 +537,7 @@
    "kind": "listItem",
    "top": 5211,
    "h": 45,
-   "style": "fd8f9b58",
+   "style": "cbb9643b",
    "content": "fc82ea94",
    "text": "Step 1: Dist contract check"
   },
@@ -573,7 +573,7 @@
    "kind": "listItem",
    "top": 5535,
    "h": 45,
-   "style": "32f0d767",
+   "style": "6ffb3a74",
    "content": "c70aa082",
    "text": "Step 2: Externals stayed external"
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 5809,
    "h": 45,
-   "style": "1e73d1cf",
+   "style": "f080ce24",
    "content": "4e33b4bd",
    "text": "Step 3: Full build + full suite"
   },
@@ -618,7 +618,7 @@
    "kind": "listItem",
    "top": 5949,
    "h": 45,
-   "style": "824080a8",
+   "style": "99393093",
    "content": "874ea419",
    "text": "Step 4: Dev smoke"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 6141,
    "h": 45,
-   "style": "76c78343",
+   "style": "0e5fdcf8",
    "content": "a42123db",
    "text": "Step 5: Package parity (non-JS parts) + size"
   },
@@ -672,7 +672,7 @@
    "kind": "listItem",
    "top": 6432,
    "h": 45,
-   "style": "0bcb0ade",
+   "style": "0bbd522d",
    "content": "cd5a03fb",
    "text": "Step 6: Full local CI"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 6520,
    "h": 45,
-   "style": "9e62b11b",
+   "style": "44698fb0",
    "content": "2df1bc48",
    "text": "Step 7: Push and raise the PR"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 6920,
    "h": 80,
-   "style": "ceb2a8ae",
+   "style": "5239d061",
    "content": "9d5090f2",
    "text": "Config content beyond the two hand-ported pieces"
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 7000,
    "h": 54,
-   "style": "f33b30a8",
+   "style": "d4fc9d67",
    "content": "4be12a27",
    "text": "The raw/PNG plugins are duplicated per config (m"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 7055,
    "h": 71,
-   "style": "6a8c0df3",
+   "style": "5b206f62",
    "content": "8e0e3afb",
    "text": "No attempt to preserve splitting: false in json-"
   },
