@@ -90,7 +90,10 @@
     "3.7: warm_open_to_applied_ms gates the fastest of the three opens, not their median. The median",
     "swung 416-693 ms between runs of code that does not touch the open path (main b889273: samples",
     "768/416/403; core PR head 2fd5300: 1274/451/693); runner stalls only add time, so the minimum",
-    "(403 and 451 there) is the stable reading. Target and guard unchanged."
+    "(403 and 451 there) is the stable reading. The minimum still moves with the runner: this PR's",
+    "own run of main's code measured 790/703/507 ms, so the fastest open of unchanged code ranged",
+    "403-507 ms. The 550 guard came from a single 358 ms reading; it is now 800 (about 1.5x the",
+    "highest fastest-open seen on unchanged code, the file's usual rule). Target stays 150."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 260, "guard": 280 },
@@ -100,7 +103,7 @@
   "word_diff_100kb":            { "where": "mac",          "unit": "ms",     "target": 5,    "guard": 5 },
   "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 75 },
   "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 3900 },
-  "warm_open_to_applied_ms":    { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 550 },
+  "warm_open_to_applied_ms":    { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 800 },
   "ql_open_ms":                 { "where": "mac",          "unit": "ms",     "target": null, "guard": null },
   "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 12800 },
   "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 1400 },
