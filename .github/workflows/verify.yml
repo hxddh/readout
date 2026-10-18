@@ -3,6 +3,13 @@ name: Verify signed product
 # Builds exactly what Release builds, signs it with tools/sign.sh, boots the
 # signed app from /Applications, asserts on its smoke output, and uploads the
 # signed app zip. Release publishes ONLY this artifact — it never rebuilds.
+#
+# Notarization (dormant until the six secrets below exist; docs/RELEASING.md):
+# with `notarize: true` AND every secret set, the app is signed with the
+# Developer ID instead of ad hoc, notarized and stapled BEFORE the smoke test,
+# and the DMG is built, signed, notarized and stapled here too, so what ships
+# is what was tested. Without the secrets (ci.yml, forks, today) NOTARIZE is
+# false and every step below runs exactly as before.
 on:
   workflow_call:
     inputs:
@@ -16,10 +23,31 @@ on:
         required: false
         default: Release
         type: string
+      notarize:
+        description: Sign with the Developer ID, notarize and staple (only when the secrets exist)
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      DEVELOPER_ID_P12_BASE64:
+        required: false
+      DEVELOPER_ID_P12_PASSWORD:
+        required: false
+      DEVELOPER_ID_IDENTITY:
+        required: false
+      NOTARY_API_KEY_P8_BASE64:
+        required: false
+      NOTARY_API_KEY_ID:
+        required: false
+      NOTARY_API_ISSUER_ID:
+        required: false
     outputs:
       sha256:
         description: SHA-256 of the uploaded readout-app-<version>.zip
         value: ${{ jobs.signed.outputs.sha256 }}
+      dmg_sha256:
+        description: SHA-256 of the notarized Readout-<version>.dmg in the same artifact (empty when not notarized)
+        value: ${{ jobs.signed.outputs.dmg_sha256 }}
 
 jobs:
   signed:
@@ -27,10 +55,13 @@ jobs:
     runs-on: macOS-26
     outputs:
       sha256: ${{ steps.hash.outputs.sha256 }}
+      dmg_sha256: ${{ steps.dmg.outputs.sha256 }}
     env:
       VERSION: ${{ inputs.version }}
       BUILD: ${{ inputs.build }}
       CONFIG: ${{ inputs.configuration }}
+      # "true" only when asked for and every secret is there.
+      NOTARIZE: ${{ inputs.notarize && secrets.DEVELOPER_ID_P12_BASE64 != '' && secrets.DEVELOPER_ID_P12_PASSWORD != '' && secrets.DEVELOPER_ID_IDENTITY != '' && secrets.NOTARY_API_KEY_P8_BASE64 != '' && secrets.NOTARY_API_KEY_ID != '' && secrets.NOTARY_API_ISSUER_ID != '' }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -71,9 +102,52 @@ jobs:
           ditto build/Build/Products/"$CONFIG"/Readout.app dist/Readout.app
 
       - name: Sign (ad-hoc, hardened runtime)
+        if: env.NOTARIZE != 'true'
         run: |
+          echo "Notarization: ${{ inputs.notarize && 'asked for, but the signing secrets are not set: ad hoc' || 'not asked for: ad hoc' }}"
           chmod +x tools/sign.sh
           tools/sign.sh dist/Readout.app "-"
+
+      - name: Import the Developer ID certificate (temporary keychain)
+        if: env.NOTARIZE == 'true'
+        env:
+          P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          NOTARY_KEY_BASE64: ${{ secrets.NOTARY_API_KEY_P8_BASE64 }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/readout-signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          printf '%s' "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/developer-id.p12"
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -f pkcs12 -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/developer-id.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          # The temporary keychain first, the user's after it (one word each).
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$KEYCHAIN"
+          printf '%s' "$NOTARY_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/notary-key.p8"
+          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+          echo "NOTARY_KEY_PATH=$RUNNER_TEMP/notary-key.p8" >> "$GITHUB_ENV"
+
+      - name: Sign (Developer ID, hardened runtime, timestamp)
+        if: env.NOTARIZE == 'true'
+        env:
+          IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+        run: |
+          chmod +x tools/sign.sh
+          tools/sign.sh dist/Readout.app "$IDENTITY"
+
+      - name: Notarize and staple the app
+        if: env.NOTARIZE == 'true'
+        env:
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          ditto -c -k --keepParent dist/Readout.app "$RUNNER_TEMP/Readout-notarize.zip"
+          sh tools/notarize.sh "$RUNNER_TEMP/Readout-notarize.zip" dist/Readout.app
 
       - name: The shipped app never writes the document
         run: |
@@ -82,8 +156,9 @@ jobs:
           # smoke capture export (into READOUT_SMOKE_OUT) and the baseline store
           # (Application Support). Any other write API anywhere fails the build.
           WRITES='replaceItemAt|[^a-zA-Z]copyItem\(|[^a-zA-Z]moveItem\(|[^a-zA-Z]linkItem\(|createFile\(|removeItem\(at:|trashItem\(|\.write\(to:|\.write\(toFile:|write\(to: *[a-zA-Z]|forWritingTo|forWritingAtPath|forUpdating|fopen\(|open\(.*O_WRONLY|O_RDWR|NSFileCoordinator'
-          if grep -rnE "$WRITES" App Shared QuickLook | grep -vE '^App/(SmokeTest|Settings)\.swift:'; then
-            echo "FAIL: file-writing code outside App/SmokeTest.swift and App/Settings.swift (baseline store)"; exit 1
+          # App/UpdateChecker.swift: Download Update moves the release's DMG into ~/Downloads.
+          if grep -rnE "$WRITES" App Shared QuickLook | grep -vE '^App/(SmokeTest|Settings|UpdateChecker)\.swift:'; then
+            echo "FAIL: file-writing code outside App/SmokeTest.swift, App/Settings.swift (baseline store) and App/UpdateChecker.swift (update download)"; exit 1
           fi
           if strings -a dist/Readout.app/Contents/MacOS/Readout | grep -E "READOUT_SMOKE_(EDIT|EARLY)|readout-smoke"; then
             echo "FAIL: the signed binary still carries smoke edit code"; exit 1
@@ -126,6 +201,10 @@ jobs:
           sleep 1
           cat smoke-out/qlmanage.log || true
           cat smoke-out/ql-render.log
+          # Reported, not gated: the extension's own time from request to apply.
+          python3 -c 'import json, re, sys; m = re.search(r"rendered -?\d+ of \d+ blocks in (\d+) ms", open(sys.argv[1]).read()); json.dump({"ql_open_ms": int(m.group(1))} if m else {}, open(sys.argv[2], "w"))' \
+            smoke-out/ql-render.log smoke-out/ql-timings.json
+          cat smoke-out/ql-timings.json
           # Informational: a preview-only extension does not provide thumbnails.
           qlmanage -t -s 512 -o smoke-out "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlthumb.log 2>&1 || true
           cat smoke-out/qlthumb.log
@@ -136,14 +215,17 @@ jobs:
             swift test --package-path Packages/ReadoutCore -c release --filter PerformanceBudgetTests
 
       - name: Speed budgets
-        run: python3 tools/perf-assert.py mac smoke-out/perf-core.json smoke-out/timings.json
+        run: python3 tools/perf-assert.py mac smoke-out/perf-core.json smoke-out/timings.json smoke-out/ql-timings.json
 
       - name: Print smoke values
         run: |
           for f in smoke-out/*.json; do echo "== $f"; cat "$f"; echo; done
 
       - name: Assert smoke output
-        run: python3 tools/smoke-assert.py smoke-out
+        run: |
+          # The About panel's licence notices, as built into the app.
+          cp /Applications/Readout.app/Contents/Resources/Credits.html smoke-out/ || true
+          python3 tools/smoke-assert.py smoke-out
 
       - name: Hash the signed app
         id: hash
@@ -153,11 +235,60 @@ jobs:
           echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
           echo "SHA-256(readout-app-$VERSION.zip) = $SHA"
 
+      - name: Gatekeeper's verdict on the app as downloaded
+        run: |
+          # A copy with the quarantine flag a browser download gets (the
+          # installed app itself stays as hashed). Ad hoc today: "rejected";
+          # once notarized: "accepted, source=Notarized Developer ID".
+          rm -rf "$RUNNER_TEMP/gatekeeper" && mkdir -p "$RUNNER_TEMP/gatekeeper"
+          ditto /Applications/Readout.app "$RUNNER_TEMP/gatekeeper/Readout.app"
+          xattr -w com.apple.quarantine "0083;$(printf '%x' "$(date +%s)");Safari;" "$RUNNER_TEMP/gatekeeper/Readout.app"
+          set +e
+          VERDICT=$(spctl -a -t exec -vv "$RUNNER_TEMP/gatekeeper/Readout.app" 2>&1)
+          CODE=$?
+          set -e
+          echo "spctl -a -t exec -vv (exit $CODE):"
+          echo "$VERDICT"
+          echo "$VERDICT" > smoke-out/gatekeeper.txt
+          if [ "$NOTARIZE" = "true" ] && [ "$CODE" -ne 0 ]; then
+            echo "FAIL: the notarized app is not accepted by Gatekeeper"; exit 1
+          fi
+
+      - name: Disk image (Developer ID signed, notarized, stapled)
+        id: dmg
+        if: env.NOTARIZE == 'true'
+        env:
+          IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          # The tested app, as hashed above: the DMG publish ships.
+          rm -rf "$RUNNER_TEMP/dmg" && mkdir -p "$RUNNER_TEMP/dmg"
+          ditto /Applications/Readout.app "$RUNNER_TEMP/dmg/Readout.app"
+          ln -s /Applications "$RUNNER_TEMP/dmg/Applications"
+          hdiutil create -volname "Readout" -srcfolder "$RUNNER_TEMP/dmg" -ov -format UDZO "Readout-$VERSION.dmg"
+          codesign --force --timestamp --sign "$IDENTITY" "Readout-$VERSION.dmg"
+          sh tools/notarize.sh "Readout-$VERSION.dmg" "Readout-$VERSION.dmg"
+          spctl -a -t open --context context:primary-signature -vv "Readout-$VERSION.dmg"
+          SHA=$(shasum -a 256 "Readout-$VERSION.dmg" | cut -d' ' -f1)
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          echo "SHA-256(Readout-$VERSION.dmg) = $SHA"
+
+      - name: Remove the signing keychain and key
+        if: always() && env.NOTARIZE == 'true'
+        run: |
+          [ -n "${KEYCHAIN:-}" ] && security delete-keychain "$KEYCHAIN" || true
+          rm -f "$RUNNER_TEMP/notary-key.p8" "$RUNNER_TEMP/developer-id.p12"
+
       - name: Upload signed app
         uses: actions/upload-artifact@v5
         with:
           name: readout-app-${{ inputs.version }}
-          path: readout-app-${{ inputs.version }}.zip
+          # The DMG is there only when it was notarized here.
+          path: |
+            readout-app-${{ inputs.version }}.zip
+            Readout-${{ inputs.version }}.dmg
+          if-no-files-found: error
 
       - name: Upload smoke output
         if: always()

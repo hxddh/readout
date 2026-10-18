@@ -69,13 +69,61 @@ a user can see, feel or rely on, in their words:
     (never a PR run or an older run of the same commit), waits up to
     60 minutes for it to finish if it is still running, and then requires
     the run and each of Core / WebKit / Rendering baselines / Verify to be `success`.
-- Verify uploads `readout-app-<version>.zip`; publish downloads that exact
-  artifact, checks its SHA-256 against verify's output, and only then makes
-  the DMG/ZIP/SHA256SUMS. Rebuilds are forbidden — **what ships is what was
+- Verify uploads `readout-app-<version>.zip` (and, when it notarized, the
+  DMG); publish downloads that exact artifact, checks its SHA-256 against
+  verify's output, and only then makes the DMG (unless verify made it)/ZIP/SHA256SUMS. Rebuilds are forbidden — **what ships is what was
   tested, byte for byte**. The release is created as a draft, the ZIP is
   re-downloaded and re-hashed, and only then is it undrafted.
 - `workflow_dispatch` never creates tags: it only re-runs an existing tag,
   and `dry_run=true` runs preflight + verify without publishing.
+
+## Notarization (dormant until the secrets exist)
+
+Releases are ad-hoc signed today. `release.yml` already asks `verify.yml` to
+notarize (`notarize: true`, `secrets: inherit`); verify does so only when all
+six repository secrets below are set, and otherwise signs ad hoc exactly as
+before (`ci.yml` passes no secrets, so PR and `main` runs are always ad hoc).
+With the secrets, verify:
+
+1. imports the certificate into a temporary keychain and signs with
+   `tools/sign.sh dist/Readout.app "$DEVELOPER_ID_IDENTITY"` (hardened runtime,
+   secure timestamp);
+2. zips the app (`ditto`), submits it with `xcrun notarytool submit --key …
+   --key-id … --issuer … --wait --timeout 30m`, prints Apple's log, fails unless
+   the status is `Accepted`, then staples and validates the ticket;
+3. runs the whole smoke test on that notarized app from /Applications;
+4. builds the DMG from the tested app, signs it, notarizes and staples it the
+   same way (`tools/notarize.sh`), and uploads it in the verified artifact with
+   its SHA-256;
+5. requires Gatekeeper (`spctl -a -t exec -vv` on a quarantined copy) to
+   accept the app; without notarization that check only prints its verdict
+   (`rejected` today).
+
+Publish then ships that DMG after checking its SHA-256 against verify's
+output, instead of building one; without it, publish builds the DMG as today.
+
+What the owner needs (once):
+
+- A **Developer ID Application** certificate (Apple Developer Program,
+  Certificates → +, "Developer ID Application"), exported from Keychain Access
+  with its private key as a `.p12` with a password.
+- An **App Store Connect API key** with the **Developer** role (App Store
+  Connect → Users and Access → Integrations → App Store Connect API → Team
+  Keys): the `.p8` file (downloadable once), its Key ID and the Issuer ID.
+- These repository secrets (Settings → Secrets and variables → Actions):
+
+  | Secret | Value |
+  | --- | --- |
+  | `DEVELOPER_ID_P12_BASE64` | `base64 -i DeveloperID.p12` |
+  | `DEVELOPER_ID_P12_PASSWORD` | the `.p12` export password |
+  | `DEVELOPER_ID_IDENTITY` | the identity's full name, e.g. `Developer ID Application: Name (TEAMID)` (`security find-identity -v -p codesigning`) |
+  | `NOTARY_API_KEY_P8_BASE64` | `base64 -i AuthKey_XXXXXXXXXX.p8` |
+  | `NOTARY_API_KEY_ID` | the key's Key ID |
+  | `NOTARY_API_ISSUER_ID` | the Issuer ID shown above the keys |
+
+Nothing else changes: the next tag pushed is released notarized. If Apple
+rejects it, verify fails before anything is published. Once releases are
+notarized, README's "Open Anyway" and per-release permission notes can go.
 
 ## Branch and tag protection (owner: set once on GitHub)
 
