@@ -130,15 +130,21 @@ export function init() {
 // highlighted. Only there: compiling a large grammar (TypeScript's) takes a
 // moment of the main thread, which a page being read should not pay for a
 // language it may not show. Never in Quick Look, which preloads nothing.
-// Marks 'readout-hl-warm' when done (perf.test.mjs).
+// It stops as soon as the page shows a document (stopWarmUp, enhance.js):
+// a spare page taken for a window before it is done leaves the rest to the
+// blocks that need it. Marks 'readout-hl-warm' when done (perf.test.mjs).
 let warming = false;
+let warmStopped = false;
 export function warm() {
   return init().then(() => {
-    if (!preload || warming) return;
+    if (!preload || warming || warmStopped) return;
     warming = true;
     warmUp();
   });
 }
+
+/** The page shows a document: no more warming up. */
+export function stopWarmUp() { warmStopped = true; }
 
 const TS_SAMPLE = [
   'import { readFile } from "node:fs/promises";',
@@ -305,6 +311,7 @@ function warmUp() {
   const idle = globalThis.requestIdleCallback || (fn => setTimeout(fn, 50));
   const ids = PRELOAD.filter(id => SAMPLES[id] && highlighter.getLoadedLanguages().includes(id));
   const next = () => {
+    if (warmStopped) return;
     const id = ids.shift();
     if (!id) { performance.mark('readout-hl-warm'); return; }
     highlightSync(SAMPLES[id], id);   // only a head start: its result, or failure, is not used

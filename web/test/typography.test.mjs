@@ -1132,6 +1132,21 @@ const v36 = patch([
   await page.close();
 }
 
+// P3. The spare page compiles the common grammars in idle time once warmed,
+//     but stops as soon as it shows a document (a window took it).
+{
+  page = await open(700);
+  await page.evaluate(() => window.readout.warm());
+  const done = await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 30000);
+  await page.close();
+  page = await open(700);
+  await page.evaluate(p => { window.readout.warm(); window.readout.apply(p); }, patch([['paragraph', '<p>A document arrives.</p>']]));
+  await page.waitForTimeout(10000);   // longer than the whole warm-up takes when not stopped
+  const stopped = await page.evaluate(() => performance.getEntriesByName('readout-hl-warm').length === 0);
+  check('a warmed spare page compiles the common grammars, and stops once it shows a document', done && stopped, JSON.stringify({ done, stopped }));
+  await page.close();
+}
+
 // 3.7 typesetting.
 // T1. Short cells stay on one line only while the table fits that way: 3.6
 //     kept them on one line regardless, which pushed tables of the real

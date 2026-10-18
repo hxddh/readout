@@ -9,6 +9,7 @@ import { renderMath } from './math.js';
 import { renderMermaid, setupMermaid } from './mermaid.js';
 
 export function enhance(el) {
+  hl.stopWarmUp();   // a document is shown: its own blocks load what they need
   for (const cb of el.querySelectorAll('.code-block')) setupCode(cb);
   for (const t of el.querySelectorAll('.table-wrap')) { setupTable(t); queueTable(t); }
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
