@@ -401,7 +401,11 @@ public final class IncrementalParser: @unchecked Sendable {
         }
         kept = []
         if let section = st.section { asm.out.append(section) }
-        let doc = identified(ParsedDocument(blocks: asm.out, title: asm.title), base: st.result.generation,
+        // Heading-free, the kept blocks never went through `add`, so `asm.title`
+        // stops at the window. No heading changed, so the first H1 (before, in
+        // or after the window) is the previous result's: its title still holds.
+        let title = headingFree ? st.result.title : asm.title
+        let doc = identified(ParsedDocument(blocks: asm.out, title: title), base: st.result.generation,
                              prefix: prefixBlocks, suffix: suffixBlocks)
         asm.out = []
 

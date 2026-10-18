@@ -81,11 +81,11 @@ readout-open://open?path=<绝对路径>&background=1&anchor=<章节>&root=<文�
 
 | 按键 | 作用 |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd>（或 <kbd>⌘]</kbd> / <kbd>⌘[</kbd>） | 下一处 / 上一处未读变更 |
+| <kbd>N</kbd> / <kbd>⇧N</kbd>（或 <kbd>⌘]</kbd> / <kbd>⌘[</kbd>） | 下一处 / 上一处未读变更；本文档已无未读时，<kbd>N</kbd> 前往下一个有未读变更的文档 |
 | <kbd>D</kbd> | 从上到下依次显示视野内修改段落的具体变更；全部显示后再按一次收起 |
 | <kbd>⌘K</kbd> | 全部标为已读（<kbd>⌘Z</kbd> 可撤销） |
 | <kbd>⇧⌘K</kbd> | 只看变更 |
-| <kbd>⇧⌘O</kbd> | 打开最新的 Agent 文件 |
+| <kbd>⇧⌘O</kbd> | 打开最新的 Agent 文件：已打开且有未读变更、或在后台打开后尚未查看的文档优先 |
 | <kbd>⌃⌥⌘R</kbd> | 在任何地方打开最新的 Agent 文件（全局快捷键，可在设置中更改或关闭） |
 | <kbd>⌘F</kbd>、<kbd>⌘G</kbd> / <kbd>⇧⌘G</kbd> | 查找、查找下一个 / 上一个 |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | 文字大小 |
@@ -93,6 +93,7 @@ readout-open://open?path=<绝对路径>&background=1&anchor=<章节>&root=<文�
 | <kbd>⌃⌘S</kbd> | 显示 / 隐藏边栏 |
 | <kbd>⌘E</kbd> | 在编辑器中打开当前文件，定位到正在阅读的行（或选中的内容） |
 | <kbd>⇧⌘R</kbd> | 在访达中显示 |
+| <kbd>⇧⌘C</kbd> | 拷贝为引用：所选段落的 Markdown 源文本，附文件行号与章节 |
 | <kbd>⌥⌘C</kbd> | 拷贝文件路径 |
 | <kbd>⌘P</kbd> | 打印 |
 | <kbd>⌥⌘W</kbd> | 关闭全部窗口 |

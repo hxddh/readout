@@ -90,10 +90,25 @@ import Testing
         #expect(CrossDocument.order(after: "a", groups: [["a"]]) == [])
     }
 
-    @Test func openLatestPrefersTheNewestDocumentWithUnreadChanges() {
+    @Test func openLatestPrefersTheNewestDocumentWaitingForTheReader() {
         let t = Date(timeIntervalSince1970: 1_000_000)
-        #expect(CrossDocument.newestUnread([("/p/a.md", t), ("/p/b.md", t + 60), ("/p/c.md", t + 5)]) == "/p/b.md")
-        #expect(CrossDocument.newestUnread([]) == nil)
+        // All with unread changes: the newest.
+        #expect(CrossDocument.newestNeedingAttention([("/p/a.md", t, 2, true), ("/p/b.md", t + 60, 1, true), ("/p/c.md", t + 5, 4, true)]) == "/p/b.md")
+        #expect(CrossDocument.newestNeedingAttention([]) == nil)
+        // Plan A has unread edits from 10:00; plan B, written at 10:05, was
+        // opened behind and never looked at (no baseline: nothing unread). B.
+        #expect(CrossDocument.newestNeedingAttention([("/p/a.md", t, 3, true), ("/p/b.md", t + 300, 0, false)]) == "/p/b.md")
+        // A newer document already looked at, nothing unread: not waiting, A.
+        #expect(CrossDocument.newestNeedingAttention([("/p/a.md", t, 3, true), ("/p/c.md", t + 300, 0, true)]) == "/p/a.md")
+        // Nothing waiting: nil (the newest file on disk is opened instead).
+        #expect(CrossDocument.newestNeedingAttention([("/p/c.md", t, 0, true)]) == nil)
+    }
+
+    @Test func needsAttentionIsTheTabDotsRule() {
+        #expect(CrossDocument.needsAttention(unread: 1, lookedAt: true))
+        #expect(CrossDocument.needsAttention(unread: 0, lookedAt: false))
+        #expect(CrossDocument.needsAttention(unread: 2, lookedAt: false))
+        #expect(!CrossDocument.needsAttention(unread: 0, lookedAt: true))
     }
 
     // MARK: U11: more unread waits for the page

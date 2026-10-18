@@ -439,6 +439,14 @@ check("git: a committed file changed since is marked against the commit, and the
 check("git: an untracked file opens unmarked, without the notice",
       (gb.get("untracked") or {}).get("unread") == 0 and gu.get("marks") == 0 and gu.get("notice") == "", gb)
 
+# ⌘P before the document has loaded (3.7 review): printed once it is, the
+# document and not the empty page; asked twice meanwhile, printed once.
+ep = load("early-print.json")
+print(f"early-print: {ep}")
+check("print before the first load prints the document once it is applied",
+      ep.get("opened") is True and ep.get("loaded_when_asked") is False and len(ep.get("printed") or []) == 1
+      and (ep["printed"][0] or 0) >= 1 and ep["printed"][0] == ep.get("page_blocks"), ep)
+
 credits = OUT / "Credits.html"
 sys.path.insert(0, str(ROOT / "tools"))
 from credits import production_packages  # noqa: E402

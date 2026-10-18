@@ -85,6 +85,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // File state (content tracking lives in `loader`)
     private var loaded = false
+    /// ⌘P before the first document was applied (`didLoad`): printed then.
+    private var printWhenLoaded = false
     /// The first read failed: the next change on disk, or opening the file
     /// again, reads it again instead of waiting for a load that never comes.
     private var loadFailed = false
@@ -402,6 +404,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 self.deleted = gone
                 self.model.status = gone ? NSLocalizedString("The file was deleted.", comment: "Status")
                                          : NSLocalizedString("The file could not be read.", comment: "Status")
+                // Nothing to print but the failure: a later read does not print on its own.
+                self.printWhenLoaded = false
                 self.showLoadFailure()
                 return
             }
@@ -467,6 +471,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
                     self.webView.call("scrollToAnchor", json: json)
                 }
+            }
+            // ⌘P while it loaded: now, queued behind the document's apply.
+            if self.printWhenLoaded {
+                self.printWhenLoaded = false
+                self.printDocument(nil)
             }
         }
     }
@@ -709,6 +718,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         let changed: @Sendable () -> Void = { [weak self] in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.tabsChanged() } }
         }
+        let selected: @Sendable () -> Void = { [weak self] in
+            DispatchQueue.main.async { MainActor.assumeIsolated { self?.selectedTabChanged() } }
+        }
         if windowObservations.isEmpty, let window {
             windowObservations = [
                 window.observe(\.tabGroup) { _, _ in changed() },
@@ -720,7 +732,15 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         tabBarObservations = [
             group.observe(\.isTabBarVisible) { _, _ in changed() },
             group.observe(\.windows) { _, _ in changed() },
+            group.observe(\.selectedWindow) { _, _ in selected() },
         ]
+    }
+
+    /// Another tab was selected: which one is selected comes back on the next
+    /// launch, so every tab's restorable state (its `selected`) is stale.
+    /// (Selecting a tab makes it key; a selection made in code may not.)
+    private func selectedTabChanged() {
+        for w in window?.tabGroup?.windows ?? [] { w.invalidateRestorableState() }
     }
 
     /// The unread count, the outline entries with an unread change, and the
@@ -732,7 +752,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // On the tab, in the tab bar only: the document has unread changes,
         // or was opened behind and has not been looked at yet.
         let n = session.unreadCount
-        let actual = UnreadDisplay(count: n, sections: session.unreadSections, dot: n > 0 || !notedRecent)
+        let actual = UnreadDisplay(count: n, sections: session.unreadSections, dot: CrossDocument.needsAttention(unread: n, lookedAt: notedRecent))
         let shown = UnreadDisplay(count: model.unread, sections: model.unreadSections, dot: window?.tab.accessoryView != nil)
         var show = actual
         if holdIncrease || unreadHold != nil {
@@ -777,6 +797,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     /// The document has unread changes (the session's, shown or about to be).
     var hasUnread: Bool { session.unreadCount > 0 }
+
+    /// Waiting for the reader, as the tab's dot says: unread changes, or opened
+    /// behind and not looked at yet (Open Latest Agent File).
+    var needsAttention: Bool { CrossDocument.needsAttention(unread: session.unreadCount, lookedAt: notedRecent) }
 
     /// Shows the document's unread changes (the Dock badge counts the documents that do).
     var showsUnread: Bool { model.unread > 0 }
@@ -1131,16 +1155,29 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     @objc func printDocument(_ sender: Any?) {
+        // Before the first document is applied the page is empty (and its
+        // apply not queued yet, so nothing would wait for it): print once
+        // didLoad has queued it. Asked twice meanwhile, printed once.
+        guard loaded else {
+            printWhenLoaded = true
+            return
+        }
         // Diagrams and code are drawn lazily near the viewport: the page draws
         // the rest first (it gives up after a few seconds), then prints.
         // In order with the calls before it (a document still being encoded,
         // a cold window's page not up yet): never ahead of them.
         webView.whenReady { [weak self] in
             self?.webView.runAsync("return await window.readout.preparePrint()") { [weak self] _ in
-                self?.runPrint()
+                guard let self else { return }
+                // CI: what would print is recorded instead of a print sheet.
+                if SmokeTest.capturePrint(self.webView) { return }
+                self.runPrint()
             }
         }
     }
+
+    /// The first document has been applied (CI).
+    var isLoaded: Bool { loaded }
 
     private func runPrint() {
         guard let window else { return }
@@ -1316,6 +1353,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         updateSubtitle()
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
         sendWindowKey()
+        // A key window in a tab group is its selected tab.
+        if (window?.tabGroup?.windows.count ?? 0) > 1 { selectedTabChanged() }
     }
 
     func windowDidResignKey(_ notification: Notification) { sendWindowKey() }
