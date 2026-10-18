@@ -100,7 +100,7 @@ public enum MarkdownParser {
     /// `footnoteIDs`: the ids defined anywhere in the document (default: in
     /// this run), which decide what `[^id]` refers to.
     static func parseFragment(_ lines: [String], atDocumentStart: Bool, footnoteIDs: Set<String>? = nil,
-                              resolver: ResourceResolver?, cache: RenderCache?) -> Fragment {
+                              resolver: ResourceResolver?, cache: RenderCache?, emphasisExcluded: Set<Int> = []) -> Fragment {
         var blocks: [Block] = []
         var cacheKeys: [String] = []
 
@@ -121,10 +121,20 @@ public enum MarkdownParser {
         var math = MathProtector()
         let ids = footnoteIDs ?? Set(definitions.map(\.id))
         math.footnoteIDs = ids
+        // The lines of blocks whose source holds a CJK emphasis marker
+        // character itself: no markers there (see the end).
+        math.emphasisExcludedLines = emphasisExcluded
         let protected = math.protect(parseLines.joined(separator: "\n"))
         // Definitions are protected with the same protector before the
-        // renderer copies it.
-        let protectedDefinitions = definitions.map { (def: $0, source: math.protect($0.text)) }
+        // renderer copies it (one block each: no markers in one holding a marker character).
+        let protectedDefinitions = definitions.map { def -> (def: Footnotes.Definition, source: String) in
+            var m = math
+            m.emphasisExcludedLines = []
+            m.emphasisEnabled = !CJKEmphasis.containsMarker(CollectionOfOne(def.text))
+            let source = m.protect(def.text)
+            math = m
+            return (def, source)
+        }
         let document = Document(parsing: protected, options: [.disableSmartOpts])
         let probe = resolver.map(ResolverProbe.init)
         var renderer = HTMLRenderer(math: math, resolver: probe)
@@ -190,13 +200,16 @@ public enum MarkdownParser {
             let refs = refsKey.isEmpty || !source.utf8.contains(0x5B) /* [ */ ? "" : refsKey
             let cacheKey = "\(XXHash64.hash(source))|\(kind.rawValue)|\(extra)\(footnoteKey)\(refs)"
             let rendered: String
-            if let cached = cache?.lookup(cacheKey) { rendered = cached; cacheKeys.append(cacheKey) }
+            // Not cached when the source holds an emphasis marker character (rare):
+            // a first parse may still have put markers in it.
+            let marked = math.emphasisMarks > 0 && CJKEmphasis.containsMarker(slice)
+            if !marked, let cached = cache?.lookup(cacheKey) { rendered = cached; cacheKeys.append(cacheKey) }
             else {
                 let reads = probe?.fileSystemReads ?? 0
                 // Markers come out, unless the block's source holds such a character itself.
-                rendered = math.emphasisMarks > 0 && !CJKEmphasis.containsMarker(slice) ? CJKEmphasis.strip(html()) : html()
+                rendered = math.emphasisMarks > 0 && !marked ? CJKEmphasis.strip(html()) : html()
                 // Not kept when it depends on files (image sizes, which paths exist).
-                if let cache, (probe?.fileSystemReads ?? 0) == reads { cache.store(cacheKey, rendered); cacheKeys.append(cacheKey) }
+                if let cache, !marked, (probe?.fileSystemReads ?? 0) == reads { cache.store(cacheKey, rendered); cacheKeys.append(cacheKey) }
             }
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
                           taskState: tasks, html: rendered, text: normalized, source: shownSource(slice, source),
@@ -343,6 +356,24 @@ public enum MarkdownParser {
             return Footnotes.Note(id: entry.def.id, lines: entry.def.lines, text: entry.def.text,
                                   html: math.emphasisMarks > 0 && !CJKEmphasis.containsMarker(CollectionOfOne(entry.def.text))
                                     ? CJKEmphasis.strip(html) : html)
+        }
+        // A block whose source holds a CJK emphasis marker character itself is
+        // not stripped (`make`), so it must get no markers: when one did, parse
+        // again without markers on its lines (rare). Decided by the block's own
+        // source, like its cache key, so every parse agrees.
+        if math.emphasisMarks > 0, CJKEmphasis.containsMarker(lines) {
+            var excluded = emphasisExcluded
+            for b in blocks {
+                let lo = b.lines.lowerBound - 1, hi = b.lines.upperBound - 1
+                guard lo >= 0, lo <= hi, hi < lines.count, hi < renderer.sourceLines.count,
+                      CJKEmphasis.markerCount(lines[lo...hi]) > 0,
+                      CJKEmphasis.markerCount(renderer.sourceLines[lo...hi]) > CJKEmphasis.markerCount(lines[lo...hi]) else { continue }
+                excluded.formUnion(lo...hi)
+            }
+            if excluded != emphasisExcluded {
+                return parseFragment(lines, atDocumentStart: atDocumentStart, footnoteIDs: footnoteIDs,
+                                     resolver: resolver, cache: cache, emphasisExcluded: excluded)
+            }
         }
         return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys)
     }

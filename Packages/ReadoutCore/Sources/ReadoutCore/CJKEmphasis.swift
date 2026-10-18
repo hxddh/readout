@@ -126,6 +126,14 @@ enum CJKEmphasis {
         }
     }
 
+    /// How many marker characters the lines hold.
+    static func markerCount<C: Collection>(_ lines: C) -> Int where C.Element: StringProtocol {
+        lines.reduce(0) { n, line in
+            guard line.utf8.contains(where: { $0 == 0xEE || $0 == 0xF0 }) else { return n }
+            return n + line.unicodeScalars.filter { $0 == neutral || $0 == punctuation }.count
+        }
+    }
+
     /// Text without the markers.
     static func strip(_ s: String) -> String {
         guard s.unicodeScalars.contains(where: { $0 == neutral || $0 == punctuation }) else { return s }

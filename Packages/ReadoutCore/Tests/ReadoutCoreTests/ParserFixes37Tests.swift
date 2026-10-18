@@ -119,6 +119,24 @@ import Testing
         #expect(doc.blocks[3].html.contains("**二：**乙 \u{E005}"))
         expectIncrementalMatchesFull(text)
         expectIncrementalMatchesFull("Intro.\n\n[x]: /u\n\n" + text)
+        // One block, two lines: one holds a marker character, the other needs a
+        // marker. The block gets none (CommonMark's rule) and keeps its character.
+        let multi = "**注意：**这里\n下一行 \u{E005} 与 \u{1BC9F}\n\n- **一：**甲\n  乙 \u{E005}\n- **二：**丙\n\n> **提示：**先\n> 后 \u{1BC9F}"
+        let m = MarkdownParser.parse(multi)
+        #expect(m.blocks[0].html == "<p>**注意：**这里下一行 \u{E005} 与 \u{1BC9F}</p>", "\(m.blocks[0].html)")
+        #expect(m.blocks[1].html.contains("**一：**甲") && m.blocks[1].html.contains("乙 \u{E005}"), "\(m.blocks[1].html)")
+        #expect(m.blocks[2].html.contains("<strong>二：</strong>丙"), "\(m.blocks[2].html)")
+        #expect(m.blocks[3].html.contains("**提示：**先") && m.blocks[3].html.contains("\u{1BC9F}"), "\(m.blocks[3].html)")
+        for b in m.blocks {
+            #expect(CJKEmphasis.markerCount(CollectionOfOne(b.html)) == CJKEmphasis.markerCount(CollectionOfOne(b.source)), "\(b.html)")
+        }
+        expectIncrementalMatchesFull(multi)
+        // The same through a render cache shared by successive parses.
+        let cache = MarkdownParser.RenderCache()
+        _ = MarkdownParser.parse(multi.replacingOccurrences(of: "\u{E005}", with: "x"), cache: cache)
+        #expect(MarkdownParser.parse(multi, cache: cache).blocks == m.blocks)
+        #expect(MarkdownParser.parse(multi.replacingOccurrences(of: "\u{E005}", with: "x").replacingOccurrences(of: "\u{1BC9F}", with: "y"), cache: cache).blocks[0].html
+                == "<p><strong>注意：</strong>这里下一行 x 与 y</p>")
     }
 
     /// Code, math, links and HTML keep their text exactly.

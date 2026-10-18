@@ -29,6 +29,12 @@ struct MathProtector {
     private(set) var spans: [Span] = []
     /// CJK-friendly emphasis markers inserted (`CJKEmphasis`): the renderer strips them.
     private(set) var emphasisMarks = 0
+    /// Lines (0-based) that get no CJK emphasis marker: those of a block whose
+    /// source holds a marker character itself (`MarkdownParser`), which then
+    /// keeps CommonMark's emphasis rule and is not stripped.
+    var emphasisExcludedLines: Set<Int> = []
+    /// No CJK emphasis markers at all.
+    var emphasisEnabled = true
 
     mutating func protect(_ source: String) -> String {
         var out: [String] = []
@@ -53,12 +59,12 @@ struct MathProtector {
                     // The Markdown parser sees paragraph text (a filler) on these lines.
                     fences.continueParagraph()
                     let isLast = k == block.prefixes.count - 1
-                    out.append(prefix + String(MathProtector.filler) + (isLast ? protectLine(block.rest) : ""))
+                    out.append(prefix + String(MathProtector.filler) + (isLast ? protectLine(block.rest, emphasis: emphasisAllowed(block.end)) : ""))
                 }
                 i = block.end + 1
                 continue
             }
-            out.append(protectLine(String(line)))
+            out.append(protectLine(String(line), emphasis: emphasisAllowed(i)))
             i += 1
         }
         return out.joined(separator: "\n")
@@ -304,11 +310,11 @@ struct MathProtector {
         return k
     }
 
-    private mutating func protectLine(_ line: String) -> String {
+    private func emphasisAllowed(_ line: Int) -> Bool { emphasisEnabled && !emphasisExcludedLines.contains(line) }
+
+    private mutating func protectLine(_ line: String, emphasis: Bool) -> String {
         let mayHaveFootnote = !footnoteIDs.isEmpty && Footnotes.mentions(line)
-        // A line holding a marker character itself gets none (`MarkdownParser`
-        // leaves the markers in a block whose source has one).
-        let cjkEmphasis = CJKEmphasis.mayApply(line) && !CJKEmphasis.containsMarker(CollectionOfOne(line))
+        let cjkEmphasis = emphasis && CJKEmphasis.mayApply(line)
         // Fast path: nothing that could start math or a footnote reference, or need a CJK emphasis marker.
         if !mayHaveFootnote && !cjkEmphasis && !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
         let chars = Array(line)
