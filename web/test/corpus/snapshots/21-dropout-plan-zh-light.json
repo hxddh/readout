@@ -231,9 +231,9 @@
    "kind": "paragraph",
    "top": 2921,
    "h": 102,
-   "style": "cda29379",
-   "content": "da51ed66",
-   "text": "从贝叶斯视角看，Dropout 等价于对指数级多个子网络做**模型平均（model averag"
+   "style": "3fac5fcc",
+   "content": "f6a31486",
+   "text": "从贝叶斯视角看，Dropout 等价于对指数级多个子网络做模型平均（model averagin"
   },
   {
    "slot": 27,
@@ -619,8 +619,8 @@
    "top": 7837,
    "h": 66,
    "style": "311d9a14",
-   "content": "6a641b39",
-   "text": "Dropout rate 过高（> 0.5） → 浅层网络欠拟合，训练 loss 降不下去 处置"
+   "content": "4b1c5841",
+   "text": "Dropout rate 过高（> 0.5） → 浅层网络欠拟合，训练 loss 降不下去处置："
   },
   {
    "slot": 70,
@@ -628,16 +628,16 @@
    "top": 7903,
    "h": 66,
    "style": "ae85b04f",
-   "content": "388a209e",
-   "text": "忘记 model.eval() → 推理时 Dropout 仍然生效，每次预测结果不同 处置：推"
+   "content": "1e5beece",
+   "text": "忘记 model.eval() → 推理时 Dropout 仍然生效，每次预测结果不同处置：推理"
   },
   {
    "slot": 71,
    "kind": "listItem",
    "top": 7969,
    "h": 66,
-   "style": "4a5e04e0",
-   "content": "b24668eb",
+   "style": "a9bd1fd7",
+   "content": "eba0c4db",
    "text": "weight_decay + Adam 的互动 → 标准 Adam 中 weight_decay"
   },
   {
@@ -645,8 +645,8 @@
    "kind": "listItem",
    "top": 8034,
    "h": 94,
-   "style": "68478815",
-   "content": "e3be2c37",
+   "style": "e235c16f",
+   "content": "20fe7fe1",
    "text": "BatchNorm 和 Dropout 顺序不当 → Dropout 改变激活分布，BatchN"
   },
   {
@@ -655,8 +655,8 @@
    "top": 8128,
    "h": 75,
    "style": "1fc0de49",
-   "content": "c09d65f2",
-   "text": "RNN 中 Dropout 加错位置 → 在循环连接上加 Dropout 会破坏长程依赖 处置："
+   "content": "416fc4a8",
+   "text": "RNN 中 Dropout 加错位置 → 在循环连接上加 Dropout 会破坏长程依赖处置：使"
   },
   {
    "slot": 74,
