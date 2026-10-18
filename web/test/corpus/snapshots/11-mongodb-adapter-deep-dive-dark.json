@@ -1,5 +1,5 @@
 {
- "height": 11918,
+ "height": 12180,
  "blocks": [
   {
    "slot": 1,
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 652,
    "h": 80,
-   "style": "2c6ae7a3",
+   "style": "1e958a12",
    "content": "57545f34",
    "text": "If you do both as one adapter: +1–2 days on top "
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 732,
    "h": 71,
-   "style": "bab85813",
+   "style": "640fae41",
    "content": "f2a11a72",
    "text": "If you do Atlas only and skip Community: ~1–1.5 "
   },
@@ -167,24 +167,24 @@
    "slot": 19,
    "kind": "listItem",
    "top": 1698,
-   "h": 54,
-   "style": "4367f0f8",
+   "h": 80,
+   "style": "6661bb65",
    "content": "a7404d23",
    "text": "exact: true — opt-in exact nearest-neighbor (ful"
   },
   {
    "slot": 20,
    "kind": "listItem",
-   "top": 1752,
+   "top": 1778,
    "h": 71,
-   "style": "ad2bca3d",
+   "style": "5500857d",
    "content": "3be926c5",
    "text": "HNSW under the hood — Atlas docs explicitly say "
   },
   {
    "slot": 21,
    "kind": "rule",
-   "top": 1823,
+   "top": 1849,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -193,7 +193,7 @@
   {
    "slot": 22,
    "kind": "heading",
-   "top": 1871,
+   "top": 1897,
    "h": 42,
    "style": "4cb67bdd",
    "content": "3dfded2b",
@@ -202,7 +202,7 @@
   {
    "slot": 23,
    "kind": "quote",
-   "top": 1913,
+   "top": 1939,
    "h": 96,
    "style": "bba2dcd1",
    "content": "ca1c5f90",
@@ -211,7 +211,7 @@
   {
    "slot": 24,
    "kind": "paragraph",
-   "top": 2009,
+   "top": 2035,
    "h": 44,
    "style": "30ee398e",
    "content": "d867f24c",
@@ -220,7 +220,7 @@
   {
    "slot": 25,
    "kind": "paragraph",
-   "top": 2052,
+   "top": 2078,
    "h": 70,
    "style": "6b11c32b",
    "content": "44710dde",
@@ -229,7 +229,7 @@
   {
    "slot": 26,
    "kind": "paragraph",
-   "top": 2122,
+   "top": 2148,
    "h": 70,
    "style": "d43df04e",
    "content": "3c3c48a8",
@@ -238,7 +238,7 @@
   {
    "slot": 27,
    "kind": "paragraph",
-   "top": 2191,
+   "top": 2217,
    "h": 44,
    "style": "6a16d842",
    "content": "5cc85206",
@@ -247,16 +247,16 @@
   {
    "slot": 28,
    "kind": "table",
-   "top": 2235,
-   "h": 591,
-   "style": "c162acc0",
+   "top": 2261,
+   "h": 801,
+   "style": "ff127ffc",
    "content": "011ff9b8",
    "text": "Payload operatorPayload's db-mongodb mappingIn $"
   },
   {
    "slot": 29,
    "kind": "paragraph",
-   "top": 2826,
+   "top": 3062,
    "h": 96,
    "style": "7ab539df",
    "content": "50d70358",
@@ -265,7 +265,7 @@
   {
    "slot": 30,
    "kind": "paragraph",
-   "top": 2922,
+   "top": 3158,
    "h": 70,
    "style": "af4ad881",
    "content": "35cab00f",
@@ -274,7 +274,7 @@
   {
    "slot": 31,
    "kind": "listItem",
-   "top": 2991,
+   "top": 3227,
    "h": 54,
    "style": "b37e4731",
    "content": "c3936bab",
@@ -283,7 +283,7 @@
   {
    "slot": 32,
    "kind": "listItem",
-   "top": 3046,
+   "top": 3282,
    "h": 54,
    "style": "44d7513c",
    "content": "398d6668",
@@ -292,7 +292,7 @@
   {
    "slot": 33,
    "kind": "listItem",
-   "top": 3100,
+   "top": 3336,
    "h": 28,
    "style": "228482a0",
    "content": "5b0ea36e",
@@ -301,7 +301,7 @@
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 3128,
+   "top": 3364,
    "h": 28,
    "style": "eb3a4632",
    "content": "1c5e7767",
@@ -310,7 +310,7 @@
   {
    "slot": 35,
    "kind": "listItem",
-   "top": 3156,
+   "top": 3392,
    "h": 54,
    "style": "02990f02",
    "content": "30f27558",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "listItem",
-   "top": 3211,
+   "top": 3447,
    "h": 97,
    "style": "f861cb89",
    "content": "6a1397f9",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "paragraph",
-   "top": 3308,
+   "top": 3544,
    "h": 96,
    "style": "4d26bf3c",
    "content": "5b42922c",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "code",
-   "top": 3403,
+   "top": 3639,
    "h": 222,
    "style": "00942609",
    "content": "ffdc00cb",
@@ -346,7 +346,7 @@
   {
    "slot": 39,
    "kind": "paragraph",
-   "top": 3625,
+   "top": 3861,
    "h": 148,
    "style": "dce2b08a",
    "content": "2641744b",
@@ -355,7 +355,7 @@
   {
    "slot": 40,
    "kind": "rule",
-   "top": 3773,
+   "top": 4009,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "heading",
-   "top": 3820,
+   "top": 4056,
    "h": 71,
    "style": "e98a99af",
    "content": "be583ba9",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "table",
-   "top": 3891,
+   "top": 4127,
    "h": 356,
    "style": "9a533470",
    "content": "bd56c18c",
@@ -382,7 +382,7 @@
   {
    "slot": 43,
    "kind": "paragraph",
-   "top": 4248,
+   "top": 4484,
    "h": 44,
    "style": "3ed53516",
    "content": "74483aa8",
@@ -391,7 +391,7 @@
   {
    "slot": 44,
    "kind": "table",
-   "top": 4291,
+   "top": 4527,
    "h": 232,
    "style": "7bf9df5e",
    "content": "16c86235",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "paragraph",
-   "top": 4523,
+   "top": 4759,
    "h": 44,
    "style": "c29f3c90",
    "content": "280d2619",
@@ -409,25 +409,25 @@
   {
    "slot": 46,
    "kind": "listItem",
-   "top": 4567,
+   "top": 4803,
    "h": 106,
-   "style": "73133d15",
+   "style": "6fb52b3e",
    "content": "33f5e810",
    "text": "Dev/CI: point at the M0 free tier or atlas deplo"
   },
   {
    "slot": 47,
    "kind": "listItem",
-   "top": 4673,
+   "top": 4909,
    "h": 45,
-   "style": "ba2dd17c",
+   "style": "92d577f4",
    "content": "04f786e9",
    "text": "Production users: mongodb+srv://... connection s"
   },
   {
    "slot": 48,
    "kind": "rule",
-   "top": 4718,
+   "top": 4954,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "heading",
-   "top": 4765,
+   "top": 5001,
    "h": 42,
    "style": "4cb67bdd",
    "content": "a5ec1c88",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 4808,
+   "top": 5044,
    "h": 70,
    "style": "17803d39",
    "content": "80d0b0cd",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "paragraph",
-   "top": 4877,
+   "top": 5113,
    "h": 44,
    "style": "cf8ff5d0",
    "content": "9c93b534",
@@ -463,25 +463,25 @@
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 4921,
+   "top": 5157,
    "h": 54,
-   "style": "c31b1370",
+   "style": "8d06b37f",
    "content": "f3a5ca34",
    "text": "Pros: one codebase, one test suite, one README. "
   },
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 4975,
+   "top": 5211,
    "h": 97,
-   "style": "befad6a6",
+   "style": "966149fa",
    "content": "8fa07a63",
    "text": "Cons: must document both setup paths in the READ"
   },
   {
    "slot": 54,
    "kind": "paragraph",
-   "top": 5072,
+   "top": 5308,
    "h": 70,
    "style": "c303d05d",
    "content": "bad331c3",
@@ -490,25 +490,25 @@
   {
    "slot": 55,
    "kind": "listItem",
-   "top": 5142,
+   "top": 5378,
    "h": 54,
-   "style": "5096584d",
+   "style": "58e8a693",
    "content": "75fc1a03",
    "text": "Pros: cleaner per-target docs; can mark Communit"
   },
   {
    "slot": 56,
    "kind": "listItem",
-   "top": 5196,
+   "top": 5432,
    "h": 45,
-   "style": "388a732b",
+   "style": "5d82969c",
    "content": "143176a8",
    "text": "Cons: 95% code duplication, double the maintenan"
   },
   {
    "slot": 57,
    "kind": "paragraph",
-   "top": 5241,
+   "top": 5477,
    "h": 44,
    "style": "d38af749",
    "content": "8f13cd71",
@@ -517,25 +517,25 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 5284,
+   "top": 5520,
    "h": 54,
-   "style": "c31b1370",
+   "style": "8d06b37f",
    "content": "50ae6e9f",
    "text": "Pros: ship faster, target the production-ready p"
   },
   {
    "slot": 59,
    "kind": "listItem",
-   "top": 5339,
+   "top": 5575,
    "h": 71,
-   "style": "6e9e5aea",
+   "style": "1fc0cbcd",
    "content": "c4a3d3ca",
    "text": "Cons: leaves self-hosted Payload users with no M"
   },
   {
    "slot": 60,
    "kind": "paragraph",
-   "top": 5410,
+   "top": 5646,
    "h": 122,
    "style": "f41b0006",
    "content": "d1894f3c",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "rule",
-   "top": 5531,
+   "top": 5767,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "heading",
-   "top": 5579,
+   "top": 5815,
    "h": 42,
    "style": "4cb67bdd",
    "content": "7eef8960",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "paragraph",
-   "top": 5621,
+   "top": 5857,
    "h": 44,
    "style": "c29f3c90",
    "content": "0272e582",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "code",
-   "top": 5665,
+   "top": 5901,
    "h": 382,
    "style": "bb2cb7ef",
    "content": "8025ea0f",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "paragraph",
-   "top": 6046,
+   "top": 6282,
    "h": 44,
    "style": "c29f3c90",
    "content": "66490991",
@@ -589,52 +589,52 @@
   {
    "slot": 66,
    "kind": "listItem",
-   "top": 6090,
+   "top": 6326,
    "h": 28,
-   "style": "3852500f",
+   "style": "7171352f",
    "content": "71986273",
    "text": "+ filterableFields config plumbing"
   },
   {
    "slot": 67,
    "kind": "listItem",
-   "top": 6118,
+   "top": 6354,
    "h": 28,
-   "style": "ae5d767c",
+   "style": "a2ae420b",
    "content": "46ae84bd",
    "text": "+ forceExact support in search.ts"
   },
   {
    "slot": 68,
    "kind": "listItem",
-   "top": 6147,
+   "top": 6383,
    "h": 28,
-   "style": "b3cc5be4",
+   "style": "eec28d10",
    "content": "180ef38b",
    "text": "+ splitWhere for like / contains / all / geo (CF"
   },
   {
    "slot": 69,
    "kind": "listItem",
-   "top": 6175,
+   "top": 6411,
    "h": 80,
-   "style": "cf6ce66c",
+   "style": "074e400a",
    "content": "d7c112bf",
    "text": "+ Payload-parity touches: escapeRegExp, $options"
   },
   {
    "slot": 70,
    "kind": "listItem",
-   "top": 6255,
+   "top": 6491,
    "h": 45,
-   "style": "388a732b",
+   "style": "5d82969c",
    "content": "6eb424d6",
    "text": "README has a tier-decision table at the top"
   },
   {
    "slot": 71,
    "kind": "rule",
-   "top": 6300,
+   "top": 6536,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "heading",
-   "top": 6348,
+   "top": 6584,
    "h": 42,
    "style": "4cb67bdd",
    "content": "c80f5715",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "paragraph",
-   "top": 6390,
+   "top": 6626,
    "h": 44,
    "style": "d9f7f081",
    "content": "2f6c0823",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "paragraph",
-   "top": 6434,
+   "top": 6670,
    "h": 44,
    "style": "c29f3c90",
    "content": "74603072",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "listItem",
-   "top": 6477,
+   "top": 6713,
    "h": 54,
    "style": "c97518fd",
    "content": "d856c3e3",
@@ -679,7 +679,7 @@
   {
    "slot": 76,
    "kind": "listItem",
-   "top": 6531,
+   "top": 6767,
    "h": 80,
    "style": "dcb716f9",
    "content": "7eafeaad",
@@ -688,7 +688,7 @@
   {
    "slot": 77,
    "kind": "listItem",
-   "top": 6612,
+   "top": 6848,
    "h": 97,
    "style": "8ef85674",
    "content": "cea1a680",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "paragraph",
-   "top": 6709,
+   "top": 6945,
    "h": 70,
    "style": "117acb10",
    "content": "604199a6",
@@ -706,52 +706,52 @@
   {
    "slot": 79,
    "kind": "listItem",
-   "top": 6778,
+   "top": 7014,
    "h": 28,
-   "style": "6cc44c68",
+   "style": "88960039",
    "content": "5ed674d4",
    "text": "Adapter scaffolding + storeChunk/deleteChunks/ha"
   },
   {
    "slot": 80,
    "kind": "listItem",
-   "top": 6807,
+   "top": 7043,
    "h": 28,
-   "style": "bee14c7b",
+   "style": "bc3d48c0",
    "content": "385e14e1",
    "text": "convertWhereToMongo + splitWhere for like/contai"
   },
   {
    "slot": 81,
    "kind": "listItem",
-   "top": 6835,
+   "top": 7071,
    "h": 54,
-   "style": "0d6f2eb9",
+   "style": "966da2be",
    "content": "a1235df2",
    "text": "search with $vectorSearch + index lifecycle (inc"
   },
   {
    "slot": 82,
    "kind": "listItem",
-   "top": 6889,
+   "top": 7125,
    "h": 28,
-   "style": "89f1ebd6",
+   "style": "8c4fbc2b",
    "content": "2477c09e",
    "text": "Atlas CLI local-deployment for CI, port test sui"
   },
   {
    "slot": 83,
    "kind": "listItem",
-   "top": 6918,
+   "top": 7154,
    "h": 45,
-   "style": "388a732b",
+   "style": "5d82969c",
    "content": "de3c8bb2",
    "text": "README with tier decision table + connection-str"
   },
   {
    "slot": 84,
    "kind": "paragraph",
-   "top": 6962,
+   "top": 7198,
    "h": 70,
    "style": "8d544b1f",
    "content": "5cad0bf7",
@@ -760,7 +760,7 @@
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 7032,
+   "top": 7268,
    "h": 148,
    "style": "cb2ab733",
    "content": "aeac37b8",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "paragraph",
-   "top": 7180,
+   "top": 7416,
    "h": 96,
    "style": "970f55f1",
    "content": "305929ce",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "rule",
-   "top": 7275,
+   "top": 7511,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "heading",
-   "top": 7323,
+   "top": 7559,
    "h": 71,
    "style": "e98a99af",
    "content": "5e771161",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "paragraph",
-   "top": 7394,
+   "top": 7630,
    "h": 122,
    "style": "8ce576f1",
    "content": "c89705c1",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "heading",
-   "top": 7516,
+   "top": 7752,
    "h": 42,
    "style": "ad78b59c",
    "content": "882680f2",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "paragraph",
-   "top": 7558,
+   "top": 7794,
    "h": 96,
    "style": "fb1f60c5",
    "content": "00efadd6",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "listItem",
-   "top": 7653,
+   "top": 7889,
    "h": 54,
    "style": "5703d29d",
    "content": "58907ca6",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "listItem",
-   "top": 7707,
+   "top": 7943,
    "h": 54,
    "style": "6fef8837",
    "content": "a7faf40b",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 7762,
+   "top": 7998,
    "h": 71,
    "style": "30dd06f8",
    "content": "44112f55",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "paragraph",
-   "top": 7833,
+   "top": 8069,
    "h": 44,
    "style": "671fe016",
    "content": "86a8c4f0",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "heading",
-   "top": 7876,
+   "top": 8112,
    "h": 42,
    "style": "ad78b59c",
    "content": "347504e0",
@@ -868,43 +868,43 @@
   {
    "slot": 97,
    "kind": "listItem",
-   "top": 7918,
+   "top": 8154,
    "h": 28,
-   "style": "f94d20fc",
+   "style": "6b860c0c",
    "content": "9eb1dc86",
    "text": "Docker. That's it. No Atlas account, no Atlas CL"
   },
   {
    "slot": 98,
    "kind": "listItem",
-   "top": 7946,
+   "top": 8182,
    "h": 54,
-   "style": "32ad40a6",
+   "style": "50b8a9e9",
    "content": "774224c2",
    "text": "Docker Desktop 4.31+ on macOS/Windows, or Docker"
   },
   {
    "slot": 99,
    "kind": "listItem",
-   "top": 8001,
+   "top": 8237,
    "h": 28,
-   "style": "89f1ebd6",
+   "style": "8c4fbc2b",
    "content": "43332b08",
    "text": "Min: 2 CPU cores, 2 GB free RAM."
   },
   {
    "slot": 100,
    "kind": "listItem",
-   "top": 8029,
-   "h": 45,
-   "style": "388a732b",
+   "top": 8265,
+   "h": 71,
+   "style": "1fc0cbcd",
    "content": "c76941c3",
    "text": "First run requires internet to pull the image (~"
   },
   {
    "slot": 101,
    "kind": "quote",
-   "top": 8074,
+   "top": 8336,
    "h": 70,
    "style": "bdb2c4ba",
    "content": "e8b5d8e0",
@@ -913,7 +913,7 @@
   {
    "slot": 102,
    "kind": "heading",
-   "top": 8144,
+   "top": 8406,
    "h": 42,
    "style": "ad78b59c",
    "content": "0837a3d6",
@@ -922,7 +922,7 @@
   {
    "slot": 103,
    "kind": "code",
-   "top": 8185,
+   "top": 8447,
    "h": 142,
    "style": "7294a4b0",
    "content": "b73dc580",
@@ -931,7 +931,7 @@
   {
    "slot": 104,
    "kind": "paragraph",
-   "top": 8327,
+   "top": 8589,
    "h": 96,
    "style": "b527b51f",
    "content": "b7288169",
@@ -940,7 +940,7 @@
   {
    "slot": 105,
    "kind": "heading",
-   "top": 8423,
+   "top": 8685,
    "h": 42,
    "style": "ad78b59c",
    "content": "d7cfecef",
@@ -949,7 +949,7 @@
   {
    "slot": 106,
    "kind": "code",
-   "top": 8465,
+   "top": 8727,
    "h": 102,
    "style": "4e1440e4",
    "content": "c8f489b5",
@@ -958,7 +958,7 @@
   {
    "slot": 107,
    "kind": "paragraph",
-   "top": 8566,
+   "top": 8828,
    "h": 70,
    "style": "2960c953",
    "content": "df528581",
@@ -967,7 +967,7 @@
   {
    "slot": 108,
    "kind": "code",
-   "top": 8636,
+   "top": 8898,
    "h": 222,
    "style": "945a743d",
    "content": "e6b67f73",
@@ -976,7 +976,7 @@
   {
    "slot": 109,
    "kind": "paragraph",
-   "top": 8858,
+   "top": 9120,
    "h": 44,
    "style": "04b4a71a",
    "content": "ee8bb2ce",
@@ -985,7 +985,7 @@
   {
    "slot": 110,
    "kind": "rule",
-   "top": 8901,
+   "top": 9163,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -994,7 +994,7 @@
   {
    "slot": 111,
    "kind": "heading",
-   "top": 8949,
+   "top": 9211,
    "h": 32,
    "style": "701bc613",
    "content": "8067dcd9",
@@ -1003,7 +1003,7 @@
   {
    "slot": 112,
    "kind": "table",
-   "top": 8981,
+   "top": 9243,
    "h": 363,
    "style": "ef132b3a",
    "content": "bae63c8c",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "paragraph",
-   "top": 9343,
+   "top": 9605,
    "h": 148,
    "style": "1243fd91",
    "content": "53a396cb",
@@ -1021,7 +1021,7 @@
   {
    "slot": 114,
    "kind": "rule",
-   "top": 9491,
+   "top": 9753,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1030,7 +1030,7 @@
   {
    "slot": 115,
    "kind": "heading",
-   "top": 9538,
+   "top": 9800,
    "h": 32,
    "style": "701bc613",
    "content": "7b59d8b4",
@@ -1039,7 +1039,7 @@
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 9570,
+   "top": 9832,
    "h": 44,
    "style": "3e83256b",
    "content": "1bf44ae5",
@@ -1048,7 +1048,7 @@
   {
    "slot": 117,
    "kind": "code",
-   "top": 9614,
+   "top": 9876,
    "h": 342,
    "style": "526da88c",
    "content": "925ed66f",
@@ -1057,7 +1057,7 @@
   {
    "slot": 118,
    "kind": "paragraph",
-   "top": 9956,
+   "top": 10218,
    "h": 70,
    "style": "3a461586",
    "content": "cb7ea6e5",
@@ -1066,7 +1066,7 @@
   {
    "slot": 119,
    "kind": "rule",
-   "top": 10025,
+   "top": 10287,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1075,7 +1075,7 @@
   {
    "slot": 120,
    "kind": "heading",
-   "top": 10073,
+   "top": 10335,
    "h": 32,
    "style": "701bc613",
    "content": "951a06d5",
@@ -1084,7 +1084,7 @@
   {
    "slot": 121,
    "kind": "paragraph",
-   "top": 10105,
+   "top": 10367,
    "h": 70,
    "style": "17803d39",
    "content": "c685281c",
@@ -1093,7 +1093,7 @@
   {
    "slot": 122,
    "kind": "paragraph",
-   "top": 10175,
+   "top": 10437,
    "h": 44,
    "style": "c29f3c90",
    "content": "235ced69",
@@ -1102,7 +1102,7 @@
   {
    "slot": 123,
    "kind": "code",
-   "top": 10218,
+   "top": 10480,
    "h": 502,
    "style": "db200c46",
    "content": "356fad23",
@@ -1111,7 +1111,7 @@
   {
    "slot": 124,
    "kind": "paragraph",
-   "top": 10720,
+   "top": 10982,
    "h": 44,
    "style": "c29f3c90",
    "content": "66fafef0",
@@ -1120,34 +1120,34 @@
   {
    "slot": 125,
    "kind": "listItem",
-   "top": 10764,
+   "top": 11026,
    "h": 54,
-   "style": "986b7cc6",
+   "style": "e2a08a6e",
    "content": "83f6e1f8",
    "text": "First-run downloads the image (~few hundred MB)."
   },
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 10818,
+   "top": 11080,
    "h": 54,
-   "style": "e62aebb8",
+   "style": "ce3a514d",
    "content": "0266c7a4",
    "text": "macOS / Windows runners: Docker isn't always rel"
   },
   {
    "slot": 127,
    "kind": "listItem",
-   "top": 10872,
+   "top": 11134,
    "h": 45,
-   "style": "9a121ed1",
+   "style": "30de1173",
    "content": "19c40bfe",
    "text": "No login, no ATLAS_* secrets needed."
   },
   {
    "slot": 128,
    "kind": "rule",
-   "top": 10917,
+   "top": 11179,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "heading",
-   "top": 10964,
+   "top": 11226,
    "h": 32,
    "style": "701bc613",
    "content": "b9668764",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "paragraph",
-   "top": 10997,
+   "top": 11259,
    "h": 70,
    "style": "5ceafbed",
    "content": "aa2d0913",
@@ -1174,7 +1174,7 @@
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 11066,
+   "top": 11328,
    "h": 80,
    "style": "ecd13b20",
    "content": "1a8fbc2b",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "listItem",
-   "top": 11146,
+   "top": 11408,
    "h": 97,
    "style": "dc3a45eb",
    "content": "a24d8022",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "paragraph",
-   "top": 11243,
+   "top": 11505,
    "h": 44,
    "style": "c29f3c90",
    "content": "61bb5dc0",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "rule",
-   "top": 11287,
+   "top": 11549,
    "h": 47,
    "style": "ff26dca4",
    "content": "811c9dc5",
@@ -1210,7 +1210,7 @@
   {
    "slot": 135,
    "kind": "heading",
-   "top": 11334,
+   "top": 11596,
    "h": 42,
    "style": "4cb67bdd",
    "content": "a2c773d1",
@@ -1219,81 +1219,81 @@
   {
    "slot": 136,
    "kind": "listItem",
-   "top": 11377,
+   "top": 11639,
    "h": 28,
-   "style": "54b81449",
+   "style": "c3006c83",
    "content": "ca8fee53",
    "text": "$vectorSearch aggregation stage reference (Atlas"
   },
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 11405,
+   "top": 11667,
    "h": 28,
-   "style": "af1f0533",
+   "style": "34192a59",
    "content": "2d3fbeb4",
    "text": "Run Vector Search Queries — Atlas"
   },
   {
    "slot": 138,
    "kind": "listItem",
-   "top": 11433,
+   "top": 11695,
    "h": 28,
-   "style": "ab2aa0e2",
+   "style": "317a6f04",
    "content": "1519ca7c",
    "text": "Review Deployment Options — Atlas Vector Search"
   },
   {
    "slot": 139,
    "kind": "listItem",
-   "top": 11462,
+   "top": 11724,
    "h": 28,
-   "style": "555f9115",
+   "style": "2b917367",
    "content": "42655ee8",
    "text": "Atlas Free Cluster Limits"
   },
   {
    "slot": 140,
    "kind": "listItem",
-   "top": 11490,
+   "top": 11752,
    "h": 28,
-   "style": "f023ebd9",
+   "style": "81f465b7",
    "content": "ee0c55af",
    "text": "MongoDB Pricing"
   },
   {
    "slot": 141,
    "kind": "listItem",
-   "top": 11518,
+   "top": 11780,
    "h": 28,
-   "style": "26b66753",
+   "style": "f93818f1",
    "content": "6a6a15d4",
    "text": "Pre-filtering Data — MongoDB Search Lab"
   },
   {
    "slot": 142,
    "kind": "listItem",
-   "top": 11547,
+   "top": 11809,
    "h": 28,
-   "style": "b56d53fd",
+   "style": "65bb7ca7",
    "content": "92e64f74",
    "text": "vectorSearch operator (within $search)"
   },
   {
    "slot": 143,
    "kind": "listItem",
-   "top": 11575,
+   "top": 11837,
    "h": 28,
-   "style": "ddaa997c",
+   "style": "89b1503a",
    "content": "1c9fffc9",
    "text": "Create a Local Atlas Deployment with Docker"
   },
   {
    "slot": 144,
    "kind": "listItem",
-   "top": 11603,
+   "top": 11865,
    "h": 45,
-   "style": "0e4fcd55",
+   "style": "13bbbad2",
    "content": "44901199",
    "text": "mongodb/mongodb-atlas-local Docker image"
   }

@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 568,
    "h": 80,
-   "style": "f7e4003d",
+   "style": "b72c443f",
    "content": "3956feef",
    "text": ".agents/matching.md: tree, lookup, same-node sib"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 648,
    "h": 54,
-   "style": "6561fac8",
+   "style": "012e9c38",
    "content": "0f39a3ab",
    "text": ".agents/syntax.md: pattern pipeline, escapes, {}"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 703,
    "h": 54,
-   "style": "fdda078f",
+   "style": "0be86d3b",
    "content": "7faca03e",
    "text": ".agents/compiler.md: compileRouter / compileRout"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 757,
    "h": 28,
-   "style": "96c88ab5",
+   "style": "be1f1a3a",
    "content": "51b3b9cd",
    "text": ".agents/regexp.md: routeToRegExp (regex ≡ router"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 785,
    "h": 54,
-   "style": "5144d066",
+   "style": "85cd3d6b",
    "content": "757fcb86",
    "text": ".agents/overlap.md: routesOverlap / compareRoute"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 839,
    "h": 71,
-   "style": "12913d40",
+   "style": "036eabd6",
    "content": "e3015c74",
    "text": ".agents/testing.md: suites, fixture conventions,"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 976,
    "h": 54,
-   "style": "aa5bf931",
+   "style": "f254883b",
    "content": "a2bf1df9",
    "text": "Interpreter (findRoute / findAllRoutes) and comp"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1030,
    "h": 132,
-   "style": "1dace847",
+   "style": "59471758",
    "content": "1779dbf1",
    "text": "findAllRoutes order (least → most specific) is a"
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1162,
    "h": 132,
-   "style": "6881da2e",
+   "style": "f9a2e7b2",
    "content": "058bf019",
    "text": "routeToRegExp(p) matches exactly the paths findR"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1294,
    "h": 106,
-   "style": "7918e957",
+   "style": "5bbfd771",
    "content": "8f496b37",
    "text": "routeToRegExp output must not backtrack polynomi"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1401,
    "h": 80,
-   "style": "9e991623",
+   "style": "bff02e14",
    "content": "c0f511ee",
    "text": "Never write a second pattern parser: derived API"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1481,
    "h": 106,
-   "style": "2a1e413d",
+   "style": "497681c6",
    "content": "7e199e00",
    "text": "Lookup ignores at most one trailing slash; middl"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1587,
    "h": 132,
-   "style": "a1e5d270",
+   "style": "4257f1d5",
    "content": "bdfa1e02",
    "text": "* is URLPattern's greedy catch-all ((.*), also i"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 1720,
    "h": 80,
-   "style": "c2c1d028",
+   "style": "4443ae38",
    "content": "c8714f4b",
    "text": "Literal pattern text is percent-encoded once, at"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 1800,
    "h": 106,
-   "style": "6dc459f4",
+   "style": "6d83e0c2",
    "content": "cbbfaf7d",
    "text": ". / .. pattern segments (%2e too) are resolved a"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1906,
    "h": 106,
-   "style": "360b23c2",
+   "style": "25d1ae15",
    "content": "208ff368",
    "text": "A :name never captures \"\", and no segment a :nam"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2012,
    "h": 132,
-   "style": "9d81fb67",
+   "style": "709a8c97",
    "content": "9d9616ec",
    "text": "Unnamed captures (*, a bare **, unnamed groups) "
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2145,
    "h": 80,
-   "style": "71f57e82",
+   "style": "f31e6155",
    "content": "e246d9f0",
    "text": "Matching a dynamic segment is linear in its leng"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2225,
    "h": 54,
-   "style": "b193c78a",
+   "style": "7cb72ccd",
    "content": "4fd18380",
    "text": "Optional features (overlap, regexp, routeNodeKey"
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 2279,
    "h": 54,
-   "style": "ba068c0d",
+   "style": "80c509ad",
    "content": "dbda69e3",
    "text": "addRoute preprocessing helpers bail early when t"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2334,
    "h": 71,
-   "style": "18ba05a3",
+   "style": "516b3967",
    "content": "c77eec9e",
    "text": "Every thrown error starts with rou3:; pattern er"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 2470,
    "h": 54,
-   "style": "3715317b",
+   "style": "de235cdc",
    "content": "328ff86a",
    "text": "Performance-first: charCodeAt() over .startsWith"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 2524,
    "h": 28,
-   "style": "69177891",
+   "style": "1c600fa4",
    "content": "5f6b07d1",
    "text": "Hot-path var names: m (method), p (path), s (seg"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2552,
    "h": 28,
-   "style": "9715a065",
+   "style": "4c7e6ecc",
    "content": "e4f719cd",
    "text": "Internal files are prefixed _; internal helpers "
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2581,
    "h": 158,
-   "style": "ea724dd7",
+   "style": "6b6d0045",
    "content": "ad8228f8",
    "text": "Split modules by concept and consumer, not line "
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 2739,
    "h": 54,
-   "style": "d16bc2d3",
+   "style": "41416c1b",
    "content": "857b82a2",
    "text": "ESM only, explicit .ts import extensions, with {"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 2793,
    "h": 45,
-   "style": "388a732b",
+   "style": "5d82969c",
    "content": "081efd8b",
    "text": "Multi-arg functions take an options object as th"
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 3098,
    "h": 54,
-   "style": "0673ad05",
+   "style": "5356add5",
    "content": "1bb9a7f3",
    "text": "Semantic, lower-case commits with scope (fix(com"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 3153,
    "h": 45,
-   "style": "6423bdb2",
+   "style": "c9e07495",
    "content": "d97e8550",
    "text": "If not on main, git push after committing. Use g"
   }

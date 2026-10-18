@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 240,
    "h": 102,
-   "style": "fa26249b",
+   "style": "bc0d1fa0",
    "content": "bbe35a35",
    "text": "Architecture: 新建独立目录 00-Prerequisites/regulariza"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 554,
    "h": 35,
-   "style": "3006e1d2",
+   "style": "4c0d0bab",
    "content": "55f84e74",
    "text": "Create: 00-Prerequisites/regularization/README.m"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 589,
    "h": 47,
-   "style": "2f5adcbb",
+   "style": "ee5b39d4",
    "content": "ba4a68f2",
    "text": "Step 1: 创建目录"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 697,
    "h": 47,
-   "style": "e365916b",
+   "style": "61a5853c",
    "content": "a467aaba",
    "text": "Step 2: 写入 README.md 完整内容"
   },
@@ -123,7 +123,7 @@
    "kind": "paragraph",
    "top": 744,
    "h": 74,
-   "style": "043affd1",
+   "style": "c7782d24",
    "content": "bf41e879",
    "text": "写入 00-Prerequisites/regularization/README.md，完整内"
   },
@@ -492,7 +492,7 @@
    "kind": "paragraph",
    "top": 5023,
    "h": 74,
-   "style": "c0faf586",
+   "style": "1ca6aaab",
    "content": "1616bd57",
    "text": "Label Smoothing：把硬标签 [0, 1, 0] 软化为 [0.1, 0.8, 0."
   },
@@ -627,7 +627,7 @@
    "kind": "listItem",
    "top": 7903,
    "h": 66,
-   "style": "ae85b04f",
+   "style": "c423cc68",
    "content": "1e5beece",
    "text": "忘记 model.eval() → 推理时 Dropout 仍然生效，每次预测结果不同处置：推理"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 7969,
    "h": 66,
-   "style": "a9bd1fd7",
+   "style": "d9410477",
    "content": "eba0c4db",
    "text": "weight_decay + Adam 的互动 → 标准 Adam 中 weight_decay"
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 8034,
    "h": 94,
-   "style": "e235c16f",
+   "style": "c64d5e55",
    "content": "20fe7fe1",
    "text": "BatchNorm 和 Dropout 顺序不当 → Dropout 改变激活分布，BatchN"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 8843,
    "h": 47,
-   "style": "6d783dad",
+   "style": "fcdbf4aa",
    "content": "eebdf13d",
    "text": "Step 4: 提交"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 9094,
    "h": 35,
-   "style": "17413f46",
+   "style": "b0e2ceee",
    "content": "847efd11",
    "text": "Modify: 00-Prerequisites/README.md"
   },
@@ -789,7 +789,7 @@
    "kind": "listItem",
    "top": 9129,
    "h": 47,
-   "style": "7fd28f00",
+   "style": "449a2a5f",
    "content": "0bd52508",
    "text": "Step 1: 添加 regularization 模块链接"
   },
@@ -843,7 +843,7 @@
    "kind": "listItem",
    "top": 9736,
    "h": 47,
-   "style": "ae38e4dc",
+   "style": "8296446b",
    "content": "6b833d81",
    "text": "Step 2: 验证改动"
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 9890,
    "h": 47,
-   "style": "6d783dad",
+   "style": "fcdbf4aa",
    "content": "0ce1b68c",
    "text": "Step 3: 提交"
   },
@@ -915,7 +915,7 @@
    "kind": "listItem",
    "top": 10142,
    "h": 35,
-   "style": "2a38fede",
+   "style": "3aa85df2",
    "content": "2107ba33",
    "text": "Modify: 00-Prerequisites/deep-learning-basics/RE"
   },
@@ -924,7 +924,7 @@
    "kind": "listItem",
    "top": 10177,
    "h": 47,
-   "style": "8b147e65",
+   "style": "edd6497a",
    "content": "8d3d2ea8",
    "text": "Step 1: 更新末尾导航链接"
   },
@@ -969,7 +969,7 @@
    "kind": "listItem",
    "top": 10438,
    "h": 47,
-   "style": "4f8fdc0d",
+   "style": "94f1dd2a",
    "content": "46a9325a",
    "text": "Step 2: 更新演进笔记中的链接"
   },
@@ -1014,7 +1014,7 @@
    "kind": "listItem",
    "top": 10699,
    "h": 47,
-   "style": "99841d16",
+   "style": "15e93eb1",
    "content": "9ece78bb",
    "text": "Step 3: 在 Step 3 渐进式实现中添加交叉引用"
   },
@@ -1059,7 +1059,7 @@
    "kind": "listItem",
    "top": 11121,
    "h": 47,
-   "style": "7986f1b4",
+   "style": "fb174f63",
    "content": "f34cfd80",
    "text": "Step 4: 同样在 Step 4 中添加交叉引用"
   },
@@ -1104,7 +1104,7 @@
    "kind": "listItem",
    "top": 11442,
    "h": 47,
-   "style": "ae38e4dc",
+   "style": "8296446b",
    "content": "87c166c0",
    "text": "Step 5: 验证改动"
   },
@@ -1122,7 +1122,7 @@
    "kind": "paragraph",
    "top": 11550,
    "h": 46,
-   "style": "64904449",
+   "style": "ff7f7a3f",
    "content": "f69d8a38",
    "text": "预期：末尾导航指向 ../regularization/README.md。"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 11596,
    "h": 47,
-   "style": "6d783dad",
+   "style": "fcdbf4aa",
    "content": "26f86317",
    "text": "Step 6: 提交"
   },
@@ -1176,7 +1176,7 @@
    "kind": "listItem",
    "top": 11847,
    "h": 35,
-   "style": "52ff574c",
+   "style": "29928870",
    "content": "0f11b01c",
    "text": "Modify: 01-Visual-Intelligence/training/README.m"
   },
@@ -1185,7 +1185,7 @@
    "kind": "listItem",
    "top": 11883,
    "h": 47,
-   "style": "b874ac3f",
+   "style": "42a3faa8",
    "content": "3c27c1f7",
    "text": "Step 1: 精简 2.2 小节"
   },
@@ -1230,7 +1230,7 @@
    "kind": "listItem",
    "top": 12384,
    "h": 47,
-   "style": "ae38e4dc",
+   "style": "8296446b",
    "content": "6b833d81",
    "text": "Step 2: 验证改动"
   },
@@ -1257,7 +1257,7 @@
    "kind": "listItem",
    "top": 12538,
    "h": 47,
-   "style": "6d783dad",
+   "style": "fcdbf4aa",
    "content": "0ce1b68c",
    "text": "Step 3: 提交"
   },
@@ -1302,7 +1302,7 @@
    "kind": "listItem",
    "top": 12789,
    "h": 35,
-   "style": "3cfbcddb",
+   "style": "354480b3",
    "content": "fb2c3225",
    "text": "Modify: 01-Visual-Intelligence/README.md"
   },
@@ -1311,7 +1311,7 @@
    "kind": "listItem",
    "top": 12825,
    "h": 47,
-   "style": "6e2662bb",
+   "style": "7413e46c",
    "content": "3e848dd7",
    "text": "Step 1: 确认并更新 training 模块描述"
   },
@@ -1356,7 +1356,7 @@
    "kind": "listItem",
    "top": 13126,
    "h": 47,
-   "style": "ae38e4dc",
+   "style": "8296446b",
    "content": "6b833d81",
    "text": "Step 2: 验证改动"
   },
@@ -1383,7 +1383,7 @@
    "kind": "listItem",
    "top": 13280,
    "h": 47,
-   "style": "6d783dad",
+   "style": "fcdbf4aa",
    "content": "0ce1b68c",
    "text": "Step 3: 提交"
   },
@@ -1428,7 +1428,7 @@
    "kind": "listItem",
    "top": 13531,
    "h": 45,
-   "style": "7e0913cd",
+   "style": "e1dacf29",
    "content": "eec97ad5",
    "text": "Modify: 00-Timeline/README.md"
   },
@@ -1446,7 +1446,7 @@
    "kind": "listItem",
    "top": 13622,
    "h": 47,
-   "style": "114675dc",
+   "style": "0953a09b",
    "content": "63819ef3",
    "text": "Step 1: 更新 2012 年 Dropout 条目"
   },
@@ -1491,7 +1491,7 @@
    "kind": "listItem",
    "top": 13883,
    "h": 47,
-   "style": "40f12bc0",
+   "style": "1d952247",
    "content": "2d9fcd3d",
    "text": "Step 2: 更新 2013 年 DropConnect 条目"
   },
@@ -1536,7 +1536,7 @@
    "kind": "listItem",
    "top": 14144,
    "h": 47,
-   "style": "9b0c5028",
+   "style": "e109a86f",
    "content": "e5c464f9",
    "text": "Step 3: 更新 2014 年 Dropout in RNNs 条目"
   },
@@ -1581,7 +1581,7 @@
    "kind": "listItem",
    "top": 14406,
    "h": 47,
-   "style": "dab4d717",
+   "style": "a3b5ee88",
    "content": "767ff516",
    "text": "Step 4: 验证三处改动"
   },
@@ -1608,7 +1608,7 @@
    "kind": "listItem",
    "top": 14560,
    "h": 47,
-   "style": "6d783dad",
+   "style": "fcdbf4aa",
    "content": "f8a5b4c6",
    "text": "Step 5: 提交"
   },
@@ -1644,7 +1644,7 @@
    "kind": "listItem",
    "top": 14768,
    "h": 47,
-   "style": "f7c6e483",
+   "style": "194612e4",
    "content": "d8194627",
    "text": "Step 1: 检查所有链接可解析"
   },
@@ -1671,7 +1671,7 @@
    "kind": "listItem",
    "top": 15081,
    "h": 47,
-   "style": "dab4d717",
+   "style": "a3b5ee88",
    "content": "e40c143f",
    "text": "Step 2: 验证阅读顺序"
   },
@@ -1716,7 +1716,7 @@
    "kind": "listItem",
    "top": 15363,
    "h": 38,
-   "style": "5673b781",
+   "style": "d814e9f0",
    "content": "6786d113",
    "text": "deep-learning-basics 的下一章指向 regularization"
   },
@@ -1725,7 +1725,7 @@
    "kind": "listItem",
    "top": 15400,
    "h": 38,
-   "style": "df7e54bb",
+   "style": "dec2e526",
    "content": "fef8a978",
    "text": "regularization 的下一章指向 training"
   },
@@ -1734,7 +1734,7 @@
    "kind": "listItem",
    "top": 15438,
    "h": 47,
-   "style": "5f42c272",
+   "style": "bd338595",
    "content": "4fd41c7e",
    "text": "Step 3: 验证 STYLE.md 签名三元素"
   },
@@ -1761,7 +1761,7 @@
    "kind": "listItem",
    "top": 15632,
    "h": 47,
-   "style": "6d2a5aec",
+   "style": "2a08d97b",
    "content": "39ac3e37",
    "text": "Step 4: 验证 git 状态"
   },
