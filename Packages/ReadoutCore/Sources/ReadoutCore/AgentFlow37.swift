@@ -81,10 +81,17 @@ public enum CrossDocument {
         return out
     }
 
-    /// Open Latest Agent File (⌃⌥⌘R): the newest of the agent documents
-    /// that have unread changes, nil when none has.
-    public static func newestUnread(_ documents: [(path: String, modified: Date)]) -> String? {
-        documents.max { $0.modified < $1.modified }?.path
+    /// A document waiting for the reader, the rule of its tab's dot: it has
+    /// unread changes, or was opened behind and has not been looked at yet
+    /// (a file opened for the first time has no baseline, so nothing unread).
+    public static func needsAttention(unread: Int, lookedAt: Bool) -> Bool { unread > 0 || !lookedAt }
+
+    /// Open Latest Agent File (⌃⌥⌘R): the newest of the open agent
+    /// documents waiting for the reader (`needsAttention`), nil when none is.
+    /// So a plan an agent just wrote, opened behind, beats an older one with
+    /// unread edits; one looked at with nothing unread is not considered.
+    public static func newestNeedingAttention(_ documents: [(path: String, modified: Date, unread: Int, lookedAt: Bool)]) -> String? {
+        documents.filter { needsAttention(unread: $0.unread, lookedAt: $0.lookedAt) }.max { $0.modified < $1.modified }?.path
     }
 }
 

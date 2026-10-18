@@ -741,7 +741,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // On the tab, in the tab bar only: the document has unread changes,
         // or was opened behind and has not been looked at yet.
         let n = session.unreadCount
-        let actual = UnreadDisplay(count: n, sections: session.unreadSections, dot: n > 0 || !notedRecent)
+        let actual = UnreadDisplay(count: n, sections: session.unreadSections, dot: CrossDocument.needsAttention(unread: n, lookedAt: notedRecent))
         let shown = UnreadDisplay(count: model.unread, sections: model.unreadSections, dot: window?.tab.accessoryView != nil)
         var show = actual
         if holdIncrease || unreadHold != nil {
@@ -786,6 +786,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     /// The document has unread changes (the session's, shown or about to be).
     var hasUnread: Bool { session.unreadCount > 0 }
+
+    /// Waiting for the reader, as the tab's dot says: unread changes, or opened
+    /// behind and not looked at yet (Open Latest Agent File).
+    var needsAttention: Bool { CrossDocument.needsAttention(unread: session.unreadCount, lookedAt: notedRecent) }
 
     /// Shows the document's unread changes (the Dock badge counts the documents that do).
     var showsUnread: Bool { model.unread > 0 }

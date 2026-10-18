@@ -365,11 +365,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openLatestScanned() {
-        // An agent document open with unread changes comes first: the newest of them.
-        let unread = readers.filter { $0.hasUnread && WorkspaceIndex.shared.contains($0.url) }.map { r in
-            (path: r.url.path, modified: (try? r.url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+        // An open agent document waiting for the reader comes first, the newest
+        // of them: unread changes, or opened behind and not looked at yet (the
+        // tab's dot), so a plan an agent just wrote beats an older one with unread edits.
+        let waiting = readers.filter { WorkspaceIndex.shared.contains($0.url) }.map { r in
+            (path: r.url.path, modified: (try? r.url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast,
+             unread: r.hasUnread ? 1 : 0, lookedAt: r.notedRecent)
         }
-        if let path = CrossDocument.newestUnread(unread) {
+        if let path = CrossDocument.newestNeedingAttention(waiting) {
             open(URL(fileURLWithPath: path))
             NSApp.activate()
         } else if let url = WorkspaceIndex.shared.latest {

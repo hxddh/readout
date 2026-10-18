@@ -17,7 +17,7 @@
 | Key | Action |
 | --- | --- |
 | <kbd>⌘O</kbd> | Open a Markdown file |
-| <kbd>⇧⌘O</kbd> | Open the latest agent file |
+| <kbd>⇧⌘O</kbd> | Open the latest agent file: an open one with unread changes, or opened behind and not looked at yet, comes first |
 | <kbd>⌃⌥⌘R</kbd> | Open the latest agent file from anywhere (global; change or turn off in Settings) |
 | <kbd>⌘E</kbd> | Open the file in your editor, at the line you are reading (or the selection) |
 | <kbd>⇧⌘R</kbd> | Reveal in Finder |

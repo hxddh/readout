@@ -81,11 +81,11 @@ Any app or web page can open such a URL (browsers ask you first), as it can ask 
 
 | Key | Action |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change |
+| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change; with none left, <kbd>N</kbd> goes on to the next document with unread changes |
 | <kbd>D</kbd> | Show which words changed in the edited blocks in view, top first; once all are shown, hide them |
 | <kbd>⌘K</kbd> | Mark all as read (<kbd>⌘Z</kbd> undoes it) |
 | <kbd>⇧⌘K</kbd> | Show only changes |
-| <kbd>⇧⌘O</kbd> | Open the latest agent file |
+| <kbd>⇧⌘O</kbd> | Open the latest agent file: an open one with unread changes, or opened behind and not looked at yet, comes first |
 | <kbd>⌃⌥⌘R</kbd> | Open the latest agent file from anywhere (global; change or turn off in Settings) |
 | <kbd>⌘F</kbd>, <kbd>⌘G</kbd> / <kbd>⇧⌘G</kbd> | Find, find next / previous |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Text size |
@@ -93,6 +93,7 @@ Any app or web page can open such a URL (browsers ask you first), as it can ask 
 | <kbd>⌃⌘S</kbd> | Toggle sidebar |
 | <kbd>⌘E</kbd> | Open the file in your editor, at the line you are reading (or the selection) |
 | <kbd>⇧⌘R</kbd> | Reveal in Finder |
+| <kbd>⇧⌘C</kbd> | Copy as Quote: the selected blocks' Markdown as a quote, with the file's lines and section |
 | <kbd>⌥⌘C</kbd> | Copy the file's path |
 | <kbd>⌘P</kbd> | Print |
 | <kbd>⌥⌘W</kbd> | Close all windows |
