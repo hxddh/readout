@@ -220,20 +220,6 @@ def main() -> int:
 
 def locale_pass(app: Path, target: Path, out: Path) -> int:
     """The app again, in Chinese: it writes menus-zh.json and two shots, then quits."""
-    # A git repository: a committed document changed since (first opened, it
-    # is marked against the commit) and an untracked one beside it (unmarked).
-    repo = tmp / "repo"
-    (repo / "docs").mkdir(parents=True)
-    git_file = repo / "docs" / "notes.md"
-    git_file.write_text("# Notes\n\nThe first step stays as it was.\n\nRun the migration on staging first, then on production.\n")
-    git = ["git", "-C", str(repo), "-c", "user.name=Readout Smoke", "-c", "user.email=smoke@example.invalid", "-c", "commit.gpgsign=false"]
-    for args in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "notes"]):
-        r = subprocess.run(git + args, capture_output=True, text=True)
-        print(f"harness: git {args[0]} exited {r.returncode} {r.stderr.strip()}")
-    git_file.write_text("# Notes\n\nThe first step stays as it was.\n\nRun the migration on staging first, then on production at night.\n\nA step the agent added.\n")
-    git_untracked = repo / "docs" / "untracked.md"
-    git_untracked.write_text("# Untracked\n\nNever committed.\n")
-
     env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out), READOUT_SMOKE_PASS="zh")
     with open(out / "smoke-zh.log", "wb") as log:
         proc = subprocess.Popen([str(app), "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"],

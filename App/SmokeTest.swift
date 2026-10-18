@@ -535,6 +535,15 @@ enum SmokeTest {
         guard let tracked = env["READOUT_SMOKE_GIT_FILE"], let untracked = env["READOUT_SMOKE_GIT_UNTRACKED"] else { return }
         let app = NSApp.delegate as? AppDelegate
         var json: [String: Any] = ["tools": GitTools.available()]
+        // What the lookup sees, so a failure can be explained.
+        let real = RealPath.of(tracked)
+        let dir = (real as NSString).deletingLastPathComponent
+        let current = (try? String(contentsOfFile: real, encoding: .utf8)) ?? ""
+        let raw = ProcessGit().run(["--no-pager", "show", "HEAD:./" + (real as NSString).lastPathComponent], in: dir)
+        let shell = ProcessRunner.run("/bin/sh", ["-c", "/usr/bin/git --no-pager show HEAD:./notes.md 2>&1; echo exit=$?"], in: dir, timeout: 5, limit: 100_000)
+        json["diagnostics"] = ["real": real, "repository": GitBaseline.repository(containing: real, exists: { FileManager.default.fileExists(atPath: $0) }) ?? "",
+                               "raw_bytes": raw?.count ?? -1, "head_text": GitBaseline.headText(for: real, current: current, git: ProcessGit()) != nil,
+                               "shell": shell.map { String(decoding: $0, as: UTF8.self) } ?? "(nil)"]
         for (name, path) in [("tracked", tracked), ("untracked", untracked)] {
             let url = URL(fileURLWithPath: path)
             app?.open(url, mode: .background)
