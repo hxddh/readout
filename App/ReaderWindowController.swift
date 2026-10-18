@@ -718,6 +718,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         let changed: @Sendable () -> Void = { [weak self] in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.tabsChanged() } }
         }
+        let selected: @Sendable () -> Void = { [weak self] in
+            DispatchQueue.main.async { MainActor.assumeIsolated { self?.selectedTabChanged() } }
+        }
         if windowObservations.isEmpty, let window {
             windowObservations = [
                 window.observe(\.tabGroup) { _, _ in changed() },
@@ -729,7 +732,15 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         tabBarObservations = [
             group.observe(\.isTabBarVisible) { _, _ in changed() },
             group.observe(\.windows) { _, _ in changed() },
+            group.observe(\.selectedWindow) { _, _ in selected() },
         ]
+    }
+
+    /// Another tab was selected: which one is selected comes back on the next
+    /// launch, so every tab's restorable state (its `selected`) is stale.
+    /// (Selecting a tab makes it key; a selection made in code may not.)
+    private func selectedTabChanged() {
+        for w in window?.tabGroup?.windows ?? [] { w.invalidateRestorableState() }
     }
 
     /// The unread count, the outline entries with an unread change, and the
@@ -1342,6 +1353,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         updateSubtitle()
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
         sendWindowKey()
+        // A key window in a tab group is its selected tab.
+        if (window?.tabGroup?.windows.count ?? 0) > 1 { selectedTabChanged() }
     }
 
     func windowDidResignKey(_ notification: Notification) { sendWindowKey() }
