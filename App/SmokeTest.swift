@@ -579,7 +579,8 @@ enum SmokeTest {
     /// ⌘P the moment a window opens, before its document has loaded: what
     /// prints is the document, not the empty page (3.7 review, finding 2).
     private static func earlyPrint(out: URL) async {
-        guard let path = ProcessInfo.processInfo.environment["READOUT_SMOKE_SECOND"] else { return }
+        // Not READOUT_SMOKE_SECOND: its opens are the warm-open samples (exactly three).
+        guard let path = ProcessInfo.processInfo.environment["READOUT_SMOKE_GIT_FILE"] else { return }
         let url = URL(fileURLWithPath: path)
         let app = NSApp.delegate as? AppDelegate
         capturingPrints = true
