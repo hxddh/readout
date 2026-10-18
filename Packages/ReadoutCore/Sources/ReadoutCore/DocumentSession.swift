@@ -369,14 +369,19 @@ public final class DocumentSession {
         var newDeletions: [Int: RenderPatch.Deletion] = [:]  // keyed by anchor slot
         var newRemoved: [(after: Int, index: Int, key: BlockKey)] = []   // the removed blocks as last read
         // The agent was still writing the last block (`1.`, `- [ ]`, `|`, `*`):
-        // what it became (a list item, a task, a table, emphasis) took it in,
-        // starting on its first line. Not a removal.
+        // what it became (a list item, a task, a table row, emphasis) covers
+        // its first line and goes on from that text there. Not a removal.
         func absorbed(_ o: Int) -> Bool {
             guard o == oldBlocks.count - 1 else { return false }
             let ob = oldBlocks[o]
             let tail = ob.source.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !tail.isEmpty, tail.utf8.count <= 64 else { return false }
-            return blocks.contains { $0.lines.contains(ob.lines.lowerBound) && $0.source.contains(tail) }
+            return blocks.contains { b in
+                guard b.lines.contains(ob.lines.lowerBound) else { return false }
+                let from = b.source.split(separator: "\n", omittingEmptySubsequences: false)
+                    .dropFirst(ob.lines.lowerBound - b.lines.lowerBound).joined(separator: "\n")
+                return from.drop(while: { $0 == " " || $0 == "\t" }).hasPrefix(tail)
+            }
         }
         for o in d.removed {
             if !oldBlocks.isEmpty, absorbed(o) {

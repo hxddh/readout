@@ -107,6 +107,14 @@ import Testing
         #expect(doc.blocks.contains { $0.html.contains("<strong>脚注：</strong>内容") })
     }
 
+    /// A document holding a marker character itself keeps it (and keeps
+    /// CommonMark's emphasis rule).
+    @Test func literalMarkerCharactersSurvive() {
+        let doc = MarkdownParser.parse("**注意：**这里\n\n```\n\u{1BC9F} and \u{E005}\n```")
+        #expect(doc.blocks[1].html.contains("\u{1BC9F} and \u{E005}"))
+        #expect(doc.blocks[0].html == "<p>**注意：**这里</p>")
+    }
+
     /// Code, math, links and HTML keep their text exactly.
     @Test func emphasisLeavesCodeMathAndLinksAlone() {
         #expect(paragraph("见`**注意：**这里`") == "<p>见<code>**注意：**这里</code></p>")

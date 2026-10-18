@@ -119,6 +119,7 @@ public enum MarkdownParser {
         let definitions = Footnotes.extract(&parseLines)
 
         var math = MathProtector()
+        math.emphasisAllowed = !CJKEmphasis.containsMarker(lines)
         let ids = footnoteIDs ?? Set(definitions.map(\.id))
         math.footnoteIDs = ids
         let protected = math.protect(parseLines.joined(separator: "\n"))

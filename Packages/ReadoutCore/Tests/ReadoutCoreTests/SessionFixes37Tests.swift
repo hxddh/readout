@@ -187,6 +187,11 @@ import Testing
         _ = s2.load(MarkdownParser.parse("Intro text.\n\n- [ ]"))
         let p2 = s2.update(MarkdownParser.parse("Intro text.\n\nThe checklist was dropped: every step is done by the script now, and nothing else is left to tick."))
         #expect(p2?.deletions.map(\.count) == [1])
+        // A short last block replaced by an unrelated one that merely contains its text.
+        let s4 = DocumentSession()
+        _ = s4.load(MarkdownParser.parse("Intro text.\n\na"))
+        let p4 = s4.update(MarkdownParser.parse("Intro text.\n\n# beta"))
+        #expect(p4?.deletions.map(\.count) == [1])
         // Not the last block: a removal.
         let s3 = DocumentSession()
         _ = s3.load(MarkdownParser.parse("Intro text.\n\n-\n\nMore text here."))

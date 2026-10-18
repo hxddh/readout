@@ -115,6 +115,15 @@ enum CJKEmphasis {
         return best.map { ($0.0, $0.1) }
     }
 
+    /// Whether the lines hold a marker character themselves (then none is
+    /// inserted: the renderer could not tell them apart). Byte scan first.
+    static func containsMarker(_ lines: [String]) -> Bool {
+        lines.contains { line in
+            line.utf8.contains { $0 == 0xEE || $0 == 0xF0 }
+                && line.unicodeScalars.contains { $0 == neutral || $0 == punctuation }
+        }
+    }
+
     /// Text without the markers.
     static func strip(_ s: String) -> String {
         guard s.unicodeScalars.contains(where: { $0 == neutral || $0 == punctuation }) else { return s }
