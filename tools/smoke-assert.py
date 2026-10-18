@@ -348,17 +348,24 @@ check("zh-Hans pass: no page errors", zlog.exists() and "Readout page error" not
 print(f"css-supports: {load('css-supports.json')}")
 
 # The soft scroll edge under the toolbar (A1): the web view asks WebKit for the
-# automatic content-inset fill, so its top scroll pocket is the soft style, not
-# the hard one. With a code block 10 pt under the edge, a hard pocket paints the
-# rows just above the edge one flat colour (sd 0, one mean); the soft edge lets
-# the block show through, fading.
+# automatic content-inset fill, so its top scroll pocket is made with the
+# automatic style (0; WebKit's default is the hard style), with no capture colour
+# and no preference for a solid hard pocket. On main the fill is off.
 edge = load("scroll-edge.json")
 print(f"scroll-edge: {edge}")
 check("scroll edge: the automatic content-inset fill is on",
       edge.get("fill_settable") is True and edge.get("automatic_fill") is True, edge)
+props = (edge.get("pocket") or {}).get("properties") or {}
+check("scroll edge: the top scroll pocket has the automatic style, no capture colour, no solid hard pocket",
+      props.get("style") == "0" and props.get("captureColor") == "nil" and props.get("prefersSolidColorHardPocket") == "0", edge.get("pocket"))
+# What it looks like: rows of a window shot just above the toolbar's edge with a
+# dark code block 10 pt under it. A hard pocket paints them one flat colour (sd 0);
+# the soft edge lets the block show through. Reported, not asserted: the runner's
+# window is never key (Readout cannot be activated there) and its rows stay flat
+# with the pocket configured as above; the look is checked on a Mac.
 band = [r for r in edge.get("rows") or [] if -8 <= r.get("rel", 99) <= -1]
 flat = bool(band) and all(r["sd"] < 0.5 for r in band) and max(r["mean"] for r in band) - min(r["mean"] for r in band) < 1
-check("scroll edge: the rows above the toolbar's edge are not one flat band", len(band) == 8 and not flat, band)
+print(f"scroll edge band (key window: {edge.get('window_key')}): {'flat (hard)' if flat else 'not flat (soft)'} {band}")
 
 landed = load("landed.json")
 print(f"landed: {landed}")
