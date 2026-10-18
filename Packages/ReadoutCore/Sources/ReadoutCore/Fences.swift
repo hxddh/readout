@@ -21,17 +21,17 @@ import Foundation
 ///   blank line. Inside them, nothing is code and nothing is Markdown.
 /// - `<details>` opened by HTML blocks: the parser joins everything up to
 ///   the closing tag into one block, so its depth is tracked too.
-struct FenceTracker {
+struct FenceTracker: Equatable {
     /// The open fence: its character and length; the content column of the
     /// list item holding it (from the quote's content inside a quote); the
     /// number of `>` before it (0: not in a quote) and the indentation of
     /// the first `>` when the quote sits in a list item.
-    private struct Fence { var char: UInt8, count: Int, container: Int?, quote: Int = 0, outer: Int = 0 }
+    private struct Fence: Equatable { var char: UInt8, count: Int, container: Int?, quote: Int = 0, outer: Int = 0 }
     private var open: Fence? = nil
     /// The open HTML block: the marker that ends it (nil: the next blank
     /// line), the content column of the list item holding it, its text, and
     /// as for a fence the quote it is in (it ends with the quote too).
-    private struct HTMLBlock { var until: String?, container: Int?, text: String, quote: Int = 0, outer: Int = 0 }
+    private struct HTMLBlock: Equatable { var until: String?, container: Int?, text: String, quote: Int = 0, outer: Int = 0 }
     private var html: HTMLBlock? = nil
     /// The previous line belongs to a paragraph (a tag line then cannot start an HTML block of kind 7).
     private var inParagraph = false
@@ -52,7 +52,8 @@ struct FenceTracker {
     }
     /// The list item inside a block quote the current line belongs to: the
     /// quote depth and the item's content column from the quote's content.
-    private var quoteItem: (depth: Int, content: Int)? = nil
+    private struct QuoteItem: Equatable { var depth: Int, content: Int }
+    private var quoteItem: QuoteItem? = nil
     /// Depth of the `<details>` the parser is joining top-level blocks into (0: none).
     private(set) var detailsDepth = 0
     /// The last Markdown line consumed is indented code: 4+ columns past the
@@ -288,7 +289,7 @@ struct FenceTracker {
                 let sub = UnsafeBufferPointer(rebasing: u[k...])
                 let subIndent = e - k
                 if c - col == subIndent, let item = Self.listItem(sub, indent: subIndent, interrupting: inParagraph && paragraphInQuote, column: col) {
-                    quoteItem = (depth, item.column)
+                    quoteItem = QuoteItem(depth: depth, content: item.column)
                     quoteItemStarted = true
                     quoteItemAt = item.at
                     quoteItemCode = item.code

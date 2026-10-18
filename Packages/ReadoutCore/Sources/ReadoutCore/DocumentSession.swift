@@ -93,7 +93,16 @@ public final class DocumentSession {
     /// that are read; of a block with an unread edit, the version last read;
     /// no unread insertions; and the blocks of unread deletions, as last
     /// read, where they were. The current version when nothing is unread.
-    public private(set) var baseline: [BlockKey] = []
+    public var baseline: [BlockKey] {
+        if baselineStale { storedBaseline = builtBaseline(); baselineStale = false }
+        return storedBaseline
+    }
+    /// The baseline, built when it is read after the state it follows from
+    /// changed (`rebuildBaseline`): not on every update of a document
+    /// streaming in, only when the app saves it.
+    private var storedBaseline: [BlockKey] = []
+    private var baselineStale = false
+    private func setBaseline(_ keys: [BlockKey]) { storedBaseline = keys; baselineStale = false }
     /// For each block marked modified: its Markdown source when last read
     /// (nil: not kept), and the comparison.
     private var readText: [Int: String?] = [:]
@@ -143,6 +152,7 @@ public final class DocumentSession {
     public func load(_ doc: ParsedDocument, baseline persisted: [BlockKey]? = nil) -> RenderPatch {
         blocks = doc.blocks
         title = doc.title
+        generation = doc.generation
         for i in blocks.indices { blocks[i].slot = allocSlot() }
         resetMarks()
         beforeEmpty = nil
@@ -171,13 +181,14 @@ public final class DocumentSession {
             // Checkbox states come from the baseline (nil in one saved before they were kept).
             if !d.rewrite {
                 // A baseline saved before sources were kept has only the normalized text.
-                applyMarks(d, oldKeys: persisted, oldSlotForIndex: { _ in nil }, oldTasks: { persisted[$0].taskState },
+                applyMarks(d, shared: 0, oldLength: persisted.count, oldKey: { persisted[$0] }, oldSlot: { _ in nil },
+                           oldTasks: { persisted[$0].taskState },
                            oldTexts: { persisted[$0].wholeSource ?? persisted[$0].wholeText },
                            oldNormalized: { persisted[$0].source == nil })
             }
             rebuildBaseline(keys)
         } else {
-            baseline = keys
+            setBaseline(keys)
             blockKeys = keys
         }
         // Rewritten since it was last read: no marks, and the notice says why.
@@ -220,8 +231,10 @@ public final class DocumentSession {
             }
         } else if let s = beforeEmpty {
             beforeEmpty = nil
-            blocks = s.blocks; title = s.title; marks = s.marks; deletions = s.deletions; baseline = s.baseline
+            blocks = s.blocks; title = s.title; marks = s.marks; deletions = s.deletions; setBaseline(s.baseline)
+            cachedToc = nil
             blockKeys = nil
+            generation = 0
             readText = s.readText; readKey = s.readKey; readTasks = s.readTasks; diffs = s.diffs
             readNormalized = s.readNormalized; removedKeys = s.removedKeys
             // The page shows the empty version: it gets the whole document, marked against the one before.
@@ -233,40 +246,90 @@ public final class DocumentSession {
         return patch
     }
 
+    /// The parse `blocks` are (`ParsedDocument.generation`; 0: not known).
+    private var generation: UInt64 = 0
+    /// While an update runs: how many blocks it had, the first `oldPrefix`
+    /// of which are still `blocks`' first, and the rest of them.
+    private var oldCount = 0
+    private var oldPrefix = 0
+    private var oldTail: [Block] = []
+    /// The blocks the last update knew unchanged at the start and end (for tests).
+    private(set) var lastShared = (prefix: 0, suffix: 0)
+    private func oldBlock(_ o: Int) -> Block { o < oldPrefix ? blocks[o] : oldTail[o - oldPrefix] }
+
     private func apply(_ doc: ParsedDocument) -> RenderPatch? {
-        let oldBlocks = blocks
-        let oldKeys = blockKeys ?? oldBlocks.map(BlockKey.init)
-        var newBlocks = doc.blocks
-        let newKeys = Self.keys(newBlocks, reusing: oldBlocks, oldKeys)
-        let d = Differ.diff(old: oldKeys, new: newKeys)
+        let oldN = blocks.count, newN = doc.blocks.count
+        // What the parse kept of the version shown (ParsedDocument.splice):
+        // its first P blocks are these blocks, its last S these but for their
+        // lines. The comparison starts after the P blocks (Differ.diff(old:new:shared:)).
+        var P = 0, S = 0
+        if let sp = doc.splice, generation != 0, sp.base == generation, blockKeys?.count == oldN,
+           sp.prefix + sp.suffix <= min(oldN, newN) {
+            P = sp.prefix; S = sp.suffix
+        }
+        lastShared = (P, S)
+        generation = doc.generation
+        // Keys: the old ones where the blocks are the same; indices into
+        // `oldKeyTail` and the diff's are of the blocks after the first P.
+        let newKeys: [BlockKey], oldKeyTail: [BlockKey]
+        if P + S > 0 {
+            var keys = blockKeys!
+            blockKeys = nil   // changed in place
+            oldKeyTail = Array(keys[P...])
+            keys.replaceSubrange(P..<(oldN - S), with: doc.blocks[P..<(newN - S)].map(BlockKey.init))
+            newKeys = keys
+        } else {
+            oldKeyTail = blockKeys ?? blocks.map(BlockKey.init)
+            newKeys = Self.keys(doc.blocks, reusing: blocks, oldKeyTail)
+        }
+        let d = Differ.diff(old: oldKeyTail, new: P == 0 ? newKeys : Array(newKeys[P...]), shared: P)
         title = doc.title
 
         if d.rewrite {
+            var newBlocks = doc.blocks
             for i in newBlocks.indices { newBlocks[i].slot = allocSlot() }
             blocks = newBlocks
             resetMarks()
-            baseline = newKeys
+            setBaseline(newKeys)
             blockKeys = newKeys
             return fullPayload(rewrite: true)
         }
 
+        oldCount = oldN
+        oldPrefix = P
+        oldTail = P == 0 ? blocks : Array(blocks[P...])
+        defer { oldTail = []; oldPrefix = 0; oldCount = 0 }
+        let old = oldTail
         // Assign slots.
+        var tail = P == 0 ? doc.blocks : Array(doc.blocks[P...])
         for (n, c) in d.changes.enumerated() {
             switch c {
-            case let .equal(o), let .modified(o): newBlocks[n].slot = oldBlocks[o].slot
-            case .inserted: newBlocks[n].slot = allocSlot()
+            case let .equal(o), let .modified(o): tail[n].slot = old[o].slot
+            case .inserted: tail[n].slot = allocSlot()
             }
         }
 
         // Build ops: removals first, then inserts/replaces in document order.
         var ops: [RenderPatch.Op] = []
-        for o in d.removed { ops.append(.init(op: .remove, slot: oldBlocks[o].slot)) }
-        var prev = 0
+        // The outline and task counts change only with a heading or a checkbox block.
+        func outlined(_ b: Block) -> Bool { b.kind == .heading || !b.taskState.isEmpty }
+        var tocDirty = cachedToc == nil
+        for o in d.removed { ops.append(.init(op: .remove, slot: old[o].slot)); if outlined(old[o]) { tocDirty = true } }
+        var prev = P == 0 ? 0 : blocks[P - 1].slot
         for (n, c) in d.changes.enumerated() {
-            let b = newBlocks[n]
+            let b = tail[n]
+            if !tocDirty {
+                switch c {
+                case let .equal(o), let .modified(o):
+                    let ob = old[o]
+                    if (outlined(b) || outlined(ob)) && (ob.html != b.html || ob.taskState != b.taskState || ob.kind != b.kind
+                        || ob.headingTitle != b.headingTitle || ob.headingLevel != b.headingLevel || ob.anchor != b.anchor) { tocDirty = true }
+                case .inserted: if outlined(b) { tocDirty = true }
+                }
+            }
             switch c {
             case let .equal(o):
-                let ob = oldBlocks[o]
+                let ob = old[o]
                 if ob.taskState != b.taskState {
                     ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .state, kind: b.kind, cjk: b.cjk, anchor: b.anchor))
                 } else if ob.html != b.html || ob.cjk != b.cjk {
@@ -281,24 +344,41 @@ public final class DocumentSession {
         }
 
         // Order changes are impossible here (no moves), so inserts by `after` reproduce the order.
-        let oldSlotForIndex: (Int) -> Int? = { oldBlocks[$0].slot }
-        blocks = newBlocks
-        applyMarks(d, oldKeys: oldKeys, oldSlotForIndex: oldSlotForIndex, oldBlocks: oldBlocks,
-                   oldTasks: { oldBlocks[$0].taskState },
-                   oldTexts: { oldBlocks[$0].source }, oldNormalized: { _ in false })
+        if P == 0 { blocks = tail } else { blocks.replaceSubrange(P..., with: tail) }
+        applyMarks(d, shared: P, oldLength: old.count, oldKey: { oldKeyTail[$0] }, oldSlot: { old[$0].slot },
+                   oldTasks: { old[$0].taskState }, oldTexts: { old[$0].source }, oldNormalized: { _ in false })
         rebuildBaseline(newKeys)
         if ops.isEmpty { return nil }
-        return payload(ops: ops, reset: false, rewrite: false)
+        return payload(ops: ops, reset: false, rewrite: false, tocDirty: tocDirty)
     }
 
-    private func applyMarks(_ d: DiffResult, oldKeys: [BlockKey], oldSlotForIndex: (Int) -> Int?,
-                            oldBlocks: [Block] = [], oldTasks: (Int) -> [Bool]?, oldTexts: (Int) -> String?,
-                            oldNormalized: (Int) -> Bool) {
-        let newSlots = Set(blocks.map(\.slot))
+    /// Marks for the diff `d` of the blocks after the first `shared` (which
+    /// are unchanged): its indices, and those the closures take, are of the
+    /// blocks after them, of which there were `oldLength`. Old blocks are
+    /// `oldBlock` (none on a load).
+    private func applyMarks(_ d: DiffResult, shared P: Int, oldLength: Int, oldKey: (Int) -> BlockKey, oldSlot oldSlotForIndex: (Int) -> Int?,
+                            oldTasks: (Int) -> [Bool]?, oldTexts: (Int) -> String?, oldNormalized: (Int) -> Bool) {
+        // Whether a slot is in the new version. Every slot asked about (of a
+        // mark, a deletion's anchor, removed blocks' anchor) is an old block's
+        // or one given now: marks, deletions and removed blocks are moved to
+        // blocks that are still there at the end of every update. So it is
+        // in the new version unless its old block was removed (as many as the
+        // update removed, not the whole document).
+        let removedSlots = Set(d.removed.compactMap(oldSlotForIndex))
+        func isNew(_ slot: Int) -> Bool { slot > 0 && !removedSlots.contains(slot) }
+        #if DEBUG
+        do {
+            var known = Set(blocks.map(\.slot))
+            for o in 0..<oldCount { known.insert(oldBlock(o).slot) }
+            let asked = Array(marks.keys) + deletions.map(\.after) + Array(removedKeys.keys)
+            assert(asked.allSatisfy { $0 == 0 || known.contains($0) }, "a mark or anchor on a slot no block has")
+        }
+        #endif
         // One comparison budget for the update: many large edited blocks cost
         // what one does, and those past it are shown replaced whole.
         var budget = WordDiff.maxWork
-        for (n, c) in d.changes.enumerated() {
+        for (t, c) in d.changes.enumerated() {
+            let n = P + t
             let slot = blocks[n].slot
             switch c {
             case .inserted:
@@ -309,7 +389,7 @@ public final class DocumentSession {
                     // (A checkbox change still unread already recorded the version read.)
                     if marks[slot] != .modified && marks[slot] != .state {
                         readText[slot] = oldTexts(o)
-                        readKey[slot] = oldKeys[o]
+                        readKey[slot] = oldKey(o)
                         if oldNormalized(o) { readNormalized.insert(slot) } else { readNormalized.remove(slot) }
                         // Unless a checkbox change since reading already recorded them.
                         if readTasks[slot] == nil, let read = oldTasks(o) { readTasks[slot] = read }
@@ -343,7 +423,7 @@ public final class DocumentSession {
                     readTasks[slot] = read   // the checkboxes as read
                     // And the block as read, should it be removed before this is read.
                     readText[slot] = oldTexts(o)
-                    readKey[slot] = oldKeys[o]
+                    readKey[slot] = oldKey(o)
                     if oldNormalized(o) { readNormalized.insert(slot) } else { readNormalized.remove(slot) }
                 } else if marks[slot] == .state, let read = readTasks[slot], read == blocks[n].taskState {
                     // Ticked and unticked again before it was read: nothing new.
@@ -351,19 +431,24 @@ public final class DocumentSession {
                 }
             }
         }
+        // (The first P blocks are equal and as they were: nothing above
+        // applies to them. A state mark always has checkboxes as read that
+        // differ from the block's, so it is not cleared there.)
 
-        // Where each removed old block sat, expressed as the nearest preceding surviving slot.
-        var oldToNewSlot: [Int: Int] = [:]  // old index -> surviving slot
-        for (n, c) in d.changes.enumerated() {
+        // Where each removed old block sat, expressed as the nearest preceding
+        // surviving slot (by old index past the first P blocks; 0: none).
+        var survivor = [Int](repeating: 0, count: oldLength)
+        for (t, c) in d.changes.enumerated() {
             switch c {
-            case let .equal(o), let .modified(o): oldToNewSlot[o] = blocks[n].slot
+            case let .equal(o), let .modified(o): if o < survivor.count { survivor[o] = blocks[P + t].slot }
             case .inserted: break
             }
         }
+        /// The surviving slot before the old block at `oldIndex` (of all old blocks).
         func anchorBefore(_ oldIndex: Int) -> Int {
             var i = oldIndex - 1
-            while i >= 0 { if let s = oldToNewSlot[i] { return s }; i -= 1 }
-            return 0
+            while i >= P { if survivor[i - P] != 0 { return survivor[i - P] }; i -= 1 }
+            return i >= 0 ? blocks[i].slot : 0   // the first P survive as they were
         }
 
         var newDeletions: [Int: RenderPatch.Deletion] = [:]  // keyed by anchor slot
@@ -372,8 +457,8 @@ public final class DocumentSession {
         // what it became (a list item, a task, a table row, emphasis) covers
         // its first line and goes on from that text there. Not a removal.
         func absorbed(_ o: Int) -> Bool {
-            guard o == oldBlocks.count - 1 else { return false }
-            let ob = oldBlocks[o]
+            guard P + o == oldCount - 1 else { return false }
+            let ob = oldBlock(P + o)
             let tail = ob.source.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !tail.isEmpty, tail.utf8.count <= 64 else { return false }
             return blocks.contains { b in
@@ -384,7 +469,7 @@ public final class DocumentSession {
             }
         }
         for o in d.removed {
-            if !oldBlocks.isEmpty, absorbed(o) {
+            if oldCount > 0, absorbed(o) {
                 if let s = oldSlotForIndex(o) { marks[s] = nil }
                 continue
             }
@@ -402,16 +487,16 @@ public final class DocumentSession {
                 return readKey[slot].map { $0.text + " …" }
             }
             // The block as last read: before an unread edit, with the checkboxes as read.
-            var removedKey = oldKeys[o].with(removed: false)
+            var removedKey = oldKey(o).with(removed: false)
             if let s = oldSlotForIndex(o) {
                 if marks[s] == .modified || marks[s] == .state, let k = readKey[s] { removedKey = k }
                 if marks[s] == .modified || marks[s] == .state, let t = readTasks[s] { removedKey = removedKey.with(taskState: t) }
                 marks[s] = nil
             }
-            let after = anchorBefore(o)
-            newRemoved.append((after, o, removedKey))
+            let after = anchorBefore(P + o)
+            newRemoved.append((after, P + o, removedKey))
             // Only the start is known for a long block in an older baseline: marked as cut.
-            let preview = Self.bounded(lastRead ?? oldTexts(o) ?? (oldKeys[o].text + " …"))
+            let preview = Self.bounded(lastRead ?? oldTexts(o) ?? (oldKey(o).text + " …"))
             if var existing = newDeletions[after] {
                 existing.count += 1
                 // Grouped removals keep every block up to a bound; past it the
@@ -429,12 +514,16 @@ public final class DocumentSession {
             }
         }
 
+        /// The old index of the block with `slot` (nil: none).
+        func oldIndex(ofSlot slot: Int) -> Int? {
+            (0..<oldCount).first { oldBlock($0).slot == slot }
+        }
         // Re-anchor existing deletion marks whose anchor block disappeared.
         var reanchored: [RenderPatch.Deletion] = []
         for var del in deletions {
-            if del.after != 0 && !newSlots.contains(del.after) {
-                if let oldIndex = oldBlocks.firstIndex(where: { $0.slot == del.after }) {
-                    del.after = anchorBefore(oldIndex)
+            if del.after != 0 && !isNew(del.after) {
+                if let i = oldIndex(ofSlot: del.after) {
+                    del.after = anchorBefore(i)
                 } else {
                     del.after = 0
                 }
@@ -452,13 +541,20 @@ public final class DocumentSession {
         // those removed before sit right after the block they sat after, those
         // removed now at their own place (deleting B, then A, of A B C keeps A before B).
         if !removedKeys.isEmpty || !newRemoved.isEmpty {
+            // The old index of each anchor (by slot), found in one pass.
             var oldIndex: [Int: Int] = [:]
-            if !removedKeys.isEmpty { for (i, b) in oldBlocks.enumerated() { oldIndex[b.slot] = i } }
+            if !removedKeys.isEmpty {
+                let wanted = Set(removedKeys.keys)
+                for i in 0..<oldCount {
+                    let s = oldBlock(i).slot
+                    if wanted.contains(s) { oldIndex[s] = i }
+                }
+            }
             var merged: [Int: [(position: Double, order: Int, id: Int, key: BlockKey)]] = [:]
             var order = 0
             for (anchor, entries) in removedKeys {
                 let i = anchor == 0 ? -1 : (oldIndex[anchor] ?? -1)
-                let to = anchor == 0 || newSlots.contains(anchor) ? anchor : (i >= 0 ? anchorBefore(i) : 0)
+                let to = anchor == 0 || isNew(anchor) ? anchor : (i >= 0 ? anchorBefore(i) : 0)
                 for e in entries { merged[to, default: []].append((Double(i) + 0.5, order, e.id, e.key)); order += 1 }
             }
             for r in newRemoved {
@@ -470,7 +566,7 @@ public final class DocumentSession {
                 entries.sorted { ($0.position, $0.order) < ($1.position, $1.order) }.filter { live.contains($0.id) }.map { ($0.id, $0.key) }
             }.filter { !$0.value.isEmpty }
         }
-        marks = marks.filter { newSlots.contains($0.key) }
+        marks = marks.filter { isNew($0.key) }
         readText = readText.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
         readKey = readKey.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
         readNormalized = readNormalized.filter { marks[$0] == .modified || marks[$0] == .state }
@@ -483,11 +579,16 @@ public final class DocumentSession {
         readNormalized = []; removedKeys = [:]
     }
 
-    /// The baseline for what is unread now (see `baseline`). `keys`: the current blocks' keys, when at hand.
+    /// The baseline for what is unread now (see `baseline`), built when it
+    /// is next read. `keys`: the current blocks' keys, when at hand.
     private func rebuildBaseline(_ keys: [BlockKey]? = nil) {
-        let keys = keys ?? blockKeys ?? blocks.map(BlockKey.init)
-        blockKeys = keys
-        guard !marks.isEmpty || !deletions.isEmpty else { baseline = keys; return }
+        blockKeys = keys ?? blockKeys ?? blocks.map(BlockKey.init)
+        baselineStale = true
+    }
+
+    private func builtBaseline() -> [BlockKey] {
+        let keys = blockKeys ?? blocks.map(BlockKey.init)
+        guard !marks.isEmpty || !deletions.isEmpty else { return keys }
         func removedAfter(_ slot: Int) -> [BlockKey] { removedKeys[slot]?.map { $0.key.with(removed: true) } ?? [] }
         var out: [BlockKey] = removedAfter(0)
         out.reserveCapacity(keys.count + deletions.count)
@@ -506,7 +607,7 @@ public final class DocumentSession {
             }
             out += removedAfter(b.slot)
         }
-        baseline = out
+        return out
     }
 
     // MARK: Reading
@@ -532,7 +633,7 @@ public final class DocumentSession {
 
     public func markAllRead() {
         resetMarks()
-        baseline = blockKeys ?? blocks.map(BlockKey.init)
+        setBaseline(blockKeys ?? blocks.map(BlockKey.init))
         dropBeforeEmptyIfRead()
     }
 
@@ -599,12 +700,19 @@ public final class DocumentSession {
     private func allocSlot() -> Int { defer { nextSlot += 1 }; return nextSlot }
     private func allocDeletionID() -> Int { defer { nextDeletionID += 1 }; return nextDeletionID }
 
-    private func payload(ops: [RenderPatch.Op], reset: Bool, rewrite: Bool) -> RenderPatch {
+    /// The outline and task counts of the last patch: the same until a
+    /// heading or a block with checkboxes changes (`apply`'s `tocDirty`).
+    private var cachedToc: (toc: [TocEntry], tasks: TaskStats)? = nil
+
+    private func payload(ops: [RenderPatch.Op], reset: Bool, rewrite: Bool, tocDirty: Bool = true) -> RenderPatch {
         if !reset { version += 1 }
-        let doc = ParsedDocument(blocks: blocks, title: title)
         let (outMarks, outDeletions) = outgoing(reset: reset)
+        if tocDirty || cachedToc == nil {
+            let doc = ParsedDocument(blocks: blocks, title: title)
+            cachedToc = (doc.toc(), doc.tasks)
+        }
         return RenderPatch(version: version, reset: reset, rewrite: rewrite, ops: ops,
                            marks: outMarks, deletions: outDeletions,
-                           toc: doc.toc(), tasks: doc.tasks, title: title)
+                           toc: cachedToc!.toc, tasks: cachedToc!.tasks, title: title)
     }
 }

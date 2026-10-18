@@ -68,6 +68,19 @@ public struct TocEntry: Codable, Sendable, Equatable, Identifiable {
 public struct ParsedDocument: Sendable {
     public var blocks: [Block]
     public let title: String?
+    /// An `IncrementalParser` result's identity (0: none).
+    var generation: UInt64 = 0
+    /// What a splice (`IncrementalParser`) kept of the result `base`: its
+    /// first `prefix` blocks as they were, and its last `suffix` blocks as
+    /// they were but for their line numbers. `DocumentSession` skips them
+    /// when it compares this version with that one.
+    var splice: Splice? = nil
+
+    struct Splice: Sendable, Equatable {
+        let base: UInt64
+        let prefix: Int
+        let suffix: Int
+    }
 
     public var tasks: TaskStats {
         var s = TaskStats()

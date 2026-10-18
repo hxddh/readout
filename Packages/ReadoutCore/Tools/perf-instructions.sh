@@ -5,8 +5,16 @@
 # is counted). Independent of the machine's speed and load, so CI can gate
 # it tightly (tools/perf-budgets.json, *_minstr).
 #
+# append and tail are small steps on one thread (a splice parses one or two
+# fragments, fewer than parseFragments spreads over threads): the difference
+# of two processes moves by about +-5 Minstr with the load's threads, a third
+# of such a step, so only the step itself is counted there (callgrind
+# --toggle-collect on perf-probe's measuredUpdate), which repeats exactly.
+# The difference is still taken: a step that ran on other threads too would
+# be undercounted, and fails instead.
+#
 # usage: Packages/ReadoutCore/Tools/perf-instructions.sh PERF_PROBE CORPUS_DIR BYTES [SCENARIO]
-#   SCENARIO: update (default), append or open-unique (see perf-probe)
+#   SCENARIO: update (default), append, tail or open-unique (see perf-probe)
 #   build PERF_PROBE with: swift build -c release --package-path Packages/ReadoutCore --product perf-probe
 set -eu
 scenario=${4:-update}
@@ -20,4 +28,21 @@ if [ -z "$total" ] || [ -z "$load" ]; then
     echo "perf-instructions: no count from valgrind" >&2
     exit 1
 fi
-echo $((total - load))
+case "$scenario" in
+    append|tail)
+        step=$(count --toggle-collect='*measuredUpdate*' "$1" "$2" "$3" 0 "$scenario")
+        if [ -z "$step" ]; then
+            echo "perf-instructions: no count from valgrind" >&2
+            exit 1
+        fi
+        # The difference may exceed the step by the noise, not by other threads' work.
+        if [ $((total - load)) -gt $((step * 3 / 2 + 15000000)) ]; then
+            echo "perf-instructions: $scenario step $step, process difference $((total - load)): the step ran on other threads too" >&2
+            exit 1
+        fi
+        echo "$step"
+        ;;
+    *)
+        echo $((total - load))
+        ;;
+esac
