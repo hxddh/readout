@@ -358,10 +358,22 @@ public final class DocumentSession {
     /// `oldBlock` (none on a load).
     private func applyMarks(_ d: DiffResult, shared P: Int, oldLength: Int, oldKey: (Int) -> BlockKey, oldSlot oldSlotForIndex: (Int) -> Int?,
                             oldTasks: (Int) -> [Bool]?, oldTexts: (Int) -> String?, oldNormalized: (Int) -> Bool) {
-        // The slots of the new version, by slot.
-        var newSlots = [Bool](repeating: false, count: nextSlot)
-        for b in blocks { newSlots[b.slot] = true }
-        func isNew(_ slot: Int) -> Bool { slot > 0 && slot < newSlots.count && newSlots[slot] }
+        // Whether a slot is in the new version. Every slot asked about (of a
+        // mark, a deletion's anchor, removed blocks' anchor) is an old block's
+        // or one given now: marks, deletions and removed blocks are moved to
+        // blocks that are still there at the end of every update. So it is
+        // in the new version unless its old block was removed (as many as the
+        // update removed, not the whole document).
+        let removedSlots = Set(d.removed.compactMap(oldSlotForIndex))
+        func isNew(_ slot: Int) -> Bool { slot > 0 && !removedSlots.contains(slot) }
+        #if DEBUG
+        do {
+            var known = Set(blocks.map(\.slot))
+            for o in 0..<oldCount { known.insert(oldBlock(o).slot) }
+            let asked = Array(marks.keys) + deletions.map(\.after) + Array(removedKeys.keys)
+            assert(asked.allSatisfy { $0 == 0 || known.contains($0) }, "a mark or anchor on a slot no block has")
+        }
+        #endif
         // One comparison budget for the update: many large edited blocks cost
         // what one does, and those past it are shown replaced whole.
         var budget = WordDiff.maxWork
@@ -532,11 +544,10 @@ public final class DocumentSession {
             // The old index of each anchor (by slot), found in one pass.
             var oldIndex: [Int: Int] = [:]
             if !removedKeys.isEmpty {
-                var wanted = [Bool](repeating: false, count: nextSlot)
-                for anchor in removedKeys.keys where anchor > 0 && anchor < nextSlot { wanted[anchor] = true }
+                let wanted = Set(removedKeys.keys)
                 for i in 0..<oldCount {
                     let s = oldBlock(i).slot
-                    if s > 0 && s < nextSlot && wanted[s] { oldIndex[s] = i }
+                    if wanted.contains(s) { oldIndex[s] = i }
                 }
             }
             var merged: [Int: [(position: Double, order: Int, id: Int, key: BlockKey)]] = [:]
