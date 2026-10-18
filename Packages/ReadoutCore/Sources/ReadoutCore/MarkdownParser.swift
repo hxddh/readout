@@ -193,7 +193,7 @@ public enum MarkdownParser {
             if let cached = cache?.lookup(cacheKey) { rendered = cached; cacheKeys.append(cacheKey) }
             else {
                 let reads = probe?.fileSystemReads ?? 0
-                rendered = html()
+                rendered = math.emphasisMarks > 0 ? CJKEmphasis.strip(html()) : html()
                 // Not kept when it depends on files (image sizes, which paths exist).
                 if let cache, (probe?.fileSystemReads ?? 0) == reads { cache.store(cacheKey, rendered); cacheKeys.append(cacheKey) }
             }
@@ -274,7 +274,8 @@ public enum MarkdownParser {
             switch node {
             case let h as Heading:
                 // The anchor, and the <hN id> carrying it, are added by `assemble`.
-                let titleText = math.restore(plain: Self.headingText(h)).trimmingCharacters(in: .whitespaces)
+                var titleText = math.restore(plain: Self.headingText(h)).trimmingCharacters(in: .whitespaces)
+                if math.emphasisMarks > 0 { titleText = CJKEmphasis.strip(titleText) }
                 blocks.append(make(.heading, h, range: range, html: renderer.inline(h),
                                    heading: (h.level, titleText, "")))
 
@@ -337,8 +338,9 @@ public enum MarkdownParser {
             // A list in the note is tight or loose by the note's own lines, not the document's.
             var noteRenderer = renderer
             noteRenderer.sourceLines = FastBytes.lineSlices(entry.source)
+            let html = noteRenderer.children(Document(parsing: entry.source, options: [.disableSmartOpts]))
             return Footnotes.Note(id: entry.def.id, lines: entry.def.lines, text: entry.def.text,
-                                  html: noteRenderer.children(Document(parsing: entry.source, options: [.disableSmartOpts])))
+                                  html: math.emphasisMarks > 0 ? CJKEmphasis.strip(html) : html)
         }
         return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys)
     }
