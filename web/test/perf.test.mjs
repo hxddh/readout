@@ -136,11 +136,13 @@ const firstHighlight = await (async () => {
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
   await p.evaluate(() => { window.readout.warm(); window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }); });
   const warmed = await p.evaluate(() => new Promise(r => {
-    const end = performance.now() + 20000;
+    const end = performance.now() + 40000;
     const t = () => performance.getEntriesByName('readout-hl-warm').length ? r(true) : performance.now() > end ? r(false) : setTimeout(t, 50);
     t();
   }));
   await p.waitForTimeout(200);
+  // Each language's warm-up task (the longest is what a window taking the page mid-warm-up could wait for).
+  const warmTasks = await p.evaluate(() => Object.fromEntries(performance.getEntriesByType('measure').filter(m => m.name.startsWith('readout-hl-warm-')).map(m => [m.name.slice(16), Math.round(m.duration)])));
   const code = 'import { readFile } from "node:fs/promises";\n\n// Load the plan and count its open tasks.\nexport async function openTasks(path: string): Promise<number> {\n  const text = await readFile(path, "utf8");\n  return text.split("\\n").filter(l => /^- \\[ \\]/.test(l)).length;\n}';
   const r = await p.evaluate(code => {
     const t0 = performance.now();
@@ -152,7 +154,7 @@ const firstHighlight = await (async () => {
     return { ms: performance.now() - t0, hl: document.querySelector('.code-block').dataset.hl };
   }, code);
   await p.close();
-  return { ...r, warmed };
+  return { ...r, warmed, warmTasks };
 })();
 if (!firstHighlight.warmed || firstHighlight.hl !== 'done') errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
 
@@ -163,6 +165,7 @@ const result = {
   web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
+  web_hl_warm_tasks_ms: firstHighlight.warmTasks,
   web_scroll_frames: gaps.length,
   web_scroll_stride_px: scroll.stride,
   web_scroll_frame_p95_ms: Math.round(sorted[Math.floor(sorted.length * 0.95)] * 10) / 10,

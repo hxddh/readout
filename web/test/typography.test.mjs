@@ -1141,7 +1141,7 @@ const v36 = patch([
   await page.close();
   page = await open(700);
   await page.evaluate(p => { window.readout.warm(); window.readout.apply(p); }, patch([['paragraph', '<p>A document arrives.</p>']]));
-  await page.waitForTimeout(10000);   // longer than the whole warm-up takes when not stopped
+  await page.waitForTimeout(15000);   // longer than the delay and the whole warm-up when not stopped
   const stopped = await page.evaluate(() => performance.getEntriesByName('readout-hl-warm').length === 0);
   check('a warmed spare page compiles the common grammars, and stops once it shows a document', done && stopped, JSON.stringify({ done, stopped }));
   await page.close();

@@ -125,11 +125,12 @@ export function init() {
 // Loading a grammar does not compile its patterns: the first block it
 // highlights does, which cost the first code block of a warm open 170-220 ms
 // inside the page's first apply. So the app's spare page (warm) also, once
-// the preloaded grammars are in, highlights a few lines of the common
-// constructs of each language, the way a block is highlighted: right away,
-// most used (and costliest) first, one language per task, so that it is
-// done before a window takes the page, and a document arriving meanwhile
-// waits for one language at most. Only there: compiling a large grammar (TypeScript's) takes a
+// the preloaded grammars are in and it has then sat unused for a while (a
+// spare page usually waits minutes for its window), highlights a few lines
+// of the common constructs of each language, the way a block is
+// highlighted, one language per task. A window that takes the page before
+// that never waits for it; one that takes it during it waits at most for
+// the language in progress (TypeScript's is the long one). Only there: compiling a large grammar (TypeScript's) takes a
 // moment of the main thread, which a page being read should not pay for a
 // language it may not show. Never in Quick Look, which preloads nothing.
 // It stops as soon as the page shows a document (stopWarmUp, enhance.js):
@@ -141,7 +142,7 @@ export function warm() {
   return init().then(() => {
     if (!preload || warming || warmStopped) return;
     warming = true;
-    warmUp();
+    setTimeout(warmUp, WARM_DELAY_MS);
   });
 }
 
@@ -309,6 +310,7 @@ const SAMPLES = {
     "INSERT INTO x VALUES (1, 'a');",
   ].join('\n'),
 };
+const WARM_DELAY_MS = 5000;
 const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript', 'go', 'swift', 'rust', 'yaml', 'markdown', 'sql', 'diff'];
 function warmUp() {
   const ids = WARM_ORDER.filter(id => SAMPLES[id] && highlighter.getLoadedLanguages().includes(id));
@@ -316,10 +318,12 @@ function warmUp() {
     if (warmStopped) return;
     const id = ids.shift();
     if (!id) { performance.mark('readout-hl-warm'); return; }
+    const t0 = performance.now();
     highlightSync(SAMPLES[id], id);   // only a head start: its result, or failure, is not used
+    try { performance.measure(`readout-hl-warm-${id}`, { start: t0 }); } catch { /* reporting only */ }
     setTimeout(next, 0);
   };
-  setTimeout(next, 0);
+  if (!warmStopped) next();
 }
 
 // Grammars are registered one at a time, in request order. Several modules
