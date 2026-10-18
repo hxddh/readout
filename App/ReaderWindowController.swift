@@ -1433,8 +1433,9 @@ final class UnreadDotView: NSView {
 @MainActor
 enum CommitBaseline {
     private static let queue = DispatchQueue(label: "Readout.CommitBaseline", qos: .userInitiated)
-    /// Checked once per launch (on `queue`).
-    nonisolated(unsafe) private static var toolsAvailable: Bool?
+    /// Found once per launch (on `queue`). Not found is asked again next
+    /// time: a first `xcode-select` or git after boot can outlast the limit.
+    nonisolated(unsafe) private static var toolsAvailable = false
 
     static func find(path: String, current: String, completion: @escaping @MainActor ([BlockKey]?) -> Void) {
         // The app's own files (help) are no one's commit.
@@ -1442,8 +1443,8 @@ enum CommitBaseline {
         queue.async {
             var keys: [BlockKey]? = nil
             if GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil {
-                if toolsAvailable == nil { toolsAvailable = GitTools.available() }
-                if toolsAvailable == true, let text = GitBaseline.headText(for: path, current: current, git: ProcessGit()) {
+                if !toolsAvailable { toolsAvailable = GitTools.available() }
+                if toolsAvailable, let text = GitBaseline.headText(for: path, current: current, git: ProcessGit()) {
                     keys = MarkdownParser.parse(text).blocks.map(BlockKey.init)
                 }
             }

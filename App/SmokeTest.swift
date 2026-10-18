@@ -535,7 +535,9 @@ enum SmokeTest {
         guard let tracked = env["READOUT_SMOKE_GIT_FILE"], let untracked = env["READOUT_SMOKE_GIT_UNTRACKED"] else { return }
         let app = NSApp.delegate as? AppDelegate
         var json: [String: Any] = ["tools": GitTools.available()]
-        // What the lookup sees, so a failure can be explained.
+        // What the lookup sees, so a failure can be explained. (This also
+        // warms xcrun's lookup of git: the first git after a runner boots can
+        // outlast the 1.5 s limit, which a reader's first open accepts.)
         let real = RealPath.of(tracked)
         let dir = (real as NSString).deletingLastPathComponent
         let current = (try? String(contentsOfFile: real, encoding: .utf8)) ?? ""
