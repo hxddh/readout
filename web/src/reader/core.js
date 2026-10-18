@@ -7,6 +7,17 @@ export const root = document.documentElement;
 export const slots = new Map();          // slot -> element
 export const heights = new WeakMap();    // element -> last observed height
 
+/**
+ * Whether the reader's window is the key window (the app says so, see
+ * setWindowKey): null until it has. Keyboard focus in the window's outline
+ * or find field takes it from the page (document.hasFocus() is false then),
+ * but the reader is still in the window, reading.
+ */
+let windowKey = null;
+export function setWindowKey(on) { windowKey = !!on; }
+/** The reader is reading in this window: it is visible, and the page or its window has the focus. */
+export function focused() { return !document.hidden && (document.hasFocus() || windowKey === true); }
+
 export let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', loadAllImages: 'Load all images from %@', remoteError: 'Could not load image: %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section', railChange: 'Unread change %d of %d: %@', railAdded: 'added', railEdited: 'edited', railRemoved: 'removed', wrap: 'Wrap', wrapTitle: 'Wrap long lines in code blocks' };
 export function mergeStrings(s) { strings = { ...strings, ...s }; }
 

@@ -1,6 +1,6 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes, and the "Show Only Changes" filter.
-import { doc, slots, heights, strings, quicklook, post, inViewport } from './core.js';
+import { doc, slots, heights, strings, quicklook, post, inViewport, focused } from './core.js';
 import { captureAnchor, restoreAnchor, isShown, atBottom } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
@@ -229,7 +229,7 @@ const readObserver = new IntersectionObserver(entries => {
 }, { threshold: readThresholds });
 
 /** On screen, but another window has the focus: read only at the end the reader follows. */
-const watching = () => !document.hidden && !document.hasFocus();
+const watching = () => !document.hidden && !focused();
 
 // Seen long enough while the window was in the background (or away from
 // the end): they wait, in view, for the reader to come back, and are read
@@ -237,9 +237,9 @@ const watching = () => !document.hidden && !document.hasFocus();
 // not reading them). Back at the end of an unfocused window counts as
 // coming back, for the longer time.
 const waiting = new Set();
-function restartDwell() {
+export function restartDwell() {
   if (document.hidden) return;
-  if (!document.hasFocus()) {
+  if (!focused()) {
     if (!waiting.size || !atBottom()) return;
     for (const el of waiting) if (el.isConnected) armRead(el, DWELL_UNFOCUSED_MS);
     waiting.clear();
@@ -258,7 +258,7 @@ window.addEventListener('scroll', () => { if (waiting.size && watching()) restar
 function tryRead(el) {
   readTimers.delete(el);
   if (document.hidden) { waiting.add(el); return; }
-  if (!document.hasFocus()) {
+  if (!focused()) {
     if (!atBottom()) { waiting.add(el); return; }
     const left = DWELL_UNFOCUSED_MS - (performance.now() - (readSince.get(el) ?? 0));
     if (left > 1) { readTimers.set(el, setTimeout(() => tryRead(el), left)); return; }
@@ -328,13 +328,15 @@ export function unreadElements() {
     .filter(e => e.offsetParent !== null);
 }
 
-export function jump(dir) {
+/** `first`: to the first unread change of the document (N arriving from another document). */
+export function jump(dir, first = false) {
   leaveVisit();
   const list = unreadElements();
-  // Nothing to go to: the app says so (a beep).
-  if (!list.length) { post({ type: 'nothing' }); return; }
+  // Nothing to go to: the app goes on to the next document with unread
+  // changes, and beeps when there is none (`jump`: N's, not D's).
+  if (!list.length) { post({ type: 'nothing', jump: true }); return; }
   const line = window.innerHeight / 3;
-  let target = dir > 0 ? list.find(e => e.getBoundingClientRect().top > line + 4)
+  let target = first ? list[0] : dir > 0 ? list.find(e => e.getBoundingClientRect().top > line + 4)
     : list.slice().reverse().find(e => e.getBoundingClientRect().top < line - 4);
   // Past the last change, back to the first (or the other way): the app says so too.
   if (!target) {

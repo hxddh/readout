@@ -10,10 +10,10 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, heights, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll } from './reader/core.js';
+import { doc, root, slots, heights, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom } from './reader/anchor.js';
-import { apply as applyPatch, findMode } from './reader/patch.js';
-import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups } from './reader/marks.js';
+import { apply as applyPatch, findMode, showNotice, noticeMaybeSeen } from './reader/patch.js';
+import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups, restartDwell } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
@@ -105,6 +105,52 @@ document.addEventListener('copy', ev => {
   ev.clipboardData.setData('text/html', box.innerHTML);
   ev.preventDefault();
 });
+
+// ---------------------------------------------------------------- Copy as Quote
+
+// Edit ▸ Copy as Quote quotes the blocks the selection touches, whole (the
+// app has their Markdown source): the page says which, and whether there is
+// a selection at all (the menu item is enabled while there is one).
+let hadSelection = false;
+document.addEventListener('selectionchange', () => {
+  const sel = getSelection();
+  const has = !!sel && !sel.isCollapsed && sel.rangeCount > 0 && doc.contains(sel.anchorNode) && sel.toString().trim() !== '';
+  if (has !== hadSelection) { hadSelection = has; post({ type: 'selection', has }); }
+});
+
+/**
+ * The slots of the blocks the selection touches, in document order. A
+ * selection that ends right at the start of the next block (a triple
+ * click) or begins at the very end of one does not take that block in;
+ * blocks without text (a rule, an image) between selected ones do count.
+ */
+function selectedSlots() {
+  const sel = getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return [];
+  const out = [];
+  for (let i = 0; i < sel.rangeCount; i++) {
+    const r = sel.getRangeAt(i);
+    const touched = [];
+    let seen = false;
+    for (let e = doc.firstElementChild; e; e = e.nextElementSibling) {
+      if (!e.classList.contains('blk')) continue;
+      if (!r.intersectsNode(e)) { if (seen) break; continue; }
+      seen = true;
+      touched.push(e);
+    }
+    const hasText = e => {
+      const part = document.createRange();
+      part.selectNodeContents(e);
+      if (r.compareBoundaryPoints(Range.START_TO_START, part) > 0) part.setStart(r.startContainer, r.startOffset);
+      if (r.compareBoundaryPoints(Range.END_TO_END, part) < 0) part.setEnd(r.endContainer, r.endOffset);
+      return part.toString().trim() !== '';
+    };
+    while (touched.length && !hasText(touched[0])) touched.shift();
+    while (touched.length && !hasText(touched[touched.length - 1])) touched.pop();
+    for (const e of touched) out.push(+e.dataset.slot);
+  }
+  return [...new Set(out)];
+}
 
 // A long jump aims again every frame for this long (see scrollToEdge, scrollToSlot).
 const AIM_MS = 1000;
@@ -348,6 +394,13 @@ window.readout = {
   preparePrint,
   nextChange: () => jump(1),
   previousChange: () => jump(-1),
+  // N went on from another document with nothing unread left: to this one's first change.
+  firstChange: () => jump(1, true),
+  selectedSlots,
+  // A passing note above the document ("Marked against the last commit").
+  notice: text => { if (text) showNotice(String(text)); },
+  // The window is key (or no longer): focus in its outline or find field is still the reader reading.
+  setWindowKey: on => { setWindowKey(on); if (on) { restartDwell(); noticeMaybeSeen(); } },
   markAllRead,
   toggleDiff,
   // View ▸ Show What Changed: what D does.

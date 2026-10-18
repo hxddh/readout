@@ -1,5 +1,5 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
-import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll } from './core.js';
+import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, resizeObserver, keepPlace, isShown, scrollToElement } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
 import { scheduleRail } from './rail.js';
@@ -289,9 +289,9 @@ const NOTICE_FADE_MS = 400;   // reader.css: #ro-notice's opacity transition
 // lands while Readout is in the background is still there when they come
 // back to it.
 let noticeWaiting = false;
-const noticeSeen = () => !document.hidden && document.hasFocus();
+const noticeSeen = focused;
 
-function showNotice(text) {
+export function showNotice(text) {
   notice.textContent = text;
   notice.hidden = false;
   notice.style.opacity = '';
@@ -300,7 +300,7 @@ function showNotice(text) {
   if (!noticeWaiting) countDownNotice();
 }
 
-function noticeMaybeSeen() {
+export function noticeMaybeSeen() {
   if (noticeWaiting && noticeSeen()) { noticeWaiting = false; countDownNotice(); }
 }
 window.addEventListener('focus', noticeMaybeSeen);
