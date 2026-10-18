@@ -1,6 +1,6 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
-import { doc, root, slots, heights, trace, keptScroll } from './core.js';
+import { doc, root, slots, heights, trace, keptScroll, blocksHidden } from './core.js';
 import { scheduleRail } from './rail.js';
 
 export function isShown(e) { return !e.hidden && e.offsetParent !== null; }
@@ -12,8 +12,9 @@ function topBlock() {
   const line = topInset() + 8;
   // Nothing hidden (the usual case): a binary search over the page's
   // children themselves, with no list of every block and no offsetParent
-  // read for each (a layout question per block, in every patch).
-  if (!doc.querySelector(':scope > .blk[hidden]')) {
+  // read for each (a layout question per block, in every patch), and no
+  // search of the whole page for a hidden one either.
+  if (!blocksHidden || !doc.querySelector(':scope > .blk[hidden]')) {
     const kids = doc.children;
     const blkFrom = i => { for (let j = i; j < kids.length; j++) if (kids[j].classList.contains('blk')) return kids[j]; return null; };
     let lo = 0, hi = kids.length - 1, found = null;
@@ -64,10 +65,21 @@ function shownSibling(el, dir) {
  * cannot scroll that far).
  */
 export function restoreAnchor(a, changedSlots) {
-  const y = document.scrollingElement.scrollTop;
-  const back = restoreAnchorTo(a, changedSlots);
-  keptScroll(document.scrollingElement.scrollTop - y);
-  return back;
+  return restoreAnchorTo(a, changedSlots);
+}
+
+/**
+ * Scrolls by `dy` to keep the reader's place, and tells whoever tracks the
+ * position. Nothing to scroll (the usual case: a patch below the reader)
+ * scrolls nothing: in a large document a scroll, and reading where it left
+ * the page, each cost a layout of the whole page.
+ */
+function keepBy(dy) {
+  if (!(Math.abs(dy) >= 0.5)) return;
+  const se = document.scrollingElement;
+  const y = se.scrollTop;
+  window.scrollBy(0, dy);
+  keptScroll(se.scrollTop - y);
 }
 
 /**
@@ -91,7 +103,7 @@ function restoreAnchorTo(a, changedSlots) {
   if (el) {
     const r = el.getBoundingClientRect();
     const want = changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset;
-    window.scrollBy(0, r.top + want);
+    keepBy(r.top + want);
     return slots.has(a.slot) && Math.abs(el.getBoundingClientRect().top + want) <= 1;
   }
   // The anchor block is gone: the block that followed it takes its place at
@@ -102,11 +114,11 @@ function restoreAnchorTo(a, changedSlots) {
   for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
     let n = slot != null ? slots.get(slot) : null;
     if (n && !isShown(n)) n = nearestVisible(n);
-    if (n) { window.scrollBy(0, n.getBoundingClientRect()[edge] - inset); return false; }
+    if (n) { keepBy(n.getBoundingClientRect()[edge] - inset); return false; }
   }
   if (a.heading) {
     const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
-    if (h) window.scrollBy(0, h.getBoundingClientRect().top - inset);
+    if (h) keepBy(h.getBoundingClientRect().top - inset);
   }
   return false;
 }
@@ -187,6 +199,22 @@ export function scrollToElement(target, { center = false, gap } = {}) {
 export function atBottom() {
   const se = document.scrollingElement;
   return se.scrollHeight - (se.scrollTop + window.innerHeight) < 48 && se.scrollTop > 0;
+}
+
+/** The whole document is on screen: the page does not scroll. */
+export function fitsOnScreen() {
+  return document.scrollingElement.scrollHeight <= window.innerHeight + 1;
+}
+
+/** The blocks on screen, top to bottom (at most a screenful's worth of layout questions). */
+export function blocksOnScreen() {
+  const out = [];
+  for (let e = topBlock(); e; e = e.nextElementSibling) {
+    if (!e.classList.contains('blk') || (blocksHidden && !isShown(e))) continue;
+    if (e.getBoundingClientRect().top >= window.innerHeight) break;
+    out.push(e);
+  }
+  return out;
 }
 
 /**

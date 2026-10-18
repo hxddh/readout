@@ -18,6 +18,13 @@ export function setWindowKey(on) { windowKey = !!on; }
 /** The reader is reading in this window: it is visible, and the page or its window has the focus. */
 export function focused() { return !document.hidden && (document.hasFocus() || windowKey === true); }
 
+/**
+ * Whether blocks may be hidden: only the changes-only filter hides them.
+ * Without it, nothing needs the whole page searched for a hidden block.
+ */
+export let blocksHidden = false;
+export function setBlocksHidden(on) { blocksHidden = !!on; }
+
 export let strings = { copy: 'Copy', copied: 'Copied', loadImage: 'Load image from %@', loadAllImages: 'Load all images from %@', remoteError: 'Could not load image: %@', rewritten: 'Rewritten since you last looked', diagramError: 'Diagram could not be drawn', caughtUp: 'All caught up', copyLink: 'Copy Link to Section', railChange: 'Unread change %d of %d: %@', railAdded: 'added', railEdited: 'edited', railRemoved: 'removed', wrap: 'Wrap', wrapTitle: 'Wrap long lines in code blocks' };
 export function mergeStrings(s) { strings = { ...strings, ...s }; }
 
