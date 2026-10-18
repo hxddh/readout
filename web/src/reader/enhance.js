@@ -17,6 +17,23 @@ export function enhance(el) {
   if (el.querySelector('.math, .math-block')) renderMath(el);
   setLang(el);
   markCjkEmphasis(el);
+  markCodeBeforePunct(el);
+}
+
+// Inline code right before full-width punctuation (`results/` 。): the
+// punctuation's glyph already brings its own space, which the code's padding
+// doubled into a gap. Such code keeps only a sliver of padding on that side
+// (reader.css: code.before-punct).
+const FULLWIDTH_PUNCT = /^[、。，．：；！？）］｝」』】〕〗〙〛》〉]/;
+const INLINE = 'a, strong, b, em, i, del, s, mark, u, span';
+function markCodeBeforePunct(el) {
+  for (const code of el.querySelectorAll('code')) {
+    if (code.closest('pre')) continue;
+    let node = code;
+    while (!node.nextSibling && node.parentElement !== el && node.parentElement?.matches(INLINE)) node = node.parentElement;
+    const next = node.nextSibling;
+    code.classList.toggle('before-punct', !!next && next.nodeType === Node.TEXT_NODE && FULLWIDTH_PUNCT.test(next.data));
+  }
 }
 
 // Han characters take Japanese forms in a block with kana, Chinese otherwise
@@ -79,7 +96,8 @@ function markCjkEmphasis(el) {
 // two) and a short identifier in code (32 characters or fewer) stay on one
 // line while the column has room: "S1 / GREEN" or `actions/configure-pages`
 // broken in two read badly. A longer identifier may break after a slash.
-// A table that no longer fits then scrolls, as any wide table does.
+// Only while the table fits that way: one they would push past the column
+// wraps them again, and scrolls only if it is still too wide (measureTables).
 const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦\u{1f000}-\u{1faff}\u{20000}-\u{3fffd}]/u;
 function columns(s) {
   let n = 0;
@@ -114,21 +132,29 @@ function breakAfterSlashes(el) {
 }
 
 /**
- * A table wider than the column scrolls sideways (and pins its first column).
- * A scrolling table takes its natural width (reader.css), so it is measured
+ * A table wider than the column scrolls sideways (and pins its first column);
+ * one of its own block widens into the margin first when the window has room
+ * (reader.css). A scrolling table takes its natural width, so it is measured
  * without the class: otherwise one that scrolled once would never fit again.
- * All the writes, then all the reads, then the writes: the page lays out once.
+ * Short cells stay on one line only while the table fits that way, widened
+ * or not: otherwise they wrap again (.nw-off), and the table scrolls only if
+ * it is still too wide. Writes and reads alternate per step, never per table:
+ * the page lays out twice, and twice more when a table had to wrap again.
  */
 export function measureTables(tables = doc.querySelectorAll('.table-wrap')) {
   const list = [...tables].filter(t => t.isConnected);
-  for (const t of list) t.classList.remove('scrolls');
-  const wide = list.map(t => t.scrollWidth > t.clientWidth + 1);
-  list.forEach((t, i) => { if (wide[i]) t.classList.add('scrolls'); });
-  // A scrolling table of its own block may widen into the margins (reader.css):
-  // its width, read once it takes it.
-  const own = list.filter((t, i) => wide[i] && t.parentElement.matches('#ro-doc > .blk.k-table'));
+  for (const t of list) t.classList.remove('scrolls', 'nw-off');
+  const wide = list.filter(t => t.scrollWidth > t.clientWidth + 1);
+  for (const t of wide) t.classList.add('scrolls');
+  // How far a table of its own block widens: its width, read once it takes it.
+  const own = wide.filter(t => t.parentElement.matches('#ro-doc > .blk.k-table'));
   const widths = own.map(t => t.firstElementChild.getBoundingClientRect().width);
   own.forEach((t, i) => t.parentElement.style.setProperty('--tb-w', `${Math.ceil(widths[i])}px`));
+  const retry = wide.filter(t => t.scrollWidth > t.clientWidth + 1 && t.querySelector('[data-nw], th'));
+  if (!retry.length) return;
+  for (const t of retry) t.classList.replace('scrolls', 'nw-off');
+  const still = retry.filter(t => t.scrollWidth > t.clientWidth + 1);
+  for (const t of still) t.classList.replace('nw-off', 'scrolls');
 }
 
 // New tables are measured together, in the next frame.

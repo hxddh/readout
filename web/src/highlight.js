@@ -93,13 +93,24 @@ export function resolveLang(lang) {
 /** Quick Look: no grammars are loaded ahead of need (call before init). */
 export function noPreload() { preload = false; }
 
+// A terminal transcript's output is secondary text, not the link blue the
+// GitHub themes give it (#0550ae / #79c0ff, the colour of constants): a grey
+// for that scope alone, so the options and numbers in its commands keep theirs.
+async function quietOutput(theme, color) {
+  const t = (await theme).default;
+  return { ...t, tokenColors: [...t.tokenColors, { scope: 'meta.output.shell-session', settings: { foreground: color } }] };
+}
+
 export function init() {
   if (ready) return ready;
   ready = (async () => {
     const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] =
       await Promise.all([import('shiki/core'), import('shiki/engine/javascript')]);
     highlighter = await createHighlighterCore({
-      themes: [import('@shikijs/themes/github-light-default'), import('@shikijs/themes/github-dark-default')],
+      themes: [
+        quietOutput(import('@shikijs/themes/github-light-default'), '#5f5f66'),
+        quietOutput(import('@shikijs/themes/github-dark-default'), '#a8a8ae'),
+      ],
       langs: [],
       engine: createJavaScriptRegexEngine({ forgiving: true }),
     });
@@ -109,6 +120,197 @@ export function init() {
     initialized = true;
   })();
   return ready;
+}
+
+// Loading a grammar does not compile its patterns: the first block it
+// highlights does, which cost the first code block of a warm open 170-220 ms
+// inside the page's first apply. So the app's spare page (warm) also, once
+// the preloaded grammars are in, highlights a few lines of the common
+// constructs of each language, one per idle period, the way a block is
+// highlighted. Only there: compiling a large grammar (TypeScript's) takes a
+// moment of the main thread, which a page being read should not pay for a
+// language it may not show. Never in Quick Look, which preloads nothing.
+// Marks 'readout-hl-warm' when done (perf.test.mjs).
+let warming = false;
+export function warm() {
+  return init().then(() => {
+    if (!preload || warming) return;
+    warming = true;
+    warmUp();
+  });
+}
+
+const TS_SAMPLE = [
+  'import { readFile } from "node:fs/promises";',
+  'import type { Plan } from "./plan.js";',
+  '/** A doc comment. */',
+  'export interface Item<T = unknown> { id: number; name?: string; tags: readonly string[]; value: T | null }',
+  'type Kind = "a" | "b";',
+  'enum Mode { On = 1, Off }',
+  'export class Store<T> extends Base implements Iterable<T> {',
+  '  private readonly items = new Map<string, T>();',
+  '  constructor(public path: string, opts: { strict?: boolean } = {}) { super(); }',
+  '  async load(): Promise<number> {',
+  '    try {',
+  '      const text = await readFile(this.path, "utf8");',
+  '      for (const [i, line] of text.split("\\n").entries()) {',
+  '        if (!line.trim() || line.startsWith("#")) continue;',
+  '        const m = /^- \\[( |x)\\] (.+)$/i.exec(line);',
+  "        this.items.set(`${i}:${m?.[2] ?? ''}`, JSON.parse(line) as T);",
+  '      }',
+  '    } catch (err) {',
+  '      throw new Error(`cannot read ${this.path}: ${String(err)}`);',
+  '    }',
+  '    return this.items.size;',
+  '  }',
+  '}',
+  'export const total = (xs: number[]): number => xs.filter(x => x > 0).reduce((a, b) => a + b, 0) * 1.5e3; // done',
+  'switch (mode) { case Mode.On: break; default: console.log(null, undefined, true); }',
+].join('\n');
+const SAMPLES = {
+  shellscript: [
+    '#!/usr/bin/env bash',
+    'set -euo pipefail',
+    'for f in "$@"; do',
+    '  if [[ -n "${f:-}" && -f "$f" ]]; then echo "ok: $(basename "$f")" | tee -a out.log; fi',
+    'done',
+    'export PATH="$HOME/bin:$PATH"  # comment',
+    'case "$1" in start) npm run build --silent 2>&1 ;; *) exit 1 ;; esac',
+  ].join('\n'),
+  json: '{\n  "name": "x",\n  "n": 1.5e3,\n  "ok": true,\n  "list": [null, {"a": "b\\n"}]\n}',
+  typescript: TS_SAMPLE,
+  javascript: TS_SAMPLE,
+  python: [
+    'from dataclasses import dataclass',
+    '',
+    '@dataclass',
+    'class Item(Base):',
+    '    """A docstring."""',
+    '    def load(self, path: str = "x", *args, **kw) -> list[int]:',
+    '        with open(path) as f:  # comment',
+    '            return [int(x) for x in f if x.strip() and not x.startswith("#")]',
+    '',
+    'async def main() -> None:',
+    '    try:',
+    '        await run(f"{path!r} {1 + 2:.2f}", r"\\d+", b"x")',
+    '    except (OSError, ValueError) as e:',
+    '        raise SystemExit(1) from e',
+    '    finally:',
+    '        print(lambda x: x ** 2, None, True)',
+  ].join('\n'),
+  swift: [
+    'import Foundation',
+    '',
+    '/// A doc comment.',
+    '@MainActor final class Store<T: Codable>: ObservableObject {',
+    '    @Published private(set) var items: [String: T] = [:]',
+    '    init(path: URL, strict: Bool = false) throws { self.path = path }',
+    '    func load() async throws -> Int {',
+    '        guard let data = try? Data(contentsOf: path) else { return 0 }',
+    '        for (i, line) in String(decoding: data, as: UTF8.self).split(separator: "\\n").enumerated() where !line.isEmpty {',
+    '            items["\\(i)"] = try JSONDecoder().decode(T.self, from: Data(line.utf8))',
+    '        }',
+    '        return items.count  // comment',
+    '    }',
+    '}',
+    'enum Mode { case on, off }',
+    'let total = [1, 2].map { $0 * 2 }.reduce(0, +) * 1.5',
+  ].join('\n'),
+  go: [
+    'package main',
+    '',
+    'import (',
+    '\t"context"',
+    '\t"fmt"',
+    ')',
+    '',
+    '// Store is a store.',
+    'type Store[T any] struct {',
+    '\tItems map[string]T `json:"items"`',
+    '}',
+    '',
+    'func (s *Store[T]) Load(ctx context.Context, path string) (int, error) {',
+    '\tfor i, line := range strings.Split(path, "\\n") {',
+    '\t\tif line == "" {',
+    '\t\t\tcontinue',
+    '\t\t}',
+    '\t\ts.Items[fmt.Sprintf("%d", i)] = *new(T)',
+    '\t}',
+    '\tgo func() { defer close(ch); ch <- 1 }()',
+    '\treturn len(s.Items), nil',
+    '}',
+  ].join('\n'),
+  rust: [
+    'use std::collections::HashMap;',
+    '',
+    '/// A doc comment.',
+    '#[derive(Debug, Clone)]',
+    "pub struct Store<'a, T: Clone> {",
+    '    items: HashMap<String, T>,',
+    "    path: &'a str,",
+    '}',
+    '',
+    "impl<'a, T: Clone> Store<'a, T> {",
+    '    pub async fn load(&mut self) -> Result<usize, Box<dyn std::error::Error>> {',
+    '        for (i, line) in self.path.lines().enumerate() {',
+    '            if line.is_empty() { continue; }',
+    '            let key = format!("{i}:{}", line.trim());',
+    '            match self.items.get(&key) { Some(_) => {}, None => return Err("x".into()) }',
+    '        }',
+    '        Ok(self.items.len()) // comment',
+    '    }',
+    '}',
+  ].join('\n'),
+  yaml: [
+    '# comment',
+    'name: "value"',
+    'on:',
+    '  push:',
+    '    branches: [main]',
+    'jobs:',
+    '  test:',
+    '    runs-on: ubuntu-latest',
+    '    steps:',
+    '      - uses: actions/checkout@v4',
+    '      - run: |',
+    '          npm ci',
+    '        env: { CI: true, N: 1.5 }',
+  ].join('\n'),
+  diff: 'diff --git a/x.js b/x.js\nindex 1111111..2222222 100644\n--- a/x.js\n+++ b/x.js\n@@ -1,3 +1,3 @@ function f\n-const a = 1;\n+const a = 2;\n context',
+  markdown: [
+    '# Title',
+    '',
+    'Some *text*, **bold** and `code`, a [link](https://example.com "t") and ![image](a.png).',
+    '',
+    '> A quote',
+    '',
+    '1. One',
+    '- [ ] Task',
+    '',
+    '| a | b |',
+    '| - | - |',
+    '| 1 | 2 |',
+  ].join('\n'),
+  sql: [
+    "WITH t AS (SELECT id, name FROM users WHERE created_at > NOW() - INTERVAL '7 days')",
+    'SELECT a.id, COUNT(*) AS n, SUM(b.x) / 1.5 FROM t a',
+    'LEFT JOIN orders b ON b.user_id = a.id',
+    "WHERE a.name LIKE '%x%' AND b.status IN ('open', 'done')",
+    'GROUP BY a.id HAVING COUNT(*) > 1 ORDER BY n DESC LIMIT 10; -- comment',
+    'CREATE TABLE IF NOT EXISTS x (id INTEGER PRIMARY KEY, v TEXT NOT NULL);',
+    "INSERT INTO x VALUES (1, 'a');",
+  ].join('\n'),
+};
+function warmUp() {
+  const idle = globalThis.requestIdleCallback || (fn => setTimeout(fn, 50));
+  const ids = PRELOAD.filter(id => SAMPLES[id] && highlighter.getLoadedLanguages().includes(id));
+  const next = () => {
+    const id = ids.shift();
+    if (!id) { performance.mark('readout-hl-warm'); return; }
+    highlightSync(SAMPLES[id], id);   // only a head start: its result, or failure, is not used
+    idle(next, { timeout: 1000 });
+  };
+  idle(next, { timeout: 1000 });
 }
 
 // Grammars are registered one at a time, in request order. Several modules

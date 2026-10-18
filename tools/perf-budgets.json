@@ -81,7 +81,11 @@
     "Every patch carried the document's whole outline, task counts and title, which the page never",
     "reads: 142,255 bytes on main (754,177 at 5 MB). Now the page gets RenderPatch.Page: 272 bytes,",
     "one paragraph and the envelope. Guard 400: room for richer paragraph HTML, while anything",
-    "sized by the document fails it."
+    "sized by the document fails it.",
+    "3.7 (web): web_first_highlight_warm_ms, the synchronous first apply of a small document with a",
+    "TypeScript block on screen, on a page warmed as the app's spare page is. Loading a grammar does",
+    "not compile its patterns, so this cost 170-220 ms on a warm open; the warm-up now tokenizes a",
+    "sample in each preloaded language in idle time. Target 40, guard 80."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 260, "guard": 280 },
@@ -96,5 +100,6 @@
   "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": 600 },
   "web_first_apply_1mb_painted_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": 2800 },
   "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 30 },
+  "web_first_highlight_warm_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 40,   "guard": 80 },
   "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null }
 }

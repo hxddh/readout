@@ -675,10 +675,10 @@ for (const dark of [false, true]) {
     const rules = [];
     for (const sh of document.styleSheets) for (const r of sh.cssRules) rules.push(r.cssText);
     const em = e => {
-      const dot = e.querySelector('.em-dot'), after = dot && cs(dot, '::after');
+      const dot = e.querySelector('.em-dot'), d = dot && cs(dot);
       return { style: cs(e).fontStyle, synth: cs(e).getPropertyValue('font-synthesis-style'), mark: cs(e).getPropertyValue('text-emphasis-style') || cs(e).getPropertyValue('-webkit-text-emphasis-style'),
         dots: e.querySelectorAll('.em-dot').length, text: e.textContent,
-        after: after && { content: after.content, position: after.position, top: after.top, bottom: after.bottom, bg: after.backgroundColor } };
+        drawn: d && { image: d.backgroundImage, top: parseFloat(d.paddingTop), bottom: parseFloat(d.paddingBottom), display: d.display } };
     };
     const root = cs(document.documentElement);
     return {
@@ -699,12 +699,14 @@ for (const dark of [false, true]) {
   // 4. Native selection colour (follows the accent, greys in an inactive window).
   check(`no custom ::selection colour (${th})`, g.selection.length === 0, JSON.stringify(g.selection));
   // 5. CJK emphasis: upright, a dot under each Chinese character and a sesame
-  //    over each Japanese one (3.6: drawn per character by .em-dot::after,
-  //    not text-emphasis, which grew the line and marked punctuation);
-  //    Latin emphasis stays italic without marks.
-  const dotted = (e, n) => e.style === 'normal' && e.synth === 'none' && /none/.test(e.mark) && e.dots === n && e.after?.position === 'absolute';
-  check(`Chinese emphasis: upright, a dot under each character (${th})`, dotted(g.zh, 4) && g.zh.after.content === '""' && g.zh.after.top !== 'auto' && g.zh.after.bg !== 'rgba(0, 0, 0, 0)', JSON.stringify(g.zh));
-  check(`Japanese emphasis: upright, a sesame over each character (${th})`, dotted(g.ja, 2) && g.ja.after.content === '""' && g.ja.after.bottom !== 'auto', JSON.stringify(g.ja));
+  //    over each Japanese one (drawn per character by .em-dot, not
+  //    text-emphasis, which grew the line and marked punctuation; since 3.7
+  //    as the span's own background in its padding, below or above the
+  //    glyph, inline so line breaking is unchanged); Latin emphasis stays
+  //    italic without marks. Where the marks land is checked in pixels (T1).
+  const dotted = (e, n) => e.style === 'normal' && e.synth === 'none' && /none/.test(e.mark) && e.dots === n && e.drawn?.display === 'inline' && /radial-gradient/.test(e.drawn.image);
+  check(`Chinese emphasis: upright, a dot under each character (${th})`, dotted(g.zh, 4) && g.zh.drawn.bottom > 0 && g.zh.drawn.top === 0, JSON.stringify(g.zh));
+  check(`Japanese emphasis: upright, a sesame over each character (${th})`, dotted(g.ja, 2) && g.ja.drawn.top > 0 && g.ja.drawn.bottom === 0, JSON.stringify(g.ja));
   check(`Latin emphasis stays italic, without marks (${th})`, g.latin.style === 'italic' && /none/.test(g.latin.mark) && g.latin.synth !== 'none' && g.latin.dots === 0, JSON.stringify(g.latin));
   // Only emphasis that is mostly CJK takes the dots: Latin emphasis in a CJK
   // block stays italic; mostly-CJK emphasis with a Latin word gets dots (on
@@ -896,10 +898,11 @@ const v36 = patch([
   check('emphasis dots are not copied', marks.copied.replace(/\s+$/, '') === marks.text, JSON.stringify(marks));
   // Under the characters in Chinese, inside the line; over them in Japanese.
   // Found in pixels: the marks are painted red, the text black.
-  const style = await page.addStyleTag({ content: '.em-dot { color: #000 !important } .em-dot::after { background: #f00 !important }' });
+  // The marks are drawn in the text colour (currentColor): red, with the glyphs filled black.
+  const style = await page.addStyleTag({ content: '.em-dot { color: #f00 !important; -webkit-text-fill-color: #000 }' });
   const place = {};
   for (const [k, id] of [['zh', 'e-em'], ['ja', 'e-ja-em']]) {
-    const r = await page.evaluate(i => { const d = document.querySelector(`#${i} .em-dot`); d.scrollIntoView({ block: 'center' }); const b = d.getBoundingClientRect(), lh = parseFloat(getComputedStyle(d.closest('p')).lineHeight);
+    const r = await page.evaluate(i => { const d = document.querySelector(`#${i} .em-dot`); d.scrollIntoView({ block: 'center' }); const g = document.createRange(); g.selectNodeContents(d); const b = g.getBoundingClientRect(), lh = parseFloat(getComputedStyle(d.closest('p')).lineHeight);
       const p = d.closest('p').getBoundingClientRect(); const line = Math.floor((b.top - p.top) / lh); return { x: b.left, w: b.width, lineTop: p.top + line * lh, lh }; }, id);
     const y0 = Math.round(r.lineTop - r.lh / 2), shot = PNG.sync.read(await page.screenshot({ clip: { x: Math.round(r.x), y: y0, width: Math.round(r.w), height: Math.round(r.lh * 2) } }));
     const red = [], ink = [];
@@ -988,7 +991,8 @@ const v36 = patch([
 // TB. In a wide window, a code block whose lines run past the column widens
 //     to 1.35 columns (centred, the text column unchanged); one that fits
 //     does not; nor in a narrower window, with wrapping on, or in print. A
-//     wide table widens as far as it needs. Change bars stay beside them.
+//     wide table widens to the right, as far as it needs (3.7). Change bars
+//     stay beside them.
 {
   const tb = patch([
     ['paragraph', '<p id="b-p">The text column stays as it is.</p>'],
@@ -998,16 +1002,22 @@ const v36 = patch([
     ['listItem', `<ul class="li-block li-first li-last"><li>In a list:<div class="code-block" id="b-li"><pre><code>${longLine}</code></pre></div></li></ul>`],
     ['table', `<div class="table-wrap" id="b-table"><table><thead><tr>${Array.from({ length: 10 }, (_, i) => `<th>Column ${i + 1}</th>`).join('')}</tr></thead><tbody><tr>${Array.from({ length: 10 }, (_, i) => `<td>value ${i}</td>`).join('')}</tr></tbody></table></div>`],
   ]);
-  tb.marks = [{ slot: 2, kind: 'inserted' }, { slot: 1, kind: 'inserted' }];
+  tb.marks = [{ slot: 2, kind: 'inserted' }, { slot: 1, kind: 'inserted' }, { slot: 6, kind: 'inserted' }];
+  tb.deletions = [{ id: 1, after: 1, count: 1 }];
   const measure = pg => pg.evaluate(() => {
     const r = id => document.getElementById(id).getBoundingClientRect();
     const col = r('b-p'), bar = blk => { const b = blk.getBoundingClientRect(); return b.left + parseFloat(getComputedStyle(blk, '::before').left); };
     const blk = id => document.getElementById(id).closest('.blk');
+    const unread = b => { const read = b.classList.contains('m-read'); b.classList.remove('m-read'); const x = bar(b); if (read) b.classList.add('m-read'); return x; };
     const pre = document.querySelector('#b-long pre'), huge = document.querySelector('#b-huge pre');
     return { col: [col.left, col.width], long: [r('b-long').left, r('b-long').width], huge: [r('b-huge').left, r('b-huge').width], short: [r('b-short').left, r('b-short').width],
       li: r('b-li').width, table: [r('b-table').left, r('b-table').width], tableScrolls: document.getElementById('b-table').classList.contains('scrolls'),
       longScrolls: pre.scrollWidth > pre.clientWidth, hugeScrolls: huge.scrollWidth > huge.clientWidth,
       barGap: { long: r('b-long').left - bar(blk('b-long')), para: col.left - bar(blk('b-p')) },
+      // As unread (a read mark is a hairline 1 px further in).
+      bars: { para: unread(blk('b-p')), table: unread(blk('b-table')),
+        deletion: (b => b.getBoundingClientRect().left + parseFloat(getComputedStyle(b, '::before').left))(document.querySelector('.del-mark > button')) },
+      vw: innerWidth,
       sideways: document.scrollingElement.scrollWidth - innerWidth };
   });
   page = await open(1600);
@@ -1020,8 +1030,10 @@ const v36 = patch([
   check('at 1600 px a long code block widens to 1.35 columns, centred, and no longer scrolls', Math.abs(w.long[1] - 1.35 * M) < 1 && centred(w.long) && !w.longScrolls, JSON.stringify(w));
   check('a longer one widens as far and scrolls (with its shade)', Math.abs(w.huge[1] - 1.35 * M) < 1 && centred(w.huge) && w.hugeScrolls, JSON.stringify(w));
   check('a code block that fits, and one in a list, keep the column', Math.abs(w.short[1] - M) < 0.5 && w.short[0] === w.col[0] && w.li < M, JSON.stringify(w));
-  check('a wide table widens as far as it needs, centred', w.tableScrolls && w.table[1] > M + 10 && w.table[1] <= 1.35 * M + 1 && centred(w.table), JSON.stringify(w));
-  check('the change bar stays beside a widened block, as beside text', Math.abs(w.barGap.long - w.barGap.para) < 0.5 && w.sideways <= 0, JSON.stringify(w));
+  // 3.7 (T9): to the right only, so its first column and its change bar stay on the text's edge.
+  check('a wide table widens to the right only, as far as it needs', w.tableScrolls && Math.abs(w.table[0] - w.col[0]) < 0.5 && w.table[1] > M + 10 && w.table[1] <= 1.35 * M + 1, JSON.stringify(w));
+  check('the change bar stays beside a widened code block, as beside text', Math.abs(w.barGap.long - w.barGap.para) < 0.5 && w.sideways <= 0, JSON.stringify(w));
+  check('a widened table\'s change bar and a deletion marker line up with the text\'s change bars', Math.abs(w.bars.table - w.bars.para) < 0.5 && Math.abs(w.bars.deletion - w.bars.para) < 0.5, JSON.stringify(w.bars));
   const tbPrint = await (async () => { await page.emulateMedia({ media: 'print' }); const m = await page.evaluate(() => [document.getElementById('b-long').getBoundingClientRect().width, document.getElementById('b-p').getBoundingClientRect().width]); await page.emulateMedia({ media: 'screen' }); return m; })();
   check('printed, a long code block keeps the text width', Math.abs(tbPrint[0] - tbPrint[1]) < 0.5, JSON.stringify(tbPrint));
   await page.evaluate(() => window.readout.setAppearance({ codeWrap: true }));
@@ -1039,6 +1051,8 @@ const v36 = patch([
     const n = await measure(page);
     const fits = width === 1200;   // 1.35 x 680 px and 4 rem each side fit in 1200 px, not in 900
     check(`at ${width} px code ${fits ? 'widens' : 'keeps the column'}`, fits ? Math.abs(n.long[1] - 1.35 * n.col[1]) < 1 : Math.abs(n.long[1] - n.col[1]) < 0.5 && n.sideways <= 0, JSON.stringify(n));
+    // Widening to the right only, a table keeps 4 rem from the window's edge.
+    check(`at ${width} px a table keeps the text's left edge and 4 rem from the window's edge`, Math.abs(n.table[0] - n.col[0]) < 0.5 && n.table[0] + n.table[1] <= n.vw - 64 + 0.5 && n.sideways <= 0, JSON.stringify(n));
     await page.close();
   }
 }
@@ -1115,6 +1129,135 @@ const v36 = patch([
     return { empty: e && getComputedStyle(e).color, caught: getComputedStyle(u).color, bg: getComputedStyle(document.documentElement).backgroundColor };
   });
   check('the empty and caught-up notes reach 4.5:1', (!c.empty || contrastOf(parseColor(c.empty), parseColor(c.bg)) >= 4.5) && contrastOf(parseColor(c.caught), parseColor(c.bg)) >= 4.5, JSON.stringify(c));
+  await page.close();
+}
+
+// 3.7 typesetting.
+// T1. Short cells stay on one line only while the table fits that way: 3.6
+//     kept them on one line regardless, which pushed tables of the real
+//     corpus into scrolling sideways and hid columns at 640 and 900 px. Such
+//     a table wraps them again and fits; one still too wide scrolls, with
+//     them on one line.
+{
+  const corpusTables = async (name, width, which) => {
+    const pg = await open(width);
+    await pg.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync(`test/corpus/patches/${name}.json`, 'utf8')));
+    await pg.waitForTimeout(200);
+    const r = await pg.evaluate(which => { const all = [...document.querySelectorAll('.table-wrap')]; return which.map(i => { const t = all[i]; return { i, scrolls: t.classList.contains('scrolls'), over: t.scrollWidth - t.clientWidth }; }); }, which);
+    await pg.close();
+    return r;
+  };
+  const cases = [['01-sdd-fix-loop-plan', 640, [0]], ['17-dataagent-tdd-design', 640, [4, 6]], ['11-mongodb-adapter-deep-dive', 900, [0]]];
+  for (const [name, width, which] of cases) {
+    const r = await corpusTables(name, width, which);
+    check(`corpus ${name.slice(0, 2)} at ${width} px: tables of short cells wrap them and fit instead of scrolling`, r.every(t => !t.scrolls && t.over <= 1), JSON.stringify(r));
+  }
+  page = await open(640);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['table', `<div class="table-wrap" id="w-fit"><table><thead><tr>${['Phase', 'Owner team', 'Status', 'Next step', 'Risk level', 'Due date', 'Reviewer'].map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody><tr>${['Phase one setup', 'platform team', 'S1 / GREEN', 'review the plan', 'medium risk', 'next sprint', 'second agent'].map(c => `<td>${c}</td>`).join('')}</tr></tbody></table></div>`],
+    ['table', `<div class="table-wrap" id="w-wide"><table><thead><tr>${Array.from({ length: 12 }, (_, i) => `<th>Key ${i}</th>`).join('')}</tr></thead><tbody><tr>${Array.from({ length: 12 }, (_, i) => `<td>identifier_${i}_name</td>`).join('')}</tr></tbody></table></div>`],
+  ]));
+  await page.waitForTimeout(150);
+  const t = await page.evaluate(() => {
+    const st = id => { const w = document.getElementById(id); return { scrolls: w.classList.contains('scrolls'), over: w.scrollWidth - w.clientWidth, th: getComputedStyle(w.querySelector('th')).whiteSpace }; };
+    return { fit: st('w-fit'), wide: st('w-wide') };
+  });
+  check('a table its short cells would push past the column wraps them and fits', !t.fit.scrolls && t.fit.over <= 1 && t.fit.th === 'normal', JSON.stringify(t.fit));
+  check('a table too wide even so scrolls, its short cells on one line', t.wide.scrolls && t.wide.th === 'nowrap', JSON.stringify(t.wide));
+  // In a window with room, a table widens before it wraps: short cells stay on one line.
+  await page.setViewportSize({ width: 1600, height: 800 });
+  await page.waitForTimeout(200);
+  const roomy = await page.evaluate(() => { const w = document.getElementById('w-fit'); return { scrolls: w.classList.contains('scrolls'), over: w.scrollWidth - w.clientWidth, th: getComputedStyle(w.querySelector('th')).whiteSpace, td: getComputedStyle(w.querySelector('td')).whiteSpace }; });
+  check('in a wide window such a table keeps short cells on one line (widened if needed)', roomy.over <= 1 && roomy.th === 'nowrap' && roomy.td === 'nowrap', JSON.stringify(roomy));
+  await page.close();
+}
+
+// T2. A one-character emphasis-dot span at a line end keeps its dot under
+//     it: an absolutely placed ::after was drawn on the next line (or lost)
+//     when the span was split there. Swept across widths at which the line
+//     ends right after a dotted character (CJK advances are 1 em = 16 px).
+{
+  page = await open(700);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['paragraph', '<p id="d-sweep">甲乙丙<em>强调文字</em>丁戊己庚<em>着重号</em>辛壬癸子丑寅卯辰巳午未申酉戌亥<em>再强调</em>一二三四五六七八九十</p>', { cjk: true }],
+    ['paragraph', '<p id="d-twin">甲乙丙强调文字丁戊己庚着重号辛壬癸子丑寅卯辰巳午未申酉戌亥再强调一二三四五六七八九十</p>', { cjk: true }],
+  ]));
+  const sweep = await page.evaluate(() => {
+    const p = document.getElementById('d-sweep'), twin = document.getElementById('d-twin'), dots = [...p.querySelectorAll('.em-dot')];
+    let split = 0, atEnd = 0, pitch = 0;
+    for (let k = 8; k <= 36; k++) for (const d of [0, 0.001, 0.01]) {
+      p.style.width = twin.style.width = `${16 * k - d}px`;
+      for (const e of dots) {
+        const rs = e.getClientRects();
+        if (rs.length > 1) split++;
+        const r = document.createRange(); r.setStartAfter(e); r.setEnd(p, p.childNodes.length);
+        const n = [...r.getClientRects()].find(x => x.width > 0);
+        if (n && rs[0] && n.top > rs[0].top + 2) atEnd++;
+      }
+      if (Math.abs(p.getBoundingClientRect().height - twin.getBoundingClientRect().height) > 0.5) pitch++;
+    }
+    p.style.width = twin.style.width = '';
+    return { split, atEnd, pitch };
+  });
+  check('an emphasis-dot span at a line end is never split onto the next line', sweep.split === 0 && sweep.atEnd > 20, JSON.stringify(sweep));
+  check('emphasis dots change neither line breaks nor line pitch (as tall as the same text without them, at every width)', sweep.pitch === 0, JSON.stringify(sweep));
+  // The dot is not text: find in page and copying see only the characters.
+  const text = await page.evaluate(() => {
+    const p = document.getElementById('d-sweep'), sel = getSelection(), r = document.createRange();
+    r.selectNodeContents(p); sel.removeAllRanges(); sel.addRange(r);
+    const copied = sel.toString(); sel.removeAllRanges();
+    return { copied: copied.replace(/\s+$/, ''), found: window.find('强调文字', true, false, true), text: p.textContent };
+  });
+  check('emphasis dots stay out of copied and found text', text.copied === text.text && text.found, JSON.stringify(text));
+  await page.close();
+}
+
+// T3. A terminal transcript's output is secondary grey, not link blue (the
+//     colour the GitHub themes give constants); the command stays apart.
+{
+  page = await open(700);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['code', '<div class="code-block" id="sh-out" data-lang="console"><pre><code>$ npm test --silent\nall checks passed</code></pre></div>'],
+  ]));
+  await until(page, () => [...document.querySelectorAll('.code-block')].every(c => c.dataset.hl === 'done'));
+  const colours = async () => page.evaluate(() => {
+    const span = (id, text) => [...document.querySelectorAll(`#${id} .line span`)].find(s => s.textContent.includes(text));
+    const c = s => s && getComputedStyle(s).color;
+    return { output: c(span('sh-out', 'passed')), command: c(span('sh-out', 'npm')) };
+  });
+  const light = await colours();
+  await page.evaluate(() => window.readout.setAppearance({ dark: true }));
+  const dark = await colours();
+  check('console output is grey, not blue (light)', light.output === 'rgb(95, 95, 102)', JSON.stringify(light));
+  check('console output is grey, not blue (dark)', dark.output === 'rgb(168, 168, 174)', JSON.stringify(dark));
+  check('the command stays apart from its output', light.command && light.command !== light.output && dark.command !== dark.output, JSON.stringify({ light, dark }));
+  await page.close();
+}
+
+// T7. Inline code right before full-width punctuation keeps only a sliver
+//     of padding on that side (the punctuation brings its own space).
+{
+  page = await open(700);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['paragraph', '<p>结果写入 <code id="p-a">results/2026-10/</code>。另见 <a href="#x"><code id="p-b">docs/</code></a>，以及 <code id="p-c">npm test</code> 和 <code id="p-d">make</code>.</p>', { cjk: true }],
+    ['paragraph', '<p>路径 <code class="path-link" id="p-e" data-path="a.md">a.md</code>。</p>', { cjk: true }],
+  ]));
+  const pad = await page.evaluate(() => Object.fromEntries(['p-a', 'p-b', 'p-c', 'p-d', 'p-e'].map(id => { const e = document.getElementById(id), cs = getComputedStyle(e); return [id, Math.round(parseFloat(cs.paddingRight) / parseFloat(cs.fontSize) * 100) / 100]; })));
+  check('code before full-width punctuation trims its right padding to 0.12em; elsewhere 0.36em; a path link keeps its outline even', pad['p-a'] === 0.12 && pad['p-b'] === 0.12 && pad['p-c'] === 0.36 && pad['p-d'] === 0.36 && pad['p-e'] === 0.36, JSON.stringify(pad));
+  await page.close();
+}
+
+// T12. Bulleted and numbered items start their text at the same place, so
+//      a list next to one of the other kind lines up.
+{
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['paragraph', '<p id="l-p">Text.</p>'],
+    ['listItem', '<ul class="li-block li-first li-last"><li id="l-ul">Bullet</li></ul>'],
+    ['listItem', '<ol class="li-block li-first li-last" start="9"><li id="l-ol">Nine</li><li id="l-ol10">Ten</li></ol>'],
+  ]));
+  const x = await page.evaluate(() => Object.fromEntries(['l-p', 'l-ul', 'l-ol', 'l-ol10'].map(id => { const r = document.createRange(); r.selectNodeContents(document.getElementById(id)); return [id, r.getClientRects()[0].left]; })));
+  check('bulleted and numbered item text starts at the same x', Math.abs(x['l-ul'] - x['l-ol']) < 0.5 && Math.abs(x['l-ol'] - x['l-ol10']) < 0.5 && x['l-ul'] > x['l-p'], JSON.stringify(x));
   await page.close();
 }
 
