@@ -98,4 +98,8 @@ R2 与 S3 在条件写入上的行为一致；Tigris 的 `CopyObject` 不支持�
 
 完成条件写入用例后，再扩展到 multipart 和版本化 bucket。详见 https://docs.aws.amazon.com/AmazonS3/latest/userguide/conditional-requests.html 。
 
+复查时请*逐项核对*每家实现的“条件写入”与「最终一致」差异；*所有实现都必须在同一个 harness 版本下重新跑完全部用例，并保存原始响应头以便复查*。
+
+日本語の確認：*条件付き書き込み*は「すべての実装」で同じ結果になるはずです。
+
 ![架构图](./missing-diagram.png)

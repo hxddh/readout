@@ -8,6 +8,7 @@ thresholds below. Thresholds were taken from those printed values for
 web/test/fixtures/plan.md -> plan-v2.md and must NOT be edited to make a
 run pass — a mismatch means the product regressed.
 """
+import html
 import json
 import re
 import sys
@@ -34,9 +35,11 @@ def load(name):
         return {}
 
 
+# 3.7: the fixtures gained two paragraphs (Chinese emphasis and quotes, a
+# Japanese line) for the typesetting shots: 33/34 blocks became 35/36.
 initial = load("1-initial.json")
 print(f"1-initial: {initial}")
-check("1-initial blocks == 33", initial.get("blocks") == 33, initial)
+check("1-initial blocks == 35", initial.get("blocks") == 35, initial)
 check("1-initial highlighted >= 2", (initial.get("highlighted") or 0) >= 2, initial)
 check("1-initial math >= 3", (initial.get("math") or 0) >= 3, initial)
 # Task E4: tools/smoke-run.py replaced the file 50ms after the app opened it;
@@ -45,7 +48,7 @@ check("1-initial early edit applied", initial.get("early") is True, initial)
 
 edit = load("2-after-edit.json")
 print(f"2-after-edit: {edit}")
-check("2-after-edit blocks == 34", edit.get("blocks") == 34, edit)
+check("2-after-edit blocks == 36", edit.get("blocks") == 36, edit)
 check("2-after-edit marks == 4", edit.get("marks") == 4, edit)
 check("2-after-edit deletions == 1", edit.get("deletions") == 1, edit)
 shift = edit.get("anchorShift")
@@ -268,8 +271,20 @@ print(f"tab-dot: {td}")
 check("tabs: a tab behind with unread changes shows the dot",
       td.get("tab_bar_visible") is True and (td.get("behind_unread") or 0) > 0 and td.get("behind_dot") is True, td)
 check("tabs: its outline marks the section added", td.get("behind_outline_unread") == ["Added later"], td)
-check("tabs: the tab in front has the dot exactly when it has unread changes",
-      td.get("front_dot") == ((td.get("front_unread") or 0) > 0), td)
+# A tab opened behind and never looked at has the dot too (U10): the window in
+# front may never have been key on the CI runner, which cannot activate Readout.
+check("tabs: the tab in front has the dot exactly when it has unread changes or was never looked at",
+      td.get("front_dot") == ((td.get("front_unread") or 0) > 0 or td.get("front_noted_recent") is False), td)
+ht = bg.get("hook_tab") or {}
+check("tabs: a tab opened behind, never looked at, shows the dot with nothing unread",
+      ht.get("unread") == 0 and ht.get("noted_recent") is False and ht.get("dot") is True, bg)
+# The tab bar moves the toolbar's edge without a resize: the inset follows it (A2).
+tdi = td.get("inset") or {}
+check("tabs: with the tab bar showing, the page's top inset is the toolbar's edge",
+      (tdi.get("layout_gap") or 0) > 0 and tdi.get("obscured_top") == tdi.get("layout_gap"), td)
+# Two documents titled alike in one tab group: their tabs name the files (A7).
+check("tabs: documents with the same title name their files",
+      td.get("dup_in_group") is True and sorted(td.get("dup_titles") or []) == ["Same plan — fix.md", "Same plan — refactor.md"], td)
 
 menus = load("menus.json")
 print(f"menus: {menus}")
@@ -295,6 +310,8 @@ check("File has Close All as the ⌥⌘W alternate of Close",
 use_sel = by_action.get("useSelectionForFind:") or {}
 check("Find has Use Selection for Find, without ⌘E", bool(use_sel) and "key" not in use_sel, use_sel)
 check("⌘E stays Open in Editor", (by_action.get("openInEditor:") or {}).get("key") == "⌘e", by_action.get("openInEditor:"))
+check("Edit has Speech: Start and Stop Speaking",
+      "startSpeaking:" in by_action and "stopSpeaking:" in by_action, sorted(by_action))
 what = by_action.get("showWhatChanged:") or {}
 check("View has Show What Changed, without a key", bool(what) and "key" not in what, what)
 check("Help opens the bundled shortcuts", "openHelp:" in by_action, sorted(by_action))
@@ -308,8 +325,62 @@ check("welcome: never a tab, no minimize or zoom button",
 check("welcome: named, and not listed twice in the Window menu",
       bool(aux.get("welcome_title")) and aux.get("welcome_in_window_menu") is False, aux)
 
-for name in ["window-light.png", "window-dark.png"]:
+for name in ["window-light.png", "window-dark.png", "cjk-light.png"]:
     check(f"{name} captured", (OUT / name).exists() and (OUT / name).stat().st_size > 10000)
+
+# The Chinese pass (-AppleLanguages '(zh-Hans)'): no menu title left in English.
+# Latin text that is not English: the app's name, product names, file names;
+# the Services submenu is filled by other apps.
+LATIN_OK = re.compile(r"Readout|Agent|Markdown|GitHub|[\w.-]+\.md\b|[⌃⌥⇧⌘]+\S*")
+zh = load("menus-zh.json")
+zh_tree = list(menu_items(zh.get("menus") or []))
+check("menus-zh.json has the whole menu bar", len(zh_tree) > 40, len(zh_tree))
+english = [" ▸ ".join(path) for path, i in zh_tree
+           if "服务" not in path[:-1] and i.get("action") != "makeKeyAndOrderFront:"
+           and re.search(r"[A-Za-z]", LATIN_OK.sub("", i.get("title") or ""))]
+check("zh-Hans: no English menu titles", not english, english)
+check("zh-Hans: Settings and welcome captured",
+      all((OUT / f).exists() for f in ["5-settings-zh.screen.png", "6-welcome-zh.screen.png"]))
+zlog = OUT / "smoke-zh.log"
+check("zh-Hans pass: no page errors", zlog.exists() and "Readout page error" not in zlog.read_text())
+
+# Typesetting this WebKit supports (T6): reported, not asserted.
+print(f"css-supports: {load('css-supports.json')}")
+
+# The soft scroll edge under the toolbar (A1): the web view asks WebKit for the
+# automatic content-inset fill, so its top scroll pocket is made with the
+# automatic style (0; WebKit's default is the hard style), with no capture colour
+# and no preference for a solid hard pocket. On main the fill is off.
+edge = load("scroll-edge.json")
+print(f"scroll-edge: {edge}")
+check("scroll edge: the automatic content-inset fill is on",
+      edge.get("fill_settable") is True and edge.get("automatic_fill") is True, edge)
+props = (edge.get("pocket") or {}).get("properties") or {}
+check("scroll edge: the top scroll pocket has the automatic style, no capture colour, no solid hard pocket",
+      props.get("style") == "0" and props.get("captureColor") == "nil" and props.get("prefersSolidColorHardPocket") == "0", edge.get("pocket"))
+# What it looks like: rows of a window shot just above the toolbar's edge with a
+# dark code block 10 pt under it. A hard pocket paints them one flat colour (sd 0);
+# the soft edge lets the block show through. Reported, not asserted: the runner's
+# window is never key (Readout cannot be activated there) and its rows stay flat
+# with the pocket configured as above; the look is checked on a Mac.
+band = [r for r in edge.get("rows") or [] if -8 <= r.get("rel", 99) <= -1]
+flat = bool(band) and all(r["sd"] < 0.5 for r in band) and max(r["mean"] for r in band) - min(r["mean"] for r in band) < 1
+print(f"scroll edge band (key window: {edge.get('window_key')}): {'flat (hard)' if flat else 'not flat (soft)'} {band}")
+
+landed = load("landed.json")
+print(f"landed: {landed}")
+# Next Change: focus lands on a change and the page says which one, for VoiceOver (U16).
+first = (landed.get("landed") or [{}])[0]
+check("next change: where it landed is reported (n of m, kind)",
+      1 <= (first.get("index") or 0) <= (first.get("total") or 0) == landed.get("unread")
+      and first.get("kind") in ("railAdded", "railEdited", "railRemoved", "railTask"), landed)
+
+credits = OUT / "Credits.html"
+sys.path.insert(0, str(ROOT / "tools"))
+from credits import production_packages  # noqa: E402
+text = credits.read_text() if credits.exists() else ""
+absent = [n for n in production_packages() if html.escape(n) not in text]
+check("Credits.html in the app names every production dependency", credits.exists() and not absent, absent[:20])
 
 logp = OUT / "smoke-out.log"
 log = logp.read_text() if logp.exists() else ""
@@ -345,7 +416,15 @@ m = re.search(r"preview (applied|timed out): rendered (-?\d+) of (\d+) blocks", 
 check("quicklook preview rendered", bool(m), qrt[-500:])
 if m:
     check("quicklook preview applied (not timed out)", m.group(1) == "applied", m.group(0))
-    check("quicklook rendered == 34 blocks", m.group(2) == "34" and m.group(3) == "34", m.group(0))
+    check("quicklook rendered == 36 blocks", m.group(2) == "36" and m.group(3) == "36", m.group(0))
+# The preview is asked for, then applied: both logged (ql_open_ms comes from the second).
+check("quicklook logs the request", "preview requested" in qrt, qrt[-500:])
+
+tm = load("timings.json")
+# Readout's own share of a warm open is part of it, and measured for every open.
+check("warm open: Readout's share is measured and within the whole open",
+      isinstance(tm.get("warm_open_to_applied_ms"), (int, float)) and isinstance(tm.get("warm_open_ms"), (int, float))
+      and tm["warm_open_to_applied_ms"] <= tm["warm_open_ms"], tm)
 
 print(f"{len(failures)} failing assertion(s)")
 sys.exit(1 if failures else 0)
