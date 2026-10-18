@@ -402,7 +402,7 @@ struct WelcomeView: View {
                  ? NSLocalizedString("New plans in ~/.claude/plans open in Readout on their own. Add other agent folders in Settings.", comment: "Welcome: how documents arrive")
                  : NSLocalizedString("New Markdown files in the agent folders you add in Settings open in Readout on their own.", comment: "Welcome: how documents arrive, ~/.claude/plans not in Settings"))
                 .font(.callout)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 40)
