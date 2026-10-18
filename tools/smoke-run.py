@@ -106,10 +106,13 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
     if warm is not None:
         timings["warm_open_ms"] = round(warm * 1000, 1)
     # Readout's own share of those opens: window request to the page's first
-    # apply, without the frame the system paints it in (also the median).
+    # apply, without the frame the system paints it in. The fastest of the
+    # three: a shared runner only ever adds time (main measured 768/416/403 ms
+    # and 1274/451/693 ms for the same code), so the minimum is the closest
+    # reading of Readout's own work and the one a regression must move.
     applied_samples = for_second(app.get("first_apply_samples_s", {})) or []
     timings["warm_open_to_applied_samples_ms"] = [round(v * 1000, 1) for v in applied_samples]
-    timings["warm_open_to_applied_ms"] = (round(sorted(applied_samples)[len(applied_samples) // 2] * 1000, 1)
+    timings["warm_open_to_applied_ms"] = (round(min(applied_samples) * 1000, 1)
                                           if len(applied_samples) == WARM_OPENS else None)
     (out / "timings.json").write_text(json.dumps(timings, indent=1, sort_keys=True) + "\n")
     print(f"harness: timings {timings}")
