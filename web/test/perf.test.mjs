@@ -141,8 +141,8 @@ const firstHighlight = await (async () => {
     t();
   }));
   await p.waitForTimeout(200);
-  // Each language's warm-up task (the longest is what a window taking the page mid-warm-up could wait for).
-  const warmTasks = await p.evaluate(() => Object.fromEntries(performance.getEntriesByType('measure').filter(m => m.name.startsWith('readout-hl-warm-')).map(m => [m.name.slice(16), Math.round(m.duration)])));
+  // The warm-up's longest step: what a window taking the page mid-warm-up could wait for.
+  const warmStep = await p.evaluate(() => Math.round(performance.getEntriesByName('readout-hl-warm')[0]?.detail?.longest ?? -1));
   const code = 'import { readFile } from "node:fs/promises";\n\n// Load the plan and count its open tasks.\nexport async function openTasks(path: string): Promise<number> {\n  const text = await readFile(path, "utf8");\n  return text.split("\\n").filter(l => /^- \\[ \\]/.test(l)).length;\n}';
   const r = await p.evaluate(code => {
     const t0 = performance.now();
@@ -154,7 +154,7 @@ const firstHighlight = await (async () => {
     return { ms: performance.now() - t0, hl: document.querySelector('.code-block').dataset.hl };
   }, code);
   await p.close();
-  return { ...r, warmed, warmTasks };
+  return { ...r, warmed, warmStep };
 })();
 if (!firstHighlight.warmed || firstHighlight.hl !== 'done') errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
 
@@ -165,7 +165,7 @@ const result = {
   web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
-  web_hl_warm_tasks_ms: firstHighlight.warmTasks,
+  web_hl_warm_longest_step_ms: firstHighlight.warmStep,
   web_scroll_frames: gaps.length,
   web_scroll_stride_px: scroll.stride,
   web_scroll_frame_p95_ms: Math.round(sorted[Math.floor(sorted.length * 0.95)] * 10) / 10,

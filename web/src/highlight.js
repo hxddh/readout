@@ -82,6 +82,7 @@ let initialized = false;   // the preloaded grammars are all registered
 const loading = new Map();
 const failed = new Set();  // grammars that could not be loaded (never waited for again)
 const lazyOf = new Map();  // grammar id -> languages it embeds only when they are loaded
+const grammarsOf = new Map();  // preloaded grammar id -> its grammar modules (for the warm-up)
 
 export function resolveLang(lang) {
   if (!lang) return null;
@@ -124,18 +125,18 @@ export function init() {
 
 // Loading a grammar does not compile its patterns: the first block it
 // highlights does, which cost the first code block of a warm open 170-220 ms
-// inside the page's first apply. So the app's spare page (warm) also, once
-// the preloaded grammars are in and it has then sat unused for a while (a
-// spare page usually waits minutes for its window), highlights a few lines
-// of the common constructs of each language, the way a block is
-// highlighted, one language per task. A window that takes the page before
-// that never waits for it; one that takes it during it waits at most for
-// the language in progress (TypeScript's is the long one). Only there: compiling a large grammar (TypeScript's) takes a
-// moment of the main thread, which a page being read should not pay for a
-// language it may not show. Never in Quick Look, which preloads nothing.
-// It stops as soon as the page shows a document (stopWarmUp, enhance.js):
-// a spare page taken for a window before it is done leaves the rest to the
-// blocks that need it. Marks 'readout-hl-warm' when done (perf.test.mjs).
+// inside the page's first apply (TypeScript's patterns alone take WebKit
+// hundreds of milliseconds). So the app's spare page (warm), once the
+// preloaded grammars are in and it has then sat unused for a while (a spare
+// page usually waits minutes for its window), compiles each grammar's
+// patterns one at a time and runs a few lines of each language through it,
+// in slices of a few milliseconds, one per task: a window taking the page
+// meanwhile waits for one slice at most (one pattern: TypeScript's largest
+// is the longest step), and nothing more is done once it shows a document
+// (stopWarmUp, enhance.js). Only on the spare page: a page being read should
+// not spend its main thread on languages it may not show. Never in Quick
+// Look, which preloads nothing. Marks 'readout-hl-warm' when done, with the
+// longest step (perf.test.mjs).
 let warming = false;
 let warmStopped = false;
 export function warm() {
@@ -312,18 +313,54 @@ const SAMPLES = {
 };
 const WARM_DELAY_MS = 5000;
 const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript', 'go', 'swift', 'rust', 'yaml', 'markdown', 'sql', 'diff'];
+// The regexes of a grammar, as the build precompiled them: WebKit compiles
+// each on its first use, which is what makes a grammar's first block slow.
+function regexesOf(id) {
+  const out = new Set(), seen = new Set();
+  const walk = v => {
+    if (v instanceof RegExp) { out.add(v); return; }
+    if (!v || typeof v !== 'object' || seen.has(v)) return;
+    seen.add(v);
+    for (const k in v) walk(v[k]);
+  };
+  walk(grammarsOf.get(id));
+  return [...out];
+}
+
+const SLICE_MS = 8;
 function warmUp() {
   const ids = WARM_ORDER.filter(id => SAMPLES[id] && highlighter.getLoadedLanguages().includes(id));
+  const work = [];
+  for (const id of ids) {
+    for (const r of regexesOf(id)) work.push(() => { try { r.lastIndex = 0; r.exec(''); } catch { /* not ours to fix */ } });
+    // Then its sample, a line per step (carrying the grammar's state), so
+    // the rules it reaches are set up as they are for a block.
+    let state;
+    for (const line of SAMPLES[id].split('\n')) {
+      work.push(() => {
+        try {
+          const tokens = highlighter.codeToTokensBase(line, { lang: id, theme: 'github-light-default', ...(state ? { grammarState: state } : {}) });
+          state = highlighter.getLastGrammarState(tokens);
+        } catch { state = undefined; }
+      });
+    }
+  }
+  // And the whole path once, as a block is highlighted (both themes, HTML).
+  work.push(() => highlightSync('x', 'json'));
+  let longest = 0;
   const next = () => {
     if (warmStopped) return;
-    const id = ids.shift();
-    if (!id) { performance.mark('readout-hl-warm'); return; }
     const t0 = performance.now();
-    highlightSync(SAMPLES[id], id);   // only a head start: its result, or failure, is not used
-    try { performance.measure(`readout-hl-warm-${id}`, { start: t0 }); } catch { /* reporting only */ }
+    do {
+      const step = work.shift();
+      if (!step) { performance.mark('readout-hl-warm', { detail: { longest } }); return; }
+      const s0 = performance.now();
+      step();
+      longest = Math.max(longest, performance.now() - s0);
+    } while (performance.now() - t0 < SLICE_MS);
     setTimeout(next, 0);
   };
-  if (!warmStopped) next();
+  next();
 }
 
 // Grammars are registered one at a time, in request order. Several modules
@@ -340,6 +377,7 @@ export function ensureLang(id) {
     const done = registry.then(() => load).then(m => {
       const main = m.default.find(g => g.name === id) || m.default[m.default.length - 1];
       lazyOf.set(id, main?.embeddedLangsLazy || []);
+      if (preload) grammarsOf.set(id, m.default);
       return highlighter.loadLanguage(m.default);
     }).catch(() => { failed.add(id); });
     registry = done;

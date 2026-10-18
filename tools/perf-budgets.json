@@ -84,8 +84,10 @@
     "sized by the document fails it.",
     "3.7 (web): web_first_highlight_warm_ms, the synchronous first apply of a small document with a",
     "TypeScript block on screen, on a page warmed as the app's spare page is. Loading a grammar does",
-    "not compile its patterns, so this cost 170-220 ms on a warm open; the warm-up now tokenizes a",
-    "sample in each preloaded language in idle time. Target 40, guard 80.",
+    "not compile its patterns, so this cost 170-220 ms on a warm open; the spare page's warm-up now",
+    "compiles each preloaded grammar's patterns and a sample, in slices, once it has sat unused for",
+    "5 s. Target 40, guard 80. web_hl_warm_longest_step_ms: its longest single step (one pattern:",
+    "what a window taking the page mid-warm-up could wait for), reported, not gated.",
     "3.7: warm_open_to_applied_ms is Readout's own share of warm_open_ms: window request to the",
     "page's first apply (the median of the same three opens), without the frame the system paints",
     "it in. The 3.6 audit measured ~350 ms of a 1.7-2.6 s warm_open on the runner: target 150,",
@@ -108,5 +110,6 @@
   "web_first_apply_1mb_painted_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": 2800 },
   "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 30 },
   "web_first_highlight_warm_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 40,   "guard": 80 },
+  "web_hl_warm_longest_step_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": null },
   "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null }
 }
