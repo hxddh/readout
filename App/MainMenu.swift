@@ -79,7 +79,7 @@ enum MainMenu {
         findMenu.addItem(item(NSLocalizedString("Use Selection for Find", comment: "Menu"), #selector(ReaderWindowController.useSelectionForFind(_:))))
         find.submenu = findMenu
         edit.addItem(find)
-        // Reads the selection aloud (WKWebView answers both).
+        // Reads the selection aloud, or the whole page when nothing is selected (WKWebView answers both).
         let speech = NSMenuItem(title: NSLocalizedString("Speech", comment: "Menu"), action: nil, keyEquivalent: "")
         let speechMenu = NSMenu(title: speech.title)
         speechMenu.addItem(item(NSLocalizedString("Start Speaking", comment: "Menu"), #selector(NSTextView.startSpeaking(_:))))
