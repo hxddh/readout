@@ -238,6 +238,7 @@ enum SmokeTest {
             await liveUpdates(app: app, out: out)
             await backgroundOpens(out: out)
             await commitBaseline(out: out)
+            await earlyPrint(out: out)
             await findModeSwitches(controller: controller, out: out)
             writeMenus(out)
             app?.showSettings(nil)
@@ -558,6 +559,46 @@ enum SmokeTest {
             reader.window?.close()
         }
         write(json, to: out, "git-baseline.json")
+    }
+
+    /// While set (the smoke run's early print), a print records the number
+    /// of blocks the page held when it would have begun, instead of a sheet.
+    private static var capturingPrints = false
+    private static var printedBlocks: [Int] = []
+
+    /// Whether the print was recorded here (CI) instead of shown.
+    static func capturePrint(_ webView: WKWebView) -> Bool {
+        guard capturingPrints else { return false }
+        Task { @MainActor in
+            let n = (try? await webView.evaluateJavaScript("document.querySelectorAll('.blk').length")) as? Int
+            printedBlocks.append(n ?? -1)
+        }
+        return true
+    }
+
+    /// ⌘P the moment a window opens, before its document has loaded: what
+    /// prints is the document, not the empty page (3.7 review, finding 2).
+    private static func earlyPrint(out: URL) async {
+        guard let path = ProcessInfo.processInfo.environment["READOUT_SMOKE_SECOND"] else { return }
+        let url = URL(fileURLWithPath: path)
+        let app = NSApp.delegate as? AppDelegate
+        capturingPrints = true
+        printedBlocks = []
+        defer { capturingPrints = false }
+        app?.open(url)
+        guard let reader = app?.reader(for: url) else { return write(["opened": false], to: out, "early-print.json") }
+        // The read runs off the main thread: it cannot have finished yet.
+        let loadedWhenAsked = reader.isLoaded
+        reader.printDocument(nil)
+        reader.printDocument(nil)   // asked twice while loading: printed once
+        let deadline = Date().addingTimeInterval(15)
+        while printedBlocks.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        try? await Task.sleep(for: .seconds(1))
+        let web = reader.window?.contentView?.firstDescendant(ofType: WKWebView.self)
+        let pageBlocks = (try? await web?.evaluateJavaScript("document.querySelectorAll('.blk').length")) as? Int
+        write(["opened": true, "loaded_when_asked": loadedWhenAsked, "printed": printedBlocks,
+               "page_blocks": pageBlocks ?? -1], to: out, "early-print.json")
+        reader.window?.close()
     }
 
     private static func write(_ json: [String: Any], to dir: URL, _ name: String) {

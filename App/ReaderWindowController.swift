@@ -85,6 +85,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // File state (content tracking lives in `loader`)
     private var loaded = false
+    /// ⌘P before the first document was applied (`didLoad`): printed then.
+    private var printWhenLoaded = false
     /// The first read failed: the next change on disk, or opening the file
     /// again, reads it again instead of waiting for a load that never comes.
     private var loadFailed = false
@@ -402,6 +404,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 self.deleted = gone
                 self.model.status = gone ? NSLocalizedString("The file was deleted.", comment: "Status")
                                          : NSLocalizedString("The file could not be read.", comment: "Status")
+                // Nothing to print but the failure: a later read does not print on its own.
+                self.printWhenLoaded = false
                 self.showLoadFailure()
                 return
             }
@@ -467,6 +471,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
                     self.webView.call("scrollToAnchor", json: json)
                 }
+            }
+            // ⌘P while it loaded: now, queued behind the document's apply.
+            if self.printWhenLoaded {
+                self.printWhenLoaded = false
+                self.printDocument(nil)
             }
         }
     }
@@ -1131,16 +1140,29 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     @objc func printDocument(_ sender: Any?) {
+        // Before the first document is applied the page is empty (and its
+        // apply not queued yet, so nothing would wait for it): print once
+        // didLoad has queued it. Asked twice meanwhile, printed once.
+        guard loaded else {
+            printWhenLoaded = true
+            return
+        }
         // Diagrams and code are drawn lazily near the viewport: the page draws
         // the rest first (it gives up after a few seconds), then prints.
         // In order with the calls before it (a document still being encoded,
         // a cold window's page not up yet): never ahead of them.
         webView.whenReady { [weak self] in
             self?.webView.runAsync("return await window.readout.preparePrint()") { [weak self] _ in
-                self?.runPrint()
+                guard let self else { return }
+                // CI: what would print is recorded instead of a print sheet.
+                if SmokeTest.capturePrint(self.webView) { return }
+                self.runPrint()
             }
         }
     }
+
+    /// The first document has been applied (CI).
+    var isLoaded: Bool { loaded }
 
     private func runPrint() {
         guard let window else { return }
