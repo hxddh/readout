@@ -56,6 +56,20 @@ const corpus = name => JSON.parse(readFileSync(join('test/corpus/patches', name)
 const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...o })), [k, o]);
 const scrollTop = page => page.evaluate(() => Math.round(document.scrollingElement.scrollTop));
 const remaining = page => page.evaluate(() => { const s = document.scrollingElement; return Math.round(s.scrollHeight - s.scrollTop - innerHeight); });
+// The top of `sel` once it is the same three frames running (at most 3 s).
+async function settledTop(page, sel) {
+  return page.evaluate(sel => new Promise(resolve => {
+    const t0 = performance.now();
+    let last = null, same = 0;
+    const frame = () => {
+      const top = Math.round(document.querySelector(sel).getBoundingClientRect().top);
+      same = top === last ? same + 1 : 0;
+      last = top;
+      if (same >= 3 || performance.now() - t0 > 3000) resolve(top); else requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }), sel);
+}
 
 // 1. A table that scrolled in a narrow window fits again once the window, the
 //    column or the type size leaves it room.
@@ -307,10 +321,14 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
 
 // 7. A change in view while the window is in the background is read only
 //    once it has been seen for the full 800 ms after the window comes back.
+//    (The page is taller than the window and the reader at its top: a page
+//    that fits the window is all on screen, and a reader watching it from
+//    another window reads what changes in it, case 20. This case used five
+//    short paragraphs, a page that fits, which 3.7 reads unfocused.)
 {
   const page = await newPage();
   await page.evaluate(() => { window.__focused = false; document.hasFocus = () => window.__focused; });
-  const r = doc(5, i => `<p>para ${i}</p>`);
+  const r = doc(40, i => `<p style="min-height:60px">para ${i}</p>`);
   r.marks = [{ slot: 2, kind: 'inserted' }];
   await page.evaluate(p => window.readout.apply(p), r);
   const read = () => page.evaluate(() => window.__msgs.some(m => m.type === 'read' && m.slots.includes(2)));
@@ -601,11 +619,14 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
     Object.keys(first.reads).length === 0 && first.code7 !== 'pending' && first.active >= 1, JSON.stringify(first));
   // Heights from the resize observer: a block above the reader that grows does not push them down.
   await page.evaluate(() => window.scrollBy(0, document.querySelector('.blk[data-slot="300"]').getBoundingClientRect().top));
-  await page.waitForTimeout(300);
-  const before = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="300"]').getBoundingClientRect().top));
+  // Measured once the page has settled (the blocks the scroll brought on
+  // screen laid out, their compensation made), not after a fixed time a
+  // loaded machine can overrun (it measured -38 then, once in four runs).
+  const top300 = () => settledTop(page, '.blk[data-slot="300"]');
+  const before = await top300();
   await page.evaluate(() => { document.querySelector('.blk[data-slot="250"] p').style.paddingTop = '200px'; });
-  await page.waitForTimeout(300);
-  const after = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="300"]').getBoundingClientRect().top));
+  await page.waitForTimeout(100);
+  const after = await top300();
   check('heights taken from the resize observer still keep the place', Math.abs(after - before) <= 1, JSON.stringify({ before, after }));
   // A patch in the middle of reading.
   const edit = (v, text) => patch(v, [301, 302, 450].map(slot => ({ op: 'replace', slot, kind: 'paragraph', change: 'content', html: `<p>${text} ${slot}</p>` })),
@@ -655,6 +676,280 @@ const remaining = page => page.evaluate(() => { const s = document.scrollingElem
   await page.waitForTimeout(1000);
   const top = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="400"]').getBoundingClientRect().top));
   check('a large document reopened at a saved place stays there', Math.abs(top) <= 2, `top=${top}`);
+  await page.close();
+}
+
+// 20. A page that fits the window, watched from the terminal beside it (on
+//     screen, unfocused): what the agent changes in it is read after 1.5 s,
+//     as at the end of a longer page (it never was: the page had no end to
+//     be at, scrolled to nowhere). Grown past the window, it follows.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(4, i => `<p>para ${i}</p>`));
+  await page.evaluate(() => { window.__focused = false; document.hasFocus = () => window.__focused; window.dispatchEvent(new Event('blur')); window.__msgs.length = 0; });
+  await page.evaluate(p => window.readout.apply(p), patch(2, [
+    { op: 'replace', slot: 2, kind: 'paragraph', change: 'content', html: '<p>para 2, edited by the agent</p>' },
+    { op: 'insert', slot: 5, after: 4, kind: 'paragraph', html: '<p>Next: run the full suite.</p>' }],
+    { marks: [{ slot: 2, kind: 'modified' }, { slot: 5, kind: 'inserted' }] }));
+  const read = s => page.evaluate(s => window.__msgs.some(m => m.type === 'read' && m.slots.includes(s)), s);
+  await page.waitForTimeout(1100);
+  const early = (await read(2)) || (await read(5));
+  await page.waitForTimeout(1000);
+  const both = (await read(2)) && (await read(5));
+  const ops = [];
+  for (let i = 6; i < 40; i++) ops.push({ op: 'insert', slot: i, after: i - 1, kind: 'paragraph', html: `<p style="min-height:60px">step ${i}</p>` });
+  await page.evaluate(p => window.readout.apply(p), patch(3, ops));
+  await page.waitForTimeout(100);
+  const grown = { y: await scrollTop(page), left: await remaining(page) };
+  check('a page that fits the window, watched unfocused: its changes are read after 1.5 s, and it follows once it grows',
+    !early && both && grown.y > 0 && grown.left < 48, JSON.stringify({ early, both, grown }));
+  await page.close();
+}
+
+// 21. A rewrite while the reader is at the end (following the old text)
+//     takes them to their section, or the top, with the notice in view: not
+//     to the end of a document they have not read.
+{
+  const page = await newPage();
+  const sections = (base, names) => {
+    const ops = [];
+    let slot = base;
+    for (const name of names) {
+      ops.push({ op: 'insert', slot: ++slot, after: slot - 1 === base ? 0 : slot - 1, kind: 'heading', anchor: name, html: `<h2 id="${name}">${name}</h2>` });
+      for (let i = 0; i < 12; i++) ops.push({ op: 'insert', slot: ++slot, after: slot - 1, kind: 'paragraph', html: `<p>${name} ${i} ${'lorem ipsum dolor sit amet '.repeat(5)}</p>` });
+    }
+    return ops;
+  };
+  await page.evaluate(p => window.readout.apply(p), patch(1, sections(0, ['alpha', 'beta']), { reset: true }));
+  const toEnd = async () => { await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight)); await page.waitForTimeout(100); };
+  await toEnd();
+  await page.evaluate(p => window.readout.apply(p), patch(2, sections(1000, ['one', 'two', 'three']), { reset: true, rewrite: true }));
+  const top = { y: await scrollTop(page), notice: await page.evaluate(() => { const n = document.getElementById('ro-notice'); const r = n.getBoundingClientRect(); return !n.hidden && r.bottom > 0 && r.top < innerHeight; }) };
+  await toEnd();
+  await page.evaluate(p => window.readout.apply(p), patch(3, sections(2000, ['intro', 'three', 'four', 'five']), { reset: true, rewrite: true }));
+  const section = { three: await page.evaluate(() => Math.round(document.querySelector('[data-anchor="three"]').getBoundingClientRect().top)), left: await remaining(page) };
+  check('a rewrite at the end goes to the reader\'s section or the top, the notice in view, not to the new end',
+    top.y === 0 && top.notice && section.three === 16 && section.left > 300, JSON.stringify({ top, section }));
+  await page.close();
+}
+
+// 22. N after an outline click, Home or a #section: the change right under
+//     where the page landed is the next one (N looks a third down the
+//     screen, which skipped it), until the reader scrolls.
+{
+  const page = await newPage();
+  const big = doc(80, i => i % 20 === 1 ? `<h2 id="s${i}">Section ${i}</h2>` : `<p style="min-height:60px">para ${i}</p>`, i => i % 20 === 1 ? 'heading' : 'paragraph');
+  big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
+  big.marks = [2, 22, 30, 42, 46].map(slot => ({ slot, kind: 'modified' }));
+  let version = 1;
+  // The marks again, unread (each step reads what it went to).
+  const fresh = () => page.evaluate(p => window.readout.apply(p), { ...big, version: version++ });
+  await fresh();
+  const at = () => page.evaluate(() => document.activeElement?.dataset?.slot);
+  const wrapped = () => page.evaluate(() => window.__msgs.filter(m => m.type === 'wrapped').length);
+  await page.evaluate(() => { window.__msgs.length = 0; window.readout.scrollToSlot(41); });
+  const under = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="42"]').getBoundingClientRect().top));
+  await key(page, 'n');
+  const outline = await at();
+  await key(page, 'n');
+  const next = await at();
+  // Scrolled since: from a third down the screen again.
+  await fresh();
+  await page.evaluate(() => { window.readout.scrollToSlot(41); window.scrollBy(0, 5); });
+  await page.waitForTimeout(50);
+  await key(page, 'n');
+  const scrolled = await at();
+  await fresh();
+  await page.evaluate(() => window.scrollTo(0, 1500));
+  await page.waitForTimeout(50);
+  await key(page, 'Home');
+  await page.waitForTimeout(50);
+  await key(page, 'n');
+  const home = await at();
+  await fresh();
+  await page.evaluate(() => window.scrollTo(0, 3000));
+  await page.waitForTimeout(50);
+  await page.evaluate(() => window.readout.scrollToFragment({ fragment: '#s21' }));
+  await key(page, 'n');
+  const fragment = await at();
+  const r = { under, outline, next, scrolled, home, fragment, wrapped: await wrapped() };
+  check('N goes to the change right under where an outline click, Home or a #section landed',
+    under < 700 / 3 && outline === '42' && next === '46' && scrolled === '46' && home === '2' && fragment === '22' && r.wrapped === 0, JSON.stringify(r));
+  await page.close();
+}
+
+// 23. Where N and a rail tick went shows (the .landed pulse), also when the
+//     page could not scroll there.
+{
+  const page = await newPage();
+  const short = doc(4, i => `<p>para ${i}</p>`);
+  short.marks = [{ slot: 3, kind: 'inserted' }];
+  await page.evaluate(p => window.readout.apply(p), short);
+  await key(page, 'n');
+  const n = await page.evaluate(() => ({ landed: document.querySelector('.blk[data-slot="3"]').classList.contains('landed'), y: scrollY,
+    animation: getComputedStyle(document.querySelector('.blk[data-slot="3"]')).animationName }));
+  await page.close();
+  const p2 = await newPage();
+  const tall = doc(40, i => `<p style="min-height:120px">para ${i}</p>`);
+  tall.marks = [{ slot: 25, kind: 'inserted' }];
+  await p2.evaluate(p => window.readout.apply(p), tall);
+  await p2.waitForTimeout(400);
+  const tick = await p2.evaluate(() => { document.querySelector('#ro-rail button').click(); return document.querySelector('.blk[data-slot="25"]').classList.contains('landed'); });
+  check('N and a rail tick show where they went, on a page that cannot scroll too', n.landed && n.y === 0 && n.animation === 'landed' && tick, JSON.stringify({ n, tick }));
+  await p2.close();
+}
+
+// 24. N takes a run of unread blocks (a section the agent wrote, boxes it
+//     ticked) as one change: what of it is on screen is read, the next N
+//     goes to the first block of it still off screen, then to the next run.
+{
+  const page = await newPage();
+  const r = doc(120, i => `<p>line ${i}, a short paragraph</p>`);
+  const run = (a, b) => Array.from({ length: b - a + 1 }, (_, k) => ({ slot: a + k, kind: 'inserted' }));
+  r.marks = [...run(30, 48), ...run(90, 94)];
+  await page.evaluate(p => { window.scrollTo(0, 0); window.readout.apply(p); }, r);
+  await page.evaluate(() => { window.__msgs.length = 0; });
+  const unread = () => page.evaluate(() => document.querySelectorAll('.blk.m-inserted:not(.m-read)').length);
+  // Pressed every 450 ms, faster than the 800 ms dwell reads what is on
+  // screen: the stops are N's own. A press after the last run may find its
+  // blocks read by then ("nothing"): not a stop.
+  const steps = [];
+  for (let i = 0; i < 12 && (await unread()) > 0; i++) {
+    const before = await scrollTop(page);
+    await page.evaluate(() => { window.__msgs.length = 0; });
+    await key(page, 'n');
+    if (await page.evaluate(() => window.__msgs.some(m => m.type === 'nothing'))) break;
+    await page.waitForTimeout(450);
+    steps.push({ at: await page.evaluate(() => document.activeElement?.dataset?.slot), moved: (await scrollTop(page)) - before,
+      wrapped: await page.evaluate(() => window.__msgs.some(m => m.type === 'wrapped')) });
+  }
+  await page.waitForTimeout(600);
+  const left = await unread();
+  const second = +steps[1]?.at;
+  check('N stops once per run of unread blocks, then at what of the run is still off screen',
+    left === 0 && steps.length === 3 && steps[0].at === '30' && second > 36 && second <= 48 && steps[2].at === '90'
+    && steps.every(s => s.moved > 150 && !s.wrapped), JSON.stringify({ steps, left }));
+  await page.close();
+}
+
+// 25. D with nothing in view to compare asks the app for a beep (as the menu
+//     item, enabled whenever a document is open, does); it still opens an
+//     edit's comparison after the edit was read.
+{
+  const page = await newPage();
+  const r = doc(40, i => `<p style="min-height:60px">para ${i}</p>`);
+  r.marks = [{ slot: 2, kind: 'modified', diff: 'para <del>two</del><ins>2</ins>' }];
+  await page.evaluate(p => window.readout.apply(p), r);
+  const readIt = await page.evaluate(() => new Promise(res => { const t0 = Date.now(); const poll = () => window.__msgs.some(m => m.type === 'read' && m.slots.includes(2)) ? res(true) : Date.now() - t0 > 3000 ? res(false) : setTimeout(poll, 50); poll(); }));
+  // The app drops the read mark: the next patch carries none.
+  await page.evaluate(p => window.readout.apply(p), patch(2, [{ op: 'insert', slot: 41, after: 40, kind: 'paragraph', html: '<p>added</p>' }], { marks: [{ slot: 41, kind: 'inserted' }] }));
+  await page.evaluate(() => { window.scrollTo(0, 0); window.__msgs.length = 0; });
+  await page.waitForTimeout(50);
+  await key(page, 'd');
+  const opened = await page.evaluate(() => !!document.querySelector('.blk[data-slot="2"] > .wd-panel'));
+  await key(page, 'Escape');
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  await page.waitForTimeout(50);
+  await key(page, 'd');
+  await page.evaluate(() => window.readout.toggleDiffInView());
+  const nothing = await page.evaluate(() => window.__msgs.filter(m => m.type === 'nothing').length);
+  check('D and Show What Changed with nothing in view to compare post "nothing"; D works after the edit was read',
+    readIt && opened && nothing === 2, JSON.stringify({ readIt, opened, nothing }));
+  await page.close();
+}
+
+// 26. A path in a code span is a link for the keyboard and VoiceOver, its
+//     tooltip the file and line.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), patch(1, [{ op: 'insert', slot: 1, after: 0, kind: 'paragraph',
+    html: '<p>See <code class="path-link" data-path="/repo/src/cache.ts" data-line="42">src/cache.ts:42</code> and <code class="path-link" data-path="/repo/Makefile">Makefile</code>.</p>' }], { reset: true }));
+  const attrs = await page.evaluate(() => [...document.querySelectorAll('code.path-link')].map(c => ({ role: c.getAttribute('role'), tab: c.tabIndex, title: c.title })));
+  await page.focus('code.path-link');
+  await page.evaluate(() => { window.__msgs.length = 0; });
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press(' ');
+  const opened = await page.evaluate(() => window.__msgs.filter(m => m.type === 'openPath').map(m => `${m.path}:${m.line}`));
+  const links = [];
+  const walk = n => { if (n.role === 'link') links.push(n.name); (n.children || []).forEach(walk); };
+  walk(await page.accessibility.snapshot());
+  const scrolled = await scrollTop(page);
+  check('a path in a code span is a link: role, Tab, Return and Space, its file and line as the tooltip',
+    JSON.stringify(attrs) === JSON.stringify([{ role: 'link', tab: 0, title: '/repo/src/cache.ts:42' }, { role: 'link', tab: 0, title: '/repo/Makefile' }])
+    && JSON.stringify(opened) === JSON.stringify(['/repo/src/cache.ts:42', '/repo/Makefile:0']) && links.includes('src/cache.ts:42') && links.includes('Makefile') && scrolled === 0,
+    JSON.stringify({ attrs, opened, links, scrolled }));
+  await page.close();
+}
+
+// 27. Reopened mid-way in a large document (the app's resume calls
+//     scrollToAnchor right after the first apply), the code on screen is
+//     highlighted in the first frame that shows it, not a frame later.
+{
+  const page = await newPage();
+  await page.evaluate(() => window.readout.warm());
+  await page.waitForTimeout(1500);   // grammars preloaded, as in a warmed app window
+  const ops = Array.from({ length: 600 }, (_, k) => k % 5 === 0
+    ? { op: 'insert', slot: k + 1, after: k, kind: 'code', html: `<div class="code-block" data-lang="js"><pre><code>const a${k} = ${k};\nfunction f${k}() { return a${k} * 2; }</code></pre></div>` }
+    : { op: 'insert', slot: k + 1, after: k, kind: 'paragraph', html: `<p>Para ${k} ${'lorem ipsum '.repeat(10)}</p>` });
+  const r = await page.evaluate(ops => new Promise(res => {
+    window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], ops });
+    window.readout.scrollToAnchor({ slot: 301, offset: 0, ratio: 0 });
+    requestAnimationFrame(() => {
+      const vis = [...document.querySelectorAll('.code-block')].filter(c => { const b = c.getBoundingClientRect(); return b.bottom > 0 && b.top < innerHeight; });
+      res({ onScreen: vis.length, states: vis.map(c => c.dataset.hl) });
+    });
+  }), ops);
+  check('code on screen at a resumed place is highlighted in its first frame', r.onScreen > 0 && r.states.every(s => s === 'done'), JSON.stringify(r));
+  await page.close();
+}
+
+// 28. The app's unread badge and dots are told of a change (showUnread)
+//     only once it is not being read at once: one arriving at the end the
+//     reader follows is read first (its read posted before), one off
+//     screen is told at once.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(40, i => `<p style="min-height:60px">para ${i}</p>`));
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  await page.waitForTimeout(100);
+  await page.evaluate(() => { window.__msgs.length = 0; window.__t0 = performance.now(); window.__at = {}; const push = window.__msgs.push.bind(window.__msgs); window.__msgs.push = m => { window.__at[m.type] ??= performance.now() - window.__t0; return push(m); }; });
+  await page.evaluate(p => window.readout.apply(p), patch(2, [{ op: 'insert', slot: 41, after: 40, kind: 'paragraph', html: '<p>the agent wrote this</p>' }], { marks: [{ slot: 41, kind: 'inserted' }] }));
+  await page.waitForTimeout(1600);
+  const followed = await page.evaluate(() => ({ order: window.__msgs.map(m => m.type).filter(t => t === 'read' || t === 'showUnread'), at: window.__at }));
+  await page.evaluate(() => { window.scrollTo(0, 0); window.__msgs.length = 0; window.__t0 = performance.now(); window.__at = {}; });
+  await page.waitForTimeout(100);
+  await page.evaluate(p => window.readout.apply(p), patch(3, [{ op: 'insert', slot: 42, after: 41, kind: 'paragraph', html: '<p>more, off screen</p>' }], { marks: [{ slot: 42, kind: 'inserted' }] }));
+  await page.waitForTimeout(500);
+  const away = await page.evaluate(() => ({ order: window.__msgs.map(m => m.type).filter(t => t === 'read' || t === 'showUnread'), at: window.__at }));
+  check('the app is told to show a change once it is not read at once; one read at the end it follows is read first',
+    JSON.stringify(followed.order) === '["read","showUnread"]' && followed.at.showUnread > 700
+    && JSON.stringify(away.order) === '["showUnread"]' && away.at.showUnread < 400, JSON.stringify({ followed, away }));
+  await page.close();
+}
+
+// 29. A patch touches the marks of only the blocks whose mark changed (it
+//     used to take every mark off and put it back, restyling them all), and
+//     keeps the removal markers it had (and what was read of them).
+{
+  const page = await newPage();
+  const r = doc(300, i => `<p>para ${i}</p>`);
+  const kept = Array.from({ length: 50 }, (_, k) => ({ slot: 200 + k, kind: 'inserted' }));
+  r.marks = kept;
+  r.deletions = [{ id: 7, after: 250, count: 2, preview: 'gone' }];
+  await page.evaluate(p => { window.scrollTo(0, 0); window.readout.apply(p); }, r);
+  await page.waitForTimeout(100);
+  const touched = await page.evaluate(p => new Promise(res => {
+    const seen = new Set();
+    const mo = new MutationObserver(ms => { for (const m of ms) if (m.target.classList?.contains('blk')) seen.add(m.target.dataset.slot); });
+    mo.observe(document.getElementById('ro-doc'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+    const del = document.querySelector('.del-mark');
+    window.readout.apply(p);
+    setTimeout(() => { mo.disconnect(); res({ slots: [...seen], sameMarker: document.querySelector('.del-mark') === del }); }, 0);
+  }), patch(2, [{ op: 'insert', slot: 301, after: 300, kind: 'paragraph', html: '<p>new</p>' }],
+    { marks: [...kept, { slot: 301, kind: 'inserted' }], deletions: [{ id: 7, after: 250, count: 2 }] }));
+  check('a patch changes the classes of only the blocks whose mark changed, and keeps its removal markers',
+    JSON.stringify(touched.slots) === '["301"]' && touched.sameMarker, JSON.stringify(touched));
   await page.close();
 }
 

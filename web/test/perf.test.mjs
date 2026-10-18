@@ -2,8 +2,9 @@
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
 // measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it, and frame
-// pacing while scrolling through the whole page; and, on a fresh warmed page,
-// the first apply of a small document whose code block is on screen. Writes the numbers to
+// pacing while scrolling through the whole page; on a fresh warmed page,
+// the first apply of a small document whose code block is on screen; then, in a
+// ~5 MB document, an agent streaming at its end while the reader follows. Writes the numbers to
 // test/out/perf-web.json; tools/perf-assert.py checks them against
 // tools/perf-budgets.json.
 //
@@ -23,24 +24,26 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 
-// Chain corpus patches into one document of at least TARGET bytes of HTML.
-const TARGET = 1_000_000;
+// Chain corpus patches into one document of at least `target` bytes of HTML.
 const files = readdirSync('test/corpus/patches').filter(f => f.endsWith('.json')).sort();
-const ops = [];
-let slot = 0, bytes = 0;
-for (let round = 0; bytes < TARGET; round++) {
-  for (const f of files) {
-    const p = JSON.parse(readFileSync(`test/corpus/patches/${f}`, 'utf8'));
-    const map = new Map();
-    for (const op of p.ops) {
-      if (op.op !== 'insert') continue;
-      map.set(op.slot, ++slot);
-      ops.push({ ...op, slot, after: slot - 1, anchor: op.anchor ? `${op.anchor}-${round}-${slot}` : undefined });
-      bytes += op.html.length;
+function chain(target) {
+  const ops = [];
+  let slot = 0, bytes = 0;
+  for (let round = 0; bytes < target; round++) {
+    for (const f of files) {
+      const p = JSON.parse(readFileSync(`test/corpus/patches/${f}`, 'utf8'));
+      for (const op of p.ops) {
+        if (op.op !== 'insert') continue;
+        ++slot;
+        ops.push({ ...op, slot, after: slot - 1, anchor: op.anchor ? `${op.anchor}-${round}-${slot}` : undefined });
+        bytes += op.html.length;
+      }
+      if (bytes >= target) break;
     }
-    if (bytes >= TARGET) break;
   }
+  return { ops, bytes };
 }
+const { ops, bytes } = chain(1_000_000);
 const big = { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } };
 const paragraphs = ops.filter(o => o.kind === 'paragraph');
 const step = Math.floor(paragraphs.length / 20);
@@ -120,6 +123,60 @@ const scroll = await page.evaluate(() => new Promise(resolve => {
 }));
 const gaps = scroll.gaps.slice(1);
 const sorted = gaps.slice().sort((a, b) => a - b);
+await page.close();
+
+// An agent streaming at the end of a ~5 MB document, the reader following:
+// every fifth patch appends a paragraph, the others write on into it (the
+// agent's last block growing), each with the unread marks of the last
+// fifty. The apply plus the layout it causes, per patch. What the page
+// does per patch must not grow with the document (3.6: about 105 ms per
+// patch at 5 MB, most of it the page's own searches and layouts).
+// Reported, not gated (tools/perf-budgets.json): the engine's own layout
+// of a 25,000-block page is in it.
+const streamStart = Date.now();
+const stream = await (async () => {
+  const p5 = await browser.newPage({ viewport: { width: 900, height: 900 } });
+  collectPageErrors(p5, errors, '5 MB: ');
+  await p5.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await p5.goto(`${base}/reader.html`);
+  await p5.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
+  await p5.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  const doc5 = chain(5_000_000);
+  await p5.evaluate(p => new Promise(r => { window.readout.apply(p); requestAnimationFrame(() => setTimeout(r, 0)); }),
+    { version: 1, reset: true, rewrite: false, ops: doc5.ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p5.waitForTimeout(1000);
+  const frames = () => p5.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  // To the end, again once the blocks there are laid out at their real
+  // heights (the first scroll lands where their estimates put it).
+  for (let k = 0; k < 3; k++) {
+    await p5.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+    await frames();
+    await p5.waitForTimeout(300);
+  }
+  let slot5 = doc5.ops.length, last = slot5;
+  const marks = [];
+  const times = [];
+  for (let i = 0; i < 40; i++) {
+    let ops5;
+    if (i % 5 === 0) {
+      last = ++slot5;
+      marks.push({ slot: last, kind: 'inserted' });
+      ops5 = [{ op: 'insert', slot: last, after: last - 1, kind: 'paragraph', html: `<p>Streaming paragraph ${i} with some words of agent output that keeps going.</p>` }];
+    } else {
+      ops5 = [{ op: 'replace', slot: last, change: 'content', kind: 'paragraph', html: `<p>Streaming paragraph ${i - (i % 5)} with some words of agent output that keeps going.${' more'.repeat(i % 5 * 8)}</p>` }];
+    }
+    const patch = { version: 2 + i, reset: false, rewrite: false, ops: ops5, marks: marks.slice(-50), deletions: [], toc: [], tasks: { done: 0, total: 0 } };
+    times.push(await p5.evaluate(p => { const t0 = performance.now(); window.readout.apply(p); void document.scrollingElement.scrollHeight; return performance.now() - t0; }, patch));
+    if (i % 10 === 0) await frames();
+  }
+  const left = await p5.evaluate(() => { const s = document.scrollingElement; return Math.round(s.scrollHeight - s.scrollTop - innerHeight); });
+  await p5.close();
+  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left };
+})();
+console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 1000)} s`);
 
 // The first code block of a warm open: a fresh page warmed as the app's
 // spare page is (its grammars preloaded and compiled in idle time), then a
@@ -171,6 +228,10 @@ const result = {
   web_scroll_frame_p95_ms: Math.round(sorted[Math.floor(sorted.length * 0.95)] * 10) / 10,
   web_scroll_frame_max_ms: Math.round(sorted[sorted.length - 1]),
   web_scroll_long_frames: gaps.filter(g => g > 50).length,
+  web_stream_doc_bytes: stream.bytes,
+  web_stream_doc_blocks: stream.blocks,
+  web_stream_append_5mb_ms: Math.round(stream.ms * 10) / 10,
+  web_stream_end_left_px: stream.left,
   errors,
 };
 mkdirSync('test/out', { recursive: true });

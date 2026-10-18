@@ -11,22 +11,26 @@
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
 import { doc, root, slots, heights, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll } from './reader/core.js';
-import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom } from './reader/anchor.js';
+import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen } from './reader/anchor.js';
 import { apply as applyPatch, findMode } from './reader/patch.js';
-import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups } from './reader/marks.js';
+import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups, noteLanding } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables } from './reader/enhance.js';
+import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables, highlightIn } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
 
 // ---------------------------------------------------------------- Links & keys
 
+function openPath(path) {
+  post({ type: 'openPath', path: path.dataset.path, line: +path.dataset.line || 0, column: +path.dataset.col || 0 });
+}
+
 doc.addEventListener('click', ev => {
   const path = ev.target.closest('code.path-link');
   if (path) {
     ev.preventDefault();
-    post({ type: 'openPath', path: path.dataset.path, line: +path.dataset.line || 0, column: +path.dataset.col || 0 });
+    openPath(path);
     return;
   }
   const a = ev.target.closest('a[href]');
@@ -39,6 +43,7 @@ doc.addEventListener('click', ev => {
     // Footnotes and their back-references land mid-screen and show where.
     const note = a.matches('[data-footnote-ref], [data-footnote-backref]');
     scrollToElement(target, { center: note });
+    noteLanding(target);
     if (note) {
       const spot = target.closest('li, sup') || target;
       spot.classList.remove('landed'); void spot.offsetWidth; spot.classList.add('landed');
@@ -126,7 +131,7 @@ onKeptScroll(dy => { if (edge) edge.y += dy; });
 function scrollToEdge(end) {
   const se = document.scrollingElement;
   const mine = edge = { end, y: 0 };
-  const aim = () => { window.scrollTo(0, end ? se.scrollHeight : 0); mine.y = se.scrollTop; };
+  const aim = () => { window.scrollTo(0, end ? se.scrollHeight : 0); mine.y = se.scrollTop; noteLanding(); };
   aim();
   const until = performance.now() + AIM_MS;
   const reaim = () => {
@@ -142,6 +147,9 @@ function scrollToEdge(end) {
 
 document.addEventListener('keydown', ev => {
   if (ev.target.closest && ev.target.closest('input, textarea')) return;
+  // A path in a code span is a link: Return or Space opens it.
+  const path = ev.target.closest && ev.target.closest('code.path-link');
+  if (path && (ev.key === 'Enter' || ev.key === ' ') && !ev.metaKey && !ev.ctrlKey && !ev.altKey) { ev.preventDefault(); openPath(path); return; }
   if (ev.key === 'Escape') { if (closePopups()) ev.preventDefault(); return; }
   if (ev.ctrlKey || ev.altKey) return;
   // End / Home, and Command-Down / Command-Up.
@@ -308,6 +316,8 @@ function scrollToSlot(slot) {
   window.scrollBy(0, off());
   for (const e of forced) heights.set(e, e.getBoundingClientRect().height);
   pinActiveHeading(slot);
+  noteLanding(el);
+  highlightOnScreen();
   if (!cv) return;
   requestAnimationFrame(() => requestAnimationFrame(() => { for (const e of forced) e.style.contentVisibility = ''; }));
   const se = document.scrollingElement;
@@ -318,21 +328,30 @@ function scrollToSlot(slot) {
     // the TOC may not have run yet): leave the page where it is.
     if (aiming !== mine || !el.isConnected || Math.abs(se.scrollTop - mine.y) > 2) return;
     const d = off();
-    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; pinActiveHeading(slot); }
+    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; pinActiveHeading(slot); noteLanding(el); }
     if (performance.now() < until) requestAnimationFrame(reaim);
   };
   requestAnimationFrame(reaim);
 }
 
+/**
+ * Code on screen where the app put the reader (a resumed place, a section)
+ * is highlighted before that is painted: the first open highlighted what
+ * was on screen at the top, and the rest waits for the lazy observer, which
+ * hears of it only after a frame has shown it plain.
+ */
+function highlightOnScreen() { highlightIn(blocksOnScreen()); }
+
 function scrollToAnchor(a) {
   if (!a) return;
   trace('scrollToAnchor', { slot: a.slot, offset: Math.round(a.offset) });
   restoreAnchor(a, new Set());
+  highlightOnScreen();
 }
 
 function scrollToFragment(o) {
   const target = resolveFragment(o && o.fragment);
-  if (target) { scrollToElement(target, { gap: 16 }); reportActiveHeading(); }
+  if (target) { scrollToElement(target, { gap: 16 }); noteLanding(target); reportActiveHeading(); highlightOnScreen(); }
 }
 
 window.readout = {

@@ -1,10 +1,13 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes, and the "Show Only Changes" filter.
-import { doc, slots, heights, strings, quicklook, post, inViewport } from './core.js';
-import { captureAnchor, restoreAnchor, isShown, atBottom } from './anchor.js';
+import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, blocksHidden, setBlocksHidden } from './core.js';
+import { captureAnchor, restoreAnchor, isShown, atBottom, fitsOnScreen, topInset } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
+const classed = new Map(); // slot -> the mark its block carries (unread, or read and fading)
+const delMarks = new Map(); // deletion id -> its marker
+let unreadOrder = null;    // the unread elements in document order (null: not worked out since the last patch)
 const diffOf = new Map();   // slot -> word-level comparison HTML of an edited block ("" = no earlier text)
 const openDiffs = new Set(); // slots whose comparison is shown
 const previewOf = new Map(); // deletion id -> removed text (each patch sends it once)
@@ -14,23 +17,40 @@ let printing = false;   // printing shows the whole document
 
 export function renderMarks(marks, deletions, reset = false) {
   // Comparisons and removed texts arrive once; later patches leave them out.
-  if (reset) { diffOf.clear(); previewOf.clear(); }
-  for (const el of doc.querySelectorAll('.m-inserted, .m-modified, .m-state')) {
-    el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
-  }
-  // A removed-text popup the reader has open stays open across the rebuild.
-  const openPops = reset ? new Set()
-    : new Set([...doc.querySelectorAll('.del-mark')].filter(m => m.querySelector('.del-pop')).map(m => +m.dataset.del));
-  doc.querySelectorAll('.del-mark').forEach(e => e.remove());
-  marked = new Map();
+  if (reset) { diffOf.clear(); previewOf.clear(); arrivals.clear(); }
+  unreadOrder = null;
   if (quicklook) return;
-  for (const m of marks) {
-    const el = slots.get(m.slot);
+  const next = new Map();
+  for (const m of marks) if (slots.has(m.slot)) next.set(m.slot, m);
+  // Only blocks whose mark changed are touched: a patch to a large document
+  // restyles none of the others (and searches none of them out).
+  for (const [slot, kind] of classed) {
+    const el = slots.get(slot);
+    if (el && next.get(slot)?.kind === kind) continue;
+    classed.delete(slot);
     if (!el) continue;
-    el.classList.add(`m-${m.kind}`);
-    marked.set(m.slot, m.kind);
-    if (m.kind === 'modified' && typeof m.diff === 'string') diffOf.set(m.slot, m.diff);
-    else if (m.kind === 'inserted') diffOf.delete(m.slot);
+    el.classList.remove(`m-${kind}`, 'm-read');
+    if (!next.has(slot)) { disarmRead(el); readObserver.unobserve(el); }
+  }
+  const before = marked;
+  marked = new Map();
+  const now = performance.now();
+  for (const [slot, m] of next) {
+    const el = slots.get(slot);
+    const cls = `m-${m.kind}`;
+    // (A replaced block lost its classes: it gets them again.)
+    if (!el.classList.contains(cls)) {
+      el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
+      el.classList.add(cls);
+    }
+    classed.set(slot, m.kind);
+    if (m.kind === 'modified' && typeof m.diff === 'string') diffOf.set(slot, m.diff);
+    else if (m.kind === 'inserted') diffOf.delete(slot);
+    // Read here, and the app has not heard yet (or this patch was on its
+    // way when it did): it stays read.
+    if (el.classList.contains('m-read')) continue;
+    marked.set(slot, m.kind);
+    if (!reset && !before.has(slot)) arrivals.set(el, now);
     readObserver.observe(el);
   }
   // Once read, the mark fades, but the comparison stays one click away in
@@ -47,27 +67,52 @@ export function renderMarks(marks, deletions, reset = false) {
   for (const d of deletions) if (typeof d.preview === 'string') previewOf.set(d.id, d.preview);
   const live = new Set(deletions.map(d => d.id));
   for (const id of [...previewOf.keys()]) if (!live.has(id)) previewOf.delete(id);
+  // Markers stay from patch to patch (a removed-text popup open in one
+  // stays open; one read stays read); those no longer sent go.
+  for (const [id, mark] of delMarks) if (!live.has(id)) dropDelMark(id, mark);
+  let firstBlock;
   for (const d of deletions) {
-    const mark = document.createElement('div');
-    mark.className = 'del-mark';
-    mark.dataset.del = d.id;
-    const btn = document.createElement('button');
-    btn.title = d.count === 1 ? (strings.deletedOne || '1 block removed') : (strings.deletedMany || '%d blocks removed').replace('%d', d.count);
-    btn.setAttribute('aria-label', btn.title);
-    btn.addEventListener('click', ev => {
-      ev.stopPropagation();
-      const open = mark.querySelector('.del-pop');
-      document.querySelectorAll('.del-pop').forEach(p => p.remove());
-      if (open) return;
-      showPop(mark, d.id);
-    });
-    mark.appendChild(btn);
-    if (openPops.has(d.id)) showPop(mark, d.id);
+    let mark = delMarks.get(d.id);
+    if (!mark) {
+      mark = makeDelMark(d.id);
+      delMarks.set(d.id, mark);
+      if (!reset) arrivals.set(mark, now);
+      readObserver.observe(mark);
+    }
+    const title = d.count === 1 ? (strings.deletedOne || '1 block removed') : (strings.deletedMany || '%d blocks removed').replace('%d', d.count);
+    const btn = mark.firstChild;
+    if (btn.title !== title) { btn.title = title; btn.setAttribute('aria-label', title); }
     const after = d.after ? slots.get(d.after) : null;
-    if (after) after.after(mark);
-    else doc.insertBefore(mark, doc.querySelector('.blk'));
-    readObserver.observe(mark);
+    if (after) { if (after.nextElementSibling !== mark) after.after(mark); }
+    else {
+      if (firstBlock === undefined) firstBlock = doc.querySelector(':scope > .blk');
+      if (mark.nextElementSibling !== firstBlock || !mark.isConnected) doc.insertBefore(mark, firstBlock);
+    }
   }
+  scheduleShow();
+}
+
+function makeDelMark(id) {
+  const mark = document.createElement('div');
+  mark.className = 'del-mark';
+  mark.dataset.del = id;
+  const btn = document.createElement('button');
+  btn.addEventListener('click', ev => {
+    ev.stopPropagation();
+    const open = mark.querySelector('.del-pop');
+    document.querySelectorAll('.del-pop').forEach(p => p.remove());
+    if (open) return;
+    showPop(mark, id);
+  });
+  mark.appendChild(btn);
+  return mark;
+}
+
+function dropDelMark(id, mark) {
+  readObserver.unobserve(mark);
+  disarmRead(mark);
+  mark.remove();
+  if (delMarks.get(id) === mark) delMarks.delete(id);
 }
 
 function showPop(mark, id) {
@@ -149,7 +194,8 @@ let walk = [];
 export function toggleDiffInView() {
   const live = slot => { const el = slots.get(slot); return el && diffOf.has(slot) && isShown(el) ? el : null; };
   const inView = [...diffOf.keys()].map(live).filter(el => el && inViewport(el));
-  if (!inView.length) { walk = []; return false; }
+  // Nothing in view to compare: the app says so (a beep), as for N.
+  if (!inView.length) { walk = []; post({ type: 'nothing' }); return false; }
   const viewed = new Set(inView.map(el => +el.dataset.slot));
   if (!walk.some(slot => viewed.has(slot))) walk = [];
   const all = [...new Set([...walk, ...viewed])].map(live).filter(Boolean)
@@ -202,15 +248,21 @@ doc.addEventListener('click', ev => {
 const DWELL_MS = 800;
 const DWELL_UNFOCUSED_MS = 1500;
 const readSince = new Map();   // element -> when its dwell started
+const readDue = new Map();     // element -> when its dwell ends
 function armRead(el, ms = DWELL_MS) {
   waiting.delete(el);
   readSince.set(el, performance.now());
+  readAt(el, ms);
+}
+function readAt(el, ms) {
+  readDue.set(el, performance.now() + ms);
   readTimers.set(el, setTimeout(() => tryRead(el), ms));
 }
 function disarmRead(el) {
   clearTimeout(readTimers.get(el));
   readTimers.delete(el);
   readSince.delete(el);
+  readDue.delete(el);
   waiting.delete(el);
 }
 const readThresholds = [0];
@@ -229,7 +281,13 @@ const readObserver = new IntersectionObserver(entries => {
 }, { threshold: readThresholds });
 
 /** On screen, but another window has the focus: read only at the end the reader follows. */
-const watching = () => !document.hidden && !document.hasFocus();
+export const watching = () => !document.hidden && !document.hasFocus();
+/**
+ * At the end the reader follows, or with the whole document on screen: a
+ * page that fits the window has no end to scroll to, and a reader watching
+ * it sees all of it.
+ */
+const atEnd = () => atBottom() || fitsOnScreen();
 
 // Seen long enough while the window was in the background (or away from
 // the end): they wait, in view, for the reader to come back, and are read
@@ -240,7 +298,7 @@ const waiting = new Set();
 function restartDwell() {
   if (document.hidden) return;
   if (!document.hasFocus()) {
-    if (!waiting.size || !atBottom()) return;
+    if (!waiting.size || !atEnd()) return;
     for (const el of waiting) if (el.isConnected) armRead(el, DWELL_UNFOCUSED_MS);
     waiting.clear();
     return;
@@ -257,11 +315,12 @@ window.addEventListener('scroll', () => { if (waiting.size && watching()) restar
 
 function tryRead(el) {
   readTimers.delete(el);
+  readDue.delete(el);
   if (document.hidden) { waiting.add(el); return; }
   if (!document.hasFocus()) {
-    if (!atBottom()) { waiting.add(el); return; }
+    if (!atEnd()) { waiting.add(el); return; }
     const left = DWELL_UNFOCUSED_MS - (performance.now() - (readSince.get(el) ?? 0));
-    if (left > 1) { readTimers.set(el, setTimeout(() => tryRead(el), left)); return; }
+    if (left > 1) { readAt(el, left); return; }
   }
   markRead(el);
 }
@@ -275,39 +334,101 @@ function markRead(el) {
   if (el.classList.contains('del-mark')) pendingRead.deletions.push(+el.dataset.del);
   else { pendingRead.slots.push(+el.dataset.slot); marked.delete(+el.dataset.slot); }
   clearTimeout(markRead.flush);
-  markRead.flush = setTimeout(() => {
-    post({ type: 'read', ...pendingRead });
-    pendingRead = { slots: [], deletions: [] };
-    scheduleRail();
-  }, 150);
-  setTimeout(() => {
-    if (el.classList.contains('m-read')) {
-      el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
-      if (el.classList.contains('del-mark')) el.remove();
-    }
-  }, 10000);
+  markRead.flush = setTimeout(flushRead, 150);
+  setTimeout(() => { if (el.classList.contains('m-read')) unmark(el); }, 10000);
+}
+
+/** A read mark's fade is over: the block carries no mark, a removal marker goes. */
+function unmark(el) {
+  if (el.classList.contains('del-mark')) { dropDelMark(+el.dataset.del, el); return; }
+  el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
+  const slot = +el.dataset.slot;
+  if (slots.get(slot) === el) classed.delete(slot);
+}
+
+function flushRead() {
+  clearTimeout(markRead.flush);
+  if (!pendingRead.slots.length && !pendingRead.deletions.length) return;
+  post({ type: 'read', ...pendingRead });
+  pendingRead = { slots: [], deletions: [] };
+  scheduleRail();
+}
+
+// The app shows how many changes are unread (the toolbar badge, the
+// outline's dots, the tab's dot). A change that arrives where the reader is
+// reading (the end they follow while an agent writes) is read within its
+// dwell: shown as unread meanwhile, the badge and dots blink with every
+// paragraph. So the page tells the app when what a patch added is to be
+// shown ({type:'showUnread'}): at once for changes nobody is reading (off
+// screen, a hidden window), after SHOW_HOLD_MS for changes whose dwell is
+// running (a dwell running then holds it until the dwell ends, up to
+// SHOW_HOLD_MAX_MS), and after their read once they are all read. The read
+// is posted first, so the app never counts them. Fewer unread changes (a
+// read, a removal) show at once; that is the app's own.
+const SHOW_SETTLE_MS = 100;   // the read observer has had its look at what arrived
+const SHOW_HOLD_MS = 1200;
+const SHOW_HOLD_MAX_MS = 2000;
+const arrivals = new Map();   // newly unread element -> when it arrived
+let showTimer = 0;
+function scheduleShow() {
+  if (!showTimer && arrivals.size) showTimer = setTimeout(checkShow, SHOW_SETTLE_MS);
+}
+function checkShow() {
+  showTimer = 0;
+  const now = performance.now();
+  let show = false;
+  for (const [el, at] of arrivals) {
+    if (!isUnread(el)) { arrivals.delete(el); continue; }
+    const age = now - at;
+    const due = readDue.get(el);
+    const reading = due !== undefined && age < SHOW_HOLD_MAX_MS && (age < SHOW_HOLD_MS || now < due + 50);
+    if (age >= SHOW_SETTLE_MS && !reading) show = true;
+  }
+  if (show || !arrivals.size) {
+    arrivals.clear();
+    flushRead();
+    post({ type: 'showUnread' });
+    return;
+  }
+  showTimer = setTimeout(checkShow, VISIT_POLL_MS * 2);
 }
 
 // A change N, Shift-N or a rail tick went to is read once it has been on
 // screen for 300 ms, or when N leaves it after 250 ms: pressing through the
-// changes is reading them, faster than the dwell above.
+// changes is reading them, faster than the dwell above. N goes to a run of
+// unread blocks (blocks one after the other) as one change: what of the
+// run is on screen is read the same way.
 const VISIT_READ_MS = 300;
 const VISIT_LEAVE_MS = 250;
 const VISIT_POLL_MS = 50;
 const VISIT_GIVE_UP_MS = 3000;   // a scroll that never brings it on screen
-let visited = null;   // {el, at, shown, timer}
+let visited = null;   // {el, run, at, shown, timer}
 
-/** The reader went to change `el` (N or a rail tick). */
-export function visit(el) {
+/** Most of it on screen (all of a short block, half of a tall one, half a screen of a very tall one). */
+function seen(el) {
+  const r = el.getBoundingClientRect();
+  const inset = topInset();
+  if (r.bottom < inset || r.top > window.innerHeight) return false;
+  const visible = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, inset);
+  return visible >= Math.min(r.height / 2, window.innerHeight / 2);
+}
+
+/** The reader went to change `el` (N or a rail tick); `run`: the unread blocks it begins. */
+export function visit(el, run = [el]) {
   leaveVisit();
-  const v = visited = { el, at: performance.now(), shown: null, timer: 0 };
+  const v = visited = { el, run, at: performance.now(), shown: new Map(), timer: 0 };
   const check = () => {
     if (visited !== v) return;
     const now = performance.now();
-    if (!el.isConnected || el.classList.contains('m-read') || now - v.at > VISIT_GIVE_UP_MS) { visited = null; return; }
-    if (!inViewport(el)) v.shown = null;
-    else if (v.shown === null) v.shown = now;
-    if (v.shown !== null && now - v.shown >= VISIT_READ_MS) { visited = null; markRead(el); return; }
+    if (now - v.at > VISIT_GIVE_UP_MS) { visited = null; return; }
+    let left = 0;
+    for (const m of v.run) {
+      if (!m.isConnected || m.classList.contains('m-read')) continue;
+      if (!(m === el ? inViewport(m) : seen(m))) { v.shown.delete(m); left++; continue; }
+      if (!v.shown.has(m)) v.shown.set(m, now);
+      if (now - v.shown.get(m) >= VISIT_READ_MS) markRead(m); else left++;
+    }
+    if (!left) { visited = null; return; }
     v.timer = setTimeout(check, VISIT_POLL_MS);
   };
   v.timer = setTimeout(check, VISIT_POLL_MS);
@@ -318,29 +439,90 @@ function leaveVisit() {
   if (!v) return;
   visited = null;
   clearTimeout(v.timer);
-  if (v.el.isConnected && performance.now() - v.at >= VISIT_LEAVE_MS) markRead(v.el);
+  if (performance.now() - v.at < VISIT_LEAVE_MS) return;
+  for (const m of v.run) if (m.isConnected && (m === v.el || seen(m))) markRead(m);
+}
+
+/** Whether `el` is an unread change (a block with an unread mark, or a removal marker not read). */
+function isUnread(el) {
+  if (!el.isConnected || el.classList.contains('m-read')) return false;
+  if (el.classList.contains('del-mark')) return delMarks.get(+el.dataset.del) === el;
+  const slot = +el.dataset.slot;
+  return marked.has(slot) && slots.get(slot) === el;
 }
 
 export function unreadElements() {
+  if (!unreadOrder) {
+    const els = [];
+    for (const slot of marked.keys()) { const el = slots.get(slot); if (el) els.push(el); }
+    for (const m of delMarks.values()) els.push(m);
+    unreadOrder = inDocumentOrder(els);
+  }
   // `offsetParent === null` covers `hidden` blocks in changes-only mode, so the
   // rail, jumps and the caught-up state all ignore filtered-out blocks.
-  return Array.from(doc.querySelectorAll('.blk.m-inserted:not(.m-read), .blk.m-modified:not(.m-read), .blk.m-state:not(.m-read), .del-mark:not(.m-read)'))
-    .filter(e => e.offsetParent !== null);
+  return unreadOrder.filter(e => isUnread(e) && (!blocksHidden || e.offsetParent !== null));
+}
+
+function inDocumentOrder(els) {
+  if (els.length < 2) return els;
+  // Many of them: one walk over the page costs less than sorting them.
+  if (els.length * 16 > doc.children.length) {
+    const want = new Set(els);
+    const out = [];
+    for (let e = doc.firstElementChild; e; e = e.nextElementSibling) if (want.has(e)) out.push(e);
+    return out;
+  }
+  return els.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+}
+
+/** The block or removal marker shown right after `el` (null: none). */
+function nextShown(el) {
+  for (let e = el.nextElementSibling; e; e = e.nextElementSibling) {
+    if (!e.classList.contains('blk') && !e.classList.contains('del-mark')) continue;
+    if (blocksHidden && e.offsetParent === null) continue;
+    return e;
+  }
+  return null;
+}
+
+// Where an outline click, G, Home / End or a #section landed: N goes on
+// from the top of what landed there (not from a third down the screen, past
+// the changes right under the heading clicked), until the reader scrolls.
+let landing = null;   // {el, y}: el null for the top of the screen
+onKeptScroll(dy => { if (landing) landing.y += dy; });
+export function noteLanding(el = null) {
+  landing = { el, y: document.scrollingElement.scrollTop };
 }
 
 export function jump(dir) {
+  const left = visited;
   leaveVisit();
+  const land = landing && Math.abs(document.scrollingElement.scrollTop - landing.y) <= 2
+    && (!landing.el || landing.el.isConnected) ? landing : null;
+  landing = null;
   const list = unreadElements();
   // Nothing to go to: the app says so (a beep).
   if (!list.length) { post({ type: 'nothing' }); return; }
+  // Runs: unread blocks one right after the other.
+  const run = [0];
+  for (let i = 1; i < list.length; i++) run.push(nextShown(list[i - 1]) === list[i] ? run[i - 1] : run[i - 1] + 1);
+  // What the change left behind showed of its run is read (or about to be).
+  const skip = new Set(left ? left.run.filter(m => m !== left.el && m.isConnected && seen(m)) : []);
   const line = window.innerHeight / 3;
-  let target = dir > 0 ? list.find(e => e.getBoundingClientRect().top > line + 4)
-    : list.slice().reverse().find(e => e.getBoundingClientRect().top < line - 4);
+  const from = land ? (land.el ? land.el.getBoundingClientRect().top : topInset()) : null;
+  const tops = list.map(e => e.getBoundingClientRect().top);
+  let i = -1;
+  if (dir > 0) i = list.findIndex((e, k) => !skip.has(e) && (from !== null ? tops[k] >= from - 4 : tops[k] > line + 4));
+  else for (let k = list.length - 1; k >= 0; k--) if (!skip.has(list[k]) && tops[k] < (from !== null ? from : line) - 4) { i = k; break; }
   // Past the last change, back to the first (or the other way): the app says so too.
-  if (!target) {
-    target = dir > 0 ? list[0] : list[list.length - 1];
+  if (i < 0) {
+    i = dir > 0 ? 0 : list.length - 1;
     post({ type: 'wrapped' });
   }
+  // Back to a run: to its first block.
+  if (dir < 0) while (i > 0 && run[i - 1] === run[i] && !skip.has(list[i - 1])) i--;
+  const target = list[i];
+  const members = list.filter((e, k) => k >= i && run[k] === run[i]);
   const top = target.getBoundingClientRect().top - line;
   // In a large document the blocks a smooth scroll passes are laid out on
   // the way and change height, and the compensation for them fights the
@@ -349,7 +531,8 @@ export function jump(dir) {
   const smooth = !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   window.scrollBy({ top, behavior: smooth ? 'smooth' : 'auto' });
   focusBlock(target);
-  visit(target);
+  pulse(target);
+  visit(target, members);
   if (!smooth) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!target.isConnected) return;
@@ -357,6 +540,17 @@ export function jump(dir) {
       if (Math.abs(off) > 2) window.scrollBy(0, off);
     }));
   }
+}
+
+/**
+ * Where a jump went shows for a moment (reader.css: .landed, none with
+ * reduced motion), most of all when the page could not scroll there: the
+ * change was on screen already, or the document is too short.
+ */
+export function pulse(el) {
+  el.classList.remove('landed');
+  void el.offsetWidth;
+  el.classList.add('landed');
 }
 
 /**
@@ -369,16 +563,15 @@ export function focusBlock(el) {
 }
 
 export function markAllRead() {
-  for (const el of unreadElements()) {
+  const read = unreadElements();
+  for (const el of read) {
     el.classList.add('m-read');
     readObserver.unobserve(el);
+    disarmRead(el);
   }
   marked.clear();
   setTimeout(() => {
-    doc.querySelectorAll('.m-read').forEach(el => {
-      el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
-      if (el.classList.contains('del-mark')) el.remove();
-    });
+    for (const el of read) if (el.classList.contains('m-read')) unmark(el);
     applyChangesOnly();
     scheduleRail();
   }, 700);
@@ -417,8 +610,9 @@ export function applyChangesOnly() {
   // height so the resize compensator does not "correct" the reflow that
   // anchor restore already accounts for (double compensation scrolls away).
   // Read after all writes: one layout, not one per block.
+  setBlocksHidden(on);
   for (const el of toggled) heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
-  for (const m of doc.querySelectorAll('.del-mark')) m.hidden = false;
+  for (const m of delMarks.values()) m.hidden = false;
   if (caughtup) {
     const anyVisible = on && unreadElements().length === 0 && slots.size > 0;
     caughtup.textContent = anyVisible ? (strings.caughtUp || 'All caught up') : '';
