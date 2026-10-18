@@ -67,6 +67,39 @@ public enum ReaderChrome {
         return titles
     }
 
+    /// Titles for the tabs of one tab group: each document's title, with
+    /// " — <file name>" only for titles that appear more than once in the
+    /// group (case-insensitively), and " — <folder>" when those files have
+    /// the same name too (every agent's plan.md titled "Plan"), as many
+    /// folders as `recentTitles` needs to tell them apart.
+    public static func tabTitles(titles: [String], paths: [String]) -> [String] {
+        precondition(titles.count == paths.count)
+        var groups: [String: [Int]] = [:]
+        for i in titles.indices { groups[titles[i].lowercased(), default: []].append(i) }
+        var result = titles
+        for indices in groups.values where indices.count > 1 {
+            let named = recentTitles(indices.map { paths[$0] })
+            for (i, shown) in zip(indices, named) {
+                let name = (paths[i] as NSString).lastPathComponent
+                // recentTitles says "plan.md — app/plans" when the names collide: the folder is the difference.
+                let suffix = shown.hasPrefix(name + " — ") ? String(shown.dropFirst(name.count + 3)) : shown
+                result[i] = "\(titles[i]) — \(suffix)"
+            }
+        }
+        return result
+    }
+
+    /// The source line ⌘E opens: the line as far into the top block's
+    /// lines as the view is into the block (`ratio`, the share of the block
+    /// above the toolbar's edge), so a long code block or table opens where
+    /// it is being read, not at its first line. A missing or non-positive
+    /// ratio keeps the block's first line.
+    public static func editorLine(lines: ClosedRange<Int>, ratio: Double?) -> Int {
+        guard let ratio, ratio.isFinite, ratio > 0 else { return lines.lowerBound }
+        let span = Double(lines.upperBound - lines.lowerBound)
+        return lines.lowerBound + Int((min(1, ratio) * span).rounded(.down))
+    }
+
     /// Context-menu items (WebKit identifiers) the reader removes. Always the
     /// ones that would navigate away from the rendered document or open a
     /// link inside the web view. Copy Link, Download Linked File and Copy
