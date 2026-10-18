@@ -390,7 +390,7 @@ struct FenceTracker {
             underline = restBlank(k)
         }
         if inTable {
-            if isHeading || isBreak || first == 0x3E || itemStarted || relative >= 4 {
+            if isHeading || isBreak || first == 0x3E || itemStarted || leadRelative >= 4 {
                 inTable = false     // another block starts: the table ends
             } else {
                 return false        // a row

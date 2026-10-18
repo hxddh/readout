@@ -101,14 +101,89 @@ public enum ProjectRoot {
 public struct FileResolver: ResourceResolver {
     public let baseDirectory: URL?
     public let searchRoots: [URL]
+    /// The project the document was written for (Claude Code's `cwd`): a
+    /// relative path is looked up there right after the document's folder,
+    /// before the folders above it.
+    public let projectRoot: URL?
+    /// The repository the document's folder is in (the nearest folder at or
+    /// above it holding `.git`): relative paths are looked up in the folders
+    /// above the document up to it, and nowhere above the document outside one.
+    let repositoryRoot: URL?
 
-    public init(baseDirectory: URL?, searchRoots: [URL] = []) {
-        self.baseDirectory = baseDirectory
+    public init(baseDirectory: URL?, searchRoots: [URL] = [], projectRoot: URL? = nil) {
+        self.baseDirectory = baseDirectory?.standardizedFileURL
         self.searchRoots = searchRoots
+        self.projectRoot = projectRoot?.standardizedFileURL
+        self.repositoryRoot = self.baseDirectory.flatMap(Self.repositoryRoot(above:))
+    }
+
+    /// A document's resolver: its folder, then its project (when known), then
+    /// the folders above it in its repository, then the agent folders.
+    public init(baseDirectory: URL?, project: String?, workspaces: [String]) {
+        self.init(baseDirectory: baseDirectory,
+                  searchRoots: ProjectRoot.searchRoots(project: project, workspaces: workspaces),
+                  projectRoot: project.map { URL(fileURLWithPath: $0) })
     }
 
     public var identity: String {
-        ([baseDirectory?.path ?? ""] + searchRoots.map(\.path)).joined(separator: "\u{1F}")
+        ([baseDirectory?.path ?? "", projectRoot?.path ?? ""] + searchRoots.map(\.path)).joined(separator: "\u{1F}")
+    }
+
+    /// How many folders above the document a relative path is looked up in.
+    static let walkUpLevels = 5
+
+    /// The nearest folder at or above `dir` that holds `.git` (a folder, or
+    /// the file a worktree has), else nil. The file system root is no repository.
+    static func repositoryRoot(above dir: URL) -> URL? {
+        let fm = FileManager.default
+        var d = dir.standardizedFileURL
+        for _ in 0..<64 {
+            if d.path == "/" { return nil }
+            if fm.fileExists(atPath: d.appendingPathComponent(".git").path) { return d }
+            let up = d.deletingLastPathComponent()
+            if up.path == d.path { return nil }
+            d = up
+        }
+        return nil
+    }
+
+    /// Where a path written in the document (`src/app.ts`, `../README.md`,
+    /// `~/notes.md`, `/etc/hosts`; no `:line` suffix or `#fragment`) may be,
+    /// most likely first, each once: an absolute or `~/` path as written;
+    /// a relative one in the document's folder, then the project, then the
+    /// folders above the document inside its repository (agents write paths
+    /// relative to the repository root), then the other search roots.
+    /// Code spans resolve through it; so can links (`[x](src/a.ts#L42)`).
+    public func candidates(for path: String) -> [URL] {
+        if path.hasPrefix("/") { return [URL(fileURLWithPath: path).standardizedFileURL] }
+        if path.hasPrefix("~/") { return [URL(fileURLWithPath: NSString(string: path).expandingTildeInPath).standardizedFileURL] }
+        var out: [URL] = []
+        var seen: Set<String> = []
+        func add(_ dir: URL) {
+            let u = dir.appendingPathComponent(path).standardizedFileURL
+            if seen.insert(u.path).inserted { out.append(u) }
+        }
+        if let b = baseDirectory { add(b) }
+        if let projectRoot { add(projectRoot) }
+        if let b = baseDirectory, let repo = repositoryRoot {
+            var dir = b
+            for _ in 0..<Self.walkUpLevels where dir.path != repo.path {
+                dir = dir.deletingLastPathComponent()
+                add(dir)
+            }
+        }
+        for r in searchRoots { add(r) }
+        return out
+    }
+
+    /// The first of `candidates(for:)` that is an existing file (not a folder).
+    public func existingFile(_ path: String) -> URL? {
+        let fm = FileManager.default
+        for c in candidates(for: path) {
+            var isDir: ObjCBool = false
+            if fm.fileExists(atPath: c.path, isDirectory: &isDir), !isDir.boolValue { return c }
+        }
+        return nil
     }
 
     public func image(_ src: String) -> ResolvedImage {
@@ -155,31 +230,8 @@ public struct FileResolver: ResourceResolver {
         if !raw.contains("/") && raw.first?.isNumber == true { return nil }
         let line = m.range(at: 2).location != NSNotFound ? Int(ns.substring(with: m.range(at: 2))) : nil
         let col = m.range(at: 3).location != NSNotFound ? Int(ns.substring(with: m.range(at: 3))) : nil
-        var candidates: [URL] = []
-        if raw.hasPrefix("/") { candidates.append(URL(fileURLWithPath: raw)) }
-        else if raw.hasPrefix("~/") { candidates.append(URL(fileURLWithPath: NSString(string: raw).expandingTildeInPath)) }
-        else {
-            if let b = baseDirectory {
-                candidates.append(b.appendingPathComponent(raw))
-                // Agents usually write paths relative to the repository root: walk up a few levels.
-                var dir = b
-                for _ in 0..<5 {
-                    dir = dir.deletingLastPathComponent()
-                    candidates.append(dir.appendingPathComponent(raw))
-                    if dir.path == "/" { break }
-                }
-            }
-            for r in searchRoots { candidates.append(r.appendingPathComponent(raw)) }
-        }
-        let fm = FileManager.default
-        for c in candidates {
-            var isDir: ObjCBool = false
-            let p = c.standardizedFileURL.path
-            if fm.fileExists(atPath: p, isDirectory: &isDir), !isDir.boolValue {
-                return PathReference(path: p, line: line, column: col)
-            }
-        }
-        return nil
+        guard let file = existingFile(raw) else { return nil }
+        return PathReference(path: file.path, line: line, column: col)
     }
 }
 
