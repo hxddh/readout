@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1547,
    "h": 80,
-   "style": "199da433",
+   "style": "56de7eab",
    "content": "4cc8cb16",
    "text": "Modify: skills/wiki-init/SKILL.md — (a) director"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1627,
    "h": 97,
-   "style": "9f190882",
+   "style": "ca318c28",
    "content": "ecaba2c5",
    "text": "Modify: skills/wiki-audit/SKILL.md — strong-mode"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 1940,
    "h": 61,
-   "style": "eb17ba2d",
+   "style": "4170d8ec",
    "content": "90047294",
    "text": "Modify: skills/wiki-init/SKILL.md (directory dia"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2001,
    "h": 45,
-   "style": "db4e84a4",
+   "style": "c50b1bff",
    "content": "ee5674f6",
    "text": "Step 1: Verify the current directory diagram and"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2193,
    "h": 45,
-   "style": "8295be2a",
+   "style": "b1faccfa",
    "content": "51185aea",
    "text": "Step 2: Add .gitignore to the directory diagram"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2731,
    "h": 45,
-   "style": "10c86053",
+   "style": "71910c59",
    "content": "50eabe1e",
    "text": "Step 3: Add a .gitignore write step after the \"C"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 3287,
    "h": 45,
-   "style": "1c16477a",
+   "style": "e8836f70",
    "content": "b105d9cc",
    "text": "Step 4: Document the review: token in the SCHEMA"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 4222,
    "h": 45,
-   "style": "4be024df",
+   "style": "5316e05c",
    "content": "7ba03623",
    "text": "Step 5: Verify the edits landed"
   },
@@ -402,7 +402,7 @@
    "kind": "listItem",
    "top": 4414,
    "h": 45,
-   "style": "558671d9",
+   "style": "644db7b2",
    "content": "3ebd93fa",
    "text": "Step 6: Commit"
   },
@@ -447,7 +447,7 @@
    "kind": "listItem",
    "top": 4704,
    "h": 61,
-   "style": "b4537a8e",
+   "style": "a1f03610",
    "content": "677a769f",
    "text": "Modify: skills/wiki-audit/SKILL.md (intro line ~"
   },
@@ -456,7 +456,7 @@
    "kind": "listItem",
    "top": 4765,
    "h": 45,
-   "style": "00dc20cd",
+   "style": "39bc4dd6",
    "content": "f891fe79",
    "text": "Step 1: Verify the current intro and page-resolu"
   },
@@ -474,7 +474,7 @@
    "kind": "listItem",
    "top": 4931,
    "h": 45,
-   "style": "c39aad34",
+   "style": "1c934647",
    "content": "4d8208e8",
    "text": "Step 2: Update the intro to mention strong mode'"
   },
@@ -519,7 +519,7 @@
    "kind": "listItem",
    "top": 5186,
    "h": 71,
-   "style": "128c2349",
+   "style": "4b431fe4",
    "content": "84d6d867",
    "text": "Step 3: Add strong-mode argument parsing to the "
   },
@@ -564,7 +564,7 @@
    "kind": "listItem",
    "top": 5508,
    "h": 45,
-   "style": "4be024df",
+   "style": "5316e05c",
    "content": "d9cc2c56",
    "text": "Step 4: Verify the edits landed"
   },
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 5622,
    "h": 45,
-   "style": "558671d9",
+   "style": "644db7b2",
    "content": "c5f9adef",
    "text": "Step 5: Commit"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 6030,
    "h": 61,
-   "style": "38d95758",
+   "style": "a3f69505",
    "content": "23efccd2",
    "text": "Modify: skills/wiki-audit/SKILL.md (insert befor"
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 6091,
    "h": 45,
-   "style": "3edafb2a",
+   "style": "6b58de91",
    "content": "a6372103",
    "text": "Step 1: Verify the insertion point"
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 6257,
    "h": 45,
-   "style": "e74dd020",
+   "style": "4445bfb3",
    "content": "21133160",
    "text": "Step 2: Insert the Phase C section"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 6849,
    "h": 28,
-   "style": "8a2e2730",
+   "style": "e77ef7d5",
    "content": "3d750959",
    "text": "\"overreach\": a claim generalizes beyond what its"
   },
@@ -708,7 +708,7 @@
    "kind": "listItem",
    "top": 6877,
    "h": 28,
-   "style": "302f06d6",
+   "style": "15166777",
    "content": "c39ba217",
    "text": "\"internal-contradiction\": two claims on this pag"
   },
@@ -717,7 +717,7 @@
    "kind": "listItem",
    "top": 6905,
    "h": 97,
-   "style": "0e81a6db",
+   "style": "b85ee0ca",
    "content": "80455c5b",
    "text": "\"cross-page-contradiction\": a claim conflicts wi"
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 7499,
    "h": 45,
-   "style": "8032c0d5",
+   "style": "9843f4c6",
    "content": "9555a3e4",
    "text": "Step 3: Verify the section landed in the right p"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 7787,
    "h": 45,
-   "style": "558671d9",
+   "style": "644db7b2",
    "content": "e799c660",
    "text": "Step 4: Commit"
   },
@@ -825,7 +825,7 @@
    "kind": "listItem",
    "top": 8100,
    "h": 61,
-   "style": "392e59b0",
+   "style": "92576db2",
    "content": "1879dc6e",
    "text": "Modify: skills/wiki-audit/SKILL.md (report templ"
   },
@@ -834,7 +834,7 @@
    "kind": "listItem",
    "top": 8161,
    "h": 45,
-   "style": "4a035feb",
+   "style": "e9b6a3f8",
    "content": "f929d2e0",
    "text": "Step 1: Verify the current report template, inde"
   },
@@ -852,7 +852,7 @@
    "kind": "listItem",
    "top": 8353,
    "h": 45,
-   "style": "f57f79b3",
+   "style": "fed003d8",
    "content": "2af556bd",
    "text": "Step 2: Add the cross-model line to the report S"
   },
@@ -897,7 +897,7 @@
    "kind": "listItem",
    "top": 8748,
    "h": 45,
-   "style": "eedcb7c6",
+   "style": "26aa0815",
    "content": "ddb2caef",
    "text": "Step 3: Add the Cross-Model Review section to th"
   },
@@ -942,7 +942,7 @@
    "kind": "listItem",
    "top": 9264,
    "h": 71,
-   "style": "f280d17b",
+   "style": "48b9d1c6",
    "content": "300c075a",
    "text": "Step 4: Replace the \"add to index\" line with the"
   },
@@ -987,7 +987,7 @@
    "kind": "listItem",
    "top": 9545,
    "h": 45,
-   "style": "fc9e300c",
+   "style": "471f9a67",
    "content": "283ca31f",
    "text": "Step 5: Note the local-only report in the log st"
   },
@@ -1032,7 +1032,7 @@
    "kind": "listItem",
    "top": 10140,
    "h": 45,
-   "style": "4be024df",
+   "style": "5316e05c",
    "content": "9a4f9708",
    "text": "Step 6: Verify the edits landed"
   },
@@ -1059,7 +1059,7 @@
    "kind": "listItem",
    "top": 10376,
    "h": 45,
-   "style": "558671d9",
+   "style": "644db7b2",
    "content": "62ee2751",
    "text": "Step 7: Commit"
   },
@@ -1104,7 +1104,7 @@
    "kind": "listItem",
    "top": 10691,
    "h": 45,
-   "style": "bc1a8acb",
+   "style": "8f3491a0",
    "content": "06660512",
    "text": "Step 1: Gitignore pattern is byte-identical in b"
   },
@@ -1122,7 +1122,7 @@
    "kind": "listItem",
    "top": 10858,
    "h": 71,
-   "style": "a27a4e0c",
+   "style": "72527af2",
    "content": "4445bfaa",
    "text": "Step 2: review: token fields and values match be"
   },
@@ -1140,7 +1140,7 @@
    "kind": "listItem",
    "top": 11102,
    "h": 45,
-   "style": "6ce587ce",
+   "style": "306107e5",
    "content": "ef48778c",
    "text": "Step 3: Provider chain order is identical wherev"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 11242,
    "h": 45,
-   "style": "b059149b",
+   "style": "49156bf8",
    "content": "5a36fd8c",
    "text": "Step 4: Section numbering is intact"
   },
@@ -1176,7 +1176,7 @@
    "kind": "listItem",
    "top": 11408,
    "h": 45,
-   "style": "e342e528",
+   "style": "611a9d1b",
    "content": "286b2278",
    "text": "Step 5: Final manual trace against the spec"
   },
@@ -1194,7 +1194,7 @@
    "kind": "listItem",
    "top": 11652,
    "h": 45,
-   "style": "ba0cef7f",
+   "style": "b96438c4",
    "content": "70b7944c",
    "text": "Step 6: Commit (only if Steps 1-5 required fixes"
   },

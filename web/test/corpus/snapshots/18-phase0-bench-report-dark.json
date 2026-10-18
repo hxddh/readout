@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 1070,
    "h": 184,
-   "style": "39fc7be2",
+   "style": "469e8461",
    "content": "e5a85def",
    "text": "Harness: apps/cli/test/loadbench/. loadbench_tes"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 1254,
    "h": 243,
-   "style": "316e5161",
+   "style": "19ad6dd2",
    "content": "e8104434",
    "text": "Configs: (a) single-get - one request node (GET "
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 1497,
    "h": 28,
-   "style": "cc1c8241",
+   "style": "eacd96d5",
    "content": "2707e2e7",
    "text": "VUs: 1, 10, 50, per the task contract."
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 1525,
    "h": 210,
-   "style": "4f830cab",
+   "style": "4668a112",
    "content": "c16f7e0c",
    "text": "Stop condition: Duration, not MaxIterations - si"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1735,
    "h": 158,
-   "style": "20bcf20a",
+   "style": "38893c30",
    "content": "05809175",
    "text": "Isolation between cells: each (config, VUs) cell"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 1894,
    "h": 132,
-   "style": "d76d2192",
+   "style": "71a580c8",
    "content": "c3180590",
    "text": "What \"RPS\" means here: loadmetrics.Report.Total."
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 2026,
    "h": 253,
-   "style": "55b90c6a",
+   "style": "ff1e301c",
    "content": "4b5b3112",
    "text": "Why a header, not the body, carries the chained "
   },
@@ -150,7 +150,7 @@
    "kind": "table",
    "top": 2440,
    "h": 259,
-   "style": "de7f9a1d",
+   "style": "64521c35",
    "content": "5695e6a8",
    "text": "ConfigVUsRequestsIterationsElapsedRPSError %P50P"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 3235,
    "h": 28,
-   "style": "1430aceb",
+   "style": "13d81425",
    "content": "5b9fc61d",
    "text": "single-get: 155.3 → 1,564.1 RPS = x10.1"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 3263,
    "h": 45,
-   "style": "12b562ec",
+   "style": "f0dba008",
    "content": "fac66209",
    "text": "chained-5-step: 155.5 → 1,569.8 RPS = x10.1"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 5942,
    "h": 236,
-   "style": "2ea8712e",
+   "style": "204e8ffe",
    "content": "44a20038",
    "text": "Tells you: the engine's own per-request overhead"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 6178,
    "h": 175,
-   "style": "25bcbb6e",
+   "style": "323913e9",
    "content": "43d2ebbd",
    "text": "Does not tell you: what a Fly shared-cpu machine"
   },

@@ -1,5 +1,5 @@
 {
- "height": 8583,
+ "height": 8609,
  "blocks": [
   {
    "slot": 1,
@@ -33,7 +33,7 @@
    "kind": "listItem",
    "top": 140,
    "h": 184,
-   "style": "b64ed30f",
+   "style": "4eb08685",
    "content": "27cb2c30",
    "text": "Terms-of-service acceptance records — the closes"
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 325,
    "h": 158,
-   "style": "cad1b809",
+   "style": "59adae62",
    "content": "c4859146",
    "text": "Policy acknowledgment systems — in HR/IT (e.g., "
   },
@@ -50,24 +50,24 @@
    "slot": 6,
    "kind": "listItem",
    "top": 483,
-   "h": 106,
-   "style": "9981bb4c",
+   "h": 132,
+   "style": "cd6a242f",
    "content": "389101f4",
    "text": "GDPR consent records — the same shape. Art. 7(1)"
   },
   {
    "slot": 7,
    "kind": "listItem",
-   "top": 589,
+   "top": 615,
    "h": 253,
-   "style": "605155b5",
+   "style": "efd50c7b",
    "content": "85e1905f",
    "text": "Fair use policies (FUP/AUP) — the commercial fra"
   },
   {
    "slot": 8,
    "kind": "heading",
-   "top": 842,
+   "top": 868,
    "h": 65,
    "style": "e9714888",
    "content": "021e9955",
@@ -76,7 +76,7 @@
   {
    "slot": 9,
    "kind": "listItem",
-   "top": 907,
+   "top": 933,
    "h": 139,
    "style": "60acc928",
    "content": "152a1377",
@@ -85,7 +85,7 @@
   {
    "slot": 10,
    "kind": "listItem",
-   "top": 1047,
+   "top": 1073,
    "h": 139,
    "style": "08bfd303",
    "content": "401354a8",
@@ -94,7 +94,7 @@
   {
    "slot": 11,
    "kind": "listItem",
-   "top": 1186,
+   "top": 1212,
    "h": 139,
    "style": "a4f1b9ef",
    "content": "600280c2",
@@ -103,7 +103,7 @@
   {
    "slot": 12,
    "kind": "listItem",
-   "top": 1325,
+   "top": 1351,
    "h": 139,
    "style": "438a7f6b",
    "content": "cef00529",
@@ -112,7 +112,7 @@
   {
    "slot": 13,
    "kind": "listItem",
-   "top": 1465,
+   "top": 1491,
    "h": 123,
    "style": "31bf911a",
    "content": "beeae5fa",
@@ -121,7 +121,7 @@
   {
    "slot": 14,
    "kind": "heading",
-   "top": 1588,
+   "top": 1614,
    "h": 65,
    "style": "e9714888",
    "content": "b0668d10",
@@ -130,52 +130,52 @@
   {
    "slot": 15,
    "kind": "listItem",
-   "top": 1653,
+   "top": 1679,
    "h": 158,
-   "style": "9e369e9c",
+   "style": "14eb7234",
    "content": "2f9ffc01",
    "text": "Legal review of the acknowledgment text itself. "
   },
   {
    "slot": 16,
    "kind": "listItem",
-   "top": 1811,
+   "top": 1837,
    "h": 158,
-   "style": "059b0f9d",
+   "style": "d5b42a41",
    "content": "f519fd3b",
    "text": "Onboarding vs. threshold semantics. Prior art su"
   },
   {
    "slot": 17,
    "kind": "listItem",
-   "top": 1969,
+   "top": 1995,
    "h": 80,
-   "style": "a307d4a0",
+   "style": "be435812",
    "content": "c2a9386a",
    "text": "Export/discovery. Support and legal need to answ"
   },
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 2050,
+   "top": 2076,
    "h": 123,
-   "style": "6183aee8",
+   "style": "903dd8a6",
    "content": "dd9fa340",
    "text": "Don't overengineer. Your note rejecting a generi"
   },
   {
    "slot": 19,
    "kind": "paragraph",
-   "top": 2173,
+   "top": 2199,
    "h": 122,
-   "style": "9186544d",
+   "style": "cb0fd489",
    "content": "b69a7120",
    "text": "Sources: [^a] Stripe ToS acceptance — https://do"
   },
   {
    "slot": 20,
    "kind": "paragraph",
-   "top": 2294,
+   "top": 2320,
    "h": 44,
    "style": "5a87df18",
    "content": "dc0b6beb",
@@ -184,7 +184,7 @@
   {
    "slot": 21,
    "kind": "rule",
-   "top": 2338,
+   "top": 2364,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -193,7 +193,7 @@
   {
    "slot": 22,
    "kind": "heading",
-   "top": 2385,
+   "top": 2411,
    "h": 59,
    "style": "364d23db",
    "content": "3ed79281",
@@ -202,7 +202,7 @@
   {
    "slot": 23,
    "kind": "paragraph",
-   "top": 2444,
+   "top": 2470,
    "h": 122,
    "style": "cba7456d",
    "content": "31f83aff",
@@ -211,7 +211,7 @@
   {
    "slot": 24,
    "kind": "heading",
-   "top": 2565,
+   "top": 2591,
    "h": 65,
    "style": "e9714888",
    "content": "48b5991f",
@@ -220,7 +220,7 @@
   {
    "slot": 25,
    "kind": "paragraph",
-   "top": 2631,
+   "top": 2657,
    "h": 44,
    "style": "7d310239",
    "content": "6ce5f78b",
@@ -229,7 +229,7 @@
   {
    "slot": 26,
    "kind": "listItem",
-   "top": 2674,
+   "top": 2700,
    "h": 54,
    "style": "7cd81951",
    "content": "1b4c235f",
@@ -238,7 +238,7 @@
   {
    "slot": 27,
    "kind": "listItem",
-   "top": 2729,
+   "top": 2755,
    "h": 132,
    "style": "a582fb31",
    "content": "7413bc5a",
@@ -247,7 +247,7 @@
   {
    "slot": 28,
    "kind": "listItem",
-   "top": 2861,
+   "top": 2887,
    "h": 97,
    "style": "1530be90",
    "content": "8d97b99d",
@@ -256,7 +256,7 @@
   {
    "slot": 29,
    "kind": "paragraph",
-   "top": 2958,
+   "top": 2984,
    "h": 70,
    "style": "9ad6b1b1",
    "content": "7e082ebb",
@@ -265,7 +265,7 @@
   {
    "slot": 30,
    "kind": "heading",
-   "top": 3027,
+   "top": 3053,
    "h": 65,
    "style": "e9714888",
    "content": "61785d88",
@@ -274,43 +274,43 @@
   {
    "slot": 31,
    "kind": "listItem",
-   "top": 3093,
+   "top": 3119,
    "h": 106,
-   "style": "b5ce9805",
+   "style": "230104ed",
    "content": "7e11a2a6",
    "text": "It's a bait-and-switch on the decision variable."
   },
   {
    "slot": 32,
    "kind": "listItem",
-   "top": 3199,
+   "top": 3225,
    "h": 80,
-   "style": "42cded22",
+   "style": "7c768b8c",
    "content": "820d6f9e",
    "text": "It taxes success. Growth is exactly what you wan"
   },
   {
    "slot": 33,
    "kind": "listItem",
-   "top": 3279,
+   "top": 3305,
    "h": 80,
-   "style": "042e979c",
+   "style": "2fee8f3a",
    "content": "922e658d",
    "text": "The asymmetry is dishonest. Genuine abuse protec"
   },
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 3359,
+   "top": 3385,
    "h": 123,
-   "style": "fefbbf6e",
+   "style": "a4e94c7e",
    "content": "73e35cf3",
    "text": "Legal/UX exposure. \"Unlimited\" with an undisclos"
   },
   {
    "slot": 35,
    "kind": "heading",
-   "top": 3482,
+   "top": 3508,
    "h": 65,
    "style": "e9714888",
    "content": "18d730d1",
@@ -319,7 +319,7 @@
   {
    "slot": 36,
    "kind": "table",
-   "top": 3548,
+   "top": 3574,
    "h": 329,
    "style": "2655e502",
    "content": "8fb8e333",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "paragraph",
-   "top": 3877,
+   "top": 3903,
    "h": 200,
    "style": "04d320ae",
    "content": "faef80fb",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "rule",
-   "top": 4076,
+   "top": 4102,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -346,7 +346,7 @@
   {
    "slot": 39,
    "kind": "heading",
-   "top": 4124,
+   "top": 4150,
    "h": 59,
    "style": "364d23db",
    "content": "0129c05d",
@@ -355,7 +355,7 @@
   {
    "slot": 40,
    "kind": "paragraph",
-   "top": 4182,
+   "top": 4208,
    "h": 44,
    "style": "7d310239",
    "content": "2a7d444d",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "heading",
-   "top": 4226,
+   "top": 4252,
    "h": 65,
    "style": "e9714888",
    "content": "ff1e8693",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "paragraph",
-   "top": 4291,
+   "top": 4317,
    "h": 96,
    "style": "d679cb6b",
    "content": "2b891af9",
@@ -382,7 +382,7 @@
   {
    "slot": 43,
    "kind": "code",
-   "top": 4387,
+   "top": 4413,
    "h": 542,
    "style": "04b2f119",
    "content": "fa5ea2b7",
@@ -391,7 +391,7 @@
   {
    "slot": 44,
    "kind": "paragraph",
-   "top": 4928,
+   "top": 4954,
    "h": 44,
    "style": "adf40992",
    "content": "5fab6519",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "listItem",
-   "top": 4972,
+   "top": 4998,
    "h": 106,
    "style": "d732311e",
    "content": "bc20827a",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "listItem",
-   "top": 5078,
+   "top": 5104,
    "h": 132,
    "style": "002a9fec",
    "content": "1c9b5bac",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "listItem",
-   "top": 5211,
+   "top": 5237,
    "h": 71,
    "style": "a26f6008",
    "content": "63024fb5",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "paragraph",
-   "top": 5282,
+   "top": 5308,
    "h": 148,
    "style": "a2bb7087",
    "content": "12b8f772",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "paragraph",
-   "top": 5429,
+   "top": 5455,
    "h": 148,
    "style": "0c2b65c9",
    "content": "cb247fe4",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "heading",
-   "top": 5577,
+   "top": 5603,
    "h": 65,
    "style": "e9714888",
    "content": "962bbf5d",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "paragraph",
-   "top": 5642,
+   "top": 5668,
    "h": 44,
    "style": "d729dbab",
    "content": "6eca1dac",
@@ -463,43 +463,43 @@
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 5686,
+   "top": 5712,
    "h": 54,
-   "style": "c84c900e",
+   "style": "f1cdcb26",
    "content": "b10a0ce0",
    "text": "acknowledgment → policy_text (many-to-one, FK to"
   },
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 5740,
+   "top": 5766,
    "h": 28,
-   "style": "aee9106f",
+   "style": "43c56f6b",
    "content": "0e329352",
    "text": "acknowledgment → org (many-to-one) — the scope"
   },
   {
    "slot": 54,
    "kind": "listItem",
-   "top": 5768,
+   "top": 5794,
    "h": 80,
-   "style": "ecfb2b7b",
+   "style": "7827d32f",
    "content": "fbe079f8",
    "text": "acknowledgment → actor (many-to-one, or pseudony"
   },
   {
    "slot": 55,
    "kind": "listItem",
-   "top": 5848,
+   "top": 5874,
    "h": 71,
-   "style": "adc6971c",
+   "style": "91bdaf0b",
    "content": "44ffef2a",
    "text": "No FK to subscription/entitlement tables at all."
   },
   {
    "slot": 56,
    "kind": "paragraph",
-   "top": 5919,
+   "top": 5945,
    "h": 174,
    "style": "c7d4d429",
    "content": "771b22f2",
@@ -508,7 +508,7 @@
   {
    "slot": 57,
    "kind": "heading",
-   "top": 6093,
+   "top": 6119,
    "h": 65,
    "style": "e9714888",
    "content": "210205bd",
@@ -517,7 +517,7 @@
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 6158,
+   "top": 6184,
    "h": 106,
    "style": "44f55c9b",
    "content": "c35b35b9",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "listItem",
-   "top": 6264,
+   "top": 6290,
    "h": 106,
    "style": "d4c2785a",
    "content": "a20a63c2",
@@ -535,7 +535,7 @@
   {
    "slot": 60,
    "kind": "listItem",
-   "top": 6371,
+   "top": 6397,
    "h": 80,
    "style": "5b449b1c",
    "content": "3b16004d",
@@ -544,7 +544,7 @@
   {
    "slot": 61,
    "kind": "listItem",
-   "top": 6451,
+   "top": 6477,
    "h": 158,
    "style": "c2f0dd11",
    "content": "736f859c",
@@ -553,7 +553,7 @@
   {
    "slot": 62,
    "kind": "listItem",
-   "top": 6609,
+   "top": 6635,
    "h": 149,
    "style": "72050189",
    "content": "9efb813f",
@@ -562,7 +562,7 @@
   {
    "slot": 63,
    "kind": "heading",
-   "top": 6758,
+   "top": 6784,
    "h": 94,
    "style": "994cf190",
    "content": "d875d815",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "table",
-   "top": 6852,
+   "top": 6878,
    "h": 503,
    "style": "598755e2",
    "content": "018ecb22",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "paragraph",
-   "top": 7356,
+   "top": 7382,
    "h": 226,
    "style": "07bb3e8f",
    "content": "e35428a2",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "paragraph",
-   "top": 7581,
+   "top": 7607,
    "h": 44,
    "style": "5a87df18",
    "content": "dc0b6beb",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "footnotes",
-   "top": 7625,
+   "top": 7651,
    "h": 688,
    "style": "f9ed1a58",
    "content": "9aaa8635",

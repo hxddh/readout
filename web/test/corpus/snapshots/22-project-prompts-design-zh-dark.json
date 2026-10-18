@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 136,
    "h": 102,
-   "style": "43463549",
+   "style": "b433c753",
    "content": "0185f6a3",
    "text": "在现有全局提示词存储（~/.codemoss/prompt.json）的基础上，增加项目级别的提"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 557,
    "h": 31,
-   "style": "0ac93c25",
+   "style": "ab577bd9",
    "content": "b720c923",
    "text": "全局提示词：用户个人常用的提示词，跨所有项目使用"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 587,
    "h": 47,
-   "style": "4418211e",
+   "style": "13301da0",
    "content": "23286f1d",
    "text": "项目提示词：项目特定的提示词，可通过 Git 与团队共享"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 833,
    "h": 31,
-   "style": "a42d754f",
+   "style": "4ef07384",
    "content": "109af292",
    "text": "代码复用高，消除重复"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 863,
    "h": 31,
-   "style": "7195e313",
+   "style": "a57dbdf8",
    "content": "35bacc12",
    "text": "职责清晰，易于维护"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 894,
    "h": 31,
-   "style": "7195e313",
+   "style": "a57dbdf8",
    "content": "bfbeaf67",
    "text": "易于扩展（未来可支持团队级、云端提示词）"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 925,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "99e43141",
    "text": "符合 SOLID 设计原则"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 1443,
    "h": 31,
-   "style": "8fa68690",
+   "style": "61268c05",
    "content": "5be9718c",
    "text": "定义模板方法：getStoragePath(), ensureStorageDirectory("
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 1474,
    "h": 31,
-   "style": "7195e313",
+   "style": "a57dbdf8",
    "content": "eb84cac7",
    "text": "实现通用业务逻辑：增删改查、验证、冲突检测、批量导入"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 1504,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "4fdb7517",
    "text": "提供 Gson 和通用工具方法"
   },
@@ -312,7 +312,7 @@
    "kind": "paragraph",
    "top": 1875,
    "h": 46,
-   "style": "c9f9afef",
+   "style": "63bf17a3",
    "content": "a8031832",
    "text": "全局提示词管理器，继承 AbstractPromptManager。"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 2224,
    "h": 46,
-   "style": "c9f9afef",
+   "style": "63bf17a3",
    "content": "76626885",
    "text": "项目提示词管理器，继承 AbstractPromptManager。"
   },
@@ -438,7 +438,7 @@
    "kind": "listItem",
    "top": 3836,
    "h": 47,
-   "style": "4e4771b2",
+   "style": "e8253636",
    "content": "7e73b81a",
    "text": "PromptManager 类直接操作全局配置"
   },
@@ -456,7 +456,7 @@
    "kind": "listItem",
    "top": 3929,
    "h": 31,
-   "style": "58edee65",
+   "style": "590c95ce",
    "content": "9a3995e8",
    "text": "将 PromptManager 重命名为 AbstractPromptManager 并抽象化"
   },
@@ -465,7 +465,7 @@
    "kind": "listItem",
    "top": 3960,
    "h": 31,
-   "style": "7195e313",
+   "style": "a57dbdf8",
    "content": "744582e3",
    "text": "提取路径相关方法为抽象方法"
   },
@@ -474,7 +474,7 @@
    "kind": "listItem",
    "top": 3990,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "4509c8f4",
    "text": "保持所有业务逻辑不变"
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 8699,
    "h": 31,
-   "style": "a42d754f",
+   "style": "4ef07384",
    "content": "8dc9f8ed",
    "text": "Settings 页面：项目提示词区域显示\"无活动项目\"占位符"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 8730,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "1f370fb8",
    "text": "聊天自动补全：只显示全局提示词"
   },
@@ -906,7 +906,7 @@
    "kind": "listItem",
    "top": 8819,
    "h": 31,
-   "style": "344aad34",
+   "style": "46f73ffb",
    "content": "248865e7",
    "text": "ProjectPromptManager.getStoragePath() 抛出 Illegal"
   },
@@ -915,7 +915,7 @@
    "kind": "listItem",
    "top": 8850,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "f81bf7e9",
    "text": "UI 捕获异常，显示友好错误信息"
   },
@@ -933,7 +933,7 @@
    "kind": "listItem",
    "top": 8939,
    "h": 31,
-   "style": "a42d754f",
+   "style": "4ef07384",
    "content": "a78c4d3d",
    "text": "始终只显示当前活动项目的提示词"
   },
@@ -942,7 +942,7 @@
    "kind": "listItem",
    "top": 8970,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "dd13e433",
    "text": "切换项目时，自动刷新项目提示词列表"
   },
@@ -960,7 +960,7 @@
    "kind": "listItem",
    "top": 9059,
    "h": 31,
-   "style": "1e3b02de",
+   "style": "2242c838",
    "content": "f2e0b892",
    "text": "创建 .codemoss 目录失败：捕获 IOException，提示用户检查权限"
   },
@@ -969,7 +969,7 @@
    "kind": "listItem",
    "top": 9089,
    "h": 47,
-   "style": "7f40c069",
+   "style": "9793a68d",
    "content": "0c599cb5",
    "text": "读写 prompt.json 失败：降级为空列表，不中断用户操作"
   },
@@ -987,7 +987,7 @@
    "kind": "listItem",
    "top": 9179,
    "h": 31,
-   "style": "a42d754f",
+   "style": "4ef07384",
    "content": "4f20b1b3",
    "text": "全局和项目提示词的 ID 可以相同（因为存储路径不同）"
   },
@@ -996,7 +996,7 @@
    "kind": "listItem",
    "top": 9209,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "c354e1bd",
    "text": "导入导出时保持现有冲突策略（SKIP/OVERWRITE/DUPLICATE）"
   },
@@ -1023,7 +1023,7 @@
    "kind": "listItem",
    "top": 9364,
    "h": 31,
-   "style": "d75ce5bf",
+   "style": "351c0685",
    "content": "2b8c2f7e",
    "text": "AbstractPromptManager 通用逻辑测试"
   },
@@ -1032,7 +1032,7 @@
    "kind": "listItem",
    "top": 9394,
    "h": 31,
-   "style": "4099a340",
+   "style": "6bd5a5ba",
    "content": "1cceb941",
    "text": "GlobalPromptManager 路径解析测试"
   },
@@ -1041,7 +1041,7 @@
    "kind": "listItem",
    "top": 9425,
    "h": 31,
-   "style": "675a760b",
+   "style": "a4b8701d",
    "content": "56908c71",
    "text": "ProjectPromptManager 路径解析测试"
   },
@@ -1050,7 +1050,7 @@
    "kind": "listItem",
    "top": 9456,
    "h": 31,
-   "style": "675a760b",
+   "style": "a4b8701d",
    "content": "f8d8adc6",
    "text": "PromptManagerFactory 工厂创建测试"
   },
@@ -1059,7 +1059,7 @@
    "kind": "listItem",
    "top": 9487,
    "h": 47,
-   "style": "f1ba161d",
+   "style": "6623370b",
    "content": "fdfd3bb0",
    "text": "PromptScope 枚举解析测试"
   },
@@ -1077,7 +1077,7 @@
    "kind": "listItem",
    "top": 9576,
    "h": 31,
-   "style": "a42d754f",
+   "style": "4ef07384",
    "content": "6ab49bd2",
    "text": "全局提示词增删改查"
   },
@@ -1086,7 +1086,7 @@
    "kind": "listItem",
    "top": 9606,
    "h": 31,
-   "style": "7195e313",
+   "style": "a57dbdf8",
    "content": "2fb9ad27",
    "text": "项目提示词增删改查"
   },
@@ -1095,7 +1095,7 @@
    "kind": "listItem",
    "top": 9637,
    "h": 31,
-   "style": "7195e313",
+   "style": "a57dbdf8",
    "content": "1eaf7d2e",
    "text": "导入导出功能（全局和项目）"
   },
@@ -1104,7 +1104,7 @@
    "kind": "listItem",
    "top": 9668,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "2b93e3c2",
    "text": "复制到全局功能"
   },
@@ -1122,7 +1122,7 @@
    "kind": "listItem",
    "top": 9757,
    "h": 31,
-   "style": "a42d754f",
+   "style": "4ef07384",
    "content": "2f62301c",
    "text": "Settings 页面加载全局和项目提示词"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 9788,
    "h": 31,
-   "style": "7195e313",
+   "style": "a57dbdf8",
    "content": "b57ae50c",
    "text": "创建、编辑、删除操作"
   },
@@ -1140,7 +1140,7 @@
    "kind": "listItem",
    "top": 9818,
    "h": 31,
-   "style": "7195e313",
+   "style": "a57dbdf8",
    "content": "3b98ec69",
    "text": "导入导出操作"
   },
@@ -1149,7 +1149,7 @@
    "kind": "listItem",
    "top": 9849,
    "h": 47,
-   "style": "95dc7854",
+   "style": "2d08ef79",
    "content": "36016299",
    "text": "聊天输入框自动补全显示"
   },
@@ -1473,7 +1473,7 @@
    "kind": "listItem",
    "top": 11411,
    "h": 59,
-   "style": "28ae6f4d",
+   "style": "f76069bd",
    "content": "cbecbb03",
    "text": "现有 PromptManager 实现：src/main/java/com/github/cla"
   },
@@ -1482,7 +1482,7 @@
    "kind": "listItem",
    "top": 11469,
    "h": 28,
-   "style": "de92d568",
+   "style": "6218e842",
    "content": "2274e6a9",
    "text": "Settings UI：webview/src/components/settings/Prom"
   },
@@ -1491,7 +1491,7 @@
    "kind": "listItem",
    "top": 11498,
    "h": 47,
-   "style": "66358360",
+   "style": "720527a4",
    "content": "bb58f226",
    "text": "聊天自动补全：webview/src/components/ChatInputBox/provi"
   }

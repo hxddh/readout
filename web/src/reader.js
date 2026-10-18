@@ -355,7 +355,7 @@ window.readout = {
   remoteReady,
   remoteFailed,
   remoteKnown,
-  warm: () => hl.init(),
+  warm: () => hl.warm(),
 };
 
 post({ type: 'ready' });

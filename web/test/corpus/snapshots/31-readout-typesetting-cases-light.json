@@ -60,7 +60,7 @@
    "kind": "code",
    "top": 565,
    "h": 122,
-   "style": "16dd1335",
+   "style": "545fff21",
    "content": "cefa7893",
    "text": "$ npm run corpus ok: 01-sdd-fix-loop-plan-light "
   },
@@ -132,7 +132,7 @@
    "kind": "paragraph",
    "top": 1434,
    "h": 74,
-   "style": "5a6c3fa3",
+   "style": "9f736e11",
    "content": "55e014e1",
    "text": "这一段测试着重号：强调文字不用斜体，标点不加点。——也不加，混排的调用 API 接口只在汉字下加"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1627,
    "h": 30,
-   "style": "0a90e37a",
+   "style": "c8586150",
    "content": "2c9cf511",
    "text": "已完成：检查复选框与这一行居中"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1656,
    "h": 45,
-   "style": "2d2a3976",
+   "style": "5ebd9618",
    "content": "ef23225f",
    "text": "未完成：Latin task item in a CJK list"
   },
@@ -177,7 +177,7 @@
    "kind": "paragraph",
    "top": 1701,
    "h": 46,
-   "style": "08c68563",
+   "style": "f708f252",
    "content": "b2b5a8f2",
    "text": "日本語の段落：強調は傍点で示します。"
   },

@@ -82,6 +82,7 @@ let initialized = false;   // the preloaded grammars are all registered
 const loading = new Map();
 const failed = new Set();  // grammars that could not be loaded (never waited for again)
 const lazyOf = new Map();  // grammar id -> languages it embeds only when they are loaded
+const grammarsOf = new Map();  // preloaded grammar id -> its grammar modules (for the warm-up)
 
 export function resolveLang(lang) {
   if (!lang) return null;
@@ -93,13 +94,24 @@ export function resolveLang(lang) {
 /** Quick Look: no grammars are loaded ahead of need (call before init). */
 export function noPreload() { preload = false; }
 
+// A terminal transcript's output is secondary text, not the link blue the
+// GitHub themes give it (#0550ae / #79c0ff, the colour of constants): a grey
+// for that scope alone, so the options and numbers in its commands keep theirs.
+async function quietOutput(theme, color) {
+  const t = (await theme).default;
+  return { ...t, tokenColors: [...t.tokenColors, { scope: 'meta.output.shell-session', settings: { foreground: color } }] };
+}
+
 export function init() {
   if (ready) return ready;
   ready = (async () => {
     const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] =
       await Promise.all([import('shiki/core'), import('shiki/engine/javascript')]);
     highlighter = await createHighlighterCore({
-      themes: [import('@shikijs/themes/github-light-default'), import('@shikijs/themes/github-dark-default')],
+      themes: [
+        quietOutput(import('@shikijs/themes/github-light-default'), '#5f5f66'),
+        quietOutput(import('@shikijs/themes/github-dark-default'), '#a8a8ae'),
+      ],
       langs: [],
       engine: createJavaScriptRegexEngine({ forgiving: true }),
     });
@@ -109,6 +121,246 @@ export function init() {
     initialized = true;
   })();
   return ready;
+}
+
+// Loading a grammar does not compile its patterns: the first block it
+// highlights does, which cost the first code block of a warm open 170-220 ms
+// inside the page's first apply (TypeScript's patterns alone take WebKit
+// hundreds of milliseconds). So the app's spare page (warm), once the
+// preloaded grammars are in and it has then sat unused for a while (a spare
+// page usually waits minutes for its window), compiles each grammar's
+// patterns one at a time and runs a few lines of each language through it,
+// in slices of a few milliseconds, one per task: a window taking the page
+// meanwhile waits for one slice at most (one pattern: TypeScript's largest
+// is the longest step), and nothing more is done once it shows a document
+// (stopWarmUp, enhance.js). Only on the spare page: a page being read should
+// not spend its main thread on languages it may not show. Never in Quick
+// Look, which preloads nothing. Marks 'readout-hl-warm' when done, with the
+// longest step (perf.test.mjs).
+let warming = false;
+let warmStopped = false;
+export function warm() {
+  return init().then(() => {
+    if (!preload || warming || warmStopped) return;
+    warming = true;
+    setTimeout(warmUp, WARM_DELAY_MS);
+  });
+}
+
+/** The page shows a document: no more warming up. */
+export function stopWarmUp() { warmStopped = true; }
+
+const TS_SAMPLE = [
+  'import { readFile } from "node:fs/promises";',
+  'import type { Plan } from "./plan.js";',
+  '/** A doc comment. */',
+  'export interface Item<T = unknown> { id: number; name?: string; tags: readonly string[]; value: T | null }',
+  'type Kind = "a" | "b";',
+  'enum Mode { On = 1, Off }',
+  'export class Store<T> extends Base implements Iterable<T> {',
+  '  private readonly items = new Map<string, T>();',
+  '  constructor(public path: string, opts: { strict?: boolean } = {}) { super(); }',
+  '  async load(): Promise<number> {',
+  '    try {',
+  '      const text = await readFile(this.path, "utf8");',
+  '      for (const [i, line] of text.split("\\n").entries()) {',
+  '        if (!line.trim() || line.startsWith("#")) continue;',
+  '        const m = /^- \\[( |x)\\] (.+)$/i.exec(line);',
+  "        this.items.set(`${i}:${m?.[2] ?? ''}`, JSON.parse(line) as T);",
+  '      }',
+  '    } catch (err) {',
+  '      throw new Error(`cannot read ${this.path}: ${String(err)}`);',
+  '    }',
+  '    return this.items.size;',
+  '  }',
+  '}',
+  'export const total = (xs: number[]): number => xs.filter(x => x > 0).reduce((a, b) => a + b, 0) * 1.5e3; // done',
+  'switch (mode) { case Mode.On: break; default: console.log(null, undefined, true); }',
+].join('\n');
+const SAMPLES = {
+  shellscript: [
+    '#!/usr/bin/env bash',
+    'set -euo pipefail',
+    'for f in "$@"; do',
+    '  if [[ -n "${f:-}" && -f "$f" ]]; then echo "ok: $(basename "$f")" | tee -a out.log; fi',
+    'done',
+    'export PATH="$HOME/bin:$PATH"  # comment',
+    'case "$1" in start) npm run build --silent 2>&1 ;; *) exit 1 ;; esac',
+  ].join('\n'),
+  json: '{\n  "name": "x",\n  "n": 1.5e3,\n  "ok": true,\n  "list": [null, {"a": "b\\n"}]\n}',
+  typescript: TS_SAMPLE,
+  javascript: TS_SAMPLE,
+  python: [
+    'from dataclasses import dataclass',
+    '',
+    '@dataclass',
+    'class Item(Base):',
+    '    """A docstring."""',
+    '    def load(self, path: str = "x", *args, **kw) -> list[int]:',
+    '        with open(path) as f:  # comment',
+    '            return [int(x) for x in f if x.strip() and not x.startswith("#")]',
+    '',
+    'async def main() -> None:',
+    '    try:',
+    '        await run(f"{path!r} {1 + 2:.2f}", r"\\d+", b"x")',
+    '    except (OSError, ValueError) as e:',
+    '        raise SystemExit(1) from e',
+    '    finally:',
+    '        print(lambda x: x ** 2, None, True)',
+  ].join('\n'),
+  swift: [
+    'import Foundation',
+    '',
+    '/// A doc comment.',
+    '@MainActor final class Store<T: Codable>: ObservableObject {',
+    '    @Published private(set) var items: [String: T] = [:]',
+    '    init(path: URL, strict: Bool = false) throws { self.path = path }',
+    '    func load() async throws -> Int {',
+    '        guard let data = try? Data(contentsOf: path) else { return 0 }',
+    '        for (i, line) in String(decoding: data, as: UTF8.self).split(separator: "\\n").enumerated() where !line.isEmpty {',
+    '            items["\\(i)"] = try JSONDecoder().decode(T.self, from: Data(line.utf8))',
+    '        }',
+    '        return items.count  // comment',
+    '    }',
+    '}',
+    'enum Mode { case on, off }',
+    'let total = [1, 2].map { $0 * 2 }.reduce(0, +) * 1.5',
+  ].join('\n'),
+  go: [
+    'package main',
+    '',
+    'import (',
+    '\t"context"',
+    '\t"fmt"',
+    ')',
+    '',
+    '// Store is a store.',
+    'type Store[T any] struct {',
+    '\tItems map[string]T `json:"items"`',
+    '}',
+    '',
+    'func (s *Store[T]) Load(ctx context.Context, path string) (int, error) {',
+    '\tfor i, line := range strings.Split(path, "\\n") {',
+    '\t\tif line == "" {',
+    '\t\t\tcontinue',
+    '\t\t}',
+    '\t\ts.Items[fmt.Sprintf("%d", i)] = *new(T)',
+    '\t}',
+    '\tgo func() { defer close(ch); ch <- 1 }()',
+    '\treturn len(s.Items), nil',
+    '}',
+  ].join('\n'),
+  rust: [
+    'use std::collections::HashMap;',
+    '',
+    '/// A doc comment.',
+    '#[derive(Debug, Clone)]',
+    "pub struct Store<'a, T: Clone> {",
+    '    items: HashMap<String, T>,',
+    "    path: &'a str,",
+    '}',
+    '',
+    "impl<'a, T: Clone> Store<'a, T> {",
+    '    pub async fn load(&mut self) -> Result<usize, Box<dyn std::error::Error>> {',
+    '        for (i, line) in self.path.lines().enumerate() {',
+    '            if line.is_empty() { continue; }',
+    '            let key = format!("{i}:{}", line.trim());',
+    '            match self.items.get(&key) { Some(_) => {}, None => return Err("x".into()) }',
+    '        }',
+    '        Ok(self.items.len()) // comment',
+    '    }',
+    '}',
+  ].join('\n'),
+  yaml: [
+    '# comment',
+    'name: "value"',
+    'on:',
+    '  push:',
+    '    branches: [main]',
+    'jobs:',
+    '  test:',
+    '    runs-on: ubuntu-latest',
+    '    steps:',
+    '      - uses: actions/checkout@v4',
+    '      - run: |',
+    '          npm ci',
+    '        env: { CI: true, N: 1.5 }',
+  ].join('\n'),
+  diff: 'diff --git a/x.js b/x.js\nindex 1111111..2222222 100644\n--- a/x.js\n+++ b/x.js\n@@ -1,3 +1,3 @@ function f\n-const a = 1;\n+const a = 2;\n context',
+  markdown: [
+    '# Title',
+    '',
+    'Some *text*, **bold** and `code`, a [link](https://example.com "t") and ![image](a.png).',
+    '',
+    '> A quote',
+    '',
+    '1. One',
+    '- [ ] Task',
+    '',
+    '| a | b |',
+    '| - | - |',
+    '| 1 | 2 |',
+  ].join('\n'),
+  sql: [
+    "WITH t AS (SELECT id, name FROM users WHERE created_at > NOW() - INTERVAL '7 days')",
+    'SELECT a.id, COUNT(*) AS n, SUM(b.x) / 1.5 FROM t a',
+    'LEFT JOIN orders b ON b.user_id = a.id',
+    "WHERE a.name LIKE '%x%' AND b.status IN ('open', 'done')",
+    'GROUP BY a.id HAVING COUNT(*) > 1 ORDER BY n DESC LIMIT 10; -- comment',
+    'CREATE TABLE IF NOT EXISTS x (id INTEGER PRIMARY KEY, v TEXT NOT NULL);',
+    "INSERT INTO x VALUES (1, 'a');",
+  ].join('\n'),
+};
+const WARM_DELAY_MS = 5000;
+const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript', 'go', 'swift', 'rust', 'yaml', 'markdown', 'sql', 'diff'];
+// The regexes of a grammar, as the build precompiled them: WebKit compiles
+// each on its first use, which is what makes a grammar's first block slow.
+function regexesOf(id) {
+  const out = new Set(), seen = new Set();
+  const walk = v => {
+    if (v instanceof RegExp) { out.add(v); return; }
+    if (!v || typeof v !== 'object' || seen.has(v)) return;
+    seen.add(v);
+    for (const k in v) walk(v[k]);
+  };
+  walk(grammarsOf.get(id));
+  return [...out];
+}
+
+const SLICE_MS = 8;
+function warmUp() {
+  const ids = WARM_ORDER.filter(id => SAMPLES[id] && highlighter.getLoadedLanguages().includes(id));
+  const work = [];
+  for (const id of ids) {
+    for (const r of regexesOf(id)) work.push(() => { try { r.lastIndex = 0; r.exec(''); } catch { /* not ours to fix */ } });
+    // Then its sample, a line per step (carrying the grammar's state), so
+    // the rules it reaches are set up as they are for a block.
+    let state;
+    for (const line of SAMPLES[id].split('\n')) {
+      work.push(() => {
+        try {
+          const tokens = highlighter.codeToTokensBase(line, { lang: id, theme: 'github-light-default', ...(state ? { grammarState: state } : {}) });
+          state = highlighter.getLastGrammarState(tokens);
+        } catch { state = undefined; }
+      });
+    }
+  }
+  // And the whole path once, as a block is highlighted (both themes, HTML).
+  work.push(() => highlightSync('x', 'json'));
+  let longest = 0;
+  const next = () => {
+    if (warmStopped) return;
+    const t0 = performance.now();
+    do {
+      const step = work.shift();
+      if (!step) { performance.mark('readout-hl-warm', { detail: { longest } }); return; }
+      const s0 = performance.now();
+      step();
+      longest = Math.max(longest, performance.now() - s0);
+    } while (performance.now() - t0 < SLICE_MS);
+    setTimeout(next, 0);
+  };
+  next();
 }
 
 // Grammars are registered one at a time, in request order. Several modules
@@ -125,6 +377,7 @@ export function ensureLang(id) {
     const done = registry.then(() => load).then(m => {
       const main = m.default.find(g => g.name === id) || m.default[m.default.length - 1];
       lazyOf.set(id, main?.embeddedLangsLazy || []);
+      if (preload) grammarsOf.set(id, m.default);
       return highlighter.loadLanguage(m.default);
     }).catch(() => { failed.add(id); });
     registry = done;

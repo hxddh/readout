@@ -2,7 +2,8 @@
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
 // measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it, and frame
-// pacing while scrolling through the whole page. Writes the numbers to
+// pacing while scrolling through the whole page; and, on a fresh warmed page,
+// the first apply of a small document whose code block is on screen. Writes the numbers to
 // test/out/perf-web.json; tools/perf-assert.py checks them against
 // tools/perf-budgets.json.
 //
@@ -120,12 +121,51 @@ const scroll = await page.evaluate(() => new Promise(resolve => {
 const gaps = scroll.gaps.slice(1);
 const sorted = gaps.slice().sort((a, b) => a - b);
 
+// The first code block of a warm open: a fresh page warmed as the app's
+// spare page is (its grammars preloaded and compiled in idle time), then a
+// small document with a TypeScript block on screen, highlighted inside the
+// synchronous first apply.
+const firstHighlight = await (async () => {
+  const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
+  await p.evaluate(() => { window.readout.warm(); window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }); });
+  const warmed = await p.evaluate(() => new Promise(r => {
+    const end = performance.now() + 40000;
+    const t = () => performance.getEntriesByName('readout-hl-warm').length ? r(true) : performance.now() > end ? r(false) : setTimeout(t, 50);
+    t();
+  }));
+  await p.waitForTimeout(200);
+  // The warm-up's longest step: what a window taking the page mid-warm-up could wait for.
+  const warmStep = await p.evaluate(() => Math.round(performance.getEntriesByName('readout-hl-warm')[0]?.detail?.longest ?? -1));
+  const code = 'import { readFile } from "node:fs/promises";\n\n// Load the plan and count its open tasks.\nexport async function openTasks(path: string): Promise<number> {\n  const text = await readFile(path, "utf8");\n  return text.split("\\n").filter(l => /^- \\[ \\]/.test(l)).length;\n}';
+  const r = await p.evaluate(code => {
+    const t0 = performance.now();
+    window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
+      { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'plan', html: '<h1 id="plan">Plan</h1>' },
+      { op: 'insert', slot: 2, after: 1, kind: 'paragraph', html: '<p>Count the open tasks:</p>' },
+      { op: 'insert', slot: 3, after: 2, kind: 'code', html: `<div class="code-block" data-lang="ts"><pre><code>${code.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre></div>` },
+    ] });
+    return { ms: performance.now() - t0, hl: document.querySelector('.code-block').dataset.hl };
+  }, code);
+  await p.close();
+  return { ...r, warmed, warmStep };
+})();
+if (!firstHighlight.warmed || firstHighlight.hl !== 'done') errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
+
 const result = {
   web_doc_bytes: bytes,
   web_doc_blocks: ops.length,
   web_first_apply_1mb_ms: Math.round(firstApply.sync),
   web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
+  web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
+  web_hl_warm_longest_step_ms: firstHighlight.warmStep,
   web_scroll_frames: gaps.length,
   web_scroll_stride_px: scroll.stride,
   web_scroll_frame_p95_ms: Math.round(sorted[Math.floor(sorted.length * 0.95)] * 10) / 10,
