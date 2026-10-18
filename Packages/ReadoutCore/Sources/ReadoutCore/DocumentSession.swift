@@ -149,17 +149,23 @@ public final class DocumentSession {
         let keys = blocks.map(BlockKey.init)
         var rewrite = false
         if let persisted, persisted != keys {
-            var d = Differ.diff(old: persisted, new: keys)
-            // A block of an unread deletion stays removed: what replaced it was inserted.
-            if !d.rewrite, persisted.contains(where: { $0.removed == true }) {
-                for (n, c) in d.changes.enumerated() {
+            // A block of an unread deletion stays removed: it takes no part in
+            // the alignment (nothing can match or pair with it, and it does not
+            // count towards a rewrite), as in the live session it was not there.
+            var d: DiffResult
+            if persisted.contains(where: { $0.removed == true }) {
+                let present = persisted.indices.filter { persisted[$0].removed != true }
+                let inner = Differ.diff(old: present.map { persisted[$0] }, new: keys)
+                d = DiffResult(changes: inner.changes.map { c -> DiffResult.Change in
                     switch c {
-                    case let .equal(o), let .modified(o):
-                        if persisted[o].removed == true { d.changes[n] = .inserted; d.removed.append(o) }
-                    case .inserted: break
+                    case let .equal(o): return .equal(old: present[o])
+                    case let .modified(o): return .modified(old: present[o])
+                    case .inserted: return .inserted
                     }
-                }
-                d.removed.sort()
+                }, removed: (inner.removed.map { present[$0] } + persisted.indices.filter { persisted[$0].removed == true }).sorted(),
+                   rewrite: inner.rewrite)
+            } else {
+                d = Differ.diff(old: persisted, new: keys)
             }
             rewrite = d.rewrite
             // Checkbox states come from the baseline (nil in one saved before they were kept).
@@ -362,7 +368,21 @@ public final class DocumentSession {
 
         var newDeletions: [Int: RenderPatch.Deletion] = [:]  // keyed by anchor slot
         var newRemoved: [(after: Int, index: Int, key: BlockKey)] = []   // the removed blocks as last read
+        // The agent was still writing the last block (`1.`, `- [ ]`, `|`, `*`):
+        // what it became (a list item, a task, a table, emphasis) took it in,
+        // starting on its first line. Not a removal.
+        func absorbed(_ o: Int) -> Bool {
+            guard o == oldBlocks.count - 1 else { return false }
+            let ob = oldBlocks[o]
+            let tail = ob.source.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !tail.isEmpty, tail.utf8.count <= 64 else { return false }
+            return blocks.contains { $0.lines.contains(ob.lines.lowerBound) && $0.source.contains(tail) }
+        }
         for o in d.removed {
+            if !oldBlocks.isEmpty, absorbed(o) {
+                if let s = oldSlotForIndex(o) { marks[s] = nil }
+                continue
+            }
             if let s = oldSlotForIndex(o), marks[s] == .inserted {
                 // Inserted and removed before it was read: nothing to report.
                 marks[s] = nil
