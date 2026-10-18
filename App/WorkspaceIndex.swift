@@ -114,6 +114,25 @@ final class WorkspaceIndex {
                 self.onWrite?(hits.map { (url: $0.0, isNew: $0.2) })
             }
         }
+        // A folder that just appeared: a file renamed into it after the scan
+        // above but before the stream started reaches neither. Look again now
+        // that the stream runs, on its queue: what this finds is known to the
+        // events after it, and what they found first is not reported twice.
+        guard !appeared.isEmpty else { return }
+        queue.async { [weak self] in
+            var late: [(url: URL, isNew: Bool)] = []
+            for a in appeared {
+                for (url, date) in Self.scan([a.root]).newest where date >= a.since.addingTimeInterval(-2) {
+                    if known.paths.insert(Self.givenPath(url.path, roots: realRoots)).inserted { late.append((url: url, isNew: true)) }
+                }
+            }
+            guard !late.isEmpty else { return }
+            DispatchQueue.main.async {
+                guard let self, self.generation == gen else { return }
+                self.record(late.map { ($0.url, Date()) })
+                self.onWrite?(late)
+            }
+        }
     }
 
     /// Watches the folders asked for again: one that did not exist when they

@@ -145,6 +145,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         forwarder.target = self
         ucc.add(forwarder, name: "readout")
         ucc.addUserScript(WKUserScript(source: Self.contextLinkScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        ucc.addUserScript(WKUserScript(source: Self.landedScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         allowsMagnification = false
         allowsBackForwardNavigationGestures = false
         underPageBackgroundColor = .textBackgroundColor
@@ -173,6 +174,26 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         document.addEventListener('contextmenu', e => {
           const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
           window.webkit.messageHandlers.readout.postMessage({ type: 'contextLink', href: a ? a.href : '' });
+        }, true);
+        """
+
+    /// Reports where keyboard focus landed when it moves to an unread change
+    /// (N, ⌘], a rail tick: the page focuses the change it went to), with its
+    /// place among the unread changes and its kind, so the app can tell
+    /// VoiceOver "Unread change 2 of 5: edited". The same changes, in the same
+    /// order, as the page's rail (rail.js: unreadElements, kindKey).
+    private static let landedScript = """
+        document.addEventListener('focusin', e => {
+          const el = e.target;
+          const marked = '.blk.m-inserted, .blk.m-modified, .blk.m-state, .del-mark';
+          if (!(el instanceof Element) || !el.matches(marked) || el.classList.contains('m-read')) return;
+          const list = [...document.querySelectorAll('.blk.m-inserted:not(.m-read), .blk.m-modified:not(.m-read), .blk.m-state:not(.m-read), .del-mark:not(.m-read)')]
+            .filter(x => x.offsetParent !== null);
+          const i = list.indexOf(el);
+          if (i < 0) return;
+          const c = el.classList;
+          const kind = c.contains('m-modified') ? 'railEdited' : c.contains('m-state') ? 'railTask' : c.contains('del-mark') ? 'railRemoved' : 'railAdded';
+          window.webkit.messageHandlers.readout.postMessage({ type: 'landed', index: i + 1, total: list.length, kind });
         }, true);
         """
 
@@ -243,6 +264,20 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         }
     }
 
+    /// An async function body (`return await …`), run in the page's world
+    /// after every call made before it, as `run` does: never ahead of a
+    /// document still being encoded.
+    func runAsync(_ body: String, completion: @escaping @MainActor (Result<Any, Error>) -> Void) {
+        if pendingCalls.isEmpty {
+            callAsyncJavaScript(body, in: nil, in: .page, completionHandler: completion)
+        } else {
+            let call = PendingCall()
+            call.script = body
+            call.asyncCompletion = completion
+            pendingCalls.append(call)
+        }
+    }
+
     /// For a large argument (a whole document): encoded on a background
     /// queue, the main thread free meanwhile; calls made after it wait for it.
     func callEncodingOffMain<T: Encodable & Sendable>(_ function: String, _ value: T) {
@@ -265,6 +300,8 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         /// nil while encoding; "" when there is nothing to run.
         var script: String?
         var completion: (@MainActor (Any?, Error?) -> Void)?
+        /// Set for `runAsync`: the script is an async function body.
+        var asyncCompletion: (@MainActor (Result<Any, Error>) -> Void)?
     }
     private var pendingCalls: [PendingCall] = []
     private static let encodeQueue = DispatchQueue(label: "Readout.encode", qos: .userInitiated)
@@ -272,7 +309,11 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
     private func drainCalls() {
         while let first = pendingCalls.first, let script = first.script {
             pendingCalls.removeFirst()
-            if !script.isEmpty { evaluateJavaScript(script, completionHandler: first.completion) }
+            if let done = first.asyncCompletion {
+                callAsyncJavaScript(script, in: nil, in: .page, completionHandler: done)
+            } else if !script.isEmpty {
+                evaluateJavaScript(script, completionHandler: first.completion)
+            }
         }
     }
 

@@ -267,9 +267,7 @@ enum EditorOpener {
         case .vscode: url = URL(string: "vscode://file\(enc)\(pos)")
         case .cursor: url = URL(string: "cursor://file\(enc)\(pos)")
         case .zed: url = URL(string: "zed://file\(enc)\(pos)")
-        case .sublime:
-            let fileURL = URL(fileURLWithPath: path).absoluteString
-            url = URL(string: "subl://open?url=\(fileURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? fileURL)" + (line > 0 ? "&line=\(line)" : ""))
+        case .sublime: url = EditorURL.sublime(path: path, line: line)
         case .xcode:
             let p = Process()
             p.executableURL = URL(fileURLWithPath: "/usr/bin/xed")

@@ -28,6 +28,10 @@ public enum PageMessage: Equatable, Sendable {
     case nothing
     /// N went past the last change and wrapped around to the first: the app beeps.
     case wrapped
+    /// Keyboard focus moved to an unread change (N, a rail tick): its place
+    /// among the unread changes (1-based) and its kind (`railAdded`,
+    /// `railEdited`, `railRemoved`, `railTask`), for VoiceOver.
+    case landed(index: Int, total: Int, kind: String)
 
     public init?(_ msg: [String: Any]) {
         func int(_ v: Any?) -> Int? { (v as? NSNumber)?.intValue ?? (v as? Int) }
@@ -64,6 +68,10 @@ public enum PageMessage: Equatable, Sendable {
             self = .setCodeWrap(on: on)
         case "nothing": self = .nothing
         case "wrapped": self = .wrapped
+        case "landed":
+            guard let index = int(msg["index"]), let total = int(msg["total"]), index >= 1, index <= total,
+                  let kind = msg["kind"] as? String else { return nil }
+            self = .landed(index: index, total: total, kind: kind)
         case "error":
             self = .error(message: msg["message"] as? String ?? "")
         default:

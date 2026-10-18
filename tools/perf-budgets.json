@@ -85,7 +85,12 @@
     "3.7 (web): web_first_highlight_warm_ms, the synchronous first apply of a small document with a",
     "TypeScript block on screen, on a page warmed as the app's spare page is. Loading a grammar does",
     "not compile its patterns, so this cost 170-220 ms on a warm open; the warm-up now tokenizes a",
-    "sample in each preloaded language in idle time. Target 40, guard 80."
+    "sample in each preloaded language in idle time. Target 40, guard 80.",
+    "3.7: warm_open_to_applied_ms is Readout's own share of warm_open_ms: window request to the",
+    "page's first apply (the median of the same three opens), without the frame the system paints",
+    "it in. The 3.6 audit measured ~350 ms of a 1.7-2.6 s warm_open on the runner: target 150,",
+    "guard 550. ql_open_ms (Quick Look, preparePreviewOfFile to the page's first apply, from the",
+    "extension's log) is reported, not gated, until a few runs show its spread."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 260, "guard": 280 },
@@ -95,6 +100,8 @@
   "word_diff_100kb":            { "where": "mac",          "unit": "ms",     "target": 5,    "guard": 5 },
   "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 75 },
   "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 3900 },
+  "warm_open_to_applied_ms":    { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 550 },
+  "ql_open_ms":                 { "where": "mac",          "unit": "ms",     "target": null, "guard": null },
   "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 12800 },
   "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 1400 },
   "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": 600 },
