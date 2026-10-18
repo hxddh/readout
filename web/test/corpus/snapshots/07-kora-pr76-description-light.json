@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 482,
    "h": 80,
-   "style": "5e5a9a3a",
+   "style": "af2f3c45",
    "content": "e0867bba",
    "text": "Running the image with plain docker run (outside"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 563,
    "h": 80,
-   "style": "d08f909c",
+   "style": "406284db",
    "content": "80ca2109",
    "text": "The healthcheck contract (which script to call, "
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 643,
    "h": 97,
-   "style": "33a878ac",
+   "style": "5183c6b9",
    "content": "a5330a15",
    "text": "The root .dockerignore did not exclude markdown "
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 972,
    "h": 80,
-   "style": "1551a792",
+   "style": "7f21f272",
    "content": "0f41daa3",
    "text": "The timing parameters (interval, timeout, retrie"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1052,
    "h": 54,
-   "style": "e04cd609",
+   "style": "c65c76cf",
    "content": "38214950",
    "text": "The default healthcheck mode is p2p (set inside "
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1107,
    "h": 54,
-   "style": "8a18d5ef",
+   "style": "1a3092d0",
    "content": "87514c48",
    "text": "Compose services override this to HEALTHCHECK_MO"
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1161,
    "h": 156,
-   "style": "a0ddefb1",
+   "style": "61db8a5f",
    "content": "1551c181",
    "text": "The HEALTHCHECK_MODE environment variable suppor"
   },

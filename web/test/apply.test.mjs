@@ -532,8 +532,10 @@ check('rail labels use the localized template',
 }
 
 // Tables: a table that stops fitting when the window narrows starts scrolling.
+// Its cells cannot wrap (no-break spaces): short cells that can wrap do so
+// before a table scrolls (typography.test.mjs).
 {
-  const cells = Array.from({ length: 4 }, (_, i) => `<td>column ${i} value</td>`).join('');
+  const cells = Array.from({ length: 4 }, (_, i) => `<td>column&nbsp;${i}&nbsp;value</td>`).join('');
   await page.evaluate(p => window.readout.apply(p), { version: 97, reset: true, rewrite: false,
     ops: [{ op: 'insert', slot: 1401, after: 0, kind: 'table', html: `<div class="table-wrap"><table><thead><tr>${cells.replace(/td/g, 'th')}</tr></thead><tbody><tr>${cells}</tr></tbody></table></div>` }],
     marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });

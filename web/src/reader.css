@@ -150,14 +150,17 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 }
 
 /* Wide code and tables. In a window with room to spare, a code block whose
-   lines run past the column, and a table too wide for it, widen into the
-   margins on both sides, up to 1.35 times the column, centred on it (the
-   text column stays as it is). Only with the whole of that room: never up to
-   the window's edge. The block itself widens (--out on each side), so its
-   change bar, flash and edit mark stay beside it as on any other block.
-   A code block widens all the way or not at all (enhance.js gives its longest
-   line in columns, --cb-cols): a fill a few pixels wider than the text reads
-   as a misalignment. A table widens as far as it needs (--tb-w, measured). */
+   lines run past the column widens into the margins on both sides, up to
+   1.35 times the column, centred on it (the text column stays as it is).
+   Only with the whole of that room: never up to the window's edge. The block
+   itself widens (--out on each side), so its change bar, flash and edit mark
+   stay beside it as on any other block. A code block widens all the way or
+   not at all (enhance.js gives its longest line in columns, --cb-cols): a
+   fill a few pixels wider than the text reads as a misalignment.
+   A table too wide for the column widens to the right only, as far as it
+   needs (--tb-w, measured), up to the same 0.35 column and never closer than
+   4 rem to the window's edge: its first column, which is read down like the
+   text, and its change bar stay on the text's edge. */
 @property --out { syntax: "<length>"; inherits: true; initial-value: 0px; }
 #ro-doc > .blk:is(.k-code, .k-table) {
   --bleed: clamp(0px, (100vw - 8rem - 1.35 * var(--measure)) * 1000, 0.175 * var(--measure));
@@ -168,10 +171,15 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
   --out: clamp(0px, ((var(--cb-cols, 0) * 1ch + 2.1em) * 0.84 - var(--measure)) * 1000, var(--bleed));
 }
 :root[data-code-wrap="on"] #ro-doc > .blk.k-code { --out: 0px; }
-#ro-doc > .blk.k-table:has(> .table-wrap.scrolls) {
-  --out: clamp(0px, (var(--tb-w, 0px) - var(--measure)) / 2, var(--bleed));
+#ro-doc > .blk.k-code > .code-block { margin-inline: calc(-1 * var(--out)); }
+@media not print {
+  #ro-doc > .blk.k-table:has(> .table-wrap.scrolls) {
+    --out-end: clamp(0px, var(--tb-w, 0px) - var(--measure), min(var(--bleed) * 1000, 2 * var(--bleed), (100vw - var(--measure)) / 2 - 4rem));
+    margin-inline-end: calc(-1 * (var(--gutter) + var(--out-end)));
+    padding-inline-end: calc(var(--gutter) + var(--out-end));
+  }
+  #ro-doc > .blk.k-table > .table-wrap.scrolls { margin-inline-end: calc(-1 * var(--out-end)); }
 }
-#ro-doc > .blk.k-code > .code-block, #ro-doc > .blk.k-table > .table-wrap.scrolls { margin-inline: calc(-1 * var(--out)); }
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
 /* CJK emphasis: upright (Han and kana have no italic), with emphasis dots
    under the text in Chinese and sesame marks over it in Japanese. Only on
@@ -179,23 +187,24 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    Latin script keeps its italic, in a CJK block too. Each Han, kana or Hangul
    character is a span of its own (.em-dot), punctuation is not: the mark
    hangs outside the line box (text-emphasis made the line ~5 px taller and
-   marked 。 and —— too, which clreq and jlreq forbid), and as generated
-   content it is never copied or read aloud. */
+   marked 。 and —— too, which clreq and jlreq forbid), and as a background
+   it is never copied, found or read aloud. */
 em:is(.cjk-em, .cjk-em-long) { font-style: normal; font-synthesis-style: none; }
-.em-dot { position: relative; }
-.em-dot::after {
-  content: "";
-  position: absolute; left: 50%; top: 100%;
-  width: 0.17em; height: 0.17em; margin: 0.04em 0 0 -0.085em;
-  border-radius: 50%; background: currentColor;
-  pointer-events: none;
+/* The dot is the span's own background, in its padding under the glyph
+   (an inline's padding never makes the line taller). It stays with the
+   character wherever the line breaks: an absolutely placed ::after was lost,
+   or drawn alone on the next line, when the span was split at a line end.
+   Not inline-block, which would change where lines may break (kinsoku).
+   Printed too, where backgrounds are otherwise left out. */
+.em-dot {
+  padding-bottom: 0.32em;
+  background: radial-gradient(circle closest-side, currentColor 92%, transparent) no-repeat 50% 100% / 0.17em 0.17em;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
 }
-/* Japanese: a filled sesame (﹅), a short slanted teardrop, over the text. */
-:lang(ja) .em-dot::after {
-  top: auto; bottom: 100%;
-  width: 0.13em; height: 0.24em; margin: 0 0 0.03em -0.065em;
-  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
-  rotate: -35deg;
+/* Japanese: a filled sesame (﹅), a short upright oval, over the text. */
+:lang(ja) .em-dot {
+  padding-bottom: 0; padding-top: 0.3em;
+  background: radial-gradient(closest-side, currentColor 92%, transparent) no-repeat 50% 0 / 0.13em 0.24em;
 }
 /* A long run of emphasis (a sentence or a whole paragraph) is set a step
    heavier instead of dotted under every character: still marked, not noisy. */
@@ -285,6 +294,9 @@ code {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
+/* Before full-width punctuation, which brings its own space (enhance.js);
+   a path link keeps its outline even. */
+code.before-punct:not(.path-link) { padding-right: 0.12em; }
 code.path-link {
   cursor: pointer;
   color: var(--link);
@@ -317,10 +329,11 @@ kbd {
 }
 
 /* Lists: each item is its own block, so spacing is applied per block. */
-ul.li-block, ol.li-block { margin: 0; padding-left: 1.5em; }
-/* Numbered items: two-figure numbers (10.–99.) and the gap WebKit leaves
-   after a number fit inside the column, not in the gutter. */
-ol.li-block { padding-left: 2.1em; }
+/* One indent for bulleted and numbered items, so the text of a list next to
+   one of the other kind lines up: wide enough for two-figure numbers (10.–99.)
+   and the gap WebKit leaves after a number to fit inside the column, not in
+   the gutter. */
+ul.li-block, ol.li-block { margin: 0; padding-left: 2.1em; }
 ul.li-block.li-last, ol.li-block.li-last { margin-bottom: var(--flow); }
 .li-block.li-loose > li { margin-bottom: 0.5em; }
 .li-block li > ul, .li-block li > ol { padding-left: 1.4em; margin: 0.15em 0; }
@@ -430,8 +443,11 @@ th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; 
 td { font-variant-numeric: tabular-nums; }
 /* Code in a cell: a little larger than in body text (the cell's text is smaller). */
 td code, th code { font-size: 0.9em; }
-/* Short cells and identifiers stay on one line while the table fits (enhance.js). */
+/* Short cells, identifiers and headers stay on one line while the table
+   fits that way; when they would push it past the column, they wrap again
+   (.nw-off, enhance.js) and it scrolls only if it is still too wide. */
 :is(td, th)[data-nw], :is(td, th) code[data-nw] { white-space: nowrap; }
+.table-wrap.nw-off :is(td, th, td code, th code) { white-space: normal; }
 tbody tr:last-child td { border-bottom: 0; }
 /* A header row with no text (a table written only for its body) is not shown. */
 thead:not(:has(th:not(:empty))) { display: none; }
@@ -654,7 +670,8 @@ details ul, details ol { padding-left: 1.5em; }
 }
 .del-mark > button {
   position: absolute;
-  left: calc(-1 * var(--gutter) + 5px);
+  /* Its triangle starts where a change bar does (10 px into the gutter). */
+  left: calc(-1 * var(--gutter) + 9px);
   top: -0.85em;
   width: 13px; height: 13px;
   padding: 0; border: 0; background: transparent; cursor: pointer;

@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 339,
    "h": 28,
-   "style": "dbc4e125",
+   "style": "2b2f64f3",
    "content": "376bc97f",
    "text": "internal/cli/daemon.go:208 — ExecStart=%s server"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 367,
    "h": 45,
-   "style": "a442f8ba",
+   "style": "bed06726",
    "content": "6cc63e6e",
    "text": "internal/cli/daemon.go:362 — <string>--daemon</s"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 1913,
    "h": 54,
-   "style": "ede5ff80",
+   "style": "6209478f",
    "content": "98150398",
    "text": "argvFromSystemdUnit — take the ExecStart= line, "
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 1968,
    "h": 54,
-   "style": "562bc3ca",
+   "style": "2e3557f1",
    "content": "185b43b4",
    "text": "argvFromLaunchdPlist — take the <string> values "
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2022,
    "h": 71,
-   "style": "1b28be16",
+   "style": "5f91a7e7",
    "content": "a3009d0c",
    "text": "For each: NewRoot(\"test\").Find(argv) must resolv"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2401,
    "h": 28,
-   "style": "dd93b993",
+   "style": "a858f72a",
    "content": "43d9873c",
    "text": "go test ./internal/cli/... and full go test ./.."
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2429,
    "h": 28,
-   "style": "41c711d3",
+   "style": "d37f3bb6",
    "content": "74fa6eaf",
    "text": "GOOS=windows go build ./... (per AGENTS.md)"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 2458,
    "h": 71,
-   "style": "1d2ab058",
+   "style": "65149aba",
    "content": "a2384546",
    "text": "go run ./cmd/agentsh server --daemon reaches con"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 2637,
    "h": 106,
-   "style": "fa615679",
+   "style": "f8c75a1a",
    "content": "60def19b",
    "text": "ProtectSystem=strict in the systemd unit makes /"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 2744,
    "h": 54,
-   "style": "23bb4cd4",
+   "style": "fa82558c",
    "content": "5abd38a4",
    "text": "Auto-repairing stale unit files on agentsh daemo"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 2798,
    "h": 71,
-   "style": "755a9815",
+   "style": "a0feda28",
    "content": "c22ea20e",
    "text": "AUDIT-FINDINGS.md is a point-in-time report with"
   }

@@ -1,5 +1,5 @@
 {
- "height": 20457,
+ "height": 20483,
  "blocks": [
   {
    "slot": 1,
@@ -861,7 +861,7 @@
    "kind": "listItem",
    "top": 14534,
    "h": 54,
-   "style": "0bd7cb40",
+   "style": "702750c5",
    "content": "df15caab",
    "text": "Public API signatures — under Approach 3, zero o"
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 14589,
    "h": 54,
-   "style": "bcadbae8",
+   "style": "2fb6d58b",
    "content": "3ec64fff",
    "text": "Element semantics — CallSite does not participat"
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 14643,
    "h": 54,
-   "style": "4ea36d3d",
+   "style": "829e6dbf",
    "content": "0ba75970",
    "text": "Unstamped allocation — bucketed storage keeps th"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 14697,
    "h": 71,
-   "style": "3051ee61",
+   "style": "1ec1a8f1",
    "content": "3242d011",
    "text": "Release builds by default — ReactorSourceMap def"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 19713,
    "h": 210,
-   "style": "073df0af",
+   "style": "7cd00757",
    "content": "b73ecce3",
    "text": "implicit operator Element(string) (declared on E"
   },
@@ -1140,7 +1140,7 @@
    "kind": "listItem",
    "top": 19923,
    "h": 71,
-   "style": "9a785389",
+   "style": "fc688fd7",
    "content": "4505667d",
    "text": "Helper-method attribution — see Stack-based reso"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 20036,
    "h": 54,
-   "style": "c4113c17",
+   "style": "8ba24350",
    "content": "f2438daa",
    "text": "Non-Factories entry points. Constructing an elem"
   },
@@ -1166,8 +1166,8 @@
    "slot": 130,
    "kind": "listItem",
    "top": 20090,
-   "h": 97,
-   "style": "9095767e",
+   "h": 123,
+   "style": "246c4592",
    "content": "c3c8030e",
    "text": "Decorator targets resolve through IDecoratorElem"
   }

@@ -1,5 +1,5 @@
 {
- "height": 30214,
+ "height": 30256,
  "blocks": [
   {
    "slot": 1,
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 364,
    "h": 54,
-   "style": "e9cc95ae",
+   "style": "b582752d",
    "content": "6d59188f",
    "text": "56% of test methods are fake -- 41 of 73 methods"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 418,
    "h": 54,
-   "style": "58a8e6fb",
+   "style": "57436fc7",
    "content": "c46cd5ec",
    "text": "~120 real tests were deleted from main branch in"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 472,
    "h": 54,
-   "style": "d269e210",
+   "style": "7fff415c",
    "content": "a4f8702d",
    "text": "0/11 dispatchers tested, 0/15 controllers tested"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 527,
    "h": 28,
-   "style": "dda71dd3",
+   "style": "1adbf28c",
    "content": "19481697",
    "text": "Only 6 of 16 workflow nodes have any meaningful "
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 555,
    "h": 45,
-   "style": "401329d4",
+   "style": "ef615df9",
    "content": "4a1fd16c",
    "text": "Estimated real coverage: ~10-15%"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1408,
    "h": 28,
-   "style": "78029247",
+   "style": "a49a0490",
    "content": "73c07bfe",
    "text": "Frontend tests (Vue 3) -- separate spec"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1436,
    "h": 28,
-   "style": "dda71dd3",
+   "style": "1adbf28c",
    "content": "37050946",
    "text": "Performance/load testing"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 1464,
    "h": 45,
-   "style": "401329d4",
+   "style": "ef615df9",
    "content": "7082adb6",
    "text": "Security penetration testing"
   },
@@ -1590,7 +1590,7 @@
    "kind": "listItem",
    "top": 19939,
    "h": 28,
-   "style": "49a8fd5d",
+   "style": "a1595848",
    "content": "7dd7053b",
    "text": "Add missing imports for @Mock, when(), any(), ve"
   },
@@ -1599,7 +1599,7 @@
    "kind": "listItem",
    "top": 19967,
    "h": 28,
-   "style": "faaa6de8",
+   "style": "5169c617",
    "content": "81f40d9b",
    "text": "Verify TextType and ChatResponseUtil references "
   },
@@ -1608,7 +1608,7 @@
    "kind": "listItem",
    "top": 19995,
    "h": 45,
-   "style": "401329d4",
+   "style": "ef615df9",
    "content": "2a9633dc",
    "text": "Run and verify all 7 tests pass"
   },
@@ -1851,7 +1851,7 @@
    "kind": "listItem",
    "top": 22866,
    "h": 28,
-   "style": "4fb9e89e",
+   "style": "1670f648",
    "content": "09453fe3",
    "text": "DockerCodePoolExecutorServiceTest.java (~5 tests"
   },
@@ -1860,7 +1860,7 @@
    "kind": "listItem",
    "top": 22894,
    "h": 28,
-   "style": "fca92735",
+   "style": "79a310a7",
    "content": "49871aac",
    "text": "LocalCodePoolExecutorServiceTest.java (~5 tests)"
   },
@@ -1869,7 +1869,7 @@
    "kind": "listItem",
    "top": 22923,
    "h": 28,
-   "style": "2ab058c7",
+   "style": "1261536d",
    "content": "9e385e0c",
    "text": "RrfFusionStrategyTest.java (~8 tests)"
   },
@@ -1878,7 +1878,7 @@
    "kind": "listItem",
    "top": 22951,
    "h": 45,
-   "style": "183f5629",
+   "style": "607a8e95",
    "content": "a424e5bf",
    "text": "AbstractHybridRetrievalStrategyTest.java (~5 tes"
   },
@@ -2103,7 +2103,7 @@
    "kind": "listItem",
    "top": 24661,
    "h": 28,
-   "style": "15f363fa",
+   "style": "b1876674",
    "content": "193f35b0",
    "text": "AgentDatasourceMapperTest.java (8 tests)"
   },
@@ -2112,7 +2112,7 @@
    "kind": "listItem",
    "top": 24690,
    "h": 28,
-   "style": "4d35b042",
+   "style": "dce819dc",
    "content": "d36b7a45",
    "text": "DatasourceMapperTest.java (8 tests)"
   },
@@ -2121,7 +2121,7 @@
    "kind": "listItem",
    "top": 24718,
    "h": 28,
-   "style": "e0af99fc",
+   "style": "18646422",
    "content": "af41856c",
    "text": "MappersTest.java (5 tests)"
   },
@@ -2130,7 +2130,7 @@
    "kind": "listItem",
    "top": 24746,
    "h": 45,
-   "style": "09e5937e",
+   "style": "afa909de",
    "content": "13c352c6",
    "text": "UserPromptConfigMapperTest.java (10 tests)"
   },
@@ -2264,15 +2264,15 @@
    "slot": 252,
    "kind": "table",
    "top": 25891,
-   "h": 397,
-   "style": "598e7e08",
+   "h": 439,
+   "style": "da7d1df8",
    "content": "842480c9",
    "text": "ComponentTargetPhase 0Phase 1Phase 2Phase 3Phase"
   },
   {
    "slot": 253,
    "kind": "rule",
-   "top": 26288,
+   "top": 26330,
    "h": 47,
    "style": "7baced60",
    "content": "811c9dc5",
@@ -2281,7 +2281,7 @@
   {
    "slot": 254,
    "kind": "heading",
-   "top": 26336,
+   "top": 26378,
    "h": 42,
    "style": "5c798855",
    "content": "d3dab903",
@@ -2290,7 +2290,7 @@
   {
    "slot": 255,
    "kind": "heading",
-   "top": 26378,
+   "top": 26420,
    "h": 42,
    "style": "fa3add72",
    "content": "f128c4a9",
@@ -2299,7 +2299,7 @@
   {
    "slot": 256,
    "kind": "code",
-   "top": 26420,
+   "top": 26462,
    "h": 322,
    "style": "7f63866a",
    "content": "35374def",
@@ -2308,7 +2308,7 @@
   {
    "slot": 257,
    "kind": "heading",
-   "top": 26742,
+   "top": 26784,
    "h": 42,
    "style": "fa3add72",
    "content": "93f80eba",
@@ -2317,7 +2317,7 @@
   {
    "slot": 258,
    "kind": "paragraph",
-   "top": 26784,
+   "top": 26826,
    "h": 44,
    "style": "805551d4",
    "content": "2b006132",
@@ -2326,34 +2326,34 @@
   {
    "slot": 259,
    "kind": "listItem",
-   "top": 26827,
+   "top": 26869,
    "h": 28,
-   "style": "78029247",
+   "style": "a49a0490",
    "content": "39255b54",
    "text": "Line coverage threshold: 80% at PACKAGE level"
   },
   {
    "slot": 260,
    "kind": "listItem",
-   "top": 26855,
+   "top": 26897,
    "h": 28,
-   "style": "a8e4dc3b",
+   "style": "5ec5277f",
    "content": "bc4c4446",
    "text": "Excludes: **/excel/**/*.class"
   },
   {
    "slot": 261,
    "kind": "listItem",
-   "top": 26884,
+   "top": 26926,
    "h": 45,
-   "style": "59280851",
+   "style": "0df889cb",
    "content": "777846d7",
    "text": "Report generated to target/site/jacoco/"
   },
   {
    "slot": 262,
    "kind": "heading",
-   "top": 26929,
+   "top": 26971,
    "h": 42,
    "style": "fa3add72",
    "content": "6e2047ee",
@@ -2362,7 +2362,7 @@
   {
    "slot": 263,
    "kind": "paragraph",
-   "top": 26971,
+   "top": 27013,
    "h": 44,
    "style": "9ba42805",
    "content": "3bc09f7b",
@@ -2371,7 +2371,7 @@
   {
    "slot": 264,
    "kind": "code",
-   "top": 27014,
+   "top": 27056,
    "h": 202,
    "style": "ef501fb4",
    "content": "ce28a05e",
@@ -2380,7 +2380,7 @@
   {
    "slot": 265,
    "kind": "paragraph",
-   "top": 27216,
+   "top": 27258,
    "h": 44,
    "style": "805551d4",
    "content": "9fe482bb",
@@ -2389,7 +2389,7 @@
   {
    "slot": 266,
    "kind": "code",
-   "top": 27259,
+   "top": 27301,
    "h": 82,
    "style": "307f0afd",
    "content": "da13cd0b",
@@ -2398,7 +2398,7 @@
   {
    "slot": 267,
    "kind": "rule",
-   "top": 27341,
+   "top": 27383,
    "h": 47,
    "style": "7baced60",
    "content": "811c9dc5",
@@ -2407,7 +2407,7 @@
   {
    "slot": 268,
    "kind": "heading",
-   "top": 27389,
+   "top": 27431,
    "h": 42,
    "style": "5c798855",
    "content": "247f832d",
@@ -2416,7 +2416,7 @@
   {
    "slot": 269,
    "kind": "table",
-   "top": 27431,
+   "top": 27473,
    "h": 328,
    "style": "f4ca6c5a",
    "content": "132c0283",
@@ -2425,7 +2425,7 @@
   {
    "slot": 270,
    "kind": "rule",
-   "top": 27759,
+   "top": 27801,
    "h": 47,
    "style": "7baced60",
    "content": "811c9dc5",
@@ -2434,7 +2434,7 @@
   {
    "slot": 271,
    "kind": "heading",
-   "top": 27806,
+   "top": 27848,
    "h": 42,
    "style": "5c798855",
    "content": "849782bd",
@@ -2443,7 +2443,7 @@
   {
    "slot": 272,
    "kind": "listItem",
-   "top": 27849,
+   "top": 27891,
    "h": 28,
    "style": "97e8003e",
    "content": "054a9c98",
@@ -2452,7 +2452,7 @@
   {
    "slot": 273,
    "kind": "listItem",
-   "top": 27877,
+   "top": 27919,
    "h": 28,
    "style": "5262144a",
    "content": "09d56111",
@@ -2461,7 +2461,7 @@
   {
    "slot": 274,
    "kind": "listItem",
-   "top": 27905,
+   "top": 27947,
    "h": 28,
    "style": "ecb37ee5",
    "content": "46d16bf0",
@@ -2470,7 +2470,7 @@
   {
    "slot": 275,
    "kind": "listItem",
-   "top": 27934,
+   "top": 27976,
    "h": 28,
    "style": "5262144a",
    "content": "e6ae6be5",
@@ -2479,7 +2479,7 @@
   {
    "slot": 276,
    "kind": "listItem",
-   "top": 27962,
+   "top": 28004,
    "h": 28,
    "style": "5262144a",
    "content": "affbbe7b",
@@ -2488,7 +2488,7 @@
   {
    "slot": 277,
    "kind": "listItem",
-   "top": 27990,
+   "top": 28032,
    "h": 54,
    "style": "13257616",
    "content": "99c3b13b",
@@ -2497,7 +2497,7 @@
   {
    "slot": 278,
    "kind": "listItem",
-   "top": 28045,
+   "top": 28087,
    "h": 28,
    "style": "5262144a",
    "content": "29b00695",
@@ -2506,7 +2506,7 @@
   {
    "slot": 279,
    "kind": "listItem",
-   "top": 28073,
+   "top": 28115,
    "h": 45,
    "style": "948eae6f",
    "content": "3d39e356",
@@ -2515,7 +2515,7 @@
   {
    "slot": 280,
    "kind": "rule",
-   "top": 28118,
+   "top": 28160,
    "h": 47,
    "style": "7baced60",
    "content": "811c9dc5",
@@ -2524,7 +2524,7 @@
   {
    "slot": 281,
    "kind": "heading",
-   "top": 28165,
+   "top": 28207,
    "h": 42,
    "style": "5c798855",
    "content": "42dac463",
@@ -2533,7 +2533,7 @@
   {
    "slot": 282,
    "kind": "table",
-   "top": 28208,
+   "top": 28250,
    "h": 356,
    "style": "2e9d750c",
    "content": "70ad85d3",
@@ -2542,7 +2542,7 @@
   {
    "slot": 283,
    "kind": "rule",
-   "top": 28564,
+   "top": 28606,
    "h": 47,
    "style": "7baced60",
    "content": "811c9dc5",
@@ -2551,7 +2551,7 @@
   {
    "slot": 284,
    "kind": "heading",
-   "top": 28611,
+   "top": 28653,
    "h": 42,
    "style": "5c798855",
    "content": "9a0b0549",
@@ -2560,7 +2560,7 @@
   {
    "slot": 285,
    "kind": "table",
-   "top": 28654,
+   "top": 28696,
    "h": 710,
    "style": "b699fda1",
    "content": "93904ccc",
@@ -2569,7 +2569,7 @@
   {
    "slot": 286,
    "kind": "heading",
-   "top": 29364,
+   "top": 29406,
    "h": 65,
    "style": "dbebbb91",
    "content": "41dfceed",
@@ -2578,7 +2578,7 @@
   {
    "slot": 287,
    "kind": "table",
-   "top": 29429,
+   "top": 29471,
    "h": 516,
    "style": "55acf385",
    "content": "4c060e9e",

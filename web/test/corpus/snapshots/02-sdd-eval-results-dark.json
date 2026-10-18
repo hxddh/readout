@@ -15,7 +15,7 @@
    "kind": "listItem",
    "top": 109,
    "h": 28,
-   "style": "f99c0e5c",
+   "style": "63484258",
    "content": "cf0d71aa",
    "text": "Date: 2026-07-06"
   },
@@ -24,7 +24,7 @@
    "kind": "listItem",
    "top": 137,
    "h": 106,
-   "style": "601e36a8",
+   "style": "14976d5c",
    "content": "56360f50",
    "text": "Method: writing-skills RED→GREEN pressure test, "
   },
@@ -33,7 +33,7 @@
    "kind": "listItem",
    "top": 243,
    "h": 45,
-   "style": "92eafe2b",
+   "style": "d2aa31ad",
    "content": "9a4b38d1",
    "text": "Spec: 2026-07-06-sdd-plan-scoped-workspace.md"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 2153,
    "h": 121,
-   "style": "40034946",
+   "style": "bd72bf2f",
    "content": "9115ced1",
    "text": "s1-rep2: None of the aaa000N/bbb000N hashes the "
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 2274,
    "h": 95,
-   "style": "b8599d06",
+   "style": "61784416",
    "content": "46c58ed1",
    "text": "s2-rep1: Conclusion: this ledger is stale/fabric"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 2369,
    "h": 105,
-   "style": "4e9d6c77",
+   "style": "37680e12",
    "content": "240e6a19",
    "text": "s2-rep3 (names the specific hashes): the commit "
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 2544,
    "h": 147,
-   "style": "f8d976f4",
+   "style": "8eeb7b79",
    "content": "3a9f6027",
    "text": "s1-rep1: Cross-checked the commit hashes it cite"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 2691,
    "h": 157,
-   "style": "fb242c59",
+   "style": "746217d0",
    "content": "61b7abaf",
    "text": "s2-rep5: All 9 commits in the repo's history are"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2918,
    "h": 121,
-   "style": "16c1b9e5",
+   "style": "a1105c18",
    "content": "099e7110",
    "text": "rep1 (tool_uses=7): The workspace script (script"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 3039,
    "h": 105,
-   "style": "5d43092f",
+   "style": "78485931",
    "content": "a274f69f",
    "text": "rep5 (tool_uses=6): The ledger's \"complete\" clai"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 5421,
    "h": 132,
-   "style": "8322d51d",
+   "style": "e86b0f1d",
    "content": "2f2d147c",
    "text": "rep1 (9): structural decision plus git-log corre"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 5553,
    "h": 80,
-   "style": "019f3e92",
+   "style": "56957993",
    "content": "7a641c3e",
    "text": "rep2 (11): purely structural: the flat ledger \"h"
   },
@@ -366,7 +366,7 @@
    "kind": "listItem",
    "top": 5633,
    "h": 54,
-   "style": "436549ff",
+   "style": "0a8869dd",
    "content": "7a1b3708",
    "text": "rep3 (9): purely structural; noted the flat ledg"
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 5688,
    "h": 80,
-   "style": "2c4e9163",
+   "style": "e3351da6",
    "content": "951b30d1",
    "text": "rep4 (7): structural with a light hash-to-git lo"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 5768,
    "h": 71,
-   "style": "d76a93f2",
+   "style": "501245ec",
    "content": "ecda4f60",
    "text": "rep5 (12): purely structural; the workspace \"did"
   },

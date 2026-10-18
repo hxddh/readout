@@ -76,7 +76,9 @@ async function settledTop(page, sel) {
 {
   const page = await newPage({ width: 520, height: 800 });
   const long = 'A full sentence of reasoning about the option, as agents write in comparison tables. '.repeat(2);
-  const html = `<div class="table-wrap"><table><thead><tr><th>Option name</th><th>Rationale</th><th>Monthly cost</th><th>Risk level</th><th>Owner team</th><th>Status</th></tr></thead><tbody>
+  // Headers that cannot wrap (no-break spaces): short cells that can wrap do
+  // so before a table scrolls (typography.test.mjs).
+  const html = `<div class="table-wrap"><table><thead><tr><th>Option&nbsp;name</th><th>Rationale</th><th>Monthly&nbsp;cost</th><th>Risk&nbsp;level</th><th>Owner&nbsp;team</th><th>Status</th></tr></thead><tbody>
 <tr><td>A</td><td>${long}</td><td>12</td><td>low</td><td>team-a</td><td>ok</td></tr><tr><td>B</td><td>${long}</td><td>40</td><td>high</td><td>team-b</td><td>ok</td></tr></tbody></table></div>`;
   await page.evaluate(p => window.readout.apply(p), patch(1, [{ op: 'insert', slot: 1, after: 0, html, kind: 'table' }], { reset: true }));
   await page.waitForTimeout(300);

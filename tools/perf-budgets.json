@@ -82,6 +82,12 @@
     "reads: 142,255 bytes on main (754,177 at 5 MB). Now the page gets RenderPatch.Page: 272 bytes,",
     "one paragraph and the envelope. Guard 400: room for richer paragraph HTML, while anything",
     "sized by the document fails it.",
+    "3.7 (web): web_first_highlight_warm_ms, the synchronous first apply of a small document with a",
+    "TypeScript block on screen, on a page warmed as the app's spare page is. Loading a grammar does",
+    "not compile its patterns, so this cost 170-220 ms on a warm open; the spare page's warm-up now",
+    "compiles each preloaded grammar's patterns and a sample, in slices, once it has sat unused for",
+    "5 s. Target 40, guard 80. web_hl_warm_longest_step_ms: its longest single step (one pattern:",
+    "what a window taking the page mid-warm-up could wait for), reported, not gated.",
     "3.7: warm_open_to_applied_ms is Readout's own share of warm_open_ms: window request to the",
     "page's first apply (the fastest of the same three opens), without the frame the system paints",
     "it in. The 3.6 audit measured ~350 ms of a 1.7-2.6 s warm_open on the runner: target 150,",
@@ -100,7 +106,12 @@
     "it out once instead of up to three times; locally (2-core Linux, WebKit) the same scenario",
     "measured 206-229 ms on main and 170-175 ms after (apply alone 138-156 -> 92-97). Most of what",
     "is left is the engine's own layout and scroll of 25,000 blocks (raw append ~50 ms). Reported,",
-    "not gated, until CI runs show its spread."
+    "not gated, until CI runs show its spread.",
+    "3.7, later the same day: the same tree measured 475 ms (core PR head 64b2d9c, main merged in)",
+    "and 851 ms (main b405e72, its squash; identical files) as the fastest of three opens, and",
+    "main went red at 800. On the shared macOS runner this number swings ~2x with no code change,",
+    "so it can only catch gross regressions: guard 2000 (about 2.3x the worst reading of unchanged",
+    "code), like warm_open_ms. Target 150 unchanged; the samples stay in the log for comparison."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 260, "guard": 280 },
@@ -110,7 +121,7 @@
   "word_diff_100kb":            { "where": "mac",          "unit": "ms",     "target": 5,    "guard": 5 },
   "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 75 },
   "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 3900 },
-  "warm_open_to_applied_ms":    { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 800 },
+  "warm_open_to_applied_ms":    { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 2000 },
   "ql_open_ms":                 { "where": "mac",          "unit": "ms",     "target": null, "guard": null },
   "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 12800 },
   "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 1400 },
@@ -118,5 +129,7 @@
   "web_first_apply_1mb_painted_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": 2800 },
   "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 30 },
   "web_stream_append_5mb_ms":   { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
+  "web_first_highlight_warm_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 40,   "guard": 80 },
+  "web_hl_warm_longest_step_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": null },
   "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null }
 }
