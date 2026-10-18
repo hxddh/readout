@@ -369,6 +369,11 @@ print(f"scroll edge band (key window: {edge.get('window_key')}): {'flat (hard)' 
 
 landed = load("landed.json")
 print(f"landed: {landed}")
+# Next Change: focus lands on a change and the page says which one, for VoiceOver (U16).
+first = (landed.get("landed") or [{}])[0]
+check("next change: where it landed is reported (n of m, kind)",
+      1 <= (first.get("index") or 0) <= (first.get("total") or 0) == landed.get("unread")
+      and first.get("kind") in ("railAdded", "railEdited", "railRemoved", "railTask"), landed)
 
 credits = OUT / "Credits.html"
 sys.path.insert(0, str(ROOT / "tools"))
