@@ -24,7 +24,7 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
   4d. when the app reports `await-cli`, runs `cli/readout -b` on a new file
      and `cli/readout --hook` on plan.md (open in a tab behind); the app
      records whether the tab being read stayed in front
-  5. waits for the app to exit on its own (90 s), with its log in OUT_DIR/smoke-out.log
+  5. waits for the app to exit on its own (120 s), with its log in OUT_DIR/smoke-out.log
   6. writes OUT_DIR/timings.json: cold start, warm open and write-to-update
      times, from its own clock readings and the app's (timings-app.json)
   7. launches it again in Chinese (-AppleLanguages '(zh-Hans)', READOUT_SMOKE_PASS=zh):
@@ -177,13 +177,28 @@ def main() -> int:
         d.parent.mkdir()
         d.write_text("# Same plan\n\nTwo agents titled their plans alike.\n")
 
+    # A git repository: a committed document changed since (first opened, it
+    # is marked against the commit) and an untracked one beside it (unmarked).
+    repo = tmp / "repo"
+    (repo / "docs").mkdir(parents=True)
+    git_file = repo / "docs" / "notes.md"
+    git_file.write_text("# Notes\n\nThe first step stays as it was.\n\nRun the migration on staging first, then on production.\n")
+    git = ["git", "-C", str(repo), "-c", "user.name=Readout Smoke", "-c", "user.email=smoke@example.invalid", "-c", "commit.gpgsign=false"]
+    for args in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "notes"]):
+        r = subprocess.run(git + args, capture_output=True, text=True)
+        print(f"harness: git {args[0]} exited {r.returncode} {r.stderr.strip()}")
+    git_file.write_text("# Notes\n\nThe first step stays as it was.\n\nRun the migration on staging first, then on production at night.\n\nA step the agent added.\n")
+    git_untracked = repo / "docs" / "untracked.md"
+    git_untracked.write_text("# Untracked\n\nNever committed.\n")
+
     env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
                READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
                READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_HOOK_PLAN=str(hook_plan), READOUT_SMOKE_COLLIDE_LINK=str(collide),
                READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"),
                READOUT_SMOKE_LATE_FOLDER=str(late_dir), READOUT_SMOKE_DANGLE_LINK=str(dangle), READOUT_SMOKE_UNREADABLE=str(locked),
-               READOUT_SMOKE_DUP_FILES=":".join(str(d) for d in dups))
+               READOUT_SMOKE_DUP_FILES=":".join(str(d) for d in dups),
+               READOUT_SMOKE_GIT_FILE=str(git_file), READOUT_SMOKE_GIT_UNTRACKED=str(git_untracked))
     # Launch Services must know the bundle for `open -b` to reach the running app.
     bundle = app.parents[2] if app.parent.name == "MacOS" else None
     if bundle is not None:
@@ -325,9 +340,9 @@ def run(app, target, out, env, clock, second, cli_file, hook_plan, project, tmp,
                 print("harness: the app never reported `await-cli`")
 
             try:
-                code = proc.wait(timeout=90)
+                code = proc.wait(timeout=120)
             except subprocess.TimeoutExpired:
-                print("FAIL: the signed app did not exit on its own within 90 seconds")
+                print("FAIL: the signed app did not exit on its own within 120 seconds")
                 return 1
             print(f"signed app exited with code {code}")
             write_timings(out, clock, second)

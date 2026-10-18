@@ -8,6 +8,17 @@ export const slots = new Map();          // slot -> element
 export const heights = new WeakMap();    // element -> last observed height
 
 /**
+ * Whether the reader's window is the key window (the app says so, see
+ * setWindowKey): null until it has. Keyboard focus in the window's outline
+ * or find field takes it from the page (document.hasFocus() is false then),
+ * but the reader is still in the window, reading.
+ */
+let windowKey = null;
+export function setWindowKey(on) { windowKey = !!on; }
+/** The reader is reading in this window: it is visible, and the page or its window has the focus. */
+export function focused() { return !document.hidden && (document.hasFocus() || windowKey === true); }
+
+/**
  * Whether blocks may be hidden: only the changes-only filter hides them.
  * Without it, nothing needs the whole page searched for a hidden block.
  */

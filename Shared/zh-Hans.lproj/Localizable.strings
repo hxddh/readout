@@ -123,3 +123,7 @@
 "Speech" = "语音";
 "Start Speaking" = "开始朗读";
 "Stop Speaking" = "停止朗读";
+"Copy as Quote" = "拷贝为引用";
+"Marked against the last commit" = "已对照上次提交标出变更";
+"Next unread: %@" = "下一个未读：%@";
+"Project: %@" = "项目：%@";

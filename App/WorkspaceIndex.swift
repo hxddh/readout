@@ -216,6 +216,9 @@ final class WorkspaceIndex {
         recent.first(where: { FileManager.default.fileExists(atPath: $0.url.path) })?.url
     }
 
+    /// Whether `url` is a Markdown file in one of the agent folders.
+    func contains(_ url: URL) -> Bool { Self.isCandidate(url, roots: roots) }
+
     nonisolated static func isCandidate(_ url: URL, roots: [String]) -> Bool { AgentFolders.isCandidate(url.path, roots: roots) }
 
     /// Bounded initial scan: the newest Markdown files, and every one found.

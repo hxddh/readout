@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import WebKit
+import ReadoutCore
 
 /// Read-only state export used by CI (tools/smoke-run.py). Enabled only when
 /// READOUT_SMOKE_OUT is set. The app never modifies the document here: the
@@ -149,6 +150,7 @@ enum SmokeTest {
             try? await Task.sleep(for: .milliseconds(300))
             await capture(webView, window: controller.window, to: out, name: "3-marks")
             await undoMarkAllRead(controller: controller, webView: webView, out: out)
+            await copyAsQuote(controller: controller, webView: webView, out: out)
             await navigationStaysOnTheReader(webView: webView, out: out)
 
             // Dark appearance, then the auxiliary windows.
@@ -235,6 +237,7 @@ enum SmokeTest {
             await refill(controller: controller, webView: webView, out: out)
             await liveUpdates(app: app, out: out)
             await backgroundOpens(out: out)
+            await commitBaseline(out: out)
             await findModeSwitches(controller: controller, out: out)
             writeMenus(out)
             app?.showSettings(nil)
@@ -256,6 +259,8 @@ enum SmokeTest {
             write(aux, to: out, "aux-windows.json")
             await tabDot(controller: controller, out: out)
             await landing(controller: controller, webView: webView, out: out)
+            restoration(controller: controller, out: out)
+            await crossDocument(controller: controller, out: out)
             writeTimings(out)
             NSApp.terminate(nil)
         }
@@ -429,6 +434,130 @@ enum SmokeTest {
         let focused = (try? await webView.evaluateJavaScript("(() => { const e = document.activeElement; return e ? e.className : ''; })()")) as? String ?? ""
         write(["unread": unread, "landed": landed, "focused_class": focused, "app_active": NSApp.isActive,
                "key": controller.window?.isKeyWindow ?? false], to: out, "landed.json")
+    }
+
+    /// Edit ▸ Copy as Quote on a selection across two blocks: enabled while
+    /// there is one; the blocks' Markdown as a blockquote, the file's lines and section.
+    private static func copyAsQuote(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
+        controller.show()
+        let select = """
+            (() => { const b = [...document.querySelectorAll('#ro-doc > .blk.k-paragraph')].filter(e => e.textContent.trim().length > 20);
+              const a = b[1], z = b[2]; if (!a || !z) return null;
+              const t = n => { const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT); let x; while ((x = w.nextNode())) if (x.textContent.trim().length > 4) return x; return null; };
+              const r = document.createRange(); r.setStart(t(a), 2); r.setEnd(t(z), 3);
+              const s = getSelection(); s.removeAllRanges(); s.addRange(r); return [+a.dataset.slot, +z.dataset.slot]; })()
+            """
+        let picked = try? await webView.evaluateJavaScript(select)
+        try? await Task.sleep(for: .milliseconds(300))
+        let item = NSMenuItem(title: "", action: #selector(ReaderWindowController.copyAsQuote(_:)), keyEquivalent: "")
+        let enabled = controller.validateMenuItem(item)
+        NSPasteboard.general.clearContents()
+        controller.copyAsQuote(nil)
+        try? await Task.sleep(for: .milliseconds(400))
+        let text = NSPasteboard.general.string(forType: .string) ?? ""
+        _ = try? await webView.evaluateJavaScript("getSelection().removeAllRanges(); 1")
+        try? await Task.sleep(for: .milliseconds(300))
+        write(["picked": picked ?? NSNull(), "enabled": enabled, "text": text,
+               "enabled_after_deselect": controller.validateMenuItem(item),
+               "path": ReaderChrome.tabToolTip(path: controller.url.path)], to: out, "copy-quote.json")
+    }
+
+    /// The window's restorable state, encoded and decoded as AppKit keeps it
+    /// for the next launch (relaunching is not part of the smoke run).
+    private static func restoration(controller: ReaderWindowController, out: URL) {
+        func roundTrip(_ c: ReaderWindowController) -> [String: Any] {
+            guard let window = c.window else { return [:] }
+            let archiver = NSKeyedArchiver(requiringSecureCoding: true)
+            c.window(window, willEncodeRestorableState: archiver)
+            archiver.finishEncoding()
+            guard let unarchiver = try? NSKeyedUnarchiver(forReadingFrom: archiver.encodedData) else { return [:] }
+            unarchiver.requiresSecureCoding = true
+            let back = ReaderRestoration.decode(unarchiver)
+            return ["path": back?.path ?? "", "root": back?.projectRoot ?? "", "expected_path": c.url.path,
+                    "expected_root": c.restorationState.projectRoot ?? "", "group": back?.group ?? "", "index": back?.tabIndex ?? -1]
+        }
+        let readers = NSApp.windows.compactMap { $0.windowController as? ReaderWindowController }
+        var json: [String: Any] = ["main": roundTrip(controller)]
+        if let plan = ProcessInfo.processInfo.environment["READOUT_SMOKE_HOOK_PLAN"],
+           let hooked = (NSApp.delegate as? AppDelegate)?.reader(for: URL(fileURLWithPath: plan)) { json["hooked"] = roundTrip(hooked) }
+        // A file that is gone does not come back.
+        let archiver = NSKeyedArchiver(requiringSecureCoding: true)
+        ReaderRestoration.encode(ReaderRestorationState(path: "/nonexistent/readout-gone.md"), into: archiver)
+        archiver.finishEncoding()
+        if let u = try? NSKeyedUnarchiver(forReadingFrom: archiver.encodedData) { json["gone_restored"] = ReaderRestoration.decode(u) != nil }
+        json["restorable"] = readers.allSatisfy { $0.window?.isRestorable == true && $0.window?.restorationClass == ReaderRestoration.self }
+        let ids = readers.compactMap { $0.window?.identifier?.rawValue }
+        json["identifiers_unique"] = Set(ids).count == ids.count && ids.count == readers.count
+        // No window holds the frame name (only the first one could): each saves under it.
+        json["frame_autosave_names"] = readers.compactMap { $0.window?.frameAutosaveName }.filter { !$0.isEmpty }
+        json["others_restorable"] = NSApp.windows.filter { !($0.windowController is ReaderWindowController) && $0.isRestorable }.map(\.title)
+        write(json, to: out, "restoration.json")
+    }
+
+    /// N with nothing unread left in the document goes on to the next
+    /// document with unread changes (its tab comes forward, at its first
+    /// change); with none anywhere it stays. The Dock badge counts them.
+    private static func crossDocument(controller: ReaderWindowController, out: URL) async {
+        let app = NSApp.delegate as? AppDelegate
+        let readers = { NSApp.windows.compactMap { $0.windowController as? ReaderWindowController } }
+        controller.show()
+        var json: [String: Any] = ["badge_before": NSApp.dockTile.badgeLabel ?? "",
+                                   "showing_unread_before": readers().filter(\.showsUnread).count]
+        controller.markAllRead(nil)
+        try? await Task.sleep(for: .milliseconds(900))
+        json["from"] = reading()
+        landed = []
+        controller.nextChange(nil)
+        let deadline = Date().addingTimeInterval(4)
+        while (reading() == json["from"] as? String || landed.isEmpty) && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
+        // Before the change it went to is read (300 ms on screen).
+        let destination = readers().first { ($0.window?.tabGroup?.selectedWindow ?? $0.window) === $0.window && $0.window?.title == reading() }
+        json["to"] = reading()
+        json["to_had_unread"] = destination?.model.unread ?? -1
+        try? await Task.sleep(for: .milliseconds(300))
+        json["landed"] = landed
+        json["to_subtitle"] = destination?.window?.subtitle ?? ""
+        json["badge_after_read"] = NSApp.dockTile.badgeLabel ?? ""
+        json["showing_unread_after_read"] = readers().filter(\.showsUnread).count
+        // Nothing unread anywhere: N has nowhere to go.
+        for r in readers() { r.markAllRead(nil) }
+        try? await Task.sleep(for: .milliseconds(900))
+        json["went_with_none_left"] = app?.goToNextUnread(from: controller) ?? true
+        json["badge_none"] = NSApp.dockTile.badgeLabel ?? ""
+        write(json, to: out, "cross-document.json")
+    }
+
+    /// A file opened for the first time in a git repository, changed since
+    /// its last commit: what changed since is marked, and the notice says
+    /// against what. An untracked file beside it opens unmarked.
+    private static func commitBaseline(out: URL) async {
+        let env = ProcessInfo.processInfo.environment
+        guard let tracked = env["READOUT_SMOKE_GIT_FILE"], let untracked = env["READOUT_SMOKE_GIT_UNTRACKED"] else { return }
+        let app = NSApp.delegate as? AppDelegate
+        var json: [String: Any] = ["tools": GitTools.available()]
+        // What the lookup sees, so a failure can be explained. (This also
+        // warms xcrun's lookup of git: the first git after a runner boots can
+        // outlast the 1.5 s limit, which a reader's first open accepts.)
+        let real = RealPath.of(tracked)
+        let dir = (real as NSString).deletingLastPathComponent
+        let current = (try? String(contentsOfFile: real, encoding: .utf8)) ?? ""
+        let raw = ProcessGit().run(["--no-pager", "show", "HEAD:./" + (real as NSString).lastPathComponent], in: dir)
+        let shell = ProcessRunner.run("/bin/sh", ["-c", "/usr/bin/git --no-pager show HEAD:./notes.md 2>&1; echo exit=$?"], in: dir, timeout: 5, limit: 100_000)
+        json["diagnostics"] = ["real": real, "repository": GitBaseline.repository(containing: real, exists: { FileManager.default.fileExists(atPath: $0) }) ?? "",
+                               "raw_bytes": raw?.count ?? -1, "head_text": GitBaseline.headText(for: real, current: current, git: ProcessGit()) != nil,
+                               "shell": shell.map { String(decoding: $0, as: UTF8.self) } ?? "(nil)"]
+        for (name, path) in [("tracked", tracked), ("untracked", untracked)] {
+            let url = URL(fileURLWithPath: path)
+            app?.open(url, mode: .background)
+            let deadline = Date().addingTimeInterval(10)
+            while (firstPaintSamples[url.standardizedFileURL.path]?.isEmpty ?? true) && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+            try? await Task.sleep(for: .milliseconds(500))
+            guard let reader = app?.reader(for: url), let web = reader.window?.contentView?.firstDescendant(ofType: WKWebView.self) else { continue }
+            let state = (try? await web.evaluateJavaScript("JSON.stringify({ marks: document.querySelectorAll('.m-inserted, .m-modified').length, deletions: document.querySelectorAll('.del-mark').length, notice: document.getElementById('ro-notice').hidden ? '' : document.getElementById('ro-notice').textContent })")) as? String
+            json[name] = ["unread": reader.model.unread, "page": state ?? ""]
+            reader.window?.close()
+        }
+        write(json, to: out, "git-baseline.json")
     }
 
     private static func write(_ json: [String: Any], to dir: URL, _ name: String) {
@@ -810,6 +939,8 @@ enum SmokeTest {
             BaselineStore.flush()
             json["hook_root"] = ["resolved": resolved, "kept": BaselineStore.projectRoot(for: URL(fileURLWithPath: plan)) ?? "",
                                  "marks": (try? await web.evaluateJavaScript("document.querySelectorAll('.m-inserted, .m-modified').length")) as? Int ?? -1]
+            // Outside its project: the window says which project it is for (subtitle, tooltip).
+            json["hook_chrome"] = chrome(reader)
             // Opened behind, never looked at, nothing unread: its tab still has the dot.
             json["hook_tab"] = ["unread": reader.model.unread, "dot": reader.window?.tab.accessoryView != nil,
                                 "noted_recent": reader.notedRecent, "key": reader.window?.isKeyWindow ?? false]
