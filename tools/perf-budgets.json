@@ -83,10 +83,14 @@
     "one paragraph and the envelope. Guard 400: room for richer paragraph HTML, while anything",
     "sized by the document fails it.",
     "3.7: warm_open_to_applied_ms is Readout's own share of warm_open_ms: window request to the",
-    "page's first apply (the median of the same three opens), without the frame the system paints",
+    "page's first apply (the fastest of the same three opens), without the frame the system paints",
     "it in. The 3.6 audit measured ~350 ms of a 1.7-2.6 s warm_open on the runner: target 150,",
     "guard 550. ql_open_ms (Quick Look, preparePreviewOfFile to the page's first apply, from the",
-    "extension's log) is reported, not gated, until a few runs show its spread."
+    "extension's log) is reported, not gated, until a few runs show its spread.",
+    "3.7: warm_open_to_applied_ms gates the fastest of the three opens, not their median. The median",
+    "swung 416-693 ms between runs of code that does not touch the open path (main b889273: samples",
+    "768/416/403; core PR head 2fd5300: 1274/451/693); runner stalls only add time, so the minimum",
+    "(403 and 451 there) is the stable reading. Target and guard unchanged."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 260, "guard": 280 },
