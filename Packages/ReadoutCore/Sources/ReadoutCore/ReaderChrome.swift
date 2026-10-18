@@ -14,14 +14,34 @@ public enum ReaderChrome {
         case status(String)
         case tasks(done: Int, total: Int)
         case folder(String)
+        /// A plan outside its project: the project's name, and its tasks ("readout · 3 of 7 tasks done").
+        case projectTasks(project: String, done: Int, total: Int)
     }
 
-    public static func subtitle(status: String?, tasks: TaskStats, path: String, showsTabBar: Bool) -> Subtitle? {
+    /// `project`: the name of the project a document outside it was written
+    /// for (`projectName`), shown before the tasks, or in place of the folder
+    /// whether there is a tab bar or not.
+    public static func subtitle(status: String?, tasks: TaskStats, path: String, showsTabBar: Bool, project: String? = nil) -> Subtitle? {
         if let status, !status.isEmpty { return .status(status) }
+        if let project {
+            return tasks.total > 0 ? .projectTasks(project: project, done: tasks.done, total: tasks.total) : .folder(project)
+        }
         if tasks.total > 0 { return .tasks(done: tasks.done, total: tasks.total) }
         guard !showsTabBar else { return nil }
         let folder = ((path as NSString).deletingLastPathComponent as NSString).lastPathComponent
         return folder.isEmpty || folder == "/" ? nil : .folder(folder)
+    }
+
+    /// The name of the project folder an agent named for a document
+    /// (`readout --hook`) that lies outside it, as plans in ~/.claude/plans
+    /// do: they are about that project, which nothing else in the window says.
+    /// Nil for a document inside its project, or without one.
+    public static func projectName(path: String, projectRoot: String?) -> String? {
+        guard let projectRoot, projectRoot.hasPrefix("/") else { return nil }
+        let root = projectRoot.count > 1 && projectRoot.hasSuffix("/") ? String(projectRoot.dropLast()) : projectRoot
+        guard root != "/", path != root, !path.hasPrefix(root + "/") else { return nil }
+        let name = (root as NSString).lastPathComponent
+        return name.isEmpty ? nil : name
     }
 
     /// The tab's tooltip: the file's path, with the home folder as `~`, so

@@ -4,7 +4,7 @@
 
 | Key | Action |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change |
+| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change; with none left, the next document that has some |
 | <kbd>D</kbd> | Show which words changed in the edited blocks in view, top first; once all are shown, hide them (also **View ▸ Show What Changed**) |
 | <kbd>⌘K</kbd> | Mark all as read (<kbd>⌘Z</kbd> undoes it) |
 | <kbd>⇧⌘K</kbd> | Show only changes |
@@ -21,6 +21,7 @@
 | <kbd>⌃⌥⌘R</kbd> | Open the latest agent file from anywhere (global; change or turn off in Settings) |
 | <kbd>⌘E</kbd> | Open the file in your editor, at the line you are reading (or the selection) |
 | <kbd>⇧⌘R</kbd> | Reveal in Finder |
+| <kbd>⇧⌘C</kbd> | Copy as Quote: the selected blocks' Markdown as a quote, with the file's lines and section |
 | <kbd>⌥⌘C</kbd> | Copy the file's path |
 | <kbd>⌘P</kbd> | Print |
 | <kbd>⌘W</kbd> / <kbd>⌥⌘W</kbd> | Close / close all |

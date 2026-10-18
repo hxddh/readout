@@ -24,8 +24,19 @@ public enum PageMessage: Equatable, Sendable {
     case error(message: String)
     /// The reader turned code wrapping on or off (remembered for all windows).
     case setCodeWrap(on: Bool)
-    /// A key found nothing to go to (N with no change left): the app beeps.
+    /// A key found nothing to go to (D with no comparison in view): the app beeps.
     case nothing
+    /// N or Shift-N found no unread change left in the document
+    /// (`{type: "nothing", jump: true}`): the app goes
+    /// on to the next document with unread changes, and beeps only when there
+    /// is none.
+    case noUnread
+    /// What the last patch added is to be shown as unread now (the toolbar
+    /// badge, the outline's and the tab's dots): until then, more unread waits.
+    case showUnread
+    /// The reader selected text in the document, or the selection went
+    /// (Copy as Quote is enabled while there is one).
+    case selection(has: Bool)
     /// N went past the last change and wrapped around to the first: the app beeps.
     case wrapped
     /// Keyboard focus moved to an unread change (N, a rail tick): its place
@@ -66,7 +77,14 @@ public enum PageMessage: Equatable, Sendable {
         case "setCodeWrap":
             guard let on = (msg["on"] as? NSNumber)?.boolValue ?? (msg["on"] as? Bool) else { return nil }
             self = .setCodeWrap(on: on)
-        case "nothing": self = .nothing
+        case "nothing":
+            // N's (`jump`), not D's: there is no unread change left to go to.
+            let jump = (msg["jump"] as? NSNumber)?.boolValue ?? (msg["jump"] as? Bool) ?? false
+            self = jump ? .noUnread : .nothing
+        case "showUnread": self = .showUnread
+        case "selection":
+            guard let has = (msg["has"] as? NSNumber)?.boolValue ?? (msg["has"] as? Bool) else { return nil }
+            self = .selection(has: has)
         case "wrapped": self = .wrapped
         case "landed":
             guard let index = int(msg["index"]), let total = int(msg["total"]), index >= 1, index <= total,
@@ -106,8 +124,48 @@ public enum LinkTarget: Equatable, Sendable {
     ///   - markdownExtensions: lowercased extensions Readout opens itself.
     ///   - fileExists: existence check for non-Markdown targets.
     ///   - isDirectory: whether an existing target is a folder (opened by the system, line or not).
+    ///   - candidates: where else a relative path may be (`FileResolver.candidates(for:)`:
+    ///     the project an agent named, the folders above in the repository, the
+    ///     agent folders), as code-span paths are looked up: a link to a file
+    ///     not beside the document is looked for there before it is missing.
     public static func resolve(_ href: String, from documentURL: URL, markdownExtensions: Set<String>,
-                               fileExists: (URL) -> Bool, isDirectory: (URL) -> Bool = { _ in false }) -> LinkTarget? {
+                               fileExists: (URL) -> Bool, isDirectory: (URL) -> Bool = { _ in false },
+                               candidates: ((String) -> [URL])? = nil) -> LinkTarget? {
+        let target = resolveHere(href, from: documentURL, markdownExtensions: markdownExtensions, fileExists: fileExists, isDirectory: isDirectory)
+        guard let candidates, let target else { return target }
+        let here = { (p: String) in documentURL.deletingLastPathComponent().appendingPathComponent(p).standardizedFileURL.path }
+        let missing: URL
+        switch target {
+        case .missing(let u): missing = u
+        case .markdown(let u, _) where !fileExists(u): missing = u
+        case .external:
+            // "feature.swift:42" reads as a URL scheme when no such file is beside the document.
+            let written = String(href.prefix { $0 != "#" })
+            guard !written.contains("//"), let (stripped, _) = SourceLine.pathSuffix(written),
+                  stripped.contains(".") || stripped.contains("/") else { return target }
+            missing = URL(fileURLWithPath: here(stripped.removingPercentEncoding ?? stripped))
+        default: return target
+        }
+        // The path as written (without the fragment or a :line suffix), relative.
+        var path = href
+        var rest = ""
+        if let hash = path.firstIndex(of: "#") { rest = String(path[hash...]); path = String(path[..<hash]) }
+        path = path.removingPercentEncoding ?? path
+        guard !path.isEmpty, !path.hasPrefix("/"), !path.hasPrefix("~"), !path.lowercased().hasPrefix("file:") else { return target }
+        var suffix = ""
+        if let (stripped, _) = SourceLine.pathSuffix(path), here(stripped) == missing.path, here(path) != missing.path {
+            suffix = String(path.dropFirst(stripped.count))
+            path = stripped
+        }
+        for c in candidates(path) where c.standardizedFileURL.path != missing.path && fileExists(c) {
+            let found = c.path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "#?"))) ?? c.path
+            return resolveHere(found + suffix + rest, from: documentURL, markdownExtensions: markdownExtensions, fileExists: fileExists, isDirectory: isDirectory)
+        }
+        return target
+    }
+
+    private static func resolveHere(_ href: String, from documentURL: URL, markdownExtensions: Set<String>,
+                                    fileExists: (URL) -> Bool, isDirectory: (URL) -> Bool) -> LinkTarget? {
         func url(_ p: String) -> URL {
             p.hasPrefix("/") ? URL(fileURLWithPath: p)
                 : documentURL.deletingLastPathComponent().appendingPathComponent(p).standardizedFileURL

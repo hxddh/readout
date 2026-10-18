@@ -286,6 +286,11 @@ check("tabs: with the tab bar showing, the page's top inset is the toolbar's edg
 check("tabs: documents with the same title name their files",
       td.get("dup_in_group") is True and sorted(td.get("dup_titles") or []) == ["Same plan — fix.md", "Same plan — refactor.md"], td)
 
+# A plan outside its project (3.7): the subtitle names the project, the tab's tooltip its folder.
+hc = bg.get("hook_chrome") or {}
+check("plans know their project: subtitle and tooltip name it",
+      hc.get("subtitle") == "project" and "/project" in (hc.get("tab_tooltip") or "") and "\n" in (hc.get("tab_tooltip") or ""), hc)
+
 menus = load("menus.json")
 print(f"menus: {menus}")
 edit_menu = menus.get("edit_menu") or []
@@ -312,6 +317,9 @@ check("Find has Use Selection for Find, without ⌘E", bool(use_sel) and "key" n
 check("⌘E stays Open in Editor", (by_action.get("openInEditor:") or {}).get("key") == "⌘e", by_action.get("openInEditor:"))
 check("Edit has Speech: Start and Stop Speaking",
       "startSpeaking:" in by_action and "stopSpeaking:" in by_action, sorted(by_action))
+quote = by_action.get("copyAsQuote:") or {}
+check("Edit has Copy as Quote on ⇧⌘C, and no other item has that key",
+      quote.get("key") == "⇧⌘c" and sum(1 for _, i in tree if (i.get("key") or "").lower() == "⇧⌘c") == 1, quote)
 what = by_action.get("showWhatChanged:") or {}
 check("View has Show What Changed, without a key", bool(what) and "key" not in what, what)
 check("Help opens the bundled shortcuts", "openHelp:" in by_action, sorted(by_action))
@@ -374,6 +382,62 @@ first = (landed.get("landed") or [{}])[0]
 check("next change: where it landed is reported (n of m, kind)",
       1 <= (first.get("index") or 0) <= (first.get("total") or 0) == landed.get("unread")
       and first.get("kind") in ("railAdded", "railEdited", "railRemoved", "railTask"), landed)
+
+# Copy as Quote (3.7): the selected blocks' Markdown as a blockquote, then
+# the file's lines and section; enabled only while text is selected.
+cq = load("copy-quote.json")
+print(f"copy-quote: {cq}")
+cq_lines = (cq.get("text") or "").split("\n")
+check("Copy as Quote: enabled with a selection, not without",
+      cq.get("enabled") is True and cq.get("enabled_after_deselect") is False, cq)
+check("Copy as Quote: a blockquote of the blocks, then '— <path>#L<a>-L<b> (§ <section>)'",
+      len(cq_lines) >= 3 and all(l.startswith(">") for l in cq_lines[:-1])
+      and re.fullmatch(re.escape("— " + (cq.get("path") or "?")) + r"#L(\d+)-L(\d+) \(§ .+\)", cq_lines[-1]) is not None, cq)
+
+# N on to the next document with unread changes (3.7): the tab behind with
+# unread changes comes forward at its first change; with none left anywhere
+# N stays (a beep). The Dock badge counts the documents showing unread changes.
+cd = load("cross-document.json")
+print(f"cross-document: {cd}")
+check("cross-document N: goes on to the tab with unread changes, at its first change",
+      cd.get("to") == "background.md" and cd.get("from") != cd.get("to") and (cd.get("to_had_unread") or 0) > 0
+      and len(cd.get("landed") or []) >= 1 and (cd["landed"][0].get("index") == 1), cd)
+check("cross-document N: says where it went in the subtitle", "Opened with readout -b" in (cd.get("to_subtitle") or ""), cd)
+check("cross-document N: nowhere to go once nothing is unread anywhere", cd.get("went_with_none_left") is False, cd)
+check("Dock badge: the number of documents showing unread changes, none at 0",
+      cd.get("badge_before") == str(cd.get("showing_unread_before")) and (cd.get("showing_unread_before") or 0) >= 1
+      and cd.get("badge_after_read") == (str(cd["showing_unread_after_read"]) if cd.get("showing_unread_after_read") else "")
+      and cd.get("badge_none") == "", cd)
+
+# Window restoration (3.7): what a reader window keeps for the next launch
+# comes back as it was (relaunching is checked on a Mac); a gone file does not.
+rs = load("restoration.json")
+print(f"restoration: {rs}")
+rm = rs.get("main") or {}
+rh = rs.get("hooked") or {}
+check("restoration: the file and the project come back from the encoded state",
+      rm.get("path") and rm.get("path") == rm.get("expected_path")
+      and rh.get("path") == rh.get("expected_path") and rh.get("root") and rh.get("root") == rh.get("expected_root"), rs)
+check("restoration: a window whose file is gone does not come back", rs.get("gone_restored") is False, rs)
+check("restoration: reader windows are restorable, each with its own identifier, none holding the frame name",
+      rs.get("restorable") is True and rs.get("identifiers_unique") is True and rs.get("frame_autosave_names") == [], rs)
+check("restoration: Welcome and Settings are not restorable",
+      not {"Welcome", "Settings"} & set(rs.get("others_restorable") or []), rs)
+
+# First open marked against the last commit (3.7).
+gb = load("git-baseline.json")
+print(f"git-baseline: {gb}")
+def page(name):
+    try:
+        return json.loads((gb.get(name) or {}).get("page") or "{}")
+    except ValueError:
+        return {}
+gt, gu = page("tracked"), page("untracked")
+check("git: a committed file changed since is marked against the commit, and the notice says so",
+      gb.get("tools") is True and (gb["tracked"].get("unread") or 0) >= 2 and (gt.get("marks") or 0) >= 2
+      and gt.get("notice") == "Marked against the last commit", gb)
+check("git: an untracked file opens unmarked, without the notice",
+      (gb.get("untracked") or {}).get("unread") == 0 and gu.get("marks") == 0 and gu.get("notice") == "", gb)
 
 credits = OUT / "Credits.html"
 sys.path.insert(0, str(ROOT / "tools"))

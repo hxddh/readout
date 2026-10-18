@@ -210,8 +210,12 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         while let last = menu.items.last, last.isSeparatorItem { menu.removeItem(last) }
     }
 
+    /// Adds the app's own items to the page's context menu (Copy as Quote).
+    var onContextMenu: ((NSMenu) -> Void)?
+
     override func willOpenMenu(_ menu: NSMenu, with event: NSEvent) {
         Self.filterContextMenu(menu, linkURL: contextLink)
+        onContextMenu?(menu)
         contextLink = nil
         super.willOpenMenu(menu, with: event)
     }
