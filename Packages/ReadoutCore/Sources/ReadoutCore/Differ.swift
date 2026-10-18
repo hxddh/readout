@@ -108,33 +108,43 @@ public enum Differ {
     }
 
     public static func diff(old: [BlockKey], new: [BlockKey]) -> DiffResult {
+        diff(old: old, new: new, shared: 0)
+    }
+
+    /// The diff of `S + old` and `S + new`, where `S` is `shared` blocks with
+    /// the same fingerprints on both sides (the start of a document an update
+    /// left alone), exactly as `diff(old:new:)` computes it for the whole
+    /// sequences, but without visiting `S`: indices are into `old` and `new`,
+    /// and the blocks of `S` are equal to themselves. (Unless it is a
+    /// rewrite, whose alignment nobody reads.)
+    static func diff(old: [BlockKey], new: [BlockKey], shared: Int) -> DiffResult {
         // Step 1: exact matches via Myers diff on fingerprints (bounded, see `equalPairs`).
         let oldFP = old.map(\.fingerprint), newFP = new.map(\.fingerprint)
-        guard let equalPairs = Self.equalPairs(oldFP, newFP) else {
+        guard let equalPairs = Self.equalPairs(oldFP, newFP, shared: shared) else {
             // So little can match that it is a rewrite whatever the alignment: not worth computing.
             return DiffResult(changes: [DiffResult.Change](repeating: .inserted, count: new.count),
                               removed: Array(old.indices), rewrite: true)
         }
 
         var changes = [DiffResult.Change](repeating: .inserted, count: new.count)
-        var matchedOld = Set<Int>()
-        for (o, n) in equalPairs { changes[n] = .equal(old: o); matchedOld.insert(o) }
+        var matchedOld = [Bool](repeating: false, count: old.count)
+        for (o, n) in equalPairs { changes[n] = .equal(old: o); matchedOld[o] = true }
 
         // Step 2: pair deletions and insertions inside each gap into modifications.
         var prevO = -1, prevN = -1
         for (o, n) in equalPairs + [(old.count, new.count)] {
-            let gapOld = Array((prevO + 1)..<o), gapNew = Array((prevN + 1)..<n)
-            if !gapOld.isEmpty && !gapNew.isEmpty {
+            if o > prevO + 1 && n > prevN + 1 {
+                let gapOld = Array((prevO + 1)..<o), gapNew = Array((prevN + 1)..<n)
                 for (go, gn) in pairGap(old: gapOld.map { old[$0] }, new: gapNew.map { new[$0] }) {
                     changes[gapNew[gn]] = .modified(old: gapOld[go])
-                    matchedOld.insert(gapOld[go])
+                    matchedOld[gapOld[go]] = true
                 }
             }
             prevO = o; prevN = n
         }
 
-        let removed = (0..<old.count).filter { !matchedOld.contains($0) }
-        let rewrite = isRewrite(equal: equalPairs.count, old: old.count, new: new.count)
+        let removed = old.indices.filter { !matchedOld[$0] }
+        let rewrite = isRewrite(equal: shared + equalPairs.count, old: shared + old.count, new: shared + new.count)
         return DiffResult(changes: changes, removed: removed, rewrite: rewrite)
     }
 
@@ -154,24 +164,31 @@ public enum Differ {
     /// and end are matched and the middle is diffed with Myers where its
     /// edit distance turns out small, else anchored on fingerprints that
     /// occur once on each side (patience diff), the gaps between them diffed the same way.
-    static func equalPairs(_ a: [UInt64], _ b: [UInt64]) -> [(Int, Int)]? {
+    ///
+    /// `shared`: that many equal values before `a` and `b` (see
+    /// `diff(old:new:shared:)`), not visited and not among the pairs.
+    static func equalPairs(_ a: [UInt64], _ b: [UInt64], shared: Int = 0) -> [(Int, Int)]? {
         var prefix = 0
         while prefix < a.count && prefix < b.count && a[prefix] == b[prefix] { prefix += 1 }
         var suffix = 0
         while suffix < a.count - prefix && suffix < b.count - prefix && a[a.count - 1 - suffix] == b[b.count - 1 - suffix] { suffix += 1 }
         let aMid = a[prefix..<(a.count - suffix)], bMid = b[prefix..<(b.count - suffix)]
-        if isRewrite(equal: prefix + suffix + min(aMid.count, bMid.count), old: a.count, new: b.count) {
+        let oldCount = shared + a.count, newCount = shared + b.count
+        if isRewrite(equal: shared + prefix + suffix + min(aMid.count, bMid.count), old: oldCount, new: newCount) {
             var counts: [UInt64: Int] = [:]
             counts.reserveCapacity(aMid.count)
             for x in aMid { counts[x, default: 0] += 1 }
-            var shared = 0
-            for x in bMid { if let c = counts[x], c > 0 { counts[x] = c - 1; shared += 1 } }
-            if isRewrite(equal: prefix + suffix + shared, old: a.count, new: b.count) { return nil }
+            var common = 0
+            for x in bMid { if let c = counts[x], c > 0 { counts[x] = c - 1; common += 1 } }
+            if isRewrite(equal: shared + prefix + suffix + common, old: oldCount, new: newCount) { return nil }
         }
         // Myers over the whole sequences costs (N + M) × D: affordable for the usual edit (D small).
-        let budget = maxMyersWork / max(1, a.count + b.count)
+        let budget = maxMyersWork / max(1, oldCount + newCount)
         if aMid.count + bMid.count <= budget || editDistance(aMid, bMid, limit: budget) != nil {
-            return myersPairs(a[...], b[...])
+            // Myers' first move takes the shared start whole (its 0-path), and
+            // everything after starts from there: the same as over the whole
+            // sequences, without copying and walking the start.
+            return (0..<prefix).map { ($0, $0) } + myersPairs(a[prefix...], b[prefix...])
         }
 
         var pairs: [(Int, Int)] = (0..<prefix).map { ($0, $0) }

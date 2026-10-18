@@ -6,7 +6,7 @@
 # it tightly (tools/perf-budgets.json, *_minstr).
 #
 # usage: Packages/ReadoutCore/Tools/perf-instructions.sh PERF_PROBE CORPUS_DIR BYTES [SCENARIO]
-#   SCENARIO: update (default), append or open-unique (see perf-probe)
+#   SCENARIO: update (default), append, tail or open-unique (see perf-probe)
 #   build PERF_PROBE with: swift build -c release --package-path Packages/ReadoutCore --product perf-probe
 set -eu
 scenario=${4:-update}

@@ -5,6 +5,8 @@
 // Usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes] [SCENARIO]
 //   SCENARIO: update (default): load the document, then 20 paragraphs edited;
 //             append: load it, then one paragraph appended at the end (an agent writing on);
+//             tail: load it, then a few words added to its last line (an agent streaming
+//             mid-line: the last paragraph grows);
 //             open-unique: the first open of a document whose blocks are all distinct
 //             (the corpus repeated with every repetition's prose lines marked), so
 //             nothing is shared between its blocks.
@@ -21,7 +23,7 @@ import ReadoutCore
 
 let args = CommandLine.arguments
 guard args.count >= 3, let bytes = Int(args[2]) else {
-    FileHandle.standardError.write("usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes] [update | append | open-unique]\n".data(using: .utf8)!)
+    FileHandle.standardError.write("usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes] [update | append | tail | open-unique]\n".data(using: .utf8)!)
     exit(2)
 }
 let corpus = URL(fileURLWithPath: args[1])
@@ -29,7 +31,7 @@ let loadOnly = args.count > 3 && args[3] == "load"
 let printBytes = args.count > 3 && args[3] == "bytes"
 let runs = args.count > 3 ? Int(args[3]) ?? 0 : 0
 let scenario = args.count > 4 ? args[4] : "update"
-guard ["update", "append", "open-unique"].contains(scenario) else {
+guard ["update", "append", "tail", "open-unique"].contains(scenario) else {
     FileHandle.standardError.write("unknown scenario \(scenario)\n".data(using: .utf8)!)
     exit(2)
 }
@@ -108,6 +110,7 @@ let original = document(bytes: bytes, unique: scenario == "open-unique")
 let data: Data
 switch scenario {
 case "append": data = Data((original + "\n\nThe agent appended this new paragraph describing the next step of the plan.\n").utf8)
+case "tail": data = Data((original + " and one more clause streamed in").utf8)
 case "open-unique": data = Data(original.utf8)
 default: data = Data(edited(original, count: 20).utf8)
 }

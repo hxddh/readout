@@ -42,25 +42,67 @@ public enum MarkdownParser {
     }
 
     static func assemble(_ fragments: [(offset: Int, fragment: Fragment)]) -> ParsedDocument {
+        var asm = Assembler()
+        asm.mixedIsCJK = Assembler.mixedIsCJK(fragments.lazy.map(\.fragment))
+        for (offset, fragment) in fragments { asm.add(offset: offset, fragment: fragment) }
+        return asm.finish()
+    }
+
+    /// Assembly as a resumable state machine. `assemble` above is one run of
+    /// it; `IncrementalParser` keeps a checkpoint per fragment and resumes
+    /// after the unchanged start of the document (`IncrementalParser.splice`).
+    struct Assembler {
         var out: [Block] = []
-        out.reserveCapacity(fragments.reduce(0) { $0 + $1.fragment.blocks.count } + 1)
         var numbering = Footnotes.Numbering()
         var notes: [Footnotes.Note] = []
         var headingStack: [(level: Int, title: String)] = []
         var currentPath: [String] = []   // headingStack's titles, shared by the blocks under it
         var slugger = Slugger()
         var title: String? = nil
-        // Mixed blocks (`Task 2: 更新 README.md`) read as CJK in a document
-        // whose other prose is mostly CJK.
-        var cjkProse = 0, otherProse = 0
-        for (_, fragment) in fragments {
+        var mixedIsCJK = false
+        var memo: Slugger.Memo? = nil
+        /// Each anchor given, to take back (nil: not kept).
+        var slugLog: [Slugger.Undo]? = nil
+
+        /// The state before a fragment: blocks so far, the headings above,
+        /// the title, and how many anchors were given (`slugLog`).
+        struct Checkpoint {
+            var blocks: Int
+            var headingStack: [(level: Int, title: String)]
+            var currentPath: [String]
+            var title: String?
+            var slugs: Int
+        }
+        var checkpoint: Checkpoint {
+            Checkpoint(blocks: out.count, headingStack: headingStack, currentPath: currentPath, title: title, slugs: slugLog?.count ?? 0)
+        }
+
+        /// Takes back the anchors given after `checkpoint` (its `slugs`), as if assembly had stopped there.
+        mutating func rewindSlugs(to count: Int) {
+            guard var log = slugLog else { return }
+            slugLog = nil
+            while log.count > count { slugger.undo(log.removeLast()) }
+            slugLog = log
+        }
+
+        /// Prose counts deciding `mixedIsCJK`.
+        static func counts(_ fragment: Fragment) -> (cjk: Int, other: Int) {
+            var c = 0, o = 0
             for b in fragment.blocks where !b.cjkMixed && b.kind != .code && b.kind != .mermaid && b.kind != .math
                 && b.kind != .frontMatter && b.kind != .rule {
-                if b.cjk { cjkProse += 1 } else { otherProse += 1 }
+                if b.cjk { c += 1 } else { o += 1 }
             }
+            return (c, o)
         }
-        let mixedIsCJK = cjkProse > otherProse
-        for (offset, fragment) in fragments {
+        // Mixed blocks (`Task 2: 更新 README.md`) read as CJK in a document
+        // whose other prose is mostly CJK.
+        static func mixedIsCJK<S: Sequence>(_ fragments: S) -> Bool where S.Element == Fragment {
+            var cjkProse = 0, otherProse = 0
+            for f in fragments { let (c, o) = counts(f); cjkProse += c; otherProse += o }
+            return cjkProse > otherProse
+        }
+
+        mutating func add(offset: Int, fragment: Fragment) {
             for var n in fragment.notes {
                 n.lines = (n.lines.lowerBound + offset)...(n.lines.upperBound + offset)
                 notes.append(n)
@@ -73,7 +115,7 @@ public enum MarkdownParser {
                 if b.kind == .heading, let level = b.headingLevel, let titleText = b.headingTitle {
                     while let last = headingStack.last, last.level >= level { headingStack.removeLast() }
                     path = headingStack.map(\.title)
-                    let a = slugger.next(titleText)
+                    let a = slugger.next(titleText, memo: memo, log: &slugLog)
                     anchor = a
                     html = "<h\(level) id=\"\(HTML.escape(a))\">\(html)</h\(level)>"
                     headingStack.append((level, titleText))
@@ -91,8 +133,11 @@ public enum MarkdownParser {
                 out.append(nb)
             }
         }
-        if let section = numbering.section(notes) { out.append(section) }
-        return ParsedDocument(blocks: out, title: title)
+
+        mutating func finish() -> ParsedDocument {
+            if let section = numbering.section(notes) { out.append(section) }
+            return ParsedDocument(blocks: out, title: title)
+        }
     }
 
     /// Blocks of one run of lines, independent of the rest of the document.
@@ -399,6 +444,18 @@ public enum MarkdownParser {
             for key in keys where next[key] == nil {
                 if let v = current[key] { next[key] = v }
             }
+        }
+        /// A splice keeps the previous generation whole (the unchanged blocks
+        /// are not walked to keep their entries); `drop` then removes those
+        /// of the fragments it replaced.
+        func resume() {
+            lock.lock()
+            for (k, v) in next where current[k] == nil { current[k] = v }
+            next = current; current = [:]
+            lock.unlock()
+        }
+        func drop<S: Sequence>(_ keys: S) where S.Element == String {
+            lock.lock(); for k in keys { next[k] = nil }; lock.unlock()
         }
         /// Call before each parse of the same document.
         public func beginGeneration() {
