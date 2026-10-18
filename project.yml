@@ -47,6 +47,14 @@ targets:
       - target: ReadoutQuickLook
         embed: true
         codeSign: true
+    # Readout ▸ About Readout shows Resources/Credits.html: the licences of the
+    # npm and Swift packages inside the app (the web bundle drops their comments).
+    postBuildScripts:
+      - name: Third-party notices (Credits.html)
+        basedOnDependencyAnalysis: false
+        script: |
+          python3 "$SRCROOT/tools/credits.py" --checkouts "$BUILD_DIR/../../SourcePackages/checkouts" \
+            --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Credits.html"
     info:
       path: App/Info.plist
       properties:
@@ -65,7 +73,7 @@ targets:
         # Localized in App/<lang>.lproj/InfoPlist.strings.
         NSDocumentsFolderUsageDescription: Readout reads the Markdown files you open or add as agent folders here. It never changes them.
         NSDesktopFolderUsageDescription: Readout reads the Markdown files you open or add as agent folders here. It never changes them.
-        NSDownloadsFolderUsageDescription: Readout reads the Markdown files you open or add as agent folders here. It never changes them.
+        NSDownloadsFolderUsageDescription: Readout reads the Markdown files you open or add as agent folders here, and saves the updates you download here. It never changes your files.
         # Settings ▸ Editor ▸ Xcode runs /usr/bin/xed, which asks Xcode over Apple Events to open the file at a line.
         NSAppleEventsUsageDescription: Readout asks Xcode to open a file at a line when Xcode is your editor.
         # `readout -b` / `readout --hook` open through readout-open://open?path=…&background=1.
