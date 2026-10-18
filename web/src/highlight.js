@@ -126,8 +126,10 @@ export function init() {
 // highlights does, which cost the first code block of a warm open 170-220 ms
 // inside the page's first apply. So the app's spare page (warm) also, once
 // the preloaded grammars are in, highlights a few lines of the common
-// constructs of each language, one per idle period, the way a block is
-// highlighted. Only there: compiling a large grammar (TypeScript's) takes a
+// constructs of each language, the way a block is highlighted: right away,
+// most used (and costliest) first, one language per task, so that it is
+// done before a window takes the page, and a document arriving meanwhile
+// waits for one language at most. Only there: compiling a large grammar (TypeScript's) takes a
 // moment of the main thread, which a page being read should not pay for a
 // language it may not show. Never in Quick Look, which preloads nothing.
 // It stops as soon as the page shows a document (stopWarmUp, enhance.js):
@@ -307,17 +309,17 @@ const SAMPLES = {
     "INSERT INTO x VALUES (1, 'a');",
   ].join('\n'),
 };
+const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript', 'go', 'swift', 'rust', 'yaml', 'markdown', 'sql', 'diff'];
 function warmUp() {
-  const idle = globalThis.requestIdleCallback || (fn => setTimeout(fn, 50));
-  const ids = PRELOAD.filter(id => SAMPLES[id] && highlighter.getLoadedLanguages().includes(id));
+  const ids = WARM_ORDER.filter(id => SAMPLES[id] && highlighter.getLoadedLanguages().includes(id));
   const next = () => {
     if (warmStopped) return;
     const id = ids.shift();
     if (!id) { performance.mark('readout-hl-warm'); return; }
     highlightSync(SAMPLES[id], id);   // only a head start: its result, or failure, is not used
-    idle(next, { timeout: 1000 });
+    setTimeout(next, 0);
   };
-  idle(next, { timeout: 1000 });
+  setTimeout(next, 0);
 }
 
 // Grammars are registered one at a time, in request order. Several modules
