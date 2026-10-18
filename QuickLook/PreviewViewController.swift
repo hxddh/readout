@@ -26,29 +26,42 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     func preparePreviewOfFile(at url: URL) async throws {
+        let requested = Date()
+        // With the "applied" line below: how long a preview took (CI's ql_open_ms).
+        log.notice("preview requested")
         let data = try Data(contentsOf: url)
         let text = FileContent.decode(data).text
-        let doc = MarkdownParser.parse(text, resolver: FileResolver(baseDirectory: url.deletingLastPathComponent()))
+        // The incremental parser's first parse cuts the document into
+        // fragments parsed concurrently: the same document as
+        // MarkdownParser.parse, sooner for a long one.
+        let doc = IncrementalParser(resolver: FileResolver(baseDirectory: url.deletingLastPathComponent())).parse(text)
         let session = DocumentSession()
         let patch = session.load(doc)
+        // Only the count outlives this call: the parsed document is released with it.
+        let blocks = doc.blocks.count
 
         await MainActor.run { _ = self.view }
         guard let webView = await MainActor.run(body: { self.webView }) else { return }
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
             Task { @MainActor in
                 var resumed = false
-                let finish = { (how: String) in
+                // Weak: the web view holds this through onMessage, and a
+                // strong reference back kept every preview's web view alive.
+                let finish = { [weak webView] (how: String) in
                     guard !resumed else { return }
                     resumed = true
+                    cont.resume()
+                    webView?.onMessage = nil
+                    let ms = Int(Date().timeIntervalSince(requested) * 1000)
                     // One line per preview, so CI (and Console) can see that
                     // content actually rendered, not just that we registered.
-                    cont.resume()
-                    webView.evaluateJavaScript("document.querySelectorAll('.blk').length") { value, _ in
+                    webView?.evaluateJavaScript("document.querySelectorAll('.blk').length") { value, _ in
                         let rendered = (value as? NSNumber)?.intValue ?? -1
-                        log.notice("preview \(how, privacy: .public): rendered \(rendered, privacy: .public) of \(doc.blocks.count, privacy: .public) blocks")
+                        log.notice("preview \(how, privacy: .public): rendered \(rendered, privacy: .public) of \(blocks, privacy: .public) blocks in \(ms, privacy: .public) ms")
                     }
                 }
-                webView.whenReady {
+                webView.whenReady { [weak self, weak webView] in
+                    guard let self, let webView else { return }
                     // The app's default text size (Actual Size), in the preview's appearance.
                     webView.setAppearance(dark: self.isDark, accent: .controlAccentColor, width: "narrow", fontSize: 16,
                                           strings: ReaderStrings.all, mode: "quicklook")

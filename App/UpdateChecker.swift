@@ -1,4 +1,5 @@
 import AppKit
+import CoreServices
 import ReadoutCore
 
 /// Lightweight update checker backed by GitHub Releases.
@@ -18,12 +19,29 @@ enum UpdateChecker {
         var name: String?
         var body: String?
         var htmlURL: URL?
+        var assets: [Asset]?
 
         enum CodingKeys: String, CodingKey {
             case tag = "tag_name"
             case name
             case body
             case htmlURL = "html_url"
+            case assets
+        }
+
+        struct Asset: Decodable {
+            var name: String
+            var url: URL
+
+            enum CodingKeys: String, CodingKey {
+                case name
+                case url = "browser_download_url"
+            }
+        }
+
+        /// The release's disk image, when it has one on GitHub.
+        var dmg: Asset? {
+            assets?.first { $0.name.lowercased().hasSuffix(".dmg") && $0.url.scheme == "https" && $0.url.host == "github.com" }
         }
     }
 
@@ -59,7 +77,7 @@ enum UpdateChecker {
                         let body = rateLimited
                             ? NSLocalizedString("GitHub's limit on update checks from this network was reached. Please try again in an hour.", comment: "Update alert body: GitHub rate limit")
                             : NSLocalizedString("Readout could not reach GitHub. Please try again later.", comment: "Update alert body")
-                        alert(titleKey: "Could Not Check for Updates", body: body, updateURL: nil)
+                        alert(title: NSLocalizedString("Could Not Check for Updates", comment: "Update alert title"), body: body, update: nil)
                     }
                     return
                 }
@@ -67,16 +85,16 @@ enum UpdateChecker {
                 if ReleaseCheck.isNewer(release.tag, than: currentVersion) {
                     let updateURL = release.htmlURL ?? releasesURL
                     if interactive {
-                        alert(titleKey: "A New Version Is Available",
+                        alert(title: NSLocalizedString("A New Version Is Available", comment: "Update alert title"),
                               body: "\(release.name ?? release.tag)\n\n\(ReleaseCheck.plainNotes(release.body ?? ""))",
-                              updateURL: updateURL)
+                              update: (page: updateURL, dmg: release.dmg))
                     } else {
                         onBackgroundUpdate?(release.name ?? release.tag, updateURL)
                     }
                 } else if interactive {
-                    alert(titleKey: "You're Up to Date",
+                    alert(title: NSLocalizedString("You're Up to Date", comment: "Update alert title"),
                           body: String(format: NSLocalizedString("Readout %@ is the latest version.", comment: "Update alert body"), currentVersion),
-                          updateURL: nil)
+                          update: nil)
                 }
             }
         }.resume()
@@ -110,18 +128,60 @@ enum UpdateChecker {
         }
     }
 
-    private static func alert(titleKey: String, body: String, updateURL: URL?) {
+    /// `title` is localized by the caller (literal keys, so the strings can be found).
+    private static func alert(title: String, body: String, update: (page: URL, dmg: Release.Asset?)?) {
         let alert = NSAlert()
-        alert.messageText = NSLocalizedString(titleKey, comment: "Update alert title")
+        alert.messageText = title
         alert.informativeText = body
-        if let updateURL {
+        if let update {
             alert.addButton(withTitle: NSLocalizedString("Download Update", comment: "Button"))
             alert.addButton(withTitle: NSLocalizedString("Later", comment: "Button"))
             NSApp.activate()
-            if alert.runModal() == .alertFirstButtonReturn { NSWorkspace.shared.open(updateURL) }
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            if let dmg = update.dmg { download(dmg, fallback: update.page) } else { NSWorkspace.shared.open(update.page) }
         } else {
             NSApp.activate()
             alert.runModal()
         }
+    }
+
+    /// Download Update: the release's disk image into Downloads, shown in
+    /// Finder, quarantined as a browser download is (Gatekeeper checks it
+    /// as usual). Nothing is installed. If it cannot be downloaded, the
+    /// release page opens instead.
+    private static func download(_ asset: Release.Asset, fallback: URL) {
+        var request = URLRequest(url: asset.url, timeoutInterval: 300)
+        request.setValue("Readout/\(currentVersion)", forHTTPHeaderField: "User-Agent")
+        let name = (asset.name as NSString).lastPathComponent
+        URLSession.shared.downloadTask(with: request) { temp, response, _ in
+            // The temporary file is removed once this returns: move it now.
+            var saved: URL?
+            if let temp, (response as? HTTPURLResponse)?.statusCode == 200 {
+                saved = try? keepDownload(temp, name: name, from: asset.url)
+            }
+            DispatchQueue.main.async {
+                if let saved { NSWorkspace.shared.activateFileViewerSelecting([saved]) } else { NSWorkspace.shared.open(fallback) }
+            }
+        }.resume()
+    }
+
+    /// Moves a finished download into ~/Downloads under `name` ("Readout-3.7.0 2.dmg"
+    /// when that is taken) and marks it as downloaded from `source`.
+    nonisolated private static func keepDownload(_ temp: URL, name: String, from source: URL) throws -> URL {
+        let fm = FileManager.default
+        let downloads = try fm.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+        let stem = (name as NSString).deletingPathExtension, ext = (name as NSString).pathExtension
+        var target = downloads.appendingPathComponent(name)
+        var n = 2
+        while fm.fileExists(atPath: target.path) {
+            target = downloads.appendingPathComponent("\(stem) \(n)" + (ext.isEmpty ? "" : ".\(ext)"))
+            n += 1
+        }
+        try fm.moveItem(at: temp, to: target)
+        let quarantine: [String: Any] = [kLSQuarantineAgentNameKey as String: "Readout",
+                                         kLSQuarantineTypeKey as String: kLSQuarantineTypeWebDownload as String,
+                                         kLSQuarantineDataURLKey as String: source]
+        try? (target as NSURL).setResourceValue(quarantine, forKey: .quarantinePropertiesKey)
+        return target
     }
 }

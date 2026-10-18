@@ -106,6 +106,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// When the window was asked for, for the open-to-first-paint measurement.
     private let openedAt = Date()
     private var painted = false
+    private var appliedOnce = false
     private let openSignpost: OSSignpostIntervalState
 
     init(url: URL, pendingAnchor: String? = nil, projectRoot root: String? = nil) {
@@ -243,6 +244,17 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     private func configureWebView() {
         webView.navigationDelegate = self
+        // macOS 26's soft scroll edge under the toolbar: WebKit gives its top
+        // scroll pocket the automatic (soft) style only when the web view uses
+        // the automatic content-inset background fill, and the hard style
+        // otherwise, which looks like no edge effect at all
+        // (WebViewImpl::updateTopScrollPocketStyle). Private, off by default,
+        // so asked for only where the web view answers to it; set before the
+        // first inset so the pocket is made with it. KVC finds the
+        // underscored setter (_set<Key>:).
+        if webView.responds(to: NSSelectorFromString("_setUsesAutomaticContentInsetBackgroundFill:")) {
+            webView.setValue(true, forKey: "usesAutomaticContentInsetBackgroundFill")
+        }
         webView.onMessage = { [weak self] msg in self?.handle(msg) }
         // Proxied remote images: the page posts loadRemote, we download with a
         // cookie-free ephemeral session and serve the bytes back over readout:.
@@ -271,6 +283,21 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 .sink { [weak self] _ in self?.updateTopInset() }
                 .store(in: &cancellables)
         }
+        // A tab bar shown or hidden moves the toolbar's edge without resizing
+        // the window: the layout rect says so.
+        layoutObservation = window?.observe(\.contentLayoutRect) { [weak self] _, _ in
+            DispatchQueue.main.async { MainActor.assumeIsolated { self?.updateTopInset() } }
+        }
+    }
+
+    private var layoutObservation: NSKeyValueObservation?
+
+    /// The inset given to the web view and the toolbar's edge it should match (smoke test).
+    var topInsetState: [String: Double] {
+        guard let window else { return [:] }
+        let web = webView.convert(webView.bounds, to: nil)
+        return ["obscured_top": Double(webView.obscuredContentInsets.top),
+                "layout_gap": max(0, Double(web.maxY - window.contentLayoutRect.maxY)).rounded()]
     }
 
     private func sendKnownImages() {
@@ -550,8 +577,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         refreshUnread()
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
         // Tabs of same-named files (every agent's plan.md) show the document's
-        // title; the window title stays the file name.
-        window?.tab.title = patch.title ?? url.lastPathComponent
+        // title; the window title stays the file name. Tabs whose documents
+        // have the same title too name their files (updateTabTitles).
+        let tabTitle = patch.title ?? url.lastPathComponent
+        if tabTitle != documentTitle {
+            documentTitle = tabTitle
+            updateTabTitles()
+        }
         if let decoded, let enc = decoded.fallbackEncoding {
             let name = enc == FileContent.replacementEncoding
                 ? NSLocalizedString("UTF-8 (with replacement characters)", comment: "Status: bytes that are no known encoding, shown with replacement characters")
@@ -592,10 +624,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func flashStatus(_ text: String) {
         flashText = text
         updateSubtitle()
-        if let window {
-            NSAccessibility.post(element: window, notification: .announcementRequested,
-                                 userInfo: [.announcement: text, .priority: NSAccessibilityPriorityLevel.high.rawValue])
-        }
+        announce(text)
         flashWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
             self?.flashText = nil
@@ -605,16 +634,40 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: work)
     }
 
+    /// Says `text` to VoiceOver now.
+    private func announce(_ text: String) {
+        guard let window else { return }
+        NSAccessibility.post(element: window, notification: .announcementRequested,
+                             userInfo: [.announcement: text, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+    }
+
     /// The window joined or left tabs, or its tab bar was shown or hidden:
-    /// the subtitle follows.
-    func tabsChanged() { updateSubtitle() }
+    /// the subtitle and the tab titles follow.
+    func tabsChanged() {
+        updateSubtitle()
+        updateTabTitles()
+    }
+
+    /// The document's title, as its tab shows it unless another tab in the
+    /// group has the same one.
+    private(set) var documentTitle: String = ""
+
+    /// The titles of every tab in the window's group: a title two documents
+    /// share is followed by the file name (or folder) that tells them apart.
+    private func updateTabTitles() {
+        guard let window else { return }
+        let readers = (window.tabGroup?.windows ?? [window]).compactMap { $0.windowController as? ReaderWindowController }
+        let base = readers.map { $0.documentTitle.isEmpty ? $0.url.lastPathComponent : $0.documentTitle }
+        let titles = ReaderChrome.tabTitles(titles: base, paths: readers.map(\.url.path))
+        for (reader, title) in zip(readers, titles) where reader.window?.tab.title != title { reader.window?.tab.title = title }
+    }
 
     /// Follows the tab bar of the window's current tab group, and the window
     /// itself: its group is made or replaced (Show Tab Bar, Merge All Windows,
     /// a tab dragged out) while it stays key.
     private func observeTabBar() {
         let changed: @Sendable () -> Void = { [weak self] in
-            DispatchQueue.main.async { MainActor.assumeIsolated { self?.updateSubtitle() } }
+            DispatchQueue.main.async { MainActor.assumeIsolated { self?.tabsChanged() } }
         }
         if windowObservations.isEmpty, let window {
             windowObservations = [
@@ -636,9 +689,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         if model.unread != n { model.unread = n }
         let sections = session.unreadSections
         if model.unreadSections != sections { model.unreadSections = sections }
-        // On the tab, in the tab bar only: the document has unread changes.
-        if let tab = window?.tab, (tab.accessoryView != nil) != (n > 0) {
-            tab.accessoryView = n > 0 ? UnreadDotView() : nil
+        // On the tab, in the tab bar only: the document has unread changes,
+        // or was opened behind and has not been looked at yet.
+        let dot = n > 0 || !notedRecent
+        if let tab = window?.tab, (tab.accessoryView != nil) != dot {
+            tab.accessoryView = dot ? UnreadDotView() : nil
         }
     }
 
@@ -703,6 +758,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case .applied:
             ReaderPerf.signposter.emitEvent("applied")
             SmokeTest.noteApplied()
+            if !appliedOnce {
+                // Window request to the page's first apply: Readout's own share
+                // of an open, without the frame the system paints it in.
+                appliedOnce = true
+                SmokeTest.noteFirstApply(url, seconds: Date().timeIntervalSince(openedAt))
+            }
         case .painted:
             SmokeTest.notePainted()
             if !painted {
@@ -723,6 +784,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             // A key with nothing to go to (N with no change left), or N
             // wrapping past the last change back to the first.
             NSSound.beep()
+        case .landed(let index, let total, let kind):
+            // VoiceOver hears which change it is, as the rail's ticks say it.
+            let kindText = ReaderStrings.all[kind] ?? kind
+            announce(String(format: NSLocalizedString("Unread change %d of %d: %@", comment: "Change-rail tick label; %d is position, %d is total, %@ is the kind"),
+                            index, total, kindText))
+            SmokeTest.noteLanded(index: index, total: total, kind: kind)
         case .ready, .error:
             break   // handled by ReaderWebView
         }
@@ -920,26 +987,30 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     @objc func revealInFinder(_ sender: Any?) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
 
-    /// ⌘E: the editor at the source line of the selection, or else of the block at the top of the view.
+    /// ⌘E: the editor at the source line of the selection's block, or else
+    /// at the line as far into the block at the top of the view as the view is.
     @objc func openInEditor(_ sender: Any?) {
         webView.run(Self.editorSlotScript) { [weak self] value, _ in
             guard let self else { return }
-            let slot = (value as? NSNumber)?.intValue ?? self.lastAnchor?.slot ?? 0
-            let line = self.session.blocks.first { $0.slot == slot }?.lines.lowerBound ?? 0
+            let place = value as? [String: Any]
+            let slot = (place?["slot"] as? NSNumber)?.intValue ?? self.lastAnchor?.slot ?? 0
+            let ratio = (place?["ratio"] as? NSNumber)?.doubleValue
+            let line = self.session.blocks.first { $0.slot == slot }.map { ReaderChrome.editorLine(lines: $0.lines, ratio: ratio) } ?? 0
             EditorOpener.open(path: self.url.path, line: line, column: 0)
         }
     }
 
-    /// The slot of the block the selection starts in, else of the block at the top of the view.
+    /// The block the selection starts in (its first line: ratio 0), else the
+    /// block at the top of the view and how far it is scrolled under the toolbar.
     private static let editorSlotScript = """
         (() => {
           const s = getSelection();
           const n = s && !s.isCollapsed ? s.anchorNode : null;
           const e = n && (n.nodeType === 1 ? n : n.parentElement);
           const b = e && e.closest('.blk[data-slot]');
-          if (b) return +b.dataset.slot;
+          if (b) return { slot: +b.dataset.slot, ratio: 0 };
           const a = window.readout && window.readout.captureAnchor();
-          return a ? a.slot : null;
+          return a ? { slot: a.slot, ratio: a.ratio } : null;
         })()
         """
 
@@ -966,8 +1037,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     @objc func printDocument(_ sender: Any?) {
         // Diagrams and code are drawn lazily near the viewport: the page draws
         // the rest first (it gives up after a few seconds), then prints.
-        webView.callAsyncJavaScript("return await window.readout.preparePrint()", in: nil, in: .page) { [weak self] _ in
-            self?.runPrint()
+        // In order with the calls before it (a document still being encoded,
+        // a cold window's page not up yet): never ahead of them.
+        webView.whenReady { [weak self] in
+            self?.webView.runAsync("return await window.readout.preparePrint()") { [weak self] _ in
+                self?.runPrint()
+            }
         }
     }
 
@@ -1086,7 +1161,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case #selector(nextChange(_:)), #selector(previousChange(_:)), #selector(markAllRead(_:)):
             return session.unreadCount > 0
         case #selector(showWhatChanged(_:)):
-            return session.unreadCount > 0
+            // As the page's D key: with nothing to compare, the page beeps.
+            return loaded
         case #selector(toggleChangesOnly(_:)):
             item.state = changesOnly ? .on : .off
             return session.unreadCount > 0 || changesOnly
@@ -1113,6 +1189,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         cancellables.removeAll()
         tabBarObservations = []
         windowObservations = []
+        layoutObservation = nil
         // Nothing to undo in a closed window; the actions hold the controller.
         undoStack.removeAllActions()
         flashWork?.cancel()
@@ -1122,7 +1199,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     /// Whether Open Recent lists the document yet: only once its window has
     /// been in front, not for every file an agent opened in the background.
-    private var notedRecent = false
+    private(set) var notedRecent = false
 
     func windowDidBecomeKey(_ notification: Notification) {
         if !notedRecent {
@@ -1131,6 +1208,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             if !url.path.hasPrefix(Bundle.main.bundleURL.standardizedFileURL.path + "/") {
                 NSDocumentController.shared.noteNewRecentDocumentURL(url)
             }
+            refreshUnread()   // looked at: the tab's dot stays only for unread changes
         }
         updateSubtitle()
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
