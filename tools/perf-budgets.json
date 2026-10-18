@@ -93,7 +93,12 @@
     "(403 and 451 there) is the stable reading. The minimum still moves with the runner: this PR's",
     "own run of main's code measured 790/703/507 ms, so the fastest open of unchanged code ranged",
     "403-507 ms. The 550 guard came from a single 358 ms reading; it is now 800 (about 1.5x the",
-    "highest fastest-open seen on unchanged code, the file's usual rule). Target stays 150."
+    "highest fastest-open seen on unchanged code, the file's usual rule). Target stays 150.",
+    "3.7, later the same day: the same tree measured 475 ms (core PR head 64b2d9c, main merged in)",
+    "and 851 ms (main b405e72, its squash; identical files) as the fastest of three opens, and",
+    "main went red at 800. On the shared macOS runner this number swings ~2x with no code change,",
+    "so it can only catch gross regressions: guard 2000 (about 2.3x the worst reading of unchanged",
+    "code), like warm_open_ms. Target 150 unchanged; the samples stay in the log for comparison."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 260, "guard": 280 },
@@ -103,7 +108,7 @@
   "word_diff_100kb":            { "where": "mac",          "unit": "ms",     "target": 5,    "guard": 5 },
   "update_1mb":                 { "where": "mac",          "unit": "ms",     "target": 60,   "guard": 75 },
   "warm_open_ms":               { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 3900 },
-  "warm_open_to_applied_ms":    { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 800 },
+  "warm_open_to_applied_ms":    { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 2000 },
   "ql_open_ms":                 { "where": "mac",          "unit": "ms",     "target": null, "guard": null },
   "cold_start_ms":              { "where": "mac",          "unit": "ms",     "target": null, "guard": 12800 },
   "write_to_update_ms":         { "where": "mac",          "unit": "ms",     "target": 150,  "guard": 1400 },
