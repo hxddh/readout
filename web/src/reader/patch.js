@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll } from './core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, atBottom, resizeObserver, keepPlace, isShown, scrollToElement } from './anchor.js';
-import { renderMarks, applyChangesOnly, forgetDiff } from './marks.js';
+import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, keepPlace, isShown, scrollToElement } from './anchor.js';
+import { renderMarks, applyChangesOnly, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, measureTables } from './enhance.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
@@ -48,6 +48,22 @@ function fillBlock(el, op) {
   el.innerHTML = op.html;
   enhance(el);
   titleLinks(el);
+  pathLinks(el);
+}
+
+/**
+ * A path in a code span opens in the editor: it is a link, to the keyboard
+ * (Tab reaches it, Return or Space opens it: reader.js) and to VoiceOver,
+ * and its tooltip says which file, at which line.
+ */
+function pathLinks(el) {
+  for (const c of el.querySelectorAll('code.path-link')) {
+    c.setAttribute('role', 'link');
+    c.tabIndex = 0;
+    if (c.hasAttribute('title')) continue;
+    const line = +c.dataset.line || 0, col = +c.dataset.col || 0;
+    c.title = (c.dataset.path || c.textContent) + (line ? `:${line}${col ? `:${col}` : ''}` : '');
+  }
 }
 
 /**
@@ -84,8 +100,10 @@ export function apply(p) {
   const fromTop = !place && (isFirst || document.scrollingElement.scrollTop <= 0);
   // An empty page is never following: there is no end being read. (It can
   // sit at its own bottom when it scrolls at all; following from there would
-  // send the content that arrives to its end.)
-  const following = !isFirst && (place ? place.following : slots.size > 0 && atBottom());
+  // send the content that arrives to its end.) A reader watching a page that
+  // fits the window (Readout beside the terminal the agent writes from)
+  // follows it too: once it grows past the window, they see its end.
+  const following = !isFirst && (place ? place.following : slots.size > 0 && (atBottom() || (watching() && fitsOnScreen())));
   // Only follow when the change is at (or below) the viewport: an insertion
   // at the top of the document must not yank a bottom-dwelling reader.
   // The anchor block itself counts: if it was edited, restoring it keeps us
@@ -112,7 +130,10 @@ export function apply(p) {
       if (anchor && op.slot === anchor.slot) { changeNearViewport = true; break; }
     }
   }
-  const follow = following && (p.reset || p.rewrite || changeNearViewport);
+  // A rewrite is a new document: read from the reader's section, or its top,
+  // with the notice saying so (not from its end, even for a reader who had
+  // followed the old one to its end).
+  const follow = following && !p.rewrite && (p.reset || changeNearViewport);
   const changed = new Set();
   const rerendered = [];   // silent replaces: new HTML, no mark
   const visibleChanged = [];
@@ -120,6 +141,8 @@ export function apply(p) {
   // Measured once after all the ops: a measurement between two DOM changes
   // forces a layout each time.
   const maybeVisible = [];
+  // The outline's headings are looked for again only when one changed.
+  let headingsTouched = !!p.reset;
 
   if (p.reset) {
     for (const el of slots.values()) resizeObserver.unobserve(el);
@@ -130,17 +153,21 @@ export function apply(p) {
   for (const op of p.ops) {
     if (op.op === 'remove') {
       const el = slots.get(op.slot);
-      if (el) { resizeObserver.unobserve(el); el.remove(); slots.delete(op.slot); }
+      if (el) { headingsTouched ||= el.classList.contains('k-heading'); resizeObserver.unobserve(el); el.remove(); slots.delete(op.slot); }
     } else if (op.op === 'replace') {
       const el = slots.get(op.slot);
       if (!el) continue;
+      headingsTouched ||= op.kind === 'heading' || el.classList.contains('k-heading');
       const wasMarked = el.className.match(/m-(inserted|modified|state)/)?.[0];
+      const wasRead = el.classList.contains('m-read');
       fillBlock(el, op);
       if (op.change === 'content') forgetDiff(op.slot);
-      if (wasMarked && op.change === 'silent') el.classList.add(wasMarked);
+      // A silent re-render keeps the mark as it was, read or not.
+      if (wasMarked && op.change === 'silent') { el.classList.add(wasMarked); if (wasRead) el.classList.add('m-read'); }
       if (op.change !== 'silent') { changed.add(op.slot); if (!p.reset) maybeVisible.push(el); }
       else rerendered.push(el);
     } else if (op.op === 'insert') {
+      headingsTouched ||= op.kind === 'heading';
       const el = makeBlock(op);
       const after = op.after ? slots.get(op.after) : null;
       if (after) after.after(el);
@@ -151,8 +178,6 @@ export function apply(p) {
       if (!p.reset) { changed.add(op.slot); inserted.push(el); maybeVisible.push(el); }
     }
   }
-
-  for (const el of maybeVisible) if (el.isConnected && inViewport(el)) visibleChanged.push(el);
 
   updateCv();
   // The first open of a large document reads no layout before its first
@@ -178,6 +203,18 @@ export function apply(p) {
   // A silent re-render (checkbox HTML, CJK class) must not disturb the filter.
   applyChangesOnly();
 
+  if (p.rewrite) showNotice(strings.rewritten);
+
+  // In a large document a new block counts at its estimated height until
+  // it is laid out: lay out the new ones now so the end is the real end.
+  const forced = follow && doc.classList.contains('cv') ? inserted.filter(el => el.isConnected) : [];
+  for (const el of forced) el.style.contentVisibility = 'visible';
+
+  // Every change to the page is made by now: what follows reads its layout,
+  // which is laid out once (a read between two changes lays it out again,
+  // in a large document the cost of the whole patch over again).
+  for (const el of maybeVisible) if (el.isConnected && inViewport(el)) visibleChanged.push(el);
+
   // Re-baseline heights of touched blocks so the resize compensator does not count this patch twice.
   for (const slot of changed) { const el = slots.get(slot); if (el) heights.set(el, el.getBoundingClientRect().height); }
   for (const el of rerendered) if (el.isConnected) heights.set(el, el.getBoundingClientRect().height);
@@ -188,15 +225,9 @@ export function apply(p) {
   // height still keep the place.
   if (firstLarge) for (const el of slots.values()) heights.set(el, parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0);
 
-  if (p.rewrite) showNotice(strings.rewritten);
-
   // Restore position in the same task, before the browser paints.
   let restored = false;
   if (follow) {
-    // In a large document a new block counts at its estimated height until
-    // it is laid out: lay out the new ones now so the end is the real end.
-    const forced = doc.classList.contains('cv') ? inserted.filter(el => el.isConnected) : [];
-    for (const el of forced) el.style.contentVisibility = 'visible';
     window.scrollTo(0, document.scrollingElement.scrollHeight);
     for (const el of forced) heights.set(el, el.getBoundingClientRect().height);
     // Handed back once a frame has rendered them, which records their real
@@ -228,6 +259,10 @@ export function apply(p) {
     anchor: anchor && { slot: anchor.slot, offset: Math.round(anchor.offset) }, following, follow, restored, held: !!held,
     height: null });
 
+  // (Code coming on screen is highlighted before the flash's class changes
+  // make the page's style stale again: it measures first.)
+  renderLazy(firstLarge ? estimatedOnScreen() : undefined);
+
   // A flash still running restarts under the other animation name
   // (reader.css), without a forced style and layout to restart it.
   for (const el of visibleChanged) {
@@ -236,9 +271,8 @@ export function apply(p) {
     el.classList.toggle('flash-alt', again);
   }
 
-  renderLazy(firstLarge ? estimatedOnScreen() : undefined);
   scheduleRail();
-  if (p.reset || p.ops.length) headingsChanged();
+  if (headingsTouched) headingsChanged();
   post({ type: 'applied', version: p.version });
   // After the frame that shows it: rAF runs before the paint, the task it
   // queues runs after. The current section is found then too: the page is

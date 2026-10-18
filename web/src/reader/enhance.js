@@ -12,7 +12,7 @@ export function enhance(el) {
   for (const cb of el.querySelectorAll('.code-block')) setupCode(cb);
   for (const t of el.querySelectorAll('.table-wrap')) { setupTable(t); queueTable(t); }
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
-  for (const m of el.querySelectorAll('.mermaid-block')) setupMermaid(m);
+  for (const m of el.querySelectorAll('.mermaid-block')) { setupMermaid(m); diagrams.add(m); }
   for (const h of el.classList.contains('k-heading') ? [el] : []) setupHeadingLink(h);
   if (el.querySelector('.math, .math-block')) renderMath(el);
   setLang(el);
@@ -353,6 +353,11 @@ function lazyWork(el) {
   else if (el.classList.contains('mermaid-block')) renderMermaid(el);
 }
 
+/** Highlights now the code not highlighted yet in `blocks` (on screen after a jump, before it is painted). */
+export function highlightIn(blocks) {
+  for (const b of blocks) for (const cb of b.querySelectorAll('.code-block[data-hl="pending"]')) highlightBlock(cb);
+}
+
 /** Highlights every code block not highlighted yet, wherever it is (printing). */
 export function highlightAll() {
   for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) highlightBlock(cb);
@@ -370,5 +375,10 @@ export function renderLazy(near = inViewport) {
     if (near(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
   }
   for (const cb of onScreen) highlightBlock(cb);
-  for (const m of doc.querySelectorAll('.mermaid-block:not(.done):not(.busy):not([data-waiting])')) lazyObserver.observe(m);
+  // The page's diagrams, without a search of the whole page in every patch.
+  for (const m of diagrams) {
+    if (!m.isConnected) { diagrams.delete(m); continue; }
+    if (!m.classList.contains('done') && !m.classList.contains('busy') && !m.dataset.waiting) lazyObserver.observe(m);
+  }
 }
+const diagrams = new Set();   // every diagram block set up (enhance), until it leaves the page
