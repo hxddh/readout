@@ -22,13 +22,52 @@ struct HTMLRenderer {
 
     func inline(_ node: Markup) -> String {
         var out = ""
-        for child in node.children { out += inlineNode(child) }
+        // A line break between two wide CJK characters is no space (CSS Text's
+        // segment break rule, which WebKit does not apply): decided once the
+        // child after it is known.
+        var previous: Markup? = nil
+        var pendingBreak = false
+        for child in node.children {
+            if child is SoftBreak, softBreak == "\n" {
+                if pendingBreak { out += softBreak }
+                pendingBreak = true
+                continue
+            }
+            if pendingBreak {
+                pendingBreak = false
+                let joined = previous.flatMap { Self.edge($0, last: true) }.map(CJKText.isWideNonHangul) == true
+                    && Self.edge(child, last: false).map(CJKText.isWideNonHangul) == true
+                if !joined { out += softBreak }
+            }
+            out += inlineNode(child)
+            previous = child
+        }
+        if pendingBreak { out += softBreak }
         // Lines taken into multi-line display math leave a filler (MathProtector.protect).
         if out.utf8.contains(0xEE), out.contains(MathProtector.filler) {
             out = out.replacingOccurrences(of: "\n" + String(MathProtector.filler), with: "")
                 .replacingOccurrences(of: String(MathProtector.filler), with: "")
         }
         return out
+    }
+
+    /// The last (or first) code point of an inline's text, through emphasis
+    /// and links; nil for code, images, HTML and breaks. Emphasis markers
+    /// (`CJKEmphasis`) are skipped; a math or footnote token counts as itself.
+    static func edge(_ node: Markup, last: Bool) -> UInt32? {
+        switch node {
+        case let t as Text:
+            let scalars = t.string.unicodeScalars
+            let found = last ? scalars.last { $0 != CJKEmphasis.neutral && $0 != CJKEmphasis.punctuation }
+                : scalars.first { $0 != CJKEmphasis.neutral && $0 != CJKEmphasis.punctuation }
+            return found?.value
+        case is Emphasis, is Strong, is Strikethrough, is Link:
+            let kids = Array(node.children)
+            guard let k = last ? kids.last : kids.first else { return nil }
+            return edge(k, last: last)
+        default:
+            return nil
+        }
     }
 
     func inlineNode(_ node: Markup) -> String {

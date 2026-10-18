@@ -120,8 +120,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         project.path = root ?? stored
         self.projectRoot = project
         self.loader = DocumentLoader(url: self.url) {
-            FileResolver(baseDirectory: base,
-                         searchRoots: ProjectRoot.searchRoots(project: project.path, workspaces: AppSettings.shared.workspaces))
+            FileResolver(baseDirectory: base, project: project.path, workspaces: AppSettings.shared.workspaces)
         }
         self.webView = WebViewPool.shared.take()
         self.pendingAnchor = pendingAnchor
