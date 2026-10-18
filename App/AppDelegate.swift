@@ -36,6 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         WebViewPool.shared.prewarm()
+        // Windows restored from the last launch are back by now: their tabs too.
+        regroupRestoredTabs()
+        DispatchQueue.main.async { [weak self] in self?.regroupRestoredTabs() }
         BaselineStore.prune()
         UpdateChecker.onBackgroundUpdate = { [weak self] name, url in self?.showUpdateMenuItem(name: name, url: url) }
         UpdateChecker.startAutomaticChecks()
@@ -86,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    /// Reader windows come back with the file and project they showed
+    /// (ReaderRestoration), decoded with secure coding.
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 
     /// An agent folder created since (`~/.claude/plans` before Claude Code's
     /// first plan) is watched from now on.
@@ -163,21 +170,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let anchor { existing.scrollToAnchor(fragment: anchor) }
             return
         }
-        let controller = ReaderWindowController(url: url, pendingAnchor: anchor, projectRoot: projectRoot)
-        controller.onClose = { [weak self] c in
-            guard let self else { return }
-            self.windows = self.windows.filter { $0.value !== c }   // by identity: a retarget may have re-keyed it
-            self.displaced.removeAll { $0 === c }
-        }
-        controller.onRetarget = { [weak self] c in self?.rekey(c) }
+        let first = windows.isEmpty
+        let controller = makeController(url, key: key, anchor: anchor, projectRoot: projectRoot)
         if let front = NSApp.orderedWindows.first(where: { w in windows.values.contains { $0.window === w } }),
            let w = controller.window {
             w.setFrameTopLeftPoint(NSPoint(x: front.frame.minX + 26, y: front.frame.maxY - 26))
-        } else if windows.isEmpty {
+        } else if first {
             controller.window?.center()
         }
-        let readers = NSApp.orderedWindows.filter { w in windows.values.contains { $0.window === w } }
-        windows[key] = controller
+        let readers = NSApp.orderedWindows.filter { w in windows.values.contains { $0.window === w && $0 !== controller } }
         if mode == .background, let w = controller.window {
             if let current = readers.first {
                 // Reader windows join tabs: add it as a tab behind the one being read.
@@ -197,6 +198,99 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // A background open leaves the window the reader is in alone, the welcome window included.
         if mode == .request || !(NSApp.isActive && welcome?.isKeyWindow == true) { welcome?.close() }
+    }
+
+    private func makeController(_ url: URL, key: String, anchor: String? = nil, projectRoot: String? = nil) -> ReaderWindowController {
+        let controller = ReaderWindowController(url: url, pendingAnchor: anchor, projectRoot: projectRoot)
+        controller.onClose = { [weak self] c in
+            guard let self else { return }
+            self.windows = self.windows.filter { $0.value !== c }   // by identity: a retarget may have re-keyed it
+            self.displaced.removeAll { $0 === c }
+            self.updateDockBadge()
+        }
+        controller.onRetarget = { [weak self] c in self?.rekey(c) }
+        controller.onUnreadShownChanged = { [weak self] in self?.updateDockBadge() }
+        windows[key] = controller
+        return controller
+    }
+
+    // MARK: Restoration
+
+    /// Restored windows and what they kept, until their tabs are regrouped.
+    private var restored: [(window: NSWindow, state: ReaderRestorationState)] = []
+
+    /// A reader window of the last launch (ReaderRestoration): nil when its
+    /// file is gone or another window shows it already.
+    func restoreWindow(_ state: ReaderRestorationState) -> NSWindow? {
+        let url = URL(fileURLWithPath: state.path).standardizedFileURL
+        let key = WorkspaceIndex.realPath(url.path)
+        guard windows[key] == nil, WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else { return nil }
+        openedAtLaunch = true
+        let controller = makeController(url, key: key, projectRoot: state.projectRoot)
+        guard let window = controller.window else { return nil }
+        restored.append((window, state))
+        return window
+    }
+
+    /// Windows that were tabs of one window are again, in their order, with
+    /// the tab that was selected in front (AppKit may have done it already).
+    private func regroupRestoredTabs() {
+        let all = restored
+        restored = []
+        for group in ReaderRestorationState.tabGroups(all.map(\.state)) {
+            let tabs = group.map { all[$0].window }
+            guard let first = tabs.first else { continue }
+            var previous = first
+            for w in tabs.dropFirst() {
+                if w.tabGroup !== first.tabGroup || first.tabGroup == nil { previous.addTabbedWindow(w, ordered: .above) }
+                previous = w
+            }
+            if let selected = group.first(where: { all[$0].state.selected }) { first.tabGroup?.selectedWindow = all[selected].window }
+            for w in tabs { (w.windowController as? ReaderWindowController)?.tabsChanged() }
+        }
+    }
+
+    // MARK: Unread across documents
+
+    /// Every reader window Readout owns.
+    private var readers: [ReaderWindowController] { Array(windows.values) + displaced }
+
+    /// Some document has unread changes (N can go on to it).
+    var anyUnread: Bool { readers.contains { $0.hasUnread } }
+
+    /// The Dock icon's badge: how many open documents show unread changes.
+    func updateDockBadge() {
+        let n = readers.filter(\.showsUnread).count
+        let label = n > 0 ? String(n) : nil
+        if NSApp.dockTile.badgeLabel != label { NSApp.dockTile.badgeLabel = label }
+    }
+
+    /// N found nothing unread left in `current`: the next document with
+    /// unread changes comes forward (the other tabs of its window first, then
+    /// the other windows, front to back) at its first change. False when no
+    /// document has any.
+    @discardableResult
+    func goToNextUnread(from current: ReaderWindowController) -> Bool {
+        var groups: [[ReaderWindowController]] = []
+        var seen: Set<ObjectIdentifier> = []
+        func add(_ w: NSWindow) {
+            let tabs = (w.tabGroup?.windows ?? [w]).compactMap { $0.windowController as? ReaderWindowController }
+            let fresh = tabs.filter { seen.insert(ObjectIdentifier($0)).inserted && owns($0) }
+            if !fresh.isEmpty { groups.append(fresh) }
+        }
+        if let w = current.window { add(w) }
+        for w in NSApp.orderedWindows { add(w) }
+        // Tabs not ordered in (minimized windows): last.
+        for r in readers { if let w = r.window { add(w) } }
+        let order = CrossDocument.order(after: ObjectIdentifier(current), groups: groups.map { $0.map(ObjectIdentifier.init) })
+        guard let next = order.lazy.compactMap({ id in self.readers.first { ObjectIdentifier($0) == id } }).first(where: { $0.hasUnread }),
+              let window = next.window else { return false }
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        window.tabGroup?.selectedWindow = window
+        next.show()
+        window.makeKeyAndOrderFront(nil)
+        next.goToFirstChange()
+        return true
     }
 
     /// A symlink a window shows now points to another file: key the window by
@@ -271,7 +365,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openLatestScanned() {
-        if let url = WorkspaceIndex.shared.latest {
+        // An agent document open with unread changes comes first: the newest of them.
+        let unread = readers.filter { $0.hasUnread && WorkspaceIndex.shared.contains($0.url) }.map { r in
+            (path: r.url.path, modified: (try? r.url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+        }
+        if let path = CrossDocument.newestUnread(unread) {
+            open(URL(fileURLWithPath: path))
+            NSApp.activate()
+        } else if let url = WorkspaceIndex.shared.latest {
             open(url)
             NSApp.activate()
         } else {
@@ -308,6 +409,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             w.standardWindowButton(.zoomButton)?.isHidden = true
             w.isMovableByWindowBackground = true
             w.isReleasedWhenClosed = false
+            w.isRestorable = false   // only reader windows come back on the next launch
             w.setContentSize(NSSize(width: 460, height: WelcomeView.height))
             w.center()
             welcome = w
@@ -325,6 +427,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Never a tab of a reader window ("Prefer tabs: Always").
             w.tabbingMode = .disallowed
             w.isReleasedWhenClosed = false
+            w.isRestorable = false
             w.center()
             settingsWindow = w
         }
@@ -454,4 +557,45 @@ struct WelcomeView: View {
         .frame(width: 460, height: Self.height)
     }
 
+}
+
+/// Brings reader windows back on the next launch, when System Settings ▸
+/// Desktop & Dock ▸ "Close windows when quitting an application" is off (or
+/// ⌥⌘Q quit): the file and project each showed, and their tabs. A window whose
+/// file is gone does not come back. Welcome and Settings are not restorable.
+final class ReaderRestoration: NSObject, NSWindowRestoration {
+    @MainActor static func encode(_ state: ReaderRestorationState, into coder: NSCoder) {
+        coder.encode(state.path as NSString, forKey: ReaderRestorationState.pathKey)
+        if let root = state.projectRoot { coder.encode(root as NSString, forKey: ReaderRestorationState.rootKey) }
+        if let group = state.group { coder.encode(group as NSString, forKey: ReaderRestorationState.groupKey) }
+        coder.encode(state.tabIndex, forKey: ReaderRestorationState.indexKey)
+        coder.encode(state.selected, forKey: ReaderRestorationState.selectedKey)
+    }
+
+    /// What `encode` kept, when the window is to come back (its file is there).
+    static func decode(_ coder: NSCoder) -> ReaderRestorationState? {
+        var d: [String: Any] = [:]
+        for key in [ReaderRestorationState.pathKey, ReaderRestorationState.rootKey, ReaderRestorationState.groupKey] {
+            if let v = coder.decodeObject(of: NSString.self, forKey: key) { d[key] = v as String }
+        }
+        if coder.containsValue(forKey: ReaderRestorationState.indexKey) { d[ReaderRestorationState.indexKey] = coder.decodeInteger(forKey: ReaderRestorationState.indexKey) }
+        if coder.containsValue(forKey: ReaderRestorationState.selectedKey) { d[ReaderRestorationState.selectedKey] = coder.decodeBool(forKey: ReaderRestorationState.selectedKey) }
+        let fm = FileManager.default
+        return ReaderRestorationState.restorable(d, exists: { fm.fileExists(atPath: $0) }, isDirectory: { p in
+            var dir: ObjCBool = false
+            return fm.fileExists(atPath: p, isDirectory: &dir) && dir.boolValue
+        })
+    }
+
+    static func restoreWindow(withIdentifier identifier: NSUserInterfaceItemIdentifier, state: NSCoder,
+                              completionHandler: @escaping (NSWindow?, Error?) -> Void) {
+        let decoded = decode(state)
+        MainActor.assumeIsolated {
+            if let decoded, let window = (NSApp.delegate as? AppDelegate)?.restoreWindow(decoded) {
+                completionHandler(window, nil)
+            } else {
+                completionHandler(nil, CocoaError(.fileNoSuchFile))
+            }
+        }
+    }
 }

@@ -54,6 +54,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     let url: URL
     let model = ReaderModel()
     var onClose: ((ReaderWindowController) -> Void)?
+    /// Whether the document shows unread changes changed (the Dock badge counts them).
+    var onUnreadShownChanged: (() -> Void)?
     /// The opened path is a symlink that now points to another file.
     var onRetarget: ((ReaderWindowController) -> Void)?
 
@@ -134,7 +136,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // As System Settings ▸ Desktop & Dock ▸ "Prefer tabs" says; opens in
         // the background still join the reader's window as tabs (AppDelegate.open).
         window.tabbingMode = .automatic
-        window.isRestorable = false
+        // Back on the next launch as System Settings ▸ Desktop & Dock ▸
+        // "Close windows when quitting an application" says (ReaderRestoration).
+        window.isRestorable = true
+        window.restorationClass = ReaderRestoration.self
+        window.identifier = NSUserInterfaceItemIdentifier("reader-" + UUID().uuidString)
         super.init(window: window)
         window.delegate = self
 
@@ -146,8 +152,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         window.title = url.lastPathComponent
         window.representedURL = url
         // Where the file is: on the tab, not in the subtitle.
-        window.tab.toolTip = ReaderChrome.tabToolTip(path: self.url.path)
-        window.setFrameAutosaveName("ReaderWindow")
+        updateTabToolTip()
+        // Every reader window saves its frame under one name when resized or
+        // closed, and a new one starts from it. (As the frame autosave name,
+        // only the first window could have it: the others never saved theirs.)
+        window.setFrameUsingName(Self.frameName)
 
         model.onSelectHeading = { [weak self] slot in self?.jumpToHeading(slot) }
         watcher = FileWatcher(url: self.url, onChange: { [weak self] change in self?.fileChanged(change) },
@@ -255,6 +264,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             webView.setValue(true, forKey: "usesAutomaticContentInsetBackgroundFill")
         }
         webView.onMessage = { [weak self] msg in self?.handle(msg) }
+        webView.onContextMenu = { [weak self] menu in self?.addQuoteItem(to: menu) }
         // Proxied remote images: the page posts loadRemote, we download with a
         // cookie-free ephemeral session and serve the bytes back over readout:.
         // Quick Look never sets this, so remote loading stays disabled there.
@@ -396,7 +406,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 return
             }
             saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from
-                self?.didLoad(result, record: record)
+                guard let self else { return }
+                guard record == nil else { return self.didLoad(result, record: record) }
+                // Never opened before: in a git repository, marked against the last commit.
+                CommitBaseline.find(path: result.sourcePath, current: result.decoded.text) { [weak self] keys in
+                    self?.didLoad(result, record: nil, commitBaseline: keys)
+                }
             }
         }
     }
@@ -414,8 +429,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
     private static let emptyPatch = #"{"version":0,"reset":true,"rewrite":false,"ops":[],"marks":[],"deletions":[]}"#
 
-    private func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?) {
-        let patch = self.session.load(result.doc, baseline: record?.baseline)
+    private func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?, commitBaseline: [BlockKey]? = nil) {
+        let patch = self.session.load(result.doc, baseline: record?.baseline ?? commitBaseline)
+        let againstCommit = commitBaseline != nil && !patch.rewrite && session.unreadCount > 0
         // What is on disk already: an unchanged baseline is not written again.
         self.lastSavedBaseline = record?.baseline
         self.loaded = true
@@ -431,6 +447,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             }
             // A whole document: encoded off the main thread, still delivered before the calls below.
             self.webView.callEncodingOffMain("apply", patch.page)
+            if againstCommit {
+                // What is marked is what changed since the last commit, not since the reader last read it.
+                self.webView.call("notice", NSLocalizedString("Marked against the last commit", comment: "Notice above a document opened for the first time: its changes since the last git commit are marked"))
+            }
             SmokeTest.run(controller: self, webView: self.webView)
             // An agent write that landed mid-load: re-read now that the
             // first patch is applied, so the fresh content wins.
@@ -465,6 +485,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         guard root != projectRoot.path else { return }
         projectRoot.path = root
         BaselineStore.saveProjectRoot(root, for: url)
+        updateTabToolTip()
+        updateSubtitle()
+        window?.invalidateRestorableState()
         rereadForRoot = true
         if loaded { fileChanged(.modified) } else { editedWhileLoading = true }
     }
@@ -515,7 +538,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 self.model.status = nil
                 return
             }
-            self.updateModel(patch, decoded: result.decoded)
+            // A whole document again (a reset) is shown at once: the page holds back only what a patch adds.
+            self.updateModel(patch, decoded: result.decoded, holdIncrease: !patch.reset)
             let emptiedNow = !wasEmpty && self.session.blocks.isEmpty
             let restore = self.placeAfterRefill(wasEmpty: wasEmpty, patch: patch)
             self.webView.whenReady { [weak self] in
@@ -568,12 +592,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     /// `decoded`: how the content was read (sets the status); nil keeps the status.
-    private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded?) {
+    private func updateModel(_ patch: RenderPatch, decoded: FileContent.Decoded?, holdIncrease: Bool = false) {
         // Assigned only when changed: each assignment has SwiftUI compare the
         // whole sidebar again, and most patches leave the outline as it was.
         if model.toc != patch.toc { model.toc = patch.toc }
         if model.tasks != patch.tasks { model.tasks = patch.tasks }
-        refreshUnread()
+        refreshUnread(holdIncrease: holdIncrease)
         model.title = patch.title ?? url.deletingPathExtension().lastPathComponent
         // Tabs of same-named files (every agent's plan.md) show the document's
         // title; the window title stays the file name. Tabs whose documents
@@ -607,13 +631,28 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             return
         }
         let showsTabBar = window?.tabGroup?.isTabBarVisible ?? false
-        switch ReaderChrome.subtitle(status: status, tasks: model.tasks, path: url.path, showsTabBar: showsTabBar) {
+        switch ReaderChrome.subtitle(status: status, tasks: model.tasks, path: url.path, showsTabBar: showsTabBar, project: projectName) {
         case .status(let s): window?.subtitle = s
         case .tasks(let done, let total):
             window?.subtitle = String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), done, total)
+        case .projectTasks(let project, let done, let total):
+            window?.subtitle = project + " · " + String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), done, total)
         case .folder(let name): window?.subtitle = name
         case nil: window?.subtitle = ""
         }
+    }
+
+    /// The project a plan outside it was written for (`readout --hook`): its
+    /// name in the subtitle, its folder in the tab's tooltip.
+    private var projectName: String? { ReaderChrome.projectName(path: url.path, projectRoot: projectRoot.path) }
+
+    private func updateTabToolTip() {
+        var tip = ReaderChrome.tabToolTip(path: url.path)
+        if projectName != nil, let root = projectRoot.path {
+            tip += "\n" + String(format: NSLocalizedString("Project: %@", comment: "Tab tooltip line: the project folder a plan outside it was written for"),
+                                 ReaderChrome.tabToolTip(path: root))
+        }
+        if window?.tab.toolTip != tip { window?.tab.toolTip = tip }
     }
 
     /// A passing message in the subtitle (a link to a file that is not
@@ -645,6 +684,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     func tabsChanged() {
         updateSubtitle()
         updateTabTitles()
+        // Which tabs it is among comes back on the next launch.
+        window?.invalidateRestorableState()
     }
 
     /// The document's title, as its tab shows it unless another tab in the
@@ -682,19 +723,63 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         ]
     }
 
-    /// The unread count, the outline entries with an unread change, and the tab's dot.
-    private func refreshUnread() {
-        let n = session.unreadCount
-        if model.unread != n { model.unread = n }
-        let sections = session.unreadSections
-        if model.unreadSections != sections { model.unreadSections = sections }
+    /// The unread count, the outline entries with an unread change, and the
+    /// tab's dot. `holdIncrease`: a patch an agent wrote may have added
+    /// unread changes the reader reads as they arrive: more unread waits until
+    /// the page says what it added is to be shown (`showUnread`), or a moment
+    /// at most; less shows at once (UnreadDisplay).
+    private func refreshUnread(holdIncrease: Bool = false) {
         // On the tab, in the tab bar only: the document has unread changes,
         // or was opened behind and has not been looked at yet.
-        let dot = n > 0 || !notedRecent
-        if let tab = window?.tab, (tab.accessoryView != nil) != dot {
-            tab.accessoryView = dot ? UnreadDotView() : nil
+        let n = session.unreadCount
+        let actual = UnreadDisplay(count: n, sections: session.unreadSections, dot: n > 0 || !notedRecent)
+        let shown = UnreadDisplay(count: model.unread, sections: model.unreadSections, dot: window?.tab.accessoryView != nil)
+        var show = actual
+        if holdIncrease || unreadHold != nil {
+            let next = UnreadDisplay.next(shown: shown, actual: actual)
+            show = next.show
+            if next.held { holdUnread() } else { releaseHold() }
         }
+        showUnread(show)
     }
+
+    private func showUnread(_ d: UnreadDisplay) {
+        let had = model.unread > 0
+        if model.unread != d.count { model.unread = d.count }
+        if model.unreadSections != d.sections { model.unreadSections = d.sections }
+        if let tab = window?.tab, (tab.accessoryView != nil) != d.dot {
+            tab.accessoryView = d.dot ? UnreadDotView() : nil
+        }
+        if had != (d.count > 0) { onUnreadShownChanged?() }
+    }
+
+    /// More unread waiting for the page's `showUnread`, with its fallback.
+    private var unreadHold: DispatchWorkItem?
+    private static let unreadHoldFallback: TimeInterval = 2.5
+
+    private func holdUnread() {
+        guard unreadHold == nil else { return }
+        let work = DispatchWorkItem { [weak self] in self?.unreadShown() }
+        unreadHold = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.unreadHoldFallback, execute: work)
+    }
+
+    private func releaseHold() {
+        unreadHold?.cancel()
+        unreadHold = nil
+    }
+
+    /// The page says what it added is to be shown (or the fallback ran out).
+    private func unreadShown() {
+        releaseHold()
+        refreshUnread()
+    }
+
+    /// The document has unread changes (the session's, shown or about to be).
+    var hasUnread: Bool { session.unreadCount > 0 }
+
+    /// Shows the document's unread changes (the Dock badge counts the documents that do).
+    var showsUnread: Bool { model.unread > 0 }
 
     private func updateChangeItem(_ n: Int) {
         guard let item = changeItem else { return }
@@ -780,9 +865,16 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case .setCodeWrap(let on):
             if AppSettings.shared.codeWrap != on { AppSettings.shared.codeWrap = on }
         case .nothing, .wrapped:
-            // A key with nothing to go to (N with no change left), or N
+            // A key with nothing to go to (D with nothing in view), or N
             // wrapping past the last change back to the first.
             NSSound.beep()
+        case .noUnread:
+            // N with no unread change left here: on to the next document with some.
+            if (NSApp.delegate as? AppDelegate)?.goToNextUnread(from: self) != true { NSSound.beep() }
+        case .showUnread:
+            if unreadHold != nil { unreadShown() }
+        case .selection(let has):
+            hasSelection = has
         case .landed(let index, let total, let kind):
             // VoiceOver hears which change it is, as the rail's ticks say it.
             let kindText = ReaderStrings.all[kind] ?? kind
@@ -807,12 +899,17 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     private func openLink(_ href: String) {
         let fm = FileManager.default
+        // A link to a source file is looked for where a path in a code span
+        // is (the project, the repository's folders, the agent folders) before it is missing.
+        let resolver = FileResolver(baseDirectory: url.deletingLastPathComponent(), project: projectRoot.path,
+                                    workspaces: AppSettings.shared.workspaces)
         guard let target = LinkTarget.resolve(href, from: url, markdownExtensions: WorkspaceIndex.markdownExtensions,
                                               fileExists: { fm.fileExists(atPath: $0.path) },
                                               isDirectory: { u in
                                                   var dir: ObjCBool = false
                                                   return fm.fileExists(atPath: u.path, isDirectory: &dir) && dir.boolValue
-                                              }) else { return }
+                                              },
+                                              candidates: resolver.candidates(for:)) else { return }
         switch target {
         case .external(let u), .file(let u):
             // No app for it (a file name with a line that is not there, "main.swift:42"): say so.
@@ -1157,8 +1254,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
-        case #selector(nextChange(_:)), #selector(previousChange(_:)), #selector(markAllRead(_:)):
+        case #selector(nextChange(_:)), #selector(previousChange(_:)):
+            // With none left here, N goes on to another document that has some.
+            return session.unreadCount > 0 || (NSApp.delegate as? AppDelegate)?.anyUnread == true
+        case #selector(markAllRead(_:)):
             return session.unreadCount > 0
+        case #selector(copyAsQuote(_:)):
+            return hasSelection && loaded
         case #selector(showWhatChanged(_:)):
             // As the page's D key: with nothing to compare, the page beeps.
             return loaded
@@ -1181,6 +1283,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     func windowWillClose(_ notification: Notification) {
+        saveFrame()
+        releaseHold()
         saveWork?.cancel()
         saveNow()
         watcher?.stop()
@@ -1211,6 +1315,78 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         updateSubtitle()
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
+        sendWindowKey()
+    }
+
+    func windowDidResignKey(_ notification: Notification) { sendWindowKey() }
+
+    /// The page reads changes while the window is key, focus in the outline
+    /// or the find field included (document.hasFocus() alone says no then).
+    private func sendWindowKey() {
+        let key = window?.isKeyWindow ?? false
+        webView.whenReady { [weak self] in self?.webView.call("setWindowKey", json: key ? "true" : "false") }
+    }
+
+    func windowDidEndLiveResize(_ notification: Notification) { saveFrame() }
+
+    static let frameName = "ReaderWindow"
+
+    private func saveFrame() {
+        guard let window, !window.styleMask.contains(.fullScreen) else { return }
+        window.saveFrame(usingName: Self.frameName)
+    }
+
+    // MARK: Restoration
+
+    /// What the window keeps for the next launch (see ReaderRestoration).
+    var restorationState: ReaderRestorationState {
+        let group = window?.tabGroup
+        let tabs = group?.windows ?? []
+        let index = window.flatMap { w in tabs.firstIndex { $0 === w } } ?? 0
+        return ReaderRestorationState(path: url.path, projectRoot: projectRoot.path,
+                                      group: tabs.count > 1 ? group.map { String(UInt(bitPattern: ObjectIdentifier($0).hashValue), radix: 36) } : nil,
+                                      tabIndex: index, selected: group?.selectedWindow === window || tabs.count <= 1)
+    }
+
+    func window(_ window: NSWindow, willEncodeRestorableState state: NSCoder) {
+        ReaderRestoration.encode(restorationState, into: state)
+    }
+
+    // MARK: Copy as Quote
+
+    /// The page has a selection in the document (it says when that changes).
+    private var hasSelection = false
+
+    /// Edit ▸ Copy as Quote (⇧⌘C): the Markdown source of the blocks the
+    /// selection touches, as a blockquote, and the file's lines and section.
+    @objc func copyAsQuote(_ sender: Any?) {
+        webView.run("window.readout.selectedSlots()") { [weak self] value, _ in
+            guard let self else { return }
+            let slots = Set(((value as? [Any]) ?? []).compactMap { ($0 as? NSNumber)?.intValue })
+            let path = QuoteFormatter.displayPath(self.url.path, projectRoot: self.projectRoot.path)
+            guard let text = QuoteFormatter.quote(blocks: self.session.blocks, slots: slots, path: path) else { return NSSound.beep() }
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        }
+    }
+
+    /// The page's context menu: Copy as Quote after Copy, when text is selected.
+    private func addQuoteItem(to menu: NSMenu) {
+        guard hasSelection, let copy = menu.items.firstIndex(where: { $0.identifier?.rawValue == "WKMenuItemIdentifierCopy" }) else { return }
+        let item = NSMenuItem(title: NSLocalizedString("Copy as Quote", comment: "Menu: copy the selected blocks' Markdown as a quote with the file's lines"),
+                              action: #selector(copyAsQuote(_:)), keyEquivalent: "")
+        item.target = self
+        menu.insertItem(item, at: copy + 1)
+    }
+
+    // MARK: Across documents
+
+    /// N arrived here from a document with nothing unread left: to the first
+    /// change, with where it is in the subtitle for a moment.
+    func goToFirstChange() {
+        webView.whenReady { [weak self] in self?.webView.call("firstChange") }
+        flashStatus(String(format: NSLocalizedString("Next unread: %@", comment: "Subtitle for a few seconds after N went on to this document; %@ is its title"),
+                           window?.tab.title.isEmpty == false ? window!.tab.title : url.lastPathComponent))
     }
 }
 
@@ -1246,5 +1422,33 @@ final class UnreadDotView: NSView {
         let d = Self.diameter
         NSColor.controlAccentColor.setFill()
         NSBezierPath(ovalIn: NSRect(x: bounds.midX - d / 2, y: bounds.midY - d / 2, width: d, height: d)).fill()
+    }
+}
+
+/// The first open of a file in a git repository: the committed version, as a
+/// reading baseline, so what changed since the last commit is marked.
+/// git runs off the main thread, at most `GitBaseline.timeout`, and only when
+/// the developer tools are installed (`/usr/bin/git` would otherwise ask to
+/// install them); files outside a repository never run it.
+@MainActor
+enum CommitBaseline {
+    private static let queue = DispatchQueue(label: "Readout.CommitBaseline", qos: .userInitiated)
+    /// Checked once per launch (on `queue`).
+    nonisolated(unsafe) private static var toolsAvailable: Bool?
+
+    static func find(path: String, current: String, completion: @escaping @MainActor ([BlockKey]?) -> Void) {
+        // The app's own files (help) are no one's commit.
+        guard !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/") else { return completion(nil) }
+        queue.async {
+            var keys: [BlockKey]? = nil
+            if GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil {
+                if toolsAvailable == nil { toolsAvailable = GitTools.available() }
+                if toolsAvailable == true, let text = GitBaseline.headText(for: path, current: current, git: ProcessGit()) {
+                    keys = MarkdownParser.parse(text).blocks.map(BlockKey.init)
+                }
+            }
+            let found = keys
+            DispatchQueue.main.async { MainActor.assumeIsolated { completion(found) } }
+        }
     }
 }

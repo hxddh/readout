@@ -63,6 +63,9 @@ enum MainMenu {
         edit.addItem(.separator())
         edit.addItem(item(NSLocalizedString("Cut", comment: "Menu"), #selector(NSText.cut(_:)), "x"))
         edit.addItem(item(NSLocalizedString("Copy", comment: "Menu"), #selector(NSText.copy(_:)), "c"))
+        // The selected blocks' Markdown as a quote, with the file's lines: for the agent's next prompt.
+        edit.addItem(item(NSLocalizedString("Copy as Quote", comment: "Menu: copy the selected blocks' Markdown as a quote with the file's lines"),
+                          #selector(ReaderWindowController.copyAsQuote(_:)), "c", [.command, .shift]))
         edit.addItem(item(NSLocalizedString("Paste", comment: "Menu"), #selector(NSText.paste(_:)), "v"))
         edit.addItem(item(NSLocalizedString("Delete", comment: "Menu"), #selector(NSText.delete(_:))))
         edit.addItem(item(NSLocalizedString("Select All", comment: "Menu"), #selector(NSText.selectAll(_:)), "a"))
