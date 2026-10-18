@@ -27,6 +27,14 @@ struct MathProtector {
     static let filler: Character = "\u{E004}"
 
     private(set) var spans: [Span] = []
+    /// CJK-friendly emphasis markers inserted (`CJKEmphasis`): the renderer strips them.
+    private(set) var emphasisMarks = 0
+    /// Lines (0-based) that get no CJK emphasis marker: those of a block whose
+    /// source holds a marker character itself (`MarkdownParser`), which then
+    /// keeps CommonMark's emphasis rule and is not stripped.
+    var emphasisExcludedLines: Set<Int> = []
+    /// No CJK emphasis markers at all.
+    var emphasisEnabled = true
 
     mutating func protect(_ source: String) -> String {
         var out: [String] = []
@@ -51,12 +59,12 @@ struct MathProtector {
                     // The Markdown parser sees paragraph text (a filler) on these lines.
                     fences.continueParagraph()
                     let isLast = k == block.prefixes.count - 1
-                    out.append(prefix + String(MathProtector.filler) + (isLast ? protectLine(block.rest) : ""))
+                    out.append(prefix + String(MathProtector.filler) + (isLast ? protectLine(block.rest, emphasis: emphasisAllowed(block.end)) : ""))
                 }
                 i = block.end + 1
                 continue
             }
-            out.append(protectLine(String(line)))
+            out.append(protectLine(String(line), emphasis: emphasisAllowed(i)))
             i += 1
         }
         return out.joined(separator: "\n")
@@ -302,11 +310,16 @@ struct MathProtector {
         return k
     }
 
-    private mutating func protectLine(_ line: String) -> String {
+    private func emphasisAllowed(_ line: Int) -> Bool { emphasisEnabled && !emphasisExcludedLines.contains(line) }
+
+    private mutating func protectLine(_ line: String, emphasis: Bool) -> String {
         let mayHaveFootnote = !footnoteIDs.isEmpty && Footnotes.mentions(line)
-        // Fast path: nothing that could start math or a footnote reference.
-        if !mayHaveFootnote && !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
+        let cjkEmphasis = emphasis && CJKEmphasis.mayApply(line)
+        // Fast path: nothing that could start math or a footnote reference, or need a CJK emphasis marker.
+        if !mayHaveFootnote && !cjkEmphasis && !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
         let chars = Array(line)
+        // Where the line's content starts, after quote markers, list markers and indentation.
+        let contentStart = cjkEmphasis ? Self.contentStart(chars) : 0
         var out = ""
         var i = 0
         var parenClose = CloserSearch(closer: ")"), bracketClose = CloserSearch(closer: "]")
@@ -426,10 +439,82 @@ struct MathProtector {
                     }
                 }
             }
+            if cjkEmphasis && (c == "*" || c == "_") {
+                var run = 1
+                while i + run < chars.count && chars[i + run] == c { run += 1 }
+                let (before, after) = emphasisInserts(chars, at: i, run: run, out: out, contentStart: contentStart)
+                if let before { out.unicodeScalars.append(before); emphasisMarks += 1 }
+                out += String(repeating: c, count: run)
+                if let after { out.unicodeScalars.append(after); emphasisMarks += 1 }
+                i += run
+                continue
+            }
             out.append(c)
             i += 1
         }
         return out
+    }
+
+    /// The first character of a line's content: past block quote markers,
+    /// list markers followed by white space, and indentation.
+    static func contentStart(_ chars: [Character]) -> Int {
+        var k = 0
+        while k < chars.count {
+            let c = chars[k]
+            if c == " " || c == "\t" || c == ">" { k += 1; continue }
+            if c == "-" || c == "*" || c == "+", k + 1 < chars.count, chars[k + 1] == " " || chars[k + 1] == "\t" { k += 2; continue }
+            if c.isASCII, c.isNumber {
+                var d = k
+                while d < chars.count, d - k < 9, chars[d].isASCII, chars[d].isNumber { d += 1 }
+                if d < chars.count, chars[d] == "." || chars[d] == ")", d + 1 < chars.count, chars[d + 1] == " " || chars[d + 1] == "\t" {
+                    k = d + 2; continue
+                }
+            }
+            break
+        }
+        return k
+    }
+
+    /// The markers to put before and after the `*` or `_` run at `i` (of
+    /// `run` characters) for CJK-friendly emphasis (`CJKEmphasis`). `out`
+    /// is the line as protected so far: what cmark will see before the run.
+    private func emphasisInserts(_ chars: [Character], at i: Int, run: Int, out: String, contentStart: Int)
+        -> (Unicode.Scalar?, Unicode.Scalar?) {
+        let delimiter: UInt8 = chars[i] == "*" ? 0x2A : 0x5F
+        let end = i + run
+        // A table cell starts and ends at a pipe: a line boundary to cmark.
+        let atStart = i <= contentStart || out.isEmpty || chars[i - 1] == "|"
+        let atEnd = end >= chars.count || chars[end] == "|"
+        var after: UInt32? = nil
+        if !atEnd {
+            let n = chars[end]
+            // What cmark sees there is not known yet: math or a footnote reference may follow.
+            if n == "$" || (n == "\\" && end + 1 < chars.count && (chars[end + 1] == "(" || chars[end + 1] == "["))
+                || (n == "[" && end + 1 < chars.count && chars[end + 1] == "^") { return (nil, nil) }
+            after = n.unicodeScalars.first?.value
+        }
+        var before: UInt32? = nil, beforeThat: UInt32? = nil
+        if !atStart {
+            let scalars = out.unicodeScalars
+            if let last = scalars.last {
+                before = last.value
+                let li = scalars.index(before: scalars.endIndex)
+                if li > scalars.startIndex { beforeThat = scalars[scalars.index(before: li)].value }
+            }
+        }
+        let delimiters: Set<Character> = ["*", "_", "~"]
+        let mayInsertBefore = !atStart && !delimiters.contains(chars[i - 1])
+        let mayInsertAfter = !atEnd && !delimiters.contains(chars[end])
+        guard let (b, a) = CJKEmphasis.inserts(delimiter, beforeThat: beforeThat, before: before, after: after,
+                                               mayInsertBefore: mayInsertBefore, mayInsertAfter: mayInsertAfter) else { return (nil, nil) }
+        func scalar(_ x: CJKEmphasis.Insert) -> Unicode.Scalar? {
+            switch x {
+            case .none: return nil
+            case .neutral: return CJKEmphasis.neutral
+            case .punctuation: return CJKEmphasis.punctuation
+            }
+        }
+        return (scalar(b), scalar(a))
     }
 
     /// Replaces tokens in already-escaped HTML text with math placeholders.
