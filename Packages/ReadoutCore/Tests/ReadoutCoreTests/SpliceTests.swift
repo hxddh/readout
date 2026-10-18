@@ -107,6 +107,29 @@ import Testing
         #expect(doc.splice?.suffix == 0)
     }
 
+    /// A preamble (badges, a logo, an intro) before the first H1, edited
+    /// outside the first fragment: the kept rest holds the H1, and the
+    /// spliced result keeps its title, exactly as the full parse.
+    @Test func titleAfterAnEditedPreambleIsKept() throws {
+        let preamble = (0..<6).map { "Preamble paragraph \($0) before the title." }.joined(separator: "\n\n")
+        let body = (0..<6).map { "Body paragraph \($0)." }.joined(separator: "\n\n")
+        let text = preamble + "\n\n# Real Title\n\n" + body
+        let p = IncrementalParser()
+        #expect(p.parse(text).title == "Real Title")
+        var next = text.replacingOccurrences(of: "Preamble paragraph 3 before", with: "Preamble paragraph 3 edited before")
+        var doc = p.parse(next)
+        #expect(p.lastSpliced)
+        #expect((doc.splice?.suffix ?? 0) > 0)
+        #expect(doc.title == "Real Title")
+        #expect(doc.blocks == MarkdownParser.parse(next).blocks)
+        // And on through later heading-free splices, lines added too.
+        next = next.replacingOccurrences(of: "Preamble paragraph 4 before", with: "Preamble paragraph 4\nwith a line before")
+        doc = p.parse(next)
+        #expect(p.lastSpliced)
+        #expect(doc.title == MarkdownParser.parse(next).title)
+        #expect(doc.title == "Real Title")
+    }
+
     /// What splicing does not cover parses as before.
     @Test(arguments: [
         ("crlf", "\r\nA new line."),
@@ -150,6 +173,37 @@ import Testing
         for step in 0..<30 {
             for _ in 0..<Int.random(in: 1...3, using: &rng) { DifferentialFuzzTests.mutate(&lines, rng: &rng) }
             guard same(lines.joined(separator: "\n"), p, "fuzz\(seed)-step\(step)") else { return }
+        }
+    }
+
+    /// Documents whose first H1 comes after a preamble (the fuzz palette's
+    /// documents rarely have one), edited mostly in the preamble: the title
+    /// is compared with the full parse's after every edit.
+    @Test(arguments: 0..<seeds)
+    func preambleFuzz(_ seed: Int) {
+        var rng = RNG(state: UInt64(seed) &* 104_729 &+ 3)
+        let intro = ["[![CI](https://example.com/badge.svg)](https://example.com)", "<p align=\"center\"><img src=\"logo.png\"></p>",
+                     "An intro paragraph before the title.", "> [!NOTE]", "> A callout before the title.", "- a list item", "Plain text."]
+        var lines: [String] = []
+        for _ in 0..<Int.random(in: 3...12, using: &rng) { lines += [intro.randomElement(using: &rng)!, ""] }
+        let h1 = lines.count
+        lines += ["# Real Title", ""]
+        lines += (0..<Int.random(in: 5...40, using: &rng)).map { _ in DifferentialFuzzTests.palette.randomElement(using: &rng)! }
+        let p = IncrementalParser()
+        guard same(lines.joined(separator: "\n"), p, "preamble\(seed)-v0") else { return }
+        for step in 0..<20 {
+            if Bool.random(using: &rng), min(h1, lines.count) > 2 {
+                // An edit in the preamble, after its first lines.
+                let at = Int.random(in: 2..<min(h1, lines.count), using: &rng)
+                switch Int.random(in: 0..<3, using: &rng) {
+                case 0: lines[at] += " edited"
+                case 1: lines.insert(intro.randomElement(using: &rng)!, at: at)
+                default: lines.insert("", at: at)
+                }
+            } else {
+                DifferentialFuzzTests.mutate(&lines, rng: &rng)
+            }
+            guard same(lines.joined(separator: "\n"), p, "preamble\(seed)-step\(step)") else { return }
         }
     }
 
