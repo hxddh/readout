@@ -321,9 +321,27 @@ jobs:
           [ "$(readlink "$MNT/Applications")" = "/Applications" ] || fail "no Applications link"
           [ -f "$MNT/.DS_Store" ] || fail "no Finder layout (.DS_Store)"
           [ -f "$MNT/.background.tiff" ] || fail "no background image"
-          tiffutil -info "$MNT/.background.tiff" | tee "$RUNNER_TEMP/background.txt"
-          # One image at 1x and one at 2x.
-          [ "$(grep -c 'Image Width' "$RUNNER_TEMP/background.txt")" -ge 2 ] || fail "the background has no 2x image"
+          # dmgbuild combines background.png and background@2x.png into one
+          # TIFF (a lone PNG would stay .background.png): one image per scale.
+          tiffutil -info "$MNT/.background.tiff" || true
+          IMAGES=$(python3 - "$MNT/.background.tiff" <<'EOF'
+          import struct, sys
+          data = open(sys.argv[1], "rb").read()
+          order = "<" if data[:2] == b"II" else ">"
+          offset, sizes = struct.unpack(order + "I", data[4:8])[0], []
+          while offset:
+              count = struct.unpack(order + "H", data[offset:offset + 2])[0]
+              tags = {}
+              for i in range(count):
+                  tag, kind, _, value = struct.unpack(order + "HHII", data[offset + 2 + 12 * i:offset + 14 + 12 * i])
+                  tags[tag] = value & 0xFFFF if kind == 3 and order == "<" else (value >> 16 if kind == 3 else value)
+              sizes.append(f"{tags.get(256)}x{tags.get(257)}")
+              offset = struct.unpack(order + "I", data[offset + 2 + 12 * count:offset + 6 + 12 * count])[0]
+          print(" ".join(sizes))
+          EOF
+          )
+          echo "background images: $IMAGES"
+          [ "$IMAGES" = "600x420 1200x840" ] || fail "the background is not one 600 x 420 image at 1x and 2x ($IMAGES)"
           # The tested app, file for file, with the same signature.
           diff -r "$MNT/Readout.app" /Applications/Readout.app || fail "the app in the disk image is not the tested app"
           codesign --verify --deep --strict "$MNT/Readout.app" || fail "the app in the disk image does not verify"
