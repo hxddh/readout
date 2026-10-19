@@ -7,8 +7,9 @@
 #   readout -b FILE...         open files (or a folder's newest, or FILE.md#section) in the
 #                              background, behind the one you are reading
 #   readout --hook             for agent hooks: read hook JSON on stdin and open
-#                              tool_input.file_path in the background if it is Markdown
-#                              (paths in it are also looked up in the hook's cwd)
+#                              tool_input.file_path (Cursor: file_path) in the background
+#                              if it is Markdown (paths in it are also looked up in the
+#                              hook's cwd, or Cursor's first workspace root)
 #   readout --version          print Readout's version
 #
 # Bundle identifier of the Readout app.
@@ -16,7 +17,7 @@ APP_ID="io.github.hxddh.readout"
 OPEN="${READOUT_OPEN_COMMAND:-/usr/bin/open}"
 
 usage() {
-  sed -n '3,13p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '3,14p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 is_markdown() {
@@ -102,9 +103,13 @@ case "$1" in
     exit 0 ;;
   --hook)
     input=$(cat)
-    path=$(printf '%s' "$input" | /usr/bin/plutil -extract tool_input.file_path raw -o - - 2>/dev/null)
+    # Claude Code and Gemini CLI: tool_input.file_path; Cursor's afterFileEdit: file_path.
+    path=$(printf '%s' "$input" | /usr/bin/plutil -extract tool_input.file_path raw -o - - 2>/dev/null) ||
+      path=$(printf '%s' "$input" | /usr/bin/plutil -extract file_path raw -o - - 2>/dev/null)
     # The folder the agent works in: plans (~/.claude/plans) name paths relative to it.
-    root=$(printf '%s' "$input" | /usr/bin/plutil -extract cwd raw -o - - 2>/dev/null)
+    # Cursor names its workspace folders instead, the first one first.
+    root=$(printf '%s' "$input" | /usr/bin/plutil -extract cwd raw -o - - 2>/dev/null) ||
+      root=$(printf '%s' "$input" | /usr/bin/plutil -extract workspace_roots.0 raw -o - - 2>/dev/null)
     [ -n "$path" ] && is_markdown "$path" && [ -f "$path" ] && exec "$OPEN" -g -b "$APP_ID" "$(background_url "$path" "$root")"
     exit 0 ;;
   -b|--background)

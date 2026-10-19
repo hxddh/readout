@@ -12,7 +12,7 @@
 import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding } from './reader/anchor.js';
-import { apply as applyPatch, findMode, showNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
+import { apply as applyPatch, findMode, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups, noteLanding, restartDwell } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables, highlightIn } from './reader/enhance.js';
@@ -115,23 +115,41 @@ document.addEventListener('copy', ev => {
 
 // Edit ▸ Copy as Quote quotes the blocks the selection touches, whole (the
 // app has their Markdown source): the page says which, and whether there is
-// a selection at all (the menu item is enabled while there is one).
-let hadSelection = false;
-document.addEventListener('selectionchange', () => {
+// anything to quote (the menu item is enabled while there is). With no text
+// selected, the block the keyboard is on (where N, a rail tick or Tab went),
+// so "N, then Copy as Quote" needs no mouse.
+let hadSelection = 'false/false';
+const textSelected = () => {
   const sel = getSelection();
-  const has = !!sel && !sel.isCollapsed && sel.rangeCount > 0 && doc.contains(sel.anchorNode) && sel.toString().trim() !== '';
-  if (has !== hadSelection) { hadSelection = has; post({ type: 'selection', has }); }
-});
+  return !!sel && !sel.isCollapsed && sel.rangeCount > 0 && doc.contains(sel.anchorNode) && sel.toString().trim() !== '';
+};
+const focusedBlock = () => {
+  const a = document.activeElement;
+  return a && doc.contains(a) ? a.closest('#ro-doc > .blk[data-slot]') : null;
+};
+// `has`: text is selected (the context menu's Copy as Quote); `focused`: a
+// block has the keyboard's focus (Edit ▸ Copy as Quote quotes it when no text
+// is selected; a right click elsewhere does not move the focus).
+function reportSelection() {
+  const has = textSelected(), focused = !!focusedBlock();
+  const state = `${has}/${focused}`;
+  if (state !== hadSelection) { hadSelection = state; post({ type: 'selection', has, focused }); }
+}
+document.addEventListener('selectionchange', reportSelection);
+doc.addEventListener('focusin', reportSelection);
+// Focus leaving goes through the body first: decide once it has landed.
+doc.addEventListener('focusout', () => setTimeout(reportSelection, 0));
 
 /**
- * The slots of the blocks the selection touches, in document order. A
+ * The slots of the blocks the selection touches, in document order (no
+ * text selected: the block with the keyboard's focus, if any). A
  * selection that ends right at the start of the next block (a triple
  * click) or begins at the very end of one does not take that block in;
  * blocks without text (a rule, an image) between selected ones do count.
  */
 function selectedSlots() {
   const sel = getSelection();
-  if (!sel || sel.isCollapsed || !sel.rangeCount) return [];
+  if (!textSelected()) { const b = focusedBlock(); return b ? [+b.dataset.slot] : []; }
   const out = [];
   for (let i = 0; i < sel.rangeCount; i++) {
     const r = sel.getRangeAt(i);
@@ -274,6 +292,9 @@ window.addEventListener('resize', () => {
 function apply(p) {
   applyPatch(p);
   if (!resizeAnchor) settle();
+  // A patch can remove the focused block (a reset removes them all) without
+  // a focusout: what there is to quote is said again (posted only if it changed).
+  reportSelection();
 }
 
 // ---------------------------------------------------------------- Native API
@@ -416,6 +437,8 @@ window.readout = {
   selectedSlots,
   // A passing note above the document ("Marked against the last commit").
   notice: text => { if (text) showNotice(String(text)); },
+  // The app's notice no longer holds (Compare with Last Commit undone): gone now, if it is the one showing.
+  hideNotice: text => hideNotice(String(text ?? '')),
   // The window is key (or no longer): focus in its outline or find field is still the reader reading.
   setWindowKey: on => { setWindowKey(on); if (on) { restartDwell(); noticeMaybeSeen(); } },
   markAllRead,

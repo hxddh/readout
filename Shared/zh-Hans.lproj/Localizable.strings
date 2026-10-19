@@ -125,5 +125,9 @@
 "Stop Speaking" = "停止朗读";
 "Copy as Quote" = "拷贝为引用";
 "Marked against the last commit" = "已对照上次提交标出变更";
+"Rewritten since the last commit" = "自上次提交以来已被整篇重写";
+"Compare with Last Commit" = "与上次提交比较";
+"No changes since the last commit" = "自上次提交以来没有变更";
+"Not in the last commit" = "上次提交中没有此文件";
 "Next unread: %@" = "下一个未读：%@";
 "Project: %@" = "项目：%@";

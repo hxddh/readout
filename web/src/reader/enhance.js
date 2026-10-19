@@ -280,11 +280,65 @@ function setupCode(cb) {
   // Box-drawing characters (a directory tree, a diagram): tighter lines, so
   // the vertical strokes join up.
   if (/[\u2500-\u257f]/.test(text)) cb.classList.add('cb-tree');
+  // Prose in a fence (a prompt, a SKILL.md, notes) wraps at the column like
+  // the text around it: a 400-column sentence read by scrolling sideways is
+  // not code. Never a drawing, a listing, a log or a transcript.
+  const prose = isProseFence(cb.dataset.lang, text) && !cb.classList.contains('cb-tree');
+  cb.classList.toggle('cb-prose', prose);
   // Its longest line, in columns: reader.css widens a code block of its own
   // whose lines run past the column into the margins, when the window has room.
-  if (cb.parentElement.classList.contains('k-code')) cb.parentElement.style.setProperty('--cb-cols', codeColumns(text));
+  if (cb.parentElement.classList.contains('k-code')) cb.parentElement.style.setProperty('--cb-cols', prose ? 0 : codeColumns(text));
   cb.dataset.hl = 'pending';
   fresh.push(cb);
+}
+
+const PROSE_LANGS = new Set(['', 'text', 'txt', 'plain', 'plaintext', 'markdown', 'md', 'prompt']);
+const MARKDOWN_LANGS = new Set(['markdown', 'md']);
+// A shell prompt at a line start: a transcript, not prose. In Markdown,
+// `# ` is a heading and `> ` a quote.
+const PROMPT = /^\s*(\$ |PS>|❯)/;
+const PROMPT_PLAIN = /^\s*(\$ |PS>|❯|> |# )/;
+const LIST_ITEM = /^\s*([-*+]|\d+[.)])\s/;
+// A word: letters (any script, CJK included) with at most sentence
+// punctuation around or inside them, e.g. "don't", "(see", "e.g.,",
+// "条件写入，与". Not an identifier, a path, a string or an expression
+// (web_search, a/b, "x", {, ==).
+const WORD = /^[\p{L}\p{M}\p{N}'’\-–—.,;:!?，、。；：！？「」『』（）《》“”…·]+$/u;
+function wordy(token) {
+  const core = token.replace(/^[(\[“‘"'*_]+|[)\]”’"'*_.,;:!?]+$/gu, '');
+  if (!core || !WORD.test(core)) return false;
+  const letters = core.match(/\p{L}|\p{M}/gu)?.length || 0;
+  return letters / [...core].length >= 0.7;
+}
+/**
+ * A fence that holds prose (a prompt, a SKILL.md, notes): only on a positive
+ * signal, so code, logs and transcripts keep their lines.
+ * - no language, or text, txt, plain, plaintext, markdown, md or prompt;
+ * - a line longer than the column (80 columns) made of ordinary words;
+ * - and nothing that lines text up or marks it as code or output: no tab, no
+ *   run of 3+ spaces inside a line, no line starting with a shell prompt, and
+ *   no line indented by 2+ spaces unless it continues a Markdown list item
+ *   (a stack frame, a nested block, a listing are indented).
+ * Box drawing is ruled out by the caller (.cb-tree).
+ */
+function isProseFence(lang = '', text) {
+  lang = lang.toLowerCase();
+  if (!PROSE_LANGS.has(lang) || text.includes('\t')) return false;
+  const prompt = MARKDOWN_LANGS.has(lang) ? PROMPT : PROMPT_PLAIN;
+  let inList = false, long = false;
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    if (prompt.test(line) || /\S {3,}\S/.test(line)) return false;
+    const indented = /^ {2,}/.test(line);
+    if (LIST_ITEM.test(line)) inList = true;
+    else if (indented && !inList) return false;
+    else if (!indented) inList = false;
+    if (!long && codeColumns(line) > 80) {
+      const tokens = line.trim().split(/\s+/);
+      long = tokens.filter(wordy).length / tokens.length >= 0.75;
+    }
+  }
+  return long;
 }
 
 // The width of the longest line in monospace columns: a tab to the next

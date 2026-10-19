@@ -175,7 +175,9 @@ import Testing
         #expect(GitBaseline.baselineText(head: lfs, current: "# Plan") == nil)
         #expect(GitBaseline.baselineText(head: Data([0x23, 0x00, 0x41]), current: "# Plan") == nil)
         #expect(GitBaseline.baselineText(head: Data(count: GitBaseline.sizeLimit + 1), current: "# Plan") == nil)
-        #expect(GitBaseline.baselineText(head: Data(), current: "# Plan") == nil)
+        // Committed empty (git succeeded with no bytes): everything there now is new.
+        #expect(GitBaseline.baselineText(head: Data(), current: "# Plan") == "")
+        #expect(GitBaseline.baselineText(head: Data(), current: "") == nil)
         #expect(GitBaseline.baselineText(head: Data("# Old".utf8), current: "# Plan") == "# Old")
     }
 

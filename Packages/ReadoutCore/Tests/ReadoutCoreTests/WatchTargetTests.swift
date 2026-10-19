@@ -336,5 +336,16 @@ private struct Scratch {
         #expect(try hook(cwd: s.real + "/my app") == .init(path: s.real + "/plan.md", background: true, root: s.real + "/my app"))
         #expect(try hook(cwd: s.real + "/missing")?.root == nil)
     }
+
+    /// Cursor's afterFileEdit names the file at the top level and its
+    /// workspace folders instead of a cwd (3.7 opened nothing for it).
+    @Test func theHookTakesCursorsFileAndWorkspace() throws {
+        let s = try Scratch()
+        s.write("plan.md")
+        try FileManager.default.createDirectory(atPath: s.real + "/ws", withIntermediateDirectories: true)
+        let out = try runScript(["--hook"], cwd: "/", stdin: #"{"file_path":"\#(s.real)/plan.md","edits":[],"workspace_roots":["\#(s.real)/ws","/elsewhere"]}"#)
+        #expect(out.split(separator: " ").last.flatMap { URL(string: String($0)) }.flatMap(OpenLink.parse)
+                == .init(path: s.real + "/plan.md", background: true, root: s.real + "/ws"))
+    }
     #endif
 }
