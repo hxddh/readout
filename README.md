@@ -30,7 +30,7 @@ Every release is ad-hoc signed, not notarized, so macOS refuses to open it the f
 
 To check a download, put `SHA256SUMS` from the release next to the DMG and ZIP and run `shasum -a 256 -c SHA256SUMS` (only the DMG: `grep dmg SHA256SUMS | shasum -a 256 -c`).
 
-Readout checks GitHub Releases for new versions (**Readout → Check for Updates…**). **Download Update** saves the new DMG to your Downloads folder and shows it in Finder; Readout installs nothing itself.
+Readout checks GitHub Releases for new versions (**Readout → Check for Updates…**). **Download Update** saves the new DMG to your Downloads folder, with its progress on the file there (Finder and the Dock's Downloads stack show it), then shows it in Finder; Readout installs nothing itself. When a weekly check finds a new version, the Readout menu says so; choosing it offers the same download.
 
 ## Privacy
 

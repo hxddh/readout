@@ -30,7 +30,7 @@ Agent 会把计划、规格、分析报告和代码解释写成很长的 Markdow
 
 如需校验下载的文件，把发布页上的 `SHA256SUMS` 与 DMG、ZIP 放在同一文件夹，运行 `shasum -a 256 -c SHA256SUMS`（只下载了 DMG 时：`grep dmg SHA256SUMS | shasum -a 256 -c`）。
 
-Readout 会通过 GitHub Releases 检查新版本（**Readout → 检查更新…**）。点击**下载更新**会把新版 DMG 存到“下载”文件夹并在访达中显示；Readout 自己不会安装任何东西。
+Readout 会通过 GitHub Releases 检查新版本（**Readout → 检查更新…**）。点击**下载更新**会把新版 DMG 存到“下载”文件夹，下载进度显示在那里的文件上（访达和程序坞的“下载”堆栈都能看到），完成后在访达中显示；Readout 自己不会安装任何东西。每周自动检查发现新版本时，Readout 菜单里会出现提示，选择它会提供同样的下载。
 
 ## 隐私
 
