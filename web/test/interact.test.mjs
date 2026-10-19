@@ -71,6 +71,17 @@ async function settledTop(page, sel) {
   }), sel);
 }
 
+// Counts writes that set or clear content-visibility on the document's blocks,
+// from watchCv until cvWrites.
+const watchCv = page => page.evaluate(() => {
+  window.__cv = 0;
+  window.__cvObserver = new MutationObserver(ms => {
+    for (const m of ms) if (/content-visibility/.test(m.oldValue || '') !== /content-visibility/.test(m.target.getAttribute('style') || '')) window.__cv++;
+  });
+  window.__cvObserver.observe(document.getElementById('ro-doc'), { subtree: true, attributes: true, attributeFilter: ['style'], attributeOldValue: true });
+});
+const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect(); return window.__cv; });
+
 // 1. A table that scrolled in a narrow window fits again once the window, the
 //    column or the type size leaves it room.
 {
@@ -650,17 +661,24 @@ async function settledTop(page, sel) {
 }
 
 // 18. A wide table far down a large document scrolls from the first open
-//     (its block is skipped by the first frame, which lays out the screen only).
+//     (its block is skipped by the first frame, which lays out the screen
+//     only): measured once it comes on screen, its block laid out then (3.8:
+//     not at once, every such block laid out for the moment, which cost ~1 s
+//     at 1 MB), and no block's content-visibility is set for it.
 {
   const page = await newPage({ width: 600, height: 700 });
   const words = ['Implementation', 'Responsibility', 'Configuration', 'Documentation', 'Compatibility', 'Infrastructure', 'Observability'];
   const table = `<div class="table-wrap"><table><thead><tr>${words.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody><tr>${words.map(w => `<td>${w}</td>`).join('')}</tr></tbody></table></div>`;
   const big = doc(400, i => i === 350 || i === 3 ? table : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(6)}</p>`, i => i === 350 || i === 3 ? 'table' : 'paragraph');
+  await watchCv(page);
   await page.evaluate(p => window.readout.apply(p), big);
   await page.waitForTimeout(500);
-  const r = await page.evaluate(() => ({ near: document.querySelector('.blk[data-slot="3"] .table-wrap').classList.contains('scrolls'),
-    far: document.querySelector('.blk[data-slot="350"] .table-wrap').classList.contains('scrolls') }));
-  check('a wide table scrolls from the first open, on screen or far below', r.near && r.far, JSON.stringify(r));
+  const near = await page.evaluate(() => document.querySelector('.blk[data-slot="3"] .table-wrap').classList.contains('scrolls'));
+  await page.evaluate(() => window.scrollBy(0, document.querySelector('.blk[data-slot="350"]').getBoundingClientRect().top - 100));
+  await settledTop(page, '.blk[data-slot="350"]');
+  const far = await page.evaluate(() => document.querySelector('.blk[data-slot="350"] .table-wrap').classList.contains('scrolls'));
+  const r = { near, far, writes: await cvWrites(page) };
+  check('a wide table scrolls from the first open, on screen or far below, with no block forced', r.near && r.far && r.writes === 0, JSON.stringify(r));
   await page.close();
 }
 
@@ -950,6 +968,188 @@ async function settledTop(page, sel) {
     { marks: [...kept, { slot: 301, kind: 'inserted' }], deletions: [{ id: 7, after: 250, count: 2 }] }));
   check('a patch changes the classes of only the blocks whose mark changed, and keeps its removal markers',
     JSON.stringify(touched.slots) === '["301"]' && touched.sameMarker, JSON.stringify(touched));
+  await page.close();
+}
+
+// ---------------------------------------------------------------- 3.8 web performance
+// In a large document (content-visibility) a style change on a block that has
+// been laid out (contain-intrinsic-size, content-visibility), and offsetParent
+// read after any change, make WebKit lay out every skipped block again: 1-4 s
+// per patch or jump at 5 MB.
+
+// 30. P1: an edit above the reader leaves a block that has been laid out its
+//     contain-intrinsic-size (content-visibility keeps its last size), and
+//     reads no offsetParent while the changes-only filter is off.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(600));
+  // Block 300 on screen (laid out), then the reader 30 blocks further on.
+  for (const s of [300, 330]) {
+    await page.evaluate(s => window.scrollBy(0, document.querySelector(`.blk[data-slot="${s}"]`).getBoundingClientRect().top), s);
+    await settledTop(page, `.blk[data-slot="${s}"]`);
+  }
+  const r = await page.evaluate(p => {
+    const el = document.querySelector('.blk[data-slot="300"]');
+    const before = el.style.containIntrinsicSize;
+    const reader = document.querySelector('.blk[data-slot="330"]').getBoundingClientRect().top;
+    let reads = 0;
+    const d = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetParent');
+    Object.defineProperty(HTMLElement.prototype, 'offsetParent', { ...d, get() { reads++; return d.get.call(this); } });
+    try { window.readout.apply(p); } finally { Object.defineProperty(HTMLElement.prototype, 'offsetParent', d); }
+    return { before, after: el.style.containIntrinsicSize, reads, edited: el.textContent.startsWith('edited'),
+      moved: Math.round(document.querySelector('.blk[data-slot="330"]').getBoundingClientRect().top - reader) };
+  }, patch(2, [{ op: 'replace', slot: 300, kind: 'paragraph', change: 'content', html: `<p>edited ${'and much longer now '.repeat(40)}</p>` }],
+    { marks: [{ slot: 300, kind: 'modified' }] }));
+  check('an edit above the reader keeps a laid-out block\'s intrinsic size, reads no offsetParent, keeps the place',
+    r.before && r.before === r.after && r.reads === 0 && r.edited && Math.abs(r.moved) <= 1, JSON.stringify(r));
+  // With the changes-only filter on, hidden blocks are still told apart.
+  await page.evaluate(() => window.readout.setChangesOnly(true));
+  const shown = await page.evaluate(() => [...document.querySelectorAll('#ro-doc > .blk')].filter(e => !e.hidden).map(e => +e.dataset.slot));
+  await page.evaluate(() => window.readout.setChangesOnly(false));
+  check('the changes-only filter still shows only the change', JSON.stringify(shown) === '[300]', JSON.stringify(shown));
+  await page.close();
+}
+
+// 31. P2: an outline jump and N in a large document set content-visibility
+//     on no block (an outline jump forced 40 blocks laid out, and back a frame
+//     later), and still land where they aim.
+{
+  const page = await newPage({ appearance: { topInset: 52 } });
+  const big = doc(600, i => i % 50 === 1 ? `<h2 id="s${i}">Section ${i}</h2>` : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(1 + (i * 7) % 11)}</p>`,
+    i => i % 50 === 1 ? 'heading' : 'paragraph');
+  big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
+  big.marks = [{ slot: 560, kind: 'inserted' }];
+  await page.evaluate(p => window.readout.apply(p), big);
+  await page.waitForTimeout(300);
+  await watchCv(page);
+  await page.evaluate(() => window.readout.scrollToSlot(451));
+  await page.waitForTimeout(1200);
+  const toc = { writes: await cvWrites(page), top: await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="451"]').getBoundingClientRect().top)) };
+  await watchCv(page);
+  await key(page, 'n');
+  await page.waitForTimeout(1200);
+  const n = { writes: await cvWrites(page), ...await page.evaluate(() => ({ top: Math.round(document.querySelector('.blk[data-slot="560"]').getBoundingClientRect().top), want: Math.round(innerHeight / 3) })) };
+  check('an outline jump and N in a large document force no block\'s layout and land where they aim',
+    toc.writes === 0 && Math.abs(toc.top - 68) <= 2 && n.writes === 0 && Math.abs(n.top - n.want) <= 30, JSON.stringify({ toc, n }));
+  await page.close();
+}
+
+// 32. P3: following the end is sticky. The page moving under the reader (a
+//     block near the end laid out taller) leaves them short of the end: the
+//     next patch takes them there again. The reader scrolling (the wheel, the
+//     scrollbar: a scroll the page did not make) stops it.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(60));
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  await page.waitForTimeout(300);
+  let slot = 60;
+  const append = () => page.evaluate(s => window.readout.apply({ version: s, reset: false, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+    ops: [{ op: 'insert', slot: s, after: s - 1, kind: 'paragraph', html: `<p>streamed ${s}</p>` }] }), ++slot);
+  const grow = () => page.evaluate(s => { const d = document.createElement('div'); d.style.height = '300px'; document.querySelector(`.blk[data-slot="${s}"]`).appendChild(d); }, slot - 1);
+  const r = {};
+  await append();
+  r.following = await remaining(page);
+  await grow();
+  await page.waitForTimeout(300);   // settled: the reader is short of the end
+  r.slipped = await remaining(page);
+  await append();
+  r.caught = await remaining(page);
+  // The wheel.
+  await page.mouse.move(450, 350);
+  await page.mouse.wheel(0, -600);
+  await page.waitForTimeout(400);
+  let y = await scrollTop(page);
+  await append();
+  r.wheelStays = (await scrollTop(page)) - y;
+  // Back at the end it follows again, through a slip again.
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  await page.waitForTimeout(300);
+  await grow();
+  await page.waitForTimeout(300);
+  await append();
+  r.again = await remaining(page);
+  // The scrollbar.
+  await page.evaluate(() => window.scrollBy(0, -500));
+  await page.waitForTimeout(400);
+  y = await scrollTop(page);
+  await append();
+  r.barStays = (await scrollTop(page)) - y;
+  check('following the end survives the page moving under the reader, and stops when they scroll',
+    r.following <= 1 && r.slipped >= 250 && r.caught <= 1 && r.wheelStays === 0 && r.again <= 1 && r.barStays === 0, JSON.stringify(r));
+  await page.close();
+}
+
+// 33. P6: scrolling up through a large document's unseen blocks (shown at
+//     their estimated height until WebKit lays them out, a frame after they
+//     came into view): the text on screen stays where the scroll put it once
+//     they are laid out (the block kept in place is the first on screen that
+//     was laid out before; those before it grow upward).
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(600, i => `<p style="min-height: ${60 + (i * 37) % 240}px">para ${i}</p>`));
+  for (let k = 0; k < 2; k++) {
+    await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+    await page.waitForTimeout(400);
+  }
+  const moved = await page.evaluate(() => new Promise(resolve => {
+    const out = [];
+    let el = null, top = 0;
+    const after = () => {
+      if (el) out.push(Math.round(el.getBoundingClientRect().top - top - 400));
+      if (out.length >= 12) return resolve(out);
+      el = document.elementFromPoint(450, 350).closest('.blk');
+      top = el.getBoundingClientRect().top;
+      // Measured once the blocks the step brought on screen are laid out and their change made up for.
+      const settled = n => (n ? requestAnimationFrame(() => settled(n - 1)) : setTimeout(after, 0));
+      requestAnimationFrame(() => { window.scrollBy(0, -400); settled(4); });
+    };
+    after();
+  }));
+  const sum = moved.reduce((a, b) => a + Math.abs(b), 0);
+  check('scrolling up through unseen blocks of a large document keeps the text in place', sum <= 60, JSON.stringify({ sum, moved }));
+  await page.close();
+}
+
+// 34. P10: blocks a following reader's patches lay out at once at the end
+//     go back to content-visibility many at a time, not each in a frame of
+//     its own two frames later (each such frame laid out the whole document
+//     again: 5 MB, ~0.1 s per append).
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(400));
+  for (let k = 0; k < 2; k++) {
+    await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+    await page.waitForTimeout(300);
+  }
+  const r = await page.evaluate(() => new Promise(resolve => {
+    // Which frames hand blocks back: a counter the frames advance.
+    let frame = 0;
+    const tick = () => { frame++; requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+    const clears = new Set();
+    let sets = 0;
+    const mo = new MutationObserver(ms => {
+      for (const m of ms) {
+        const was = /content-visibility/.test(m.oldValue || ''), is = /content-visibility/.test(m.target.getAttribute('style') || '');
+        if (was && !is) clears.add(frame); else if (!was && is) sets++;
+      }
+    });
+    mo.observe(document.getElementById('ro-doc'), { subtree: true, attributes: true, attributeFilter: ['style'], attributeOldValue: true });
+    let s = 400, left = [];
+    const add = () => {
+      s++;
+      window.readout.apply({ version: s, reset: false, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+        ops: [{ op: 'insert', slot: s, after: s - 1, kind: 'paragraph', html: `<p>streamed ${s} ${'more agent output '.repeat(20)}</p>` }] });
+      const se = document.scrollingElement;
+      left.push(Math.round(se.scrollHeight - se.scrollTop - innerHeight));
+      if (s < 440) requestAnimationFrame(() => requestAnimationFrame(add));
+      else setTimeout(() => { mo.disconnect(); resolve({ sets, clearFrames: clears.size, maxLeft: Math.max(...left) }); }, 300);
+    };
+    add();
+  }));
+  check('a following reader\'s forced blocks go back many at a time, not one frame each',
+    r.sets === 40 && r.clearFrames >= 1 && r.clearFrames <= 2 && r.maxLeft <= 1, JSON.stringify(r));
   await page.close();
 }
 

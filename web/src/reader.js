@@ -10,9 +10,9 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, heights, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
-import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen } from './reader/anchor.js';
-import { apply as applyPatch, findMode, showNotice, noticeMaybeSeen } from './reader/patch.js';
+import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
+import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding } from './reader/anchor.js';
+import { apply as applyPatch, findMode, showNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups, noteLanding, restartDwell } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables, highlightIn } from './reader/enhance.js';
@@ -242,7 +242,10 @@ let settleTimer = null;
 function settle() {
   settledAnchor = null;
   clearTimeout(settleTimer);
-  settleTimer = setTimeout(() => { settledAnchor = captureAnchor(); settledBottom = atBottom(); settledY = document.scrollingElement.scrollTop; }, 100);
+  settleTimer = setTimeout(() => {
+    settledAnchor = captureAnchor(); settledBottom = atBottom(); settledY = document.scrollingElement.scrollTop;
+    if (settledBottom) restedAtEnd();   // following the end from here on
+  }, 100);
 }
 
 let resizeAnchor = null;
@@ -343,29 +346,24 @@ function setAppearance(o) {
  * around the place it lands are laid out over the next frames and move it:
  * it aims again as they get their real heights, unless the reader scrolled.
  */
-const LANDING_BLOCKS = 40;
 let aiming = null;   // the TOC jump being aimed: {y}, where its last aim left the page
 onKeptScroll(dy => { if (aiming) aiming.y += dy; });
 function scrollToSlot(slot) {
   const el = slots.get(slot);
   if (!el) return;
   const off = () => el.getBoundingClientRect().top - 16 - topInset();
-  // The blocks it lands on are laid out at once, at their real size (a
-  // screenful and more), and handed back once a frame has rendered them.
+  // The blocks it lands on are not laid out at once (content-visibility set
+  // on them, and taken off again, made WebKit lay out the whole document
+  // twice per jump: 5 MB, 1-5 s): the frames after the jump lay them out,
+  // the heading stays put while they do (pinLanding), and the aim below
+  // follows whatever still moves it.
   const cv = doc.classList.contains('cv');
-  const forced = [];
-  if (cv) {
-    for (let e = el; e && forced.length < LANDING_BLOCKS; e = e.nextElementSibling) {
-      if (e.classList.contains('blk') && !e.style.contentVisibility) { e.style.contentVisibility = 'visible'; forced.push(e); }
-    }
-  }
   window.scrollBy(0, off());
-  for (const e of forced) heights.set(e, e.getBoundingClientRect().height);
   pinActiveHeading(slot);
   noteLanding(el);
+  pinLanding(el);
   highlightOnScreen();
   if (!cv) return;
-  requestAnimationFrame(() => requestAnimationFrame(() => { for (const e of forced) e.style.contentVisibility = ''; }));
   const se = document.scrollingElement;
   const mine = aiming = { y: se.scrollTop };
   const until = performance.now() + AIM_MS;
@@ -374,7 +372,7 @@ function scrollToSlot(slot) {
     // the TOC may not have run yet): leave the page where it is.
     if (aiming !== mine || !el.isConnected || Math.abs(se.scrollTop - mine.y) > 2) return;
     const d = off();
-    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; pinActiveHeading(slot); noteLanding(el); }
+    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; pinActiveHeading(slot); noteLanding(el); pinLanding(el); }
     if (performance.now() < until) requestAnimationFrame(reaim);
   };
   requestAnimationFrame(reaim);

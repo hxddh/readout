@@ -1,7 +1,7 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes, and the "Show Only Changes" filter.
 import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, blocksHidden, setBlocksHidden, focused } from './core.js';
-import { captureAnchor, restoreAnchor, isShown, atBottom, fitsOnScreen, topInset } from './anchor.js';
+import { captureAnchor, restoreAnchor, isShown, atBottom, fitsOnScreen, topInset, pinLanding } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -533,6 +533,10 @@ export function jump(dir, first = false) {
   // target have their real heights.
   const smooth = !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   window.scrollBy({ top, behavior: smooth ? 'smooth' : 'auto' });
+  // The change it lands on stays where it landed while the blocks around it
+  // are laid out (not the first block on screen, the resize compensation's
+  // usual choice).
+  if (!smooth) pinLanding(target);
   focusBlock(target);
   pulse(target);
   visit(target, members);
@@ -540,7 +544,7 @@ export function jump(dir, first = false) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!target.isConnected) return;
       const off = target.getBoundingClientRect().top - line;
-      if (Math.abs(off) > 2) window.scrollBy(0, off);
+      if (Math.abs(off) > 2) { window.scrollBy(0, off); pinLanding(target); }
     }));
   }
 }
