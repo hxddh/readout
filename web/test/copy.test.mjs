@@ -273,7 +273,7 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
   if (!got.refPara.text.endsWith(`this line.\n\n${ref}`)) fail(`copy-cases: reference definition not appended: ${JSON.stringify(got.refPara.text.slice(-80))}`);
   // C3: rich text is the clean HTML whatever the selection touches: handled by the page, no page classes or styles.
   if (!got.inPara.handled || got.inPara.text !== 'Status' || !got.inPara.html || /class=|style=/.test(got.inPara.html)) fail(`copy-cases: a selection in a paragraph is not the clean copy: ${JSON.stringify(got.inPara)}`);
-  if (!got.table.html.includes('<table') || /data-slot|tabindex|<button/.test(got.table.html)) fail(`copy-cases: table rich text: ${got.table.html.slice(0, 200)}`);
+  if (!got.table.html.includes('<table') || /data-slot|tabindex|<button|class=/.test(got.table.html)) fail(`copy-cases: table rich text: ${got.table.html.slice(0, 200)}`);
   // C8: the drag carries the copy's Markdown and HTML.
   if (got.drag.text !== got.table.text || got.drag.html !== got.table.html) fail(`copy-cases: drag payload differs from the copy: ${JSON.stringify(got.drag.text.slice(0, 120))}`);
 }

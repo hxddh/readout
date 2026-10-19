@@ -457,5 +457,8 @@ export function htmlOf(sel) {
   }
   for (const b of box.querySelectorAll('.blk')) b.replaceWith(...b.childNodes);
   box.querySelectorAll('[tabindex]').forEach(e => e.removeAttribute('tabindex'));
+  // The page's classes mean nothing where it is pasted. (On macOS WebKit
+  // still writes the HTML with its own default inline styles: smoke run.)
+  box.querySelectorAll('[class]').forEach(e => e.removeAttribute('class'));
   return box.innerHTML;
 }
