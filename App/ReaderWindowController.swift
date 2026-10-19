@@ -28,12 +28,33 @@ final class WebViewPool: NSObject, WKNavigationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.prewarm() }
     }
 
+    /// When the next spare page is made: not while the page just taken is
+    /// still loading (at launch, WebKit's first process start), but once a
+    /// page has painted its first document, or a few seconds after the page
+    /// taken is ready when none paints.
+    private var plan = SparePagePlan()
+
     func take() -> ReaderWebView {
         let w = spare ?? ReaderWebView(bundle: .main)
         w.navigationDelegate = nil   // the window controller sets its own
         spare = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.prewarm() }
+        let token = plan.taken()
+        // The fallback counts from the page's ready, so the next spare never
+        // competes with its load.
+        w.whenReady { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + SparePagePlan.fallback) { [weak self] in
+                guard let self, self.plan.fallbackFired(token) else { return }
+                self.prewarm()
+            }
+        }
         return w
+    }
+
+    /// A window's page painted its first document: the spare page owed is made now.
+    func pagePainted() {
+        guard plan.painted() else { return }
+        // After the frame that showed it, not inside the message reporting it.
+        DispatchQueue.main.async { [weak self] in self?.prewarm() }
     }
 }
 
@@ -126,6 +147,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         self.loader = DocumentLoader(url: self.url) {
             FileResolver(baseDirectory: base, project: project.path, workspaces: AppSettings.shared.workspaces)
         }
+        SmokeTest.noteLaunchPhase("window_init")
         self.webView = WebViewPool.shared.take()
         self.pendingAnchor = pendingAnchor
 
@@ -150,6 +172,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         buildToolbar()
         configureWebView()
         observeSettings()
+        // The first window's page up (the spare made at launch, or one made for it).
+        webView.whenReady { SmokeTest.noteLaunchPhase("page_ready") }
 
         window.title = url.lastPathComponent
         window.representedURL = url
@@ -434,6 +458,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private static let emptyPatch = #"{"version":0,"reset":true,"rewrite":false,"ops":[],"marks":[],"deletions":[]}"#
 
     private func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?, commitBaseline: [BlockKey]? = nil) {
+        SmokeTest.noteLaunchPhase("did_load")
         let patch = self.session.load(result.doc, baseline: record?.baseline ?? commitBaseline)
         let againstCommit = commitBaseline != nil && !patch.rewrite && session.unreadCount > 0
         // What is on disk already: an unchanged baseline is not written again.
@@ -560,7 +585,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                         self?.followingBeforeEmpty = (value as? Bool) ?? false
                     }
                 }
-                self.webView.call("apply", patch.page)
+                if patch.reset {
+                    // A whole document (a rewrite): encoded off the main thread,
+                    // still delivered before the calls below.
+                    self.webView.callEncodingOffMain("apply", patch.page)
+                } else {
+                    self.webView.call("apply", patch.page)
+                }
                 if let restore { self.restorePlace(restore) }
             }
             self.scheduleSave()
@@ -871,6 +902,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 // of an open, without the frame the system paints it in.
                 appliedOnce = true
                 SmokeTest.noteFirstApply(url, seconds: Date().timeIntervalSince(openedAt))
+                SmokeTest.noteLaunchPhase("apply")
             }
         case .painted:
             SmokeTest.notePainted()
@@ -879,6 +911,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 painted = true
                 ReaderPerf.signposter.endInterval("open", openSignpost)
                 SmokeTest.noteFirstPaint(url, seconds: Date().timeIntervalSince(openedAt))
+                SmokeTest.noteLaunchPhase("paint")
+                WebViewPool.shared.pagePainted()
             }
         case .open(let href):
             openLink(href)

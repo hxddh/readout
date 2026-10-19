@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      notarize:
+        description: "Notarization check: verify signs with the Developer ID, notarizes and staples the app and DMG (publishes nothing; ad hoc when the secrets are not set)"
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -96,8 +101,25 @@ jobs:
   verify:
     name: Verify signed product
     needs: [core, webkit]
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.notarize) }}
     uses: ./.github/workflows/verify.yml
     with:
       version: 0.0.0-ci
       build: ci
       configuration: Release
+
+  # Actions ▸ CI ▸ Run workflow ▸ notarize: the notarization lane on this
+  # commit, end to end, without a release (docs/RELEASING.md). Only a dispatch
+  # by someone with write access gets here; pull requests and pushes never
+  # pass secrets to verify.
+  notarize-check:
+    name: Notarization check
+    needs: [core, webkit]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.notarize }}
+    uses: ./.github/workflows/verify.yml
+    with:
+      version: 0.0.0-notarize
+      build: ci
+      configuration: Release
+      notarize: true
+    secrets: inherit

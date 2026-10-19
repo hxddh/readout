@@ -27,7 +27,10 @@ final class FSEventsStream {
     private var stream: FSEventStreamRef?
     private let queue: DispatchQueue
 
-    init?(paths: [String], latency: TimeInterval, queue: DispatchQueue, sinceNow: Bool = true, handler: @escaping ([Event]) -> Void) {
+    /// `excluding`: folders whose events FSEvents filters out before the app
+    /// is woken (at most WatchExclusions.limit).
+    init?(paths: [String], latency: TimeInterval, queue: DispatchQueue, sinceNow: Bool = true, excluding: [String] = [],
+          handler: @escaping ([Event]) -> Void) {
         self.queue = queue
         queue.markForRunSync()
         let box = Box(handler)
@@ -57,6 +60,7 @@ final class FSEventsStream {
         guard let s = FSEventStreamCreate(kCFAllocatorDefault, callback, &context, paths as CFArray,
                                           FSEventStreamEventId(kFSEventStreamEventIdSinceNow), latency, flags) else { return nil }
         stream = s
+        if !excluding.isEmpty { _ = FSEventStreamSetExclusionPaths(s, Array(excluding.prefix(WatchExclusions.limit)) as CFArray) }
         FSEventStreamSetDispatchQueue(s, queue)
         FSEventStreamStart(s)
     }
@@ -134,11 +138,15 @@ final class FileWatcher {
         if stream == nil { startPolling() }
     }
 
-    /// Watches the folder of the file shown and, for a symlink, the link's own folder.
+    /// Watches the folder of the file shown and, for a symlink, the link's own
+    /// folder, without what a build, a package install or a commit writes into
+    /// them (`.git`, `node_modules`, `.build`, `DerivedData`, …): those events
+    /// never wake the app.
     private func startStream() {
         stream?.stop()
         watchedDirectories = target.directories
-        stream = FSEventsStream(paths: watchedDirectories, latency: 0.03, queue: queue) { [weak self] events in
+        let excluded = WatchExclusions.paths(for: watchedDirectories, keep: [target.target, target.linkPath])
+        stream = FSEventsStream(paths: watchedDirectories, latency: 0.03, queue: queue, excluding: excluded) { [weak self] events in
             self?.handle(events)
         }
     }
