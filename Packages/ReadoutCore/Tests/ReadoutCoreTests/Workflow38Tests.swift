@@ -138,12 +138,15 @@ import Testing
         #expect(CommitNotice.after(rewrite: patch.rewrite, unread: s.unreadCount) == .marked)
     }
 
-    /// Compare with Last Commit's result applies only to the file it was asked
-    /// for: a window whose symlink was retargeted meanwhile drops it.
-    @Test func aComparisonAppliesOnlyToTheFileItWasAskedFor() {
-        #expect(CommitComparison.applies(askedFor: "/w/runs/run-41.md", showing: "/w/runs/run-41.md", retargeting: false))
-        #expect(!CommitComparison.applies(askedFor: "/w/runs/run-41.md", showing: "/w/runs/run-42.md", retargeting: false))
-        #expect(!CommitComparison.applies(askedFor: "/w/runs/run-41.md", showing: "/w/runs/run-41.md", retargeting: true))
+    /// Compare with Last Commit's result applies only to the version it was
+    /// asked for: a write (or a retargeted symlink's file) read meanwhile
+    /// compares once more with what is shown now; changed again, dropped.
+    @Test func aComparisonAppliesOnlyToTheVersionItWasAskedFor() {
+        #expect(CommitComparison.applies(askedAt: 4, current: 4, retargeting: false, rerun: false) == .apply)
+        #expect(CommitComparison.applies(askedAt: 4, current: 5, retargeting: false, rerun: false) == .rerun)
+        #expect(CommitComparison.applies(askedAt: 5, current: 5, retargeting: false, rerun: true) == .apply)
+        #expect(CommitComparison.applies(askedAt: 5, current: 6, retargeting: false, rerun: true) == .drop)
+        #expect(CommitComparison.applies(askedAt: 4, current: 4, retargeting: true, rerun: false) == .drop)
     }
 
     /// Re-marked against the commit after everything was read, then ⌘Z: the

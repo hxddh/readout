@@ -54,12 +54,24 @@ public enum CommitComparison: Equatable, Sendable {
     /// large, a Git LFS pointer, or git missing, failing or too slow.
     case unavailable
 
-    /// git runs off the main thread: its result is for the window only while
-    /// it still shows the file it was asked for (`showing`: the real path of
-    /// the content it holds now), not after a symlink was retargeted to
-    /// another file, nor while that retarget's read is pending.
-    public static func applies(askedFor path: String, showing: String, retargeting: Bool) -> Bool {
-        !retargeting && path == showing
+    /// What to do with a comparison that comes back from git (it runs off
+    /// the main thread, reading the file and its commit).
+    public enum Arrival: Equatable, Sendable {
+        /// The window still shows the version it was asked for.
+        case apply
+        /// A read landed meanwhile (an agent's write, a retargeted symlink's
+        /// file): compare again with the version shown now, once.
+        case rerun
+        /// Changed again during the rerun, or a retarget's read is pending: dropped.
+        case drop
+    }
+
+    /// `askedAt` and `current`: the window's content generation (it goes up
+    /// with every read that lands) when the comparison was asked for, and now.
+    public static func applies(askedAt: Int, current: Int, retargeting: Bool, rerun: Bool) -> Arrival {
+        if retargeting { return .drop }
+        if askedAt == current { return .apply }
+        return rerun ? .drop : .rerun
     }
 }
 

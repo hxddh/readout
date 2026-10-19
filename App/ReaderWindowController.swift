@@ -435,6 +435,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     private func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?, commitBaseline: [BlockKey]? = nil) {
         let patch = self.session.load(result.doc, baseline: record?.baseline ?? commitBaseline)
+        contentGeneration += 1
         // What is marked is what changed since the last commit, not since the reader last read it.
         let commitNotice = commitBaseline == nil ? nil : CommitNotice.after(rewrite: patch.rewrite, unread: session.unreadCount)
         // What is on disk already: an unchanged baseline is not written again.
@@ -541,6 +542,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 return
             }
             self.deleted = false
+            self.contentGeneration += 1
             let wasEmpty = self.session.blocks.isEmpty
             guard let patch = self.session.update(result.doc) else {
                 self.model.status = nil
@@ -1096,16 +1098,28 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // MARK: Compare with Last Commit
 
+    /// Goes up with every read that lands in the session (the first load,
+    /// each write, a retargeted symlink's file): a comparison is for the
+    /// version it was asked for.
+    private var contentGeneration = 0
+
     /// View ▸ Compare with Last Commit: the document marked again against
     /// its committed version (`git show HEAD:`), what the agent changed since
     /// unread; ⌘Z brings back what was read before, as for Mark All as Read.
-    @objc func compareWithLastCommit(_ sender: Any?) {
+    @objc func compareWithLastCommit(_ sender: Any?) { compareWithLastCommit(rerun: false) }
+
+    /// `rerun`: a read landed while the first comparison ran; this one is
+    /// against the version shown now, and is dropped if another lands.
+    private func compareWithLastCommit(rerun: Bool) {
         guard loaded, !session.blocks.isEmpty, !retargetGate.isPending else { return NSSound.beep() }
-        let path = contentPath ?? url.path
-        CommitBaseline.compare(path: path) { [weak self] result in
-            guard let self, !self.session.blocks.isEmpty,
-                  CommitComparison.applies(askedFor: path, showing: self.contentPath ?? self.url.path, retargeting: self.retargetGate.isPending)
-            else { return NSSound.beep() }
+        let askedAt = contentGeneration
+        CommitBaseline.compare(path: contentPath ?? url.path) { [weak self] result in
+            guard let self, !self.session.blocks.isEmpty else { return NSSound.beep() }
+            switch CommitComparison.applies(askedAt: askedAt, current: self.contentGeneration, retargeting: self.retargetGate.isPending, rerun: rerun) {
+            case .apply: break
+            case .rerun: return self.compareWithLastCommit(rerun: true)
+            case .drop: return NSSound.beep()
+            }
             switch result {
             case .baseline(let text):
                 self.showMarked(against: MarkdownParser.parse(text).blocks.map(BlockKey.init), againstCommit: true)
