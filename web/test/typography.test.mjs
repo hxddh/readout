@@ -1339,6 +1339,8 @@ const v36 = patch([
     ['code', `<div class="code-block" id="f-tree"><pre><code>web/\n├── src/  ${prose}\n│   └── reader.css\n└── test/</code></pre></div>`],
     ['code', `<div class="code-block" id="f-aligned" data-lang="text"><pre><code>${aligned}</code></pre></div>`],
     ['code', '<div class="code-block" id="f-short-aligned"><pre><code>name   type   default\nid     int    0\nlabel  text   none</code></pre></div>'],
+    ['code', `<div class="code-block" id="f-stack"><pre><code>error Error: Cannot find module 'readout-core' from the reader bundle while the reader was loading the document view\n    at Function.Module._resolveFilename (node:internal/modules/cjs/loader:1145:15)\n    at Object.&lt;anonymous&gt; (/work/web/build.mjs:12:3)</code></pre></div>`],
+    ['code', `<div class="code-block" id="f-shell" data-lang="text"><pre><code>$ npm test\n${prose}</code></pre></div>`],
     ['code', `<div class="code-block" id="f-tabs" data-lang="text"><pre><code>path\tsize\tnote\nsrc/reader.css\t22 KB\t${prose}\nsrc/reader/enhance.js\t31 KB\tshort</code></pre></div>`],
   ]);
   for (const width of [900, 1600]) {
@@ -1350,7 +1352,7 @@ const v36 = patch([
       const col = document.getElementById('f-p').getBoundingClientRect();
       const one = id => { const c = document.getElementById(id), pre = c.querySelector('pre'), b = c.getBoundingClientRect();
         return { id, prose: c.classList.contains('cb-prose'), ws: getComputedStyle(pre).whiteSpace, scrolls: pre.scrollWidth > pre.clientWidth + 1, left: b.left - col.left, width: b.width - col.width, wrapBtn: getComputedStyle(c.querySelector('.cb-wrap')).display }; };
-      return { prose: ids.map(one), js: one('f-js'), tree: one('f-tree'), aligned: one('f-aligned'), short: one('f-short-aligned'), tabs: one('f-tabs'), sideways: document.scrollingElement.scrollWidth - innerWidth };
+      return { prose: ids.map(one), js: one('f-js'), tree: one('f-tree'), aligned: one('f-aligned'), short: one('f-short-aligned'), tabs: one('f-tabs'), stack: one('f-stack'), shell: one('f-shell'), sideways: document.scrollingElement.scrollWidth - innerWidth };
     }, fences.map(f => f[0]));
     check(`prose fences (none, text, txt, plain, plaintext, md, markdown, prompt) wrap in the column, without a Wrap button (${width})`,
       r.prose.every(f => f.prose && f.ws === 'pre-wrap' && !f.scrolls && Math.abs(f.left) < 0.5 && Math.abs(f.width) < 0.5 && f.wrapBtn === 'none') && r.sideways <= 0, JSON.stringify(r.prose.filter(f => !(f.prose && !f.scrolls && Math.abs(f.left) < 0.5 && Math.abs(f.width) < 0.5 && f.wrapBtn === 'none'))));
@@ -1359,6 +1361,10 @@ const v36 = patch([
       [r.js, r.tree, r.aligned].every(f => !f.prose && f.ws === 'pre' && (width > 900 || f.scrolls) && f.wrapBtn !== 'none'), JSON.stringify([r.js, r.tree, r.aligned]));
     check(`a short aligned table and a tab-separated listing are not prose: unwrapped, with their Wrap button${width === 900 ? ', the long one scrolling' : ''} (${width})`,
       [r.short, r.tabs].every(f => !f.prose && f.ws === 'pre' && f.wrapBtn !== 'none') && (width > 900 || r.tabs.scrolls), JSON.stringify([r.short, r.tabs]));
+    // Prose only on a positive signal: a stack trace (indented frames) and a
+    // shell transcript are not prose, long sentences in them notwithstanding.
+    check(`a stack trace and a shell transcript in an unlabelled or text fence are not prose (${width})`,
+      [r.stack, r.shell].every(f => !f.prose && f.ws === 'pre' && f.wrapBtn !== 'none') && (width > 900 || r.stack.scrolls), JSON.stringify([r.stack, r.shell]));
     if (width === 1600) check('at 1600 px code still widens into the margins, prose does not', r.js.width > 10 && r.prose.every(f => Math.abs(f.width) < 0.5), JSON.stringify([r.js, r.prose[0]]));
     await page.close();
   }
