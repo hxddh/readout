@@ -91,8 +91,27 @@ import Testing
         #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan", git: lfs, exists: exists) == .unavailable)
         let binary = FakeGit(output: [show: Data([0x23, 0x00, 0x41])])
         #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan", git: binary, exists: exists) == .unavailable)
+        // Committed empty (git succeeded, no bytes): a baseline, or unchanged; not "not in the commit".
         let empty = FakeGit(output: [show: Data()])
-        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "", git: empty, exists: exists) == .unavailable)
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: empty, exists: exists) == .baseline(""))
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "", git: empty, exists: exists) == .unchanged)
+        #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: empty, exists: exists) == "")
+    }
+
+    /// A file committed empty, written since: its first open marks every block new.
+    @Test func aFileCommittedEmptyIsMarkedAllNew() {
+        let s = DocumentSession()
+        let patch = s.load(MarkdownParser.parse("# Plan\n\nOne.\n\nTwo.\n"), baseline: MarkdownParser.parse("").blocks.map(BlockKey.init))
+        #expect(!patch.rewrite && s.unreadCount == 3)
+        #expect(CommitNotice.after(rewrite: patch.rewrite, unread: s.unreadCount) == .marked)
+    }
+
+    /// Compare with Last Commit's result applies only to the file it was asked
+    /// for: a window whose symlink was retargeted meanwhile drops it.
+    @Test func aComparisonAppliesOnlyToTheFileItWasAskedFor() {
+        #expect(CommitComparison.applies(askedFor: "/w/runs/run-41.md", showing: "/w/runs/run-41.md", retargeting: false))
+        #expect(!CommitComparison.applies(askedFor: "/w/runs/run-41.md", showing: "/w/runs/run-42.md", retargeting: false))
+        #expect(!CommitComparison.applies(askedFor: "/w/runs/run-41.md", showing: "/w/runs/run-41.md", retargeting: true))
     }
 
     /// Re-marked against the commit after everything was read, then ⌘Z: the

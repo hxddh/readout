@@ -157,9 +157,11 @@ public enum GitBaseline {
 
     /// The text to mark the file's `current` text against, from the bytes of
     /// its committed version: nil when that is the same text, too large, not
-    /// text, or a Git LFS pointer (the content is elsewhere).
+    /// text, or a Git LFS pointer (the content is elsewhere). A file committed
+    /// empty is a baseline too (all of what it has now is new): a git that
+    /// failed or a file not committed gives no bytes at all (nil), not empty ones.
     public static func baselineText(head: Data, current: String) -> String? {
-        guard !head.isEmpty, head.count <= sizeLimit, !head.contains(0) else { return nil }
+        guard head.count <= sizeLimit, !head.contains(0) else { return nil }
         if head.starts(with: Array("version https://git-lfs.github.com/spec/".utf8)) { return nil }
         let text = FileContent.decode(head).text
         guard MarkdownParser.sourceLines(text) != MarkdownParser.sourceLines(current) else { return nil }

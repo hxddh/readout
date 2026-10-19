@@ -12,7 +12,7 @@
 import * as hl from './highlight.js';
 import { doc, root, slots, heights, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen } from './reader/anchor.js';
-import { apply as applyPatch, findMode, showNotice, noticeMaybeSeen } from './reader/patch.js';
+import { apply as applyPatch, findMode, showNotice, hideNotice, noticeMaybeSeen } from './reader/patch.js';
 import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups, noteLanding, restartDwell } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables, highlightIn } from './reader/enhance.js';
@@ -432,6 +432,8 @@ window.readout = {
   selectedSlots,
   // A passing note above the document ("Marked against the last commit").
   notice: text => { if (text) showNotice(String(text)); },
+  // The app's notice no longer holds (Compare with Last Commit undone): gone now, if it is the one showing.
+  hideNotice: text => hideNotice(String(text ?? '')),
   // The window is key (or no longer): focus in its outline or find field is still the reader reading.
   setWindowKey: on => { setWindowKey(on); if (on) { restartDwell(); noticeMaybeSeen(); } },
   markAllRead,

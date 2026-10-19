@@ -53,6 +53,14 @@ public enum CommitComparison: Equatable, Sendable {
     /// Outside a repository, not committed (untracked, new), not text, too
     /// large, a Git LFS pointer, or git missing, failing or too slow.
     case unavailable
+
+    /// git runs off the main thread: its result is for the window only while
+    /// it still shows the file it was asked for (`showing`: the real path of
+    /// the content it holds now), not after a symlink was retargeted to
+    /// another file, nor while that retarget's read is pending.
+    public static func applies(askedFor path: String, showing: String, retargeting: Bool) -> Bool {
+        !retargeting && path == showing
+    }
 }
 
 extension GitBaseline {
@@ -67,7 +75,7 @@ extension GitBaseline {
         guard let data = git.run(["--no-pager", "show", "HEAD:./" + name], in: dir) else { return .unavailable }
         if let text = baselineText(head: data, current: current) { return .baseline(text) }
         // baselineText says nil for the same text and for what is not compared: tell them apart.
-        let comparable = !data.isEmpty && data.count <= sizeLimit && !data.contains(0)
+        let comparable = data.count <= sizeLimit && !data.contains(0)
             && !data.starts(with: Array("version https://git-lfs.github.com/spec/".utf8))
         return comparable ? .unchanged : .unavailable
     }

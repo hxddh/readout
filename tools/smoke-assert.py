@@ -484,7 +484,8 @@ check("compare: a read document is marked against the last commit again, with th
       gc.get("unread_read") == 0 and (gc.get("unread_compared") or 0) >= 2 and (gc.get("marks_compared") or 0) >= 2
       and gc.get("notice") == "Marked against the last commit", gb)
 check("compare: Undo brings back what was read",
-      gc.get("undo_title") == "Undo Compare with Last Commit" and gc.get("unread_undone") == 0 and gc.get("marks_undone") == 0, gb)
+      gc.get("undo_title") == "Undo Compare with Last Commit" and gc.get("unread_undone") == 0 and gc.get("marks_undone") == 0
+      and gc.get("notice_undone") == "", gb)
 check("compare: an untracked file says there is nothing to compare with",
       gcu.get("unread_compared") == 0 and gcu.get("subtitle") == "Not in the last commit", gb)
 

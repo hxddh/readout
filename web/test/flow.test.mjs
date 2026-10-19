@@ -163,6 +163,15 @@ const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEven
   await page.evaluate(() => window.readout.notice('Marked against the last commit'));
   const r = await page.evaluate(() => { const n = document.getElementById('ro-notice'); return { hidden: n.hidden, text: n.textContent }; });
   check('the app\'s notice shows above the document', !r.hidden && r.text === 'Marked against the last commit', JSON.stringify(r));
+  // Compare with Last Commit undone (3.8): its notice goes at once; another notice stays.
+  const h = await page.evaluate(() => {
+    const n = document.getElementById('ro-notice');
+    window.readout.hideNotice('Rewritten since the last commit');
+    const other = n.hidden;
+    window.readout.hideNotice('Marked against the last commit');
+    return { other, hidden: n.hidden };
+  });
+  check('hideNotice hides the notice it names at once, and no other', h.other === false && h.hidden === true, JSON.stringify(h));
   await page.close();
 }
 

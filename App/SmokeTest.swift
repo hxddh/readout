@@ -631,6 +631,7 @@ enum SmokeTest {
             try? await Task.sleep(for: .milliseconds(800))
             json["unread_undone"] = reader.model.unread
             json["marks_undone"] = (try? await web.evaluateJavaScript(marks)) as? Int ?? -1
+            json["notice_undone"] = (try? await web.evaluateJavaScript(notice)) as? String ?? "?"
         }
         return json
     }

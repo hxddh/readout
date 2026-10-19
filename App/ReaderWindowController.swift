@@ -1099,9 +1099,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// its committed version (`git show HEAD:`), what the agent changed since
     /// unread; ⌘Z brings back what was read before, as for Mark All as Read.
     @objc func compareWithLastCommit(_ sender: Any?) {
-        guard loaded, !session.blocks.isEmpty else { return NSSound.beep() }
-        CommitBaseline.compare(path: contentPath ?? url.path) { [weak self] result in
-            guard let self, !self.session.blocks.isEmpty else { return NSSound.beep() }
+        guard loaded, !session.blocks.isEmpty, !retargetGate.isPending else { return NSSound.beep() }
+        let path = contentPath ?? url.path
+        CommitBaseline.compare(path: path) { [weak self] result in
+            guard let self, !self.session.blocks.isEmpty,
+                  CommitComparison.applies(askedFor: path, showing: self.contentPath ?? self.url.path, retargeting: self.retargetGate.isPending)
+            else { return NSSound.beep() }
             switch result {
             case .baseline(let text):
                 self.showMarked(against: MarkdownParser.parse(text).blocks.map(BlockKey.init), againstCommit: true)
@@ -1131,7 +1134,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         let before = session.baseline
         reloadMarked(against: baseline) { [weak self] patch in
-            guard let self, againstCommit else { return }
+            guard let self else { return }
+            guard againstCommit else {
+                // Undone: the commit's notice goes with its marks (any other notice stays).
+                for n in [CommitNotice.marked, .rewritten] { self.webView.call("hideNotice", Self.text(n)) }
+                return
+            }
             let notice = CommitNotice.after(rewrite: patch.rewrite, unread: self.session.unreadCount)
             if let notice { self.webView.call("notice", Self.text(notice)) }
             SmokeTest.noteCompared(notice.map { Self.text($0) } ?? "")
