@@ -1276,6 +1276,147 @@ const v36 = patch([
   await page.close();
 }
 
+// 3.8 T1. Emphasis dots are whole dots on every character: a dot laid on the
+//      fractional bottom edge of its padding was cut to a 1 px dash on some
+//      characters and not others (3.7), depending on where each one fell.
+//      Ink per dot, with the glyphs hidden, at 1x and 2x and 13 to 22 px.
+{
+  const dotDoc = patch([
+    ['paragraph', '<p id="dz">复查时请<em>逐项核对</em>每家实现的差异，并<em>保存原始响应头</em>以便<em>复查</em>；<em>所有实现</em>都必须在<em>同一个版本</em>下<em>重新跑完</em>。</p>', { cjk: true }],
+    ['paragraph', '<p id="dj">日本語の確認：<em>条件付き書き込み</em>は「<em>すべての実装</em>」で<em>同じ結果</em>になるはずです。</p>', { cjk: true }],
+  ]);
+  const spread = [];
+  for (const dsf of [1, 2]) {
+    const pg = await browser.newPage({ viewport: { width: 900, height: 900 }, deviceScaleFactor: dsf });
+    collectPageErrors(pg, errors);
+    await pg.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+    await pg.goto(`${base}/reader.html`);
+    await pg.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+    await pg.addStyleTag({ content: '#ro-doc { -webkit-text-fill-color: transparent } .em-dot { color: #000 !important }' });
+    for (let fs = 13; fs <= 22; fs++) {
+      await pg.evaluate(f => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: f, topInset: 0 }), fs);
+      if (fs === 13) await pg.evaluate(p => window.readout.apply(p), dotDoc);
+      await pg.waitForTimeout(80);
+      const info = await pg.evaluate(() => {
+        const box = document.getElementById('dz').getBoundingClientRect(), end = document.getElementById('dj').getBoundingClientRect();
+        const y = Math.max(0, Math.floor(box.top - 20)), clip = { x: 0, y, width: innerWidth, height: Math.ceil(end.bottom + 20 - y) };
+        return { clip, dots: [...document.querySelectorAll('.em-dot')].map(e => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, ja: !!e.closest(':lang(ja)') }; }) };
+      });
+      const png = PNG.sync.read(await pg.screenshot({ clip: info.clip }));
+      for (const ja of [false, true]) {
+        const inks = info.dots.filter(d => d.ja === ja).map(d => {
+          const x0 = Math.floor(d.x * dsf), x1 = Math.ceil((d.x + d.w) * dsf), top = (d.y - info.clip.y) * dsf;
+          const band = ja ? [top - 1, top + 0.3 * fs * dsf] : [top + d.h * dsf - 0.3 * fs * dsf, top + d.h * dsf + 1];
+          let ink = 0;
+          for (let y = Math.max(0, Math.floor(band[0])); y < Math.min(png.height, Math.ceil(band[1])); y++) for (let x = x0; x < x1; x++) {
+            const i = (y * png.width + x) * 4;
+            ink += (255 - (0.2126 * png.data[i] + 0.7152 * png.data[i + 1] + 0.0722 * png.data[i + 2])) / 255;
+          }
+          return ink / dsf / dsf;
+        });
+        const mean = inks.reduce((a, b) => a + b, 0) / inks.length;
+        const cv = Math.sqrt(inks.reduce((a, b) => a + (b - mean) ** 2, 0) / inks.length) / mean;
+        spread.push({ lang: ja ? 'ja' : 'zh', dsf, fs, n: inks.length, mean: +mean.toFixed(2), cv: +cv.toFixed(3) });
+      }
+    }
+    await pg.close();
+  }
+  const bad = spread.filter(s => !(s.n >= 8 && s.mean > 0.5 && s.cv < 0.1));
+  check('emphasis dots carry the same ink on every character (spread under 0.1, zh and ja, 1x and 2x, 13-22 px)', bad.length === 0 && spread.length === 40, JSON.stringify(bad.length ? bad : spread.slice(0, 4)));
+}
+
+// 3.8 T2. Prose in a fence (no language, text, markdown, prompt...) wraps at
+//      the column, never widens into the margins and has no Wrap button; code,
+//      a box-drawing tree and an aligned listing keep scrolling.
+{
+  const prose = 'This is a prompt written as one long line of prose, the way agents embed instructions and SKILL.md text in a fence, and it goes on well past the column.';
+  const aligned = Array.from({ length: 3 }, (_, i) => `row-${i}-name-that-is-long      value-${i}-also-quite-long-here      note ${i} with more words`).join('\n');
+  const fences = [['f-none', ''], ['f-text', 'text'], ['f-txt', 'txt'], ['f-plain', 'plain'], ['f-plaintext', 'plaintext'], ['f-md', 'md'], ['f-markdown', 'markdown'], ['f-prompt', 'prompt']];
+  const fp = patch([
+    ['paragraph', '<p id="f-p">The text column.</p>'],
+    ...fences.map(([id, lang]) => ['code', `<div class="code-block" id="${id}"${lang ? ` data-lang="${lang}"` : ''}><pre><code>${prose} ${prose}</code></pre></div>`]),
+    ['code', `<div class="code-block" id="f-js" data-lang="js"><pre><code>${longLine} ${longLine}</code></pre></div>`],
+    ['code', `<div class="code-block" id="f-tree"><pre><code>web/\n├── src/  ${prose}\n│   └── reader.css\n└── test/</code></pre></div>`],
+    ['code', `<div class="code-block" id="f-aligned" data-lang="text"><pre><code>${aligned}</code></pre></div>`],
+    ['code', '<div class="code-block" id="f-short-aligned"><pre><code>name   type   default\nid     int    0\nlabel  text   none</code></pre></div>'],
+    ['code', `<div class="code-block" id="f-stack"><pre><code>error Error: Cannot find module 'readout-core' from the reader bundle while the reader was loading the document view\n    at Function.Module._resolveFilename (node:internal/modules/cjs/loader:1145:15)\n    at Object.&lt;anonymous&gt; (/work/web/build.mjs:12:3)</code></pre></div>`],
+    ['code', `<div class="code-block" id="f-shell" data-lang="text"><pre><code>$ npm test\n${prose}</code></pre></div>`],
+    ['code', `<div class="code-block" id="f-tabs" data-lang="text"><pre><code>path\tsize\tnote\nsrc/reader.css\t22 KB\t${prose}\nsrc/reader/enhance.js\t31 KB\tshort</code></pre></div>`],
+  ]);
+  for (const width of [900, 1600]) {
+    page = await open(width);
+    await page.evaluate(p => window.readout.apply(p), fp);
+    await until(page, () => [...document.querySelectorAll('.code-block[data-lang]')].every(c => c.dataset.hl === 'done'));
+    await page.waitForTimeout(100);
+    const r = await page.evaluate(ids => {
+      const col = document.getElementById('f-p').getBoundingClientRect();
+      const one = id => { const c = document.getElementById(id), pre = c.querySelector('pre'), b = c.getBoundingClientRect();
+        return { id, prose: c.classList.contains('cb-prose'), ws: getComputedStyle(pre).whiteSpace, scrolls: pre.scrollWidth > pre.clientWidth + 1, left: b.left - col.left, width: b.width - col.width, wrapBtn: getComputedStyle(c.querySelector('.cb-wrap')).display }; };
+      return { prose: ids.map(one), js: one('f-js'), tree: one('f-tree'), aligned: one('f-aligned'), short: one('f-short-aligned'), tabs: one('f-tabs'), stack: one('f-stack'), shell: one('f-shell'), sideways: document.scrollingElement.scrollWidth - innerWidth };
+    }, fences.map(f => f[0]));
+    check(`prose fences (none, text, txt, plain, plaintext, md, markdown, prompt) wrap in the column, without a Wrap button (${width})`,
+      r.prose.every(f => f.prose && f.ws === 'pre-wrap' && !f.scrolls && Math.abs(f.left) < 0.5 && Math.abs(f.width) < 0.5 && f.wrapBtn === 'none') && r.sideways <= 0, JSON.stringify(r.prose.filter(f => !(f.prose && !f.scrolls && Math.abs(f.left) < 0.5 && Math.abs(f.width) < 0.5 && f.wrapBtn === 'none'))));
+    // At 1600 px they widen into the margins, where the aligned listing fits.
+    check(`code, a tree and an aligned listing do not wrap and keep their Wrap button${width === 900 ? ', and scroll' : ''} (${width})`,
+      [r.js, r.tree, r.aligned].every(f => !f.prose && f.ws === 'pre' && (width > 900 || f.scrolls) && f.wrapBtn !== 'none'), JSON.stringify([r.js, r.tree, r.aligned]));
+    check(`a short aligned table and a tab-separated listing are not prose: unwrapped, with their Wrap button${width === 900 ? ', the long one scrolling' : ''} (${width})`,
+      [r.short, r.tabs].every(f => !f.prose && f.ws === 'pre' && f.wrapBtn !== 'none') && (width > 900 || r.tabs.scrolls), JSON.stringify([r.short, r.tabs]));
+    // Prose only on a positive signal: a stack trace (indented frames) and a
+    // shell transcript are not prose, long sentences in them notwithstanding.
+    check(`a stack trace and a shell transcript in an unlabelled or text fence are not prose (${width})`,
+      [r.stack, r.shell].every(f => !f.prose && f.ws === 'pre' && f.wrapBtn !== 'none') && (width > 900 || r.stack.scrolls), JSON.stringify([r.stack, r.shell]));
+    if (width === 1600) check('at 1600 px code still widens into the margins, prose does not', r.js.width > 10 && r.prose.every(f => Math.abs(f.width) < 0.5), JSON.stringify([r.js, r.prose[0]]));
+    await page.close();
+  }
+}
+
+// 3.8 T3. Chinese blocks take “ ” ‘ ’ — … from the Chinese font (its
+//      full-width forms, clreq), Japanese and Latin blocks and code do not.
+{
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['paragraph', '<p id="q-zh">复查每家实现的“条件写入”与‘最终一致’——见……</p>', { cjk: true }],
+    ['paragraph', '<p id="q-ja">日本語の“引用”です。</p>', { cjk: true }],
+    ['paragraph', '<p id="q-en">The “quoted” word — and so on…</p>'],
+    ['code', '<div class="code-block" id="q-code" data-lang="text"><pre><code>中文的“引号”在代码里</code></pre></div>'],
+  ]));
+  const fam = await page.evaluate(() => {
+    const f = id => getComputedStyle(document.getElementById(id)).fontFamily;
+    const faces = [...document.fonts].filter(x => x.family.replace(/["']/g, '') === 'ro-zh-punct').map(x => ({ range: x.unicodeRange, weight: x.weight }));
+    return { zh: f('q-zh'), ja: f('q-ja'), en: f('q-en'), code: getComputedStyle(document.querySelector('#q-code pre')).fontFamily, codeBlk: getComputedStyle(document.getElementById('q-code').closest('.blk')).fontFamily, faces };
+  });
+  check('a Chinese block puts the Chinese punctuation face first; Japanese, Latin and code do not',
+    /^"?ro-zh-punct"?,/.test(fam.zh) && ![fam.ja, fam.en, fam.code, fam.codeBlk].some(v => /ro-zh-punct/.test(v)), JSON.stringify(fam));
+  check('the punctuation face covers only “ ” ‘ ’ — …, regular and bold',
+    fam.faces.length === 2 && fam.faces.every(x => /U\+2018-2019/i.test(x.range) && /U\+201C-201D/i.test(x.range) && /U\+2014/i.test(x.range) && /U\+2026/i.test(x.range) && !/U\+3/i.test(x.range)), JSON.stringify(fam.faces));
+  await page.close();
+}
+
+// 3.8 T4. Front matter is a key/value grid: each key on a row of its own, the
+//      keys in one column, the values in the next, a long value wrapping
+//      beside its key, not under it.
+{
+  page = await open(700);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    // As ReadoutCore writes it; the last value is a literal block (`notes: |`) with a blank line.
+    ['frontMatter', '<div class="front-matter" id="fm"><span class="fm-item"><span class="fm-key">title</span> <span class="fm-val">Plan</span></span><span class="fm-item"><span class="fm-key">status</span> <span class="fm-val">draft</span></span><span class="fm-item"><span class="fm-key">description</span> <span class="fm-val">A long description that runs on well past the end of a single line in the column, so it has to wrap onto a second one at least.</span></span><span class="fm-item"><span class="fm-key">notes</span> <span class="fm-val">line one<br>line two<br><br>after a blank line</span></span></div>'],
+    ['heading', '<h1 id="fm-h">Title</h1>', { anchor: 'fm-h' }],
+  ]));
+  const fm = await page.evaluate(() => {
+    const keys = [...document.querySelectorAll('#fm .fm-key')].map(k => k.getBoundingClientRect());
+    const vals = [...document.querySelectorAll('#fm .fm-val')].map(v => { const r = document.createRange(); r.selectNodeContents(v); return [...r.getClientRects()].filter(x => x.width > 0).map(x => ({ left: x.left, top: x.top })); });
+    return { keys: keys.map(k => ({ left: k.left, right: k.right, top: k.top })), vals };
+  });
+  const k = fm.keys, v = fm.vals;
+  check('front matter: keys line up in one column, each on its own row',
+    k.length === 4 && k.every(x => Math.abs(x.left - k[0].left) < 0.5) && k[0].top < k[1].top && k[1].top < k[2].top, JSON.stringify(k));
+  check('front matter: values line up beside the keys, a long one and one with blank lines staying in their own column',
+    v.every(lines => lines.length && Math.abs(lines[0].left - v[0][0].left) < 0.5 && lines[0].left > Math.max(...k.map(x => x.right))) && v[2].length >= 2 && v[2].every(l => Math.abs(l.left - v[0][0].left) < 0.5)
+      && v[3].length === 3 && v[3].every(l => Math.abs(l.left - v[0][0].left) < 0.5) && v[3][2].top - v[3][1].top > 1.5 * (v[3][1].top - v[3][0].top),
+    JSON.stringify(v));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();

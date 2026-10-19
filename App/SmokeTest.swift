@@ -165,6 +165,7 @@ enum SmokeTest {
             _ = try? await webView.evaluateJavaScript("(() => { const e = [...document.querySelectorAll('.blk')].find(b => b.textContent.includes('日本語の確認')); if (e) window.scrollBy(0, e.getBoundingClientRect().top - 160); return 1; })()")
             try? await Task.sleep(for: .seconds(1))
             windowShot(controller.window, out, "cjk-light")
+            await chinesePunctuation(webView: webView, out: out)
             _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
             try? await Task.sleep(for: .milliseconds(500))
             // The next-change button's image as drawn in an active window (the
@@ -288,6 +289,7 @@ enum SmokeTest {
             await tabDot(controller: controller, out: out)
             await landing(controller: controller, webView: webView, out: out)
             restoration(controller: controller, out: out)
+            await restoredTabs(out: out)
             await crossDocument(controller: controller, out: out)
             await updateDownload(out: out)
             writeTimings(out)
@@ -366,6 +368,40 @@ enum SmokeTest {
         guard let text = try? await webView.evaluateJavaScript(script) as? String,
               let data = text.data(using: .utf8), let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         write(json, to: out, "css-supports.json")
+    }
+
+    /// Which font draws “ ” ‘ ’ — … in the fixture's Chinese paragraph
+    /// (reader.css: the ro-zh-punct face, `local()` PingFang on a Chinese
+    /// block): the face's status, and the width of those six characters
+    /// as the block draws them, in PingFang SC and in the system font
+    /// (zh-punct.json). Taken once the paragraph has been shown.
+    private static func chinesePunctuation(webView: WKWebView, out: URL) async {
+        let script = #"""
+            (() => {
+              const blk = [...document.querySelectorAll('#ro-doc > .blk')].find(b => b.lang === 'zh' && b.textContent.includes('\u201C'));
+              if (!blk) return JSON.stringify({ found: false });
+              const host = blk.querySelector('p') || blk;
+              const width = font => {
+                const s = document.createElement('span');
+                s.textContent = '\u201C\u201D\u2018\u2019\u2014\u2026';
+                s.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:20px;font-weight:400' + (font ? ';font-family:' + font : '');
+                host.appendChild(s);
+                const w = s.getBoundingClientRect().width;
+                s.remove();
+                return Math.round(w * 100) / 100;
+              };
+              return JSON.stringify({
+                found: true,
+                family: getComputedStyle(blk).fontFamily,
+                check: document.fonts.check('20px ro-zh-punct', '\u201C'),
+                faces: [...document.fonts].filter(f => f.family.replace(/["']/g, '') === 'ro-zh-punct').map(f => ({ weight: f.weight, status: f.status })),
+                width: { block: width(''), pingfang: width('"PingFang SC"'), system: width('-apple-system') },
+              });
+            })()
+            """#
+        guard let text = try? await webView.evaluateJavaScript(script) as? String,
+              let data = text.data(using: .utf8), let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        write(json, to: out, "zh-punct.json")
     }
 
     /// The soft scroll edge under the toolbar: the web view's top scroll
@@ -572,10 +608,22 @@ enum SmokeTest {
         controller.copyAsQuote(nil)
         try? await Task.sleep(for: .milliseconds(400))
         let text = NSPasteboard.general.string(forType: .string) ?? ""
-        _ = try? await webView.evaluateJavaScript("getSelection().removeAllRanges(); 1")
+        _ = try? await webView.evaluateJavaScript("getSelection().removeAllRanges(); document.activeElement?.blur(); 1")
         try? await Task.sleep(for: .milliseconds(300))
+        let enabledAfterDeselect = controller.validateMenuItem(item)
+        // No text selected, the keyboard on a block (where N goes): that block is quoted.
+        let focus = "(() => { const b = [...document.querySelectorAll('#ro-doc > .blk.k-paragraph')].filter(e => e.textContent.trim().length > 20)[1]; if (!b) return null; if (!b.hasAttribute('tabindex')) b.tabIndex = -1; b.focus(); return +b.dataset.slot; })()"
+        let focused = try? await webView.evaluateJavaScript(focus)
+        try? await Task.sleep(for: .milliseconds(300))
+        let enabledFocused = controller.validateMenuItem(item)
+        NSPasteboard.general.clearContents()
+        controller.copyAsQuote(nil)
+        try? await Task.sleep(for: .milliseconds(400))
+        let focusedText = NSPasteboard.general.string(forType: .string) ?? ""
+        _ = try? await webView.evaluateJavaScript("document.activeElement?.blur(); 1")
         write(["picked": picked ?? NSNull(), "enabled": enabled, "text": text,
-               "enabled_after_deselect": controller.validateMenuItem(item),
+               "enabled_after_deselect": enabledAfterDeselect,
+               "focused_slot": focused ?? NSNull(), "enabled_focused": enabledFocused, "focused_text": focusedText,
                "path": ReaderChrome.tabToolTip(path: controller.url.path)], to: out, "copy-quote.json")
     }
 
@@ -651,13 +699,33 @@ enum SmokeTest {
         let readers = { NSApp.windows.compactMap { $0.windowController as? ReaderWindowController } }
         controller.show()
         var json: [String: Any] = ["badge_before": NSApp.dockTile.badgeLabel ?? "",
+                                   "attention_before": readers().filter(\.showsAttention).count,
                                    "showing_unread_before": readers().filter(\.showsUnread).count]
         controller.markAllRead(nil)
         try? await Task.sleep(for: .milliseconds(900))
+        // A document opened behind and not looked at yet counts as waiting
+        // (U2): N goes on to it as it shows, without a first change. (The CI
+        // window is never key: no document has been looked at.)
+        json["unseen_from"] = reading()
+        landed = []
+        controller.nextChange(nil)
+        var deadline = Date().addingTimeInterval(4)
+        while reading() == json["unseen_from"] as? String && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
+        try? await Task.sleep(for: .milliseconds(600))
+        let unseen = readers().first { ($0.window?.tabGroup?.selectedWindow ?? $0.window) === $0.window && $0.window?.title == reading() }
+        json["unseen"] = ["to": reading(), "unread": unseen?.model.unread ?? -1, "looked_at": unseen?.notedRecent ?? true,
+                          "landed": landed, "subtitle": unseen?.window?.subtitle ?? ""]
+        // As if the reader had looked at every document: only unread changes wait now.
+        for r in readers() { r.noteLookedAt() }
+        try? await Task.sleep(for: .milliseconds(300))
+        json["badge_looked_at"] = NSApp.dockTile.badgeLabel ?? ""
+        json["showing_unread_looked_at"] = readers().filter(\.showsUnread).count
+        controller.show()
+        try? await Task.sleep(for: .milliseconds(300))
         json["from"] = reading()
         landed = []
         controller.nextChange(nil)
-        let deadline = Date().addingTimeInterval(4)
+        deadline = Date().addingTimeInterval(4)
         while (reading() == json["from"] as? String || landed.isEmpty) && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
         // Before the change it went to is read (300 ms on screen).
         let destination = readers().first { ($0.window?.tabGroup?.selectedWindow ?? $0.window) === $0.window && $0.window?.title == reading() }
@@ -704,9 +772,104 @@ enum SmokeTest {
             guard let reader = app?.reader(for: url), let web = reader.window?.contentView?.firstDescendant(ofType: WKWebView.self) else { continue }
             let state = (try? await web.evaluateJavaScript("JSON.stringify({ marks: document.querySelectorAll('.m-inserted, .m-modified').length, deletions: document.querySelectorAll('.del-mark').length, notice: document.getElementById('ro-notice').hidden ? '' : document.getElementById('ro-notice').textContent })")) as? String
             json[name] = ["unread": reader.model.unread, "page": state ?? ""]
+            json["compare_" + name] = await compareWithLastCommit(reader, web: web)
             reader.window?.close()
         }
+        // Outside a repository (a plan in /tmp/…/plans): the item is disabled.
+        if let plan = env["READOUT_SMOKE_HOOK_PLAN"], let hooked = app?.reader(for: URL(fileURLWithPath: plan)) {
+            json["compare_enabled_outside"] = hooked.validateMenuItem(NSMenuItem(title: "", action: #selector(ReaderWindowController.compareWithLastCommit(_:)), keyEquivalent: ""))
+        }
         write(json, to: out, "git-baseline.json")
+    }
+
+    /// View ▸ Compare with Last Commit (N1) on a document in the repository:
+    /// with everything read, the changes since the commit are marked again,
+    /// with the notice; Edit ▸ Undo brings back what was read.
+    private static func compareWithLastCommit(_ reader: ReaderWindowController, web: WKWebView) async -> [String: Any] {
+        let item = NSMenuItem(title: "", action: #selector(ReaderWindowController.compareWithLastCommit(_:)), keyEquivalent: "")
+        let marks = "document.querySelectorAll('.m-inserted:not(.m-read), .m-modified:not(.m-read)').length"
+        let notice = "document.getElementById('ro-notice').hidden ? '' : document.getElementById('ro-notice').textContent"
+        var json: [String: Any] = ["enabled": reader.validateMenuItem(item)]
+        reader.markAllRead(nil)
+        try? await Task.sleep(for: .milliseconds(500))
+        json["unread_read"] = reader.model.unread
+        // A reader chooses these from the menu, one event each, so each is an
+        // undo group of its own; called here without an event in between,
+        // they can share one, and Undo would take back Mark All as Read too
+        // (the commit's marks again). Only the comparison is to be undone.
+        reader.window?.undoManager?.removeAllActions()
+        compared = []
+        let before = appliedCount
+        let subtitle = reader.window?.subtitle ?? ""
+        reader.compareWithLastCommit(nil)
+        // Marked and applied, or a message in the subtitle instead (nothing to compare with).
+        let deadline = Date().addingTimeInterval(10)
+        while (compared.isEmpty || appliedCount == before) && reader.window?.subtitle == subtitle && Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        try? await Task.sleep(for: .milliseconds(500))
+        json["unread_compared"] = reader.model.unread
+        json["marks_compared"] = (try? await web.evaluateJavaScript(marks)) as? Int ?? -1
+        json["notice"] = (try? await web.evaluateJavaScript(notice)) as? String ?? ""
+        json["subtitle"] = reader.window?.subtitle ?? ""
+        let undo = reader.window?.undoManager
+        json["undo_title"] = undo?.undoMenuItemTitle ?? ""
+        if undo?.canUndo == true && !compared.isEmpty {
+            undo?.undo()
+            try? await Task.sleep(for: .milliseconds(800))
+            json["unread_undone"] = reader.model.unread
+            json["marks_undone"] = (try? await web.evaluateJavaScript(marks)) as? Int ?? -1
+            json["notice_undone"] = (try? await web.evaluateJavaScript(notice)) as? String ?? "?"
+            json["redo_title"] = undo?.redoMenuItemTitle ?? ""
+        }
+        return json
+    }
+
+    /// Compare with Last Commit marked the document (the notice it showed).
+    private static var compared: [String] = []
+    static func noteCompared(_ notice: String) {
+        if outputDirectory != nil { compared.append(notice) }
+    }
+
+    /// Two documents restored as the tabs of one window, through the
+    /// restoration path AppKit takes at launch (ReaderRestoration's coder,
+    /// restoreWindow, the regrouping): the tab not in front comes back
+    /// without the dot when it had been looked at (U1, a 3.7 regression).
+    private static func restoredTabs(out: URL) async {
+        let paths = (ProcessInfo.processInfo.environment["READOUT_SMOKE_RESTORE_FILES"] ?? "").split(separator: ":").map(String.init)
+        guard paths.count == 2, let app = NSApp.delegate as? AppDelegate else { return }
+        let states = [ReaderRestorationState(path: paths[0], group: "smoke-restore", tabIndex: 0, selected: true, seen: true),
+                      ReaderRestorationState(path: paths[1], group: "smoke-restore", tabIndex: 1, selected: false, seen: true)]
+        final class Box { var windows: [NSWindow] = [] }
+        let box = Box()
+        for (i, state) in states.enumerated() {
+            let archiver = NSKeyedArchiver(requiringSecureCoding: true)
+            ReaderRestoration.encode(state, into: archiver)
+            archiver.finishEncoding()
+            guard let coder = try? NSKeyedUnarchiver(forReadingFrom: archiver.encodedData) else { continue }
+            coder.requiresSecureCoding = true
+            ReaderRestoration.restoreWindow(withIdentifier: NSUserInterfaceItemIdentifier("reader-smoke-restore-\(i)"), state: coder) { w, _ in
+                if let w { box.windows.append(w) }
+            }
+        }
+        // AppKit orders restored windows in, then the launch regroups their tabs.
+        box.windows.first?.orderFront(nil)
+        app.regroupRestoredTabs()
+        let readers = box.windows.compactMap { $0.windowController as? ReaderWindowController }
+        let deadline = Date().addingTimeInterval(10)
+        while readers.contains(where: { !$0.isLoaded }) && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        try? await Task.sleep(for: .milliseconds(500))
+        let group = box.windows.first?.tabGroup
+        write(["restored": readers.count,
+               "same_group": box.windows.count == 2 && box.windows.allSatisfy { $0.tabGroup === group && group != nil },
+               "selected_first": group?.selectedWindow === box.windows.first,
+               "tabs": readers.map { r -> [String: Any] in
+                   ["file": r.url.lastPathComponent, "dot": r.window?.tab.accessoryView != nil, "looked_at": r.notedRecent,
+                    "waiting": r.needsAttention, "key": r.window?.isKeyWindow ?? false,
+                    "seen_kept": r.restorationState.seen]
+               }], to: out, "restored-tabs.json")
+        for w in box.windows { w.close() }
+        try? await Task.sleep(for: .milliseconds(300))
     }
 
     /// While set (the smoke run's early print), a print records the number
@@ -900,6 +1063,8 @@ enum SmokeTest {
         _ = try? await webView.evaluateJavaScript("location.href = 'readout://app/other-plan.md'; 1")
         try? await Task.sleep(for: .seconds(1))
         json["href"] = (try? await webView.evaluateJavaScript("location.href")) as? String ?? ""
+        // Tab reaches links, not only ⌥Tab.
+        json["tab_focuses_links"] = webView.configuration.preferences.tabFocusesLinks
         json["blocks_after"] = (try? await webView.evaluateJavaScript(blocks)) as? Int ?? -1
         // The link a context menu opens on, as the app's script reports it.
         func contextLink(_ href: String) async -> String {
@@ -1101,7 +1266,7 @@ enum SmokeTest {
         let before = reading()
         mark(out, "await-cli")
         var deadline = Date().addingTimeInterval(15)
-        while backgroundRequests.count < 4 && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        while backgroundRequests.count < 5 && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
         deadline = Date().addingTimeInterval(5)
         let name = URL(fileURLWithPath: file).lastPathComponent
         while !NSApp.windows.contains(where: { $0.title == name }) && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
@@ -1134,6 +1299,13 @@ enum SmokeTest {
             // Opened behind, never looked at, nothing unread: its tab still has the dot.
             json["hook_tab"] = ["unread": reader.model.unread, "dot": reader.window?.tab.accessoryView != nil,
                                 "noted_recent": reader.notedRecent, "key": reader.window?.isKeyWindow ?? false]
+        }
+        // Cursor's hook (top-level file_path, workspace_roots): opened, with the workspace as its project.
+        if let plan = ProcessInfo.processInfo.environment["READOUT_SMOKE_CURSOR_PLAN"] {
+            let url = URL(fileURLWithPath: plan)
+            BaselineStore.flush()
+            json["cursor"] = ["opened": (NSApp.delegate as? AppDelegate)?.reader(for: url) != nil,
+                              "root": BaselineStore.projectRoot(for: url) ?? ""]
         }
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: out.appendingPathComponent("background-opens.json"))

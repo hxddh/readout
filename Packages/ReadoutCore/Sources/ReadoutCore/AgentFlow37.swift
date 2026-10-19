@@ -162,13 +162,24 @@ public enum GitBaseline {
 
     /// The text to mark the file's `current` text against, from the bytes of
     /// its committed version: nil when that is the same text, too large, not
-    /// text, or a Git LFS pointer (the content is elsewhere).
+    /// text, or a Git LFS pointer (the content is elsewhere). A file committed
+    /// empty is a baseline too (all of what it has now is new): a git that
+    /// failed or a file not committed gives no bytes at all (nil), not empty ones.
     public static func baselineText(head: Data, current: String) -> String? {
-        guard !head.isEmpty, head.count <= sizeLimit, !head.contains(0) else { return nil }
+        guard let text = committedText(head: head),
+              MarkdownParser.sourceLines(text) != MarkdownParser.sourceLines(current) else { return nil }
+        return text
+    }
+
+    /// The committed version's text, decoded as the app decodes the file
+    /// (FileContent: UTF-8, UTF-16 with or without a byte order mark, …), so
+    /// a UTF-16 file's NUL bytes are not taken for a binary's; nil when it is
+    /// too large, a Git LFS pointer, or binary (NULs in the decoded text).
+    public static func committedText(head: Data) -> String? {
+        guard head.count <= sizeLimit else { return nil }
         if head.starts(with: Array("version https://git-lfs.github.com/spec/".utf8)) { return nil }
         let text = FileContent.decode(head).text
-        guard MarkdownParser.sourceLines(text) != MarkdownParser.sourceLines(current) else { return nil }
-        return text
+        return text.contains("\0") ? nil : text
     }
 
     /// The committed text to mark the file at `path` (its real path) against,
@@ -279,21 +290,26 @@ public struct ReaderRestorationState: Equatable, Sendable {
     public var group: String?
     public var tabIndex: Int
     public var selected: Bool
+    /// The document was looked at (its window was in front) before the quit:
+    /// it comes back without the tab's dot of a document opened behind and
+    /// not looked at yet. A state kept before 3.8 has no such flag: seen.
+    public var seen: Bool
 
-    public init(path: String, projectRoot: String? = nil, group: String? = nil, tabIndex: Int = 0, selected: Bool = true) {
+    public init(path: String, projectRoot: String? = nil, group: String? = nil, tabIndex: Int = 0, selected: Bool = true, seen: Bool = true) {
         self.path = path
         self.projectRoot = projectRoot
         self.group = group
         self.tabIndex = tabIndex
         self.selected = selected
+        self.seen = seen
     }
 
     public static let pathKey = "readout.path", rootKey = "readout.projectRoot", groupKey = "readout.tabGroup",
-                      indexKey = "readout.tabIndex", selectedKey = "readout.tabSelected"
+                      indexKey = "readout.tabIndex", selectedKey = "readout.tabSelected", seenKey = "readout.seen"
 
     /// As kept in the window's restorable state.
     public var dictionary: [String: Any] {
-        var d: [String: Any] = [Self.pathKey: path, Self.indexKey: tabIndex, Self.selectedKey: selected]
+        var d: [String: Any] = [Self.pathKey: path, Self.indexKey: tabIndex, Self.selectedKey: selected, Self.seenKey: seen]
         if let projectRoot { d[Self.rootKey] = projectRoot }
         if let group { d[Self.groupKey] = group }
         return d
@@ -306,7 +322,8 @@ public struct ReaderRestorationState: Equatable, Sendable {
         let root = (d[rootKey] as? String).flatMap { isDirectory($0) ? $0 : nil }
         return ReaderRestorationState(path: path, projectRoot: root, group: d[groupKey] as? String,
                                       tabIndex: (d[indexKey] as? NSNumber)?.intValue ?? (d[indexKey] as? Int) ?? 0,
-                                      selected: (d[selectedKey] as? NSNumber)?.boolValue ?? (d[selectedKey] as? Bool) ?? true)
+                                      selected: (d[selectedKey] as? NSNumber)?.boolValue ?? (d[selectedKey] as? Bool) ?? true,
+                                      seen: (d[seenKey] as? NSNumber)?.boolValue ?? (d[seenKey] as? Bool) ?? true)
     }
 
     /// Restored windows that were tabs of one window, in tab order (windows

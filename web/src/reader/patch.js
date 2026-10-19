@@ -346,6 +346,17 @@ export function showNotice(text) {
   if (!noticeWaiting) countDownNotice();
 }
 
+/** Hides the notice at once, if it says `text` (another one stays). */
+export function hideNotice(text) {
+  if (notice.hidden || notice.textContent !== text) return;
+  clearTimeout(showNotice.t);
+  noticeWaiting = false;
+  const anchor = captureAnchor();
+  notice.hidden = true;
+  notice.style.opacity = '';
+  restoreAnchor(anchor, new Set());
+}
+
 export function noticeMaybeSeen() {
   if (noticeWaiting && noticeSeen()) { noticeWaiting = false; countDownNotice(); }
 }

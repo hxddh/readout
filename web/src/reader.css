@@ -198,18 +198,33 @@ em:is(.cjk-em, .cjk-em-long) { font-style: normal; font-synthesis-style: none; }
    Printed too, where backgrounds are otherwise left out. */
 .em-dot {
   padding-bottom: 0.32em;
-  background: radial-gradient(circle closest-side, currentColor 92%, transparent) no-repeat 50% 100% / 0.17em 0.17em;
+  /* In whole pixels and a hair inside the padding's edge: a 2.7 px dot laid
+     on the fractional bottom edge was cut to a 1 px dash on most characters
+     (on every display at some sizes, always at 1x), so the dots of one word
+     differed in size. */
+  background: radial-gradient(circle closest-side, currentColor 92%, transparent) no-repeat
+    50% calc(100% - 0.03em) / round(up, 0.17em, 1px) round(up, 0.17em, 1px);
   -webkit-print-color-adjust: exact; print-color-adjust: exact;
 }
 /* Japanese: a filled sesame (﹅), a short upright oval, over the text. */
 :lang(ja) .em-dot {
   padding-bottom: 0; padding-top: 0.3em;
-  background: radial-gradient(closest-side, currentColor 92%, transparent) no-repeat 50% 0 / 0.13em 0.24em;
+  background: radial-gradient(closest-side, currentColor 92%, transparent) no-repeat
+    50% 0.06em / round(up, 0.14em, 1px) round(up, 0.22em, 1px);
 }
 /* A long run of emphasis (a sentence or a whole paragraph) is set a step
    heavier instead of dotted under every character: still marked, not noisy. */
 em.cjk-em-long { font-weight: 500; }
 :is(strong, b, h1, h2, h3, h4, h5, h6, th, summary, .alert-title) em.cjk-em-long { font-weight: inherit; }
+/* Chinese quotes, dashes and ellipses in the Chinese font's full-width forms
+   (clreq): the system font draws “ ” ‘ ’ — … as narrow Latin glyphs, so
+   “条件写入”与 jammed the quote into the next character, —— gapped and ……
+   sat on the baseline. Only in Chinese blocks (not code: its own font, and
+   its columns) and only these characters. PingFang on the Mac; Noto where
+   the tests run. */
+@font-face { font-family: ro-zh-punct; src: local("PingFangSC-Regular"), local("Noto Sans CJK SC"); unicode-range: U+2018-2019, U+201C-201D, U+2014, U+2026; font-weight: 1 549; }
+@font-face { font-family: ro-zh-punct; src: local("PingFangSC-Semibold"), local("Noto Sans CJK SC Bold"); unicode-range: U+2018-2019, U+201C-201D, U+2014, U+2026; font-weight: 550 1000; }
+#ro-doc > .blk:lang(zh):not(.k-code) { font-family: ro-zh-punct, var(--font); }
 /* CJK: trim the doubled space of adjacent full-width punctuation where WebKit supports it. */
 @supports (text-spacing-trim: space-first) { html { text-spacing-trim: space-first; } }
 
@@ -426,12 +441,17 @@ blockquote > :last-child { margin-bottom: 0; }
 .alert-warning { --alert-c: var(--warning); }
 .alert-caution { --alert-c: var(--caution); }
 
-/* Front matter */
+/* Front matter: a key/value grid, each key on its own row with its value
+   beside it (a flowing line ran "title … status draft owner agent" together,
+   and a long value wrapped under its key). Each value is an element of its
+   own (.fm-val), so a value with line breaks stays in its column. */
 .front-matter {
-  display: flex; flex-wrap: wrap; gap: 4px 18px;
-  font-size: var(--fs-sm); color: var(--text-2);
+  display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 16px;
+  font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2);
   margin: 0 0 1.6em;
 }
+.fm-item { display: contents; }
+.fm-val { min-width: 0; }
 .fm-key { color: var(--text-2); font-weight: 600; }
 
 /* Tables */
@@ -544,6 +564,9 @@ td.num, th.num { text-align: right; }
 
 /* Long code lines wrap when the reader turns wrapping on (remembered by the app). */
 :root[data-code-wrap="on"] .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Prose in a fence always wraps, between words (enhance.js: .cb-prose). */
+.code-block.cb-prose pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.code-block.cb-prose .cb-wrap { display: none; }
 :root[data-code-wrap="on"] .cb-wrap { color: var(--text); background: var(--fill-2); }
 
 /* Disclosure (<details>) */

@@ -217,6 +217,8 @@ print(f"navigation: {nav}")
 # view) is not loaded: the document stays (3.4 showed a blank window).
 check("navigation: the reader page stays", (nav.get("href") or "").startswith("readout://app/reader.html"), nav)
 check("navigation: the document stays", (nav.get("blocks_after") or 0) > 0 and nav.get("blocks_after") == nav.get("blocks_before"), nav)
+# Tab reaches links, as it reaches paths in code spans (U6, 3.8).
+check("navigation: Tab reaches links", nav.get("tab_focuses_links") is True, nav)
 # The app's script reports the link a context menu opens on, resolved.
 check("navigation: the context menu's link is known",
       nav.get("context_link_web") == "https://example.com/readout"
@@ -246,7 +248,11 @@ bg = load("background-opens.json")
 print(f"background-opens: {bg}")
 # `readout -b` and `readout --hook` open behind the tab being read, never in front of it.
 check("cli: every open arrived as a background request",
-      sorted(bg.get("requests") or []) == sorted(["background.md", "plan.md", "hooked.md", "hooked.md"]), bg)
+      sorted(bg.get("requests") or []) == sorted(["background.md", "plan.md", "hooked.md", "hooked.md", "cursor.md"]), bg)
+# Cursor's afterFileEdit hook (top-level file_path, workspace_roots; U7, 3.8): opened, the workspace as its project.
+bcur = bg.get("cursor") or {}
+check("cli: Cursor's hook opens the file, its first workspace root as the project",
+      bcur.get("opened") is True and (bcur.get("root") or "").endswith("/project"), bg)
 # A plan outside its project: the hook's cwd is where its code references resolve (U2).
 hr = bg.get("hook_root") or {}
 check("cli: the hook's project folder resolves the plan's code reference",
@@ -282,9 +288,10 @@ check("tabs: a tab opened behind, never looked at, shows the dot with nothing un
 tdi = td.get("inset") or {}
 check("tabs: with the tab bar showing, the page's top inset is the toolbar's edge",
       (tdi.get("layout_gap") or 0) > 0 and tdi.get("obscured_top") == tdi.get("layout_gap"), td)
-# Two documents titled alike in one tab group: their tabs name the files (A7).
-check("tabs: documents with the same title name their files",
-      td.get("dup_in_group") is True and sorted(td.get("dup_titles") or []) == ["Same plan — fix.md", "Same plan — refactor.md"], td)
+# Two documents titled alike in one tab group: their tabs name the files (A7),
+# first, where a narrow tab does not truncate them (U5, 3.8).
+check("tabs: documents with the same title name their files, first",
+      td.get("dup_in_group") is True and sorted(td.get("dup_titles") or []) == ["fix.md — Same plan", "refactor.md — Same plan"], td)
 
 # A plan outside its project (3.7): the subtitle names the project, the tab's tooltip its folder.
 hc = bg.get("hook_chrome") or {}
@@ -322,6 +329,8 @@ check("Edit has Copy as Quote on ⇧⌘C, and no other item has that key",
       quote.get("key") == "⇧⌘c" and sum(1 for _, i in tree if (i.get("key") or "").lower() == "⇧⌘c") == 1, quote)
 what = by_action.get("showWhatChanged:") or {}
 check("View has Show What Changed, without a key", bool(what) and "key" not in what, what)
+compare = next((i for path, i in tree if i.get("action") == "compareWithLastCommit:" and path[0] == "View"), {})
+check("View has Compare with Last Commit, without a key", compare.get("title") == "Compare with Last Commit" and "key" not in compare, compare)
 check("Help opens the bundled shortcuts", "openHelp:" in by_action, sorted(by_action))
 
 aux = load("aux-windows.json")
@@ -354,6 +363,22 @@ check("zh-Hans pass: no page errors", zlog.exists() and "Readout page error" not
 
 # Typesetting this WebKit supports (T6): reported, not asserted.
 print(f"css-supports: {load('css-supports.json')}")
+
+# 3.8 T3: a Chinese block draws “ ” ‘ ’ — … in PingFang (reader.css's
+# ro-zh-punct face, local("PingFangSC-Regular")), not in the system font's
+# narrow Latin forms: the face loads in WKWebView, and the six characters
+# are as wide in the block as in PingFang SC and not as in the system font.
+punct = load("zh-punct.json")
+print(f"zh-punct: {punct}")
+pw = punct.get("width") or {}
+regular = [f for f in punct.get("faces") or [] if str(f.get("weight", "")).startswith("1 ")]
+check("zh punctuation: a Chinese block uses the ro-zh-punct face first",
+      punct.get("found") is True and str(punct.get("family", "")).replace('"', "").startswith("ro-zh-punct,"), punct)
+check("zh punctuation: local() PingFang loads in WKWebView",
+      len(regular) == 1 and regular[0].get("status") == "loaded" and punct.get("check") is True, punct)
+check("zh punctuation: drawn in PingFang SC, not the system font",
+      all(isinstance(pw.get(k), (int, float)) for k in ("block", "pingfang", "system"))
+      and abs(pw["block"] - pw["pingfang"]) < 0.5 and abs(pw["block"] - pw["system"]) >= 0.5, pw)
 
 # The soft scroll edge under the toolbar (A1): the web view asks WebKit for the
 # automatic content-inset fill, so its top scroll pocket is made with the
@@ -401,6 +426,12 @@ check("Copy as Quote: enabled with a selection, not without",
 check("Copy as Quote: a blockquote of the blocks, then '— <path>#L<a>-L<b> (§ <section>)'",
       len(cq_lines) >= 3 and all(l.startswith(">") for l in cq_lines[:-1])
       and re.fullmatch(re.escape("— " + (cq.get("path") or "?")) + r"#L(\d+)-L(\d+) \(§ .+\)", cq_lines[-1]) is not None, cq)
+# No text selected, the keyboard on a block (where N lands; U4, 3.8): enabled, and that block is quoted.
+cqf = (cq.get("focused_text") or "").split("\n")
+check("Copy as Quote: with no text selected, the block with the keyboard's focus",
+      cq.get("focused_slot") is not None and cq.get("enabled_focused") is True and len(cqf) >= 2
+      and all(l.startswith(">") for l in cqf[:-1])
+      and re.fullmatch(re.escape("— " + (cq.get("path") or "?")) + r"#L(\d+)(-L\d+)?( \(§ .+\))?", cqf[-1]) is not None, cq)
 
 # ⌘C (3.8): Markdown as plain text, clean HTML as rich text.
 cm = load("copy-markdown.json")
@@ -418,13 +449,24 @@ check("Copy (⌘C): clean HTML as rich text (no page controls or state)",
 # N stays (a beep). The Dock badge counts the documents showing unread changes.
 cd = load("cross-document.json")
 print(f"cross-document: {cd}")
+# A document opened behind and not looked at yet waits as one with unread
+# changes does (U2, 3.8): N goes on to it as it shows (no first change), and
+# the Dock badge counts the tabs' dots. The CI window is never key: nothing was looked at.
+cu = cd.get("unseen") or {}
+check("cross-document N: goes on to a document not looked at yet, as it shows",
+      cu.get("to") not in (None, "", cd.get("unseen_from")) and cu.get("unread") == 0 and cu.get("looked_at") is False
+      and cu.get("landed") == [] and (cu.get("subtitle") or "").startswith("Next unread: "), cd)
+check("Dock badge: the documents whose tabs show the dot (unread, or not looked at yet)",
+      cd.get("badge_before") == str(cd.get("attention_before")) and (cd.get("attention_before") or 0) > (cd.get("showing_unread_before") or 0), cd)
+check("Dock badge: once every document was looked at, those with unread changes",
+      cd.get("badge_looked_at") == (str(cd["showing_unread_looked_at"]) if cd.get("showing_unread_looked_at") else ""), cd)
 check("cross-document N: goes on to the tab with unread changes, at its first change",
       cd.get("to") == "background.md" and cd.get("from") != cd.get("to") and (cd.get("to_had_unread") or 0) > 0
       and len(cd.get("landed") or []) >= 1 and (cd["landed"][0].get("index") == 1), cd)
 check("cross-document N: says where it went in the subtitle", "Opened with readout -b" in (cd.get("to_subtitle") or ""), cd)
 check("cross-document N: nowhere to go once nothing is unread anywhere", cd.get("went_with_none_left") is False, cd)
-check("Dock badge: the number of documents showing unread changes, none at 0",
-      cd.get("badge_before") == str(cd.get("showing_unread_before")) and (cd.get("showing_unread_before") or 0) >= 1
+check("Dock badge: the number of documents showing unread changes once all were looked at, none at 0",
+      (cd.get("showing_unread_before") or 0) >= 1
       and cd.get("badge_after_read") == (str(cd["showing_unread_after_read"]) if cd.get("showing_unread_after_read") else "")
       and cd.get("badge_none") == "", cd)
 
@@ -442,6 +484,17 @@ check("restoration: reader windows are restorable, each with its own identifier,
       rs.get("restorable") is True and rs.get("identifiers_unique") is True and rs.get("frame_autosave_names") == [], rs)
 check("restoration: Welcome and Settings are not restorable",
       not {"Welcome", "Settings"} & set(rs.get("others_restorable") or []), rs)
+# Two tabs restored through ReaderRestoration as at launch (U1, a 3.7
+# regression): looked at before the quit, the tab not in front has no dot and
+# is not "waiting" for Open Latest Agent File, and keeps that for the next launch.
+rt = load("restored-tabs.json")
+print(f"restored-tabs: {rt}")
+rtt = rt.get("tabs") or []
+check("restoration: a two-tab group comes back as one window, the selected tab in front",
+      rt.get("restored") == 2 and rt.get("same_group") is True and rt.get("selected_first") is True, rt)
+check("restoration: restored tabs looked at before come back without the dot",
+      len(rtt) == 2 and all(t.get("dot") is False and t.get("waiting") is False and t.get("looked_at") is True
+                            and t.get("seen_kept") is True for t in rtt) and rtt[1].get("key") is False, rt)
 
 # First open marked against the last commit (3.7).
 gb = load("git-baseline.json")
@@ -457,6 +510,19 @@ check("git: a committed file changed since is marked against the commit, and the
       and gt.get("notice") == "Marked against the last commit", gb)
 check("git: an untracked file opens unmarked, without the notice",
       (gb.get("untracked") or {}).get("unread") == 0 and gu.get("marks") == 0 and gu.get("notice") == "", gb)
+# View ▸ Compare with Last Commit (N1, 3.8): with everything read, what changed
+# since the commit is marked again, with the notice; Undo brings back what was read.
+gc, gcu = gb.get("compare_tracked") or {}, gb.get("compare_untracked") or {}
+check("compare: enabled in a repository, not outside one",
+      gc.get("enabled") is True and gcu.get("enabled") is True and gb.get("compare_enabled_outside") is False, gb)
+check("compare: a read document is marked against the last commit again, with the notice",
+      gc.get("unread_read") == 0 and (gc.get("unread_compared") or 0) >= 2 and (gc.get("marks_compared") or 0) >= 2
+      and gc.get("notice") == "Marked against the last commit", gb)
+check("compare: Undo brings back what was read",
+      gc.get("undo_title") == "Undo Compare with Last Commit" and gc.get("unread_undone") == 0 and gc.get("marks_undone") == 0
+      and gc.get("notice_undone") == "", gb)
+check("compare: an untracked file says there is nothing to compare with",
+      gcu.get("unread_compared") == 0 and gcu.get("subtitle") == "Not in the last commit", gb)
 
 # ⌘P before the document has loaded (3.7 review): printed once it is, the
 # document and not the empty page; asked twice meanwhile, printed once.
