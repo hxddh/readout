@@ -22,8 +22,9 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
      symlink the app shows at another file, the way `ln -sf` does; at
      `await-dangle`, points one at a file not written yet, then writes it
   4d. when the app reports `await-cli`, runs `cli/readout -b` on a new file
-     and `cli/readout --hook` on plan.md (open in a tab behind); the app
-     records whether the tab being read stayed in front
+     and `cli/readout --hook` on plan.md (open in a tab behind), on a plan
+     outside its project, and as Cursor's hook calls it; the app records
+     whether the tab being read stayed in front
   5. waits for the app to exit on its own (120 s), with its log in OUT_DIR/smoke-out.log
   6. writes OUT_DIR/timings.json: cold start, warm open and write-to-update
      times, from its own clock readings and the app's (timings-app.json)
@@ -171,6 +172,13 @@ def main() -> int:
     (tmp / "plans").mkdir()
     hook_plan = tmp / "plans" / "hooked.md"
     hook_plan.write_text("# Hooked plan\n\nChange `src/app/feature.swift:3` first.\n")
+    # One Cursor's afterFileEdit hook reports: the file at the top level, the project as a workspace root.
+    cursor_plan = tmp / "plans" / "cursor.md"
+    cursor_plan.write_text("# Cursor plan\n\nWritten by Cursor.\n")
+    # Two documents restored as the tabs of one window (as after a relaunch).
+    (tmp / "restore").mkdir()
+    for name in ("first", "second"):
+        (tmp / "restore" / f"{name}.md").write_text(f"# Restored {name}\n\nA tab of the last launch.\n")
     # Two documents with the same title, in different files: their tabs say which file.
     dups = [tmp / "dup-a" / "fix.md", tmp / "dup-b" / "refactor.md"]
     for d in dups:
@@ -195,6 +203,8 @@ def main() -> int:
                READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
                READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_HOOK_PLAN=str(hook_plan), READOUT_SMOKE_COLLIDE_LINK=str(collide),
+               READOUT_SMOKE_CURSOR_PLAN=str(cursor_plan),
+               READOUT_SMOKE_RESTORE_FILES=":".join(str(tmp / "restore" / f"{n}.md") for n in ("first", "second")),
                READOUT_SMOKE_COLLIDE_TARGET=str(tmp / "runs" / "run-44.md"),
                READOUT_SMOKE_LATE_FOLDER=str(late_dir), READOUT_SMOKE_DANGLE_LINK=str(dangle), READOUT_SMOKE_UNREADABLE=str(locked),
                READOUT_SMOKE_DUP_FILES=":".join(str(d) for d in dups),
@@ -330,6 +340,10 @@ def run(app, target, out, env, clock, second, cli_file, hook_plan, project, tmp,
                 hook = json.dumps({"cwd": str(project), "tool_input": {"file_path": str(hook_plan)}})
                 r = subprocess.run(["/bin/sh", str(cli), "--hook"], input=hook, capture_output=True, text=True)
                 print(f"harness: readout --hook (cwd) exited {r.returncode} {r.stdout}{r.stderr}")
+                # Cursor's afterFileEdit: top-level file_path and workspace_roots.
+                hook = json.dumps({"file_path": str(tmp / "plans" / "cursor.md"), "edits": [], "workspace_roots": [str(project)]})
+                r = subprocess.run(["/bin/sh", str(cli), "--hook"], input=hook, capture_output=True, text=True)
+                print(f"harness: readout --hook (Cursor) exited {r.returncode} {r.stdout}{r.stderr}")
                 # The file opened behind gets a new section: its tab shows the unread dot.
                 time.sleep(1.0)
                 src = work / ".background.src"

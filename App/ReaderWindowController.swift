@@ -435,7 +435,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     private func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?, commitBaseline: [BlockKey]? = nil) {
         let patch = self.session.load(result.doc, baseline: record?.baseline ?? commitBaseline)
-        let againstCommit = commitBaseline != nil && !patch.rewrite && session.unreadCount > 0
+        // What is marked is what changed since the last commit, not since the reader last read it.
+        let commitNotice = commitBaseline == nil ? nil : CommitNotice.after(rewrite: patch.rewrite, unread: session.unreadCount)
         // What is on disk already: an unchanged baseline is not written again.
         self.lastSavedBaseline = record?.baseline
         self.loaded = true
@@ -451,10 +452,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             }
             // A whole document: encoded off the main thread, still delivered before the calls below.
             self.webView.callEncodingOffMain("apply", patch.page)
-            if againstCommit {
-                // What is marked is what changed since the last commit, not since the reader last read it.
-                self.webView.call("notice", NSLocalizedString("Marked against the last commit", comment: "Notice above a document opened for the first time: its changes since the last git commit are marked"))
-            }
+            // After the apply: in place of the page's own "This file was rewritten".
+            if let commitNotice { self.webView.call("notice", Self.text(commitNotice)) }
             SmokeTest.run(controller: self, webView: self.webView)
             // An agent write that landed mid-load: re-read now that the
             // first patch is applied, so the fresh content wins.
@@ -764,13 +763,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     private func showUnread(_ d: UnreadDisplay) {
-        let had = model.unread > 0
+        let had = showsAttention
         if model.unread != d.count { model.unread = d.count }
         if model.unreadSections != d.sections { model.unreadSections = d.sections }
         if let tab = window?.tab, (tab.accessoryView != nil) != d.dot {
             tab.accessoryView = d.dot ? UnreadDotView() : nil
         }
-        if had != (d.count > 0) { onUnreadShownChanged?() }
+        // The Dock badge counts what the tab's dot says.
+        if had != showsAttention { onUnreadShownChanged?() }
     }
 
     /// More unread waiting for the page's `showUnread`, with its fallback.
@@ -802,8 +802,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// behind and not looked at yet (Open Latest Agent File).
     var needsAttention: Bool { CrossDocument.needsAttention(unread: session.unreadCount, lookedAt: notedRecent) }
 
-    /// Shows the document's unread changes (the Dock badge counts the documents that do).
+    /// Shows the document's unread changes (the toolbar's count).
     var showsUnread: Bool { model.unread > 0 }
+
+    /// Shows that it waits for the reader, as the tab's dot does: unread
+    /// changes, or opened behind and not looked at yet (the Dock badge counts these).
+    var showsAttention: Bool { model.unread > 0 || window?.tab.accessoryView != nil }
 
     private func updateChangeItem(_ n: Int) {
         guard let item = changeItem else { return }
@@ -940,7 +944,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             if !NSWorkspace.shared.open(u) { NSSound.beep() }
         case .source(let u, let line, let column): EditorOpener.open(path: u.path, line: line, column: column)
         case .sameDocument(let fragment): scrollToAnchor(fragment: fragment)
-        case .markdown(let u, let fragment): (NSApp.delegate as? AppDelegate)?.open(u, anchor: fragment)
+        case .markdown(let u, let fragment): (NSApp.delegate as? AppDelegate)?.open(u, anchor: fragment, from: self)
         case .missing(let u):
             NSSound.beep()
             flashStatus(String(format: NSLocalizedString("%@ could not be found.", comment: "Subtitle for a few seconds after a link to a missing file; %@ is the file name"), u.lastPathComponent))
@@ -1064,6 +1068,15 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             }
             return
         }
+        reloadMarked(against: baseline)
+        // Redo marks everything read again.
+        undoStack.registerUndo(withTarget: self) { $0.markAllRead(nil) }
+        undoStack.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
+    }
+
+    /// The document shown again marked against `baseline`, at the same place.
+    @discardableResult
+    private func reloadMarked(against baseline: [BlockKey], then: ((RenderPatch) -> Void)? = nil) -> RenderPatch {
         let place = lastAnchor.flatMap { a in session.blocks.firstIndex { $0.slot == a.slot }.map { (index: $0, offset: a.offset) } }
         let patch = session.reload(baseline: baseline)
         model.activeSlot = 0   // the slots are new
@@ -1074,11 +1087,79 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             guard let self else { return }
             self.webView.callEncodingOffMain("apply", patch.page)
             if let restore { self.restorePlace(restore) }
+            then?(patch)
         }
         scheduleSave()
-        // Redo marks everything read again.
-        undoStack.registerUndo(withTarget: self) { $0.markAllRead(nil) }
-        undoStack.setActionName(NSLocalizedString("Mark All as Read", comment: "Menu"))
+        return patch
+    }
+
+    // MARK: Compare with Last Commit
+
+    /// View ▸ Compare with Last Commit: the document marked again against
+    /// its committed version (`git show HEAD:`), what the agent changed since
+    /// unread; ⌘Z brings back what was read before, as for Mark All as Read.
+    @objc func compareWithLastCommit(_ sender: Any?) {
+        guard loaded, !session.blocks.isEmpty else { return NSSound.beep() }
+        CommitBaseline.compare(path: contentPath ?? url.path) { [weak self] result in
+            guard let self, !self.session.blocks.isEmpty else { return NSSound.beep() }
+            switch result {
+            case .baseline(let text):
+                self.showMarked(against: MarkdownParser.parse(text).blocks.map(BlockKey.init), againstCommit: true)
+            case .unchanged:
+                NSSound.beep()
+                self.flashStatus(NSLocalizedString("No changes since the last commit", comment: "Subtitle for a few seconds after Compare with Last Commit: the file is as committed"))
+            case .unavailable:
+                NSSound.beep()
+                self.flashStatus(NSLocalizedString("Not in the last commit", comment: "Subtitle for a few seconds after Compare with Last Commit: git has no committed version of the file (untracked, new, not text, or git not available)"))
+            }
+        }
+    }
+
+    /// Marked against `baseline`, undoably: the commit's (`againstCommit`,
+    /// with the notice that says so) or the reading state from before it.
+    private func showMarked(against baseline: [BlockKey], againstCommit: Bool) {
+        let name = NSLocalizedString("Compare with Last Commit", comment: "Menu: mark the document again against its version in the last git commit")
+        guard !session.blocks.isEmpty else {
+            // Empty for a moment (an agent truncating it): kept for when it is back, as restoreUnread does.
+            NSSound.beep()
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.undoStack.registerUndo(withTarget: self) { $0.showMarked(against: baseline, againstCommit: againstCommit) }
+                self.undoStack.setActionName(name)
+            }
+            return
+        }
+        let before = session.baseline
+        reloadMarked(against: baseline) { [weak self] patch in
+            guard let self, againstCommit else { return }
+            let notice = CommitNotice.after(rewrite: patch.rewrite, unread: self.session.unreadCount)
+            if let notice { self.webView.call("notice", Self.text(notice)) }
+            SmokeTest.noteCompared(notice.map { Self.text($0) } ?? "")
+        }
+        undoStack.registerUndo(withTarget: self) { $0.showMarked(against: before, againstCommit: !againstCommit) }
+        undoStack.setActionName(name)
+    }
+
+    /// The notice above a document marked against its last commit.
+    static func text(_ notice: CommitNotice) -> String {
+        switch notice {
+        case .marked:
+            return NSLocalizedString("Marked against the last commit", comment: "Notice above a document opened for the first time: its changes since the last git commit are marked")
+        case .rewritten:
+            return NSLocalizedString("Rewritten since the last commit", comment: "Notice above a document marked against its last git commit when most of it changed since (nothing is marked)")
+        }
+    }
+
+    /// The file lies in a git repository (View ▸ Compare with Last Commit),
+    /// looked up again only when the window shows another file (a retarget).
+    private var repositoryCheck: (path: String, inside: Bool)?
+    private var inRepository: Bool {
+        let path = contentPath ?? url.path
+        if let c = repositoryCheck, c.path == path { return c.inside }
+        let inside = !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/")
+            && GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil
+        repositoryCheck = (path, inside)
+        return inside
     }
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? {
@@ -1297,7 +1378,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case #selector(markAllRead(_:)):
             return session.unreadCount > 0
         case #selector(copyAsQuote(_:)):
+            // Text selected, or else a block with the keyboard's focus (where N went).
             return hasSelection && loaded
+        case #selector(compareWithLastCommit(_:)):
+            // A file in a git repository (git itself is asked when chosen).
+            return loaded && inRepository
         case #selector(showWhatChanged(_:)):
             // As the page's D key: with nothing to compare, the page beeps.
             return loaded
@@ -1320,6 +1405,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     func windowWillClose(_ notification: Notification) {
+        returnToOpener()
         saveFrame()
         releaseHold()
         saveWork?.cancel()
@@ -1341,14 +1427,22 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// been in front, not for every file an agent opened in the background.
     private(set) var notedRecent = false
 
+    /// Looked at before the quit (ReaderRestorationState.seen), so already in
+    /// Open Recent: only unread changes give the restored tab its dot.
+    func noteLookedAt() {
+        guard !notedRecent else { return }
+        notedRecent = true
+        refreshUnread()
+        window?.invalidateRestorableState()
+    }
+
     func windowDidBecomeKey(_ notification: Notification) {
         if !notedRecent {
-            notedRecent = true
             // Not the help files inside the app.
             if !url.path.hasPrefix(Bundle.main.bundleURL.standardizedFileURL.path + "/") {
                 NSDocumentController.shared.noteNewRecentDocumentURL(url)
             }
-            refreshUnread()   // looked at: the tab's dot stays only for unread changes
+            noteLookedAt()   // looked at: the tab's dot stays only for unread changes
         }
         updateSubtitle()
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
@@ -1384,7 +1478,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         let index = window.flatMap { w in tabs.firstIndex { $0 === w } } ?? 0
         return ReaderRestorationState(path: url.path, projectRoot: projectRoot.path,
                                       group: tabs.count > 1 ? group.map { String(UInt(bitPattern: ObjectIdentifier($0).hashValue), radix: 36) } : nil,
-                                      tabIndex: index, selected: group?.selectedWindow === window || tabs.count <= 1)
+                                      tabIndex: index, selected: group?.selectedWindow === window || tabs.count <= 1, seen: notedRecent)
     }
 
     func window(_ window: NSWindow, willEncodeRestorableState state: NSCoder) {
@@ -1420,10 +1514,30 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // MARK: Across documents
 
+    /// The reader whose link opened this document as its next tab: closing
+    /// this one goes back to it.
+    weak var opener: ReaderWindowController?
+
+    /// Closing the tab a link opened, while it is the one in front: the tab
+    /// the link was in comes forward again, whichever AppKit would select.
+    private func returnToOpener() {
+        guard let opener, let back = opener.window, let window, let group = window.tabGroup,
+              group.selectedWindow === window, group.windows.contains(where: { $0 === back }) else { return }
+        // Once this tab is gone, unless the opener closed meanwhile (Close All).
+        DispatchQueue.main.async { [weak opener] in
+            guard let opener, (NSApp.delegate as? AppDelegate)?.owns(opener) == true, let back = opener.window else { return }
+            back.tabGroup?.selectedWindow = back
+            back.makeKeyAndOrderFront(nil)
+        }
+    }
+
     /// N arrived here from a document with nothing unread left: to the first
-    /// change, with where it is in the subtitle for a moment.
+    /// change, with where it is in the subtitle for a moment. Opened behind
+    /// and not looked at yet, nothing is marked: it is read from where it shows.
     func goToFirstChange() {
-        webView.whenReady { [weak self] in self?.webView.call("firstChange") }
+        if CrossDocument.arrival(unread: session.unreadCount) == .firstChange {
+            webView.whenReady { [weak self] in self?.webView.call("firstChange") }
+        }
         flashStatus(String(format: NSLocalizedString("Next unread: %@", comment: "Subtitle for a few seconds after N went on to this document; %@ is its title"),
                            window?.tab.title.isEmpty == false ? window!.tab.title : url.lastPathComponent))
     }
@@ -1488,6 +1602,23 @@ enum CommitBaseline {
                 }
             }
             let found = keys
+            DispatchQueue.main.async { MainActor.assumeIsolated { completion(found) } }
+        }
+    }
+
+    /// View ▸ Compare with Last Commit: the file at `path` (its real path) as
+    /// on disk now against its committed version, with the guards of `find`.
+    static func compare(path: String, completion: @escaping @MainActor (CommitComparison) -> Void) {
+        guard !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/") else { return completion(.unavailable) }
+        queue.async {
+            var result = CommitComparison.unavailable
+            if GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil {
+                if !toolsAvailable { toolsAvailable = GitTools.available() }
+                if toolsAvailable, let data = try? Data(contentsOf: URL(fileURLWithPath: path)) {
+                    result = GitBaseline.compare(path: path, current: FileContent.decode(data).text, git: ProcessGit())
+                }
+            }
+            let found = result
             DispatchQueue.main.async { MainActor.assumeIsolated { completion(found) } }
         }
     }

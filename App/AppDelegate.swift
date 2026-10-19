@@ -65,9 +65,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Files passed on launch arrive through application(_:open:) right after this; show the welcome
-        // window only if none did.
+        // window only if none did, and not at every login when Readout is a
+        // login item (System Settings ▸ General ▸ Login Items), there to be
+        // running when an agent writes.
+        let event = NSAppleEventManager.shared().currentAppleEvent
+        let prop = event?.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))
+        let loginItem = LaunchWelcome.isLoginItemLaunch(eventID: event.map { UInt32($0.eventID) }, propData: prop.map { UInt32($0.enumCodeValue) })
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            guard let self, !self.openedAtLaunch, self.windows.isEmpty else { return }
+            guard let self, LaunchWelcome.shows(openedAtLaunch: self.openedAtLaunch, windowsOpen: !self.windows.isEmpty, loginItem: loginItem) else { return }
             self.showWelcome(nil)
         }
     }
@@ -135,7 +140,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// `projectRoot`: the folder an agent worked in when it wrote the file
     /// (an existing absolute folder), kept with the file's reading state.
-    func open(_ url: URL, anchor: String? = nil, mode: OpenMode = .request, projectRoot: String? = nil) {
+    /// `from`: the reader a link to the document was followed in. A document
+    /// not open yet opens as the next tab of its window, in front, so closing
+    /// it (⌘W) goes back to the document the link was in.
+    func open(_ url: URL, anchor: String? = nil, mode: OpenMode = .request, projectRoot: String? = nil,
+              from source: ReaderWindowController? = nil) {
         var url = url.standardizedFileURL
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else {
@@ -193,6 +202,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 controller.show()   // Readout is in the background: this does not activate it
             }
+        } else if let source, let from = source.window, let w = controller.window, owns(source) {
+            // Followed a link: the next tab of the window the link was in, in front.
+            from.addTabbedWindow(w, ordered: .above)
+            controller.opener = source
+            controller.show()
+            for window in from.tabGroup?.windows ?? [w] { (window.windowController as? ReaderWindowController)?.tabsChanged() }
         } else {
             controller.show()
         }
@@ -227,6 +242,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard windows[key] == nil, WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else { return nil }
         openedAtLaunch = true
         let controller = makeController(url, key: key, projectRoot: state.projectRoot)
+        // Looked at before the quit: no dot, and not the newest "waiting" for
+        // Open Latest Agent File, for not having been in front since.
+        if state.seen { controller.noteLookedAt() }
         guard let window = controller.window else { return nil }
         restored.append((window, state))
         return window
@@ -234,7 +252,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Windows that were tabs of one window are again, in their order, with
     /// the tab that was selected in front (AppKit may have done it already).
-    private func regroupRestoredTabs() {
+    func regroupRestoredTabs() {
         let all = restored
         restored = []
         for group in ReaderRestorationState.tabGroups(all.map(\.state)) {
@@ -255,20 +273,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Every reader window Readout owns.
     private var readers: [ReaderWindowController] { Array(windows.values) + displaced }
 
-    /// Some document has unread changes (N can go on to it).
-    var anyUnread: Bool { readers.contains { $0.hasUnread } }
+    /// Some document waits for the reader, as its tab's dot says: unread
+    /// changes, or opened behind and not looked at yet (N can go on to it).
+    var anyUnread: Bool { readers.contains { $0.needsAttention } }
 
-    /// The Dock icon's badge: how many open documents show unread changes.
+    /// The Dock icon's badge: how many open documents show the tab's dot
+    /// (unread changes, or opened behind and not looked at yet).
     func updateDockBadge() {
-        let n = readers.filter(\.showsUnread).count
-        let label = n > 0 ? String(n) : nil
+        let label = CrossDocument.badgeLabel(waiting: readers.filter(\.showsAttention).count)
         if NSApp.dockTile.badgeLabel != label { NSApp.dockTile.badgeLabel = label }
     }
 
-    /// N found nothing unread left in `current`: the next document with
-    /// unread changes comes forward (the other tabs of its window first, then
-    /// the other windows, front to back) at its first change. False when no
-    /// document has any.
+    /// N found nothing unread left in `current`: the next document waiting
+    /// for the reader comes forward (the other tabs of its window first, then
+    /// the other windows, front to back), at its first change, or as it shows
+    /// when it was opened behind and not looked at yet. False when none waits.
     @discardableResult
     func goToNextUnread(from current: ReaderWindowController) -> Bool {
         var groups: [[ReaderWindowController]] = []
@@ -282,9 +301,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for w in NSApp.orderedWindows { add(w) }
         // Tabs not ordered in (minimized windows): last.
         for r in readers { if let w = r.window { add(w) } }
-        let order = CrossDocument.order(after: ObjectIdentifier(current), groups: groups.map { $0.map(ObjectIdentifier.init) })
-        guard let next = order.lazy.compactMap({ id in self.readers.first { ObjectIdentifier($0) == id } }).first(where: { $0.hasUnread }),
-              let window = next.window else { return false }
+        let all = readers
+        let byID = Dictionary(all.map { (ObjectIdentifier($0), $0) }, uniquingKeysWith: { a, _ in a })
+        guard let id = CrossDocument.next(after: ObjectIdentifier(current), groups: groups.map { $0.map(ObjectIdentifier.init) },
+                                          waiting: { byID[$0]?.needsAttention == true }),
+              let next = byID[id], let window = next.window else { return false }
         if window.isMiniaturized { window.deminiaturize(nil) }
         window.tabGroup?.selectedWindow = window
         next.show()
@@ -573,6 +594,7 @@ final class ReaderRestoration: NSObject, NSWindowRestoration {
         if let group = state.group { coder.encode(group as NSString, forKey: ReaderRestorationState.groupKey) }
         coder.encode(state.tabIndex, forKey: ReaderRestorationState.indexKey)
         coder.encode(state.selected, forKey: ReaderRestorationState.selectedKey)
+        coder.encode(state.seen, forKey: ReaderRestorationState.seenKey)
     }
 
     /// What `encode` kept, when the window is to come back (its file is there).
@@ -582,7 +604,9 @@ final class ReaderRestoration: NSObject, NSWindowRestoration {
             if let v = coder.decodeObject(of: NSString.self, forKey: key) { d[key] = v as String }
         }
         if coder.containsValue(forKey: ReaderRestorationState.indexKey) { d[ReaderRestorationState.indexKey] = coder.decodeInteger(forKey: ReaderRestorationState.indexKey) }
-        if coder.containsValue(forKey: ReaderRestorationState.selectedKey) { d[ReaderRestorationState.selectedKey] = coder.decodeBool(forKey: ReaderRestorationState.selectedKey) }
+        for key in [ReaderRestorationState.selectedKey, ReaderRestorationState.seenKey] where coder.containsValue(forKey: key) {
+            d[key] = coder.decodeBool(forKey: key)
+        }
         let fm = FileManager.default
         return ReaderRestorationState.restorable(d, exists: { fm.fileExists(atPath: $0) }, isDirectory: { p in
             var dir: ObjCBool = false

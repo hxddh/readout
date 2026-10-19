@@ -14,11 +14,11 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 ## What it does
 
 - **Live, without losing your place.** Readout watches the file (including atomic save-and-rename writes). Updates are applied block by block, so the paragraph you are reading stays put. If you are at the end, it follows the agent like a terminal.
-- **Shows what changed.** New and edited blocks get a thin bar in the margin; click an edited block's bar to see which words changed since you read it. Removed text leaves a small marker that opens to show it in full. Marks fade once you have actually read them. Press <kbd>N</kbd> for the next change, <kbd>⌘K</kbd> to mark everything read (<kbd>⌘Z</kbd> brings the marks back). Readout remembers what you had read, even across launches.
-- **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42`, and links such as `[main](src/app/main.swift#L42)`, open in your editor at that line.
+- **Shows what changed.** New and edited blocks get a thin bar in the margin; click an edited block's bar to see which words changed since you read it. Removed text leaves a small marker that opens to show it in full. Marks fade once you have actually read them. Press <kbd>N</kbd> for the next change, <kbd>⌘K</kbd> to mark everything read (<kbd>⌘Z</kbd> brings the marks back). Readout remembers what you had read, even across launches. For a file in a git repository, **View → Compare with Last Commit** marks what changed since the last commit (<kbd>⌘Z</kbd> undoes it).
+- **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42`, and links such as `[main](src/app/main.swift#L42)`, open in your editor at that line. A link to another Markdown document opens it as the next tab; <kbd>⌘W</kbd> takes you back.
 - **Outline with progress.** The sidebar lists headings and how many tasks in each section are done.
 - **Focus on what's new.** Filter the document to unread changes only (<kbd>⇧⌘K</kbd>), see task progress in the window subtitle, and copy a link to any section by hovering its heading.
-- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A new Markdown document an agent creates there opens in Readout on its own, in the background, without taking focus from your terminal (edits to files that were already there, such as a README, do not). Press <kbd>⌃⌥⌘R</kbd> anywhere to open the most recently written one. Using Codex? Add your project folder in Settings.
+- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A new Markdown document an agent creates there opens in Readout on its own, in the background, without taking focus from your terminal (edits to files that were already there, such as a README, do not). Press <kbd>⌃⌥⌘R</kbd> anywhere to open the most recently written one. The Dock icon's badge counts the documents waiting for you: unread changes, or opened behind and not looked at yet. Using Codex? Add your project folder in Settings. To have Readout running whenever an agent writes, add it in **System Settings → General → Login Items**; opened at login, it shows no welcome window.
 - **Quick Look.** Press Space on a `.md` file in Finder (it works once Readout has been opened from Applications).
 - **Read-only by design.** Readout never writes to your files.
 
@@ -65,6 +65,36 @@ For a Claude Code hook instead of a watched folder (no `readout` link needed), a
 
 The hook also passes the folder Claude Code works in, so file paths in a plan kept in `~/.claude/plans` link to the files in that project.
 
+The same command works as a [Cursor hook](https://cursor.com/docs/hooks) (`afterFileEdit`, in `~/.cursor/hooks.json`; the first workspace folder is the project):
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      { "command": "/Applications/Readout.app/Contents/Resources/readout --hook" }
+    ]
+  }
+}
+```
+
+and as a [Gemini CLI hook](https://geminicli.com/docs/hooks/reference.md) (`AfterTool` on its [file tools](https://geminicli.com/docs/tools/file-system), in `~/.gemini/settings.json`):
+
+```json
+{
+  "hooks": {
+    "AfterTool": [
+      {
+        "matcher": "write_file|replace",
+        "hooks": [
+          { "type": "command", "command": "/Applications/Readout.app/Contents/Resources/readout --hook" }
+        ]
+      }
+    ]
+  }
+}
+```
+
 ### The `readout-open:` URL
 
 `readout -b` and `readout --hook` open files through a URL, which other tools can use too:
@@ -81,7 +111,7 @@ Any app or web page can open such a URL (browsers ask you first), as it can ask 
 
 | Key | Action |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change; with none left, <kbd>N</kbd> goes on to the next document with unread changes |
+| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change; with none left, <kbd>N</kbd> goes on to the next document with unread changes, or opened behind and not looked at yet |
 | <kbd>D</kbd> | Show which words changed in the edited blocks in view, top first; once all are shown, hide them |
 | <kbd>⌘K</kbd> | Mark all as read (<kbd>⌘Z</kbd> undoes it) |
 | <kbd>⇧⌘K</kbd> | Show only changes |
@@ -93,7 +123,7 @@ Any app or web page can open such a URL (browsers ask you first), as it can ask 
 | <kbd>⌃⌘S</kbd> | Toggle sidebar |
 | <kbd>⌘E</kbd> | Open the file in your editor, at the line you are reading (or the selection) |
 | <kbd>⇧⌘R</kbd> | Reveal in Finder |
-| <kbd>⇧⌘C</kbd> | Copy as Quote: the selected blocks' Markdown as a quote, with the file's lines and section |
+| <kbd>⇧⌘C</kbd> | Copy as Quote: the selected blocks' Markdown (with nothing selected, the block <kbd>N</kbd> went to) as a quote, with the file's lines and section |
 | <kbd>⌥⌘C</kbd> | Copy the file's path |
 | <kbd>⌘P</kbd> | Print |
 | <kbd>⌥⌘W</kbd> | Close all windows |

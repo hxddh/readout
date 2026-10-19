@@ -5,16 +5,18 @@ import Testing
 /// 3.7 app shell: tab titles, the ⌘E line, the Sublime Text URL, the landing announcement.
 @Suite struct AppShell37Tests {
     @Test func tabTitlesNameTheFileOnlyWhenTitlesRepeatInTheGroup() {
-        // Two documents titled "Plan" in one tab group: the file names tell them apart.
+        // Two documents titled "Plan" in one tab group: the file names tell
+        // them apart, first (3.8, U5: a narrow tab truncates the end, so the
+        // 3.7 order "Plan — fix.md" showed the same "Plan —…" on every tab).
         #expect(ReaderChrome.tabTitles(titles: ["Plan", "plan", "Notes"], paths: ["/w/a/fix.md", "/w/b/refactor.md", "/w/notes.md"])
-                == ["Plan — fix.md", "plan — refactor.md", "Notes"])
+                == ["fix.md — Plan", "refactor.md — plan", "Notes"])
         // Same title and same file name (every agent's plan.md): the folder.
         #expect(ReaderChrome.tabTitles(titles: ["Plan", "Plan"], paths: ["/w/app/plan.md", "/w/web/plan.md"])
-                == ["Plan — app", "Plan — web"])
+                == ["app — Plan", "web — Plan"])
         // Folders that collide too: as much of the path as Open Recent shows.
         #expect(ReaderChrome.tabTitles(titles: ["Plan", "Plan", "Plan"],
                                        paths: ["/x/app/plans/plan.md", "/y/app/plans/plan.md", "/x/notes.md"])
-                == ["Plan — x/app/plans", "Plan — y/app/plans", "Plan — notes.md"])
+                == ["x/app/plans — Plan", "y/app/plans — Plan", "notes.md — Plan"])
         // Distinct titles stay as they are, and a group of one is untouched.
         #expect(ReaderChrome.tabTitles(titles: ["A", "B"], paths: ["/a.md", "/b.md"]) == ["A", "B"])
         #expect(ReaderChrome.tabTitles(titles: ["Plan"], paths: ["/w/plan.md"]) == ["Plan"])

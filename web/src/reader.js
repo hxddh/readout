@@ -115,23 +115,37 @@ document.addEventListener('copy', ev => {
 
 // Edit ▸ Copy as Quote quotes the blocks the selection touches, whole (the
 // app has their Markdown source): the page says which, and whether there is
-// a selection at all (the menu item is enabled while there is one).
+// anything to quote (the menu item is enabled while there is). With no text
+// selected, the block the keyboard is on (where N, a rail tick or Tab went),
+// so "N, then Copy as Quote" needs no mouse.
 let hadSelection = false;
-document.addEventListener('selectionchange', () => {
+const textSelected = () => {
   const sel = getSelection();
-  const has = !!sel && !sel.isCollapsed && sel.rangeCount > 0 && doc.contains(sel.anchorNode) && sel.toString().trim() !== '';
+  return !!sel && !sel.isCollapsed && sel.rangeCount > 0 && doc.contains(sel.anchorNode) && sel.toString().trim() !== '';
+};
+const focusedBlock = () => {
+  const a = document.activeElement;
+  return a && doc.contains(a) ? a.closest('#ro-doc > .blk[data-slot]') : null;
+};
+function reportSelection() {
+  const has = textSelected() || !!focusedBlock();
   if (has !== hadSelection) { hadSelection = has; post({ type: 'selection', has }); }
-});
+}
+document.addEventListener('selectionchange', reportSelection);
+doc.addEventListener('focusin', reportSelection);
+// Focus leaving goes through the body first: decide once it has landed.
+doc.addEventListener('focusout', () => setTimeout(reportSelection, 0));
 
 /**
- * The slots of the blocks the selection touches, in document order. A
+ * The slots of the blocks the selection touches, in document order (no
+ * text selected: the block with the keyboard's focus, if any). A
  * selection that ends right at the start of the next block (a triple
  * click) or begins at the very end of one does not take that block in;
  * blocks without text (a rule, an image) between selected ones do count.
  */
 function selectedSlots() {
   const sel = getSelection();
-  if (!sel || sel.isCollapsed || !sel.rangeCount) return [];
+  if (!textSelected()) { const b = focusedBlock(); return b ? [+b.dataset.slot] : []; }
   const out = [];
   for (let i = 0; i < sel.rangeCount; i++) {
     const r = sel.getRangeAt(i);

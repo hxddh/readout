@@ -87,11 +87,12 @@ public enum ReaderChrome {
         return titles
     }
 
-    /// Titles for the tabs of one tab group: each document's title, with
-    /// " — <file name>" only for titles that appear more than once in the
-    /// group (case-insensitively), and " — <folder>" when those files have
-    /// the same name too (every agent's plan.md titled "Plan"), as many
-    /// folders as `recentTitles` needs to tell them apart.
+    /// Titles for the tabs of one tab group: each document's title; titles
+    /// that appear more than once in the group (case-insensitively) start
+    /// with what tells them apart, "<file name> — ", or "<folder> — " when
+    /// those files have the same name too (every agent's plan.md titled
+    /// "Plan"), as many folders as `recentTitles` needs. First, because a
+    /// narrow tab truncates the end: there they would all read alike.
     public static func tabTitles(titles: [String], paths: [String]) -> [String] {
         precondition(titles.count == paths.count)
         var groups: [String: [Int]] = [:]
@@ -103,7 +104,7 @@ public enum ReaderChrome {
                 let name = (paths[i] as NSString).lastPathComponent
                 // recentTitles says "plan.md — app/plans" when the names collide: the folder is the difference.
                 let suffix = shown.hasPrefix(name + " — ") ? String(shown.dropFirst(name.count + 3)) : shown
-                result[i] = "\(titles[i]) — \(suffix)"
+                result[i] = "\(suffix) — \(titles[i])"
             }
         }
         return result

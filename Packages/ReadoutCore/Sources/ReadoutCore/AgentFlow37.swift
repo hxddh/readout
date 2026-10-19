@@ -274,21 +274,26 @@ public struct ReaderRestorationState: Equatable, Sendable {
     public var group: String?
     public var tabIndex: Int
     public var selected: Bool
+    /// The document was looked at (its window was in front) before the quit:
+    /// it comes back without the tab's dot of a document opened behind and
+    /// not looked at yet. A state kept before 3.8 has no such flag: seen.
+    public var seen: Bool
 
-    public init(path: String, projectRoot: String? = nil, group: String? = nil, tabIndex: Int = 0, selected: Bool = true) {
+    public init(path: String, projectRoot: String? = nil, group: String? = nil, tabIndex: Int = 0, selected: Bool = true, seen: Bool = true) {
         self.path = path
         self.projectRoot = projectRoot
         self.group = group
         self.tabIndex = tabIndex
         self.selected = selected
+        self.seen = seen
     }
 
     public static let pathKey = "readout.path", rootKey = "readout.projectRoot", groupKey = "readout.tabGroup",
-                      indexKey = "readout.tabIndex", selectedKey = "readout.tabSelected"
+                      indexKey = "readout.tabIndex", selectedKey = "readout.tabSelected", seenKey = "readout.seen"
 
     /// As kept in the window's restorable state.
     public var dictionary: [String: Any] {
-        var d: [String: Any] = [Self.pathKey: path, Self.indexKey: tabIndex, Self.selectedKey: selected]
+        var d: [String: Any] = [Self.pathKey: path, Self.indexKey: tabIndex, Self.selectedKey: selected, Self.seenKey: seen]
         if let projectRoot { d[Self.rootKey] = projectRoot }
         if let group { d[Self.groupKey] = group }
         return d
@@ -301,7 +306,8 @@ public struct ReaderRestorationState: Equatable, Sendable {
         let root = (d[rootKey] as? String).flatMap { isDirectory($0) ? $0 : nil }
         return ReaderRestorationState(path: path, projectRoot: root, group: d[groupKey] as? String,
                                       tabIndex: (d[indexKey] as? NSNumber)?.intValue ?? (d[indexKey] as? Int) ?? 0,
-                                      selected: (d[selectedKey] as? NSNumber)?.boolValue ?? (d[selectedKey] as? Bool) ?? true)
+                                      selected: (d[selectedKey] as? NSNumber)?.boolValue ?? (d[selectedKey] as? Bool) ?? true,
+                                      seen: (d[seenKey] as? NSNumber)?.boolValue ?? (d[seenKey] as? Bool) ?? true)
     }
 
     /// Restored windows that were tabs of one window, in tab order (windows

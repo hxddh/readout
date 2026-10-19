@@ -99,6 +99,43 @@ const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEven
   await page.close();
 }
 
+// 1b. U4 (3.8): N lands on a change with no text selected; Copy as Quote
+//     quotes that block (the page says there is something to quote), so
+//     "N, then ⇧⌘C" needs no mouse. A text selection still wins; focus
+//     leaving the document leaves nothing to quote.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(30));
+  await page.evaluate(p => window.readout.apply(p), patch(2, [], { marks: [{ slot: 12, kind: 'modified' }] }));
+  await page.evaluate(() => { window.__msgs.length = 0; });
+  await key(page, 'n');
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(async () => {
+    const tick = () => new Promise(r => setTimeout(r, 50));
+    const landed = { active: document.activeElement?.dataset?.slot, selected: window.readout.selectedSlots(), text: getSelection().toString() };
+    // A selection in another block wins over the focus.
+    const t = document.querySelector('.blk[data-slot="20"] p').firstChild;
+    const range = document.createRange();
+    range.setStart(t, 1);
+    range.setEnd(t, 5);
+    getSelection().removeAllRanges();
+    getSelection().addRange(range);
+    await tick();
+    const withText = window.readout.selectedSlots();
+    getSelection().removeAllRanges();
+    await tick();
+    document.activeElement.blur();
+    await tick();
+    return { landed, withText, after: window.readout.selectedSlots(), msgs: window.__msgs.filter(m => m.type === 'selection').map(m => m.has) };
+  });
+  check('Copy as Quote after N: the block N landed on, with no text selected',
+    r.landed.active === '12' && r.landed.text === '' && JSON.stringify(r.landed.selected) === '[12]', JSON.stringify(r));
+  check('Copy as Quote after N: a text selection still names its own blocks', JSON.stringify(r.withText) === '[20]', JSON.stringify(r));
+  check('Copy as Quote after N: the page says there is something to quote, and when there no longer is',
+    r.msgs[0] === true && r.msgs[r.msgs.length - 1] === false && JSON.stringify(r.after) === '[]', JSON.stringify(r));
+  await page.close();
+}
+
 // 2. N with nothing unread says so as N (the app goes on to the next
 //    document); the app's firstChange goes to the document's first change
 //    from wherever the reader is, without "wrapped".
