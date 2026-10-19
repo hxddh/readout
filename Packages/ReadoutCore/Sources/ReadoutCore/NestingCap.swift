@@ -11,8 +11,9 @@ import Glibc
 /// Past `containers` levels of block quotes and list items, the next
 /// marker on a line is escaped (`\>`, `\-`, `1\.`): the rest of the line is
 /// text in the deepest container. A list item's level comes from the items
-/// above it (any indentation width, over blank lines); where nothing above
-/// tells, a level per four columns. Past `inlines` levels of links and emphasis in
+/// above it (any indentation width, over blank lines), in its block quote
+/// (indented after the `>`) or outside one; where nothing above tells, a
+/// level per four columns. Past `inlines` levels of links and emphasis in
 /// a run of lines, the opener is escaped (`\[`, `\*\*`): it shows as
 /// written. Only nesting no real document has changes (markdown-it's
 /// CommonMark preset stops at 20 levels).
@@ -104,19 +105,26 @@ enum NestingCap {
     }
 
     /// The list items open in a run of lines, from the lines before: their
-    /// content column and how deep each is (`containerPrefix`).
-    typealias Lists = [(content: Int, depth: Int)]
+    /// content column, how deep each is, and the block quote it is in
+    /// (`containerPrefix`).
+    typealias Lists = [(content: Int, depth: Int, quote: Int)]
 
     /// Where a line's block quote and list markers end, and the marker that
-    /// goes past `containers` levels (nil: none). A line's first list marker
-    /// is as deep as the item above it in the run that it is indented under
-    /// (`lists`, which the line updates), and a line the run tells nothing
-    /// about (its first, or the first indented one) is a level per four
-    /// columns in; each further marker on the line is one more.
+    /// goes past `containers` levels (nil: none). The first list marker
+    /// after the line's last `>` (or its first marker, with none) is as deep
+    /// as the item above it in the run, in the same block quote, that it is
+    /// indented under (`lists`, which the line updates), its columns counted
+    /// from that `>`; a line the run tells nothing about (its first, or the
+    /// first indented one) is a level per four columns in. Every other marker
+    /// on the line is one more than the one before it.
     static func containerPrefix(_ u: UnsafeBufferPointer<UInt8>, _ s: Int, _ e: Int, lists: inout Lists) -> (content: Int, escape: Int?, blank: Bool) {
         var i = s, columns = 0, markers = 0, depth = 0
-        var firstIsList = false
-        var item: (content: Int, depth: Int)? = nil
+        // The block quote the markers that follow are in: the depth of the
+        // last `>` (0: none) and the column after it.
+        var quote = 0, quoteColumn = 0
+        // A list marker since the last `>`.
+        var listInQuote = false
+        var item: (content: Int, depth: Int, quote: Int)? = nil
         while i < e {
             let c = u[i]
             if c == 0x20 { columns += 1; i += 1; continue }
@@ -138,29 +146,38 @@ enum NestingCap {
                 break
             }
             markers += 1
-            if markers == 1 {
-                firstIsList = list
-                if list {
-                    while let last = lists.last, last.content > columns { lists.removeLast() }
-                    depth = (lists.last?.depth ?? columns / 4) + 1
-                } else {
-                    depth = columns / 4 + 1
-                }
+            if list && !listInQuote {
+                // Columns from the quote's `>`, as the items above it in the quote count theirs.
+                let at = columns - quoteColumn
+                while let last = lists.last, last.quote > quote || (last.quote == quote && last.content > at) { lists.removeLast() }
+                depth = (lists.last.flatMap { $0.quote == quote ? $0.depth : nil } ?? quote + at / 4) + 1
+                listInQuote = true
+            } else if markers == 1 {
+                depth = columns / 4 + 1
             } else {
                 depth += 1
             }
             if depth > containers {
                 // `- - - -`, `* * * *` from here: a thematic break, not nesting.
                 if c == 0x2D || c == 0x2A, (i..<e).allSatisfy({ u[$0] == c || isSpace(u[$0]) }) { break }
+                // The items before it on the line stay open for the lines
+                // below (`- > x` under `- > x`: deeper each line).
+                if let item { lists.append(item) }
                 // The marker's own character (a list number keeps its digits).
                 return (end, end - 1, false)
             }
             columns += end - i
             i = end
-            // Its content: at least one column past the marker (more is safe: deeper).
-            if list { item = (columns + 1, depth) }
+            if list {
+                // Its content: at least one column past the marker (more is safe: deeper).
+                item = (columns + 1 - quoteColumn, depth, quote)
+            } else {
+                quote = depth
+                quoteColumn = columns
+                listInQuote = false
+            }
         }
-        if firstIsList, let item { lists.append(item) }
+        if let item { lists.append(item) }
         return (i, nil, i == e && markers == 0)
     }
 

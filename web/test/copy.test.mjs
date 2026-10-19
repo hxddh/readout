@@ -298,6 +298,20 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
   // C3: rich text is the clean HTML whatever the selection touches: handled by the page, no page classes or styles.
   if (!got.inPara.handled || got.inPara.text !== 'Status' || !got.inPara.html || /class=|style=/.test(got.inPara.html)) fail(`copy-cases: a selection in a paragraph is not the clean copy: ${JSON.stringify(got.inPara)}`);
   if (!got.table.html.includes('<table') || /data-slot|tabindex|<button|class=/.test(got.table.html)) fail(`copy-cases: table rich text: ${got.table.html.slice(0, 200)}`);
+  // Front matter's rich text is a table of keys and values, not spans that run together ("title Copy casesstatus draft").
+  if (!got.all.html.includes('<table><tbody><tr><td>title</td><td>Copy cases</td></tr><tr><td>status</td><td>draft</td></tr>') || /title Copy casesstatus/.test(got.all.html.replace(/<[^>]+>/g, ''))) fail(`copy-cases: front matter rich text: ${got.all.html.slice(0, 300)}`);
+  // A value with line breaks (a literal block: the parser's <br>, ParserFixes36Tests) keeps them in its cell.
+  {
+    const html = await page.evaluate(() => {
+      const fm = document.querySelector('#ro-doc .front-matter'), val = fm.querySelector('.fm-val'), was = val.innerHTML;
+      val.innerHTML = 'line one<br>line two<br><br>after a blank line';
+      const r = document.createRange(); r.selectNodeContents(fm.closest('.blk'));
+      const out = window.__copy(r).html;
+      val.innerHTML = was;
+      return out;
+    });
+    if (!html.includes('<td>line one<br>line two<br><br>after a blank line</td>')) fail(`copy-cases: a front matter value loses its line breaks: ${html.slice(0, 300)}`);
+  }
   // C8: the drag carries the copy's Markdown and HTML.
   if (got.drag.text !== got.table.text || got.drag.html !== got.table.html) fail(`copy-cases: drag payload differs from the copy: ${JSON.stringify(got.drag.text.slice(0, 120))}`);
 }

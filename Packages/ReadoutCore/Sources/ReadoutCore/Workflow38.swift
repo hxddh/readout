@@ -89,7 +89,8 @@ extension GitBaseline {
         // As headText: relative to the folder git runs in (a submodule's or worktree's own HEAD).
         guard let data = git.run(["--no-pager", "show", "HEAD:./" + name], in: dir),
               let text = committedText(head: data) else { return .unavailable }
-        let committed = MarkdownParser.parse(text).blocks.map(BlockKey.init)
+        // On a large stack, as the document itself: callers run this on a GCD queue.
+        let committed = ParseThread.sync { MarkdownParser.parse(text).blocks.map(BlockKey.init) }
         return committed == displayed ? .unchanged : .baseline(committed)
     }
 }

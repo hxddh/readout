@@ -14,6 +14,7 @@ import Testing
         ("loose-lists-150", (0..<150).map { String(repeating: "  ", count: $0) + "- item" }.joined(separator: "\n\n")),
         ("loose-4-150", (0..<150).map { String(repeating: "    ", count: $0) + "- item" }.joined(separator: "\n\n")),
         ("mixed-120", String(repeating: "> - ", count: 120) + "x"),
+        ("lists-in-quote-150", (0..<150).map { "> " + String(repeating: "  ", count: $0) + "- item" }.joined(separator: "\n")),
         ("images-300", String(repeating: "[![", count: 300) + "x" + String(repeating: "](a.png)](b)", count: 300)),
         ("emphasis-4000", String(repeating: "*a **b ", count: 4000) + "c" + String(repeating: "** b*", count: 4000)),
         ("strike-2000", String(repeating: "~~a ", count: 2000) + "c" + String(repeating: " b~~", count: 2000)),
@@ -21,6 +22,13 @@ import Testing
         ("emphasis-lines", (0..<2000).map { _ in "*a **b" }.joined(separator: "\n") + "\nc\n" + (0..<2000).map { _ in "b** a*" }.joined(separator: "\n")),
         ("quoted-emphasis", String(repeating: ">", count: 300) + " " + String(repeating: "*a **b ", count: 300) + "c" + String(repeating: "** b*", count: 300)),
         ("note-emphasis", "x[^n]\n\n[^n]: " + String(repeating: "*a **b ", count: 2000) + "c" + String(repeating: "** b*", count: 2000)),
+        // The 3.8 release review: lists nested by indentation inside block quotes.
+        ("ordered-in-quote-150", (0..<150).map { "> " + String(repeating: "   ", count: $0) + "1. item" }.joined(separator: "\n")),
+        ("list-in-list-quote-150", "- top\n" + (0..<150).map { "  > " + String(repeating: "  ", count: $0) + "- item" }.joined(separator: "\n")),
+        ("quote-in-quote-4sp-150", (0..<150).map { "> > " + String(repeating: "    ", count: $0) + "- item" }.joined(separator: "\n")),
+        // A line escaped at its `>` keeps its item open for the lines below (review of #76).
+        ("item-quote-150", (0..<150).map { String(repeating: "  ", count: $0) + "- > x" }.joined(separator: "\n")),
+        ("quoted-item-quote-150", (0..<150).map { "> " + String(repeating: "  ", count: $0) + "- > item" }.joined(separator: "\n")),
     ]
 
     /// `body` on a thread with a 512 KB stack (a GCD worker's on macOS,

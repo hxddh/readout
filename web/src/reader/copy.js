@@ -485,6 +485,27 @@ export function htmlOf(range) {
     a.textContent = r.dataset.alt || r.dataset.src || '';
     r.replaceWith(a);
   }
+  // Front matter: a table of its keys and values (its spans would run together, "title Planstatus draft").
+  for (const f of box.querySelectorAll('.front-matter')) {
+    const table = document.createElement('table'), body = table.appendChild(document.createElement('tbody'));
+    for (const i of f.querySelectorAll('.fm-item')) {
+      const row = body.appendChild(document.createElement('tr'));
+      row.appendChild(document.createElement('td')).textContent = i.querySelector('.fm-key')?.textContent ?? '';
+      // The value's text, its line breaks (a literal block's <br>) kept.
+      const cell = row.appendChild(document.createElement('td'));
+      const parts = [];
+      for (const c of i.childNodes) {
+        if (c.classList && c.classList.contains('fm-key')) continue;
+        const w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+        for (let n = w.currentNode; n; n = w.nextNode()) {
+          if (n.nodeType === Node.TEXT_NODE) parts.push(n.data);
+          else if (n.tagName === 'BR') parts.push('\n');
+        }
+      }
+      parts.join('').trim().split('\n').forEach((line, k) => { if (k) cell.appendChild(document.createElement('br')); cell.append(line); });
+    }
+    if (body.rows.length) f.replaceWith(table); else f.remove();
+  }
   for (const b of box.querySelectorAll('.blk')) b.replaceWith(...b.childNodes);
   box.querySelectorAll('[tabindex]').forEach(e => e.removeAttribute('tabindex'));
   safeHTML(box);
