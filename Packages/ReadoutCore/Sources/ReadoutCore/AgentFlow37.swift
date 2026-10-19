@@ -1,4 +1,9 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 // Agent workflow 3.7: quoting a passage back to the agent, catching up
 // across documents, and the first open of a file in a git repository.
@@ -234,31 +239,81 @@ public enum ProcessRunner {
         let exited = DispatchSemaphore(value: 0)
         process.terminationHandler = { _ in exited.signal() }
         do { try process.run() } catch { return nil }
-        // Read as it is written (a full pipe would stall it), up to the limit.
-        final class Box: @unchecked Sendable { var data = Data(); var over = false }
-        let box = Box()
-        let read = DispatchSemaphore(value: 0)
-        let handle = out.fileHandleForReading
-        DispatchQueue.global(qos: .userInitiated).async {
-            while true {
-                let chunk = handle.availableData
-                if chunk.isEmpty { break }
-                box.data.append(chunk)
-                if box.data.count > limit { box.over = true; break }
-            }
-            read.signal()
-        }
         let deadline = DispatchTime.now() + timeout
-        if read.wait(timeout: deadline) == .timedOut || box.over {
-            process.terminate()
-            _ = exited.wait(timeout: .now() + 0.5)
-            return nil
+        // Read as it is written (a full pipe would stall it), up to the limit,
+        // never blocked for long: it looks every 20 ms whether to stop. Once
+        // the program has exited, what it wrote is in the pipe; a child it
+        // left running may hold the pipe open, so reading ends when the pipe
+        // is empty, not at its end.
+        let reader = Reader()
+        let readDone = DispatchSemaphore(value: 0)
+        let handle = out.fileHandleForReading
+        nonisolated(unsafe) let running = process
+        DispatchQueue.global(qos: .userInitiated).async {
+            reader.read(handle.fileDescriptor, limit: limit) { running.terminate() }
+            try? handle.close()
+            readDone.signal()
         }
         guard exited.wait(timeout: deadline) == .success else {
             process.terminate()
+            reader.finish(.stop)
             return nil
         }
-        return process.terminationStatus == 0 && process.terminationReason == .exit ? box.data : nil
+        reader.finish(.drain)
+        // Draining takes a moment, unless a child goes on writing: no longer than the deadline
+        // (a program exiting right at it gets the moment).
+        guard readDone.wait(timeout: max(deadline, .now() + 0.05)) == .success else {
+            reader.finish(.stop)
+            return nil
+        }
+        guard !reader.over, process.terminationStatus == 0, process.terminationReason == .exit else { return nil }
+        return reader.data
+    }
+
+    /// Readers still reading (for tests: none is left behind).
+    static var liveReaders: Int { Reader.lock.withLock { Reader.live } }
+
+    private static func systemRead(_ fd: Int32, _ buffer: UnsafeMutableRawPointer?, _ count: Int) -> Int {
+        #if canImport(Darwin)
+        return Darwin.read(fd, buffer, count)
+        #else
+        return Glibc.read(fd, buffer, count)
+        #endif
+    }
+
+    private final class Reader: @unchecked Sendable {
+        enum Finish { case drain, stop }
+        static let lock = NSLock()
+        nonisolated(unsafe) static var live = 0
+        private let lock = NSLock()
+        private var finishing: Finish? = nil
+        private(set) var data = Data()
+        private(set) var over = false
+
+        func finish(_ how: Finish) { lock.withLock { if finishing != .stop { finishing = how } } }
+
+        func read(_ fd: Int32, limit: Int, overflow: () -> Void) {
+            Self.lock.withLock { Self.live += 1 }
+            defer { Self.lock.withLock { Self.live -= 1 } }
+            var buffer = [UInt8](repeating: 0, count: 65536)
+            while true {
+                let how = lock.withLock { finishing }
+                if how == .stop { return }
+                var p = pollfd(fd: fd, events: Int16(POLLIN), revents: 0)
+                let ready = poll(&p, 1, 20)
+                if ready < 0 { if errno == EINTR { continue }; return }
+                if ready == 0 { if how == .drain { return }; continue }
+                let n = buffer.withUnsafeMutableBytes { systemRead(fd, $0.baseAddress, $0.count) }
+                if n < 0 { if errno == EINTR || errno == EAGAIN { continue }; return }
+                if n == 0 { return }   // every writer closed it
+                let isOver = lock.withLock {
+                    data.append(buffer, count: n)
+                    if data.count > limit { over = true }
+                    return over
+                }
+                if isOver { overflow(); return }
+            }
+        }
     }
 }
 

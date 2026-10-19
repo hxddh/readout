@@ -1672,7 +1672,8 @@ enum CommitBaseline {
             if GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil {
                 if !toolsAvailable { toolsAvailable = GitTools.available() }
                 if toolsAvailable, let text = GitBaseline.headText(for: path, current: current, git: ProcessGit()) {
-                    keys = MarkdownParser.parse(text).blocks.map(BlockKey.init)
+                    // On a large stack, as the document itself (`ParseThread`).
+                    keys = ParseThread.sync { MarkdownParser.parse(text).blocks.map(BlockKey.init) }
                 }
             }
             let found = keys

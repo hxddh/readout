@@ -519,7 +519,7 @@ struct FenceTracker: Equatable {
     private mutating func endHTML() {
         guard let h = html else { return }
         html = nil
-        guard h.container == nil, h.quote == 0, h.text.contains("<") else { return }
+        guard h.container == nil, h.quote == 0, FastBytes.contains(h.text, 0x3C) else { return }
         let d = MarkdownParser.detailsDepth(h.text + "\n")   // the parser's raw HTML ends with the line break
         if detailsDepth == 0 {
             if d > 0 { detailsDepth = d }
@@ -531,21 +531,27 @@ struct FenceTracker: Equatable {
     /// If `trimmed` starts an HTML block, the marker that ends it
     /// (`.some(nil)`: the next blank line); nil when it starts none.
     static func htmlStart<S: StringProtocol>(_ trimmed: S, continuesParagraph: Bool) -> String?? {
-        let lower = trimmed.lowercased()
-        if lower.hasPrefix("<!--") { return .some("-->") }
-        if lower.hasPrefix("<?") { return .some("?>") }
-        if trimmed.hasPrefix("<![CDATA[") { return .some("]]>") }   // case-sensitive in CommonMark
+        // By byte, as cmark-gfm: `>` followed by a variation selector or a
+        // combining mark is one Character, and would not compare as `>`.
+        let raw = Array(trimmed.utf8)
+        let b = raw.map { $0 >= 0x41 && $0 <= 0x5A ? $0 | 0x20 : $0 }   // ASCII lowercased
+        func starts(_ p: String, _ a: [UInt8]) -> Bool { a.starts(with: p.utf8) }
+        if starts("<!--", b) { return .some("-->") }
+        if starts("<?", b) { return .some("?>") }
+        if starts("<![CDATA[", raw) { return .some("]]>") }   // case-sensitive in CommonMark
         // Kind 4 (declarations): <! and an uppercase ASCII letter, as in the bundled cmark-gfm.
-        if lower.hasPrefix("<!"), let c = trimmed.dropFirst(2).first, c >= "A" && c <= "Z" { return .some(">") }
-        let afterBracket = lower.dropFirst()
-        let closing = afterBracket.hasPrefix("/")
-        let tag = closing ? afterBracket.dropFirst() : afterBracket   // at most one slash: <//div> is text
-        guard tag.first.map({ $0.isASCII && $0.isLetter }) ?? false else { return nil }
-        let name = String(tag.prefix(while: { $0.isLetter || $0.isNumber || $0 == "-" }))
-        guard !name.isEmpty else { return nil }
-        let next = tag.dropFirst(name.count).first
-        let ends = next == nil || next == " " || next == "\t" || next == ">" || (next == "/" && tag.dropFirst(name.count + 1).first == ">")
-        if !closing, ends, next != "/", Self.rawTags.contains(name) { return .some(Self.rawEnd) }
+        if starts("<!", b), raw.count > 2, raw[2] >= 0x41 && raw[2] <= 0x5A { return .some(">") }
+        guard b.first == 0x3C else { return nil }
+        let closing = b.count > 1 && b[1] == 0x2F
+        let tag = b.dropFirst(closing ? 2 : 1)   // at most one slash: <//div> is text
+        func isLetter(_ c: UInt8) -> Bool { c >= 0x61 && c <= 0x7A }
+        guard let first = tag.first, isLetter(first) else { return nil }
+        let nameBytes = tag.prefix(while: { isLetter($0) || ($0 >= 0x30 && $0 <= 0x39) || $0 == 0x2D })
+        let name = String(decoding: nameBytes, as: UTF8.self)
+        let rest = tag.dropFirst(nameBytes.count)
+        let next = rest.first
+        let ends = next == nil || next == 0x20 || next == 0x09 || next == 0x3E || (next == 0x2F && rest.dropFirst().first == 0x3E)
+        if !closing, ends, next != 0x2F, Self.rawTags.contains(name) { return .some(Self.rawEnd) }
         if ends && Self.blockTags.contains(name) { return .some(nil) }
         let s = String(trimmed)
         if !continuesParagraph, Self.completeTag.firstMatch(in: s, range: NSRange(location: 0, length: (s as NSString).length)) != nil {
@@ -554,9 +560,10 @@ struct FenceTracker: Equatable {
         return nil
     }
 
+    /// By byte, as `htmlStart`.
     private static func ends(_ lower: String, _ until: String) -> Bool {
-        guard until == rawEnd else { return lower.contains(until) }
-        return lower.contains("</pre>") || lower.contains("</script>") || lower.contains("</style>") || lower.contains("</textarea>")
+        guard until == rawEnd else { return FastBytes.contains(lower, bytes: until) }
+        return ["</pre>", "</script>", "</style>", "</textarea>"].contains { FastBytes.contains(lower, bytes: $0) }
     }
 
     /// A setext heading underline at `p`: a run of `=` or of `-`, then only white space.
@@ -621,11 +628,6 @@ struct FenceTracker: Equatable {
         guard width >= 1 else { return nil }
         let next = u[p]
         if next == 0x0A || next == 0x0B || next == 0x0C || next == 0x0D { return nil }
-        if next >= 0x80 {
-            // Unicode white space (no-break space, ideographic space) is not text.
-            var it = String(decoding: UnsafeBufferPointer(rebasing: u[p...]), as: UTF8.self).unicodeScalars.makeIterator()
-            if let scalar = it.next(), scalar.properties.isWhitespace { return nil }
-        }
         if interrupting, let number, number != 1 { return nil }
         if width >= 5 { return (k + 1, k, true) }
         return (col - start, p, false)

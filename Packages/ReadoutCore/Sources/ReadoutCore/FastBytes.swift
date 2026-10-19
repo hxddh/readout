@@ -37,6 +37,25 @@ enum FastBytes {
         return false
     }
 
+    /// The string's UTF-8 holds `needle`'s: by byte, not Character (`>`
+    /// followed by a variation selector is one Character, and holds no `>`).
+    static func contains(_ s: String, bytes needle: String) -> Bool {
+        let n = Array(needle.utf8)
+        guard let first = n.first else { return true }
+        var s = s
+        s.makeContiguousUTF8()
+        return s.utf8.withContiguousStorageIfAvailable { buf -> Bool in
+            guard let base = buf.baseAddress, buf.count >= n.count else { return false }
+            var i = 0
+            while i + n.count <= buf.count, let p = memchr(base + i, Int32(first), buf.count - n.count + 1 - i) {
+                let k = base.distance(to: p.assumingMemoryBound(to: UInt8.self))
+                if memcmp(base + k, n, n.count) == 0 { return true }
+                i = k + 1
+            }
+            return false
+        } ?? false
+    }
+
     /// The lines of `s` as substrings of it, split at LF (a trailing LF gives
     /// a last empty line). The same as splitting on the Character "\n" for
     /// text with LF line endings (what the parser works on: a CR LF pair is

@@ -27,9 +27,10 @@ public final class DocumentLoader {
     public let url: URL
     private let resolver: @MainActor () -> FileResolver
     private let cache = MarkdownParser.RenderCache()
-    /// Re-parses only the parts of the file that changed (used on `parseQueue` only).
+    /// Re-parses only the parts of the file that changed. Used by one read
+    /// at a time (`readInFlight`), each on its own `ParseThread`: a large
+    /// stack, which deeply nested Markdown needs.
     private let parser = IncrementalParser()
-    private let parseQueue = DispatchQueue(label: "readout.parse", qos: .userInitiated)
     /// Delay before re-reading a write that looks half-finished.
     private let retryDelay: TimeInterval
 
@@ -121,7 +122,7 @@ public final class DocumentLoader {
         let resolver = self.resolver()
         let cache = self.cache
         let parser = self.parser
-        parseQueue.async {
+        ParseThread.start {
             var result: ReadResult?
             // Resolve first, then read that file: the path and the bytes always belong together.
             let source = RealPath.of(url.path)

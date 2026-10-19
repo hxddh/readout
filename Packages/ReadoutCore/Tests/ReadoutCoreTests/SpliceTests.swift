@@ -130,6 +130,112 @@ import Testing
         #expect(doc.title == "Real Title")
     }
 
+    /// 3.8 P4: in a document that defines no footnotes (and no links: it
+    /// would parse in full), `[^` and `]:` after the change are text, not a
+    /// reason to parse in full: regex classes, index signatures, citations.
+    /// 3.7 parsed every version changed before such a line in full.
+    @Test func definitionLikeTextAfterTheChangeIsSpliced() throws {
+        let tail = "Match `([^/]*)` and `{ [key: string]: T }`, see [^1] and [x]: not at a line start.\n\n"
+            + "```ts\n[k]: v\ntype M = { [key: string]: number }\n```\n\n"
+            + (0..<20).map { "Later paragraph \($0) with a `[^a-z]+` class." }.joined(separator: "\n\n")
+        let text = "# Doc\n\n" + (0..<20).map { "Paragraph \($0)." }.joined(separator: "\n\n") + "\n\n" + tail
+        let p = IncrementalParser()
+        _ = p.parse(text)
+        for (i, next) in [
+            text.replacingOccurrences(of: "Paragraph 10.", with: "Paragraph 10, edited."),
+            text.replacingOccurrences(of: "Paragraph 10.", with: "Paragraph 10, edited.\n\nA new paragraph [^2] in between."),
+            text.replacingOccurrences(of: "Paragraph 19.", with: "Paragraph 19 and [a]: b mid-line."),
+        ].enumerated() {
+            _ = p.parse(text)
+            let doc = p.parse(next)
+            #expect(p.lastSpliced, "\(i)")
+            #expect(doc.blocks == MarkdownParser.parse(next).blocks && doc.title == MarkdownParser.parse(next).title, "\(i)")
+        }
+        // 04-rou3 has `([^x]*)` half way down: 46 of its 114 streaming versions spliced in 3.7.
+        let k = try #require(CorpusTests.documents().firstIndex { $0.lastPathComponent.hasPrefix("04-") })
+        let q = IncrementalParser()
+        let versions = try Self.stream(k)
+        var spliced = 0
+        for (i, v) in versions.enumerated() {
+            guard same(v, q, "rou3-\(i)") else { return }
+            if q.lastSpliced { spliced += 1 }
+        }
+        #expect(spliced * 10 >= versions.count * 9, "spliced \(spliced) of \(versions.count)")
+    }
+
+    /// A change that makes a definition, its own or one it brings out of
+    /// code (a fence closed or opened), is not spliced.
+    @Test func aDefinitionTheChangeMakesIsNotSpliced() {
+        let body = (0..<12).map { "Paragraph \($0) cites [ref] and [^n]." }.joined(separator: "\n\n")
+        let text = "# Doc\n\nIntro.\n\n" + body + "\n\n```\n[ref]: https://example.com\n[^n]: in code\n```\n\nEnd."
+        for next in [
+            text.replacingOccurrences(of: "Paragraph 5 cites", with: "[ref]: https://example.com\n\nParagraph 5 cites"),
+            text.replacingOccurrences(of: "Paragraph 5 cites", with: "[^n]: a note\n\nParagraph 5 cites"),
+            text.replacingOccurrences(of: "Paragraph 5 cites", with: "  - [ref]: /in-a-list\n\nParagraph 5 cites"),
+            // The fence before the definitions taken away: they are definitions now.
+            text.replacingOccurrences(of: "\n\n```\n[ref]", with: "\n\n[ref]"),
+            // A fence opened above them: closed by theirs, the old closing fence opens one.
+            text.replacingOccurrences(of: "Paragraph 11 cites", with: "```\nParagraph 11 cites"),
+        ] {
+            let p = IncrementalParser()
+            _ = p.parse(text)
+            let doc = p.parse(next)
+            let full = MarkdownParser.parse(next)
+            #expect(doc.blocks == full.blocks && doc.title == full.title, "\(next.suffix(120))")
+            #expect(!p.lastSpliced, "\(next.suffix(120))")
+        }
+    }
+
+    /// A link definition whose label spans lines (`[foo` / `bar]: url`, the
+    /// 3.8 review): the document parses in full, as for any definition, and
+    /// a change that makes one is not spliced. 3.7 cut it into fragments, so
+    /// a reference in another one did not link.
+    @Test func aDefinitionWithItsLabelOnTwoLinesParsesInFull() {
+        let defined = "Intro.\n\n[foo\nbar]: https://example.com\n\nSee [foo bar] here.\n\nMore."
+        #expect(IncrementalParser.needsFullParse(MarkdownParser.sourceLines(defined)))
+        #expect(IncrementalParser().parse(defined).blocks == MarkdownParser.parse(defined).blocks)
+        #expect(MarkdownParser.parse(defined).blocks.contains { $0.html.contains("href=\"https://example.com\"") })
+        let text = "# Doc\n\n" + (0..<12).map { "Paragraph \($0) cites [foo bar]." }.joined(separator: "\n\n")
+        let p = IncrementalParser()
+        _ = p.parse(text)
+        let next = text.replacingOccurrences(of: "Paragraph 6 cites", with: "[foo\nbar]: https://example.com\n\nParagraph 6 cites")
+        let doc = p.parse(next)
+        #expect(!p.lastSpliced)
+        #expect(doc.blocks == MarkdownParser.parse(next).blocks)
+        // Not every `]:` after a `[` is one, but taking it for one only parses in full.
+        let plain = "A [note that\ngoes on]: and more.\n\nNext."
+        #expect(IncrementalParser().parse(plain).blocks == MarkdownParser.parse(plain).blocks)
+    }
+
+    /// `ParsedDocument.links` (Copy) after every kind of change to a link
+    /// definition: one added, removed or edited, and one brought out of code
+    /// by an edit elsewhere (a fence taken away or opened above it), each
+    /// as the full parse has them; and a spliced document defines none.
+    @Test func linksAfterAChangeAreTheFullParses() {
+        let body = (0..<10).map { "Paragraph \($0) cites [x] and [y]." }.joined(separator: "\n\n")
+        let code = "```\n[y]: https://y.example\n```"
+        let plain = "# Doc\n\nIntro.\n\n" + body + "\n\n" + code + "\n\nEnd."
+        let defined = plain.replacingOccurrences(of: "Paragraph 4 cites", with: "[x]: https://x.example\n\nParagraph 4 cites")
+        let versions = [
+            plain,
+            defined,                                                                          // added
+            defined.replacingOccurrences(of: "https://x.example", with: "https://x2.example"),  // edited
+            plain,                                                                            // removed
+            plain.replacingOccurrences(of: "\n\n```\n[y]", with: "\n\n[y]"),                  // out of code: fence taken away
+            plain,
+            plain.replacingOccurrences(of: "Paragraph 9 cites", with: "```\nParagraph 9 cites"),  // a fence opened above it
+            plain + "\n\nMore after.",
+        ]
+        let p = IncrementalParser()
+        for (i, v) in versions.enumerated() {
+            let doc = p.parse(v), full = MarkdownParser.parse(v)
+            #expect(doc.links == full.links, "version \(i): \(doc.links) vs \(full.links)")
+            #expect(doc.blocks == full.blocks, "version \(i)")
+            if p.lastSpliced { #expect(doc.links.isEmpty, "version \(i)") }
+        }
+        #expect(!MarkdownParser.parse(versions[1]).links.isEmpty && !MarkdownParser.parse(versions[4]).links.isEmpty)
+    }
+
     /// What splicing does not cover parses as before.
     @Test(arguments: [
         ("crlf", "\r\nA new line."),
@@ -244,10 +350,92 @@ import Testing
             if p.lastSpliced { spliced += 1 }
         }
         // Many versions are spliced: not those with link definitions (parsed in full
-        // throughout), nor those changed before a `]:` or `[^` (04-rou3 has `([^x]*)`
-        // half way down: 46 of its 114 versions are spliced).
+        // throughout), nor, in a document defining footnotes, those changed before a
+        // `]:` or `[^` (definitionLikeTextAfterTheChangeIsSpliced).
         if !IncrementalParser.needsFullParse(MarkdownParser.sourceLines(versions.last ?? "")) {
             #expect(spliced * 3 >= versions.count, "spliced \(spliced) of \(versions.count)")
+        }
+    }
+
+    /// The 3.8 audit's grown palette (`bugs/AuditB38Tests.swift`): CJK
+    /// emphasis and emoji, footnotes and link definitions, HTML and details
+    /// blocks, tabs, NBSP and ideographic space, nested containers, setext
+    /// and math; and deep nesting (`NestingCap`). With its edits, front
+    /// matter, a preamble, corpus documents, CRLF and BOM now and then.
+    static let grownPalette: [String] = DifferentialFuzzTests.palette + [
+        "**注意：**这里", "这是**加粗（括号）**的", "中文*强调*文字", "（*片*）", "**提示**：内容", "前文__下划线__后文",
+        "- **项目：**说明", "> **提示：**内容", "1. **步骤一：**运行", "| **列：**值 | b |", "# 标题 **强调：**后",
+        "## 小节", "## 小节", "emoji 😀 **粗体**😀", "👨‍👩‍👧 family **x**", "café\u{0301} *é*", "⚠️ **警告**：",
+        "“**引号**”中文", "‘︁*x*’︁中", "漢\u{FE00}*字*", "**注意：**`code`后", "**注意：**$x$后", "**注意：**[^n]",
+        "中文**\u{FE01}中文", "**注意**\u{FE0E}中文",
+        "参考[^1]。", "[^1]: 脚注", "[^1]: 脚注 **强调：**后", "[^a]: note a", "Cite[^a] here.", "[ref]: https://example.com",
+        "[ref]", "[text][ref]", "  [ref2]: <https://x.y> \"title\"", "- [def]: http://x", "> [q]: /quoted",
+        "[链接](https://例子.com/路径)", "<https://example.com/**a**>", "https://example.com/注意：**x**",
+        "Match `([^/]*)` here", "type M = { [key: string]: T }", "`[x]: y` in code",
+        "<details>", "<summary>概要</summary>", "</details>", "<div align=\"center\">", "</div>", "<pre>", "</pre>",
+        "<script>", "</script>", "<style>", "</style>", "<!--", "-->", "<img src=\"（*片*）.png\">", "<p>**注意：**中</p>",
+        "<table>", "<tr><td>x</td></tr>", "</table>", "<?xml?>",
+        "\t- tab item", "-\tdash tab", "- \tx", "  \t  ", "\u{00A0}", "- \u{00A0}", "- \u{3000}", "1.\tone", "*\tstar",
+        "> > - nested", "> - > deep", "    > code?", "- > quoted", "  1. two", "     five", "\tcode", "| |", "|---|",
+        "| | |", "|-|-|", "\t\tdouble tab", "- - - dash", "* * *", "+ [ ] plus task", "- [ ]\t tabbed task",
+        "Setext", "===", "---", "+++", "title = \"x\"", "___", "***", "- - -",
+        "$$", "\\begin{aligned}", "\\end{aligned}", "$$x$$", "\\(a\\)", "\\[b\\]",
+        String(repeating: ">", count: 40) + " deep", String(repeating: "> - ", count: 12) + "x",
+        String(repeating: "  ", count: 20) + "- deep item", String(repeating: "    ", count: 10) + "1. deep",
+        String(repeating: "*a **b ", count: 12), String(repeating: "** b*", count: 12), String(repeating: "[![", count: 12) + "x",
+        String(repeating: "](a.png)](b)", count: 12), String(repeating: "~~s ", count: 20), String(repeating: " t~~", count: 20),
+        "", "", "",
+    ]
+
+    static func grownMutate(_ lines: inout [String], rng: inout RNG) {
+        let at = lines.isEmpty ? 0 : Int.random(in: 0..<lines.count, using: &rng)
+        switch Int.random(in: 0..<10, using: &rng) {
+        case 0, 1: lines.insert(grownPalette.randomElement(using: &rng)!, at: at)
+        case 2: if !lines.isEmpty { lines.remove(at: at) }
+        case 3: if !lines.isEmpty { lines[at] += [" edited", "，改了", " 😀", "**", "：**这", "\t", "\u{FE0F}*"].randomElement(using: &rng)! }
+        case 4: if !lines.isEmpty { lines.insert(lines[at], at: at) }
+        case 5:
+            if !lines.isEmpty, !lines[at].isEmpty {
+                var s = Array(lines[at])
+                let k = Int.random(in: 0..<s.count, using: &rng)
+                if Bool.random(using: &rng) { s.remove(at: k) } else {
+                    s.insert(["$", "`", "<", ">", " ", "*", "[", "]", "|", "-", "#", "\t", "~", "_", "中", "：", "（", "😀", "\u{3000}", "^", ":"]
+                        .randomElement(using: &rng)!, at: k)
+                }
+                lines[at] = String(s)
+            }
+        case 6:
+            if !lines.isEmpty { lines[at] = ["  ", "    ", "> ", "- ", "1. ", "\t", "-\t", "> > ", "   "].randomElement(using: &rng)! + lines[at] }
+        case 7:
+            // A line split in two.
+            if !lines.isEmpty, lines[at].count > 1 {
+                let s = Array(lines[at]); let k = Int.random(in: 1..<s.count, using: &rng)
+                lines[at] = String(s[..<k]); lines.insert(String(s[k...]), at: at + 1)
+            }
+        case 8:
+            // An agent writing on.
+            lines += ["", ["The agent writes on.", "代理继续写，**注意：**这里。", "- next item", "## Next", "```", "| a | b |"].randomElement(using: &rng)!]
+        default:
+            if at + 1 < lines.count { lines[at] += lines.remove(at: at + 1) }
+        }
+    }
+
+    /// Bounded for CI (`READOUT_FUZZ_SEEDS`); the audit ran 1,500 seeds of 40-60 steps.
+    @Test(arguments: 0..<seeds)
+    func grownFuzz(_ seed: Int) {
+        var rng = RNG(state: UInt64(seed) &* 6_700_417 &+ 11)
+        var lines: [String] = (0..<Int.random(in: 5...80, using: &rng)).map { _ in Self.grownPalette.randomElement(using: &rng)! }
+        if seed % 6 == 1 { lines = ["---", "title: t", "---", ""] + lines }
+        if seed % 6 == 2 { lines = ["[![CI](b.svg)](x)", "", "Intro **注意：**这里。", "", "# Title", ""] + lines }
+        if seed % 10 == 3, let doc = CorpusTests.documents().randomElement(using: &rng),
+           let s = try? String(contentsOf: doc, encoding: .utf8) { lines = s.replacingOccurrences(of: "\r", with: "").components(separatedBy: "\n") }
+        let crlf = seed % 11 == 10, bom = seed % 13 == 12
+        func text() -> String { (bom ? "\u{FEFF}" : "") + lines.joined(separator: crlf ? "\r\n" : "\n") }
+        let p = IncrementalParser()
+        guard same(text(), p, "grown\(seed)-v0") else { return }
+        for step in 0..<30 {
+            for _ in 0..<Int.random(in: 1...3, using: &rng) { Self.grownMutate(&lines, rng: &rng) }
+            guard same(text(), p, "grown\(seed)-step\(step)") else { return }
         }
     }
 
