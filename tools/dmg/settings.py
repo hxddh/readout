@@ -14,7 +14,10 @@ format = "UDZO"
 filesystem = "HFS+"
 files = [app]
 symlinks = {"Applications": "/Applications"}
-hide_extensions = [app_name]
+# No hide_extensions: dmgbuild sets it as Finder information on the bundle
+# itself (com.apple.FinderInfo), which `codesign --verify --strict` rejects as
+# detritus, and which a drag to Applications would copy. Finder hides ".app"
+# by default anyway.
 
 background = defines["bg"]
 window_rect = ((200, 160), (600, 420))

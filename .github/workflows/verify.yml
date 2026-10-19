@@ -344,6 +344,9 @@ jobs:
           [ "$IMAGES" = "600x420 1200x840" ] || fail "the background is not one 600 x 420 image at 1x and 2x ($IMAGES)"
           # The tested app, file for file, with the same signature.
           diff -r "$MNT/Readout.app" /Applications/Readout.app || fail "the app in the disk image is not the tested app"
+          # Nothing outside the signature on the bundle (Finder information,
+          # a resource fork): strict verification refuses it.
+          xattr -l "$MNT/Readout.app" || true
           codesign --verify --deep --strict "$MNT/Readout.app" || fail "the app in the disk image does not verify"
           A=$(codesign -dvvv "$MNT/Readout.app" 2>&1 | grep '^CDHash='); B=$(codesign -dvvv /Applications/Readout.app 2>&1 | grep '^CDHash=')
           [ -n "$A" ] && [ "$A" = "$B" ] || fail "the app's signature differs ($A vs $B)"
