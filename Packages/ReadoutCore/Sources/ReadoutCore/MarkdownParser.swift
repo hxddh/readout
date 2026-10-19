@@ -169,7 +169,10 @@ public enum MarkdownParser {
         // The lines of blocks whose source holds a CJK emphasis marker
         // character itself: no markers there (see the end).
         math.emphasisExcludedLines = emphasisExcluded
-        let protected = math.protect(parseLines.joined(separator: "\n"))
+        var protected = math.protect(parseLines.joined(separator: "\n"))
+        // Nesting too deep to parse on a small stack, flattened (`NestingCap`).
+        var flattened: Set<Int> = []
+        if let capped = NestingCap.apply(protected) { protected = capped.text; flattened = capped.lines }
         // Definitions are protected with the same protector before the
         // renderer copies it (one block each: no markers in one holding a marker character).
         let protectedDefinitions = definitions.map { def -> (def: Footnotes.Definition, source: String) in
@@ -178,7 +181,7 @@ public enum MarkdownParser {
             m.emphasisEnabled = !CJKEmphasis.containsMarker(CollectionOfOne(def.text))
             let source = m.protect(def.text)
             math = m
-            return (def, source)
+            return (def, NestingCap.apply(source)?.text ?? source)
         }
         let document = Document(parsing: protected, options: [.disableSmartOpts])
         let probe = resolver.map(ResolverProbe.init)
@@ -243,7 +246,16 @@ public enum MarkdownParser {
             // The rendered HTML depends on the exact source (incl. task state) plus positional context.
             let source = slice.joined(separator: "\n")
             let refs = refsKey.isEmpty || !source.utf8.contains(0x5B) /* [ */ ? "" : refsKey
-            let cacheKey = "\(XXHash64.hash(source))|\(kind.rawValue)|\(extra)\(footnoteKey)\(refs)"
+            // Flattened lines render from what they became, which a run of lines decides.
+            var flat = ""
+            if !flattened.isEmpty, range.contains(where: { flattened.contains($0 - 1) }) {
+                let lo = max(range.lowerBound - 1, 0), hi = min(range.upperBound, renderer.sourceLines.count)
+                flat = "|flat:\(XXHash64.hash(lo < hi ? renderer.sourceLines[lo..<hi].joined(separator: "\n") : ""))"
+            }
+            // Code not closed before blank lines (a fence open to the end)
+            // holds them, which its source does not.
+            let open = kind == .code && hi < rawRange.upperBound ? "|open:\(rawRange.upperBound - hi)" : ""
+            let cacheKey = "\(XXHash64.hash(source))|\(kind.rawValue)|\(extra)\(footnoteKey)\(refs)\(flat)\(open)"
             let rendered: String
             // Not cached when the source holds an emphasis marker character (rare):
             // a first parse may still have put markers in it.

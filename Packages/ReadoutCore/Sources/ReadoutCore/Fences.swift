@@ -621,11 +621,6 @@ struct FenceTracker: Equatable {
         guard width >= 1 else { return nil }
         let next = u[p]
         if next == 0x0A || next == 0x0B || next == 0x0C || next == 0x0D { return nil }
-        if next >= 0x80 {
-            // Unicode white space (no-break space, ideographic space) is not text.
-            var it = String(decoding: UnsafeBufferPointer(rebasing: u[p...]), as: UTF8.self).unicodeScalars.makeIterator()
-            if let scalar = it.next(), scalar.properties.isWhitespace { return nil }
-        }
         if interrupting, let number, number != 1 { return nil }
         if width >= 5 { return (k + 1, k, true) }
         return (col - start, p, false)

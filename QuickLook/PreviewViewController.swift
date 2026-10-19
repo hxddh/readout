@@ -33,8 +33,10 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let text = FileContent.decode(data).text
         // The incremental parser's first parse cuts the document into
         // fragments parsed concurrently: the same document as
-        // MarkdownParser.parse, sooner for a long one.
-        let doc = IncrementalParser(resolver: FileResolver(baseDirectory: url.deletingLastPathComponent())).parse(text)
+        // MarkdownParser.parse, sooner for a long one. On a large stack
+        // (`ParseThread`): Quick Look's own threads have 512 KB.
+        let base = url.deletingLastPathComponent()
+        let doc = await ParseThread.run { IncrementalParser(resolver: FileResolver(baseDirectory: base)).parse(text) }
         let session = DocumentSession()
         let patch = session.load(doc)
         // Only the count outlives this call: the parsed document is released with it.
