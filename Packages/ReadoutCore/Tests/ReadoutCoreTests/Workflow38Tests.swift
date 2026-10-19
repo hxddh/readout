@@ -53,6 +53,17 @@ import Testing
         #expect(CrossDocument.badgeLabel(waiting: 0) == nil)
     }
 
+    // MARK: U4 quoting the focused block
+
+    /// Text selected and a focused block are told apart: the context menu
+    /// offers Copy as Quote for a text selection only (a right click elsewhere
+    /// leaves the focus on the block N went to), the Edit menu for either.
+    @Test func theSelectionMessageTellsTextFromAFocusedBlock() {
+        #expect(PageMessage(["type": "selection", "has": false, "focused": true]) == .selection(has: false, focused: true))
+        #expect(PageMessage(["type": "selection", "has": NSNumber(value: true), "focused": NSNumber(value: false)]) == .selection(has: true, focused: false))
+        #expect(PageMessage(["type": "selection", "has": true]) == .selection(has: true, focused: false))
+    }
+
     // MARK: U12 the commit notices
 
     /// A first open whose committed version is mostly different: no marks
@@ -96,6 +107,27 @@ import Testing
         #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: empty, exists: exists) == .baseline(""))
         #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "", git: empty, exists: exists) == .unchanged)
         #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: empty, exists: exists) == "")
+    }
+
+    /// A UTF-16 file (as Windows tools write) has NUL bytes in its blob: it is
+    /// decoded as the app decodes the file, not taken for a binary.
+    @Test func aUTF16CommittedFileIsCompared() {
+        let show = "/w/app/docs|--no-pager show HEAD:./plan.md"
+        let exists = { (p: String) in p == "/w/app/.git" }
+        let old = "# Plan\n\nOld.\n"
+        var bom = Data([0xFF, 0xFE])
+        for u in old.utf16 { bom.append(UInt8(u & 0xFF)); bom.append(UInt8(u >> 8)) }
+        var noBOM = Data()
+        for u in old.utf16 { noBOM.append(UInt8(u >> 8)); noBOM.append(UInt8(u & 0xFF)) }   // UTF-16BE, no BOM
+        for blob in [bom, noBOM] {
+            let git = FakeGit(output: [show: blob])
+            #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: git, exists: exists) == .baseline(old))
+            #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: old, git: git, exists: exists) == .unchanged)
+            // The first open (3.7's GitBaseline) too.
+            #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: git, exists: exists) == old)
+        }
+        // A binary still is not compared.
+        #expect(GitBaseline.committedText(head: Data([0x89, 0x50, 0x4E, 0x47, 0x00, 0x00, 0x1A, 0x0A, 0x00, 0x0D])) == nil)
     }
 
     /// A file committed empty, written since: its first open marks every block new.

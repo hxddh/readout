@@ -901,8 +901,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             if (NSApp.delegate as? AppDelegate)?.goToNextUnread(from: self) != true { NSSound.beep() }
         case .showUnread:
             if unreadHold != nil { unreadShown() }
-        case .selection(let has):
+        case .selection(let has, let focused):
             hasSelection = has
+            hasFocusedBlock = focused
         case .landed(let index, let total, let kind):
             // VoiceOver hears which change it is, as the rail's ticks say it.
             let kindText = ReaderStrings.all[kind] ?? kind
@@ -1387,7 +1388,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             return session.unreadCount > 0
         case #selector(copyAsQuote(_:)):
             // Text selected, or else a block with the keyboard's focus (where N went).
-            return hasSelection && loaded
+            return (hasSelection || hasFocusedBlock) && loaded
         case #selector(compareWithLastCommit(_:)):
             // A file in a git repository (git itself is asked when chosen).
             return loaded && inRepository
@@ -1495,8 +1496,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // MARK: Copy as Quote
 
-    /// The page has a selection in the document (it says when that changes).
+    /// The page has a text selection in the document (it says when that changes).
     private var hasSelection = false
+    /// A block has the keyboard's focus (where N went): with no text
+    /// selected, Edit ▸ Copy as Quote quotes it. Not the context menu: a
+    /// right click elsewhere does not move the focus.
+    private var hasFocusedBlock = false
 
     /// Edit ▸ Copy as Quote (⇧⌘C): the Markdown source of the blocks the
     /// selection touches, as a blockquote, and the file's lines and section.

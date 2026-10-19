@@ -118,7 +118,7 @@ document.addEventListener('copy', ev => {
 // anything to quote (the menu item is enabled while there is). With no text
 // selected, the block the keyboard is on (where N, a rail tick or Tab went),
 // so "N, then Copy as Quote" needs no mouse.
-let hadSelection = false;
+let hadSelection = 'false/false';
 const textSelected = () => {
   const sel = getSelection();
   return !!sel && !sel.isCollapsed && sel.rangeCount > 0 && doc.contains(sel.anchorNode) && sel.toString().trim() !== '';
@@ -127,9 +127,13 @@ const focusedBlock = () => {
   const a = document.activeElement;
   return a && doc.contains(a) ? a.closest('#ro-doc > .blk[data-slot]') : null;
 };
+// `has`: text is selected (the context menu's Copy as Quote); `focused`: a
+// block has the keyboard's focus (Edit ▸ Copy as Quote quotes it when no text
+// is selected; a right click elsewhere does not move the focus).
 function reportSelection() {
-  const has = textSelected() || !!focusedBlock();
-  if (has !== hadSelection) { hadSelection = has; post({ type: 'selection', has }); }
+  const has = textSelected(), focused = !!focusedBlock();
+  const state = `${has}/${focused}`;
+  if (state !== hadSelection) { hadSelection = state; post({ type: 'selection', has, focused }); }
 }
 document.addEventListener('selectionchange', reportSelection);
 doc.addEventListener('focusin', reportSelection);

@@ -73,11 +73,8 @@ extension GitBaseline {
         let name = (path as NSString).lastPathComponent
         // As headText: relative to the folder git runs in (a submodule's or worktree's own HEAD).
         guard let data = git.run(["--no-pager", "show", "HEAD:./" + name], in: dir) else { return .unavailable }
-        if let text = baselineText(head: data, current: current) { return .baseline(text) }
-        // baselineText says nil for the same text and for what is not compared: tell them apart.
-        let comparable = data.count <= sizeLimit && !data.contains(0)
-            && !data.starts(with: Array("version https://git-lfs.github.com/spec/".utf8))
-        return comparable ? .unchanged : .unavailable
+        guard let text = committedText(head: data) else { return .unavailable }
+        return MarkdownParser.sourceLines(text) == MarkdownParser.sourceLines(current) ? .unchanged : .baseline(text)
     }
 }
 

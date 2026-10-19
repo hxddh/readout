@@ -161,11 +161,20 @@ public enum GitBaseline {
     /// empty is a baseline too (all of what it has now is new): a git that
     /// failed or a file not committed gives no bytes at all (nil), not empty ones.
     public static func baselineText(head: Data, current: String) -> String? {
-        guard head.count <= sizeLimit, !head.contains(0) else { return nil }
+        guard let text = committedText(head: head),
+              MarkdownParser.sourceLines(text) != MarkdownParser.sourceLines(current) else { return nil }
+        return text
+    }
+
+    /// The committed version's text, decoded as the app decodes the file
+    /// (FileContent: UTF-8, UTF-16 with or without a byte order mark, …), so
+    /// a UTF-16 file's NUL bytes are not taken for a binary's; nil when it is
+    /// too large, a Git LFS pointer, or binary (NULs in the decoded text).
+    public static func committedText(head: Data) -> String? {
+        guard head.count <= sizeLimit else { return nil }
         if head.starts(with: Array("version https://git-lfs.github.com/spec/".utf8)) { return nil }
         let text = FileContent.decode(head).text
-        guard MarkdownParser.sourceLines(text) != MarkdownParser.sourceLines(current) else { return nil }
-        return text
+        return text.contains("\0") ? nil : text
     }
 
     /// The committed text to mark the file at `path` (its real path) against,

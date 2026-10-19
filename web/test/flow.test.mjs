@@ -126,7 +126,7 @@ const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEven
     await tick();
     document.activeElement.blur();
     await tick();
-    return { landed, withText, after: window.readout.selectedSlots(), msgs: window.__msgs.filter(m => m.type === 'selection').map(m => m.has) };
+    return { landed, withText, after: window.readout.selectedSlots(), msgs: window.__msgs.filter(m => m.type === 'selection').map(m => m.has || m.focused) };
   });
   check('Copy as Quote after N: the block N landed on, with no text selected',
     r.landed.active === '12' && r.landed.text === '' && JSON.stringify(r.landed.selected) === '[12]', JSON.stringify(r));
@@ -137,14 +137,29 @@ const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEven
   await page.evaluate(() => { const b = document.querySelector('.blk[data-slot="12"]'); b.setAttribute('tabindex', '-1'); b.focus(); });
   await page.waitForTimeout(100);
   const removed = await page.evaluate(async p => {
-    const before = { active: document.activeElement?.dataset?.slot, last: window.__msgs.filter(m => m.type === 'selection').pop()?.has };
+    const before = { active: document.activeElement?.dataset?.slot, last: (m => m && (m.has || m.focused))(window.__msgs.filter(m => m.type === 'selection').pop()) };
     window.__msgs.length = 0;
     window.readout.apply(p);
     await new Promise(r => setTimeout(r, 50));
-    return { before, selected: window.readout.selectedSlots(), msgs: window.__msgs.filter(m => m.type === 'selection').map(m => m.has) };
+    return { before, selected: window.readout.selectedSlots(), msgs: window.__msgs.filter(m => m.type === 'selection').map(m => m.has || m.focused) };
   }, patch(3, [{ op: 'remove', slot: 12 }]));
   check('Copy as Quote: a patch removing the focused block says there is nothing to quote',
     removed.before.active === '12' && removed.before.last === true && JSON.stringify(removed.msgs) === '[false]' && removed.selected.length === 0, JSON.stringify(removed));
+  // After N, a right click on another block: focus stays on the block N went to, but
+  // no text is selected, so the context menu (the app shows Copy as Quote for `has` only)
+  // offers no quote of it; the Edit menu still quotes the focused block.
+  await page.evaluate(() => { const b = document.querySelector('.blk[data-slot="5"]'); window.__msgs.length = 0; b.setAttribute('tabindex', '-1'); b.focus(); });
+  await page.waitForTimeout(100);
+  const ctx = await page.evaluate(async () => {
+    const other = document.querySelector('.blk[data-slot="20"] p');
+    const r = other.getBoundingClientRect();
+    other.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: r.left + 5, clientY: r.top + 5 }));
+    await new Promise(r => setTimeout(r, 50));
+    const last = window.__msgs.filter(m => m.type === 'selection').pop() || null;
+    return { last, active: document.activeElement?.dataset?.slot, text: getSelection().toString() };
+  });
+  check('Copy as Quote: after N, a right click on another block offers no context-menu quote (no text selected)',
+    ctx.last && ctx.last.has === false && ctx.last.focused === true && ctx.text === '', JSON.stringify(ctx));
   await page.close();
 }
 
