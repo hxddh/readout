@@ -275,11 +275,24 @@ function setupCode(cb) {
   // Box-drawing characters (a directory tree, a diagram): tighter lines, so
   // the vertical strokes join up.
   if (/[\u2500-\u257f]/.test(text)) cb.classList.add('cb-tree');
+  // Prose in a fence (a prompt, a SKILL.md, notes: no language, text or
+  // markdown) wraps at the column like the text around it: a 400-column
+  // sentence read by scrolling sideways is not code. Not a drawing or an
+  // aligned listing, whose columns wrapping would break.
+  const prose = isProseFence(cb.dataset.lang, text) && !cb.classList.contains('cb-tree');
+  cb.classList.toggle('cb-prose', prose);
   // Its longest line, in columns: reader.css widens a code block of its own
   // whose lines run past the column into the margins, when the window has room.
-  if (cb.parentElement.classList.contains('k-code')) cb.parentElement.style.setProperty('--cb-cols', codeColumns(text));
+  if (cb.parentElement.classList.contains('k-code')) cb.parentElement.style.setProperty('--cb-cols', prose ? 0 : codeColumns(text));
   cb.dataset.hl = 'pending';
   fresh.push(cb);
+}
+
+const PROSE_LANGS = new Set(['', 'text', 'txt', 'plain', 'plaintext', 'markdown', 'md', 'prompt']);
+function isProseFence(lang = '', text) {
+  if (!PROSE_LANGS.has(lang.toLowerCase())) return false;
+  // Columns lined up with runs of spaces (a table, a diagram) in a long line.
+  return !text.split('\n').some(l => l.length > 60 && /\S {3,}\S/.test(l));
 }
 
 // The width of the longest line in monospace columns: a tab to the next

@@ -140,6 +140,7 @@ enum SmokeTest {
             _ = try? await webView.evaluateJavaScript("(() => { const e = [...document.querySelectorAll('.blk')].find(b => b.textContent.includes('日本語の確認')); if (e) window.scrollBy(0, e.getBoundingClientRect().top - 160); return 1; })()")
             try? await Task.sleep(for: .seconds(1))
             windowShot(controller.window, out, "cjk-light")
+            await chinesePunctuation(webView: webView, out: out)
             _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
             try? await Task.sleep(for: .milliseconds(500))
             // The next-change button's image as drawn in an active window (the
@@ -338,6 +339,40 @@ enum SmokeTest {
         guard let text = try? await webView.evaluateJavaScript(script) as? String,
               let data = text.data(using: .utf8), let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
         write(json, to: out, "css-supports.json")
+    }
+
+    /// Which font draws “ ” ‘ ’ — … in the fixture's Chinese paragraph
+    /// (reader.css: the ro-zh-punct face, `local()` PingFang on a Chinese
+    /// block): the face's status, and the width of those six characters
+    /// as the block draws them, in PingFang SC and in the system font
+    /// (zh-punct.json). Taken once the paragraph has been shown.
+    private static func chinesePunctuation(webView: WKWebView, out: URL) async {
+        let script = #"""
+            (() => {
+              const blk = [...document.querySelectorAll('#ro-doc > .blk')].find(b => b.lang === 'zh' && b.textContent.includes('\u201C'));
+              if (!blk) return JSON.stringify({ found: false });
+              const host = blk.querySelector('p') || blk;
+              const width = font => {
+                const s = document.createElement('span');
+                s.textContent = '\u201C\u201D\u2018\u2019\u2014\u2026';
+                s.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-size:20px;font-weight:400' + (font ? ';font-family:' + font : '');
+                host.appendChild(s);
+                const w = s.getBoundingClientRect().width;
+                s.remove();
+                return Math.round(w * 100) / 100;
+              };
+              return JSON.stringify({
+                found: true,
+                family: getComputedStyle(blk).fontFamily,
+                check: document.fonts.check('20px ro-zh-punct', '\u201C'),
+                faces: [...document.fonts].filter(f => f.family.replace(/["']/g, '') === 'ro-zh-punct').map(f => ({ weight: f.weight, status: f.status })),
+                width: { block: width(''), pingfang: width('"PingFang SC"'), system: width('-apple-system') },
+              });
+            })()
+            """#
+        guard let text = try? await webView.evaluateJavaScript(script) as? String,
+              let data = text.data(using: .utf8), let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        write(json, to: out, "zh-punct.json")
     }
 
     /// The soft scroll edge under the toolbar: the web view's top scroll
