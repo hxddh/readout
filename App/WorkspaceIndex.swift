@@ -95,18 +95,14 @@ final class WorkspaceIndex {
             }
         }
         stream = FSEventsStream(paths: roots, latency: 0.3, queue: queue) { [weak self] events in
-            var hits: [(URL, Date, Bool)] = []
-            for e in events where e.isFile {
-                let path = Self.givenPath(e.path, roots: realRoots)
-                guard FileManager.default.fileExists(atPath: path) else {
-                    known.paths.remove(path)   // removed or renamed away: a later write is new again
-                    continue
-                }
-                let url = URL(fileURLWithPath: path)
-                guard Self.isCandidate(url, roots: rootsCopy) else { continue }
-                let isNew = known.paths.insert(path).inserted
-                hits.append((url, Date(), isNew))
-            }
+            // Markdown documents only, by name before any stat: build output
+            // and dependencies written into an agent folder never cost one.
+            // One removed or renamed away is forgotten: a later write is new again.
+            let paths = events.filter(\.isFile).map { Self.givenPath($0.path, roots: realRoots) }
+            let now = Date()
+            let hits: [(URL, Date, Bool)] = AgentFolders.writes(paths, roots: rootsCopy, known: &known.paths) {
+                FileManager.default.fileExists(atPath: $0)
+            }.map { (URL(fileURLWithPath: $0.path), now, $0.isNew) }
             guard !hits.isEmpty else { return }
             DispatchQueue.main.async {
                 guard let self, self.generation == gen else { return }

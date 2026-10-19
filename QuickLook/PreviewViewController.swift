@@ -29,19 +29,34 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let requested = Date()
         // With the "applied" line below: how long a preview took (CI's ql_open_ms).
         log.notice("preview requested")
-        let data = try Data(contentsOf: url)
-        let text = FileContent.decode(data).text
-        // The incremental parser's first parse cuts the document into
-        // fragments parsed concurrently: the same document as
-        // MarkdownParser.parse, sooner for a long one.
-        let doc = IncrementalParser(resolver: FileResolver(baseDirectory: url.deletingLastPathComponent())).parse(text)
-        let session = DocumentSession()
-        let patch = session.load(doc)
-        // Only the count outlives this call: the parsed document is released with it.
-        let blocks = doc.blocks.count
+        // The web view first: its page loads in WebKit's process while the
+        // document is read and parsed here, instead of after it.
+        let made: ReaderWebView? = await MainActor.run {
+            _ = self.view
+            guard let webView = self.webView else { return nil }
+            let created = Date()
+            log.notice("preview view created in \(Int(created.timeIntervalSince(requested) * 1000), privacy: .public) ms")
+            // CI's ql_page_ready_ms: view created to its page's ready.
+            webView.whenReady {
+                log.notice("preview page ready in \(Int(Date().timeIntervalSince(created) * 1000), privacy: .public) ms")
+            }
+            return webView
+        }
+        guard let webView = made else { return }
+        // Off the main thread, whatever this method is called on: the page's
+        // messages (its ready) are handled there meanwhile.
+        let (patch, blocks) = try await Task.detached(priority: .userInitiated) { () throws -> (RenderPatch, Int) in
+            let data = try Data(contentsOf: url)
+            let text = FileContent.decode(data).text
+            // The incremental parser's first parse cuts the document into
+            // fragments parsed concurrently: the same document as
+            // MarkdownParser.parse, sooner for a long one.
+            let doc = IncrementalParser(resolver: FileResolver(baseDirectory: url.deletingLastPathComponent())).parse(text)
+            let session = DocumentSession()
+            // Only the count outlives this: the parsed document is released with it.
+            return (session.load(doc), doc.blocks.count)
+        }.value
 
-        await MainActor.run { _ = self.view }
-        guard let webView = await MainActor.run(body: { self.webView }) else { return }
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
             Task { @MainActor in
                 var resumed = false
