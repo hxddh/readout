@@ -27,6 +27,10 @@ public struct Block: Sendable, Equatable {
     /// checkboxes included; trailing white space left out): what a
     /// comparison or a removed block shows.
     public let source: String
+    /// The source with its lines' trailing white space, when it had some
+    /// (two spaces at the end of a line are a hard break): what copying the
+    /// block keeps. Nil when it equals `source`.
+    var rawSource: String? = nil
     /// Heading metadata.
     public let headingLevel: Int?
     public let headingTitle: String?
@@ -50,6 +54,54 @@ public struct Block: Sendable, Equatable {
     }
 }
 
+extension Block {
+    /// What copying the whole block (⌘C, Copy as Quote) puts on the
+    /// clipboard: its source as written, trailing white space included;
+    /// front matter with its `---` fences (its source is the body).
+    public var copySource: String {
+        kind == .frontMatter ? "---\n" + source + "\n---" : rawSource ?? source
+    }
+}
+
+/// A link reference definition (`[label]: destination "title"`). It is not a
+/// block, so copying a block that uses it (`[text][label]`) appends it.
+public struct LinkDefinition: Codable, Sendable, Equatable {
+    /// The label as references match it: case-folded, white space collapsed.
+    public let label: String
+    /// The definition as written, without the quote or list markers before it.
+    public let md: String
+
+    public init(label: String, md: String) {
+        self.label = Self.normalize(label)
+        self.md = md
+    }
+
+    /// CommonMark's label matching: trimmed, inner white space one space, case-folded.
+    static func normalize(_ label: String) -> String {
+        label.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" }).joined(separator: " ").lowercased()
+    }
+
+    private static let bracketed = try! NSRegularExpression(pattern: #"\[((?:\\.|[^\[\]\\])+)\]"#)
+
+    /// The definitions of `definitions` that `text` refers to (`[text][label]`,
+    /// `[label][]`, `[label]`), in the order of their first use, leaving out
+    /// those `text` holds itself.
+    public static func used(by text: String, in definitions: [LinkDefinition]) -> [LinkDefinition] {
+        guard !definitions.isEmpty, text.utf8.contains(0x5B) /* [ */ else { return [] }
+        var byLabel: [String: LinkDefinition] = [:]
+        for d in definitions where byLabel[d.label] == nil { byLabel[d.label] = d }
+        var out: [LinkDefinition] = []
+        var seen = Set<String>()
+        let ns = text as NSString
+        for m in bracketed.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            let label = normalize(ns.substring(with: m.range(at: 1)))
+            guard !label.hasPrefix("^"), let d = byLabel[label], seen.insert(label).inserted, !text.contains(d.md) else { continue }
+            out.append(d)
+        }
+        return out
+    }
+}
+
 public struct TaskStats: Codable, Sendable, Equatable {
     public var done: Int
     public var total: Int
@@ -68,6 +120,8 @@ public struct TocEntry: Codable, Sendable, Equatable, Identifiable {
 public struct ParsedDocument: Sendable {
     public var blocks: [Block]
     public let title: String?
+    /// The document's link reference definitions, in source order.
+    public var links: [LinkDefinition] = []
     /// An `IncrementalParser` result's identity (0: none).
     var generation: UInt64 = 0
     /// What a splice (`IncrementalParser`) kept of the result `base`: its

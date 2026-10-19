@@ -383,6 +383,7 @@ public final class IncrementalParser: @unchecked Sendable {
                                        headingLevel: b.headingLevel, headingTitle: b.headingTitle, anchor: b.anchor)
                         nb.cjk = b.cjk
                         nb.cjkMixed = b.cjkMixed
+                        nb.rawSource = b.rawSource
                         asm.out.append(nb)
                     }
                 }
@@ -405,7 +406,10 @@ public final class IncrementalParser: @unchecked Sendable {
         // stops at the window. No heading changed, so the first H1 (before, in
         // or after the window) is the previous result's: its title still holds.
         let title = headingFree ? st.result.title : asm.title
-        let doc = identified(ParsedDocument(blocks: asm.out, title: title), base: st.result.generation,
+        var spliced = ParsedDocument(blocks: asm.out, title: title)
+        // No definition line is at or after the change (`lastSpecial`): the definitions stay.
+        spliced.links = st.result.links
+        let doc = identified(spliced, base: st.result.generation,
                              prefix: prefixBlocks, suffix: suffixBlocks)
         asm.out = []
 
@@ -534,6 +538,42 @@ public final class IncrementalParser: @unchecked Sendable {
             text += line + "\n" + (i + 1 < lines.count ? lines[i + 1] : "") + "\n"
         }
         return found ? XXHash64.hash(text) : nil
+    }
+
+    /// A definition line: the quote and list markers before it, its label, the rest.
+    private static let definitionLine = try! NSRegularExpression(
+        pattern: #"^((?:[ \t]*(?:>|(?:[-*+]|\d{1,9}[.)])(?=[ \t]|$)))*[ \t]*)\[((?:\\.|[^\]\\])+)\]:(.*)$"#)
+    /// A title on the line after a definition: `"…"`, `'…'` or `(…)`.
+    private static let titleLine = try! NSRegularExpression(pattern: #"^[ \t>]*(["'(].*["')])[ \t]*$"#)
+
+    /// The link reference definitions in `lines` outside code (the same lines
+    /// `linkDefinitionsHash` reads), as written without their container
+    /// markers; a destination or title on the next line comes along.
+    static func linkDefinitions(_ lines: [String]) -> [LinkDefinition] {
+        var fences = FenceTracker()
+        var out: [LinkDefinition] = []
+        for (i, line) in lines.enumerated() {
+            if fences.consume(line) { continue }
+            guard FastBytes.contains(line, 0x5D, 0x3A) else { continue }   // "]:"
+            let ns = line as NSString
+            guard let m = definitionLine.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else { continue }
+            let label = ns.substring(with: m.range(at: 2))
+            if label.hasPrefix("^") { continue }
+            var rest = ns.substring(with: m.range(at: 3)).trimmingCharacters(in: .whitespaces)
+            let next = i + 1 < lines.count ? lines[i + 1] : ""
+            let nn = next as NSString
+            if rest.isEmpty {
+                // The destination on the next line.
+                let dest = next.drop(while: { $0 == " " || $0 == "\t" || $0 == ">" }).trimmingCharacters(in: .whitespaces)
+                guard !dest.isEmpty else { continue }
+                rest = dest
+            } else if !rest.contains(where: { $0 == " " || $0 == "\t" }),
+                      let t = titleLine.firstMatch(in: next, range: NSRange(location: 0, length: nn.length)) {
+                rest += " " + nn.substring(with: t.range(at: 1))
+            }
+            out.append(LinkDefinition(label: label, md: "[\(label)]: \(rest)"))
+        }
+        return out
     }
 
     private static let listMarker = try! NSRegularExpression(pattern: #"^\d{1,9}[.)](?:[ \t]|$)"#)

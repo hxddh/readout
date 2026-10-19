@@ -95,7 +95,7 @@ struct HTMLRenderer {
             if let t = l.title, !t.isEmpty { title = " title=\"\(HTML.escape(t))\"" }
             var inner = self
             inner.autolinks = false
-            return "<a href=\"\(HTML.escape(dest))\"\(title)>\(inner.inline(l))</a>"
+            return "<a href=\"\(HTML.escape(HTML.safeLink(dest)))\"\(title)>\(inner.inline(l))</a>"
         case let img as Image:
             return image(img)
         case is SoftBreak:
