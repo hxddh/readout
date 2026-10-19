@@ -4,12 +4,16 @@ name: Verify signed product
 # signed app from /Applications, asserts on its smoke output, and uploads the
 # signed app zip. Release publishes ONLY this artifact — it never rebuilds.
 #
+# The disk image (dmgbuild: the app, an Applications link, a 2x background with
+# an arrow and, while not notarized, the first-open hint) is built here from the
+# tested app and checked, and publish ships it byte for byte.
+#
 # Notarization (dormant until the six secrets below exist; docs/RELEASING.md):
 # with `notarize: true` AND every secret set, the app is signed with the
 # Developer ID instead of ad hoc, notarized and stapled BEFORE the smoke test,
-# and the DMG is built, signed, notarized and stapled here too, so what ships
-# is what was tested. Without the secrets (ci.yml, forks, today) NOTARIZE is
-# false and every step below runs exactly as before.
+# and the DMG is signed, notarized and stapled here too, so what ships is what
+# was tested. Without the secrets (ci.yml, forks, today) NOTARIZE is false and
+# the app and the disk image are ad hoc.
 on:
   workflow_call:
     inputs:
@@ -46,7 +50,7 @@ on:
         description: SHA-256 of the uploaded readout-app-<version>.zip
         value: ${{ jobs.signed.outputs.sha256 }}
       dmg_sha256:
-        description: SHA-256 of the notarized Readout-<version>.dmg in the same artifact (empty when not notarized)
+        description: SHA-256 of Readout-<version>.dmg in the same artifact (notarized and stapled when notarizing)
         value: ${{ jobs.signed.outputs.dmg_sha256 }}
 
 jobs:
@@ -201,9 +205,20 @@ jobs:
           sleep 1
           cat smoke-out/qlmanage.log || true
           cat smoke-out/ql-render.log
-          # Reported, not gated: the extension's own time from request to apply.
-          python3 -c 'import json, re, sys; m = re.search(r"rendered -?\d+ of \d+ blocks in (\d+) ms", open(sys.argv[1]).read()); json.dump({"ql_open_ms": int(m.group(1))} if m else {}, open(sys.argv[2], "w"))' \
-            smoke-out/ql-render.log smoke-out/ql-timings.json
+          # Reported, not gated: the extension's own time from request to apply,
+          # and from its web view created (before the parse) to its page's ready.
+          python3 - smoke-out/ql-render.log smoke-out/ql-timings.json <<'EOF'
+          import json, re, sys
+          log = open(sys.argv[1]).read()
+          out = {}
+          m = re.search(r"rendered -?\d+ of \d+ blocks in (\d+) ms", log)
+          if m:
+              out["ql_open_ms"] = int(m.group(1))
+          m = re.search(r"preview page ready in (\d+) ms", log)
+          if m:
+              out["ql_page_ready_ms"] = int(m.group(1))
+          json.dump(out, open(sys.argv[2], "w"))
+          EOF
           cat smoke-out/ql-timings.json
           # Informational: a preview-only extension does not provide thumbnails.
           qlmanage -t -s 512 -o smoke-out "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlthumb.log 2>&1 || true
@@ -254,25 +269,95 @@ jobs:
             echo "FAIL: the notarized app is not accepted by Gatekeeper"; exit 1
           fi
 
-      - name: Disk image (Developer ID signed, notarized, stapled)
+      - name: Disk image (dmgbuild; Developer ID signed, notarized and stapled when notarizing)
         id: dmg
-        if: env.NOTARIZE == 'true'
         env:
           IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
           NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
         run: |
-          # The tested app, as hashed above: the DMG publish ships.
+          # Built here, from the tested app as hashed above, and checked below:
+          # publish ships this disk image byte for byte (its SHA-256 is an output).
+          # The layout comes from the workflow's own commit, so a dry run of an
+          # older tag (release.yml) builds today's disk image around that tag's app.
+          TOOLS="$RUNNER_TEMP/dmg-tools"
+          rm -rf "$TOOLS" && mkdir -p "$TOOLS"
+          for f in background.swift settings.py requirements.txt; do
+            git show "$GITHUB_SHA:tools/dmg/$f" > "$TOOLS/$f"
+          done
+          python3 -m venv "$RUNNER_TEMP/dmgbuild-venv"
+          "$RUNNER_TEMP/dmgbuild-venv/bin/pip" install --quiet --require-hashes --only-binary :all: -r "$TOOLS/requirements.txt"
+          "$RUNNER_TEMP/dmgbuild-venv/bin/dmgbuild" --help > /dev/null
+          # The first-open hint only while the app is not notarized (Gatekeeper
+          # opens a notarized one without System Settings).
+          HINT=1
+          if [ "$NOTARIZE" = "true" ]; then HINT=0; fi
+          xcrun swift "$TOOLS/background.swift" "$TOOLS" "$HINT"
           rm -rf "$RUNNER_TEMP/dmg" && mkdir -p "$RUNNER_TEMP/dmg"
           ditto /Applications/Readout.app "$RUNNER_TEMP/dmg/Readout.app"
-          ln -s /Applications "$RUNNER_TEMP/dmg/Applications"
-          hdiutil create -volname "Readout" -srcfolder "$RUNNER_TEMP/dmg" -ov -format UDZO "Readout-$VERSION.dmg"
-          codesign --force --timestamp --sign "$IDENTITY" "Readout-$VERSION.dmg"
-          sh tools/notarize.sh "Readout-$VERSION.dmg" "Readout-$VERSION.dmg"
-          spctl -a -t open --context context:primary-signature -vv "Readout-$VERSION.dmg"
+          "$RUNNER_TEMP/dmgbuild-venv/bin/dmgbuild" -s "$TOOLS/settings.py" \
+            -D app="$RUNNER_TEMP/dmg/Readout.app" -D bg="$TOOLS/background.png" \
+            Readout "Readout-$VERSION.dmg"
+          if [ "$NOTARIZE" = "true" ]; then
+            codesign --force --timestamp --sign "$IDENTITY" "Readout-$VERSION.dmg"
+            sh tools/notarize.sh "Readout-$VERSION.dmg" "Readout-$VERSION.dmg"
+            spctl -a -t open --context context:primary-signature -vv "Readout-$VERSION.dmg"
+          fi
           SHA=$(shasum -a 256 "Readout-$VERSION.dmg" | cut -d' ' -f1)
           echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
           echo "SHA-256(Readout-$VERSION.dmg) = $SHA"
+
+      - name: Check the disk image as it ships
+        env:
+          EXPECTED_DMG_SHA: ${{ steps.dmg.outputs.sha256 }}
+        run: |
+          DMG="Readout-$VERSION.dmg"
+          hdiutil verify "$DMG"
+          hdiutil attach -readonly -noautoopen -plist "$DMG" > "$RUNNER_TEMP/attach.plist"
+          MNT=$(python3 -c 'import plistlib, sys; print(next(e["mount-point"] for e in plistlib.load(open(sys.argv[1], "rb"))["system-entities"] if e.get("mount-point")))' "$RUNNER_TEMP/attach.plist")
+          echo "mounted at $MNT"
+          ls -la "$MNT"
+          fail() { echo "FAIL: $1"; hdiutil detach "$MNT" -force > /dev/null || true; exit 1; }
+          [ "$(readlink "$MNT/Applications")" = "/Applications" ] || fail "no Applications link"
+          [ -f "$MNT/.DS_Store" ] || fail "no Finder layout (.DS_Store)"
+          [ -f "$MNT/.background.tiff" ] || fail "no background image"
+          # dmgbuild combines background.png and background@2x.png into one
+          # TIFF (a lone PNG would stay .background.png): one image per scale.
+          tiffutil -info "$MNT/.background.tiff" || true
+          IMAGES=$(python3 - "$MNT/.background.tiff" <<'EOF'
+          import struct, sys
+          data = open(sys.argv[1], "rb").read()
+          order = "<" if data[:2] == b"II" else ">"
+          offset, sizes = struct.unpack(order + "I", data[4:8])[0], []
+          while offset:
+              count = struct.unpack(order + "H", data[offset:offset + 2])[0]
+              tags = {}
+              for i in range(count):
+                  tag, kind, _, value = struct.unpack(order + "HHII", data[offset + 2 + 12 * i:offset + 14 + 12 * i])
+                  tags[tag] = value & 0xFFFF if kind == 3 and order == "<" else (value >> 16 if kind == 3 else value)
+              sizes.append(f"{tags.get(256)}x{tags.get(257)}")
+              offset = struct.unpack(order + "I", data[offset + 2 + 12 * count:offset + 6 + 12 * count])[0]
+          print(" ".join(sizes))
+          EOF
+          )
+          echo "background images: $IMAGES"
+          [ "$IMAGES" = "600x420 1200x840" ] || fail "the background is not one 600 x 420 image at 1x and 2x ($IMAGES)"
+          # The tested app, file for file, with the same signature.
+          diff -r "$MNT/Readout.app" /Applications/Readout.app || fail "the app in the disk image is not the tested app"
+          # Nothing outside the signature on the bundle (Finder information,
+          # a resource fork): strict verification refuses it.
+          xattr -l "$MNT/Readout.app" || true
+          codesign --verify --deep --strict "$MNT/Readout.app" || fail "the app in the disk image does not verify"
+          A=$(codesign -dvvv "$MNT/Readout.app" 2>&1 | grep '^CDHash='); B=$(codesign -dvvv /Applications/Readout.app 2>&1 | grep '^CDHash=')
+          [ -n "$A" ] && [ "$A" = "$B" ] || fail "the app's signature differs ($A vs $B)"
+          # What the reader sees on opening it (for a look, not asserted).
+          open "$MNT" || true
+          sleep 4
+          screencapture -x smoke-out/dmg-window.png || true
+          hdiutil detach "$MNT" -force > /dev/null || hdiutil detach "$MNT" -force
+          # Nothing changed it since it was hashed.
+          [ "$(shasum -a 256 "$DMG" | cut -d' ' -f1)" = "$EXPECTED_DMG_SHA" ] || { echo "FAIL: $DMG changed after it was hashed"; exit 1; }
+          echo "ok: $DMG holds the tested app, its layout and its 2x background"
 
       - name: Remove the signing keychain and key
         if: always() && env.NOTARIZE == 'true'
@@ -284,7 +369,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: readout-app-${{ inputs.version }}
-          # The DMG is there only when it was notarized here.
+          # The disk image publish ships, built and checked here.
           path: |
             readout-app-${{ inputs.version }}.zip
             Readout-${{ inputs.version }}.dmg

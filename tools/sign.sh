@@ -38,6 +38,8 @@ fi
 FLAGS="--force --options runtime"
 if [ "$ID" != "-" ]; then FLAGS="$FLAGS --timestamp"; fi
 
+# FLAGS is several options: split on purpose.
+# shellcheck disable=SC2086
 sign() { codesign $FLAGS --sign "$ID" "$@"; }
 
 # Embedded frameworks or dylibs first (individually, never --deep).
