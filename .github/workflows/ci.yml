@@ -33,9 +33,10 @@ jobs:
           a=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 append)
           t=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 tail)
           o=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 open-unique)
+          d=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 mid)
           b=$($probe web/test/corpus 1000000 bytes append)
-          echo "perf instructions: update_1mb $n, append_1mb $a, tail_1mb $t, open_1mb_unique $o; append page payload $b bytes"
-          python3 -c 'import json, sys; m = lambda v: round(int(v) / 1e6, 1); json.dump({"update_1mb_minstr": m(sys.argv[1]), "append_1mb_minstr": m(sys.argv[2]), "open_1mb_unique_minstr": m(sys.argv[3]), "append_patch_bytes_1mb": int(sys.argv[4]), "tail_1mb_minstr": m(sys.argv[5])}, open("perf-instr.json", "w"))' "$n" "$a" "$o" "$b" "$t"
+          echo "perf instructions: update_1mb $n, append_1mb $a, tail_1mb $t, mid_1mb $d, open_1mb_unique $o; append page payload $b bytes"
+          python3 -c 'import json, sys; m = lambda v: round(int(v) / 1e6, 1); json.dump({"update_1mb_minstr": m(sys.argv[1]), "append_1mb_minstr": m(sys.argv[2]), "open_1mb_unique_minstr": m(sys.argv[3]), "append_patch_bytes_1mb": int(sys.argv[4]), "tail_1mb_minstr": m(sys.argv[5]), "mid_1mb_minstr": m(sys.argv[6])}, open("perf-instr.json", "w"))' "$n" "$a" "$o" "$b" "$t" "$d"
           python3 tools/perf-assert.py linux-callgrind perf-instr.json
 
   webkit:

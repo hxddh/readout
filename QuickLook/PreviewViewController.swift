@@ -45,16 +45,20 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         guard let webView = made else { return }
         // Off the main thread, whatever this method is called on: the page's
         // messages (its ready) are handled there meanwhile.
-        let (patch, blocks) = try await Task.detached(priority: .userInitiated) { () throws -> (RenderPatch, Int) in
+        let (patch, blocks) = try await Task.detached(priority: .userInitiated) { () async throws -> (RenderPatch, Int) in
             let data = try Data(contentsOf: url)
             let text = FileContent.decode(data).text
             // The incremental parser's first parse cuts the document into
             // fragments parsed concurrently: the same document as
-            // MarkdownParser.parse, sooner for a long one.
-            let doc = IncrementalParser(resolver: FileResolver(baseDirectory: url.deletingLastPathComponent())).parse(text)
-            let session = DocumentSession()
-            // Only the count outlives this: the parsed document is released with it.
-            return (session.load(doc), doc.blocks.count)
+            // MarkdownParser.parse, sooner for a long one. On a large stack
+            // (`ParseThread`): Quick Look's own threads have 512 KB.
+            let base = url.deletingLastPathComponent()
+            return await ParseThread.run {
+                let doc = IncrementalParser(resolver: FileResolver(baseDirectory: base)).parse(text)
+                let session = DocumentSession()
+                // Only the count outlives this: the parsed document is released with it.
+                return (session.load(doc), doc.blocks.count)
+            }
         }.value
 
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in

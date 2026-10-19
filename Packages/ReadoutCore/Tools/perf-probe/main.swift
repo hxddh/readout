@@ -9,7 +9,11 @@
 //             mid-line: the last paragraph grows);
 //             open-unique: the first open of a document whose blocks are all distinct
 //             (the corpus repeated with every repetition's prose lines marked), so
-//             nothing is shared between its blocks.
+//             nothing is shared between its blocks;
+//             mid: load a document of the corpus documents that define no footnotes,
+//             then a sentence added to a paragraph in its middle, between two others
+//             (an agent revising an earlier step: spliced, `[^` and `]:` text after it
+//             included).
 //   RUNS > 0: prints the fastest and median wall time of RUNS measured steps.
 //   RUNS = 0 (default): runs up to and including the measured step once.
 //   load: runs up to the measured step only (for update and append, loads the document).
@@ -23,7 +27,7 @@ import ReadoutCore
 
 let args = CommandLine.arguments
 guard args.count >= 3, let bytes = Int(args[2]) else {
-    FileHandle.standardError.write("usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes] [update | append | tail | open-unique]\n".data(using: .utf8)!)
+    FileHandle.standardError.write("usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes] [update | append | tail | open-unique | mid]\n".data(using: .utf8)!)
     exit(2)
 }
 let corpus = URL(fileURLWithPath: args[1])
@@ -31,7 +35,7 @@ let loadOnly = args.count > 3 && args[3] == "load"
 let printBytes = args.count > 3 && args[3] == "bytes"
 let runs = args.count > 3 ? Int(args[3]) ?? 0 : 0
 let scenario = args.count > 4 ? args[4] : "update"
-guard ["update", "append", "tail", "open-unique"].contains(scenario) else {
+guard ["update", "append", "tail", "open-unique", "mid"].contains(scenario) else {
     FileHandle.standardError.write("unknown scenario \(scenario)\n".data(using: .utf8)!)
     exit(2)
 }
@@ -40,6 +44,8 @@ let docs = ((try? FileManager.default.contentsOfDirectory(at: corpus, includingP
     .filter { $0.pathExtension == "md" && $0.lastPathComponent.first?.isNumber == true }
     .sorted { $0.lastPathComponent < $1.lastPathComponent }
     .map { (try? String(contentsOf: $0, encoding: .utf8)) ?? "" }
+    // mid: no footnote definitions (a document defining footnotes is spliced only before its first `[^` or `]:`).
+    .filter { scenario != "mid" || $0.range(of: #"(?m)^ {0,3}\[\^[^\]\s]+\]:"#, options: .regularExpression) == nil }
 guard !docs.isEmpty else {
     FileHandle.standardError.write("no corpus documents in \(corpus.path)\n".data(using: .utf8)!)
     exit(2)
@@ -84,6 +90,23 @@ func edited(_ text: String, count: Int) -> String {
     return paragraphs.joined(separator: "\n\n")
 }
 
+/// A sentence added to a one-line paragraph in the middle of `text`
+/// that has a paragraph before and after it, each starting with a letter
+/// (an edit in prose: not in code, and not next to a heading, a change
+/// there reassembling what follows, as its anchors may move).
+func revisedMiddle(_ text: String) -> String {
+    let blocks = MarkdownParser.parse(text).blocks
+    let at = blocks.indices.dropFirst(blocks.count / 2).first { i in
+        i + 1 < blocks.count && blocks[i].lines.count == 1
+            && blocks[(i - 1)...(i + 1)].allSatisfy { $0.kind == .paragraph && $0.source.first?.isLetter == true }
+    }
+    // Found by its text (the corpus has lone CRs, which end lines for the parser).
+    let line = "\n\n" + (at.map { blocks[$0].source } ?? "") + "\n\n"
+    guard at != nil, let r = text.range(of: line, range: text.index(text.startIndex, offsetBy: text.count / 2)..<text.endIndex)
+            ?? text.range(of: line) else { return text }
+    return text.replacingCharacters(in: r, with: line.dropLast(2) + " The agent revised this step after the review.\n\n")
+}
+
 /// The measured update: hash, decode, parse with the render cache, diff into a patch.
 @inline(never)
 func measuredUpdate(_ data: Data, _ parser: IncrementalParser, _ session: DocumentSession,
@@ -112,6 +135,7 @@ switch scenario {
 case "append": data = Data((original + "\n\nThe agent appended this new paragraph describing the next step of the plan.\n").utf8)
 case "tail": data = Data((original + " and one more clause streamed in").utf8)
 case "open-unique": data = Data(original.utf8)
+case "mid": data = Data(revisedMiddle(original).utf8)
 default: data = Data(edited(original, count: 20).utf8)
 }
 var samples: [Double] = []

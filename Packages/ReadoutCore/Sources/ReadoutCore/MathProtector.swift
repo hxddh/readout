@@ -317,7 +317,9 @@ struct MathProtector {
         let cjkEmphasis = emphasis && CJKEmphasis.mayApply(line)
         // Fast path: nothing that could start math or a footnote reference, or need a CJK emphasis marker.
         if !mayHaveFootnote && !cjkEmphasis && !line.utf8.contains(UInt8(ascii: "$")) && !line.utf8.contains(UInt8(ascii: "\\")) { return line }
-        let chars = Array(line)
+        // By code point, not grapheme: `*` followed by a variation selector or
+        // combining mark is one Character, and would hide or split a delimiter run.
+        let chars = line.unicodeScalars.map(Character.init)
         // Where the line's content starts, after quote markers, list markers and indentation.
         let contentStart = cjkEmphasis ? Self.contentStart(chars) : 0
         var out = ""

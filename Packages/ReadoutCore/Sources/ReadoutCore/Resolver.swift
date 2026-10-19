@@ -151,8 +151,9 @@ public struct FileResolver: ResourceResolver {
     /// `~/notes.md`, `/etc/hosts`; no `:line` suffix or `#fragment`) may be,
     /// most likely first, each once: an absolute or `~/` path as written;
     /// a relative one in the document's folder, then the project, then the
-    /// folders above the document inside its repository (agents write paths
-    /// relative to the repository root), then the other search roots.
+    /// folders above the document inside its repository (up to five, and
+    /// always its root: agents write paths relative to the repository root),
+    /// then the other search roots.
     /// Code spans resolve through it; so can links (`[x](src/a.ts#L42)`).
     public func candidates(for path: String) -> [URL] {
         if path.hasPrefix("/") { return [URL(fileURLWithPath: path).standardizedFileURL] }
@@ -171,6 +172,8 @@ public struct FileResolver: ResourceResolver {
                 dir = dir.deletingLastPathComponent()
                 add(dir)
             }
+            // From deeper in it, still its root: agents write paths relative to it.
+            add(repo)
         }
         for r in searchRoots { add(r) }
         return out
