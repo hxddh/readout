@@ -35,8 +35,10 @@ public enum PageMessage: Equatable, Sendable {
     /// badge, the outline's and the tab's dots): until then, more unread waits.
     case showUnread
     /// The reader selected text in the document, or the selection went
-    /// (Copy as Quote is enabled while there is one).
-    case selection(has: Bool)
+    /// (`has`: the context menu offers Copy as Quote while there is one), and
+    /// whether a block has the keyboard's focus (`focused`: where N went;
+    /// Edit ▸ Copy as Quote quotes it when no text is selected).
+    case selection(has: Bool, focused: Bool = false)
     /// N went past the last change and wrapped around to the first: the app beeps.
     case wrapped
     /// Keyboard focus moved to an unread change (N, a rail tick): its place
@@ -84,7 +86,8 @@ public enum PageMessage: Equatable, Sendable {
         case "showUnread": self = .showUnread
         case "selection":
             guard let has = (msg["has"] as? NSNumber)?.boolValue ?? (msg["has"] as? Bool) else { return nil }
-            self = .selection(has: has)
+            let focused = (msg["focused"] as? NSNumber)?.boolValue ?? (msg["focused"] as? Bool) ?? false
+            self = .selection(has: has, focused: focused)
         case "wrapped": self = .wrapped
         case "landed":
             guard let index = int(msg["index"]), let total = int(msg["total"]), index >= 1, index <= total,
