@@ -372,6 +372,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         // Recover from a crashed renderer: reload the page and re-send the document.
+        // The new page has no selection and no focused block yet (Copy as Quote).
+        hasSelection = false
+        hasFocusedBlock = false
         self.webView.reloadReader()
         self.webView.whenReady { [weak self] in
             guard let self else { return }
