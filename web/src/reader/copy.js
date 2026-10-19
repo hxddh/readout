@@ -485,6 +485,16 @@ export function htmlOf(range) {
     a.textContent = r.dataset.alt || r.dataset.src || '';
     r.replaceWith(a);
   }
+  // Front matter: a table of its keys and values (its spans would run together, "title Planstatus draft").
+  for (const f of box.querySelectorAll('.front-matter')) {
+    const table = document.createElement('table'), body = table.appendChild(document.createElement('tbody'));
+    for (const i of f.querySelectorAll('.fm-item')) {
+      const row = body.appendChild(document.createElement('tr'));
+      row.appendChild(document.createElement('td')).textContent = i.querySelector('.fm-key')?.textContent ?? '';
+      row.appendChild(document.createElement('td')).textContent = [...i.childNodes].filter(c => !(c.classList && c.classList.contains('fm-key'))).map(c => c.textContent).join('').trim();
+    }
+    if (body.rows.length) f.replaceWith(table); else f.remove();
+  }
   for (const b of box.querySelectorAll('.blk')) b.replaceWith(...b.childNodes);
   box.querySelectorAll('[tabindex]').forEach(e => e.removeAttribute('tabindex'));
   safeHTML(box);
