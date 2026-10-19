@@ -296,18 +296,22 @@ function keptBlock(resized) {
   const cv = doc.classList.contains('cv');
   const first = topBlock();
   if (!first) return null;
-  // On screen as the page was before these changes: a block's top then was
-  // its top now less what the blocks before it grew by (blocks laid out at
-  // once can push the kept one out of the window).
-  let grown = 0;
-  for (const [el, d] of resized) if (el !== first && (el.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING)) grown += d;
-  for (let e = first; e; e = e.nextElementSibling) {
-    if (!e.classList.contains('blk') || !isShown(e)) continue;
-    if (e.getBoundingClientRect().top - grown >= window.innerHeight) return null;
-    const d = resized.get(e);
-    if (d !== undefined) { grown += d; continue; }
-    if (cv && !laidOut.has(e) && heights.get(e) === estimate(e)) continue;
-    return e;
+  // On screen as the page was before these changes (a block's top then was
+  // its top now less what the blocks before it grew by: blocks laid out at
+  // once can push the kept one out of the window); failing that, as it is
+  // now (blocks that shrank can bring it in: the screen showed only them).
+  let before = 0;
+  for (const [el, d] of resized) if (el !== first && (el.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING)) before += d;
+  for (const then of [true, false]) {
+    let grown = then ? before : 0;
+    for (let e = first; e; e = e.nextElementSibling) {
+      if (!e.classList.contains('blk') || !isShown(e)) continue;
+      if (e.getBoundingClientRect().top - grown >= window.innerHeight) break;
+      const d = resized.get(e);
+      if (d !== undefined) { if (then) grown += d; continue; }
+      if (cv && !laidOut.has(e) && heights.get(e) === estimate(e)) continue;
+      return e;
+    }
   }
   return null;
 }
