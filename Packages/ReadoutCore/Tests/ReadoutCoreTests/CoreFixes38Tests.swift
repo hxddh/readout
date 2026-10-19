@@ -150,6 +150,17 @@ import Testing
         // 3.7: <p><strong>注意<em></em>︎中文</strong>粗体**</p>
     }
 
+    /// Also found by the long fuzz runs (grown palette): the fragmenter read
+    /// HTML starts and ends by Character, so `>` followed by a variation
+    /// selector was no `>` to it (cmark-gfm reads bytes) and an HTML block
+    /// ended, or started, elsewhere than in the full parse.
+    @Test func variationSelectorAfterAnHTMLTagMatchesTheFullParse() {
+        for t in ["<details>\u{FE0F}\n\n#", "<script>\u{FE0F}\n\ne", "<!E\n>\u{FE0F}\n~~~\n>\n\n#",
+                  "<pre>\u{FE0F}\n[^n]:\nx", "<pre>\nx</pre>\u{FE0F}\n\nAfter.", "<!-- c -->\u{FE0F}\n\nAfter."] {
+            #expect(IncrementalParser().parse(t).blocks == MarkdownParser.parse(t).blocks, "\(t.debugDescription)")
+        }
+    }
+
     // MARK: B5: a list item whose first content is a no-break space
 
     /// cmark-gfm takes `- <NBSP>` for a list item (only space and tab are

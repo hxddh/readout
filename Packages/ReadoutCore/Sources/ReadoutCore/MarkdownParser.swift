@@ -480,7 +480,7 @@ public enum MarkdownParser {
     /// Tags inside HTML comments do not count.
     static func detailsDepth(_ html: String) -> Int {
         var lower = html.lowercased()
-        if lower.contains("<!--") {
+        if FastBytes.contains(lower, bytes: "<!--") {
             lower = lower.replacingOccurrences(of: #"<!--[\s\S]*?(-->|$)"#, with: "", options: .regularExpression)
         }
         // Whole tags only: <details-card> or <detailsx> is another element.
