@@ -242,10 +242,7 @@ def main() -> int:
 
 def locale_pass(app: Path, target: Path, out: Path) -> int:
     """The app again, in Chinese: it writes menus-zh.json and two shots, then quits."""
-    # Stands in for a release's DMG in the Download Update check (A3): 4 MB, so it takes a few progress steps.
-    update_file = tmp / "update.dmg"
-    update_file.write_bytes(os.urandom(4 * 1024 * 1024))
-    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out), READOUT_SMOKE_UPDATE_FILE=str(update_file), READOUT_SMOKE_PASS="zh")
+    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out), READOUT_SMOKE_PASS="zh")
     with open(out / "smoke-zh.log", "wb") as log:
         proc = subprocess.Popen([str(app), "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"],
                                 env=env, stdout=log, stderr=subprocess.STDOUT)
