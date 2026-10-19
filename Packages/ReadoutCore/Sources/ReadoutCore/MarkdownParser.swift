@@ -39,6 +39,8 @@ public enum MarkdownParser {
         /// keeps them alive (`RenderCache.keep`), so an edit to it later
         /// re-renders only the blocks that changed.
         var cacheKeys: [String] = []
+        /// The link reference definitions it holds (`ParsedDocument.links`).
+        var links: [LinkDefinition] = []
     }
 
     static func assemble(_ fragments: [(offset: Int, fragment: Fragment)]) -> ParsedDocument {
@@ -55,6 +57,7 @@ public enum MarkdownParser {
         var out: [Block] = []
         var numbering = Footnotes.Numbering()
         var notes: [Footnotes.Note] = []
+        var links: [LinkDefinition] = []
         var headingStack: [(level: Int, title: String)] = []
         var currentPath: [String] = []   // headingStack's titles, shared by the blocks under it
         var slugger = Slugger()
@@ -103,6 +106,7 @@ public enum MarkdownParser {
         }
 
         mutating func add(offset: Int, fragment: Fragment) {
+            links += fragment.links
             for var n in fragment.notes {
                 n.lines = (n.lines.lowerBound + offset)...(n.lines.upperBound + offset)
                 notes.append(n)
@@ -130,13 +134,16 @@ public enum MarkdownParser {
                                headingLevel: b.headingLevel, headingTitle: b.headingTitle, anchor: anchor)
                 nb.cjk = b.cjk || (b.cjkMixed && mixedIsCJK)
                 nb.cjkMixed = b.cjkMixed
+                nb.rawSource = b.rawSource
                 out.append(nb)
             }
         }
 
         mutating func finish() -> ParsedDocument {
             if let section = numbering.section(notes) { out.append(section) }
-            return ParsedDocument(blocks: out, title: title)
+            var doc = ParsedDocument(blocks: out, title: title)
+            doc.links = links
+            return doc
         }
     }
 
@@ -271,6 +278,7 @@ public enum MarkdownParser {
             var b = Block(kind: kind, headingPath: [], lines: range, fingerprint: fp,
                           taskState: tasks, html: rendered, text: normalized, source: shownSource(slice, source),
                           headingLevel: heading?.0, headingTitle: heading?.1, anchor: heading?.2)
+            if b.source != source { b.rawSource = source }
             if kind == .code || kind == .mermaid || kind == .math {
                 b.cjk = CJK.ratio(normalized) > 0.3
             } else {
@@ -432,7 +440,9 @@ public enum MarkdownParser {
                                      resolver: resolver, cache: cache, emphasisExcluded: excluded)
             }
         }
-        return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys)
+        // Definitions are not blocks: copying a block that uses one appends it.
+        let links = refsKey.isEmpty ? [] : IncrementalParser.linkDefinitions(parseLines)
+        return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys, links: links)
     }
 
     /// Two-generation cache of rendered block HTML, keyed by exact block source and context.

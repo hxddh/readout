@@ -207,6 +207,35 @@ import Testing
         #expect(IncrementalParser().parse(plain).blocks == MarkdownParser.parse(plain).blocks)
     }
 
+    /// `ParsedDocument.links` (Copy) after every kind of change to a link
+    /// definition: one added, removed or edited, and one brought out of code
+    /// by an edit elsewhere (a fence taken away or opened above it), each
+    /// as the full parse has them; and a spliced document defines none.
+    @Test func linksAfterAChangeAreTheFullParses() {
+        let body = (0..<10).map { "Paragraph \($0) cites [x] and [y]." }.joined(separator: "\n\n")
+        let code = "```\n[y]: https://y.example\n```"
+        let plain = "# Doc\n\nIntro.\n\n" + body + "\n\n" + code + "\n\nEnd."
+        let defined = plain.replacingOccurrences(of: "Paragraph 4 cites", with: "[x]: https://x.example\n\nParagraph 4 cites")
+        let versions = [
+            plain,
+            defined,                                                                          // added
+            defined.replacingOccurrences(of: "https://x.example", with: "https://x2.example"),  // edited
+            plain,                                                                            // removed
+            plain.replacingOccurrences(of: "\n\n```\n[y]", with: "\n\n[y]"),                  // out of code: fence taken away
+            plain,
+            plain.replacingOccurrences(of: "Paragraph 9 cites", with: "```\nParagraph 9 cites"),  // a fence opened above it
+            plain + "\n\nMore after.",
+        ]
+        let p = IncrementalParser()
+        for (i, v) in versions.enumerated() {
+            let doc = p.parse(v), full = MarkdownParser.parse(v)
+            #expect(doc.links == full.links, "version \(i): \(doc.links) vs \(full.links)")
+            #expect(doc.blocks == full.blocks, "version \(i)")
+            if p.lastSpliced { #expect(doc.links.isEmpty, "version \(i)") }
+        }
+        #expect(!MarkdownParser.parse(versions[1]).links.isEmpty && !MarkdownParser.parse(versions[4]).links.isEmpty)
+    }
+
     /// What splicing does not cover parses as before.
     @Test(arguments: [
         ("crlf", "\r\nA new line."),

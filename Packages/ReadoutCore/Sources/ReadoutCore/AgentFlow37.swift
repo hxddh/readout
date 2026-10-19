@@ -19,8 +19,11 @@ import Glibc
 /// item or the table. Ready to paste into an agent's prompt.
 public enum QuoteFormatter {
     /// The quote of the blocks of `blocks` (in document order) whose slots are
-    /// in `slots`, cited as `path`; nil when none of them is there.
-    public static func quote(blocks: [Block], slots: Set<Int>, path: String) -> String? {
+    /// in `slots`, cited as `path`; nil when none of them is there. Each block
+    /// is its source as copying has it (`Block.copySource`: hard breaks and
+    /// front matter's fences kept), followed by the definitions of `links`
+    /// its reference links use.
+    public static func quote(blocks: [Block], slots: Set<Int>, path: String, links: [LinkDefinition] = []) -> String? {
         let picked = blocks.filter { slots.contains($0.slot) }
         guard let first = picked.first else { return nil }
         var body = ""
@@ -29,9 +32,11 @@ public enum QuoteFormatter {
             // Blocks on consecutive lines stay together (a tight list stays
             // tight); a gap between them is one blank line.
             if let p = previous { body += b.lines.lowerBound == p.lines.upperBound + 1 ? "\n" : "\n\n" }
-            body += b.source
+            body += b.copySource
             previous = b
         }
+        let used = LinkDefinition.used(by: body, in: links)
+        if !used.isEmpty { body += "\n\n" + used.map(\.md).joined(separator: "\n") }
         // The footnotes section gathers definitions from anywhere in the file:
         // its lines say nothing about where the rest of the selection is.
         let ranged = picked.filter { $0.kind != .footnotes }

@@ -19,6 +19,12 @@ public struct RenderPatch: Codable, Sendable {
         public var kind: BlockKind?
         public var cjk: Bool?
         public var anchor: String?
+        /// The block's Markdown source (`Block.copySource`), so the page can
+        /// copy whole blocks as written: the copy event is synchronous.
+        public var src: String?
+        /// The block starts on the line after the previous block's last
+        /// (no blank line between them: `**Files:**` then a list); nil otherwise.
+        public var tight: Bool?
     }
 
     public struct Mark: Codable, Sendable, Equatable {
@@ -48,6 +54,10 @@ public struct RenderPatch: Codable, Sendable {
     public var toc: [TocEntry]
     public var tasks: TaskStats
     public var title: String?
+    /// The document's link reference definitions (`ParsedDocument.links`):
+    /// in a reset patch, and in another when they changed; nil otherwise.
+    /// The page appends those a copy uses.
+    public var links: [LinkDefinition]? = nil
 
     /// What the reader page reads of a patch (web/src/reader/patch.js
     /// `apply`): the same JSON without the outline, task counts and title,
@@ -60,11 +70,12 @@ public struct RenderPatch: Codable, Sendable {
         public let ops: [Op]
         public let marks: [Mark]
         public let deletions: [Deletion]
+        public let links: [LinkDefinition]?
     }
 
     /// The patch as sent to the page.
     public var page: Page {
-        Page(version: version, reset: reset, rewrite: rewrite, ops: ops, marks: marks, deletions: deletions)
+        Page(version: version, reset: reset, rewrite: rewrite, ops: ops, marks: marks, deletions: deletions, links: links)
     }
 }
 
@@ -84,6 +95,10 @@ public final class DocumentSession {
     public private(set) var blocks: [Block] = []
     public private(set) var version = 0
     public private(set) var title: String?
+    /// The link reference definitions of the version shown (Copy as Quote appends those it uses).
+    public private(set) var links: [LinkDefinition] = []
+    /// The page has not been sent `links` yet.
+    private var linksDirty = false
     private var nextSlot = 1
     private var nextDeletionID = 1
     public private(set) var marks: [Int: MarkKind] = [:]
@@ -152,6 +167,7 @@ public final class DocumentSession {
     public func load(_ doc: ParsedDocument, baseline persisted: [BlockKey]? = nil) -> RenderPatch {
         blocks = doc.blocks
         title = doc.title
+        links = doc.links
         generation = doc.generation
         for i in blocks.indices { blocks[i].slot = allocSlot() }
         resetMarks()
@@ -195,13 +211,27 @@ public final class DocumentSession {
         return fullPayload(rewrite: rewrite)
     }
 
+    /// Whether block `b` of `blocks` starts on the line after the block before
+    /// it (`before` for the first) ends: true or nil (a patch carries only true).
+    /// The footnotes section gathers definitions from anywhere: never.
+    /// (Indices, not blocks: copying a Block retains every field.)
+    static func adjacent(_ blocks: [Block], _ b: Int, before: Int?, in prior: [Block]) -> Bool? {
+        let lines: ClosedRange<Int>, kind: BlockKind
+        if b > 0 { lines = blocks[b - 1].lines; kind = blocks[b - 1].kind }
+        else if let p = before { lines = prior[p].lines; kind = prior[p].kind }
+        else { return nil }
+        guard kind != .footnotes, blocks[b].kind != .footnotes, blocks[b].lines.lowerBound == lines.upperBound + 1 else { return nil }
+        return true
+    }
+
     public func fullPayload(rewrite: Bool) -> RenderPatch {
         version += 1
         var ops: [RenderPatch.Op] = []
         var prev = 0
-        for b in blocks {
+        for (i, b) in blocks.enumerated() {
             ops.append(.init(op: .insert, slot: b.slot, after: prev, html: b.html, change: nil,
-                             kind: b.kind, cjk: b.cjk, anchor: b.anchor))
+                             kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource,
+                             tight: Self.adjacent(blocks, i, before: nil, in: blocks)))
             prev = b.slot
         }
         return payload(ops: ops, reset: true, rewrite: rewrite)
@@ -284,6 +314,7 @@ public final class DocumentSession {
         }
         let d = Differ.diff(old: oldKeyTail, new: P == 0 ? newKeys : Array(newKeys[P...]), shared: P)
         title = doc.title
+        if doc.links != links { links = doc.links; linksDirty = true }
 
         if d.rewrite {
             var newBlocks = doc.blocks
@@ -316,8 +347,10 @@ public final class DocumentSession {
         var tocDirty = cachedToc == nil
         for o in d.removed { ops.append(.init(op: .remove, slot: old[o].slot)); if outlined(old[o]) { tocDirty = true } }
         var prev = P == 0 ? 0 : blocks[P - 1].slot
+        let before: Int? = P == 0 ? nil : P - 1   // in `blocks`, unchanged before the tail
         for (n, c) in d.changes.enumerated() {
             let b = tail[n]
+            let tight = Self.adjacent(tail, n, before: before, in: blocks)
             if !tocDirty {
                 switch c {
                 case let .equal(o), let .modified(o):
@@ -330,15 +363,22 @@ public final class DocumentSession {
             switch c {
             case let .equal(o):
                 let ob = old[o]
+                let wasTight = Self.adjacent(old, o, before: before, in: blocks)
                 if ob.taskState != b.taskState {
-                    ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .state, kind: b.kind, cjk: b.cjk, anchor: b.anchor))
+                    ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .state, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
                 } else if ob.html != b.html || ob.cjk != b.cjk {
-                    ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .silent, kind: b.kind, cjk: b.cjk, anchor: b.anchor))
+                    ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .silent, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
+                } else if ob.rawSource != b.rawSource || ob.source != b.source || wasTight != tight {
+                    // A source that changed but renders the same (`*` for `-`, a
+                    // blank line before it) still reaches the page's copy: without
+                    // HTML, so the page keeps the block as it is (an open
+                    // <details>, a diagram drawn, the selection).
+                    ops.append(.init(op: .replace, slot: b.slot, html: nil, change: .silent, kind: b.kind, src: b.copySource, tight: tight))
                 }
             case .modified:
-                ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .content, kind: b.kind, cjk: b.cjk, anchor: b.anchor))
+                ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .content, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
             case .inserted:
-                ops.append(.init(op: .insert, slot: b.slot, after: prev, html: b.html, kind: b.kind, cjk: b.cjk, anchor: b.anchor))
+                ops.append(.init(op: .insert, slot: b.slot, after: prev, html: b.html, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
             }
             prev = b.slot
         }
@@ -348,7 +388,7 @@ public final class DocumentSession {
         applyMarks(d, shared: P, oldLength: old.count, oldKey: { oldKeyTail[$0] }, oldSlot: { old[$0].slot },
                    oldTasks: { old[$0].taskState }, oldTexts: { old[$0].source }, oldNormalized: { _ in false })
         rebuildBaseline(newKeys)
-        if ops.isEmpty { return nil }
+        if ops.isEmpty && !linksDirty { return nil }
         return payload(ops: ops, reset: false, rewrite: false, tocDirty: tocDirty)
     }
 
@@ -711,8 +751,11 @@ public final class DocumentSession {
             let doc = ParsedDocument(blocks: blocks, title: title)
             cachedToc = (doc.toc(), doc.tasks)
         }
+        let sendLinks = reset ? !links.isEmpty : linksDirty
+        linksDirty = false
         return RenderPatch(version: version, reset: reset, rewrite: rewrite, ops: ops,
                            marks: outMarks, deletions: outDeletions,
-                           toc: cachedToc!.toc, tasks: cachedToc!.tasks, title: title)
+                           toc: cachedToc!.toc, tasks: cachedToc!.tasks, title: title,
+                           links: sendLinks ? links : nil)
     }
 }
