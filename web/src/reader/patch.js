@@ -1,6 +1,6 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused } from './core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, keepPlace, isShown, scrollToElement } from './anchor.js';
+import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, keepPlace, isShown, scrollToElement, forceLayout, neverLaidOut } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, measureTables } from './enhance.js';
@@ -18,6 +18,16 @@ let held = null;   // {anchor, following, top}
 // Only the reader moving drops it: scrolls that keep the place (a diagram or
 // formula above rendering, a restore) move the position it was left at too.
 onKeptScroll(dy => { if (held) held.top += dy; });
+// Following the end (the live tail an agent writes) starts when the reader is
+// at the end, and stops only when the reader scrolls (wheel, keys, the
+// scrollbar, a jump): the page moving under them does not stop it. A block at
+// the end laid out taller than its estimate, or a patch the page has not caught
+// up with yet, leaves the reader short of the end without them having moved;
+// the next patch takes them to the end again.
+let tail = null;   // {y}: where the page left a reader following the end
+onKeptScroll(dy => { if (tail) tail.y += dy; });
+/** The reader came to rest at the end of the page (reader.js, after a scroll settles). */
+export function restedAtEnd() { tail = { y: document.scrollingElement.scrollTop }; }
 
 function estimateHeight(kind, html) {
   const text = html.length;
@@ -45,7 +55,15 @@ function fillBlock(el, op) {
   el.className = `blk k-${op.kind}${op.cjk ? ' cjk' : ''}`;   // drops marks and wd-has; renderMarks restores them
   if (flash.length) el.classList.add(...flash);
   if (op.anchor) el.dataset.anchor = op.anchor; else delete el.dataset.anchor;
-  el.style.containIntrinsicSize = `auto ${estimateHeight(op.kind, op.html)}px`;
+  // The estimate is only for a block never laid out: one that has been keeps
+  // its last remembered size while skipped (contain-intrinsic-size: auto).
+  // Changing the property makes WebKit lay out every skipped block again
+  // (5 MB, 25,000 blocks: 1.5-4 s per edit), on a block never laid out too:
+  // its estimate is renewed only when the new content is far off it (a
+  // paragraph become a long code block), for the page's height.
+  const est = estimateHeight(op.kind, op.html);
+  const was = parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0;
+  if (!el.style.containIntrinsicSize || (Math.abs(est - was) > Math.max(1000, was) && neverLaidOut(el))) el.style.containIntrinsicSize = `auto ${est}px`;
   el.innerHTML = op.html;
   if (op.src != null) sources.set(el, op.src); else sources.delete(el);
   if (op.tight) tight.add(el); else tight.delete(el);
@@ -98,6 +116,7 @@ export function apply(p) {
   first = false;
   // The document was emptied (truncated): the place it had before counts.
   if (held && slots.size > 0 && Math.abs(document.scrollingElement.scrollTop - held.top) > 2) held = null;   // the reader moved
+  if (tail && Math.abs(document.scrollingElement.scrollTop - tail.y) > 2) tail = null;   // the reader scrolled away
   const place = held;
   held = null;
   const anchor = isFirst ? null : place ? place.anchor : captureAnchor();
@@ -108,7 +127,7 @@ export function apply(p) {
   // send the content that arrives to its end.) A reader watching a page that
   // fits the window (Readout beside the terminal the agent writes from)
   // follows it too: once it grows past the window, they see its end.
-  const following = !isFirst && (place ? place.following : slots.size > 0 && (atBottom() || (watching() && fitsOnScreen())));
+  const following = !isFirst && (place ? place.following : slots.size > 0 && (!!tail || atBottom() || (watching() && fitsOnScreen())));
   // Only follow when the change is at (or below) the viewport: an insertion
   // at the top of the document must not yank a bottom-dwelling reader.
   // The anchor block itself counts: if it was edited, restoring it keeps us
@@ -219,8 +238,9 @@ export function apply(p) {
 
   // In a large document a new block counts at its estimated height until
   // it is laid out: lay out the new ones now so the end is the real end.
-  const forced = follow && doc.classList.contains('cv') ? inserted.filter(el => el.isConnected) : [];
-  for (const el of forced) el.style.contentVisibility = 'visible';
+  // (They go back to content-visibility later, many together: forceLayout.)
+  const forced = follow ? inserted.filter(el => el.isConnected) : [];
+  for (const el of forced) forceLayout(el);
 
   // Every change to the page is made by now: what follows reads its layout,
   // which is laid out once (a read between two changes lays it out again,
@@ -242,9 +262,6 @@ export function apply(p) {
   if (follow) {
     window.scrollTo(0, document.scrollingElement.scrollHeight);
     for (const el of forced) heights.set(el, el.getBoundingClientRect().height);
-    // Handed back once a frame has rendered them, which records their real
-    // size: content-visibility then keeps that size (and they are on screen).
-    if (forced.length) requestAnimationFrame(() => requestAnimationFrame(() => { for (const el of forced) el.style.contentVisibility = ''; }));
   }
   // Rewritten: none of the old blocks is left to keep the place by. The
   // reader goes to the section they were in, if it is still there, else to
@@ -265,6 +282,9 @@ export function apply(p) {
   if (anchor && !p.rewrite && (slots.size === 0 || cutShort || (place && (following ? !atBottom() : !restored)))) {
     held = { anchor, following, top: document.scrollingElement.scrollTop };
   }
+  // Following goes on from where this patch left the reader (a rewrite is
+  // read from the reader's section or its top, not followed).
+  tail = following && !p.rewrite && slots.size > 0 ? { y: document.scrollingElement.scrollTop } : null;
   // Where the page stands is filled in once it is painted (read now, it
   // would lay the page out once more).
   const entry = trace('apply', { y: null, version: p.version, reset: !!p.reset, ops: p.ops.length, blocks: slots.size, place: !!place,
@@ -302,15 +322,18 @@ export function apply(p) {
 /**
  * Whether a table scrolls is measured in the frame after it arrives; on a
  * first open that no longer laid out every block, a table in a block the
- * frame skipped (content-visibility) measured as fitting. Measured again,
- * each such block laid out for the moment.
+ * frame skipped (content-visibility) measured as fitting. Each such table is
+ * measured again when it comes on screen, its block laid out by then (not all
+ * of them at once, laid out for the moment: 1 MB, 66 tables, ~1 s, and every
+ * skipped block laid out again after).
  */
+const skippedTables = new IntersectionObserver(entries => {
+  const shown = entries.filter(e => e.isIntersecting && e.target.clientWidth > 0).map(e => e.target);
+  for (const t of shown) skippedTables.unobserve(t);
+  if (shown.length) measureTables(shown);
+});
 function measureSkippedTables() {
-  const tables = [...doc.querySelectorAll(':scope > .blk .table-wrap')];
-  const blocks = [...new Set(tables.map(t => t.closest('#ro-doc > .blk')))].filter(b => !b.style.contentVisibility);
-  for (const b of blocks) b.style.contentVisibility = 'visible';
-  measureTables(tables);
-  for (const b of blocks) b.style.contentVisibility = '';
+  for (const t of doc.querySelectorAll(':scope > .blk .table-wrap')) skippedTables.observe(t);
 }
 
 /**

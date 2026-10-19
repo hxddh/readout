@@ -150,7 +150,12 @@ export function measureTables(tables = doc.querySelectorAll('.table-wrap')) {
   // How far a table of its own block widens: its width, read once it takes it.
   const own = wide.filter(t => t.parentElement.matches('#ro-doc > .blk.k-table'));
   const widths = own.map(t => t.firstElementChild.getBoundingClientRect().width);
-  own.forEach((t, i) => t.parentElement.style.setProperty('--tb-w', `${Math.ceil(widths[i])}px`));
+  // (Set only when it changed: a style change on a block makes WebKit lay out
+  // a large document's skipped blocks again.)
+  own.forEach((t, i) => {
+    const w = `${Math.ceil(widths[i])}px`;
+    if (t.parentElement.style.getPropertyValue('--tb-w') !== w) t.parentElement.style.setProperty('--tb-w', w);
+  });
   const retry = wide.filter(t => t.scrollWidth > t.clientWidth + 1 && t.querySelector('[data-nw], th'));
   if (!retry.length) return;
   for (const t of retry) t.classList.replace('scrolls', 'nw-off');

@@ -1158,7 +1158,14 @@ const v36 = patch([
     const pg = await open(width);
     await pg.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync(`test/corpus/patches/${name}.json`, 'utf8')));
     await pg.waitForTimeout(200);
-    const r = await pg.evaluate(which => { const all = [...document.querySelectorAll('.table-wrap')]; return which.map(i => { const t = all[i]; return { i, scrolls: t.classList.contains('scrolls'), over: t.scrollWidth - t.clientWidth }; }); }, which);
+    // Each on screen first: in a large document a table far down is measured
+    // when it comes on screen (its block laid out by then).
+    const r = [];
+    for (const i of which) {
+      await pg.evaluate(i => window.scrollBy(0, document.querySelectorAll('.table-wrap')[i].getBoundingClientRect().top - 100), i);
+      await pg.waitForTimeout(300);
+      r.push(await pg.evaluate(i => { const t = document.querySelectorAll('.table-wrap')[i]; return { i, scrolls: t.classList.contains('scrolls'), over: t.scrollWidth - t.clientWidth }; }, i));
+    }
     await pg.close();
     return r;
   };

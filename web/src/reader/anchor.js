@@ -1,9 +1,12 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
-import { doc, root, slots, heights, trace, keptScroll, blocksHidden } from './core.js';
+import { doc, root, slots, heights, trace, keptScroll, onKeptScroll, blocksHidden } from './core.js';
 import { scheduleRail } from './rail.js';
 
-export function isShown(e) { return !e.hidden && e.offsetParent !== null; }
+// Only the changes-only filter hides blocks: without it nothing asks the
+// layout (offsetParent makes WebKit lay out content-visibility's skipped
+// blocks again, the whole page in a large document).
+export function isShown(e) { return !e.hidden && (!blocksHidden || e.offsetParent !== null); }
 
 function blockList() { return Array.from(doc.children).filter(e => e.classList.contains('blk') && isShown(e)); }
 
@@ -185,15 +188,41 @@ function nearestVisible(el) {
  */
 export function scrollToElement(target, { center = false, gap } = {}) {
   const blk = target.closest('#ro-doc > .blk');
-  const forced = blk && blk.style.contentVisibility !== 'visible';
-  if (forced) blk.style.contentVisibility = 'visible';
+  if (blk) forceLayout(blk);
   const r = target.getBoundingClientRect();
   const margin = gap ?? (parseFloat(getComputedStyle(target).scrollMarginTop) || 0);
   // The top of the page lies under the window toolbar: aim below it.
   const inset = topInset();
   window.scrollBy(0, center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset);
-  // On screen now: content-visibility keeps it rendered, as it would any block in view.
-  if (forced) requestAnimationFrame(() => { blk.style.contentVisibility = ''; });
+}
+
+/**
+ * Blocks laid out at once whatever content-visibility would skip (a link's
+ * target measured, new blocks at the end a following reader goes to). Once a
+ * frame has rendered one, content-visibility could have it back and keep the
+ * size it recorded; but handing a block back is itself a change WebKit answers
+ * by laying out every skipped block of a large document again (5 MB: 0.1-3 s),
+ * which a frame after each append of a streaming agent paid. They are handed
+ * back together, at the start of a frame, once there are more than
+ * FORCED_KEPT of them: one such layout per that many appends.
+ */
+const FORCED_KEPT = 32;
+const forced = new Map();   // block -> whether a frame has rendered it since it was forced
+export function forceLayout(el) {
+  if (!doc.classList.contains('cv') || el.style.contentVisibility) return;
+  el.style.contentVisibility = 'visible';
+  forced.set(el, false);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (forced.has(el)) forced.set(el, true);
+    if (forced.size > FORCED_KEPT) releaseForced();
+  }));
+}
+function releaseForced() {
+  for (const [el, rendered] of forced) {
+    if (el.isConnected && !rendered) continue;
+    forced.delete(el);
+    if (el.isConnected) el.style.contentVisibility = '';
+  }
 }
 
 export function atBottom() {
@@ -235,20 +264,103 @@ export function resolveFragment(raw) {
 
 let settleQueued = false;
 
-// Keep blocks above the viewport from pushing content down when their height changes later
-// (diagrams, math, images, content-visibility estimates becoming real).
+/** Blocks seen at a size other than their estimate: laid out at least once. */
+const laidOut = new WeakSet();
+const estimate = el => parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0;
+/**
+ * Whether WebKit has laid `el` out yet, in a large document: content-visibility
+ * shows a block it has not at its estimated height (contain-intrinsic-size).
+ */
+export function neverLaidOut(el) {
+  return doc.classList.contains('cv') && !laidOut.has(el) && heights.get(el) === estimate(el);
+}
+
+/**
+ * Where a jump landed (N, an outline click) stays put while the blocks
+ * around it are laid out, for as long as the jump aims (or until the reader
+ * scrolls): blocks above it that change size grow or shrink upward. Its own
+ * top is kept, not a sum of the changes above it: near the end of the page
+ * the page growing shorter has moved the scroll position already.
+ */
+let landed = null;   // {el, top, until, y}: its top on screen, and where the page was left
+onKeptScroll(dy => { if (landed) landed.y += dy; });
+export function pinLanding(el) {
+  landed = doc.classList.contains('cv')
+    ? { el, top: el.getBoundingClientRect().top, until: performance.now() + 1000, y: document.scrollingElement.scrollTop } : null;
+}
+
+/**
+ * The block whose place on screen the compensation keeps: the landing of a
+ * jump still settling, else the first block on screen that was laid out
+ * before (not one this round resized, not one still at its estimate).
+ * null: none on screen.
+ */
+function keptBlock(resized) {
+  if (landed) {
+    if (landed.el.isConnected && performance.now() < landed.until && Math.abs(document.scrollingElement.scrollTop - landed.y) <= 2) return landed.el;
+    landed = null;
+  }
+  const cv = doc.classList.contains('cv');
+  const first = topBlock();
+  if (!first) return null;
+  // On screen as the page was before these changes (a block's top then was
+  // its top now less what the blocks before it grew by: blocks laid out at
+  // once can push the kept one out of the window); failing that, as it is
+  // now (blocks that shrank can bring it in: the screen showed only them).
+  let before = 0;
+  for (const [el, d] of resized) if (el !== first && (el.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING)) before += d;
+  for (const then of [true, false]) {
+    let grown = then ? before : 0;
+    for (let e = first; e; e = e.nextElementSibling) {
+      if (!e.classList.contains('blk') || !isShown(e)) continue;
+      if (e.getBoundingClientRect().top - grown >= window.innerHeight) break;
+      const d = resized.get(e);
+      if (d !== undefined) { if (then) grown += d; continue; }
+      if (cv && !laidOut.has(e) && heights.get(e) === estimate(e)) continue;
+      return e;
+    }
+  }
+  return null;
+}
+
+// Keeps the text the reader sees from moving when blocks change height later
+// (diagrams, math, images, content-visibility estimates becoming real). In a
+// large document WebKit lays a block out a frame after it came into view (it
+// shows at its estimated height until then): scrolling up, those blocks
+// change size on screen, above the text that was there. So every such block
+// (laid out for the first time: until now at its estimate) before the kept
+// one (keptBlock) grows or shrinks upward. Any other block keeps the rule for
+// a block changing size later (a <details> opened, an image loaded): only
+// one entirely above the viewport before it resized is made up for, so what
+// the reader opened at the top of the window grows down from where it is.
 export const resizeObserver = new ResizeObserver(entries => {
   let delta = 0;
   const inset = topInset();
+  const resized = new Map();   // block -> change in height
+  const first = new Set();     // of those, the blocks laid out for the first time
+  const cv = doc.classList.contains('cv');
   for (const entry of entries) {
     const el = entry.target;
     const h = el.getBoundingClientRect().height;
     const prev = heights.get(el);
+    if (prev !== undefined && prev !== h && cv && !laidOut.has(el) && prev === estimate(el)) first.add(el);
     heights.set(el, h);
     if (prev === undefined || prev === h) continue;
-    const r = el.getBoundingClientRect();
-    // Entirely above the viewport, or under the toolbar, before it resized.
-    if (r.bottom - (h - prev) <= inset + 1) delta += h - prev;
+    resized.set(el, h - prev);
+    laidOut.add(el);
+  }
+  if (resized.size) {
+    const kept = keptBlock(resized);
+    if (kept && kept === landed?.el) {
+      const d = kept.getBoundingClientRect().top - landed.top;
+      if (Math.abs(d) >= 0.5) delta = d;
+    }
+    else for (const [el, d] of resized) {
+      // Laid out for the first time before the kept block; or entirely above
+      // the viewport (or under the toolbar) before it resized.
+      if (kept && first.has(el) ? el !== kept && (el.compareDocumentPosition(kept) & Node.DOCUMENT_POSITION_FOLLOWING)
+        : el.getBoundingClientRect().bottom - d <= inset + 1) delta += d;
+    }
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) {
     const y = document.scrollingElement.scrollTop;

@@ -150,7 +150,24 @@
     "10 decoding the file, 11 the session copying the blocks after the change, 3.5 the splice. Guard",
     "1.15x (30), target the reading rounded up (26). The deep-nesting guard (B1, NestingCap) scans",
     "every parsed fragment, and definitions are looked for across lines (a label on two): update_1mb",
-    "327.7 -> 333.3, open_1mb_unique 2890.7 -> 2916.8 locally."
+    "327.7 -> 333.3, open_1mb_unique 2890.7 -> 2916.8 locally.",
+    "3.8 (web): three new metrics, reported (guard null) until CI runs show their spread.",
+    "web_edit_above_5mb_ms: an agent's edit 50 blocks above the reader in the 5 MB document, the",
+    "apply plus the layout it causes (median of six). The page rewrote the block's",
+    "contain-intrinsic-size and read offsetParent per block, and either makes WebKit lay out every",
+    "skipped block again: 2.3-4.5 s per edit locally before, 45-140 ms after. web_toc_jump_5mb_ms:",
+    "an outline jump from the top to a heading 30/55/80% down, until the frame showing it is",
+    "painted (median); it no longer forces content-visibility on 40 blocks. web_scroll_up_jump_px:",
+    "40 steps of 400 px up from the end of the 1 MB document, one per frame, the text under the",
+    "middle of the window moving beyond the scroll, summed (blocks laid out a frame after they",
+    "came into view grow upward now): 4449 px locally before, 941-1199 after.",
+    "Gated from four CI runs of PR #73 (bd7cf65 reruns, 447634f, 443c267; the 3 metrics, same code",
+    "path): web_edit_above_5mb_ms 50, 42, 30, 45 -> target 50, guard 75 (1.5x the highest; main's",
+    "path measured 1.5-4 s locally, so any return of the whole-page relayout fails it).",
+    "web_toc_jump_5mb_ms 368, 277, 205, 269 -> target 300, guard 550 (1.5x the highest: most of it",
+    "is WebKit laying out the landing frame, which swings with the runner). web_scroll_up_jump_px",
+    "340 in every run (frame-timed but it repeated exactly; 2956 on the first head, before the P6",
+    "fallback) -> target 340, guard 400 (1.18x: a deterministic count, as the instruction counts)."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -176,5 +193,8 @@
   "web_stream_append_5mb_ms":   { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
   "web_first_highlight_warm_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 40,   "guard": 80 },
   "web_hl_warm_longest_step_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": null },
-  "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null }
+  "web_scroll_long_frames":     { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": null },
+  "web_edit_above_5mb_ms":      { "where": "linux-webkit", "unit": "ms",     "target": 50,   "guard": 75 },
+  "web_toc_jump_5mb_ms":        { "where": "linux-webkit", "unit": "ms",     "target": 300,  "guard": 550 },
+  "web_scroll_up_jump_px":      { "where": "linux-webkit", "unit": "px",     "target": 340,  "guard": 400 }
 }

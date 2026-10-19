@@ -1,10 +1,12 @@
 // Page-side performance of a large document, in WebKit.
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
-// measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it, and frame
+// measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it,
+// how far the text jumps scrolling up from the end, and frame
 // pacing while scrolling through the whole page; on a fresh warmed page,
 // the first apply of a small document whose code block is on screen; then, in a
-// ~5 MB document, an agent streaming at its end while the reader follows. Writes the numbers to
+// ~5 MB document, an edit above the reader, outline jumps, and an agent
+// streaming at its end while the reader follows. Writes the numbers to
 // test/out/perf-web.json; tools/perf-assert.py checks them against
 // tools/perf-budgets.json.
 //
@@ -101,6 +103,24 @@ for (let i = 0; i < 3; i++) {
   await page.waitForTimeout(300);
 }
 
+// Scrolling up from the end through blocks not laid out yet (each shows at
+// its estimated height until WebKit lays it out, a frame after it came into
+// view): 40 steps of 400 px, one per frame, and how far the text that was
+// under the middle of the window moved beyond the scroll, summed.
+const scrollUpJump = await page.evaluate(() => new Promise(async resolve => {
+  const settle = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))));
+  for (let k = 0; k < 2; k++) { window.scrollTo(0, document.scrollingElement.scrollHeight); await settle(); }
+  let sum = 0, steps = 0, el = null, top = 0;
+  const after = () => {
+    if (el) { sum += Math.abs(el.getBoundingClientRect().top - top - 400); steps++; }
+    if (steps >= 40) return resolve(Math.round(sum));
+    el = document.elementFromPoint(450, 450).closest('.blk');
+    top = el.getBoundingClientRect().top;
+    requestAnimationFrame(() => { window.scrollBy(0, -400); requestAnimationFrame(() => setTimeout(after, 0)); });
+  };
+  after();
+}));
+
 // Scroll through the whole page in 600 even steps, one per frame, and record
 // frame gaps (each step lands on content not yet laid out). Headless WebKit
 // on a shared CI machine paces frames unevenly, so these are reported, not
@@ -149,6 +169,43 @@ const stream = await (async () => {
     { version: 1, reset: true, rewrite: false, ops: doc5.ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p5.waitForTimeout(1000);
   const frames = () => p5.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  // An agent editing a block 50 blocks above the reader, mid-document, six
+  // times: the apply plus the layout it causes (3.7: a style write on the
+  // block, already laid out, made WebKit lay out every skipped block again).
+  await p5.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight / 2));
+  await frames();
+  await p5.waitForTimeout(500);
+  const above = await p5.evaluate(() => {
+    let e = document.elementFromPoint(450, 300).closest('.blk');
+    for (let i = 0; i < 50; i++) e = e.previousElementSibling;
+    return +e.dataset.slot;
+  });
+  const aboveOp = doc5.ops.find(o => o.slot === above);
+  const edits = [];
+  for (let i = 0; i < 6; i++) {
+    const html = aboveOp.html.replace(/<\/(p|li|h\d)>/, ` grows ${'x '.repeat((i % 3 + 1) * 25)}</$1>`);
+    const patch = { version: 100 + i, reset: false, rewrite: false, ops: [{ op: 'replace', slot: above, change: 'content', kind: aboveOp.kind, html }],
+      marks: [{ slot: above, kind: 'modified' }], deletions: [], toc: [], tasks: { done: 0, total: 0 } };
+    edits.push(await p5.evaluate(p => { const t0 = performance.now(); window.readout.apply(p); void document.scrollingElement.scrollHeight; return performance.now() - t0; }, patch));
+    await frames();
+    await p5.waitForTimeout(200);
+  }
+  // Outline jumps from the top to headings 30%, 55% and 80% down: the jump
+  // until the frame that shows where it landed is painted.
+  const jumps = [];
+  for (const frac of [0.3, 0.55, 0.8]) {
+    await p5.evaluate(() => window.scrollTo(0, 0));
+    await frames();
+    await p5.waitForTimeout(300);
+    jumps.push(await p5.evaluate(frac => new Promise(resolve => {
+      const hs = document.querySelectorAll('#ro-doc > .blk.k-heading');
+      const h = hs[Math.floor(hs.length * frac)];
+      const t0 = performance.now();
+      window.readout.scrollToSlot(+h.dataset.slot);
+      requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0));
+    }), frac));
+    await p5.waitForTimeout(1200);
+  }
   // To the end, again once the blocks there are laid out at their real
   // heights (the first scroll lands where their estimates put it).
   for (let k = 0; k < 3; k++) {
@@ -174,7 +231,7 @@ const stream = await (async () => {
   }
   const left = await p5.evaluate(() => { const s = document.scrollingElement; return Math.round(s.scrollHeight - s.scrollTop - innerHeight); });
   await p5.close();
-  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left };
+  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps) };
 })();
 console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 1000)} s`);
 
@@ -232,6 +289,9 @@ const result = {
   web_stream_doc_blocks: stream.blocks,
   web_stream_append_5mb_ms: Math.round(stream.ms * 10) / 10,
   web_stream_end_left_px: stream.left,
+  web_edit_above_5mb_ms: Math.round(stream.edit * 10) / 10,
+  web_toc_jump_5mb_ms: Math.round(stream.jump),
+  web_scroll_up_jump_px: scrollUpJump,
   errors,
 };
 mkdirSync('test/out', { recursive: true });

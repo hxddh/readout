@@ -110,6 +110,15 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
     }
   };
   await walk();
+  // A table far down a large document is measured when it comes on screen
+  // (whether it scrolls): bring each one there, in turn, for a frame.
+  const tables = await page.evaluate(() => document.querySelectorAll('.table-wrap').length);
+  for (let i = 0; i < tables; i++) {
+    await page.evaluate(i => new Promise(r => {
+      document.querySelectorAll('.table-wrap')[i].scrollIntoView({ block: 'center' });
+      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 0)));
+    }), i);
+  }
   // A block can be passed before its observer fires (a fast walk on a cold
   // page): bring each one still waiting into view, one at a time, and let
   // the observer see it before the next.
