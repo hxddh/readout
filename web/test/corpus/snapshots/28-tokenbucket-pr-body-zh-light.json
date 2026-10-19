@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 54,
    "h": 158,
-   "style": "3d1e1210",
+   "style": "8ac55dfa",
    "content": "368f915c",
    "text": "修复 Binance OHLC 在 USE_HTTP_PROXY=true 场景下因缺失 req"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 212,
    "h": 102,
-   "style": "5eb2afc9",
+   "style": "c8b05b7c",
    "content": "fdfd0ef5",
    "text": "同时补充了 Futures Kline 按 limit 分段权重、Spot/Margin 使用统"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 543,
    "h": 31,
-   "style": "e7ea68b0",
+   "style": "0fc8b639",
    "content": "0620204f",
    "text": "当前缺少代理场景的集成测试，真实代理链路仍建议补充端到端验证"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 574,
    "h": 47,
-   "style": "3dfe1dcb",
+   "style": "dd57f4dc",
    "content": "96e815af",
    "text": "public-api 中其他 endpoint 仍有模板重复，后续可继续收敛统一"
   },
@@ -96,7 +96,7 @@
    "kind": "paragraph",
    "top": 686,
    "h": 102,
-   "style": "0e2f431f",
+   "style": "9c24d964",
    "content": "57a2bc75",
    "text": "回滚 apps/vendor-binance/src/api/public-api.ts 中新增"
   }

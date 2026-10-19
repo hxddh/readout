@@ -513,7 +513,7 @@ check('rail labels use the localized template',
 {
   const ops = [];
   for (let i = 1; i <= 30; i++) ops.push({ op: 'insert', slot: 1300 + i, after: i === 1 ? 0 : 1299 + i, kind: 'code',
-    html: `<div class="code-block" data-lang="text"><pre><code>${'long line '.repeat(40)} ${i}</code></pre></div>` });
+    html: `<div class="code-block" data-lang="js"><pre><code>${'long line '.repeat(40)} ${i}</code></pre></div>` });
   await page.evaluate(p => window.readout.apply(p), { version: 96, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   const r = await page.evaluate(async () => {
     const target = document.querySelector('.blk[data-slot="1320"]');

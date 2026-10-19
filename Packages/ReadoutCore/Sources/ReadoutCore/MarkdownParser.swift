@@ -600,7 +600,7 @@ public enum MarkdownParser {
             }
             let shown = html ?? HTML.escape(value)
             guard !key.isEmpty, !shown.isEmpty else { continue }
-            items += "<span class=\"fm-item\"><span class=\"fm-key\">\(HTML.escape(key))</span> \(shown)</span>"
+            items += "<span class=\"fm-item\"><span class=\"fm-key\">\(HTML.escape(key))</span> <span class=\"fm-val\">\(shown)</span></span>"
         }
         let text = body.joined(separator: "\n")
         let html = items.isEmpty ? "" : "<div class=\"front-matter\">\(items)</div>"
