@@ -160,6 +160,9 @@ enum NestingCap {
             if depth > containers {
                 // `- - - -`, `* * * *` from here: a thematic break, not nesting.
                 if c == 0x2D || c == 0x2A, (i..<e).allSatisfy({ u[$0] == c || isSpace(u[$0]) }) { break }
+                // The items before it on the line stay open for the lines
+                // below (`- > x` under `- > x`: deeper each line).
+                if let item { lists.append(item) }
                 // The marker's own character (a list number keeps its digits).
                 return (end, end - 1, false)
             }

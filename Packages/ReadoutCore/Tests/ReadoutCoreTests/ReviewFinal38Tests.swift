@@ -94,6 +94,63 @@ import Testing
         #expect(!full.isEmpty && full == incremental)
     }
 
+    /// A batch asked for from inside a batch (review of #76) runs: on a
+    /// pool of one thread, that thread would otherwise wait on itself.
+    static func completes(within seconds: Double = 20, _ body: @escaping @Sendable () -> Void) -> Bool {
+        let done = DispatchSemaphore(value: 0)
+        ParseThread.start { body(); done.signal() }
+        return done.wait(timeout: .now() + seconds) == .success
+    }
+
+    @Test func aNestedBatchCompletes() {
+        final class Count: @unchecked Sendable { let lock = NSLock(); var n = 0; func add() { lock.lock(); n += 1; lock.unlock() } }
+        let one = ParsePool(width: 1), count = Count()
+        // From a thread that is not a ParseThread: only the pool's one thread runs the outer batch.
+        let other = DispatchSemaphore(value: 0)
+        Thread { one.perform(8) { _ in one.perform(4) { _ in count.add() } }; other.signal() }.start()
+        #expect(other.wait(timeout: .now() + 20) == .success, "a nested batch on a pool of one thread never ended")
+        #expect(count.n == 32)
+        // The shared pool, nested from a ParseThread, as the review ran it.
+        let shared = Count()
+        #expect(Self.completes {
+            ParseThread.concurrentPerform(iterations: 64) { _ in ParseThread.concurrentPerform(iterations: 4) { _ in shared.add() } }
+        }, "concurrentPerform(64) { concurrentPerform(4) } never ended")
+        #expect(shared.n == 256)
+    }
+
+    /// A caller on a large stack takes iterations itself, as GCD's does.
+    @Test func aLargeStackCallerTakesIterations() {
+        final class Seen: @unchecked Sendable { let lock = NSLock(); var callerRan = 0; var caller: Thread? }
+        let one = ParsePool(width: 1), seen = Seen()
+        #expect(Self.completes {
+            seen.caller = Thread.current
+            one.perform(16) { _ in
+                usleep(2_000)
+                if Thread.current === seen.caller { seen.lock.lock(); seen.callerRan += 1; seen.lock.unlock() }
+            }
+        })
+        #expect(seen.callerRan > 0, "the calling ParseThread took no iteration")
+    }
+
+    /// A line escaped at a later marker keeps its earlier item open (review
+    /// of #76): `- > x` under `- > x` nests a level each line.
+    @Test(arguments: ["item-quote-150", "quoted-item-quote-150"])
+    func escapedLinesKeepTheirItems(_ name: String) throws {
+        let text = try #require(CoreFixes38Tests.deep.first { $0.name == name }).text
+        let capped = try #require(NestingCap.apply(text), "\(name): NestingCap flattens nothing")
+        // From the first escaped line on, every line is escaped: none nests deeper than `containers`.
+        let first = try #require(capped.lines.min())
+        #expect(capped.lines.count == 150 - first, "\(name): \(capped.lines.sorted().prefix(4))")
+        nonisolated(unsafe) var full: [String] = [], incremental: [String] = []
+        #expect(CoreFixes38Tests.onSmallStack {
+            full = MarkdownParser.parse(text).blocks.map(\.html)
+            incremental = IncrementalParser().parse(text).blocks.map(\.html)
+        }, "\(name)")
+        #expect(!full.isEmpty && full == incremental, "\(name)")
+        let words = name == "item-quote-150" ? "x" : "item"
+        #expect(full.joined().components(separatedBy: words).count - 1 >= 150, "\(name)")
+    }
+
     /// Compare with Last Commit (#72) parses the committed text where it is
     /// called (CommitBaseline.queue, a GCD thread), not on a ParseThread as
     /// the first-open baseline (#75) does.

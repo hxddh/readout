@@ -26,6 +26,9 @@ import Testing
         ("ordered-in-quote-150", (0..<150).map { "> " + String(repeating: "   ", count: $0) + "1. item" }.joined(separator: "\n")),
         ("list-in-list-quote-150", "- top\n" + (0..<150).map { "  > " + String(repeating: "  ", count: $0) + "- item" }.joined(separator: "\n")),
         ("quote-in-quote-4sp-150", (0..<150).map { "> > " + String(repeating: "    ", count: $0) + "- item" }.joined(separator: "\n")),
+        // A line escaped at its `>` keeps its item open for the lines below (review of #76).
+        ("item-quote-150", (0..<150).map { String(repeating: "  ", count: $0) + "- > x" }.joined(separator: "\n")),
+        ("quoted-item-quote-150", (0..<150).map { "> " + String(repeating: "  ", count: $0) + "- > item" }.joined(separator: "\n")),
     ]
 
     /// `body` on a thread with a 512 KB stack (a GCD worker's on macOS,
