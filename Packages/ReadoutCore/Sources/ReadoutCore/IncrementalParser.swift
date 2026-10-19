@@ -499,7 +499,9 @@ public final class IncrementalParser: @unchecked Sendable {
         return (p, q)
     }
 
-    /// Parses fragments, concurrently from 8 on; the results are in the jobs' order.
+    /// Parses fragments, concurrently from 8 on, on large stacks
+    /// (`ParseThread.concurrentPerform`; GCD's threads have 512 KB); the
+    /// results are in the jobs' order. Fewer run on the caller's thread.
     static func parseFragments(_ jobs: [(slice: [String], atStart: Bool)], footnoteIDs: Set<String>,
                                resolver: ResourceResolver?, cache: MarkdownParser.RenderCache?) -> [MarkdownParser.Fragment] {
         @Sendable func parse(_ k: Int) -> MarkdownParser.Fragment {
@@ -512,7 +514,7 @@ public final class IncrementalParser: @unchecked Sendable {
         defer { results.deinitialize(); results.deallocate() }
         // Each iteration writes only its own element.
         nonisolated(unsafe) let slots = results
-        DispatchQueue.concurrentPerform(iterations: jobs.count) { k in slots[k] = parse(k) }
+        ParseThread.concurrentPerform(iterations: jobs.count) { k in slots[k] = parse(k) }
         return results.map { $0! }
     }
 
