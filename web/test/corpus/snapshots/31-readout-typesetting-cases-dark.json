@@ -96,7 +96,7 @@
    "kind": "table",
    "top": 995,
    "h": 239,
-   "style": "856a382e",
+   "style": "456a53a6",
    "content": "fb2714a9",
    "text": "ActionCurrentLatestRiskNotesactions/configure-pa"
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 1369,
    "h": 65,
-   "style": "aa108274",
+   "style": "cbca42ed",
    "content": "c65c33ff",
    "text": "中文排版"
   },
@@ -132,7 +132,7 @@
    "kind": "paragraph",
    "top": 1434,
    "h": 74,
-   "style": "a069bca5",
+   "style": "3512f915",
    "content": "55e014e1",
    "text": "这一段测试着重号：强调文字不用斜体，标点不加点。——也不加，混排的调用 API 接口只在汉字下加"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 1507,
    "h": 74,
-   "style": "7d382d85",
+   "style": "6d2c2797",
    "content": "9df8e94b",
    "text": "长的强调：正确性属性是系统在所有有效执行中都应保持为真的特征或行为，本质上是关于系统应该做什么的"
   },
@@ -150,7 +150,7 @@
    "kind": "paragraph",
    "top": 1581,
    "h": 46,
-   "style": "e5e77ddd",
+   "style": "e9ac5ad7",
    "content": "c9975091",
    "text": "整段强调的段落不加着重号，而是略微加重字重。"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1627,
    "h": 30,
-   "style": "16aa5c02",
+   "style": "18cfb85b",
    "content": "2c9cf511",
    "text": "已完成：检查复选框与这一行居中"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1656,
    "h": 45,
-   "style": "82caff31",
+   "style": "7d219851",
    "content": "ef23225f",
    "text": "未完成：Latin task item in a CJK list"
   },
