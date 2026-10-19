@@ -120,6 +120,19 @@ import Testing
         #expect(h.contains("line one<br>line two"), "\(h)")
     }
 
+    // 3.8 T4: each value is an element of its own, so the reader's key/value
+    // grid keeps a value with line breaks (a literal block with a blank line)
+    // in its column.
+    @Test func frontMatterValuesAreElements() {
+        let md = "---\ntitle: Plan\ndescription: |\n  line one\n\n  after a blank line\nstatus: draft\n---\n\nBody\n"
+        let h = MarkdownParser.parse(md).blocks.first?.html ?? ""
+        #expect(h.contains("<span class=\"fm-key\">title</span> <span class=\"fm-val\">Plan</span>"), "\(h)")
+        #expect(h.contains("<span class=\"fm-val\">line one<br>"), "\(h)")
+        #expect(h.contains("after a blank line</span></span>"), "\(h)")
+        #expect(h.components(separatedBy: "class=\"fm-val\"").count == 4, "\(h)")
+        expectIncrementalMatchesFull(md + "\nMore\n")
+    }
+
     // MARK: B8: incremental and full parses agree
 
     @Test func emptyListItemMatchesIncremental() {

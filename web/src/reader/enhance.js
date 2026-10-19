@@ -291,8 +291,10 @@ function setupCode(cb) {
 const PROSE_LANGS = new Set(['', 'text', 'txt', 'plain', 'plaintext', 'markdown', 'md', 'prompt']);
 function isProseFence(lang = '', text) {
   if (!PROSE_LANGS.has(lang.toLowerCase())) return false;
-  // Columns lined up with runs of spaces (a table, a diagram) in a long line.
-  return !text.split('\n').some(l => l.length > 60 && /\S {3,}\S/.test(l));
+  // Columns lined up (a table, a listing, a diagram), however short its
+  // lines: any tab, or a run of 3+ spaces inside the text on two lines.
+  if (text.includes('\t')) return false;
+  return text.split('\n').filter(l => /\S {3,}\S/.test(l)).length < 2;
 }
 
 // The width of the longest line in monospace columns: a tab to the next

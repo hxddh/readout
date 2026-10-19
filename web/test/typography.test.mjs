@@ -1338,6 +1338,8 @@ const v36 = patch([
     ['code', `<div class="code-block" id="f-js" data-lang="js"><pre><code>${longLine} ${longLine}</code></pre></div>`],
     ['code', `<div class="code-block" id="f-tree"><pre><code>web/\n├── src/  ${prose}\n│   └── reader.css\n└── test/</code></pre></div>`],
     ['code', `<div class="code-block" id="f-aligned" data-lang="text"><pre><code>${aligned}</code></pre></div>`],
+    ['code', '<div class="code-block" id="f-short-aligned"><pre><code>name   type   default\nid     int    0\nlabel  text   none</code></pre></div>'],
+    ['code', `<div class="code-block" id="f-tabs" data-lang="text"><pre><code>path\tsize\tnote\nsrc/reader.css\t22 KB\t${prose}\nsrc/reader/enhance.js\t31 KB\tshort</code></pre></div>`],
   ]);
   for (const width of [900, 1600]) {
     page = await open(width);
@@ -1348,13 +1350,15 @@ const v36 = patch([
       const col = document.getElementById('f-p').getBoundingClientRect();
       const one = id => { const c = document.getElementById(id), pre = c.querySelector('pre'), b = c.getBoundingClientRect();
         return { id, prose: c.classList.contains('cb-prose'), ws: getComputedStyle(pre).whiteSpace, scrolls: pre.scrollWidth > pre.clientWidth + 1, left: b.left - col.left, width: b.width - col.width, wrapBtn: getComputedStyle(c.querySelector('.cb-wrap')).display }; };
-      return { prose: ids.map(one), js: one('f-js'), tree: one('f-tree'), aligned: one('f-aligned'), sideways: document.scrollingElement.scrollWidth - innerWidth };
+      return { prose: ids.map(one), js: one('f-js'), tree: one('f-tree'), aligned: one('f-aligned'), short: one('f-short-aligned'), tabs: one('f-tabs'), sideways: document.scrollingElement.scrollWidth - innerWidth };
     }, fences.map(f => f[0]));
     check(`prose fences (none, text, txt, plain, plaintext, md, markdown, prompt) wrap in the column, without a Wrap button (${width})`,
       r.prose.every(f => f.prose && f.ws === 'pre-wrap' && !f.scrolls && Math.abs(f.left) < 0.5 && Math.abs(f.width) < 0.5 && f.wrapBtn === 'none') && r.sideways <= 0, JSON.stringify(r.prose.filter(f => !(f.prose && !f.scrolls && Math.abs(f.left) < 0.5 && Math.abs(f.width) < 0.5 && f.wrapBtn === 'none'))));
     // At 1600 px they widen into the margins, where the aligned listing fits.
     check(`code, a tree and an aligned listing do not wrap and keep their Wrap button${width === 900 ? ', and scroll' : ''} (${width})`,
       [r.js, r.tree, r.aligned].every(f => !f.prose && f.ws === 'pre' && (width > 900 || f.scrolls) && f.wrapBtn !== 'none'), JSON.stringify([r.js, r.tree, r.aligned]));
+    check(`a short aligned table and a tab-separated listing are not prose: unwrapped, with their Wrap button${width === 900 ? ', the long one scrolling' : ''} (${width})`,
+      [r.short, r.tabs].every(f => !f.prose && f.ws === 'pre' && f.wrapBtn !== 'none') && (width > 900 || r.tabs.scrolls), JSON.stringify([r.short, r.tabs]));
     if (width === 1600) check('at 1600 px code still widens into the margins, prose does not', r.js.width > 10 && r.prose.every(f => Math.abs(f.width) < 0.5), JSON.stringify([r.js, r.prose[0]]));
     await page.close();
   }
@@ -1388,19 +1392,21 @@ const v36 = patch([
 {
   page = await open(700);
   await page.evaluate(p => window.readout.apply(p), patch([
-    ['frontMatter', '<div class="front-matter" id="fm"><span class="fm-item"><span class="fm-key">title</span> Plan</span><span class="fm-item"><span class="fm-key">status</span> draft</span><span class="fm-item"><span class="fm-key">description</span> A long description that runs on well past the end of a single line in the column, so it has to wrap onto a second one at least.</span></div>'],
+    // As ReadoutCore writes it; the last value is a literal block (`notes: |`) with a blank line.
+    ['frontMatter', '<div class="front-matter" id="fm"><span class="fm-item"><span class="fm-key">title</span> <span class="fm-val">Plan</span></span><span class="fm-item"><span class="fm-key">status</span> <span class="fm-val">draft</span></span><span class="fm-item"><span class="fm-key">description</span> <span class="fm-val">A long description that runs on well past the end of a single line in the column, so it has to wrap onto a second one at least.</span></span><span class="fm-item"><span class="fm-key">notes</span> <span class="fm-val">line one<br>line two<br><br>after a blank line</span></span></div>'],
     ['heading', '<h1 id="fm-h">Title</h1>', { anchor: 'fm-h' }],
   ]));
   const fm = await page.evaluate(() => {
     const keys = [...document.querySelectorAll('#fm .fm-key')].map(k => k.getBoundingClientRect());
-    const vals = [...document.querySelectorAll('#fm .fm-item')].map(it => { const r = document.createRange(); r.setStartAfter(it.firstChild); r.setEndAfter(it.lastChild); return [...r.getClientRects()].filter(x => x.width > 0).map(x => ({ left: x.left, top: x.top })); });
+    const vals = [...document.querySelectorAll('#fm .fm-val')].map(v => { const r = document.createRange(); r.selectNodeContents(v); return [...r.getClientRects()].filter(x => x.width > 0).map(x => ({ left: x.left, top: x.top })); });
     return { keys: keys.map(k => ({ left: k.left, right: k.right, top: k.top })), vals };
   });
   const k = fm.keys, v = fm.vals;
   check('front matter: keys line up in one column, each on its own row',
-    k.length === 3 && k.every(x => Math.abs(x.left - k[0].left) < 0.5) && k[0].top < k[1].top && k[1].top < k[2].top, JSON.stringify(k));
-  check('front matter: values line up beside the keys, a long one wrapping in its own column',
-    v.every(lines => lines.length && Math.abs(lines[0].left - v[0][0].left) < 0.5 && lines[0].left > Math.max(...k.map(x => x.right))) && v[2].length >= 2 && v[2].every(l => Math.abs(l.left - v[0][0].left) < 0.5),
+    k.length === 4 && k.every(x => Math.abs(x.left - k[0].left) < 0.5) && k[0].top < k[1].top && k[1].top < k[2].top, JSON.stringify(k));
+  check('front matter: values line up beside the keys, a long one and one with blank lines staying in their own column',
+    v.every(lines => lines.length && Math.abs(lines[0].left - v[0][0].left) < 0.5 && lines[0].left > Math.max(...k.map(x => x.right))) && v[2].length >= 2 && v[2].every(l => Math.abs(l.left - v[0][0].left) < 0.5)
+      && v[3].length === 3 && v[3].every(l => Math.abs(l.left - v[0][0].left) < 0.5) && v[3][2].top - v[3][1].top > 1.5 * (v[3][1].top - v[3][0].top),
     JSON.stringify(v));
   await page.close();
 }
