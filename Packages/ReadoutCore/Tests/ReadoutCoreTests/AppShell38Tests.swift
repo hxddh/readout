@@ -30,6 +30,24 @@ import Testing
         #expect(Array(linked.prefix(2)) == ["/w/node_modules/pkg/.git", "/w/.git"])
     }
 
+    @Test func exclusionsIgnoreCaseAsMacVolumesDo() {
+        // /repo/latest.md -> Build/plan.md: /repo and /repo/Build are watched.
+        // On a case-insensitive volume /repo/build is /repo/Build, which holds
+        // the file shown: never excluded.
+        let paths = WatchExclusions.paths(for: ["/repo/Build", "/repo"], keep: ["/repo/Build/plan.md", "/repo/latest.md"])
+        #expect(!paths.contains { $0.lowercased() == "/repo/build" })
+        #expect(paths.contains("/repo/.git"))
+        // A file named like a folder in another case is kept too, and so is
+        // the folder holding the file, or any folder above it.
+        let named = WatchExclusions.paths(for: ["/w"], keep: ["/w/BUILD.md", "/w/Node_Modules/x/plan.md"])
+        #expect(!named.contains("/w/build") && !named.contains("/w/node_modules"))
+        for p in paths + named {
+            for kept in ["/repo/Build/plan.md", "/repo/latest.md", "/w/BUILD.md", "/w/Node_Modules/x/plan.md"] {
+                #expect(!kept.lowercased().hasPrefix(p.lowercased()), "\(p) would hide \(kept)")
+            }
+        }
+    }
+
     @Test func agentFolderEventsAskTheDiskOnlyAboutMarkdownDocuments() {
         var asked: [String] = []
         var known: Set<String> = ["/w/plans/old.md", "/w/plans/gone.md"]

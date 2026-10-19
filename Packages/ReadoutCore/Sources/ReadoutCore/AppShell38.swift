@@ -22,14 +22,18 @@ public enum WatchExclusions {
     /// across them, at most `limit`. Never one that is, or holds, a watched
     /// folder or a path in `keep` (the file shown, the link to it), and never
     /// one whose path a kept path merely starts with (`build` beside
-    /// `build.md`), whatever way FSEvents compares them.
+    /// `build.md`), whatever way FSEvents compares them. Compared ignoring
+    /// case, as most Mac volumes do: `build` is `Build`, the folder of
+    /// `/repo/Build/plan.md`. (On a case-sensitive volume that only leaves out less.)
     public static func paths(for directories: [String], keep: [String] = []) -> [String] {
-        let protected = directories + keep
+        let protected = (directories + keep).map { ($0 as NSString).standardizingPath.lowercased() }
         var out: [String] = []
         for name in names {
             for dir in directories {
                 let candidate = (dir as NSString).appendingPathComponent(name)
-                guard !protected.contains(where: { $0.hasPrefix(candidate) }), !out.contains(candidate) else { continue }
+                let folded = (candidate as NSString).standardizingPath.lowercased()
+                guard !protected.contains(where: { $0.hasPrefix(folded) }),
+                      !out.contains(where: { $0.lowercased() == candidate.lowercased() }) else { continue }
                 out.append(candidate)
                 if out.count == limit { return out }
             }

@@ -295,11 +295,24 @@ enum UpdateChecker {
 
     /// An empty file in ~/Downloads under `name` (a free variant when that is
     /// taken): where the download goes, with its progress on it meanwhile.
+    /// Created exclusively (O_EXCL): a file that arrives under the name
+    /// between looking and creating is never truncated; the next free name is tried.
     nonisolated private static func reserveDownload(name: String, in directory: URL?) throws -> Reserved {
-        let target = freeName(name, in: try downloadsFolder(directory))
-        guard FileManager.default.createFile(atPath: target.path, contents: nil),
-              let id = identity(target.path) else { throw CocoaError(.fileWriteUnknown) }
-        return Reserved(url: target, device: id.device, inode: id.inode)
+        let folder = try downloadsFolder(directory)
+        for _ in 0..<100 {
+            let target = freeName(name, in: folder)
+            let fd = open(target.path, O_CREAT | O_EXCL | O_WRONLY, 0o644)
+            if fd < 0 {
+                if errno == EEXIST { continue }
+                throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+            }
+            var st = stat()
+            let ok = fstat(fd, &st) == 0
+            close(fd)
+            guard ok else { throw CocoaError(.fileWriteUnknown) }
+            return Reserved(url: target, device: Int64(st.st_dev), inode: UInt64(st.st_ino))
+        }
+        throw CocoaError(.fileWriteFileExists)
     }
 
     /// Moves a finished download onto the file reserved for it (into
