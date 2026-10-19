@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node test/grammars.test.mjs && node test/apply.test.mjs && node test/interact.test.mjs && node test/privacy.test.mjs && node test/typography.test.mjs && node test/flow.test.mjs",
+    "test": "node test/grammars.test.mjs && node test/apply.test.mjs && node test/interact.test.mjs && node test/privacy.test.mjs && node test/typography.test.mjs && node test/flow.test.mjs && node test/copy.test.mjs",
     "corpus": "node test/corpus.test.mjs"
   },
   "dependencies": {
@@ -15,6 +15,7 @@
     "shiki": "4.5.0"
   },
   "devDependencies": {
+    "marked": "16.4.2",
     "pixelmatch": "7.1.0",
     "playwright": "1.49.1",
     "pngjs": "7.0.0"

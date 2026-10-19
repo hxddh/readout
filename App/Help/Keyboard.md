@@ -24,6 +24,7 @@
 | <kbd>⌃⌥⌘R</kbd> | Open the latest agent file from anywhere (global; change or turn off in Settings) |
 | <kbd>⌘E</kbd> | Open the file in your editor, at the line you are reading (or the selection) |
 | <kbd>⇧⌘R</kbd> | Reveal in Finder |
+| <kbd>⌘C</kbd> | Copy the selection as Markdown (whole blocks exactly as the file writes them); apps that take rich text get it formatted |
 | <kbd>⇧⌘C</kbd> | Copy as Quote: the selected blocks' Markdown (with nothing selected, the block <kbd>N</kbd> went to) as a quote, with the file's lines and section |
 | <kbd>⌥⌘C</kbd> | Copy the file's path |
 | <kbd>⌘P</kbd> | Print |

@@ -4,6 +4,7 @@ import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resiz
 import { renderMarks, applyChangesOnly, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, measureTables } from './enhance.js';
+import { sources, tight, setLinks } from './copy.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
 
 const notice = document.getElementById('ro-notice');
@@ -64,6 +65,8 @@ function fillBlock(el, op) {
   const was = parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0;
   if (!el.style.containIntrinsicSize || (Math.abs(est - was) > Math.max(1000, was) && neverLaidOut(el))) el.style.containIntrinsicSize = `auto ${est}px`;
   el.innerHTML = op.html;
+  if (op.src != null) sources.set(el, op.src); else sources.delete(el);
+  if (op.tight) tight.add(el); else tight.delete(el);
   enhance(el);
   titleLinks(el);
   pathLinks(el);
@@ -107,6 +110,8 @@ function titleLinks(el) {
  * Applies a RenderPatch: {version, reset, rewrite, ops, marks, deletions, toc, tasks, title}.
  */
 export function apply(p) {
+  // Link definitions (copy.js): every reset sends them (none: absent), another patch when they changed.
+  if (p.reset || p.links) setLinks(p.links);
   const isFirst = first;
   first = false;
   // The document was emptied (truncated): the place it had before counts.
@@ -176,6 +181,13 @@ export function apply(p) {
     } else if (op.op === 'replace') {
       const el = slots.get(op.slot);
       if (!el) continue;
+      // Only the source changed (it renders the same): the block stays as it
+      // is (an open <details>, a diagram drawn, the selection); copying sees the new source.
+      if (op.html == null) {
+        if (op.src != null) sources.set(el, op.src); else sources.delete(el);
+        if (op.tight) tight.add(el); else tight.delete(el);
+        continue;
+      }
       headingsTouched ||= op.kind === 'heading' || el.classList.contains('k-heading');
       const wasMarked = el.className.match(/m-(inserted|modified|state)/)?.[0];
       const wasRead = el.classList.contains('m-read');

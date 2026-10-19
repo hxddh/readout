@@ -51,6 +51,16 @@ enum HTML {
     private static let sourceAttribute = try! NSRegularExpression(
         pattern: #"\s(src|srcset)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, options: .caseInsensitive)
 
+    /// A Markdown link's destination, with a scheme that runs code or carries
+    /// a document (`javascript:`, `vbscript:`, `data:`, however spaced or
+    /// cased) turned into `blocked:`, as raw HTML's `javascript:` is.
+    static func safeLink(_ destination: String) -> String {
+        guard let colon = destination.firstIndex(of: ":") else { return destination }
+        let scheme = String(String.UnicodeScalarView(destination[..<colon].unicodeScalars.filter { $0.value > 0x20 && $0.value != 0x7F })).lowercased()
+        guard ["javascript", "vbscript", "data"].contains(scheme) else { return destination }
+        return "blocked:" + destination[destination.index(after: colon)...]
+    }
+
     /// GFM tagfilter plus removal of event handlers and javascript: URLs.
     /// Remote media sources are replaced with a click-to-load placeholder so
     /// raw HTML cannot phone home without the reader's consent — the same

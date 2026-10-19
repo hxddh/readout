@@ -537,7 +537,8 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 
 // 15. Copying: the panels open in the document stay out, math copies as its
 //     TeX, task boxes as [ ] / [x], footnote references as [^n] without the
-//     ↩ links back. A selection inside a panel copies as it is.
+//     ↩ links back (here from the page's HTML: these ops carry no source).
+//     A selection inside a panel copies as it is. copy.test.mjs covers the rest.
 {
   const page = await newPage();
   const r = patch(1, [
@@ -567,7 +568,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   }, sel);
   const all = await copy('#ro-doc');
   const t = all.text || '';
-  const want = ['Plan', 'The cache uses Postgres.[^1] Energy is $E=mc^2$ here.', '$$\\int_0^1 x\\,dx$$', '[ ] Step one', '[x] Step two', 'Last words.', '[^1]: The note.'];
+  const want = ['Plan', 'The cache uses Postgres.[^1] Energy is $E=mc^2$ here.', '$$\n\\int_0^1 x\\,dx\n$$', '- [ ] Step one', '[x] Step two', 'Last words.', '[^1]: The note.'];
   const unwanted = ['Changes since', 'Redis', 'A removed paragraph', '↩', 'mc2'];
   check('copy writes math as TeX, tasks as [ ]/[x], footnotes as [^n], without the open panels',
     all.handled && want.every(w => t.includes(w)) && !unwanted.some(u => t.includes(u)),

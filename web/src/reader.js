@@ -19,6 +19,7 @@ import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables, highligh
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
+import { markdownOf, htmlOf, inDocument } from './reader/copy.js';
 
 // ---------------------------------------------------------------- Links & keys
 
@@ -55,60 +56,30 @@ doc.addEventListener('click', ev => {
 
 // ---------------------------------------------------------------- Copy
 
-// Copied text says what the document says, the way its Markdown wrote it:
-// not the comparison or removed-text panels open in it (unless the
-// selection lies inside one), math as its TeX source rather than KaTeX's
-// two renderings of it, task boxes as [ ] and [x], footnote references as
-// [^n] without the ↩ links back. A selection without any of those copies as
-// the browser copies it. Rich text carries the same cleaned-up content, so
-// pasting it somewhere styled shows no panel, button or doubled formula.
-const COPY_SPECIAL = '.wd-panel, .del-pop, .del-mark, button, .cb-tools, .math, .math-block, .math-display, .katex, .task-box, [data-footnote-ref], [data-footnote-backref], section.footnotes li';
-document.addEventListener('copy', ev => {
+// ⌘C, Edit ▸ Copy and the context menu's Copy: the selection as Markdown in
+// plain text (an agent's prompt, a terminal, an editor) and as clean HTML in
+// rich text (copy.js). A selection inside an open comparison or removed-text
+// panel copies as the browser copies it.
+const RICH_LIMIT = 500_000;
+function fillClipboard(data) {
   const sel = getSelection();
-  if (!ev.clipboardData || !sel || sel.isCollapsed || !sel.rangeCount) return;
-  const range = sel.getRangeAt(0);
-  let within = range.commonAncestorContainer;
-  if (within.nodeType !== Node.ELEMENT_NODE) within = within.parentElement;
-  if (!within || !doc.contains(within) || within.closest('.wd-panel, .del-pop')) return;
-  const box = document.createElement('div');
-  for (let i = 0; i < sel.rangeCount; i++) box.appendChild(sel.getRangeAt(i).cloneContents());
-  if (!box.querySelector(COPY_SPECIAL) && !within.closest('.math, .math-block, .math-display')) return;
-  // A selection inside one formula copies that formula.
-  const math = within.closest('.math, .math-block, .math-display');
-  if (math) box.replaceChildren(math.cloneNode(true));
-  box.querySelectorAll('.wd-panel, .del-pop, .del-mark, button, .cb-tools').forEach(e => e.remove());
-  for (const m of box.querySelectorAll('.math, .math-block, .math-display')) {
-    if (!box.contains(m)) continue;   // inside another formula, replaced with it
-    const tex = m.dataset.tex ?? m.querySelector('annotation[encoding="application/x-tex"]')?.textContent ?? m.textContent;
-    const display = m.matches('.math-block, .math-display');
-    m.replaceWith(display ? `$$${tex}$$` : `$${tex}$`);
-  }
-  // KaTeX output without its wrapper (a selection that began inside it).
-  for (const k of box.querySelectorAll('.katex')) {
-    const tex = k.querySelector('annotation[encoding="application/x-tex"]')?.textContent;
-    k.replaceWith(tex != null ? `$${tex}$` : '');
-  }
-  for (const t of box.querySelectorAll('.task-box')) t.replaceWith(t.classList.contains('checked') ? '[x] ' : '[ ] ');
-  box.querySelectorAll('[data-footnote-backref]').forEach(e => e.remove());
-  for (const a of box.querySelectorAll('[data-footnote-ref]')) (a.closest('sup') || a).replaceWith(`[^${a.textContent.trim()}]`);
-  for (const li of box.querySelectorAll('section.footnotes li[id]')) {
-    const orig = doc.querySelector(`[id="${CSS.escape(li.id)}"]`);
-    const n = orig ? [...orig.parentElement.children].indexOf(orig) + 1 : 0;
-    if (n) (li.querySelector(':scope > p') || li).prepend(`[^${n}]: `);
-  }
-  // innerText needs the content laid out: off screen, in the column's width
-  // and in the white-space of where it came from (code keeps its lines).
-  box.setAttribute('aria-hidden', 'true');
-  box.style.cssText = `position: fixed; left: -100000px; top: 0; width: ${doc.clientWidth}px; white-space: ${getComputedStyle(within).whiteSpace}; pointer-events: none;`;
-  document.body.appendChild(box);
-  const text = box.innerText;
-  box.remove();
-  // The page's own wrappers and state (blocks, marks, slots) are not content.
-  for (const b of box.querySelectorAll('.blk')) b.replaceWith(...b.childNodes);
-  box.querySelectorAll('[tabindex]').forEach(e => e.removeAttribute('tabindex'));
-  ev.clipboardData.setData('text/plain', text);
-  ev.clipboardData.setData('text/html', box.innerHTML);
-  ev.preventDefault();
+  if (!data || !sel || sel.isCollapsed || !sel.rangeCount) return false;
+  // Edit ▸ Select All selects the whole page: only the document is copied.
+  const range = inDocument(sel.getRangeAt(0));
+  const text = range && markdownOf(range);
+  if (text == null) return false;
+  data.setData('text/plain', text);
+  // Rich text costs WebKit about 1.5 s a megabyte to take (it sanitizes it; Linux CI box):
+  // past RICH_LIMIT the selection goes as Markdown only, which rich apps paste as text.
+  if (text.length <= RICH_LIMIT) data.setData('text/html', htmlOf(range));
+  return true;
+}
+document.addEventListener('copy', ev => { if (fillClipboard(ev.clipboardData)) ev.preventDefault(); });
+// Dragging the selection into a terminal or an editor drops the same Markdown.
+document.addEventListener('dragstart', ev => {
+  const sel = getSelection();
+  if (!sel || sel.isCollapsed || ev.target.nodeType !== Node.TEXT_NODE && !sel.containsNode(ev.target, true)) return;
+  fillClipboard(ev.dataTransfer);
 });
 
 // ---------------------------------------------------------------- Copy as Quote
