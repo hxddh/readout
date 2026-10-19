@@ -35,12 +35,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        SmokeTest.noteLaunchPhase("did_finish_launching")
         WebViewPool.shared.prewarm()
         // Windows restored from the last launch are back by now: their tabs too.
         regroupRestoredTabs()
         DispatchQueue.main.async { [weak self] in self?.regroupRestoredTabs() }
         BaselineStore.prune()
-        UpdateChecker.onBackgroundUpdate = { [weak self] name, url in self?.showUpdateMenuItem(name: name, url: url) }
+        UpdateChecker.onBackgroundUpdate = { [weak self] name in self?.showUpdateMenuItem(name: name) }
         UpdateChecker.startAutomaticChecks()
 
         let settings = AppSettings.shared
@@ -447,11 +448,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func checkForUpdates(_ sender: Any?) { UpdateChecker.check(interactive: true) }
 
     /// Background check found an update: surface it as an application-menu
-    /// item that opens the release page. Never pops up, never activates —
-    /// the reader keeps reading undisturbed.
-    private var pendingUpdateURL: URL?
-    private func showUpdateMenuItem(name: String, url: URL) {
-        pendingUpdateURL = url
+    /// item that offers it as Check for Updates does (its notes, Download
+    /// Update: the same download). Never pops up, never activates — the
+    /// reader keeps reading undisturbed.
+    private func showUpdateMenuItem(name: String) {
         guard let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu,
               appMenu.item(withTag: 901) == nil else { return }
         let title = String(format: NSLocalizedString("%@ Is Available…", comment: "Menu: background update found; %@ is like 'Readout 3.0.2'"), name)
@@ -461,9 +461,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appMenu.insertItem(item, at: min(2, appMenu.numberOfItems))
     }
 
-    @objc private func openPendingUpdate(_ sender: Any?) {
-        if let url = pendingUpdateURL { NSWorkspace.shared.open(url) }
-    }
+    @objc private func openPendingUpdate(_ sender: Any?) { UpdateChecker.showFoundUpdate() }
 
     /// File ▸ Close All (⌥⌘W, the alternate of Close).
     @objc func closeAll(_ sender: Any?) {
