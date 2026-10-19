@@ -536,7 +536,7 @@ check("cold start: every launch phase measured, in order",
       all(isinstance(lp.get(k), (int, float)) for k in order + ["did_load"])
       and all(0 <= lp[a] <= lp[b] for a, b in zip(order, order[1:])) and lp["did_load"] <= lp["apply"], lp)
 check("cold start: Readout's segments measured",
-      isinstance(tm.get("cold_page_ready_ms"), (int, float)) and isinstance(tm.get("cold_apply_ms"), (int, float)), tm)
+      all(isinstance(tm.get(k), (int, float)) for k in ("cold_page_ready_ms", "cold_apply_ms", "cold_window_to_load_ms")), tm)
 
 print(f"{len(failures)} failing assertion(s)")
 sys.exit(1 if failures else 0)

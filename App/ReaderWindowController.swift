@@ -29,8 +29,9 @@ final class WebViewPool: NSObject, WKNavigationDelegate {
     }
 
     /// When the next spare page is made: not while the page just taken is
-    /// still loading its first document (at launch, WebKit's first process
-    /// start), but once a page has painted one, or after a few seconds.
+    /// still loading (at launch, WebKit's first process start), but once a
+    /// page has painted its first document, or a few seconds after the page
+    /// taken is ready when none paints.
     private var plan = SparePagePlan()
 
     func take() -> ReaderWebView {
@@ -38,9 +39,13 @@ final class WebViewPool: NSObject, WKNavigationDelegate {
         w.navigationDelegate = nil   // the window controller sets its own
         spare = nil
         let token = plan.taken()
-        DispatchQueue.main.asyncAfter(deadline: .now() + SparePagePlan.fallback) { [weak self] in
-            guard let self, self.plan.fallbackFired(token) else { return }
-            self.prewarm()
+        // The fallback counts from the page's ready, so the next spare never
+        // competes with its load.
+        w.whenReady { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + SparePagePlan.fallback) { [weak self] in
+                guard let self, self.plan.fallbackFired(token) else { return }
+                self.prewarm()
+            }
         }
         return w
     }

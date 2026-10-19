@@ -69,7 +69,8 @@ extension AgentFolders {
 /// Made right away, the next spare page competed with the page just taken
 /// while that one was still loading its first document (at launch: WebKit's
 /// first process start). It is made once a page has painted its first
-/// document, or after `fallback` seconds when none does.
+/// document, or `fallback` seconds after the page taken is ready when none
+/// paints (the app starts that timer at the page's ready, never before).
 public struct SparePagePlan: Equatable, Sendable {
     public static let fallback: TimeInterval = 3
 
@@ -79,8 +80,8 @@ public struct SparePagePlan: Equatable, Sendable {
 
     public init() {}
 
-    /// A spare page was taken. Returns the token the fallback timer started
-    /// now presents to `fallbackFired`.
+    /// A spare page was taken. Returns the token its fallback timer (started
+    /// once the page taken is ready) presents to `fallbackFired`.
     public mutating func taken() -> Int {
         waiting = true
         generation += 1

@@ -104,6 +104,10 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
         print(f"harness: no process start time in the app's launch phases {phases}")
     if "did_finish_launching" in phases and "page_ready" in phases:
         timings["cold_page_ready_ms"] = round((phases["page_ready"] - phases["did_finish_launching"]) * 1000, 1)
+    # Readout's own work between the window and its document: reading the
+    # file, parsing it, the reading state and the git baseline (no WebKit).
+    if "window_init" in phases and "did_load" in phases:
+        timings["cold_window_to_load_ms"] = round((phases["did_load"] - phases["window_init"]) * 1000, 1)
     if all(k in phases for k in ("page_ready", "did_load", "apply")):
         timings["cold_apply_ms"] = round((phases["apply"] - max(phases["page_ready"], phases["did_load"])) * 1000, 1)
 
