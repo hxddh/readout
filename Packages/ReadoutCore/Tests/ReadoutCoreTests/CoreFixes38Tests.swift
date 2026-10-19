@@ -11,6 +11,8 @@ import Testing
         ("quotes-400", String(repeating: ">", count: 400) + " x"),
         ("lists-150", (0..<150).map { String(repeating: "  ", count: $0) + "- item" }.joined(separator: "\n")),
         ("ordered-150", (0..<150).map { String(repeating: "   ", count: $0) + "1. item" }.joined(separator: "\n")),
+        ("loose-lists-150", (0..<150).map { String(repeating: "  ", count: $0) + "- item" }.joined(separator: "\n\n")),
+        ("loose-4-150", (0..<150).map { String(repeating: "    ", count: $0) + "- item" }.joined(separator: "\n\n")),
         ("mixed-120", String(repeating: "> - ", count: 120) + "x"),
         ("images-300", String(repeating: "[![", count: 300) + "x" + String(repeating: "](a.png)](b)", count: 300)),
         ("emphasis-4000", String(repeating: "*a **b ", count: 4000) + "c" + String(repeating: "** b*", count: 4000)),
@@ -83,6 +85,32 @@ import Testing
             String(repeating: "2*3*4 ", count: 40),
         ]
         for text in ordinary { #expect(NestingCap.apply(text) == nil, "\(text.prefix(60))") }
+    }
+
+    /// An outline nests 16 levels deep whatever its indentation (2, 3 or 4
+    /// spaces, tight or loose) and renders as written; the 17th level is
+    /// text. (A first cut counted half the columns as levels: a 4-space
+    /// outline stopped at level 9.)
+    @Test func outlinesNestSixteenLevelsAtAnyIndentation() {
+        for width in [2, 3, 4] {
+            for separator in ["\n", "\n\n"] {
+                func outline(_ levels: Int) -> String {
+                    (0..<levels).map { String(repeating: " ", count: width * $0) + (width == 3 ? "1. " : "- ") + "level \($0 + 1)" }
+                        .joined(separator: separator)
+                }
+                let sixteen = outline(16)
+                #expect(NestingCap.apply(sixteen) == nil, "\(width) spaces \(separator.count == 2 ? "loose" : "tight")")
+                let html = MarkdownParser.parse(sixteen).blocks.map(\.html).joined()
+                #expect(!html.contains("- level") && !html.contains("1. level"), "\(width) \(separator.count)")
+                #expect(html.components(separatedBy: "<li").count - 1 == 16, "\(width) \(separator.count)")
+                if separator == "\n" {
+                    // Tight, the run tells every level: the 17th is text.
+                    let text = MarkdownParser.parse(outline(17)).blocks.map(\.html).joined()
+                    #expect(text.components(separatedBy: "<li").count - 1 == 16, "\(width)")
+                    #expect(text.contains("level 17"), "\(width)")
+                }
+            }
+        }
     }
 
     /// Flattening is decided per line and per run of non-blank lines, which

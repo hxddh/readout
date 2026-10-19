@@ -149,7 +149,8 @@
     "spliced through such text when no footnotes are defined, 25.9 (Linux, Swift 6.1, as CI): about",
     "10 decoding the file, 11 the session copying the blocks after the change, 3.5 the splice. Guard",
     "1.15x (30), target the reading rounded up (26). The deep-nesting guard (B1, NestingCap) scans",
-    "every parsed fragment: update_1mb 327.7 -> 330.4, open_1mb_unique 2890.7 -> 2917.0 locally."
+    "every parsed fragment, and definitions are looked for across lines (a label on two): update_1mb",
+    "327.7 -> 333.3, open_1mb_unique 2890.7 -> 2916.8 locally."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },

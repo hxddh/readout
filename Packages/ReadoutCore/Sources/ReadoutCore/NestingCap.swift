@@ -8,16 +8,19 @@ import Glibc
 /// with small stacks (a GCD worker's is 512 KB), so a few hundred nested
 /// `>` or emphasis runs crashed Readout, at every launch once restored.
 ///
-/// Past `containers` levels of block quotes and list items on a line, the
-/// next marker is escaped (`\>`, `\-`, `1\.`): the rest of the line is text
-/// in the deepest container. Past `inlines` levels of links and emphasis in
+/// Past `containers` levels of block quotes and list items, the next
+/// marker on a line is escaped (`\>`, `\-`, `1\.`): the rest of the line is
+/// text in the deepest container. A list item's level comes from the items
+/// above it (any indentation width, over blank lines); where nothing above
+/// tells, a level per four columns. Past `inlines` levels of links and emphasis in
 /// a run of lines, the opener is escaped (`\[`, `\*\*`): it shows as
 /// written. Only nesting no real document has changes (markdown-it's
 /// CommonMark preset stops at 20 levels).
 ///
-/// Decided per line (containers) and per run of non-blank lines (inline):
-/// a fragment (`IncrementalParser`) holds whole runs, so a splice, an
-/// incremental and a full parse flatten alike. Lines of fenced code opened
+/// Decided per run of non-blank lines, and the list items open where it
+/// starts, which are none at any line a fragment (`IncrementalParser`) may
+/// start at: a fragment holds whole runs, so a splice, an incremental and
+/// a full parse flatten alike. Lines of fenced code opened
 /// in the run are left alone. Runs on the text the Markdown parser gets
 /// (math and footnote references already tokens, `MathProtector`).
 enum NestingCap {
@@ -35,20 +38,29 @@ enum NestingCap {
             // level takes a `[` or two of `*`, `_`, `~`).
             var lines: [(start: Int, end: Int)] = []
             var runLine = 0, openers = 0, delimiters = 0, deep = false
+            // Open list items carry over blank lines (a loose list), and end
+            // where a fragment may start (`IncrementalParser.startsFresh`: a
+            // line after a blank one, at column 0, no container marker), so
+            // every parse has them alike.
+            var lists: Lists = [], runLists: Lists = []
+            var afterBlank = true
             let n = u.count
             guard let base = u.baseAddress else { return nil }
             var s = 0, line = 0
             while s <= n {
                 let e = s < n ? memchr(base + s, 0x0A, n - s).map { base.distance(to: $0.assumingMemoryBound(to: UInt8.self)) } ?? n : n
-                let prefix = containerPrefix(u, s, e)
+                if afterBlank, s < e, !isSpace(u[s]), !startsMarker(u, s, e) { lists.removeAll(keepingCapacity: true) }
+                let before = lists
+                let prefix = containerPrefix(u, s, e, lists: &lists)
+                afterBlank = prefix.blank
                 if prefix.blank {
                     if !lines.isEmpty {
-                        if deep || openers + delimiters / 2 > inlines { flatten(u, lines: lines, first: runLine, into: &inserts) }
+                        if deep || openers + delimiters / 2 > inlines { flatten(u, lines: lines, first: runLine, lists: runLists, into: &inserts) }
                         lines.removeAll(keepingCapacity: true)
                         openers = 0; delimiters = 0; deep = false
                     }
                 } else {
-                    if lines.isEmpty { runLine = line }
+                    if lines.isEmpty { runLine = line; runLists = before }
                     lines.append((s, e))
                     if prefix.escape != nil { deep = true }
                     var o = 0, d = 0
@@ -63,7 +75,7 @@ enum NestingCap {
                 s = e + 1
                 line += 1
             }
-            if !lines.isEmpty, deep || openers + delimiters / 2 > inlines { flatten(u, lines: lines, first: runLine, into: &inserts) }
+            if !lines.isEmpty, deep || openers + delimiters / 2 > inlines { flatten(u, lines: lines, first: runLine, lists: runLists, into: &inserts) }
             guard !inserts.isEmpty else { return nil }
             inserts.sort { $0.at < $1.at }
             var out: [UInt8] = []
@@ -81,49 +93,88 @@ enum NestingCap {
 
     private static func isSpace(_ c: UInt8) -> Bool { c == 0x20 || c == 0x09 }
 
+    /// The line starts with a block quote or list marker.
+    private static func startsMarker(_ u: UnsafeBufferPointer<UInt8>, _ s: Int, _ e: Int) -> Bool {
+        let c = u[s]
+        if c == 0x3E { return true }
+        if c == 0x2D || c == 0x2A || c == 0x2B { return s + 1 == e || isSpace(u[s + 1]) }
+        var k = s
+        while k < e, k - s < 9, u[k] >= 0x30, u[k] <= 0x39 { k += 1 }
+        return k > s && k < e && (u[k] == 0x2E || u[k] == 0x29) && (k + 1 == e || isSpace(u[k + 1]))
+    }
+
+    /// The list items open in a run of lines, from the lines before: their
+    /// content column and how deep each is (`containerPrefix`).
+    typealias Lists = [(content: Int, depth: Int)]
+
     /// Where a line's block quote and list markers end, and the marker that
-    /// goes past `containers` levels (nil: none). Levels are counted as
-    /// markers plus half the columns of white space between them (a nested
-    /// list item is at least two columns further in).
-    static func containerPrefix(_ u: UnsafeBufferPointer<UInt8>, _ s: Int, _ e: Int) -> (content: Int, escape: Int?, blank: Bool) {
-        var i = s, columns = 0, markers = 0
+    /// goes past `containers` levels (nil: none). A line's first list marker
+    /// is as deep as the item above it in the run that it is indented under
+    /// (`lists`, which the line updates), and a line the run tells nothing
+    /// about (its first, or the first indented one) is a level per four
+    /// columns in; each further marker on the line is one more.
+    static func containerPrefix(_ u: UnsafeBufferPointer<UInt8>, _ s: Int, _ e: Int, lists: inout Lists) -> (content: Int, escape: Int?, blank: Bool) {
+        var i = s, columns = 0, markers = 0, depth = 0
+        var firstIsList = false
+        var item: (content: Int, depth: Int)? = nil
         while i < e {
             let c = u[i]
             if c == 0x20 { columns += 1; i += 1; continue }
             if c == 0x09 { columns = (columns / 4 + 1) * 4; i += 1; continue }
             var end = i + 1   // past the marker
+            let list: Bool
             if c == 0x3E {                                   // >
+                list = false
             } else if c == 0x2D || c == 0x2A || c == 0x2B {  // - * +
                 guard end == e || isSpace(u[end]) else { break }
+                list = true
             } else if c >= 0x30 && c <= 0x39 {
                 var k = i
                 while k < e, k - i < 9, u[k] >= 0x30, u[k] <= 0x39 { k += 1 }
                 guard k < e, u[k] == 0x2E || u[k] == 0x29, k + 1 == e || isSpace(u[k + 1]) else { break }
                 end = k + 1
+                list = true
             } else {
                 break
             }
             markers += 1
-            if markers + columns / 2 > containers {
+            if markers == 1 {
+                firstIsList = list
+                if list {
+                    while let last = lists.last, last.content > columns { lists.removeLast() }
+                    depth = (lists.last?.depth ?? columns / 4) + 1
+                } else {
+                    depth = columns / 4 + 1
+                }
+            } else {
+                depth += 1
+            }
+            if depth > containers {
                 // `- - - -`, `* * * *` from here: a thematic break, not nesting.
                 if c == 0x2D || c == 0x2A, (i..<e).allSatisfy({ u[$0] == c || isSpace(u[$0]) }) { break }
                 // The marker's own character (a list number keeps its digits).
                 return (end, end - 1, false)
             }
+            columns += end - i
             i = end
+            // Its content: at least one column past the marker (more is safe: deeper).
+            if list { item = (columns + 1, depth) }
         }
+        if firstIsList, let item { lists.append(item) }
         return (i, nil, i == e && markers == 0)
     }
 
     /// The escapes flattening one run of non-blank lines.
-    private static func flatten(_ u: UnsafeBufferPointer<UInt8>, lines: [(start: Int, end: Int)], first: Int,
+    private static func flatten(_ u: UnsafeBufferPointer<UInt8>, lines: [(start: Int, end: Int)], first: Int, lists start: Lists,
                                 into inserts: inout [(at: Int, line: Int)]) {
         struct Token { var kind: UInt8; var at: Int; var count: Int; var line: Int; var canOpen = true; var canClose = false }
         var tokens: [Token] = []
         var fence: (char: UInt8, count: Int)? = nil
+        var lists = start
         for (k, l) in lines.enumerated() {
             let line = first + k
-            let prefix = containerPrefix(u, l.start, l.end)
+            // Every line, code too, as `apply` read them: the same levels.
+            let prefix = containerPrefix(u, l.start, l.end, lists: &lists)
             var i = prefix.content
             // A fence (``` or ~~~) and the code it holds: left as it is.
             var f = i

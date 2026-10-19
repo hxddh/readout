@@ -186,6 +186,27 @@ import Testing
         }
     }
 
+    /// A link definition whose label spans lines (`[foo` / `bar]: url`, the
+    /// 3.8 review): the document parses in full, as for any definition, and
+    /// a change that makes one is not spliced. 3.7 cut it into fragments, so
+    /// a reference in another one did not link.
+    @Test func aDefinitionWithItsLabelOnTwoLinesParsesInFull() {
+        let defined = "Intro.\n\n[foo\nbar]: https://example.com\n\nSee [foo bar] here.\n\nMore."
+        #expect(IncrementalParser.needsFullParse(MarkdownParser.sourceLines(defined)))
+        #expect(IncrementalParser().parse(defined).blocks == MarkdownParser.parse(defined).blocks)
+        #expect(MarkdownParser.parse(defined).blocks.contains { $0.html.contains("href=\"https://example.com\"") })
+        let text = "# Doc\n\n" + (0..<12).map { "Paragraph \($0) cites [foo bar]." }.joined(separator: "\n\n")
+        let p = IncrementalParser()
+        _ = p.parse(text)
+        let next = text.replacingOccurrences(of: "Paragraph 6 cites", with: "[foo\nbar]: https://example.com\n\nParagraph 6 cites")
+        let doc = p.parse(next)
+        #expect(!p.lastSpliced)
+        #expect(doc.blocks == MarkdownParser.parse(next).blocks)
+        // Not every `]:` after a `[` is one, but taking it for one only parses in full.
+        let plain = "A [note that\ngoes on]: and more.\n\nNext."
+        #expect(IncrementalParser().parse(plain).blocks == MarkdownParser.parse(plain).blocks)
+    }
+
     /// What splicing does not cover parses as before.
     @Test(arguments: [
         ("crlf", "\r\nA new line."),
