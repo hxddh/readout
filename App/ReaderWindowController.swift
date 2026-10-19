@@ -1403,7 +1403,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             guard let self else { return }
             let slots = Set(((value as? [Any]) ?? []).compactMap { ($0 as? NSNumber)?.intValue })
             let path = QuoteFormatter.displayPath(self.url.path, projectRoot: self.projectRoot.path)
-            guard let text = QuoteFormatter.quote(blocks: self.session.blocks, slots: slots, path: path) else { return NSSound.beep() }
+            guard let text = QuoteFormatter.quote(blocks: self.session.blocks, slots: slots, path: path, links: self.session.links) else { return NSSound.beep() }
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
         }
