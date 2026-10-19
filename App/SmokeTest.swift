@@ -151,6 +151,7 @@ enum SmokeTest {
             await capture(webView, window: controller.window, to: out, name: "3-marks")
             await undoMarkAllRead(controller: controller, webView: webView, out: out)
             await copyAsQuote(controller: controller, webView: webView, out: out)
+            await copyAsMarkdown(controller: controller, webView: webView, out: out)
             await navigationStaysOnTheReader(webView: webView, out: out)
 
             // Dark appearance, then the auxiliary windows.
@@ -461,6 +462,29 @@ enum SmokeTest {
         write(["picked": picked ?? NSNull(), "enabled": enabled, "text": text,
                "enabled_after_deselect": controller.validateMenuItem(item),
                "path": ReaderChrome.tabToolTip(path: controller.url.path)], to: out, "copy-quote.json")
+    }
+
+    /// Edit ▸ Copy (⌘C) on the task items: what WKWebView puts on the
+    /// pasteboard is the items' Markdown as plain text and clean HTML.
+    private static func copyAsMarkdown(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
+        controller.show()
+        let select = """
+            (() => { const b = [...document.querySelectorAll('#ro-doc > .blk.k-listItem')].filter(e => e.querySelector('.task-box'));
+              if (b.length < 2) return null;
+              const r = document.createRange(); r.setStart(b[0], 0); r.setEnd(b[1], b[1].childNodes.length);
+              const s = getSelection(); s.removeAllRanges(); s.addRange(r); return [+b[0].dataset.slot, +b[1].dataset.slot]; })()
+            """
+        let picked = try? await webView.evaluateJavaScript(select)
+        try? await Task.sleep(for: .milliseconds(300))
+        NSPasteboard.general.clearContents()
+        let sent = NSApp.sendAction(#selector(NSText.copy(_:)), to: webView, from: nil)
+        try? await Task.sleep(for: .milliseconds(600))
+        let pb = NSPasteboard.general
+        let text = pb.string(forType: .string) ?? ""
+        let html = pb.string(forType: .html) ?? ""
+        _ = try? await webView.evaluateJavaScript("getSelection().removeAllRanges(); 1")
+        write(["picked": picked ?? NSNull(), "sent": sent, "text": text, "html": html,
+               "types": (pb.types ?? []).map(\.rawValue)], to: out, "copy-markdown.json")
     }
 
     /// The window's restorable state, encoded and decoded as AppKit keeps it

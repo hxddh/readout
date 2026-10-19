@@ -93,6 +93,7 @@ Any app or web page can open such a URL (browsers ask you first), as it can ask 
 | <kbd>⌃⌘S</kbd> | Toggle sidebar |
 | <kbd>⌘E</kbd> | Open the file in your editor, at the line you are reading (or the selection) |
 | <kbd>⇧⌘R</kbd> | Reveal in Finder |
+| <kbd>⌘C</kbd> | Copy the selection as Markdown (whole blocks exactly as the file writes them); apps that take rich text get it formatted |
 | <kbd>⇧⌘C</kbd> | Copy as Quote: the selected blocks' Markdown as a quote, with the file's lines and section |
 | <kbd>⌥⌘C</kbd> | Copy the file's path |
 | <kbd>⌘P</kbd> | Print |

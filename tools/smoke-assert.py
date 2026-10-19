@@ -394,6 +394,15 @@ check("Copy as Quote: a blockquote of the blocks, then '— <path>#L<a>-L<b> (§
       len(cq_lines) >= 3 and all(l.startswith(">") for l in cq_lines[:-1])
       and re.fullmatch(re.escape("— " + (cq.get("path") or "?")) + r"#L(\d+)-L(\d+) \(§ .+\)", cq_lines[-1]) is not None, cq)
 
+# ⌘C (3.8): Markdown as plain text, clean HTML as rich text.
+cm = load("copy-markdown.json")
+print(f"copy-markdown: {cm}")
+cm_text = cm.get("text") or ""
+check("Copy (⌘C): the task items' Markdown as plain text",
+      cm.get("sent") is True and re.match(r"^- \[[ x]\] .+\n- \[[ x]\] ", cm_text) is not None, cm)
+check("Copy (⌘C): clean HTML as rich text (no page controls or state)",
+      "<li" in (cm.get("html") or "") and not re.search(r"data-slot|tabindex|<button", cm.get("html") or ""), cm)
+
 # N on to the next document with unread changes (3.7): the tab behind with
 # unread changes comes forward at its first change; with none left anywhere
 # N stays (a beep). The Dock badge counts the documents showing unread changes.
