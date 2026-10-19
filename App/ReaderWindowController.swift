@@ -1114,12 +1114,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// `rerun`: a read landed while the first comparison ran; this one is
     /// against the version shown now, and is dropped if another lands.
     private func compareWithLastCommit(rerun: Bool) {
-        guard loaded, !session.blocks.isEmpty, !retargetGate.isPending else { return NSSound.beep() }
+        // Nothing loaded yet: nothing to compare. A loaded document with no
+        // blocks (empty, or only whitespace) is compared: what was committed shows as removed.
+        guard loaded, !retargetGate.isPending else { return NSSound.beep() }
         let askedAt = contentGeneration
         // What the window shows, not the file on disk (a newer write may have reached it first).
         let displayed = session.blocks.map(BlockKey.init)
         CommitBaseline.compare(path: contentPath ?? url.path, displayed: displayed) { [weak self] result in
-            guard let self, !self.session.blocks.isEmpty else { return NSSound.beep() }
+            guard let self else { return }
             switch CommitComparison.applies(askedAt: askedAt, current: self.contentGeneration, retargeting: self.retargetGate.isPending, rerun: rerun) {
             case .apply: break
             case .rerun: return self.compareWithLastCommit(rerun: true)
@@ -1142,7 +1144,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// with the notice that says so) or the reading state from before it.
     private func showMarked(against baseline: [BlockKey], againstCommit: Bool) {
         let name = NSLocalizedString("Compare with Last Commit", comment: "Menu: mark the document again against its version in the last git commit")
-        guard !session.blocks.isEmpty else {
+        // Undoing it while the document is empty for a moment (an agent
+        // truncating it) waits for the content; comparing an empty document does not.
+        guard !session.blocks.isEmpty || againstCommit else {
             // Empty for a moment (an agent truncating it): kept for when it is back, as restoreUnread does.
             NSSound.beep()
             DispatchQueue.main.async { [weak self] in

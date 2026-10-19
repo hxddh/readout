@@ -95,6 +95,23 @@ import Testing
         #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\n\nOld.\n"), git: git, exists: exists) == .unchanged)
     }
 
+    /// A document that is empty now (or only whitespace: no blocks) is
+    /// compared too: what was committed shows as removed; committed empty, unchanged.
+    @Test func anEmptyDocumentIsComparedToo() {
+        let exists = { (p: String) in p == "/w/app/.git" }
+        let show = "/w/app/docs|--no-pager show HEAD:./plan.md"
+        let git = FakeGit(output: [show: Data("# Plan\n\nOld.\n".utf8)])
+        #expect(keys("  \n\n").isEmpty)
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: [], git: git, exists: exists) == .baseline(keys("# Plan\n\nOld.\n")))
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: [], git: FakeGit(output: [show: Data()]), exists: exists) == .unchanged)
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: [], git: FakeGit(output: [show: Data("\n\n".utf8)]), exists: exists) == .unchanged)
+        // Marked against the commit: its blocks are removed, unread.
+        let s = DocumentSession()
+        _ = s.load(MarkdownParser.parse(""))
+        let patch = s.reload(baseline: keys("# Plan\n\nOld.\n"))
+        #expect(!patch.rewrite && s.deletions.count >= 1 && s.unreadCount >= 1)
+    }
+
     struct FakeGit: GitRunning {
         var output: [String: Data] = [:]   // "dir|args" -> stdout
         func run(_ arguments: [String], in directory: String) -> Data? { output[directory + "|" + arguments.joined(separator: " ")] }
