@@ -92,8 +92,15 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                     webView.onMessage = { msg in if msg["type"] as? String == "applied" { finish("applied") } }
                     webView.call("apply", patch.page)
                 }
-                // Never hang Quick Look if the page fails to report back.
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { finish("timed out") }
+                // Never hang Quick Look if the page fails to report back:
+                // 3 s from its page being ready to take the document, or 10 s
+                // in all if it never is. The page's ready waits for WebKit to
+                // start the extension's first web content process, which on
+                // a cold machine alone took 1.9 to 3.2 s (CI): a deadline
+                // counted from here showed an empty preview whenever that
+                // start was slow.
+                webView.whenReady { DispatchQueue.main.asyncAfter(deadline: .now() + 3) { finish("timed out") } }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 10) { finish("timed out") }
             }
         }
     }

@@ -364,6 +364,22 @@ check("zh-Hans pass: no page errors", zlog.exists() and "Readout page error" not
 # Typesetting this WebKit supports (T6): reported, not asserted.
 print(f"css-supports: {load('css-supports.json')}")
 
+# 3.8 T3: a Chinese block draws “ ” ‘ ’ — … in PingFang (reader.css's
+# ro-zh-punct face, local("PingFangSC-Regular")), not in the system font's
+# narrow Latin forms: the face loads in WKWebView, and the six characters
+# are as wide in the block as in PingFang SC and not as in the system font.
+punct = load("zh-punct.json")
+print(f"zh-punct: {punct}")
+pw = punct.get("width") or {}
+regular = [f for f in punct.get("faces") or [] if str(f.get("weight", "")).startswith("1 ")]
+check("zh punctuation: a Chinese block uses the ro-zh-punct face first",
+      punct.get("found") is True and str(punct.get("family", "")).replace('"', "").startswith("ro-zh-punct,"), punct)
+check("zh punctuation: local() PingFang loads in WKWebView",
+      len(regular) == 1 and regular[0].get("status") == "loaded" and punct.get("check") is True, punct)
+check("zh punctuation: drawn in PingFang SC, not the system font",
+      all(isinstance(pw.get(k), (int, float)) for k in ("block", "pingfang", "system"))
+      and abs(pw["block"] - pw["pingfang"]) < 0.5 and abs(pw["block"] - pw["system"]) >= 0.5, pw)
+
 # The soft scroll edge under the toolbar (A1): the web view asks WebKit for the
 # automatic content-inset fill, so its top scroll pocket is made with the
 # automatic style (0; WebKit's default is the hard style), with no capture colour

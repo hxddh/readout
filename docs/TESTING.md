@@ -44,6 +44,9 @@ Release app copied to /Applications** — the exact bytes users install — and
   |anchorShift| <= 2, mermaid >= 1
 - `4-dark`: theme == "dark"
 - the log contains no `Readout page error` and no `scheme handler: 404`
+- `zh-punct.json`: the fixture's Chinese paragraph draws “ ” ‘ ’ — … in
+  PingFang SC (reader.css's `local()` face loads in WKWebView), not in the
+  system font
 - Quick Look: `pluginkit` lists `io.github.hxddh.readout.quicklook`, the
   `qlmanage` log has no errors, and the extension's log line reports the
   preview was applied with 34 of 34 blocks rendered (proof of content, not
