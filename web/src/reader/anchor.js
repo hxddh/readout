@@ -267,6 +267,13 @@ let settleQueued = false;
 /** Blocks seen at a size other than their estimate: laid out at least once. */
 const laidOut = new WeakSet();
 const estimate = el => parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0;
+/**
+ * Whether WebKit has laid `el` out yet, in a large document: content-visibility
+ * shows a block it has not at its estimated height (contain-intrinsic-size).
+ */
+export function neverLaidOut(el) {
+  return doc.classList.contains('cv') && !laidOut.has(el) && heights.get(el) === estimate(el);
+}
 
 /**
  * Where a jump landed (N, an outline click) stays put while the blocks
@@ -320,17 +327,23 @@ function keptBlock(resized) {
 // (diagrams, math, images, content-visibility estimates becoming real). In a
 // large document WebKit lays a block out a frame after it came into view (it
 // shows at its estimated height until then): scrolling up, those blocks
-// change size on screen, above the text that was there. So every block before
-// the kept one (keptBlock) that changed size grows or shrinks upward; with
-// none on screen, those entirely above the viewport do.
+// change size on screen, above the text that was there. So every such block
+// (laid out for the first time: until now at its estimate) before the kept
+// one (keptBlock) grows or shrinks upward. Any other block keeps the rule for
+// a block changing size later (a <details> opened, an image loaded): only
+// one entirely above the viewport before it resized is made up for, so what
+// the reader opened at the top of the window grows down from where it is.
 export const resizeObserver = new ResizeObserver(entries => {
   let delta = 0;
   const inset = topInset();
   const resized = new Map();   // block -> change in height
+  const first = new Set();     // of those, the blocks laid out for the first time
+  const cv = doc.classList.contains('cv');
   for (const entry of entries) {
     const el = entry.target;
     const h = el.getBoundingClientRect().height;
     const prev = heights.get(el);
+    if (prev !== undefined && prev !== h && cv && !laidOut.has(el) && prev === estimate(el)) first.add(el);
     heights.set(el, h);
     if (prev === undefined || prev === h) continue;
     resized.set(el, h - prev);
@@ -343,8 +356,9 @@ export const resizeObserver = new ResizeObserver(entries => {
       if (Math.abs(d) >= 0.5) delta = d;
     }
     else for (const [el, d] of resized) {
-      // Before the kept block; or, with none, entirely above the viewport (or under the toolbar) before it resized.
-      if (kept ? el !== kept && (el.compareDocumentPosition(kept) & Node.DOCUMENT_POSITION_FOLLOWING)
+      // Laid out for the first time before the kept block; or entirely above
+      // the viewport (or under the toolbar) before it resized.
+      if (kept && first.has(el) ? el !== kept && (el.compareDocumentPosition(kept) & Node.DOCUMENT_POSITION_FOLLOWING)
         : el.getBoundingClientRect().bottom - d <= inset + 1) delta += d;
     }
   }

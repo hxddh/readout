@@ -1153,6 +1153,49 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.close();
 }
 
+// 35. A block at the top of the window that changes size later (a <details>
+//     the reader opens, an image loading) grows down from where it is, in a
+//     small document and in a large one: only blocks laid out for the first
+//     time (at their estimate until then) grow upward (33).
+for (const n of [60, 400]) {
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(n, i => i === 30
+    ? `<details><summary>More</summary>${'<p>folded text that the reader opens to read. '.repeat(1) + 'x</p>'.repeat(1)}${'<p>folded line</p>'.repeat(60)}</details>`
+    : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(6)}</p>`));
+  const tops = [];
+  for (const at of [2, 200]) {
+    await page.evaluate(at => { window.scrollBy(0, document.querySelector('.blk[data-slot="30"]').getBoundingClientRect().top - at); }, at);
+    await settledTop(page, '.blk[data-slot="30"] summary');
+    const before = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="30"] summary').getBoundingClientRect().top));
+    await page.evaluate(() => { document.querySelector('.blk[data-slot="30"] details').open = true; });
+    const after = await settledTop(page, '.blk[data-slot="30"] summary');
+    await page.evaluate(() => { document.querySelector('.blk[data-slot="30"] details').open = false; });
+    await settledTop(page, '.blk[data-slot="30"] summary');
+    tops.push({ at, before, after });
+  }
+  check(`a <details> opened at the top of the window stays where it is (${n} blocks)`, tops.every(t => Math.abs(t.after - t.before) <= 1), JSON.stringify(tops));
+  await page.close();
+}
+
+// 36. P1: a block never laid out (far below, skipped) that an edit makes far
+//     larger (a paragraph become a 2,000-line code block) gets the new
+//     content's estimate, so the page's height follows it; one laid out keeps
+//     its intrinsic size (30), and small edits keep theirs (perf.test).
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(600, i => `<p>para ${i}</p>`));
+  await page.waitForTimeout(300);
+  const big = `<div class="code-block" data-lang="text"><pre><code>${Array.from({ length: 2000 }, (_, i) => `line ${i}`).join('\n')}</code></pre></div>`;
+  const r = await page.evaluate(p => {
+    const el = document.querySelector('.blk[data-slot="500"]');
+    const h0 = document.scrollingElement.scrollHeight, before = el.style.containIntrinsicSize;
+    window.readout.apply(p);
+    return { before, after: el.style.containIntrinsicSize, grew: document.scrollingElement.scrollHeight - h0 };
+  }, patch(2, [{ op: 'replace', slot: 500, kind: 'code', change: 'content', html: big }]));
+  check('an edit to a block never laid out gives it the new estimate', r.before !== r.after && r.grew > 30000, JSON.stringify(r));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();

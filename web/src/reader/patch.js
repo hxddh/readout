@@ -1,6 +1,6 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused } from './core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, keepPlace, isShown, scrollToElement, forceLayout } from './anchor.js';
+import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, keepPlace, isShown, scrollToElement, forceLayout, neverLaidOut } from './anchor.js';
 import { renderMarks, applyChangesOnly, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, measureTables } from './enhance.js';
@@ -55,10 +55,14 @@ function fillBlock(el, op) {
   if (flash.length) el.classList.add(...flash);
   if (op.anchor) el.dataset.anchor = op.anchor; else delete el.dataset.anchor;
   // The estimate is only for a block never laid out: one that has been keeps
-  // its last remembered size while skipped (contain-intrinsic-size: auto),
-  // and changing the property on it makes WebKit lay out every skipped block
-  // again (5 MB, 25,000 blocks: 1-4 s per edit above the reader).
-  if (!el.style.containIntrinsicSize) el.style.containIntrinsicSize = `auto ${estimateHeight(op.kind, op.html)}px`;
+  // its last remembered size while skipped (contain-intrinsic-size: auto).
+  // Changing the property makes WebKit lay out every skipped block again
+  // (5 MB, 25,000 blocks: 1.5-4 s per edit), on a block never laid out too:
+  // its estimate is renewed only when the new content is far off it (a
+  // paragraph become a long code block), for the page's height.
+  const est = estimateHeight(op.kind, op.html);
+  const was = parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0;
+  if (!el.style.containIntrinsicSize || (Math.abs(est - was) > Math.max(1000, was) && neverLaidOut(el))) el.style.containIntrinsicSize = `auto ${est}px`;
   el.innerHTML = op.html;
   enhance(el);
   titleLinks(el);
