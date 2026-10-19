@@ -25,8 +25,8 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
      and `cli/readout --hook` on plan.md (open in a tab behind); the app
      records whether the tab being read stayed in front
   5. waits for the app to exit on its own (120 s), with its log in OUT_DIR/smoke-out.log
-  6. writes OUT_DIR/timings.json: cold start, warm open and write-to-update
-     times, from its own clock readings and the app's (timings-app.json)
+  6. writes OUT_DIR/timings.json: cold start (and its phases), warm open and
+     write-to-update times, from its own clock readings and the app's (timings-app.json)
   7. launches it again in Chinese (-AppleLanguages '(zh-Hans)', READOUT_SMOKE_PASS=zh):
      the app writes menus-zh.json and Settings/welcome shots, then quits (log: smoke-zh.log)
 
@@ -88,6 +88,25 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
         # shared runner does not decide; every sample is kept alongside.
         "warm_open_ms": None,
     }
+    # The cold start in phases (P5), each in ms since the process started
+    # (sysctl), and the two segments that are Readout's own: the reader page
+    # loading (from didFinishLaunching, where the spare page it becomes is
+    # made, to its `ready`) and the first document going in (from the later of
+    # that page being ready and the document read, to the page's apply). The
+    # rest is launch, WebKit's first start and the frame the system paints.
+    phases = app.get("launch_phases_s") or {}
+    start = phases.get("process_start")
+    if start:
+        order = ["did_finish_launching", "window_init", "page_ready", "did_load", "apply", "paint"]
+        timings["launch_phases_ms"] = {k: round((phases[k] - start) * 1000, 1) for k in order if k in phases}
+        timings["launch_phases_ms"]["spawn"] = round((clock["spawn"] - start) * 1000, 1)
+    else:
+        print(f"harness: no process start time in the app's launch phases {phases}")
+    if "did_finish_launching" in phases and "page_ready" in phases:
+        timings["cold_page_ready_ms"] = round((phases["page_ready"] - phases["did_finish_launching"]) * 1000, 1)
+    if all(k in phases for k in ("page_ready", "did_load", "apply")):
+        timings["cold_apply_ms"] = round((phases["apply"] - max(phases["page_ready"], phases["did_load"])) * 1000, 1)
+
     def for_second(table):
         found = table.get(str(second.resolve()), table.get(str(second)))
         if found is None:  # the app reports the standardized path; match by name
@@ -191,7 +210,10 @@ def main() -> int:
     git_untracked = repo / "docs" / "untracked.md"
     git_untracked.write_text("# Untracked\n\nNever committed.\n")
 
-    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
+    # Stands in for a release's DMG in the Download Update check (A3): 4 MB, so it takes a few progress steps.
+    update_file = tmp / "update.dmg"
+    update_file.write_bytes(os.urandom(4 * 1024 * 1024))
+    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out), READOUT_SMOKE_UPDATE_FILE=str(update_file),
                READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
                READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_HOOK_PLAN=str(hook_plan), READOUT_SMOKE_COLLIDE_LINK=str(collide),
@@ -220,7 +242,10 @@ def main() -> int:
 
 def locale_pass(app: Path, target: Path, out: Path) -> int:
     """The app again, in Chinese: it writes menus-zh.json and two shots, then quits."""
-    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out), READOUT_SMOKE_PASS="zh")
+    # Stands in for a release's DMG in the Download Update check (A3): 4 MB, so it takes a few progress steps.
+    update_file = tmp / "update.dmg"
+    update_file.write_bytes(os.urandom(4 * 1024 * 1024))
+    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out), READOUT_SMOKE_UPDATE_FILE=str(update_file), READOUT_SMOKE_PASS="zh")
     with open(out / "smoke-zh.log", "wb") as log:
         proc = subprocess.Popen([str(app), "-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"],
                                 env=env, stdout=log, stderr=subprocess.STDOUT)
