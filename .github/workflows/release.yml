@@ -22,7 +22,7 @@ on:
         description: "Existing tag to re-run release for (must already exist; never creates one)"
         required: true
       dry_run:
-        description: "Run preflight + verify but do not publish"
+        description: "Run preflight + verify but do not publish (any existing tag, the latest included)"
         required: false
         default: "false"
 
@@ -85,10 +85,19 @@ jobs:
       - name: Version must exceed the latest published Release
         env:
           GH_TOKEN: ${{ github.token }}
+          DRY: ${{ steps.tag.outputs.dry_run }}
         run: |
           VERSION="${{ steps.tag.outputs.version }}"
           LATEST=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "")
           echo "latest published: ${LATEST:-none}"
+          # A dry run re-runs a tag that is out already (dispatch never creates
+          # one, and pushing a new tag releases it): nothing is published, so
+          # it may be the latest or older. That is how the notarization lane is
+          # tried before its first real release (docs/RELEASING.md).
+          if [ "$DRY" = "true" ]; then
+            echo "dry run: not checked (nothing is published)"
+            exit 0
+          fi
           python3 - "$VERSION" "${LATEST#v}" <<'EOF'
           import re, sys
           def parts(v):
@@ -193,7 +202,7 @@ jobs:
       TAG: v${{ needs.preflight.outputs.version }}
       VERSION: ${{ needs.preflight.outputs.version }}
       EXPECTED_SHA: ${{ needs.verify.outputs.sha256 }}
-      # Set only when verify notarized the DMG (then it is in the artifact).
+      # The disk image verify built, checked (and notarized, when it did).
       EXPECTED_DMG_SHA: ${{ needs.verify.outputs.dmg_sha256 }}
     steps:
       - uses: actions/checkout@v5
@@ -215,25 +224,17 @@ jobs:
           echo "downloaded:  $GOT"
           [ "$GOT" = "$EXPECTED_SHA" ] || { echo "FAIL: artifact changed after verify"; exit 1; }
 
-      - name: Unpack, build DMG, write SHA256SUMS
+      - name: The DMG must match verify's output, write SHA256SUMS
         run: |
-          if [ -f "dist/Readout-$VERSION.dmg" ]; then
-            # Notarized and stapled in verify: ship that disk image as tested.
-            GOT=$(shasum -a 256 "dist/Readout-$VERSION.dmg" | cut -d' ' -f1)
-            echo "verify said: $EXPECTED_DMG_SHA"
-            echo "downloaded:  $GOT"
-            [ -n "$EXPECTED_DMG_SHA" ] && [ "$GOT" = "$EXPECTED_DMG_SHA" ] || { echo "FAIL: DMG changed after verify"; exit 1; }
-            cd dist
-            mv "readout-app-$VERSION.zip" "Readout-$VERSION.zip"
-          else
-            rm -rf dist/Readout.app
-            ditto -x -k dist/readout-app-"$VERSION".zip dist/
-            cd dist
-            mv "readout-app-$VERSION.zip" "Readout-$VERSION.zip"
-            mkdir dmg && cp -R Readout.app dmg/ && ln -s /Applications dmg/Applications
-            hdiutil create -volname "Readout" -srcfolder dmg -ov -format UDZO "Readout-$VERSION.dmg"
-            rm -rf dmg
-          fi
+          # Built (and notarized, when it notarized) and checked in verify: ship
+          # that disk image as tested. Rebuilding it here is forbidden.
+          [ -f "dist/Readout-$VERSION.dmg" ] || { echo "FAIL: verify's artifact has no Readout-$VERSION.dmg"; exit 1; }
+          GOT=$(shasum -a 256 "dist/Readout-$VERSION.dmg" | cut -d' ' -f1)
+          echo "verify said: $EXPECTED_DMG_SHA"
+          echo "downloaded:  $GOT"
+          [ -n "$EXPECTED_DMG_SHA" ] && [ "$GOT" = "$EXPECTED_DMG_SHA" ] || { echo "FAIL: DMG changed after verify"; exit 1; }
+          cd dist
+          mv "readout-app-$VERSION.zip" "Readout-$VERSION.zip"
           shasum -a 256 "Readout-$VERSION.dmg" "Readout-$VERSION.zip" > SHA256SUMS
           cat SHA256SUMS
 

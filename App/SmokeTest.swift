@@ -1,4 +1,5 @@
 import AppKit
+import CoreServices
 import SwiftUI
 import WebKit
 import ReadoutCore
@@ -84,10 +85,34 @@ enum SmokeTest {
         landed.append(["index": index, "total": total, "kind": kind])
     }
 
+    /// When each phase of the launch first happened (wall clock, seconds):
+    /// did_finish_launching, then for the first window window_init, page_ready,
+    /// did_load, apply and paint. tools/smoke-run.py splits cold_start_ms with them.
+    private static var launchPhases: [String: Double] = [:]
+    static func noteLaunchPhase(_ name: String) {
+        guard outputDirectory != nil, launchPhases[name] == nil else { return }
+        launchPhases[name] = Date().timeIntervalSince1970
+    }
+
+    /// When the kernel started this process (wall clock, seconds), from sysctl:
+    /// what comes before the app's first line of code (launch, the code
+    /// signature's first assessment) is part of a cold start too.
+    private static var processStart: Double? {
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+        guard sysctl(&mib, u_int(mib.count), &info, &size, nil, 0) == 0, size > 0 else { return nil }
+        let start = info.kp_proc.p_un.__p_starttime
+        return Double(start.tv_sec) + Double(start.tv_usec) / 1_000_000
+    }
+
     /// Timings for tools/smoke-run.py, which adds its own clock readings.
     private static func writeTimings(_ dir: URL) {
+        var phases = launchPhases
+        if let start = processStart { phases["process_start"] = start }
         let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint,
-                                   "first_paint_samples_s": firstPaintSamples, "first_apply_samples_s": firstApplySamples]
+                                   "first_paint_samples_s": firstPaintSamples, "first_apply_samples_s": firstApplySamples,
+                                   "launch_phases_s": phases]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: dir.appendingPathComponent("timings-app.json"))
         }
@@ -177,7 +202,8 @@ enum SmokeTest {
                         try? await Task.sleep(for: .milliseconds(50))
                     }
                     app?.reader(for: secondURL)?.window?.close()
-                    // The pool makes its next spare page a second after one is taken.
+                    // The pool makes its next spare page once the page taken has
+                    // painted (above), or 3 s after it was taken: ready by now.
                     try? await Task.sleep(for: .seconds(2))
                 }
             }
@@ -263,6 +289,7 @@ enum SmokeTest {
             restoration(controller: controller, out: out)
             await restoredTabs(out: out)
             await crossDocument(controller: controller, out: out)
+            await updateDownload(out: out)
             writeTimings(out)
             NSApp.terminate(nil)
         }
@@ -419,9 +446,97 @@ enum SmokeTest {
             }
             json["rows"] = rows
             json["scale"] = Double(scale)
+            // A/B (A1): the same window at the same scroll position with the
+            // private fill flag off. Identical pixels mean the flag has no
+            // visible effect here (the owner checks a key window on a Mac).
+            if has("_setUsesAutomaticContentInsetBackgroundFill:") {
+                webView.setValue(false, forKey: "usesAutomaticContentInsetBackgroundFill")
+                try? await Task.sleep(for: .seconds(1.2))
+                windowShot(window, out, "scroll-edge-dark-off")
+                var ab: [String: Any] = [:]
+                if has("_usesAutomaticContentInsetBackgroundFill") {
+                    ab["automatic_fill_off"] = (webView.value(forKey: "_usesAutomaticContentInsetBackgroundFill") as? NSNumber)?.boolValue ?? NSNull()
+                }
+                let y0 = Int(((edge - 20) * scale).rounded()), y1 = Int(((edge + 12) * scale).rounded())
+                let on = out.appendingPathComponent("scroll-edge-dark.png"), off = out.appendingPathComponent("scroll-edge-dark-off.png")
+                ab["window"] = pixelDifference(on, off)
+                ab["band"] = pixelDifference(on, off, x: max(0, x0)..<max(max(0, x0), x1), y: max(0, y0)..<max(max(0, y0), y1))
+                if let w = ab["window"] as? [String: Any] { ab["identical"] = (w["differing_pixels"] as? Int) == 0 }
+                webView.setValue(true, forKey: "usesAutomaticContentInsetBackgroundFill")
+                try? await Task.sleep(for: .seconds(0.5))
+                if has("_usesAutomaticContentInsetBackgroundFill") {
+                    ab["automatic_fill_restored"] = (webView.value(forKey: "_usesAutomaticContentInsetBackgroundFill") as? NSNumber)?.boolValue ?? NSNull()
+                }
+                json["ab"] = ab
+            }
         }
         write(json, to: out, "scroll-edge.json")
         _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
+    }
+
+    /// Download Update (A3), from a local file standing in for the release's
+    /// DMG, into a folder of the smoke output: a second request while it runs
+    /// is ignored, and its progress is published on the file it becomes.
+    private static func updateDownload(out: URL) async {
+        guard let source = ProcessInfo.processInfo.environment["READOUT_SMOKE_UPDATE_FILE"].map({ URL(fileURLWithPath: $0) }) else { return }
+        let dir = out.appendingPathComponent("update-download", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        final class Box { var done = false; var saved: URL? }
+        let box = Box()
+        let first = UpdateChecker.download(from: source, name: "Readout-99.0.0.dmg", fallback: nil, directory: dir) { saved in
+            box.saved = saved
+            box.done = true
+        }
+        let duringFiles = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
+        let second = UpdateChecker.download(from: source, name: "Readout-99.0.0.dmg", fallback: nil, directory: dir) { _ in }
+        let deadline = Date().addingTimeInterval(20)
+        while !box.done && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+        let firstDownload = UpdateChecker.lastDownload
+        // A third once it finished starts again (and is let finish).
+        let after = UpdateChecker.download(from: source, name: "Readout-99.0.0.dmg", fallback: nil, directory: dir) { _ in }
+        try? await Task.sleep(for: .seconds(2))
+        let files = ((try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []).sorted()
+        let size = { (u: URL?) -> Int in (u.flatMap { try? FileManager.default.attributesOfItem(atPath: $0.path)[.size] as? Int }) ?? -1 }
+        var json: [String: Any] = ["first_started": first, "second_started": second, "started_after_finish": after,
+                                   "finished": box.done, "files_while_running": duringFiles.sorted(), "files": files,
+                                   "saved": box.saved?.lastPathComponent ?? NSNull(),
+                                   "saved_bytes": size(box.saved), "source_bytes": size(source)]
+        json["last"] = firstDownload
+        if let saved = box.saved {
+            let q = (try? (saved as NSURL).resourceValues(forKeys: [.quarantinePropertiesKey]))?[.quarantinePropertiesKey] as? [String: Any]
+            json["quarantine_agent"] = q?[kLSQuarantineAgentNameKey as String] as? String ?? NSNull()
+        }
+        write(json, to: out, "update-download.json")
+        try? FileManager.default.removeItem(at: dir)
+    }
+
+    /// How two PNG shots differ, over the whole image or within `x`/`y`
+    /// (pixels): how many pixels differ in any channel, and the largest
+    /// difference of one channel (0-255).
+    private static func pixelDifference(_ a: URL, _ b: URL, x: Range<Int>? = nil, y: Range<Int>? = nil) -> [String: Any] {
+        guard let ra = (try? Data(contentsOf: a)).flatMap(NSBitmapImageRep.init(data:)),
+              let rb = (try? Data(contentsOf: b)).flatMap(NSBitmapImageRep.init(data:)) else { return ["error": "unreadable"] }
+        guard ra.pixelsWide == rb.pixelsWide, ra.pixelsHigh == rb.pixelsHigh, ra.bitsPerPixel == rb.bitsPerPixel,
+              ra.bytesPerRow == rb.bytesPerRow, ra.bitsPerSample == 8, !ra.isPlanar, !rb.isPlanar,
+              let pa = ra.bitmapData, let pb = rb.bitmapData else {
+            return ["error": "different formats", "a": "\(ra.pixelsWide)x\(ra.pixelsHigh)", "b": "\(rb.pixelsWide)x\(rb.pixelsHigh)"]
+        }
+        let bytes = ra.bitsPerPixel / 8
+        let xs = (x ?? 0..<ra.pixelsWide).clamped(to: 0..<ra.pixelsWide), ys = (y ?? 0..<ra.pixelsHigh).clamped(to: 0..<ra.pixelsHigh)
+        var differing = 0, maxDelta = 0
+        for row in ys {
+            let base = row * ra.bytesPerRow
+            for col in xs {
+                var differs = false
+                for c in 0..<bytes {
+                    let i = base + col * bytes + c
+                    let d = abs(Int(pa[i]) - Int(pb[i]))
+                    if d > 0 { differs = true; maxDelta = max(maxDelta, d) }
+                }
+                if differs { differing += 1 }
+            }
+        }
+        return ["pixels": xs.count * ys.count, "differing_pixels": differing, "max_channel_delta": maxDelta]
     }
 
     /// Next Change from the menu: focus lands on the change it went to, and

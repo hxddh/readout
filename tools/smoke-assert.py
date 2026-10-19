@@ -383,6 +383,14 @@ check("scroll edge: the top scroll pocket has the automatic style, no capture co
 band = [r for r in edge.get("rows") or [] if -8 <= r.get("rel", 99) <= -1]
 flat = bool(band) and all(r["sd"] < 0.5 for r in band) and max(r["mean"] for r in band) - min(r["mean"] for r in band) < 1
 print(f"scroll edge band (key window: {edge.get('window_key')}): {'flat (hard)' if flat else 'not flat (soft)'} {band}")
+# A/B (A1): a second shot at the same scroll position with the fill flag off.
+# Whether the pixels differ is reported, not asserted (the runner's window is
+# never key); that the comparison ran, with the flag off and back on, is.
+ab = edge.get("ab") or {}
+print(f"scroll edge A/B (flag on vs off): identical={ab.get('identical')} window={ab.get('window')} band={ab.get('band')}")
+check("scroll edge A/B: shot with the fill flag off and compared, the flag on again",
+      isinstance(ab.get("identical"), bool) and ab.get("automatic_fill_off") is False and ab.get("automatic_fill_restored") is True
+      and isinstance((ab.get("band") or {}).get("differing_pixels"), int), ab)
 
 landed = load("landed.json")
 print(f"landed: {landed}")
@@ -541,12 +549,44 @@ if m:
     check("quicklook rendered == 36 blocks", m.group(2) == "36" and m.group(3) == "36", m.group(0))
 # The preview is asked for, then applied: both logged (ql_open_ms comes from the second).
 check("quicklook logs the request", "preview requested" in qrt, qrt[-500:])
+# P9: the web view is made before the document is parsed, and its page's
+# ready is logged (ql_page_ready_ms), both before the apply.
+iv, ip, ia = qrt.find("preview view created"), qrt.find("preview page ready"), qrt.find("preview applied")
+check("quicklook creates its web view first and logs its page ready before the apply",
+      0 <= iv < ip and (ia < 0 or ip < ia), qrt[-800:])
+check("quicklook page-ready time reported", isinstance(load("ql-timings.json").get("ql_page_ready_ms"), int))
 
 tm = load("timings.json")
 # Readout's own share of a warm open is part of it, and measured for every open.
 check("warm open: Readout's share is measured and within the whole open",
       isinstance(tm.get("warm_open_to_applied_ms"), (int, float)) and isinstance(tm.get("warm_open_ms"), (int, float))
       and tm["warm_open_to_applied_ms"] <= tm["warm_open_ms"], tm)
+
+# A3: Download Update ignores a second request while one runs, puts the file
+# where its progress shows from the start, publishes that progress and
+# completes it, and quarantines the file as a browser download.
+ud = load("update-download.json")
+last = ud.get("last") or {}
+print(f"update download: {ud}")
+check("update download: a second request while one runs is ignored",
+      ud.get("first_started") is True and ud.get("second_started") is False and ud.get("started_after_finish") is True, ud)
+check("update download: the whole file, quarantined, where its progress was shown",
+      ud.get("finished") is True and ud.get("saved") == "Readout-99.0.0.dmg" and ud.get("saved_bytes") == ud.get("source_bytes") > 0
+      and "Readout-99.0.0.dmg" in (ud.get("files_while_running") or []) and ud.get("quarantine_agent") == "Readout", ud)
+check("update download: progress published on the file and completed",
+      last.get("progress_file") == "Readout-99.0.0.dmg" and last.get("progress_published") is True
+      and isinstance(last.get("progress_total"), int) and last["progress_total"] > 0 and last.get("progress_completed") == last["progress_total"], last)
+
+# P5: the cold start in phases, in the order they happen, from the process
+# start (sysctl); Readout's own two segments measured.
+lp = tm.get("launch_phases_ms") or {}
+order = ["did_finish_launching", "window_init", "page_ready", "apply", "paint"]
+print(f"launch phases (ms since process start): {lp}; cold_page_ready_ms {tm.get('cold_page_ready_ms')}, cold_apply_ms {tm.get('cold_apply_ms')}")
+check("cold start: every launch phase measured, in order",
+      all(isinstance(lp.get(k), (int, float)) for k in order + ["did_load"])
+      and all(0 <= lp[a] <= lp[b] for a, b in zip(order, order[1:])) and lp["did_load"] <= lp["apply"], lp)
+check("cold start: Readout's segments measured",
+      all(isinstance(tm.get(k), (int, float)) for k in ("cold_page_ready_ms", "cold_apply_ms", "cold_window_to_load_ms")), tm)
 
 print(f"{len(failures)} failing assertion(s)")
 sys.exit(1 if failures else 0)
