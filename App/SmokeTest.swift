@@ -725,6 +725,11 @@ enum SmokeTest {
         reader.markAllRead(nil)
         try? await Task.sleep(for: .milliseconds(500))
         json["unread_read"] = reader.model.unread
+        // A reader chooses these from the menu, one event each, so each is an
+        // undo group of its own; called here without an event in between,
+        // they can share one, and Undo would take back Mark All as Read too
+        // (the commit's marks again). Only the comparison is to be undone.
+        reader.window?.undoManager?.removeAllActions()
         compared = []
         let before = appliedCount
         let subtitle = reader.window?.subtitle ?? ""
@@ -747,6 +752,7 @@ enum SmokeTest {
             json["unread_undone"] = reader.model.unread
             json["marks_undone"] = (try? await web.evaluateJavaScript(marks)) as? Int ?? -1
             json["notice_undone"] = (try? await web.evaluateJavaScript(notice)) as? String ?? "?"
+            json["redo_title"] = undo?.redoMenuItemTitle ?? ""
         }
         return json
     }

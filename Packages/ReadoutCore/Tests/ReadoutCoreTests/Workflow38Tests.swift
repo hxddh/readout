@@ -211,3 +211,4 @@ import Testing
         #expect(!LaunchWelcome.shows(openedAtLaunch: false, windowsOpen: true, loginItem: false))
     }
 }
+
