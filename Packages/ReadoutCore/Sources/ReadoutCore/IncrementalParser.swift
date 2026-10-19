@@ -48,6 +48,7 @@ public final class IncrementalParser: @unchecked Sendable {
         var lineStarts: [Int]
         var frontMatterEnd: Int?
         /// The last line with `]:` or `[^` (link or footnote definitions and references), -1 for none.
+        /// Only splicing a document that defines footnotes stops at it.
         var lastSpecial: Int
         var ids: Set<String>
         // Per fragment, in order:
@@ -227,8 +228,9 @@ public final class IncrementalParser: @unchecked Sendable {
     /// (moved by the lines added or removed) when no heading changed.
     ///
     /// Nil when the change is one splicing does not cover: in the first
-    /// fragment or the front matter, link or footnote definitions or
-    /// references at or after it, a CJK emphasis marker character in it
+    /// fragment or the front matter, a link or footnote definition made in
+    /// it, footnote definitions or references at or after it in a document
+    /// that defines footnotes, a CJK emphasis marker character in it
     /// (`CJKEmphasis`: such a block keeps what is in it, decided per block),
     /// or the document's CJK reading flipping (it touches every block). The
     /// caller then parses as before, from nothing kept here.
@@ -273,7 +275,14 @@ public final class IncrementalParser: @unchecked Sendable {
         let r = st.starts[k] < changed ? k : k - 1
         guard r >= 1 else { return nil }
         let S = st.starts[r]
-        guard st.lastSpecial < S, st.frontMatterEnd.map({ $0 < S }) ?? true else { return nil }
+        guard st.frontMatterEnd.map({ $0 < S }) ?? true else { return nil }
+        // With footnotes defined, their numbers follow the order of the
+        // references: a change before one may renumber it. Without any, `[^`
+        // and `]:` after the change are text (a document defining links is
+        // parsed in full, never spliced): only a definition the change itself
+        // makes (looked for below) matters.
+        let footnotesDefined = !st.ids.isEmpty
+        if footnotesDefined { guard st.lastSpecial < S else { return nil } }
         // The old lines replaced, before they go.
         let removedMarker = CJKEmphasis.containsMarker(st.lines[changed..<oldSuffixFrom])
         // The new lines: the old ones before the change, the window split, the old suffix.
@@ -285,7 +294,7 @@ public final class IncrementalParser: @unchecked Sendable {
         let delta = lineCount - oldCount
         let suffixStart = lineCount - suffixCount
         guard MarkdownParser.frontMatterEnd(st.lines) == st.frontMatterEnd else { return nil }
-        guard Self.lastSpecial(st.lines, from: S, to: suffixStart) == nil else { return nil }
+        if footnotesDefined { guard Self.lastSpecial(st.lines, from: S, to: suffixStart) == nil else { return nil } }
         // Fragment from S until back on an old boundary in the suffix with the same fence state.
         var trackers: [FenceTracker] = []
         var resync: Int? = nil
@@ -301,6 +310,10 @@ public final class IncrementalParser: @unchecked Sendable {
         let fragmentCount = st.starts.count
         let oldEnd = resync ?? fragmentCount   // old fragments r..<oldEnd are replaced
         let windowEndLine = resync.map { st.starts[$0] + delta } ?? lineCount
+        // No definition from the change to where fragmenting is back in step,
+        // with the fences as they are now (a fence opened or closed by the
+        // change can turn a `[x]:` line that was code into one).
+        if !footnotesDefined && Self.defines(st.lines[S..<windowEndLine], fences: st.trackers[r]) { return nil }
         // A marker character where the emphasis policy decides per block: as before.
         if removedMarker || CJKEmphasis.containsMarker(st.lines[S..<windowEndLine]) { return nil }
         // Keys and parses of the window's fragments.
@@ -508,6 +521,20 @@ public final class IncrementalParser: @unchecked Sendable {
     static func needsFullParse(_ lines: [String]) -> Bool {
         var fences = FenceTracker()
         for line in lines.dropFirst(MarkdownParser.frontMatterEnd(lines).map { $0 + 1 } ?? 0) {
+            if fences.consume(line) { continue }
+            if FastBytes.contains(line, 0x5D, 0x3A) {   // "]:"
+                let ns = line as NSString
+                if documentWide.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) != nil { return true }
+            }
+        }
+        return false
+    }
+
+    /// Whether `lines`, read from `fences` on, define a link reference or a
+    /// footnote outside code and raw HTML.
+    static func defines(_ lines: ArraySlice<String>, fences start: FenceTracker) -> Bool {
+        var fences = start
+        for line in lines {
             if fences.consume(line) { continue }
             if FastBytes.contains(line, 0x5D, 0x3A) {   // "]:"
                 let ns = line as NSString
