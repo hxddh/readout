@@ -187,14 +187,16 @@ enum UpdateChecker {
         request.setValue("Readout/\(currentVersion)", forHTTPHeaderField: "User-Agent")
         let name = (name as NSString).lastPathComponent
         // The file it becomes, there from the start, so the progress has a file to show on.
-        let target = try? reserveDownload(name: name, in: directory)
+        let reserved = try? reserveDownload(name: name, in: directory)
+        let target = reserved?.url
         let task = URLSession.shared.downloadTask(with: request) { temp, response, error in
             // The temporary file is removed once this returns: move it now.
             // A file: URL (the smoke test) answers without HTTP.
             var saved: URL?
             let ok = (response as? HTTPURLResponse)?.statusCode == 200 || (response != nil && source.isFileURL)
-            if let temp, ok { saved = try? keepDownload(temp, at: target, name: name, in: directory, from: source) }
-            if saved == nil, let target { try? FileManager.default.removeItem(at: target) }
+            if let temp, ok { saved = try? keepDownload(temp, at: reserved, name: name, in: directory, from: source) }
+            // Only the empty file reserved: never one that took its name since.
+            if saved == nil, let reserved, isStill(reserved) { try? FileManager.default.removeItem(at: reserved.url) }
             // Cancelled from its progress (Finder, the Dock): nothing else happens.
             let cancelled = (error as? URLError)?.code == .cancelled
             DispatchQueue.main.async {
@@ -254,28 +256,67 @@ enum UpdateChecker {
         lastDownload["saved"] = saved?.lastPathComponent ?? NSNull()
     }
 
-    /// An empty file in ~/Downloads under `name` ("Readout-3.7.0 2.dmg" when
-    /// that is taken): where the download goes, with its progress on it meanwhile.
-    nonisolated private static func reserveDownload(name: String, in directory: URL?) throws -> URL {
-        let fm = FileManager.default
-        let downloads = try directory ?? fm.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+    /// The empty file a download reserved, and which file it is (device and
+    /// inode): the user may delete it meanwhile and another file take its name.
+    private struct Reserved: Sendable {
+        let url: URL
+        let device: Int64
+        let inode: UInt64
+    }
+
+    /// The file at `path` itself (not a link's target): device and inode, and its size.
+    nonisolated private static func identity(_ path: String) -> (device: Int64, inode: UInt64, size: Int64)? {
+        var st = stat()
+        guard lstat(path, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }
+        return (Int64(st.st_dev), UInt64(st.st_ino), Int64(st.st_size))
+    }
+
+    /// Whether the reserved name is still the empty file reserved.
+    nonisolated private static func isStill(_ r: Reserved) -> Bool {
+        guard let now = identity(r.url.path) else { return false }
+        return now.device == r.device && now.inode == r.inode && now.size == 0
+    }
+
+    /// `name` in `folder` ("Readout-3.7.0 2.dmg" when that is taken).
+    nonisolated private static func freeName(_ name: String, in folder: URL) -> URL {
         let stem = (name as NSString).deletingPathExtension, ext = (name as NSString).pathExtension
-        var target = downloads.appendingPathComponent(name)
+        var target = folder.appendingPathComponent(name)
         var n = 2
-        while fm.fileExists(atPath: target.path) {
-            target = downloads.appendingPathComponent("\(stem) \(n)" + (ext.isEmpty ? "" : ".\(ext)"))
+        while FileManager.default.fileExists(atPath: target.path) || identity(target.path) != nil {
+            target = folder.appendingPathComponent("\(stem) \(n)" + (ext.isEmpty ? "" : ".\(ext)"))
             n += 1
         }
-        guard fm.createFile(atPath: target.path, contents: nil) else { throw CocoaError(.fileWriteUnknown) }
         return target
+    }
+
+    nonisolated private static func downloadsFolder(_ directory: URL?) throws -> URL {
+        try directory ?? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+    }
+
+    /// An empty file in ~/Downloads under `name` (a free variant when that is
+    /// taken): where the download goes, with its progress on it meanwhile.
+    nonisolated private static func reserveDownload(name: String, in directory: URL?) throws -> Reserved {
+        let target = freeName(name, in: try downloadsFolder(directory))
+        guard FileManager.default.createFile(atPath: target.path, contents: nil),
+              let id = identity(target.path) else { throw CocoaError(.fileWriteUnknown) }
+        return Reserved(url: target, device: id.device, inode: id.inode)
     }
 
     /// Moves a finished download onto the file reserved for it (into
     /// Downloads under `name` when there is none) and marks it as downloaded from `source`.
-    nonisolated private static func keepDownload(_ temp: URL, at reserved: URL?, name: String, in directory: URL?, from source: URL) throws -> URL {
+    /// When the name no longer holds the empty file reserved (the user deleted
+    /// it and another file took the name), that file is left alone and the
+    /// download goes to a free name beside it.
+    nonisolated private static func keepDownload(_ temp: URL, at reserved: Reserved?, name: String, in directory: URL?, from source: URL) throws -> URL {
         let fm = FileManager.default
-        let target = try reserved ?? reserveDownload(name: name, in: directory)
-        try? fm.removeItem(at: target)
+        let target: URL
+        if let reserved, isStill(reserved) {
+            target = reserved.url
+            try fm.removeItem(at: target)
+        } else {
+            target = freeName(name, in: try reserved.map { $0.url.deletingLastPathComponent() } ?? downloadsFolder(directory))
+        }
+        // moveItem never replaces: a file that appeared at `target` meanwhile makes it fail.
         try fm.moveItem(at: temp, to: target)
         let quarantine: [String: Any] = [kLSQuarantineAgentNameKey as String: "Readout",
                                          kLSQuarantineTypeKey as String: kLSQuarantineTypeWebDownload as String,
