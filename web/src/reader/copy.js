@@ -132,6 +132,22 @@ function coversAll(r, el) {
 // ------------------------------------------------------------ The text
 
 /**
+ * `r` cut to the document when it reaches outside it (Edit ▸ Select All
+ * selects the whole page: the toolbar, the notices); null when it holds
+ * nothing of the document.
+ */
+export function inDocument(r) {
+  const c = r.commonAncestorContainer;
+  if (c === doc || doc.contains(c) || !c.contains(doc)) return r;
+  const out = r.cloneRange();
+  const whole = document.createRange();
+  whole.selectNodeContents(doc);
+  if (out.compareBoundaryPoints(Range.START_TO_START, whole) < 0) out.setStart(doc, 0);
+  if (out.compareBoundaryPoints(Range.END_TO_END, whole) > 0) out.setEnd(doc, doc.childNodes.length);
+  return out.collapsed ? null : out;
+}
+
+/**
  * The Markdown for a selection range; null when the page leaves the copy to
  * the browser (a selection inside an open comparison or removed-text panel).
  */
@@ -157,11 +173,18 @@ export function markdownOf(r) {
     const whole = (b !== blocks[0] && b !== lastBlock) || coversAll(r, b);
     const text = whole ? (sources.get(b) ?? convertBlock(b, b)) : partial(r, b, false);
     if (text === '') continue;
-    if (prev) out += (sources.has(b) ? tight.has(b) && prev.nextElementSibling === b : tightAfter(prev, b)) ? '\n' : '\n\n';
+    if (prev) out += (sources.has(b) ? tight.has(b) && previousBlock(b) === prev : tightAfter(prev, b)) ? '\n' : '\n\n';
     out += text;
     prev = b;
   }
   return withDefinitions(out);
+}
+
+/** The block before `b` (a removed-text marker between them is not one). */
+function previousBlock(b) {
+  let e = b.previousElementSibling;
+  while (e && !e.classList.contains('blk')) e = e.previousElementSibling;
+  return e;
 }
 
 /** Items of one tight list follow each other on the next line; everything else after a blank line. */
@@ -350,7 +373,8 @@ function unmark(s) {
 }
 
 function escapeText(t) {
-  return t.replace(/[\\`*]/g, '\\$&').replace(/(^|[^\p{L}\p{N}])_|_(?=$|[^\p{L}\p{N}])/gu, m => m.replace('_', '\\_'));
+  // `<` that could open a tag or an autolink, `&` that could be an entity: as text.
+  return t.replace(/[\\`*]/g, '\\$&').replace(/<(?=[A-Za-z\/!?])/g, '\\<').replace(/&(?=#?\w+;)/g, '\\&').replace(/(^|[^\p{L}\p{N}])_|_(?=$|[^\p{L}\p{N}])/gu, m => m.replace('_', '\\_'));
 }
 
 function wrap(mark, inner) {
@@ -413,18 +437,24 @@ function inl(n) {
 // ------------------------------------------------------------ Rich text
 
 /**
- * The selection as clean HTML: the page's blocks without its controls,
+ * The range as clean HTML: the page's blocks without its controls,
  * panels, marks and state; math as its TeX; task boxes as [ ] and [x];
- * alerts as quotes with their title; highlighted code in its light colours.
+ * alerts as quotes with their title; diagrams as their source; highlighted
+ * code in its light colours. Safe to paste (`safeHTML`).
  */
-export function htmlOf(sel) {
+export function htmlOf(range) {
   const box = document.createElement('div');
-  for (let i = 0; i < sel.rangeCount; i++) box.appendChild(sel.getRangeAt(i).cloneContents());
-  let within = sel.getRangeAt(0).commonAncestorContainer;
+  box.appendChild(range.cloneContents());
+  let within = range.commonAncestorContainer;
   if (within.nodeType !== Node.ELEMENT_NODE) within = within.parentElement;
   const math = within && within.closest('.math, .math-block, .math-display');
   if (math) box.replaceChildren(math.cloneNode(true));
-  box.querySelectorAll('.wd-panel, .del-pop, .del-mark, button, .cb-tools, .mermaid-src').forEach(e => e.remove());
+  box.querySelectorAll('.wd-panel, .del-pop, .del-mark, button, .cb-tools').forEach(e => e.remove());
+  for (const m of box.querySelectorAll('.mermaid-block')) {
+    const pre = document.createElement('pre');
+    pre.appendChild(document.createElement('code')).textContent = m.querySelector('.mermaid-src')?.textContent ?? '';
+    m.replaceWith(pre);
+  }
   for (const m of box.querySelectorAll('.math, .math-block, .math-display')) {
     if (!box.contains(m)) continue;
     m.replaceWith(texOf(m, true));
@@ -457,8 +487,40 @@ export function htmlOf(sel) {
   }
   for (const b of box.querySelectorAll('.blk')) b.replaceWith(...b.childNodes);
   box.querySelectorAll('[tabindex]').forEach(e => e.removeAttribute('tabindex'));
-  // The page's classes mean nothing where it is pasted. (On macOS WebKit
-  // still writes the HTML with its own default inline styles: smoke run.)
-  box.querySelectorAll('[class]').forEach(e => e.removeAttribute('class'));
+  safeHTML(box);
   return box.innerHTML;
+}
+
+// Pasted HTML runs nowhere and loads nothing: no scripts, embeds or media,
+// no attribute but a few that carry content, links only to the web, mail
+// or a place in the text. (On macOS WebKit writes it to the pasteboard with
+// its own default inline styles added: smoke run.)
+const DROP = 'script, style, link, meta, base, iframe, frame, object, embed, svg, math, video, audio, source, track, canvas, form, input, textarea, select, button, template, noscript';
+const KEEP_ATTRS = new Set(['href', 'colspan', 'rowspan', 'start', 'style']);
+const KEEP_STYLES = ['color', 'background-color', 'text-align'];
+const safeHref = h => { const t = h.replace(/[\u0000-\u0020\u007f]+/g, ''); return /^(?:https?:|mailto:|#)/i.test(t) ? h : null; };
+
+/** Makes `box`'s content safe to paste, in place. */
+function safeHTML(box) {
+  box.querySelectorAll(DROP).forEach(e => e.remove());
+  for (const p of box.querySelectorAll('picture')) p.replaceWith(...p.childNodes);
+  // An image: a link to it on the web, else its description.
+  for (const img of box.querySelectorAll('img')) {
+    const src = img.getAttribute('src') || '', alt = img.getAttribute('alt') || '';
+    if (/^https?:/i.test(src.trim())) {
+      const a = document.createElement('a');
+      a.setAttribute('href', src.trim());
+      a.textContent = alt || src.trim();
+      img.replaceWith(a);
+    } else img.replaceWith(alt);
+  }
+  for (const e of box.querySelectorAll('*')) {
+    for (const { name } of [...e.attributes]) if (!KEEP_ATTRS.has(name)) e.removeAttribute(name);
+    if (e.hasAttribute('href') && (e.tagName !== 'A' || safeHref(e.getAttribute('href')) == null)) e.removeAttribute('href');
+    if (e.hasAttribute('style')) {
+      const kept = KEEP_STYLES.map(p => [p, e.style.getPropertyValue(p)]).filter(([, v]) => v && !/url\(|expression/i.test(v));
+      if (kept.length) e.setAttribute('style', kept.map(([p, v]) => `${p}:${v}`).join(';'));
+      else e.removeAttribute('style');
+    }
+  }
 }

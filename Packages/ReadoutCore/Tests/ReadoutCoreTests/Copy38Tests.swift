@@ -65,6 +65,8 @@ import Testing
         #expect(p1.ops.map(\.op) == [.replace, .replace])
         #expect(p1.ops.allSatisfy { $0.change == .silent })
         #expect(p1.ops.map(\.src) == ["* a", "* b"])
+        // Without HTML: the page keeps the blocks as they are and updates their source.
+        #expect(p1.ops.allSatisfy { $0.html == nil })
         #expect(s.marks.isEmpty)
         // The blank line before the list goes: its first item is now tight.
         let p2 = try #require(s.update(MarkdownParser.parse("Intro.\n* a\n* b\n")))
@@ -137,5 +139,18 @@ import Testing
         // (Written with \n: an editor would strip the hard break's two spaces from a literal.)
         #expect(quote == "> ---\n> status: draft\n> ---\n>\n> Line one,  \n> line two with [the spec][spec].\n>\n"
                 + "> [spec]: https://example.com/spec\n— p.md#L1-L8")
+    }
+
+    // MARK: Safe links (review)
+
+    @Test func markdownLinksThatRunCodeAreBlocked() {
+        let html = MarkdownParser.parse("""
+            [a](javascript:alert(1)) [b](JavaScript:alert(2)) [c](vbscript:x) [d](data:text/html,x) <javascript:alert(3)>
+            [ok](https://example.com) [mail](mailto:a@b.c) [here](#top) [file](./other.md) [colon](notes:1)
+            """).blocks[0].html
+        for bad in ["javascript:", "JavaScript:", "vbscript:", "data:text"] { #expect(!html.contains("href=\"\(bad)"), "\(bad) in \(html)") }
+        #expect(html.components(separatedBy: "href=\"blocked:").count - 1 == 5)
+        for ok in ["https://example.com", "mailto:a@b.c", "#top", "./other.md", "notes:1"] { #expect(html.contains("href=\"\(ok)\""), "\(ok)") }
+        #expect(HTML.safeLink(" java\tscript:x") == "blocked:x")
     }
 }

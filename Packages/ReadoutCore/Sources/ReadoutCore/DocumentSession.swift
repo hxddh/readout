@@ -366,10 +366,14 @@ public final class DocumentSession {
                 let wasTight = Self.adjacent(old, o, before: before, in: blocks)
                 if ob.taskState != b.taskState {
                     ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .state, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
-                } else if ob.html != b.html || ob.cjk != b.cjk || ob.rawSource != b.rawSource || ob.source != b.source || wasTight != tight {
-                    // A source that changed but renders the same (`*` for `-`, a
-                    // blank line before it) still reaches the page's copy.
+                } else if ob.html != b.html || ob.cjk != b.cjk {
                     ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .silent, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
+                } else if ob.rawSource != b.rawSource || ob.source != b.source || wasTight != tight {
+                    // A source that changed but renders the same (`*` for `-`, a
+                    // blank line before it) still reaches the page's copy: without
+                    // HTML, so the page keeps the block as it is (an open
+                    // <details>, a diagram drawn, the selection).
+                    ops.append(.init(op: .replace, slot: b.slot, html: nil, change: .silent, kind: b.kind, src: b.copySource, tight: tight))
                 }
             case .modified:
                 ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .content, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))

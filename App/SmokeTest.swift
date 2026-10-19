@@ -597,9 +597,18 @@ enum SmokeTest {
         let pb = NSPasteboard.general
         let text = pb.string(forType: .string) ?? ""
         let html = pb.string(forType: .html) ?? ""
+        // Edit ▸ Select All selects the whole page (toolbar, notices): Copy writes the document.
+        _ = try? await webView.evaluateJavaScript("getSelection().removeAllRanges(); 1")
+        _ = NSApp.sendAction(#selector(NSText.selectAll(_:)), to: webView, from: nil)
+        try? await Task.sleep(for: .milliseconds(300))
+        pb.clearContents()
+        let sentAll = NSApp.sendAction(#selector(NSText.copy(_:)), to: webView, from: nil)
+        try? await Task.sleep(for: .milliseconds(600))
+        let all = pb.string(forType: .string) ?? ""
         _ = try? await webView.evaluateJavaScript("getSelection().removeAllRanges(); 1")
         write(["picked": picked ?? NSNull(), "sent": sent, "text": text, "html": html,
-               "types": (pb.types ?? []).map(\.rawValue)], to: out, "copy-markdown.json")
+               "types": (pb.types ?? []).map(\.rawValue),
+               "select_all_sent": sentAll, "select_all_text": String(all.prefix(400))], to: out, "copy-markdown.json")
     }
 
     /// The window's restorable state, encoded and decoded as AppKit keeps it

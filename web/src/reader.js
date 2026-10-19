@@ -19,7 +19,7 @@ import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables, highligh
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
-import { markdownOf, htmlOf } from './reader/copy.js';
+import { markdownOf, htmlOf, inDocument } from './reader/copy.js';
 
 // ---------------------------------------------------------------- Links & keys
 
@@ -64,12 +64,14 @@ const RICH_LIMIT = 500_000;
 function fillClipboard(data) {
   const sel = getSelection();
   if (!data || !sel || sel.isCollapsed || !sel.rangeCount) return false;
-  const text = markdownOf(sel.getRangeAt(0));
+  // Edit ▸ Select All selects the whole page: only the document is copied.
+  const range = inDocument(sel.getRangeAt(0));
+  const text = range && markdownOf(range);
   if (text == null) return false;
   data.setData('text/plain', text);
   // Rich text costs WebKit about 1.5 s a megabyte to take (it sanitizes it; Linux CI box):
   // past RICH_LIMIT the selection goes as Markdown only, which rich apps paste as text.
-  if (text.length <= RICH_LIMIT) data.setData('text/html', htmlOf(sel));
+  if (text.length <= RICH_LIMIT) data.setData('text/html', htmlOf(range));
   return true;
 }
 document.addEventListener('copy', ev => { if (fillClipboard(ev.clipboardData)) ev.preventDefault(); });

@@ -408,6 +408,8 @@ print(f"copy-markdown: {cm}")
 cm_text = cm.get("text") or ""
 check("Copy (⌘C): the task items' Markdown as plain text",
       cm.get("sent") is True and re.match(r"^- \[[ x]\] .+\n- \[[ x]\] ", cm_text) is not None, cm)
+check("Select All then Copy: the document's Markdown, from its front matter",
+      cm.get("select_all_sent") is True and (cm.get("select_all_text") or "").startswith("---\ntitle: "), cm)
 check("Copy (⌘C): clean HTML as rich text (no page controls or state)",
       "<li" in (cm.get("html") or "") and not re.search(r"data-slot|tabindex|<button|class=", cm.get("html") or ""), cm)
 

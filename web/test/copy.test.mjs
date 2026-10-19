@@ -14,7 +14,9 @@
 //    copy-cases.json; regenerate with readout-dump): Select All is the file
 //    to the byte but for the documented normalisations; each defect of the
 //    3.8 audit (C2) by name; rich text always the clean HTML (C3); the link
-//    definitions a copy uses appended (C5); a drag carries the same (C8).
+//    definitions a copy uses appended (C5); a drag carries the same (C8);
+//    Edit ▸ Select All copies the document; escaped text stays text.
+//    5b: a source-only edit (copy-edit.json); 5c: safe rich text (copy-unsafe.json).
 // 6. A large selection (C7): ~650,000 characters copy in well under a second, as
 //    Markdown only (rich text is skipped above 500,000 characters).
 //
@@ -119,7 +121,9 @@ function shape(html) {
   return counts;
 }
 const entities = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' };
-const words = s => s.replace(/<[^>]+>/g, ' ').replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, e) => entities[e]).replace(/\[!(\w+)\]/g, '').replace(/\b(note|tip|important|warning|caution)\b/gi, '').toLowerCase().replace(/[\s​]+/g, ' ').replace(/[*_`~\\[\]()|>#$-]/g, '').replace(/\s+/g, '').trim();
+// The words of rendered HTML (tags out, entities decoded) and of the plain text selected (as it is).
+const textWords = s => s.replace(/\[!(\w+)\]/g, '').replace(/\b(note|tip|important|warning|caution)\b/gi, '').toLowerCase().replace(/[\s​]+/g, ' ').replace(/[*_`~\\[\]()|>#$-]/g, '').replace(/\s+/g, '').trim();
+const words = html => textWords(html.replace(/<[^>]+>/g, ' ').replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, e) => entities[e]));
 
 let exact = 0, structural = 0, blankDiffs = 0, partials = 0, wholes = 0;
 for (const name of quick ? docs.slice(0, 4) : docs) {
@@ -189,8 +193,10 @@ for (const name of quick ? docs.slice(0, 4) : docs) {
     const html = marked.parse(r.text, { gfm: true });
     // A part of a table copies the rows it touches, whole: the copy holds the selection.
     const table = /^(?:> ?)*\| .* \|$/m.test(r.text);
-    const same = table ? words(html).includes(words(r.selected).replace(/\t/g, '')) || words(html).length >= words(r.selected).length : words(html) === words(r.selected);
-    if (!same && !r.text.includes('$') && !r.text.includes('<') && !r.text.includes('[^')) {
+    const same = table ? words(html).includes(textWords(r.selected).replace(/\t/g, '')) || words(html).length >= textWords(r.selected).length : words(html) === textWords(r.selected);
+    // A closed <details> copies its body, which the selection's text leaves out;
+    // a diagram copies its source, where the selection reads its drawing's labels (C2).
+    if (!same && !r.text.includes('$') && !r.text.includes('[^') && !r.text.includes('<details') && !r.text.includes('```mermaid')) {
       fail(`${name} ${r.kind} ${r.slot}: text changed\n  selected: ${JSON.stringify(r.selected).slice(0, 300)}\n  copied:   ${JSON.stringify(r.text).slice(0, 300)}`);
     }
     if (r.kind === 'part' && !table) {
@@ -241,7 +247,18 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
     const dt = new DataTransfer();
     blockOf('.k-table', 'pipe').querySelector('td').dispatchEvent(new DragEvent('dragstart', { dataTransfer: dt, bubbles: true, cancelable: true }));
     const table = window.__copy(range(blockOf('.k-table', 'pipe')));
-    return { all, refPara, inPara, table, drag: { text: dt.getData('text/plain'), html: dt.getData('text/html') } };
+    // Edit ▸ Select All selects the page (its toolbar, notices), not the document.
+    const selAll = {};
+    const grab = e => { selAll.text = e.clipboardData.getData('text/plain'); selAll.html = e.clipboardData.getData('text/html'); selAll.handled = e.defaultPrevented; };
+    getSelection().removeAllRanges();
+    document.execCommand('selectAll');
+    selAll.ancestor = getSelection().getRangeAt(0).commonAncestorContainer.nodeName;
+    addEventListener('copy', grab); document.execCommand('copy'); removeEventListener('copy', grab);
+    // Part of a paragraph with escaped text (`\<br\>`, `\&amp;`): still text when pasted as Markdown.
+    const lit = blockOf('.k-paragraph', 'Literal').querySelector('p');
+    const lr = document.createRange(); lr.setStart(lit.firstChild, 1); lr.setEnd(lit.lastChild, lit.lastChild.data.length - 1);
+    const literal = window.__copy(lr);
+    return { all, refPara, inPara, table, selAll, literal, drag: { text: dt.getData('text/plain'), html: dt.getData('text/html') } };
   });
   // Select All: the file, with the footnote definition and then the link definition it uses last.
   const note = '[^n]: The note text.', ref = '[ref]: https://example.com/ref';
@@ -250,6 +267,13 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
     const a = want.split('\n'), b = got.all.text.split('\n');
     const i = a.findIndex((l, k) => l !== b[k]);
     fail(`copy-cases select-all is not the file at line ${i + 1}:\n  file:   ${JSON.stringify(a[i])}\n  copied: ${JSON.stringify(b[i])}`);
+  }
+  // Edit ▸ Select All, then Copy: the same as selecting the document (review).
+  if (!got.selAll.handled || got.selAll.text !== got.all.text) fail(`copy-cases: Select All (${got.selAll.ancestor}) then Copy is not the document's Markdown: ${JSON.stringify((got.selAll.text || '').slice(0, 120))}`);
+  // Escaped text in a partial copy stays text (review): rendered again it reads as selected.
+  {
+    const html = marked.parse(got.literal.text, { gfm: true });
+    if (words(html) !== textWords(got.literal.selected) || /<br>/.test(html)) fail(`copy-cases: escaped text in a partial copy: ${JSON.stringify(got.literal.text)} renders ${JSON.stringify(html)}`);
   }
   // Each defect main had (C2), by name: true when the copy has it right.
   const t = got.all.text;
@@ -276,6 +300,49 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
   if (!got.table.html.includes('<table') || /data-slot|tabindex|<button|class=/.test(got.table.html)) fail(`copy-cases: table rich text: ${got.table.html.slice(0, 200)}`);
   // C8: the drag carries the copy's Markdown and HTML.
   if (got.drag.text !== got.table.text || got.drag.html !== got.table.html) fail(`copy-cases: drag payload differs from the copy: ${JSON.stringify(got.drag.text.slice(0, 120))}`);
+}
+
+// 5b. A source-only edit (copy-edit-1.md -> copy-edit-2.md, ReadoutCore's
+//     two patches in copy-edit.json): the page keeps the block as it is (an
+//     open <details> stays open) and copies the new source; a copy across a
+//     removed item's marker keeps the tight list tight (review).
+{
+  const [first, second] = JSON.parse(readFileSync('test/fixtures/copy-edit.json', 'utf8'));
+  await page.evaluate(p => window.readout.apply(p), first);
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { document.querySelector('#ro-doc details').open = true; });
+  await page.evaluate(p => window.readout.apply(p), second);
+  await page.waitForTimeout(300);
+  const got = await page.evaluate(() => {
+    const doc = document.getElementById('ro-doc');
+    const blockOf = text => [...doc.querySelectorAll(':scope > .blk')].find(b => b.textContent.includes(text));
+    const range = (a, z) => { const r = document.createRange(); r.setStart(a, 0); r.setEnd(z, z.childNodes.length); return r; };
+    return {
+      open: doc.querySelector('details').open,
+      details: window.__copy(range(blockOf('Hidden body'), blockOf('Hidden body'))).text,
+      list: window.__copy(range(blockOf('one'), blockOf('two'))).text,
+      marker: !!doc.querySelector('.del-mark'),
+      files: window.__copy(range(blockOf('Files:'), blockOf('gamma three'))).text,
+    };
+  });
+  if (!got.open) fail('copy-edit: a source-only edit closed the open <details>');
+  if (got.details !== '<details>\n<summary>More</summary>\n\nHidden body text.\n\n</details>') fail(`copy-edit: the <details> copies its old source: ${JSON.stringify(got.details)}`);
+  if (got.list !== '- one\n- two') fail(`copy-edit: the list copies its old markers: ${JSON.stringify(got.list)}`);
+  if (!got.marker || got.files !== '**Files:**\n- alpha one\n- gamma three') fail(`copy-edit: across the removed item (marker ${got.marker}): ${JSON.stringify(got.files)}`);
+}
+
+// 5c. Rich text is safe to paste (copy-unsafe.md): nothing that loads, runs
+//     or styles beyond colour and alignment; links only to the web, mail or a
+//     place in the text (review).
+{
+  await page.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync('test/fixtures/copy-unsafe.json', 'utf8')));
+  await page.waitForTimeout(300);
+  const html = (await page.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.getElementById('ro-doc')); return window.__copy(r); })).html;
+  const bad = [/<img/i, /<video/i, /<source/i, /<picture/i, /srcset/i, /poster/i, /url\(/i, /javascript:/i, /vbscript:/i, /data:/i, /blocked:/i, /\sclass=/i, /\sdata-/i, /\stitle=/i, /\sid=/i];
+  const hrefs = [...html.matchAll(/href="([^"]*)"/g)].map(m => m[1]);
+  if (!html || bad.some(b => b.test(html)) || hrefs.some(h => !/^(https?:|mailto:|#)/.test(h)) || !hrefs.includes('https://example.com/ok') || !hrefs.includes('mailto:a@b.c') || !hrefs.includes('#top')) {
+    fail(`copy-unsafe: rich text not safe to paste: ${html.slice(0, 600)}`);
+  }
 }
 
 // 6. A large selection (C7): the copy costs what the two end blocks do, not

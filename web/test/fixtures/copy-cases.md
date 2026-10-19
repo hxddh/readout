@@ -98,4 +98,6 @@ graph TD
 
 ***
 
+Literal \<br\> and \&amp; here, a < b & c.
+
 中文段落，*强调*与`代码`，以及[链接](https://example.cn)。
