@@ -1,5 +1,5 @@
 {
- "height": 12751,
+ "height": 13711,
  "blocks": [
   {
    "slot": 1,
@@ -311,15 +311,15 @@
    "slot": 35,
    "kind": "code",
    "top": 2820,
-   "h": 62,
-   "style": "de0c6968",
+   "h": 82,
+   "style": "d828b57e",
    "content": "59cd3489",
    "text": "**Critical:** `wiki/pages/` is flat. All pages l"
   },
   {
    "slot": 36,
    "kind": "paragraph",
-   "top": 2881,
+   "top": 2901,
    "h": 44,
    "style": "7d310239",
    "content": "cb1c0ce5",
@@ -328,7 +328,7 @@
   {
    "slot": 37,
    "kind": "code",
-   "top": 2925,
+   "top": 2945,
    "h": 362,
    "style": "c91582a4",
    "content": "16fafbe9",
@@ -337,7 +337,7 @@
   {
    "slot": 38,
    "kind": "listItem",
-   "top": 3287,
+   "top": 3307,
    "h": 45,
    "style": "e8836f70",
    "content": "b105d9cc",
@@ -346,7 +346,7 @@
   {
    "slot": 39,
    "kind": "paragraph",
-   "top": 3331,
+   "top": 3351,
    "h": 44,
    "style": "7d310239",
    "content": "0cac8cd5",
@@ -355,7 +355,7 @@
   {
    "slot": 40,
    "kind": "code",
-   "top": 3375,
+   "top": 3395,
    "h": 182,
    "style": "e5944618",
    "content": "5b4f25ba",
@@ -364,7 +364,7 @@
   {
    "slot": 41,
    "kind": "paragraph",
-   "top": 3557,
+   "top": 3577,
    "h": 44,
    "style": "7d310239",
    "content": "89c73e35",
@@ -373,7 +373,7 @@
   {
    "slot": 42,
    "kind": "code",
-   "top": 3600,
+   "top": 3620,
    "h": 622,
    "style": "dee7e588",
    "content": "1b9380d5",
@@ -382,7 +382,7 @@
   {
    "slot": 43,
    "kind": "listItem",
-   "top": 4222,
+   "top": 4242,
    "h": 45,
    "style": "5316e05c",
    "content": "7ba03623",
@@ -391,7 +391,7 @@
   {
    "slot": 44,
    "kind": "paragraph",
-   "top": 4267,
+   "top": 4287,
    "h": 148,
    "style": "b2d6963c",
    "content": "bedbedbc",
@@ -400,7 +400,7 @@
   {
    "slot": 45,
    "kind": "listItem",
-   "top": 4414,
+   "top": 4434,
    "h": 45,
    "style": "644db7b2",
    "content": "3ebd93fa",
@@ -409,7 +409,7 @@
   {
    "slot": 46,
    "kind": "code",
-   "top": 4459,
+   "top": 4479,
    "h": 122,
    "style": "56751355",
    "content": "d43fbd78",
@@ -418,7 +418,7 @@
   {
    "slot": 47,
    "kind": "rule",
-   "top": 4580,
+   "top": 4600,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -427,7 +427,7 @@
   {
    "slot": 48,
    "kind": "heading",
-   "top": 4628,
+   "top": 4648,
    "h": 32,
    "style": "0826af7c",
    "content": "38894a04",
@@ -436,7 +436,7 @@
   {
    "slot": 49,
    "kind": "paragraph",
-   "top": 4660,
+   "top": 4680,
    "h": 44,
    "style": "5cf539a9",
    "content": "dcd190be",
@@ -445,7 +445,7 @@
   {
    "slot": 50,
    "kind": "listItem",
-   "top": 4704,
+   "top": 4724,
    "h": 61,
    "style": "a1f03610",
    "content": "677a769f",
@@ -454,7 +454,7 @@
   {
    "slot": 51,
    "kind": "listItem",
-   "top": 4765,
+   "top": 4785,
    "h": 45,
    "style": "39bc4dd6",
    "content": "f891fe79",
@@ -463,7 +463,7 @@
   {
    "slot": 52,
    "kind": "paragraph",
-   "top": 4809,
+   "top": 4829,
    "h": 122,
    "style": "7fd5a311",
    "content": "b6c75d64",
@@ -472,7 +472,7 @@
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 4931,
+   "top": 4951,
    "h": 45,
    "style": "1c934647",
    "content": "4d8208e8",
@@ -481,7 +481,7 @@
   {
    "slot": 54,
    "kind": "paragraph",
-   "top": 4976,
+   "top": 4996,
    "h": 44,
    "style": "7d310239",
    "content": "a0bc0fcb",
@@ -490,16 +490,16 @@
   {
    "slot": 55,
    "kind": "code",
-   "top": 5019,
-   "h": 62,
-   "style": "cc0f00d2",
+   "top": 5039,
+   "h": 102,
+   "style": "e74a4c97",
    "content": "eea2af4a",
    "text": "Verify a single wiki page against its cited sour"
   },
   {
    "slot": 56,
    "kind": "paragraph",
-   "top": 5081,
+   "top": 5141,
    "h": 44,
    "style": "7d310239",
    "content": "89c73e35",
@@ -508,16 +508,16 @@
   {
    "slot": 57,
    "kind": "code",
-   "top": 5125,
-   "h": 62,
-   "style": "fa46ac49",
+   "top": 5185,
+   "h": 162,
+   "style": "8c70adb4",
    "content": "9709eece",
    "text": "Verify a single wiki page against its cited sour"
   },
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 5186,
+   "top": 5346,
    "h": 71,
    "style": "4b431fe4",
    "content": "84d6d867",
@@ -526,7 +526,7 @@
   {
    "slot": 59,
    "kind": "paragraph",
-   "top": 5257,
+   "top": 5417,
    "h": 44,
    "style": "7d310239",
    "content": "791fc189",
@@ -535,16 +535,16 @@
   {
    "slot": 60,
    "kind": "code",
-   "top": 5300,
-   "h": 62,
-   "style": "7c26fda5",
+   "top": 5460,
+   "h": 82,
+   "style": "af37867f",
    "content": "96894b7a",
    "text": "If the user did not name a page, ask which page "
   },
   {
    "slot": 61,
    "kind": "paragraph",
-   "top": 5362,
+   "top": 5542,
    "h": 44,
    "style": "7d310239",
    "content": "89c73e35",
@@ -553,16 +553,16 @@
   {
    "slot": 62,
    "kind": "code",
-   "top": 5406,
-   "h": 102,
-   "style": "61bfd186",
+   "top": 5586,
+   "h": 182,
+   "style": "8a454bb4",
    "content": "4d859ef0",
    "text": "**Mode:** if the invocation arguments contain th"
   },
   {
    "slot": 63,
    "kind": "listItem",
-   "top": 5508,
+   "top": 5768,
    "h": 45,
    "style": "5316e05c",
    "content": "d9cc2c56",
@@ -571,7 +571,7 @@
   {
    "slot": 64,
    "kind": "paragraph",
-   "top": 5552,
+   "top": 5812,
    "h": 70,
    "style": "fd409264",
    "content": "b61cd213",
@@ -580,7 +580,7 @@
   {
    "slot": 65,
    "kind": "listItem",
-   "top": 5622,
+   "top": 5882,
    "h": 45,
    "style": "644db7b2",
    "content": "c5f9adef",
@@ -589,7 +589,7 @@
   {
    "slot": 66,
    "kind": "code",
-   "top": 5666,
+   "top": 5926,
    "h": 122,
    "style": "782b4af8",
    "content": "c0c0e05b",
@@ -598,7 +598,7 @@
   {
    "slot": 67,
    "kind": "rule",
-   "top": 5788,
+   "top": 6048,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -607,7 +607,7 @@
   {
    "slot": 68,
    "kind": "heading",
-   "top": 5835,
+   "top": 6095,
    "h": 55,
    "style": "e87237b7",
    "content": "390fffb8",
@@ -616,7 +616,7 @@
   {
    "slot": 69,
    "kind": "paragraph",
-   "top": 5891,
+   "top": 6151,
    "h": 96,
    "style": "97f01600",
    "content": "cc493204",
@@ -625,7 +625,7 @@
   {
    "slot": 70,
    "kind": "paragraph",
-   "top": 5986,
+   "top": 6246,
    "h": 44,
    "style": "5cf539a9",
    "content": "dcd190be",
@@ -634,7 +634,7 @@
   {
    "slot": 71,
    "kind": "listItem",
-   "top": 6030,
+   "top": 6290,
    "h": 61,
    "style": "a3f69505",
    "content": "23efccd2",
@@ -643,7 +643,7 @@
   {
    "slot": 72,
    "kind": "listItem",
-   "top": 6091,
+   "top": 6351,
    "h": 45,
    "style": "6b58de91",
    "content": "a6372103",
@@ -652,7 +652,7 @@
   {
    "slot": 73,
    "kind": "paragraph",
-   "top": 6136,
+   "top": 6396,
    "h": 122,
    "style": "8c123f94",
    "content": "73558860",
@@ -661,7 +661,7 @@
   {
    "slot": 74,
    "kind": "listItem",
-   "top": 6257,
+   "top": 6517,
    "h": 45,
    "style": "4445bfb3",
    "content": "21133160",
@@ -670,7 +670,7 @@
   {
    "slot": 75,
    "kind": "paragraph",
-   "top": 6302,
+   "top": 6562,
    "h": 44,
    "style": "12ce6802",
    "content": "1f377a1c",
@@ -679,16 +679,16 @@
   {
    "slot": 76,
    "kind": "code",
-   "top": 6345,
-   "h": 382,
-   "style": "ee38a99a",
+   "top": 6605,
+   "h": 602,
+   "style": "bfe6bbea",
    "content": "866c4cf8",
    "text": "### 3b. Phase C — cross-model adversarial review"
   },
   {
    "slot": 77,
    "kind": "paragraph",
-   "top": 6727,
+   "top": 7207,
    "h": 122,
    "style": "cba7456d",
    "content": "21ca0ff1",
@@ -697,7 +697,7 @@
   {
    "slot": 78,
    "kind": "listItem",
-   "top": 6849,
+   "top": 7329,
    "h": 28,
    "style": "e77ef7d5",
    "content": "3d750959",
@@ -706,7 +706,7 @@
   {
    "slot": 79,
    "kind": "listItem",
-   "top": 6877,
+   "top": 7357,
    "h": 28,
    "style": "15166777",
    "content": "c39ba217",
@@ -715,7 +715,7 @@
   {
    "slot": 80,
    "kind": "listItem",
-   "top": 6905,
+   "top": 7385,
    "h": 97,
    "style": "b85ee0ca",
    "content": "80455c5b",
@@ -724,16 +724,16 @@
   {
    "slot": 81,
    "kind": "code",
-   "top": 7002,
-   "h": 262,
-   "style": "4a12a7c2",
+   "top": 7482,
+   "h": 462,
+   "style": "0cad4766",
    "content": "0d4bede3",
    "text": "**4. Invoke the reviewer** in non-interactive mo"
   },
   {
    "slot": 82,
    "kind": "paragraph",
-   "top": 7264,
+   "top": 7944,
    "h": 174,
    "style": "7e153eb3",
    "content": "76972d0d",
@@ -742,7 +742,7 @@
   {
    "slot": 83,
    "kind": "code",
-   "top": 7438,
+   "top": 8118,
    "h": 62,
    "style": "a72c4141",
    "content": "776761b3",
@@ -751,7 +751,7 @@
   {
    "slot": 84,
    "kind": "listItem",
-   "top": 7499,
+   "top": 8179,
    "h": 45,
    "style": "9843f4c6",
    "content": "9555a3e4",
@@ -760,7 +760,7 @@
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 7544,
+   "top": 8224,
    "h": 122,
    "style": "465ab0ce",
    "content": "e50c32cb",
@@ -769,7 +769,7 @@
   {
    "slot": 86,
    "kind": "paragraph",
-   "top": 7666,
+   "top": 8346,
    "h": 122,
    "style": "6c5dd58d",
    "content": "bc30cd3c",
@@ -778,7 +778,7 @@
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 7787,
+   "top": 8467,
    "h": 45,
    "style": "644db7b2",
    "content": "e799c660",
@@ -787,7 +787,7 @@
   {
    "slot": 88,
    "kind": "code",
-   "top": 7832,
+   "top": 8512,
    "h": 122,
    "style": "28488423",
    "content": "39d54e8e",
@@ -796,7 +796,7 @@
   {
    "slot": 89,
    "kind": "rule",
-   "top": 7954,
+   "top": 8634,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -805,7 +805,7 @@
   {
    "slot": 90,
    "kind": "heading",
-   "top": 8001,
+   "top": 8681,
    "h": 55,
    "style": "e87237b7",
    "content": "a1fb3113",
@@ -814,7 +814,7 @@
   {
    "slot": 91,
    "kind": "paragraph",
-   "top": 8056,
+   "top": 8736,
    "h": 44,
    "style": "5cf539a9",
    "content": "dcd190be",
@@ -823,7 +823,7 @@
   {
    "slot": 92,
    "kind": "listItem",
-   "top": 8100,
+   "top": 8780,
    "h": 61,
    "style": "92576db2",
    "content": "1879dc6e",
@@ -832,7 +832,7 @@
   {
    "slot": 93,
    "kind": "listItem",
-   "top": 8161,
+   "top": 8841,
    "h": 45,
    "style": "e9b6a3f8",
    "content": "f929d2e0",
@@ -841,7 +841,7 @@
   {
    "slot": 94,
    "kind": "paragraph",
-   "top": 8205,
+   "top": 8885,
    "h": 148,
    "style": "b0be870e",
    "content": "3d8fc842",
@@ -850,7 +850,7 @@
   {
    "slot": 95,
    "kind": "listItem",
-   "top": 8353,
+   "top": 9033,
    "h": 45,
    "style": "fed003d8",
    "content": "2af556bd",
@@ -859,7 +859,7 @@
   {
    "slot": 96,
    "kind": "paragraph",
-   "top": 8398,
+   "top": 9078,
    "h": 44,
    "style": "7d310239",
    "content": "1eccf75e",
@@ -868,7 +868,7 @@
   {
    "slot": 97,
    "kind": "code",
-   "top": 8441,
+   "top": 9121,
    "h": 122,
    "style": "47b5adf8",
    "content": "fa903e04",
@@ -877,7 +877,7 @@
   {
    "slot": 98,
    "kind": "paragraph",
-   "top": 8563,
+   "top": 9243,
    "h": 44,
    "style": "7d310239",
    "content": "89c73e35",
@@ -886,7 +886,7 @@
   {
    "slot": 99,
    "kind": "code",
-   "top": 8607,
+   "top": 9287,
    "h": 142,
    "style": "9e10cecb",
    "content": "60f2505e",
@@ -895,7 +895,7 @@
   {
    "slot": 100,
    "kind": "listItem",
-   "top": 8748,
+   "top": 9428,
    "h": 45,
    "style": "26aa0815",
    "content": "ddb2caef",
@@ -904,7 +904,7 @@
   {
    "slot": 101,
    "kind": "paragraph",
-   "top": 8793,
+   "top": 9473,
    "h": 44,
    "style": "7d310239",
    "content": "5570176e",
@@ -913,7 +913,7 @@
   {
    "slot": 102,
    "kind": "code",
-   "top": 8837,
+   "top": 9517,
    "h": 102,
    "style": "155142b3",
    "content": "c43340ef",
@@ -922,7 +922,7 @@
   {
    "slot": 103,
    "kind": "paragraph",
-   "top": 8938,
+   "top": 9618,
    "h": 44,
    "style": "7d310239",
    "content": "89c73e35",
@@ -931,16 +931,16 @@
   {
    "slot": 104,
    "kind": "code",
-   "top": 8982,
-   "h": 282,
-   "style": "14928b63",
+   "top": 9662,
+   "h": 402,
+   "style": "d28d0651",
    "content": "23bad5aa",
    "text": "## ✅ Supported - [^1], [^2], [^4], [^6], [^8] — "
   },
   {
    "slot": 105,
    "kind": "listItem",
-   "top": 9264,
+   "top": 10064,
    "h": 71,
    "style": "48b9d1c6",
    "content": "300c075a",
@@ -949,7 +949,7 @@
   {
    "slot": 106,
    "kind": "paragraph",
-   "top": 9334,
+   "top": 10134,
    "h": 44,
    "style": "7d310239",
    "content": "f89762b0",
@@ -958,16 +958,16 @@
   {
    "slot": 107,
    "kind": "code",
-   "top": 9378,
-   "h": 62,
-   "style": "878539dc",
+   "top": 10178,
+   "h": 82,
+   "style": "d9cb4423",
    "content": "da4a498c",
    "text": "Add the report to `wiki/index.md` under the `Mai"
   },
   {
    "slot": 108,
    "kind": "paragraph",
-   "top": 9440,
+   "top": 10260,
    "h": 44,
    "style": "7d310239",
    "content": "89c73e35",
@@ -976,16 +976,16 @@
   {
    "slot": 109,
    "kind": "code",
-   "top": 9483,
-   "h": 62,
-   "style": "23302b32",
+   "top": 10303,
+   "h": 202,
+   "style": "d4dc7622",
    "content": "81a5b0b1",
    "text": "**Audit reports are local-only artifacts.** Befo"
   },
   {
    "slot": 110,
    "kind": "listItem",
-   "top": 9545,
+   "top": 10505,
    "h": 45,
    "style": "471f9a67",
    "content": "283ca31f",
@@ -994,7 +994,7 @@
   {
    "slot": 111,
    "kind": "paragraph",
-   "top": 9590,
+   "top": 10550,
    "h": 44,
    "style": "7d310239",
    "content": "9f631b10",
@@ -1003,7 +1003,7 @@
   {
    "slot": 112,
    "kind": "code",
-   "top": 9633,
+   "top": 10593,
    "h": 222,
    "style": "d0110204",
    "content": "00d77a97",
@@ -1012,7 +1012,7 @@
   {
    "slot": 113,
    "kind": "paragraph",
-   "top": 9855,
+   "top": 10815,
    "h": 44,
    "style": "7d310239",
    "content": "89c73e35",
@@ -1021,7 +1021,7 @@
   {
    "slot": 114,
    "kind": "code",
-   "top": 9898,
+   "top": 10858,
    "h": 242,
    "style": "d7dc4f6e",
    "content": "3d701e55",
@@ -1030,7 +1030,7 @@
   {
    "slot": 115,
    "kind": "listItem",
-   "top": 10140,
+   "top": 11100,
    "h": 45,
    "style": "5316e05c",
    "content": "9a4f9708",
@@ -1039,7 +1039,7 @@
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 10185,
+   "top": 11145,
    "h": 122,
    "style": "5806ec5e",
    "content": "f89a5d59",
@@ -1048,7 +1048,7 @@
   {
    "slot": 117,
    "kind": "paragraph",
-   "top": 10306,
+   "top": 11266,
    "h": 70,
    "style": "e9a6e5d4",
    "content": "cd1e4e91",
@@ -1057,7 +1057,7 @@
   {
    "slot": 118,
    "kind": "listItem",
-   "top": 10376,
+   "top": 11336,
    "h": 45,
    "style": "644db7b2",
    "content": "62ee2751",
@@ -1066,7 +1066,7 @@
   {
    "slot": 119,
    "kind": "code",
-   "top": 10421,
+   "top": 11381,
    "h": 122,
    "style": "fd3e335d",
    "content": "d40c5b6f",
@@ -1075,7 +1075,7 @@
   {
    "slot": 120,
    "kind": "rule",
-   "top": 10542,
+   "top": 11502,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -1084,7 +1084,7 @@
   {
    "slot": 121,
    "kind": "heading",
-   "top": 10590,
+   "top": 11550,
    "h": 32,
    "style": "93ce84b6",
    "content": "52bc9f99",
@@ -1093,7 +1093,7 @@
   {
    "slot": 122,
    "kind": "paragraph",
-   "top": 10622,
+   "top": 11582,
    "h": 70,
    "style": "27a7357e",
    "content": "602ea54e",
@@ -1102,7 +1102,7 @@
   {
    "slot": 123,
    "kind": "listItem",
-   "top": 10691,
+   "top": 11651,
    "h": 45,
    "style": "8f3491a0",
    "content": "06660512",
@@ -1111,7 +1111,7 @@
   {
    "slot": 124,
    "kind": "paragraph",
-   "top": 10736,
+   "top": 11696,
    "h": 122,
    "style": "c5b7305d",
    "content": "afba9054",
@@ -1120,7 +1120,7 @@
   {
    "slot": 125,
    "kind": "listItem",
-   "top": 10858,
+   "top": 11818,
    "h": 71,
    "style": "72527af2",
    "content": "4445bfaa",
@@ -1129,7 +1129,7 @@
   {
    "slot": 126,
    "kind": "paragraph",
-   "top": 10928,
+   "top": 11888,
    "h": 174,
    "style": "48cd042c",
    "content": "2f781927",
@@ -1138,7 +1138,7 @@
   {
    "slot": 127,
    "kind": "listItem",
-   "top": 11102,
+   "top": 12062,
    "h": 45,
    "style": "306107e5",
    "content": "ef48778c",
@@ -1147,7 +1147,7 @@
   {
    "slot": 128,
    "kind": "paragraph",
-   "top": 11146,
+   "top": 12106,
    "h": 96,
    "style": "9bb21bf8",
    "content": "be347068",
@@ -1156,7 +1156,7 @@
   {
    "slot": 129,
    "kind": "listItem",
-   "top": 11242,
+   "top": 12202,
    "h": 45,
    "style": "49156bf8",
    "content": "5a36fd8c",
@@ -1165,7 +1165,7 @@
   {
    "slot": 130,
    "kind": "paragraph",
-   "top": 11286,
+   "top": 12246,
    "h": 122,
    "style": "2cd234b1",
    "content": "20ab3697",
@@ -1174,7 +1174,7 @@
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 11408,
+   "top": 12368,
    "h": 45,
    "style": "611a9d1b",
    "content": "286b2278",
@@ -1183,7 +1183,7 @@
   {
    "slot": 132,
    "kind": "paragraph",
-   "top": 11453,
+   "top": 12413,
    "h": 200,
    "style": "dfe0ca56",
    "content": "fd2211ce",
@@ -1192,7 +1192,7 @@
   {
    "slot": 133,
    "kind": "listItem",
-   "top": 11652,
+   "top": 12612,
    "h": 45,
    "style": "b96438c4",
    "content": "70b7944c",
@@ -1201,7 +1201,7 @@
   {
    "slot": 134,
    "kind": "code",
-   "top": 11697,
+   "top": 12657,
    "h": 122,
    "style": "5689d4ee",
    "content": "7bf70dc7",
@@ -1210,7 +1210,7 @@
   {
    "slot": 135,
    "kind": "rule",
-   "top": 11818,
+   "top": 12778,
    "h": 47,
    "style": "71b86d43",
    "content": "811c9dc5",
@@ -1219,7 +1219,7 @@
   {
    "slot": 136,
    "kind": "heading",
-   "top": 11866,
+   "top": 12826,
    "h": 42,
    "style": "7fc8883e",
    "content": "df9d4099",
@@ -1228,7 +1228,7 @@
   {
    "slot": 137,
    "kind": "paragraph",
-   "top": 11908,
+   "top": 12868,
    "h": 278,
    "style": "dcb265b0",
    "content": "a0b5d335",
@@ -1237,7 +1237,7 @@
   {
    "slot": 138,
    "kind": "paragraph",
-   "top": 12186,
+   "top": 13146,
    "h": 122,
    "style": "84e38214",
    "content": "051d032d",
@@ -1246,7 +1246,7 @@
   {
    "slot": 139,
    "kind": "paragraph",
-   "top": 12307,
+   "top": 13267,
    "h": 174,
    "style": "68d495b4",
    "content": "5e1e9510",
