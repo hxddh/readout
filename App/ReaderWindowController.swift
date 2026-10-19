@@ -436,6 +436,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?, commitBaseline: [BlockKey]? = nil) {
         let patch = self.session.load(result.doc, baseline: record?.baseline ?? commitBaseline)
         contentGeneration += 1
+        defer { refreshRepository() }   // once contentPath is set below
         // What is marked is what changed since the last commit, not since the reader last read it.
         let commitNotice = commitBaseline == nil ? nil : CommitNotice.after(rewrite: patch.rewrite, unread: session.unreadCount)
         // What is on disk already: an unchanged baseline is not written again.
@@ -543,6 +544,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             }
             self.deleted = false
             self.contentGeneration += 1
+            self.refreshRepository()
             let wasEmpty = self.session.blocks.isEmpty
             guard let patch = self.session.update(result.doc) else {
                 self.model.status = nil
@@ -1004,6 +1006,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func finishRetarget() {
         guard retargetGate.read(from: loader.lastSourcePath) else { return }
         contentPath = loader.lastSourcePath ?? contentPath
+        refreshRepository()
         didSaveOnce = false
         lastSavedBaseline = nil
         scheduleSave()
@@ -1113,7 +1116,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func compareWithLastCommit(rerun: Bool) {
         guard loaded, !session.blocks.isEmpty, !retargetGate.isPending else { return NSSound.beep() }
         let askedAt = contentGeneration
-        CommitBaseline.compare(path: contentPath ?? url.path) { [weak self] result in
+        // What the window shows, not the file on disk (a newer write may have reached it first).
+        let displayed = session.blocks.map(BlockKey.init)
+        CommitBaseline.compare(path: contentPath ?? url.path, displayed: displayed) { [weak self] result in
             guard let self, !self.session.blocks.isEmpty else { return NSSound.beep() }
             switch CommitComparison.applies(askedAt: askedAt, current: self.contentGeneration, retargeting: self.retargetGate.isPending, rerun: rerun) {
             case .apply: break
@@ -1121,8 +1126,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             case .drop: return NSSound.beep()
             }
             switch result {
-            case .baseline(let text):
-                self.showMarked(against: MarkdownParser.parse(text).blocks.map(BlockKey.init), againstCommit: true)
+            case .baseline(let keys):
+                self.showMarked(against: keys, againstCommit: true)
             case .unchanged:
                 NSSound.beep()
                 self.flashStatus(NSLocalizedString("No changes since the last commit", comment: "Subtitle for a few seconds after Compare with Last Commit: the file is as committed"))
@@ -1173,16 +1178,16 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
     }
 
-    /// The file lies in a git repository (View ▸ Compare with Last Commit),
-    /// looked up again only when the window shows another file (a retarget).
-    private var repositoryCheck: (path: String, inside: Bool)?
-    private var inRepository: Bool {
+    /// The file lies in a git repository (View ▸ Compare with Last Commit is
+    /// enabled), as GitBaseline finds one (a `.git` above it; git is not run).
+    /// Looked up again when the window becomes key, a read lands or the file
+    /// changes (a retarget), so a `git init` since is seen; menu validation
+    /// only reads it.
+    private var inRepository = false
+    private func refreshRepository() {
         let path = contentPath ?? url.path
-        if let c = repositoryCheck, c.path == path { return c.inside }
-        let inside = !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/")
+        inRepository = !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/")
             && GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil
-        repositoryCheck = (path, inside)
-        return inside
     }
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? {
@@ -1468,6 +1473,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             noteLookedAt()   // looked at: the tab's dot stays only for unread changes
         }
         updateSubtitle()
+        if loaded { refreshRepository() }
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
         sendWindowKey()
         // A key window in a tab group is its selected tab.
@@ -1633,17 +1639,16 @@ enum CommitBaseline {
         }
     }
 
-    /// View ▸ Compare with Last Commit: the file at `path` (its real path) as
-    /// on disk now against its committed version, with the guards of `find`.
-    static func compare(path: String, completion: @escaping @MainActor (CommitComparison) -> Void) {
+    /// View ▸ Compare with Last Commit: the version the window `displayed`
+    /// against the committed version of the file at `path` (its real path),
+    /// with the guards of `find`. Only git's HEAD blob is read.
+    static func compare(path: String, displayed: [BlockKey], completion: @escaping @MainActor (CommitComparison) -> Void) {
         guard !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/") else { return completion(.unavailable) }
         queue.async {
             var result = CommitComparison.unavailable
             if GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil {
                 if !toolsAvailable { toolsAvailable = GitTools.available() }
-                if toolsAvailable, let data = try? Data(contentsOf: URL(fileURLWithPath: path)) {
-                    result = GitBaseline.compare(path: path, current: FileContent.decode(data).text, git: ProcessGit())
-                }
+                if toolsAvailable { result = GitBaseline.compare(path: path, displayed: displayed, git: ProcessGit()) }
             }
             let found = result
             DispatchQueue.main.async { MainActor.assumeIsolated { completion(found) } }

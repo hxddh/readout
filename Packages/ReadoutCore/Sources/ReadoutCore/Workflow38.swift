@@ -46,8 +46,8 @@ public enum CommitNotice: Equatable, Sendable {
 
 /// View ▸ Compare with Last Commit: the open document against `git show HEAD:`.
 public enum CommitComparison: Equatable, Sendable {
-    /// The committed text, to mark the document against.
-    case baseline(String)
+    /// The committed version's blocks, to mark the document against.
+    case baseline([BlockKey])
     /// The document is as it was committed.
     case unchanged
     /// Outside a repository, not committed (untracked, new), not text, too
@@ -77,16 +77,20 @@ public enum CommitComparison: Equatable, Sendable {
 
 extension GitBaseline {
     /// The committed version of the file at `path` (its real path) compared
-    /// with its `current` text.
-    public static func compare(path: String, current: String, git: GitRunning,
+    /// with the version the window `displayed` (its blocks' keys, as the
+    /// session holds them), never with the file on disk: a write that reached
+    /// the disk but not the window yet would be compared instead. Only git's
+    /// HEAD blob is read.
+    public static func compare(path: String, displayed: [BlockKey], git: GitRunning,
                                exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> CommitComparison {
         guard repository(containing: path, exists: exists) != nil else { return .unavailable }
         let dir = (path as NSString).deletingLastPathComponent
         let name = (path as NSString).lastPathComponent
         // As headText: relative to the folder git runs in (a submodule's or worktree's own HEAD).
-        guard let data = git.run(["--no-pager", "show", "HEAD:./" + name], in: dir) else { return .unavailable }
-        guard let text = committedText(head: data) else { return .unavailable }
-        return MarkdownParser.sourceLines(text) == MarkdownParser.sourceLines(current) ? .unchanged : .baseline(text)
+        guard let data = git.run(["--no-pager", "show", "HEAD:./" + name], in: dir),
+              let text = committedText(head: data) else { return .unavailable }
+        let committed = MarkdownParser.parse(text).blocks.map(BlockKey.init)
+        return committed == displayed ? .unchanged : .baseline(committed)
     }
 }
 

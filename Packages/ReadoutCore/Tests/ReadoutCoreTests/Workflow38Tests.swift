@@ -82,6 +82,19 @@ import Testing
 
     // MARK: N1 Compare with Last Commit
 
+    private func keys(_ text: String) -> [BlockKey] { MarkdownParser.parse(text).blocks.map(BlockKey.init) }
+
+    /// What the window displays is compared, not the file on disk (which a
+    /// newer write may have reached first): no read but git's HEAD blob.
+    @Test func comparingUsesTheDisplayedVersion() {
+        let git = FakeGit(output: ["/w/app/docs|--no-pager show HEAD:./plan.md": Data("# Plan\n\nOld.\n".utf8)])
+        let exists = { (p: String) in p == "/w/app/.git" }
+        // The file on disk is back to HEAD already; the window still shows the edit.
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\n\nEdited.\n"), git: git, exists: exists)
+                == .baseline(keys("# Plan\n\nOld.\n")))
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\n\nOld.\n"), git: git, exists: exists) == .unchanged)
+    }
+
     struct FakeGit: GitRunning {
         var output: [String: Data] = [:]   // "dir|args" -> stdout
         func run(_ arguments: [String], in directory: String) -> Data? { output[directory + "|" + arguments.joined(separator: " ")] }
@@ -91,21 +104,21 @@ import Testing
         let show = "/w/app/docs|--no-pager show HEAD:./plan.md"
         let git = FakeGit(output: [show: Data("# Plan\n\nOld.\n".utf8)])
         let exists = { (p: String) in p == "/w/app/.git" }
-        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: git, exists: exists) == .baseline("# Plan\n\nOld.\n"))
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\n\nNew.\n"), git: git, exists: exists) == .baseline(keys("# Plan\n\nOld.\n")))
         // As committed (line endings aside): nothing to mark, and it says so.
-        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan\r\n\r\nOld.\r\n", git: git, exists: exists) == .unchanged)
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\r\n\r\nOld.\r\n"), git: git, exists: exists) == .unchanged)
         // Not committed, outside a repository: unavailable.
-        #expect(GitBaseline.compare(path: "/w/app/docs/new.md", current: "x", git: git, exists: exists) == .unavailable)
-        #expect(GitBaseline.compare(path: "/elsewhere/plan.md", current: "x", git: git, exists: exists) == .unavailable)
+        #expect(GitBaseline.compare(path: "/w/app/docs/new.md", displayed: keys("x"), git: git, exists: exists) == .unavailable)
+        #expect(GitBaseline.compare(path: "/elsewhere/plan.md", displayed: keys("x"), git: git, exists: exists) == .unavailable)
         // What is never compared is not "unchanged".
         let lfs = FakeGit(output: [show: Data("version https://git-lfs.github.com/spec/v1\noid sha256:abc\n".utf8)])
-        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan", git: lfs, exists: exists) == .unavailable)
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan"), git: lfs, exists: exists) == .unavailable)
         let binary = FakeGit(output: [show: Data([0x23, 0x00, 0x41])])
-        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan", git: binary, exists: exists) == .unavailable)
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan"), git: binary, exists: exists) == .unavailable)
         // Committed empty (git succeeded, no bytes): a baseline, or unchanged; not "not in the commit".
         let empty = FakeGit(output: [show: Data()])
-        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: empty, exists: exists) == .baseline(""))
-        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "", git: empty, exists: exists) == .unchanged)
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\n\nNew.\n"), git: empty, exists: exists) == .baseline(keys("")))
+        #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys(""), git: empty, exists: exists) == .unchanged)
         #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: empty, exists: exists) == "")
     }
 
@@ -121,8 +134,8 @@ import Testing
         for u in old.utf16 { noBOM.append(UInt8(u >> 8)); noBOM.append(UInt8(u & 0xFF)) }   // UTF-16BE, no BOM
         for blob in [bom, noBOM] {
             let git = FakeGit(output: [show: blob])
-            #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: git, exists: exists) == .baseline(old))
-            #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", current: old, git: git, exists: exists) == .unchanged)
+            #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\n\nNew.\n"), git: git, exists: exists) == .baseline(keys(old)))
+            #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys(old), git: git, exists: exists) == .unchanged)
             // The first open (3.7's GitBaseline) too.
             #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: git, exists: exists) == old)
         }
