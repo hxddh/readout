@@ -99,6 +99,9 @@ enum MainMenu {
         view.addItem(item(NSLocalizedString("Show Only Changes", comment: "Menu"), #selector(ReaderWindowController.toggleChangesOnly(_:)), "K", [.command, .shift]))
         // The page's D key, findable in the menu (a single letter is no menu key equivalent).
         view.addItem(item(NSLocalizedString("Show What Changed", comment: "Menu: show the word-level comparison of the edited blocks in view (the D key)"), #selector(ReaderWindowController.showWhatChanged(_:))))
+        // What changed since the last commit marked again (⌘Z undoes it); for files in a git repository. No key: none is free and obvious.
+        view.addItem(item(NSLocalizedString("Compare with Last Commit", comment: "Menu: mark the document again against its version in the last git commit"),
+                          #selector(ReaderWindowController.compareWithLastCommit(_:))))
         view.addItem(.separator())
         view.addItem(item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "+"))
         let bigger2 = item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "=")

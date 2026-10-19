@@ -99,6 +99,70 @@ const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEven
   await page.close();
 }
 
+// 1b. U4 (3.8): N lands on a change with no text selected; Copy as Quote
+//     quotes that block (the page says there is something to quote), so
+//     "N, then ⇧⌘C" needs no mouse. A text selection still wins; focus
+//     leaving the document leaves nothing to quote.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(30));
+  await page.evaluate(p => window.readout.apply(p), patch(2, [], { marks: [{ slot: 12, kind: 'modified' }] }));
+  await page.evaluate(() => { window.__msgs.length = 0; });
+  await key(page, 'n');
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(async () => {
+    const tick = () => new Promise(r => setTimeout(r, 50));
+    const landed = { active: document.activeElement?.dataset?.slot, selected: window.readout.selectedSlots(), text: getSelection().toString() };
+    // A selection in another block wins over the focus.
+    const t = document.querySelector('.blk[data-slot="20"] p').firstChild;
+    const range = document.createRange();
+    range.setStart(t, 1);
+    range.setEnd(t, 5);
+    getSelection().removeAllRanges();
+    getSelection().addRange(range);
+    await tick();
+    const withText = window.readout.selectedSlots();
+    getSelection().removeAllRanges();
+    await tick();
+    document.activeElement.blur();
+    await tick();
+    return { landed, withText, after: window.readout.selectedSlots(), msgs: window.__msgs.filter(m => m.type === 'selection').map(m => m.has || m.focused) };
+  });
+  check('Copy as Quote after N: the block N landed on, with no text selected',
+    r.landed.active === '12' && r.landed.text === '' && JSON.stringify(r.landed.selected) === '[12]', JSON.stringify(r));
+  check('Copy as Quote after N: a text selection still names its own blocks', JSON.stringify(r.withText) === '[20]', JSON.stringify(r));
+  check('Copy as Quote after N: the page says there is something to quote, and when there no longer is',
+    r.msgs[0] === true && r.msgs[r.msgs.length - 1] === false && JSON.stringify(r.after) === '[]', JSON.stringify(r));
+  // A patch removes the focused block (an agent's edit, or a reset): nothing to quote is said at once.
+  await page.evaluate(() => { const b = document.querySelector('.blk[data-slot="12"]'); b.setAttribute('tabindex', '-1'); b.focus(); });
+  await page.waitForTimeout(100);
+  const removed = await page.evaluate(async p => {
+    const before = { active: document.activeElement?.dataset?.slot, last: (m => m && (m.has || m.focused))(window.__msgs.filter(m => m.type === 'selection').pop()) };
+    window.__msgs.length = 0;
+    window.readout.apply(p);
+    await new Promise(r => setTimeout(r, 50));
+    return { before, selected: window.readout.selectedSlots(), msgs: window.__msgs.filter(m => m.type === 'selection').map(m => m.has || m.focused) };
+  }, patch(3, [{ op: 'remove', slot: 12 }]));
+  check('Copy as Quote: a patch removing the focused block says there is nothing to quote',
+    removed.before.active === '12' && removed.before.last === true && JSON.stringify(removed.msgs) === '[false]' && removed.selected.length === 0, JSON.stringify(removed));
+  // After N, a right click on another block: focus stays on the block N went to, but
+  // no text is selected, so the context menu (the app shows Copy as Quote for `has` only)
+  // offers no quote of it; the Edit menu still quotes the focused block.
+  await page.evaluate(() => { const b = document.querySelector('.blk[data-slot="5"]'); window.__msgs.length = 0; b.setAttribute('tabindex', '-1'); b.focus(); });
+  await page.waitForTimeout(100);
+  const ctx = await page.evaluate(async () => {
+    const other = document.querySelector('.blk[data-slot="20"] p');
+    const r = other.getBoundingClientRect();
+    other.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: r.left + 5, clientY: r.top + 5 }));
+    await new Promise(r => setTimeout(r, 50));
+    const last = window.__msgs.filter(m => m.type === 'selection').pop() || null;
+    return { last, active: document.activeElement?.dataset?.slot, text: getSelection().toString() };
+  });
+  check('Copy as Quote: after N, a right click on another block offers no context-menu quote (no text selected)',
+    ctx.last && ctx.last.has === false && ctx.last.focused === true && ctx.text === '', JSON.stringify(ctx));
+  await page.close();
+}
+
 // 2. N with nothing unread says so as N (the app goes on to the next
 //    document); the app's firstChange goes to the document's first change
 //    from wherever the reader is, without "wrapped".
@@ -126,6 +190,15 @@ const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEven
   await page.evaluate(() => window.readout.notice('Marked against the last commit'));
   const r = await page.evaluate(() => { const n = document.getElementById('ro-notice'); return { hidden: n.hidden, text: n.textContent }; });
   check('the app\'s notice shows above the document', !r.hidden && r.text === 'Marked against the last commit', JSON.stringify(r));
+  // Compare with Last Commit undone (3.8): its notice goes at once; another notice stays.
+  const h = await page.evaluate(() => {
+    const n = document.getElementById('ro-notice');
+    window.readout.hideNotice('Rewritten since the last commit');
+    const other = n.hidden;
+    window.readout.hideNotice('Marked against the last commit');
+    return { other, hidden: n.hidden };
+  });
+  check('hideNotice hides the notice it names at once, and no other', h.other === false && h.hidden === true, JSON.stringify(h));
   await page.close();
 }
 

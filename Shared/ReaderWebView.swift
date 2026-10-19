@@ -139,6 +139,9 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
         config.preferences.isTextInteractionEnabled = true
+        // Tab reaches links (to other documents, the web, source files) as it
+        // reaches the paths in code spans; WebKit leaves them to ⌥Tab by default.
+        config.preferences.tabFocusesLinks = true
         let ucc = WKUserContentController()
         config.userContentController = ucc
         super.init(frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: config)
