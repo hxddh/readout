@@ -285,6 +285,9 @@ window.addEventListener('resize', () => {
 function apply(p) {
   applyPatch(p);
   if (!resizeAnchor) settle();
+  // A patch can remove the focused block (a reset removes them all) without
+  // a focusout: what there is to quote is said again (posted only if it changed).
+  reportSelection();
 }
 
 // ---------------------------------------------------------------- Native API

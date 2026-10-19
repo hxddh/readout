@@ -133,6 +133,18 @@ const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEven
   check('Copy as Quote after N: a text selection still names its own blocks', JSON.stringify(r.withText) === '[20]', JSON.stringify(r));
   check('Copy as Quote after N: the page says there is something to quote, and when there no longer is',
     r.msgs[0] === true && r.msgs[r.msgs.length - 1] === false && JSON.stringify(r.after) === '[]', JSON.stringify(r));
+  // A patch removes the focused block (an agent's edit, or a reset): nothing to quote is said at once.
+  await page.evaluate(() => { const b = document.querySelector('.blk[data-slot="12"]'); b.setAttribute('tabindex', '-1'); b.focus(); });
+  await page.waitForTimeout(100);
+  const removed = await page.evaluate(async p => {
+    const before = { active: document.activeElement?.dataset?.slot, last: window.__msgs.filter(m => m.type === 'selection').pop()?.has };
+    window.__msgs.length = 0;
+    window.readout.apply(p);
+    await new Promise(r => setTimeout(r, 50));
+    return { before, selected: window.readout.selectedSlots(), msgs: window.__msgs.filter(m => m.type === 'selection').map(m => m.has) };
+  }, patch(3, [{ op: 'remove', slot: 12 }]));
+  check('Copy as Quote: a patch removing the focused block says there is nothing to quote',
+    removed.before.active === '12' && removed.before.last === true && JSON.stringify(removed.msgs) === '[false]' && removed.selected.length === 0, JSON.stringify(removed));
   await page.close();
 }
 
