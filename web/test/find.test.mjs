@@ -227,6 +227,72 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await page.close();
 }
 
+// A new search starts at the top of the screen, not at the top of the document.
+{
+  const page = await open();
+  const paras = Array.from({ length: 200 }, (_, i) => `<p>para ${i + 1}${[3, 150, 190].includes(i + 1) ? ' needle' : ''}</p>`);
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
+  await page.evaluate(() => document.querySelector('.blk[data-slot="140"]').scrollIntoView());
+  await page.waitForTimeout(300);
+  await find(page, 'needle');
+  check('a new search starts from the block at the top of the screen', await count(page) === '2 of 3' && await selectedSlot(page) === 150, `${await count(page)} ${await selectedSlot(page)}`);
+  await page.close();
+}
+
+// More matches than are kept (a one-letter search): every one is counted, a
+// window of them around the current one kept, and Next and Previous go on past it.
+{
+  const page = await open();
+  const paras = Array.from({ length: 30 }, (_, i) => `<p>para${i + 1} ${'q '.repeat(500)}</p>`);
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const seen = [];
+  const at = async () => seen.push(`${await count(page)}@${await selectedSlot(page)}`);
+  await find(page, 'q'); await at();
+  await find(page, 'q', true); await at();
+  await find(page, 'q', true); await at();
+  await find(page, 'q'); await find(page, 'q'); await at();
+  check('15,000 matches: counted, and Previous and Next wrap past the kept ones',
+    JSON.stringify(seen) === JSON.stringify(['1 of 15000@1', '15000 of 15000@30', '14999 of 15000@30', '1 of 15000@1']), JSON.stringify(seen));
+  const marks = await page.evaluate(() => CSS.highlights.get('ro-find')?.size);
+  check('… and only those around the current one are marked', marks > 0 && marks <= 300, String(marks));
+  // One block of more matches than are kept, the caret after its 12,000th: Next and Previous are its neighbours.
+  await page.evaluate(() => window.readout.findEnd());
+  await page.evaluate(p => window.readout.apply(p), patch(blocks([`<p>${'q '.repeat(15000)}</p>`, '<p>after</p>']), 5));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => getSelection().collapse(document.querySelector('.blk[data-slot="1"] p').firstChild, 2 * 12000 - 1));
+  await find(page, 'q');
+  const nextOne = await count(page);
+  await page.evaluate(() => { window.readout.findEnd(); getSelection().collapse(document.querySelector('.blk[data-slot="1"] p').firstChild, 2 * 12000 - 1); });
+  await find(page, 'q', true);
+  check('a block of 15,000 matches, the caret after the 12,000th: Next is the 12,001st, Previous the 12,000th', nextOne === '12001 of 15000' && await count(page) === '12000 of 15000',
+    JSON.stringify([nextOne, await count(page)]));
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras), 6));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { getSelection().removeAllRanges(); window.scrollTo(0, 0); });
+  await find(page, 'q', true);
+  await edit(page, [{ op: 'replace', slot: 1, change: 'content', html: `<p>para1 q ${'q '.repeat(500)}</p>`, kind: 'paragraph' }], 2);
+  await settle(page);
+  check('… and an edit far from the kept ones is counted, the current match kept', await count(page) === '15001 of 15001' && await selectedSlot(page) === 30, await state(page));
+  await page.close();
+}
+
+// A document of more blocks than WebKit selects in quickly: the match is
+// marked, not selected, and the reader's own caret does not stop Next.
+{
+  const page = await open();
+  const paras = Array.from({ length: 5200 }, (_, i) => `<p>p${i + 1}${[3, 20, 40].includes(i + 1) ? ' needle' : ''}</p>`);
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
+  await page.evaluate(() => { window.scrollTo(0, 0); getSelection().collapse(document.querySelector('.blk[data-slot="1"] p').firstChild, 1); });
+  await find(page, 'needle'); await page.waitForTimeout(100);
+  const first = await state(page);
+  await find(page, 'needle'); await page.waitForTimeout(100);
+  const cur = await page.evaluate(() => { const r = [...(CSS.highlights.get('ro-find-cur') || [])][0]; return r ? +r.startContainer.parentElement.closest('.blk').dataset.slot : null; });
+  check('a very large document: the match is marked, not selected, and Next goes on',
+    first === '1 of 3@1 sel= y=0' && await count(page) === '2 of 3' && cur === 20 && await selectedSlot(page) === 1, JSON.stringify([first, await state(page), cur]));
+  await page.close();
+}
+
 // A reset with the same blocks (a file truncated and written again): the place and the count stay.
 {
   const page = await open();

@@ -217,7 +217,14 @@
     "cold_page_setappearance_ms, cold_page_blocks_ms, cold_page_layout_ms (reported; *_first_boot_ms for",
     "the first launch). cold_start_ms, launch_phases_ms, cold_page_ready_ms, cold_dfl_to_window_ms and",
     "cold_window_to_load_ms stay the first launch's, as before. warm_open_ms, warm_open_to_applied_ms and",
-    "write_to_update_ms are measured in the second launch's process now (all after its first document)."
+    "write_to_update_ms are measured in the second launch's process now (all after its first document).",
+    "3.9 (release review): web_find_one_letter_5mb_ms (new), Return in a find for \"e\" at the top of the 5 MB",
+    "document (about 300,000 matches): the two frames after the call, median of three. Before: 7.3 s locally",
+    "(WebKit checking every content-visibility block against the new selection); after 0.4 s locally,",
+    "most of it the landing's own layout (a word that matches 18,000 times costs about the same).",
+    "The first CI run measured 1026 ms (web_toc_jump_5mb_ms 242 in the same run); the samples are printed",
+    "as web_find_one_letter_5mb_samples_ms ([the call, the first frame, both frames]). Reported until",
+    "more CI runs of it are in."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -254,5 +261,6 @@
   "web_tab_private_mb":         { "where": "linux-webkit", "unit": "MB",     "target": null, "guard": null },
   "web_edit_above_5mb_ms":      { "where": "linux-webkit", "unit": "ms",     "target": 50,   "guard": 75 },
   "web_toc_jump_5mb_ms":        { "where": "linux-webkit", "unit": "ms",     "target": 300,  "guard": 550 },
+  "web_find_one_letter_5mb_ms": { "where": "linux-webkit", "unit": "ms",     "target": 200,  "guard": null },
   "web_scroll_up_jump_px":      { "where": "linux-webkit", "unit": "px",     "target": 340,  "guard": 400 }
 }

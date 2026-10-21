@@ -3,9 +3,11 @@
 // not laid out, so it needed the whole document laid out while the find bar
 // was open (1 MB: seconds as it opened, and again as it closed). Here each
 // block's text is read without layout, the match is selected (⌘C, Copy
-// as Quote), and the matches are marked with the CSS Custom
+// as Quote; up to SELECTABLE blocks), and the matches are marked with the CSS Custom
 // Highlight API: only those in the blocks around the current one (marking
 // every match of a large document makes WebKit's paint take tens of seconds).
+// Every match is counted, but only a window of them around the current one
+// is kept (a one-letter search of 5 MB matches 300,000 times).
 import { doc, slots, post } from './core.js';
 import { aimAt, pinLanding, topInset, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
@@ -41,17 +43,26 @@ const fold = s => (ACCENTED.test(s)
   : s.toLowerCase()).replace(/\s/g, ' ');
 const NEAR = 10;      // blocks either side of the current match whose matches are marked
 const MARKED = 300;   // and at most this many marks
+const KEPT = 10_000;  // matches kept, around the current one
+// Past this many blocks the match is not selected: WebKit answers a change of
+// the selection by checking every content-visibility block against it, which
+// grows faster than the document (Linux WebKit: 1 MB 0.1 s, 2 MB 1.1 s, 5 MB 11 s;
+// the reader selecting with the mouse pays the same).
+const SELECTABLE = 5_000;
 const HL = typeof CSS !== 'undefined' && 'highlights' in CSS;
 
 let query = null;       // the folded text searched for; null: not finding
 let re = null;
-let matches = [];       // {el, x, bi, start, end}, in document order: x is the block's text, start and end in it
-let cur = -1;           // the current match
+let matches = [];       // {el, x, bi, ord, start, end}, in document order: x is the block's text, ord the match's place in it, start and end in it
+let base = 0;           // the number of matches before matches[0]
+let total = 0;          // the number of matches in the document
+let cur = -1;           // the current match (in matches)
 let shown = '';         // the count last told to the app
 // Where the current match is: its block's slot (a reset keeps the slots of
 // the blocks it keeps) and its place among that block's matches.
 let pos = null;         // {slot, ord, start, fromEnd, next}: next, the slot of the block after it, once it is removed
 let own = null;         // the range find selected, while the selection is it
+let left = null;        // in a document too large to select in: the selection find left as it was, while it is
 let observing = false;
 let texts = new WeakMap();   // block -> its text (textOf), while finding
 
@@ -101,8 +112,14 @@ function textOf(blk, each = false) {
   return f.length === s.length ? { s: f, segs } : textOf(blk, true);
 }
 
-function search() {
-  matches = [];
+/**
+ * Counts the matches and keeps those around `at`: {el, ord} (a block and
+ * a match's place in it) or {n} (a match's number in the document).
+ */
+function search(at) {
+  const blocks = [];
+  total = 0;
+  let center = at && at.n != null ? at.n : 0;
   let bi = 0;
   for (let e = doc.firstElementChild; e; e = e.nextElementSibling) {
     if (!e.classList.contains('blk')) continue;
@@ -110,9 +127,55 @@ function search() {
     if (e.hidden) continue;
     let x = texts.get(e);
     if (!x) texts.set(e, x = textOf(e));
-    re.lastIndex = 0;
-    for (let m; (m = re.exec(x.s));) matches.push({ el: e, x, bi, start: m.index, end: m.index + m[0].length });
+    const c = x.s.match(re)?.length ?? 0;
+    if (at && e === at.el) center = total + Math.min(at.ord, Math.max(0, c - 1));
+    if (!c) continue;
+    blocks.push([e, x, bi, total, c]);
+    total += c;
   }
+  base = Math.max(0, Math.min(center - KEPT / 2, total - KEPT));
+  const end = Math.min(total, base + KEPT);
+  matches = [];
+  for (const [el, x, bi, first, c] of blocks) {
+    if (first >= end) break;
+    if (first + c <= base) continue;
+    re.lastIndex = 0;
+    for (let n = first, m; n < end && (m = re.exec(x.s)); n++) {
+      if (n >= base) matches.push({ el, x, bi, ord: n - first, start: m.index, end: m.index + m[0].length });
+    }
+  }
+}
+/** Where the kept matches are centred: the current match's block, else where a new search looks from (origin). */
+function around() {
+  if (pos) {
+    const el = slots.get(pos.slot);
+    if (el && el.isConnected) return { el, ord: pos.ord };
+    const after = pos.next && slots.get(pos.next);
+    if (after && after.isConnected) return { el: after, ord: 0 };
+  }
+  const sel = getSelection();
+  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  const el = r && blockOf(r.startContainer);
+  if (!el) return { el: blocksOnScreen()[0], ord: 0 };
+  // In its block: the place of the first match at or after the selection's start (a block can hold more than KEPT).
+  let x = texts.get(el);
+  if (!x) texts.set(el, x = textOf(el));
+  const { startContainer: n, startOffset: o } = r;
+  let at = x.s.length;
+  for (const [start, node, map] of x.segs) {
+    if (node === n) { at = start + (map ? Math.max(0, map.findIndex(v => v >= o)) : o); break; }
+    if (n.nodeType !== Node.TEXT_NODE && r.comparePoint(node, 0) >= 0) { at = start; break; }
+  }
+  let ord = 0;
+  re.lastIndex = 0;
+  for (let m; (m = re.exec(x.s)) && m.index < at;) ord++;
+  return { el, ord };
+}
+/** Makes match number `n` of the document (wrapping) the current one, keeping those around it if they are not kept. */
+function goTo(n) {
+  n = (n % total + total) % total;
+  if (n < base || n >= base + matches.length) search({ n });
+  cur = n - base;
 }
 
 function point(m, i, end) {
@@ -154,7 +217,7 @@ function origin() {
       return -at.comparePoint(n, o);
     }, true];
   }
-  return [fromTop, false];
+  return [topNow(), false];
 }
 function fromTop(m) {
   const top = fromTop.top;
@@ -177,7 +240,7 @@ function resolve() {
     return [next(topNow(), false, false), false];
   }
   const i = next(m => m.el === el ? 0 : before(m.el, el) ? -1 : 1, false, false);
-  if (matches[i].el !== el) return [i, false];
+  if (matches[i]?.el !== el) return [i, false];
   delete pos.next;
   // In its block: the match nearest where it was, counted from the block's
   // start or from its end (text written before it moves it from the start,
@@ -186,12 +249,15 @@ function resolve() {
   for (let k = i; k < matches.length && matches[k].el === el; k++) {
     const m = matches[k];
     const d = Math.min(Math.abs(m.start - pos.start), Math.abs(m.x.s.length - m.start - pos.fromEnd));
-    if (d < far || (d === far && Math.abs(k - i - pos.ord) < Math.abs(best - i - pos.ord))) { best = k; far = d; }
+    if (d < far || (d === far && Math.abs(m.ord - pos.ord) < Math.abs(matches[best].ord - pos.ord))) { best = k; far = d; }
   }
   return [best, true];
 }
 
-/** The first match `cmp` puts after its origin (`strict`: at it does not count), wrapping. */
+/**
+ * The first kept match `cmp` puts after its origin (`strict`: at it does
+ * not count), `backwards` the last before it: matches.length and -1 past the kept ones (goTo wraps).
+ */
 function next(cmp, strict, backwards) {
   let lo = 0, hi = matches.length;
   while (lo < hi) {
@@ -199,11 +265,11 @@ function next(cmp, strict, backwards) {
     const c = cmp(matches[mid]);
     if (c > 0 || (!strict && c === 0)) hi = mid; else lo = mid + 1;
   }
-  if (!backwards) return lo < matches.length ? lo : 0;
+  if (!backwards) return lo;
   // Backwards: the last match before the origin.
   lo = 0; hi = matches.length;
   while (lo < hi) { const mid = (lo + hi) >> 1; if (cmp(matches[mid]) < 0) lo = mid + 1; else hi = mid; }
-  return lo > 0 ? lo - 1 : matches.length - 1;
+  return lo - 1;
 }
 
 /** Marks the current match and those around it; returns the current one's range. */
@@ -226,14 +292,15 @@ function select(range) {
   sel.addRange(range);
   own = range;
 }
+const sameRange = (a, b) => !!a && !!b && a.startContainer === b.startContainer && a.startOffset === b.startOffset
+  && a.endContainer === b.endContainer && a.endOffset === b.endOffset;
 const isOwn = () => {
   const sel = getSelection();
-  const r = own && sel.rangeCount ? sel.getRangeAt(0) : null;
-  return !!r && r.startContainer === own.startContainer && r.startOffset === own.startOffset
-    && r.endContainer === own.endContainer && r.endOffset === own.endOffset;
+  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  return sameRange(own, r) || sameRange(left, r);
 };
 // The reader selecting something else: the selection is theirs.
-document.addEventListener('selectionchange', () => { if (own && !isOwn()) own = null; });
+document.addEventListener('selectionchange', () => { if ((own || left) && !isOwn()) own = left = null; });
 
 /**
  * The match landed on is selected once the frame showing it is painted (its
@@ -249,23 +316,25 @@ function selectLater() {
 function selectNow() {
   selecting = null;
   const m = matches[cur];
-  if (m) select(rangeOf(m));
+  if (!m) return;
+  if (doc.childElementCount <= SELECTABLE) return select(rangeOf(m));
+  const sel = getSelection();
+  left = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
 }
 
 /** Tells the app the count (current 0: none yet): after every search, after an edit only when it changed. */
 function report(always = false) {
-  const now = `${cur + 1}/${matches.length}`;
+  const current = cur < 0 ? 0 : base + cur + 1;
+  const now = `${current}/${total}`;
   if (now === shown && !always) return;
   shown = now;
-  post({ type: 'found', current: cur + 1, total: matches.length });
+  post({ type: 'found', current, total });
 }
 
 /** Remembers where the current match is (pos). */
 function place() {
   const m = matches[cur];
-  let first = cur;
-  while (first > 0 && matches[first - 1].el === m.el) first--;
-  pos = { slot: +m.el.dataset.slot, ord: cur - first, start: m.start, fromEnd: m.x.s.length - m.start };
+  pos = { slot: +m.el.dataset.slot, ord: m.ord, start: m.start, fromEnd: m.x.s.length - m.start };
 }
 
 /** To the current match (a search): selected, and on screen (it stays where it is if it is already). */
@@ -348,9 +417,9 @@ function refresh() {
   refreshTimer = null;
   if (query == null) return;
   const t0 = performance.now();
-  if (reread()) search();
+  if (reread()) search(around());
   const [i, exact] = resolve();
-  cur = i;
+  if (i < 0) cur = -1; else goTo(base + i);
   if (exact) place();   // where it is now, for the next edit
   const range = mark();
   if (range && exact && own && own.collapsed && !selecting) select(range);
@@ -378,21 +447,20 @@ export function find(text, backwards = false) {
     pos = null;
     re = new RegExp(q.split(/ +/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' +'), 'g');
   }
-  search();
-  if (!matches.length) { cur = -1; pos = null; mark(); report(true); return 0; }
   // Next and Previous go on from the current match, unless the reader has
   // selected something else since, or clicked somewhere (the caret).
   const sel = getSelection();
   const r = sel.rangeCount ? sel.getRangeAt(0) : null;
   const theirs = !!r && !selecting && !isOwn() && !!blockOf(r.startContainer);
+  if (theirs) pos = null;
+  search(around());
+  if (!total) { cur = -1; pos = null; mark(); report(true); return 0; }
   const [i, exact] = same && !theirs ? resolve() : [-1, false];
-  const n = matches.length;
-  if (i < 0) { const [cmp, strict] = origin(); cur = next(cmp, strict, backwards); }
-  else if (exact) cur = (i + (backwards ? n - 1 : 1)) % n;
-  else cur = backwards ? (i + n - 1) % n : i;
+  if (i < 0) { const [cmp, strict] = origin(); goTo(base + next(cmp, strict, backwards)); }
+  else goTo(base + i + (backwards ? -1 : exact ? 1 : 0));
   land();
   report(true);
-  return matches.length;
+  return total;
 }
 
 /**
@@ -405,6 +473,7 @@ export function findEnd(keep = false) {
   clearTimeout(refreshTimer);
   refreshTimer = null;
   matches = [];
+  base = total = 0;
   cur = -1;
   pos = null;
   shown = '';
@@ -415,5 +484,5 @@ export function findEnd(keep = false) {
   texts = new WeakMap();
   stale.clear();
   moved = false;
-  own = null;
+  own = left = null;
 }

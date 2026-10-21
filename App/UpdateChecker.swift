@@ -138,7 +138,7 @@ enum UpdateChecker {
     private static func offer(_ release: Release) {
         alert(title: NSLocalizedString("A New Version Is Available", comment: "Update alert title"),
               body: "\(release.name ?? release.tag)\n\n\(ReleaseCheck.plainNotes(release.body ?? ""))",
-              download: ReleaseCheck.downloadURL(assets: (release.assets ?? []).map { (name: $0.name, url: $0.url) }, page: release.htmlURL ?? releasesURL))
+              download: ReleaseCheck.downloadURL(assets: (release.assets ?? []).map { (name: $0.name, url: $0.url) }, page: release.htmlURL, releases: releasesURL))
     }
 
     /// `title` is localized by the caller (literal keys, so the strings can be found).

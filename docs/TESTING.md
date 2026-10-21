@@ -28,7 +28,7 @@ installs WebKit with `npx playwright install --with-deps webkit`.
 
 `web/test/copy.test.mjs` also copies random selections and parses each copy
 again with ReadoutCore (`readout-dump`, built with `swift build`, or the
-binary in `READOUT_DUMP`): the copy must read as the selection did.
+binary in `READOUT_DUMP`; with neither, it fails and says how to set it): the copy must read as the selection did.
 `COPY_FUZZ` sets the selections per document (default 8).
 
 ## 3. Signed-product smoke test
@@ -104,7 +104,7 @@ over its guard; metrics with `"guard": null` are printed but not gated.
 | Where | Measured by | Metrics |
 | --- | --- | --- |
 | mac (Verify signed product) | `PerformanceBudgetTests` in a release build, written to the file named by `READOUT_PERF_OUT`; `tools/smoke-run.py` timings from the signed app; the Quick Look extension's log | update_100kb, update_1mb, word_diff_100kb (the word-level comparison of 20 edited blocks); cold_start_ms and its launch phases (the job's first launch), cold_apply_ms (the second launch: the first is the first time WebKit runs on the VM; its value is reported as cold_apply_first_boot_ms, with the page's split cold_page_setappearance_ms, cold_page_blocks_ms, cold_page_layout_ms), warm_open_ms, write_to_update_ms; ql_open_ms, ql_second_open_ms (reported) |
-| linux-webkit (Web tests) | `node web/test/perf.test.mjs` → `web/test/out/perf-web.json` | web_first_apply_1mb_ms (the synchronous first apply, which reads no layout), web_first_apply_1mb_painted_ms (until the frame showing it is painted), web_update_20_blocks_1mb_ms (including the layout it causes), web_find_open_1mb_ms (the find bar's first search: every block's text read without layout, the matches counted, one on screen landed on), web_find_refresh_1mb_ms (with a search on, the count and marks after a one-block edit; reported), web_scroll_up_jump_px, web_first_highlight_warm_ms and web_first_highlight_cold_ts_ms (a TypeScript block on a warmed page, and on one not warmed), web_tab_private_mb (a warmed tab's private memory with a small plan, Linux smaps), web_stream_append_5mb_ms (an agent streaming at the end of a 5 MB document the reader follows, per patch including its layout; reported) |
+| linux-webkit (Web tests) | `node web/test/perf.test.mjs` → `web/test/out/perf-web.json` | web_first_apply_1mb_ms (the synchronous first apply, which reads no layout), web_first_apply_1mb_painted_ms (until the frame showing it is painted), web_update_20_blocks_1mb_ms (including the layout it causes), web_find_open_1mb_ms (the find bar's first search: every block's text read without layout, the matches counted, one on screen landed on), web_find_refresh_1mb_ms (with a search on, the count and marks after a one-block edit; reported), web_find_one_letter_5mb_ms (Return in a find for "e" in the 5 MB document, about 300,000 matches: the two frames after it), web_scroll_up_jump_px, web_first_highlight_warm_ms and web_first_highlight_cold_ts_ms (a TypeScript block on a warmed page, and on one not warmed), web_tab_private_mb (a warmed tab's private memory with a small plan, Linux smaps), web_stream_append_5mb_ms (an agent streaming at the end of a 5 MB document the reader follows, per patch including its layout; reported) |
 
 Run locally:
 

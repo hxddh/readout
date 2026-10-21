@@ -3,7 +3,7 @@
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
 // measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it,
 // the find bar's first search and its refresh after an edit, and how far the text jumps scrolling up from the end; in a ~5 MB document,
-// an edit above the reader, outline jumps, and an agent streaming at its end
+// an edit above the reader, outline jumps, Return in a one-letter find, and an agent streaming at its end
 // while the reader follows; on a fresh warmed page, the first apply of a small
 // document whose code block is on screen, then a small plan's private memory;
 // on a fresh page not warmed, how long its first TypeScript block takes to
@@ -236,6 +236,31 @@ const stream = await (async () => {
     }), frac));
     await p5.waitForTimeout(1200);
   }
+  // Return in a find for one letter ("e": about 300,000 matches) at the top
+  // of the 5 MB document, its match on screen: the two frames after the call
+  // (the match is selected, in a smaller document, in the second). 3.9 before
+  // the release review: 7-11 s (WebKit checking every block against the new
+  // selection), the frames after a search slower with the number of matches.
+  await p5.evaluate(() => window.scrollTo(0, 0));
+  await frames();
+  await p5.waitForTimeout(300);
+  const oneLetter = [];
+  const letterHits = await p5.evaluate(() => window.readout.find('e'));
+  if (letterHits < 100_000) errors.push(`find "e" in 5 MB: ${letterHits} matches`);
+  await p5.waitForTimeout(1500);
+  for (let i = 0; i < 3; i++) {
+    oneLetter.push(await p5.evaluate(() => new Promise(resolve => {
+      const c0 = performance.now();
+      window.readout.find('e');
+      const t0 = performance.now();
+      requestAnimationFrame(() => setTimeout(() => {
+        const t1 = performance.now();
+        requestAnimationFrame(() => setTimeout(() => resolve({ ms: performance.now() - t0, call: t0 - c0, first: t1 - t0 }), 0));
+      }, 0));
+    })));
+    await p5.waitForTimeout(500);
+  }
+  await p5.evaluate(() => window.readout.findEnd());
   // To the end, again once the blocks there are laid out at their real
   // heights (the first scroll lands where their estimates put it).
   for (let k = 0; k < 3; k++) {
@@ -261,7 +286,7 @@ const stream = await (async () => {
   }
   const left = await p5.evaluate(() => { const s = document.scrollingElement; return Math.round(s.scrollHeight - s.scrollTop - innerHeight); });
   await p5.close();
-  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps) };
+  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps), letter: median(oneLetter.map(x => x.ms)), letterSamples: oneLetter.map(x => [x.call, x.first, x.ms].map(Math.round)) };
 })();
 console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 1000)} s`);
 
@@ -380,6 +405,8 @@ const result = {
   web_stream_end_left_px: stream.left,
   web_edit_above_5mb_ms: Math.round(stream.edit * 10) / 10,
   web_toc_jump_5mb_ms: Math.round(stream.jump),
+  web_find_one_letter_5mb_ms: Math.round(stream.letter),
+  web_find_one_letter_5mb_samples_ms: stream.letterSamples,   // [the call, the first frame, both frames]
   web_scroll_up_jump_px: scrollUpJump,
   errors,
 };

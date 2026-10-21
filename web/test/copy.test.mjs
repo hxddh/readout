@@ -477,11 +477,20 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
   if (named[0].text !== '- succeeds when the key exists.\n- `p2p` -- succeeds when port 30303 is open.\n- `ready` -- succeeds when both') fail(`copy-escapes: sub-points of an item do not copy as a list: ${JSON.stringify(named[0].text)}`);
   copies.push(...named.map(c => ({ doc: 'copy-escapes.md (by name)', ...c })));
   // Parsed by ReadoutCore as the app parses a file: the text a reader sees, without white space.
+  // READOUT_DUMP, else built here with swift; neither: a failure that says so (CI must run this).
+  const howTo = 'build it (swift build --package-path Packages/ReadoutCore --product readout-dump) and set READOUT_DUMP to the binary, or put swift on PATH';
   const dump = process.env.READOUT_DUMP || (() => {
     const pkg = ['--package-path', '../Packages/ReadoutCore'];
-    execFileSync('swift', ['build', ...pkg, '--product', 'readout-dump'], { stdio: ['ignore', 'ignore', 'inherit'] });
+    try {
+      execFileSync('swift', ['build', ...pkg, '--product', 'readout-dump'], { stdio: ['ignore', 'ignore', 'inherit'] });
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+      console.log(`FAIL copy round trips need ReadoutCore's readout-dump, and swift is not on PATH: ${howTo}`);
+      process.exit(1);
+    }
     return join(execFileSync('swift', ['build', ...pkg, '--show-bin-path'], { encoding: 'utf8' }).trim(), 'readout-dump');
   })();
+  if (!existsSync(dump)) { console.log(`FAIL READOUT_DUMP=${dump} does not exist: ${howTo}`); process.exit(1); }
   const dir = 'test/out/copy-fuzz';
   mkdirSync(dir, { recursive: true });
   const squash = t => t.replace(/[\s​]+/g, '');
