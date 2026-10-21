@@ -15,7 +15,6 @@
   --link: #0a64d6;
   --accent: #0a84ff;          /* replaced by the macOS accent colour at runtime */
   --accent-soft: rgba(10, 132, 255, 0.10);
-  --mark-read: #c7c7cc;
   --note: #0a64d6;
   --tip: #1a7f45;             /* 4.6:1 on --fill (AA for the alert title) */
   --important: #8a4fd0;
@@ -60,7 +59,6 @@
   --fill-2: #333336;
   --link: #5aa9ff;
   --accent-soft: rgba(10, 132, 255, 0.16);
-  --mark-read: #48484a;
   --note: #5aa9ff;
   --tip: #4cc27a;
   --important: #b48af0;
@@ -82,7 +80,6 @@
     --fill-2: #333336;
     --link: #5aa9ff;
     --accent-soft: rgba(10, 132, 255, 0.16);
-    --mark-read: #48484a;
     --note: #5aa9ff;
     --tip: #4cc27a;
     --important: #b48af0;
@@ -396,8 +393,9 @@ li.task > .task-box {
   box-shadow: inset 0 0 0 1.25px var(--text-3);
 }
 .blk.cjk li.task > .task-box { top: calc((var(--lh-cjk) - 1.01) * 0.5em); }
+/* Done is quiet: the accent means unread, nothing else. */
 li.task > .task-box.checked {
-  background: var(--accent);
+  background: var(--text-3);
   box-shadow: none;
 }
 li.task > .task-box.checked::after {
@@ -426,9 +424,9 @@ blockquote > :last-child { margin-bottom: 0; }
 .alert {
   padding: 0.7em 1em 0.75em;
   border-radius: 8px;
+  /* Its fill and coloured title, no coloured edge: beside a change bar an
+     edge read as a second one. */
   background: var(--fill);
-  /* The colour edge follows the rounded corners (a border-left frayed there). */
-  box-shadow: inset 3px 0 0 var(--alert-c);
   --surface: var(--fill);
 }
 .alert > :last-child { margin-bottom: 0; }
@@ -446,13 +444,13 @@ blockquote > :last-child { margin-bottom: 0; }
    and a long value wrapped under its key). Each value is an element of its
    own (.fm-val), so a value with line breaks stays in its column. */
 .front-matter {
-  display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 16px;
-  font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2);
-  margin: 0 0 1.6em;
+  display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 1px 12px;
+  font-size: var(--fs-xs); line-height: 1.45; color: var(--text-2);
+  margin: 0 0 1.2em;
 }
 .fm-item { display: contents; }
 .fm-val { min-width: 0; }
-.fm-key { color: var(--text-2); font-weight: 600; }
+.fm-key { color: var(--text-2); font-weight: 500; }
 
 /* Tables */
 .table-wrap { overflow-x: auto; }
@@ -546,7 +544,7 @@ td.num, th.num { text-align: right; }
 .cb-wrap:hover, .cb-copy:hover { background: var(--fill-2); color: var(--text); }
 /* Labels of the reader's own controls are generated content, so selecting and
    copying a passage never picks them up. */
-.cb-lang::before, .cb-wrap::before, .cb-copy::before, .h-link::before { content: attr(data-label); }
+.cb-lang::before, .cb-wrap::before, .cb-copy::before { content: attr(data-label); }
 
 /* Shiki dual themes */
 .shiki span { color: var(--shiki-light); }
@@ -654,13 +652,12 @@ details ul, details ol { padding-left: 1.5em; }
 .k-heading::before { top: calc(var(--h-mt) + 0.18 * var(--h-fs)); bottom: calc(var(--h-mb) + 0.12 * var(--h-fs)); }
 .k-listItem::before { bottom: 0.3em; }
 .k-listItem:has(> .li-last)::before { bottom: var(--flow); }
-.blk.m-inserted::before { background: var(--accent); }
-.blk.m-modified::before { background: var(--accent); opacity: 0.55; }
-/* Read marks are a hairline, so an edited mark in a grey (Graphite) accent
-   never passes for one already read. */
-.blk.m-read::before { background: var(--mark-read); opacity: 1; width: 1px; left: 11px; }
-.blk.m-state::before { background: var(--accent); width: 5px; height: 5px; bottom: auto; top: 0.7em; left: 9px; border-radius: 50%; }
-.blk.m-state.m-read::before { background: var(--mark-read); width: 5px; left: 9px; }
+/* One bar for every change (added, edited, a box ticked), at full strength:
+   3:1 on the page in light and dark, a grey (Graphite) accent too. What kind
+   it was is in the rail's label and VoiceOver's, and N opens an edit's
+   comparison. Once read it fades out (the transition above) and goes. */
+.blk:is(.m-inserted, .m-modified, .m-state)::before { background: var(--accent); }
+.blk.m-read::before { background: transparent; }
 /* The edit mark opens the comparison: a wider target than the 3 px bar. */
 .blk.wd-has::before {
   cursor: pointer;
@@ -706,7 +703,8 @@ details ul, details ol { padding-left: 1.5em; }
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
 }
-.del-mark.m-read > button::before { border-left-color: var(--mark-read); }
+.del-mark > button::before { transition: border-color 600ms ease; }
+.del-mark.m-read > button::before { border-left-color: transparent; }
 .del-pop {
   position: absolute;
   left: 0; right: 0; top: 0.2em; z-index: 5;
@@ -749,7 +747,6 @@ details ul, details ol { padding-left: 1.5em; }
   box-sizing: content-box; border: 0; padding: 0 0 0 10px; background-clip: content-box;
   background-color: var(--accent); pointer-events: auto; cursor: pointer;
 }
-#ro-rail > button.mod { opacity: 0.55; }
 
 /* Rewrite notice */
 #ro-notice {
@@ -762,39 +759,17 @@ details ul, details ol { padding-left: 1.5em; }
 }
 #ro-notice[hidden] { display: none; }
 
-/* Changes-only empty state */
-#ro-caughtup {
-  margin: 18vh auto 0; width: max-content; max-width: 100%;
-  font-size: var(--fs-sm); color: var(--text-2);
-}
-#ro-caughtup[hidden] { display: none; }
-
-/* Heading section links */
-.k-heading { position: relative; }
-/* Beside the heading, in the gutter on its first line: the heading's size and
-   line height, so § sits on the heading's baseline. */
-.h-link {
-  position: absolute; left: 8px; top: var(--h-mt);
-  border: 0; padding: 0 4px; background: transparent; cursor: pointer;
-  font-size: var(--h-fs); font-weight: 650; line-height: 1.3;
-  color: var(--text-3);
-  opacity: 0; transition: opacity 120ms;
-  -webkit-user-select: none; user-select: none;
-}
-.h-link::before { font-size: 0.85rem; font-weight: 400; }
-.k-heading:hover .h-link, .h-link:focus { opacity: 1; }
 /* A block a jump moved the keyboard focus to shows no focus ring (it is where the jump landed). */
 #ro-doc > [tabindex="-1"]:focus { outline: none; }
-.h-link:hover { color: var(--accent); }
 
 /* Empty state */
 #ro-empty { color: var(--text-2); font-size: var(--fs-sm); padding-top: 18vh; text-align: center; }
 
 /* QuickLook: no change UI */
 :root[data-mode="quicklook"] #ro-rail, :root[data-mode="quicklook"] .blk::before { display: none; }
-/* Nothing to copy to or load from in Quick Look: no Copy, no section links;
-   a remote image shows its placeholder's text, nothing to click. */
-:root[data-mode="quicklook"] :is(.cb-copy, .h-link) { display: none; }
+/* Nothing to copy to or load from in Quick Look: no Copy; a remote image
+   shows its placeholder's text, nothing to click. */
+:root[data-mode="quicklook"] .cb-copy { display: none; }
 :root[data-mode="quicklook"] .remote-ph {
   display: inline-block; font-size: 0.82rem; color: var(--text-2);
   border: 1px dashed var(--rule); border-radius: 8px; padding: 0.6em 1em;
@@ -803,36 +778,31 @@ details ul, details ol { padding-left: 1.5em; }
 
 @media (prefers-reduced-motion: reduce) {
   .blk.flash::after, .landed { animation: none; }
-  .blk::before, .code-block .cb-tools { transition: none; }
+  .blk::before, .del-mark > button::before, .code-block .cb-tools { transition: none; }
 }
 
 /* Increase contrast (System Settings › Accessibility › Display): darker
-   secondary text and rules, solid full-strength change marks, and edges on
+   secondary text and rules, wider change marks, and edges on
    the panels that float over the page. */
 @media (prefers-contrast: more) {
   :root {
     --text-2: #46464c;
     --text-3: #636369;
     --rule: #b4b4bb;
-    --mark-read: #8e8e93;
   }
   :root[data-theme="dark"] {
     --text-2: #c4c4ca;
     --text-3: #a1a1a7;
     --rule: #6c6c72;
-    --mark-read: #8a8a90;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --text-2: #c4c4ca;
       --text-3: #a1a1a7;
       --rule: #6c6c72;
-      --mark-read: #8a8a90;
     }
   }
   .blk::before { width: 4px; }
-  .blk.m-modified::before { opacity: 1; }
-  .blk.m-read::before { width: 2px; }
   .wd-panel { box-shadow: inset 0 0 0 1px var(--rule); }
   .del-pop { box-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.2); }
 }
@@ -848,7 +818,6 @@ details ul, details ol { padding-left: 1.5em; }
     --fill: #f5f5f7;
     --fill-2: #ececf0;
     --link: #0a64d6;
-    --mark-read: #c7c7cc;
     --note: #0a64d6;
     --tip: #1a7f45;
     --important: #8a4fd0;
@@ -859,7 +828,7 @@ details ul, details ol { padding-left: 1.5em; }
     color-scheme: light;
   }
   :root[data-theme="dark"] .shiki span, :root:not([data-theme="light"]) .shiki span { color: var(--shiki-light); }
-  #ro-rail, #ro-notice, #ro-caughtup, .cb-tools, .del-mark, .h-link { display: none !important; }
+  #ro-rail, #ro-notice, .cb-tools, .del-mark { display: none !important; }
   .blk::before { display: none; }
   /* Room on the left for list numbers past 99, which hang a little out of
      the column (on screen into the gutter, here past the paper's edge). */

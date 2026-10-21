@@ -18,6 +18,14 @@ export function pinActiveHeading(slot) {
 
 export function headingsChanged() { headings = null; }
 
+// The heading a context menu opens on, for its Copy Link to Section (the
+// app adds the item; WebKit gives the menu no way to ask). Told for every
+// menu, '' off a heading, so none is left over from the last.
+document.addEventListener('contextmenu', e => {
+  const h = e.target instanceof Element ? e.target.closest('#ro-doc > .k-heading') : null;
+  post({ type: 'contextHeading', anchor: h?.dataset.anchor || '' });
+}, true);
+
 function report(slot) {
   if (slot !== lastActive) { lastActive = slot; post({ type: 'activeHeading', slot }); }
 }
@@ -30,8 +38,7 @@ export function reportActiveHeading() {
   }
   if (!headings) headings = Array.from(doc.querySelectorAll('.k-heading'));
   // Headings are in document order, so their tops increase: binary search
-  // for the last one at or above the line. This relies on headings never
-  // being hidden ("Show Only Changes" keeps them as context).
+  // for the last one at or above the line (nothing hides a heading).
   // Below the window toolbar: jumps land a heading 16 px under it.
   const line = 80 + topInset();
   let lo = 0, hi = headings.length - 1, active = null;
