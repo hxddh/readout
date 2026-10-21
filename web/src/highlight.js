@@ -152,23 +152,27 @@ export function init() {
 // compiled the same way, ahead of the rest, until it is shown.
 let warming = false;
 let warmStopped = false;
-const work = [];             // warm-up steps, run a slice at a time
+const work = [];             // warm-up jobs (iterators: one step per next()), run a slice at a time
 let working = false;
 const warmQueued = new Set();  // grammar ids whose warm-up is queued
 export function warm() {
   return init().then(() => {
     if (!preload || warming || warmStopped) return;
     warming = true;
-    for (const id of SPARE_PRELOAD) ensureLang(id);
-    setTimeout(() => {
-      for (const id of WARM_ORDER) if (highlighter.getLoadedLanguages().includes(id)) queueWarm(id);
-      // And the whole path once, as a block is highlighted (both themes, HTML).
+    // Every preloaded grammar registered first (however long that takes),
+    // then the idle delay, then the warm-up.
+    const loads = SPARE_PRELOAD.map(id => ensureLang(id));
+    Promise.all(loads).then(() => setTimeout(() => {
+      if (warmStopped) return;
       const start = performance.now();
-      work.push(() => highlightSync('x', 'json'));
+      const ids = WARM_ORDER.filter(id => !failed.has(id));
+      for (const id of ids) queueWarm(id);
+      // And the whole path once, as a block is highlighted (both themes, HTML).
+      work.push(once(() => highlightSync('x', 'json')));
       // Marked once the queue is empty, its last slice counted.
-      warmDone = () => performance.mark('readout-hl-warm', { detail: { ms: performance.now() - start, longestSlice } });
+      warmDone = () => performance.mark('readout-hl-warm', { detail: { ms: performance.now() - start, longestSlice, grammars: ids } });
       runWork();
-    }, WARM_DELAY_MS);
+    }, WARM_DELAY_MS));
   });
 }
 
@@ -361,41 +365,42 @@ const SAMPLES = {
 const GENERIC_SAMPLE = 'import x from "y"; // comment\n# comment\n/* comment */ if (a == 1.5) { return [true, null, \'s\', `t`]; }\nfunc(a, b) -> c:';
 const WARM_DELAY_MS = 5000;
 const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript', 'go', 'swift', 'rust', 'yaml', 'markdown', 'sql', 'diff'];   // 3.8's order
-// The regexes of a grammar, as the build precompiled them: WebKit compiles
-// each on its first use, which is what makes a grammar's first block slow.
-function regexesOf(id) {
-  const out = new Set(), seen = new Set();
-  const walk = v => {
-    if (v instanceof RegExp) { out.add(v); return; }
-    if (!v || typeof v !== 'object' || seen.has(v)) return;
+// A grammar's warm-up, one step per next(), so it is sliced and measured
+// like the rest (the walk too): each of its regexes (as the build
+// precompiled them; WebKit compiles each on its first use, which is what
+// makes a grammar's first block slow) run once, then its sample (or a
+// generic one) a line per step, carrying the grammar's state, so the rules
+// it reaches are set up as they are for a block.
+function* warmSteps(id) {
+  const seen = new Set(), stack = [grammarsOf.get(id)];
+  while (stack.length) {
+    const v = stack.pop();
+    if (v instanceof RegExp) {
+      try { v.lastIndex = 0; v.exec(''); } catch { /* not ours to fix */ }
+      yield;
+      continue;
+    }
+    if (!v || typeof v !== 'object' || seen.has(v)) continue;
     seen.add(v);
-    for (const k in v) walk(v[k]);
-  };
-  walk(grammarsOf.get(id));
-  return [...out];
+    for (const k in v) stack.push(v[k]);
+  }
+  let state;
+  for (const line of (SAMPLES[id] || GENERIC_SAMPLE).split('\n')) {
+    try {
+      const tokens = highlighter.codeToTokensBase(line, { lang: id, theme: 'github-light-default', ...(state ? { grammarState: state } : {}) });
+      state = highlighter.getLastGrammarState(tokens);
+    } catch { state = undefined; }
+    yield;
+  }
 }
+function* once(f) { f(); }
 
-// A grammar's warm-up: its patterns compiled, then its sample (if it has
-// one) run a line per step (carrying the grammar's state), so the rules it
-// reaches are set up as they are for a block. `first`: ahead of the rest.
+// `first`: ahead of the rest (a document's languages, prepareLangs).
 function queueWarm(id, first = false) {
   if (warmQueued.has(id)) return;
   warmQueued.add(id);
-  const steps = [];
-  for (const r of regexesOf(id)) steps.push(() => { try { r.lastIndex = 0; r.exec(''); } catch { /* not ours to fix */ } });
-  let state;
-  for (const line of (SAMPLES[id] || GENERIC_SAMPLE).split('\n')) {
-    steps.push(() => {
-      try {
-        const tokens = highlighter.codeToTokensBase(line, { lang: id, theme: 'github-light-default', ...(state ? { grammarState: state } : {}) });
-        state = highlighter.getLastGrammarState(tokens);
-      } catch { state = undefined; }
-    });
-  }
-  if (first) {
-    steps.push(() => performance.mark('readout-hl-prepared'));   // for the tests
-    work.unshift(...steps);
-  } else work.push(...steps);
+  if (first) work.unshift(warmSteps(id), once(() => performance.mark('readout-hl-prepared')));   // the mark: for the tests
+  else work.push(warmSteps(id));
 }
 
 const SLICE_MS = 8;
@@ -407,13 +412,11 @@ function runWork() {
   const next = () => {
     if (warmStopped) { working = false; return; }
     const t0 = performance.now();
-    let step;
     do {
-      step = work.shift();
-      if (step) step();
-    } while (step && performance.now() - t0 < SLICE_MS);
+      if (work.length && work[0].next().done) work.shift();
+    } while (work.length && performance.now() - t0 < SLICE_MS);
     longestSlice = Math.max(longestSlice, performance.now() - t0);
-    if (step) { setTimeout(next, 0); return; }
+    if (work.length) { setTimeout(next, 0); return; }
     working = false;
     if (warmDone) { const done = warmDone; warmDone = null; done(); }
   };

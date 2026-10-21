@@ -14,9 +14,12 @@ const icon = new PNG({ width: 16, height: 16 });
 for (let i = 0; i < icon.data.length; i += 4) icon.data.set([220, 0, 0, 255], i);
 const ICON = PNG.sync.write(icon);
 const requests = [];   // every path the pages asked for, in order
-const server = http.createServer((req, res) => {
+const delays = [];     // [pattern, ms]: responses held back (a slow grammar import)
+const server = http.createServer(async (req, res) => {
   const u = decodeURIComponent(req.url.split('?')[0]);
   requests.push(u);
+  const held = delays.find(([re]) => re.test(u));
+  if (held) await new Promise(r => setTimeout(r, held[1]));
   if (u === '/icon.png') { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(ICON); }
   const p = join(WEB, u);
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
@@ -1258,6 +1261,39 @@ const v36 = patch([
   await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
   const last = await page.evaluate(() => ({ held: !!window.__held, longest: performance.getEntriesByName('readout-hl-warm')[0].detail.longestSlice }));
   check("the warm-up's longest slice counts its last slice", last.held && last.longest >= 150, JSON.stringify(last));
+  await page.close();
+  // It waits for every preloaded grammar, however slow its import (SQL's
+  // held back 7 s, longer than the warm-up's delay), and warms it before done.
+  const openWarm = async () => {
+    const pg = await browser.newPage({ viewport: { width: 700, height: 800 } });
+    collectPageErrors(pg, errors);
+    await pg.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+    await pg.goto(`${base}/reader.html`);
+    await until(pg, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
+    await pg.evaluate(() => { window.readout.setAppearance({ dark: false }); window.readout.warm(); });
+    return pg;
+  };
+  delays.push([/\/chunks\/sql-/, 7000]);
+  const t0 = Date.now();
+  page = await openWarm();
+  const slowDone = await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
+  const slow = await page.evaluate(() => performance.getEntriesByName('readout-hl-warm')[0]?.detail ?? {});
+  delays.length = 0;
+  check('the warm-up waits for a slow grammar and warms it before it is done', slowDone && Date.now() - t0 > 7000 && (slow.grammars || []).includes('sql'), JSON.stringify({ slowDone, ms: Date.now() - t0, grammars: slow.grammars }));
+  await page.close();
+  // Walking a grammar for its patterns is a sliced step too: a walk held up
+  // 150 ms (an inherited getter, added once the grammars are in, that the
+  // walk reads on a grammar's root) shows in the longest slice.
+  page = await openWarm();
+  await page.waitForTimeout(3000);   // the grammars registered; the warm-up starts 5 s after
+  await page.evaluate(() => {
+    Object.defineProperty(Object.prototype, '__walkProbe', { enumerable: true, configurable: true, get() {
+      if (!window.__walkHeld && typeof this.scopeName === 'string') { window.__walkHeld = true; for (const t = performance.now(); performance.now() - t < 150;); }
+    } });
+  });
+  await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
+  const walk = await page.evaluate(() => ({ held: !!window.__walkHeld, longest: performance.getEntriesByName('readout-hl-warm')[0]?.detail?.longestSlice }));
+  check("walking a grammar for its patterns is counted in the warm-up's longest slice", walk.held && walk.longest >= 150, JSON.stringify(walk));
   await page.close();
 }
 
