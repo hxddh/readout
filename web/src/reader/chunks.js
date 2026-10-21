@@ -120,20 +120,12 @@ export function place(el, after, est = 0) {
     else { const fresh = makeChunk(); c.after(fresh); c = fresh; after = null; }
   } else if (!after && n >= MAX) {
     const fresh = makeChunk(); c.before(fresh); c = fresh;
-  } else if (after && n >= MAX) {
-    // In the middle of a chunk grown full: what follows the place moves to a chunk of its own.
-    const rest = makeChunk();
-    c.after(rest);
-    const moved = [];
-    for (let e = after.nextElementSibling; e; e = e.nextElementSibling) moved.push(e);
-    rest.append(...moved);
-    let d = 0;
-    for (const e of moved) d += estimates.get(e) || 0;
-    account(c, -d); account(rest, d);
   }
+  // In the middle of a chunk: it grows (past MAX it is split when the page is quiet).
   if (after) after.after(el); else c.prepend(el);
   estimates.set(el, est);
   account(c, est);
+  if (c.childElementCount > MAX) uneven(c);
 }
 
 /** Puts `el` last in the document. */
@@ -151,8 +143,8 @@ export function reestimate(el, est) {
 }
 
 /**
- * Takes `el` out of the document. An emptied chunk goes; a chunk left
- * with few items joins a neighbour with room for them.
+ * Takes `el` out of the document. An emptied chunk goes; one left with few
+ * items joins a neighbour when the page is quiet.
  */
 export function unplace(el) {
   const c = chunkOf(el);
@@ -161,16 +153,74 @@ export function unplace(el) {
   account(c, -(estimates.get(el) || 0));
   const n = c.childElementCount;
   if (!n) return dropChunk(c);
-  if (n >= CHUNK / 4) return;
-  for (const other of [c.previousElementSibling, c.nextElementSibling]) {
-    if (!isChunk(other) || other.childElementCount + n > CHUNK) continue;
-    const items = [...c.children];
-    let d = 0;
-    for (const e of items) d += estimates.get(e) || 0;
-    if (other === c.previousElementSibling) other.append(...items); else other.prepend(...items);
-    account(other, d);
-    return dropChunk(c);
+  if (n < CHUNK / 4) uneven(c);
+}
+
+// Splitting a chunk grown past MAX and joining one left with few items move
+// blocks from one chunk to another, which would take the reader's selection,
+// caret or focus, and find's marks, with them: never while a patch applies.
+// Done when the page has been quiet a moment, only for chunks laid out (the
+// page then lays out the same), none holding the selection, the focus or a
+// find mark (they wait, and are done once they no longer do).
+const unevenChunks = new Set();
+let rebalanceTimer = null;
+function uneven(c) {
+  unevenChunks.add(c);
+  clearTimeout(rebalanceTimer);
+  rebalanceTimer = setTimeout(rebalance, 600);
+}
+function inUse(c) {
+  if (cv() && !c.classList.contains('near')) return true;
+  if (c.contains(document.activeElement)) return true;
+  const sel = getSelection();
+  for (let i = 0; sel && i < sel.rangeCount; i++) if (sel.getRangeAt(i).intersectsNode(c)) return true;
+  if (typeof CSS !== 'undefined' && CSS.highlights) for (const name of ['ro-find', 'ro-find-cur']) if (CSS.highlights.get(name)?.size) return true;
+  return false;
+}
+function rebalance() {
+  rebalanceTimer = null;
+  const done = [];
+  for (const c of unevenChunks) {
+    if (!c.isConnected) { unevenChunks.delete(c); continue; }
+    const n = c.childElementCount;
+    if (n > MAX) {
+      if (inUse(c)) continue;
+      // Into chunks of CHUNK, the first keeping its place.
+      let at = c;
+      const items = [...c.children].slice(CHUNK);
+      for (let k = 0; k < items.length; k += CHUNK) {
+        const fresh = makeChunk();
+        fresh.classList.toggle('near', c.classList.contains('near'));
+        at.after(fresh);
+        const part = items.slice(k, k + CHUNK);
+        fresh.append(...part);
+        let d = 0;
+        for (const e of part) d += estimates.get(e) || 0;
+        account(c, -d); account(fresh, d);
+        done.push(fresh);
+        at = fresh;
+      }
+      done.push(c);
+    } else if (n < CHUNK / 4) {
+      const other = [c.previousElementSibling, c.nextElementSibling].find(o => isChunk(o) && o.childElementCount + n <= CHUNK);
+      if (other) {
+        if (inUse(c) || inUse(other)) continue;
+        const items = [...c.children];
+        let d = 0;
+        for (const e of items) d += estimates.get(e) || 0;
+        if (other === c.previousElementSibling) other.append(...items); else other.prepend(...items);
+        account(other, d);
+        dropChunk(c);
+        done.push(other);
+      }
+    }
+    unevenChunks.delete(c);
   }
+  // The page lays out as before: the chunks' sizes taken as they are now.
+  flushStarts();
+  for (const c of done) if (c.isConnected) heights.set(c, c.getBoundingClientRect().height);
+  for (const c of done) touched.delete(c);
+  if (unevenChunks.size) rebalanceTimer = setTimeout(rebalance, 2000);
 }
 
 /**

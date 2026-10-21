@@ -674,6 +674,8 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   const ins = Array.from({ length: 40 }, (_, k) => ({ op: 'insert', slot: 1000 + k, after: k ? 1000 + k - 1 : 100, kind: 'paragraph', html: `<p>inserted ${k}</p>` }));
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: ins }));
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 120 }, (_, k) => ({ op: 'remove', slot: 20 + k })).filter(o => o.slot !== 33 && o.slot !== 32) }));
+  // Chunks are split and joined once the page has been quiet a moment.
+  await page.waitForTimeout(1200);
   await settled();
   const shape = await page.evaluate(() => {
     const chunks = [...document.querySelectorAll('#ro-doc > .chunk')];

@@ -1313,6 +1313,81 @@ for (const n of [60, 400]) {
   await page.close();
 }
 
+// A reader scrolling while a jump is still aiming (the second after it):
+// the wheel ends the jump, and the page stays where the reader scrolled it,
+// the text they scrolled to not pulled back to the jump's target.
+{
+  const page = await newPage();
+  const big = doc(3000, i => i % 50 === 1 ? `<h2>Section ${i}</h2>` : `<p style="min-height: ${40 + (i * 37) % 200}px">para ${i}</p>`, i => i % 50 === 1 ? 'heading' : 'paragraph');
+  big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
+  await page.evaluate(p => window.readout.apply(p), big);
+  await page.waitForTimeout(500);
+  await page.mouse.move(450, 350);
+  await page.evaluate(() => window.readout.scrollToSlot(2001));
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  for (let k = 0; k < 6; k++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(16); }
+  await page.waitForTimeout(100);
+  // (The wheel's own scrolling may still be gliding: where the text is in
+  // the document, and the page never scrolled back up towards the target.)
+  const where = s => page.evaluate(s => { const b = s ? document.querySelector(`.blk[data-slot="${s}"]`) : document.elementFromPoint(450, 350).closest('.blk');
+    return { slot: b.dataset.slot, at: Math.round(b.getBoundingClientRect().top + scrollY), y: Math.round(scrollY) }; }, s);
+  const held = await where();
+  const ys = [];
+  for (let k = 0; k < 12; k++) { await page.waitForTimeout(100); ys.push(await page.evaluate(() => Math.round(scrollY))); }
+  const later = await where(held.slot);
+  const heading = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="2001"]').getBoundingClientRect().top));
+  check('a reader scrolling during a jump\'s aim keeps the place they scrolled to', Math.abs(later.at - held.at) <= 2 && ys.every((y, k) => y >= (k ? ys[k - 1] : held.y) - 2) && heading < 0,
+    JSON.stringify({ held, later, ys, heading }));
+  await page.close();
+}
+
+// An agent inserting into the middle of a full chunk while the reader has a
+// selection in it, a block with the keyboard focus, or a find match current:
+// chunks are split only once nothing of the reader's sits in them (moving a
+// block to another chunk would take the selection, the focus and find's
+// marks with it). Nothing the reader holds changes, Copy as Quote still
+// quotes the selected block, and the chunk is split once they let go.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(300));
+  await scrollToBlock(page, 38);
+  let v = 1, s = 1000;
+  const stream = async () => {
+    for (let k = 0; k < 40; k++) {
+      await page.evaluate(p => window.readout.apply(p), patch(++v, [{ op: 'insert', slot: ++s, after: s === 1001 ? 40 : s - 1, kind: 'paragraph', html: `<p>streamed ${s}</p>` }]));
+      if (k % 10 === 0) await page.waitForTimeout(50);
+    }
+    await page.waitForTimeout(1500);
+  };
+  const sizes = () => page.evaluate(() => [...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount));
+  // (a) A selection in block 50.
+  await page.evaluate(() => { const t = document.querySelector('.blk[data-slot="50"] p').firstChild; getSelection().setBaseAndExtent(t, 2, t, 12); });
+  const selBefore = await page.evaluate(() => getSelection().toString());
+  await stream();
+  const a = await page.evaluate(() => ({ sel: getSelection().toString(), quote: window.readout.quoteSelection().slots }));
+  const grown = Math.max(...await sizes());
+  // (b) The keyboard focus on block 55.
+  await page.evaluate(() => { getSelection().removeAllRanges(); const b = document.querySelector('.blk[data-slot="55"]'); b.tabIndex = -1; b.focus(); });
+  await stream();
+  const b = await page.evaluate(() => document.activeElement?.dataset?.slot);
+  // (c) A find match current in block 60.
+  await page.evaluate(() => { document.activeElement?.blur(); window.readout.find('para 60'); });
+  await page.waitForTimeout(300);
+  const findBefore = await page.evaluate(() => ({ sel: getSelection().toString(), slot: getSelection().anchorNode?.parentElement?.closest('.blk')?.dataset.slot }));
+  await stream();
+  const c = await page.evaluate(() => ({ sel: getSelection().toString(), slot: getSelection().anchorNode?.parentElement?.closest('.blk')?.dataset.slot,
+    marked: [...(CSS.highlights.get('ro-find-cur') || [])].map(r => r.toString()) }));
+  // Let go: the chunks are split.
+  await page.evaluate(() => { window.readout.findEnd(); getSelection().removeAllRanges(); });
+  await page.waitForTimeout(3000);
+  const after = await sizes();
+  check('an agent inserting into a full chunk leaves the selection, the focus and the find match as they were, and the chunk is split once they let go',
+    a.sel === selBefore && selBefore.length === 10 && JSON.stringify(a.quote) === '[50]' && grown > 64 && b === '55'
+      && c.slot === '60' && c.sel === findBefore.sel && findBefore.slot === '60' && after.every(n => n <= 64),
+    JSON.stringify({ selBefore, a, grown, b, findBefore, c, after: Math.max(...after) }));
+  await page.close();
+}
+
 // A link to the 40th footnote of a long footnotes block at the end of a
 // large document (its chunk not laid out: WebKit places its content at the
 // chunk's top until it is): the note lands in the middle of the window, as
@@ -1329,7 +1404,13 @@ for (const n of [60, 400]) {
   await page.evaluate(() => window.readout.scrollToSlot(4000));
   await page.waitForTimeout(1200);
   const centered = sel => page.evaluate(sel => { const r = document.querySelector(sel).getBoundingClientRect(); return Math.round(r.top + r.height / 2 - innerHeight / 2); }, sel);
-  await page.evaluate(() => document.querySelector('a[href="#fn-40"]').click());
+  // The notes before it grow a frame after the jump (as a formula or an
+  // image in them is drawn): the note itself is kept in place, not just
+  // the top of its block.
+  await page.evaluate(() => {
+    document.querySelector('a[href="#fn-40"]').click();
+    requestAnimationFrame(() => { for (const n of [37, 38, 39]) document.getElementById(`fn-${n}`).style.minHeight = '300px'; });
+  });
   await page.waitForTimeout(1500);
   const note = await centered('#fn-40');
   await page.evaluate(() => document.querySelector('#fn-40 a[data-footnote-backref]').click());

@@ -251,6 +251,13 @@ export const AIM_MS = 1000;
  */
 let aiming = null;   // the jump being aimed: {y}, where its last aim left the page
 onKeptScroll(dy => { if (aiming) aiming.y += dy; });
+// The reader taking over (the wheel and a trackpad's momentum, keys, the
+// mouse, a touch) ends the jump at once, before the scroll it makes: the
+// page never aims against them. (A key or click that jumps again starts a
+// new one after this.)
+for (const type of ['wheel', 'keydown', 'mousedown', 'touchstart']) {
+  window.addEventListener(type, () => { aiming = null; landed = null; }, { capture: true, passive: true });
+}
 export function aimAt(el, off, landed) {
   forceLayout(el);
   window.scrollBy(0, off());
