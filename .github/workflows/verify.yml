@@ -174,6 +174,14 @@ jobs:
           ditto dist/Readout.app /Applications/Readout.app
           python3 tools/smoke-run.py /Applications/Readout.app/Contents/MacOS/Readout "$RUNNER_TEMP/smoke" smoke-out
 
+      - name: DIAG extra smoke runs (temporary)
+        continue-on-error: true
+        run: |
+          for i in 1 2 3 4; do
+            python3 tools/smoke-run.py /Applications/Readout.app/Contents/MacOS/Readout "$RUNNER_TEMP/smoke-x$i" smoke-x$i > smoke-x$i.log 2>&1 || true
+            grep -E "DIAG all phases|cold_apply_ms" smoke-x$i.log | head -3
+          done
+
       - name: Quick Look check
         run: |
           /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/Readout.app

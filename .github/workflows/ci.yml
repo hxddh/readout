@@ -100,7 +100,6 @@ jobs:
 
   verify:
     name: Verify signed product
-    needs: [core, webkit]
     if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.notarize) }}
     uses: ./.github/workflows/verify.yml
     with:

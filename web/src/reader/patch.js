@@ -110,6 +110,8 @@ function titleLinks(el) {
  * Applies a RenderPatch: {version, reset, rewrite, ops, marks, deletions, toc, tasks, title}.
  */
 export function apply(p) {
+  const B = l => window.__boot?.push(['ap_' + l, Date.now() / 1000]);
+  B('start');
   // Link definitions (copy.js): every reset sends them (none: absent), another patch when they changed.
   if (p.reset || p.links) setLinks(p.links);
   const isFirst = first;
@@ -210,6 +212,7 @@ export function apply(p) {
     }
   }
 
+  B('ops');
   updateCv();
   // The first open of a large document reads no layout before its first
   // frame: in that frame WebKit lays out only the blocks on screen (the rest
@@ -229,6 +232,7 @@ export function apply(p) {
     doc.appendChild(e);
   }
 
+  B('pre_marks');
   renderMarks(p.marks || [], p.deletions || [], !!p.reset);
 
   // A silent re-render (checkbox HTML, CJK class) must not disturb the filter.
@@ -245,6 +249,7 @@ export function apply(p) {
   // Every change to the page is made by now: what follows reads its layout,
   // which is laid out once (a read between two changes lays it out again,
   // in a large document the cost of the whole patch over again).
+  B('marks_rail');
   for (const el of maybeVisible) if (el.isConnected && inViewport(el)) visibleChanged.push(el);
 
   // Re-baseline heights of touched blocks so the resize compensator does not count this patch twice.
@@ -257,6 +262,7 @@ export function apply(p) {
   // height still keep the place.
   if (firstLarge) for (const el of slots.values()) heights.set(el, parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0);
 
+  B('layout_reads');
   // Restore position in the same task, before the browser paints.
   let restored = false;
   if (follow) {
@@ -293,8 +299,10 @@ export function apply(p) {
 
   // (Code coming on screen is highlighted before the flash's class changes
   // make the page's style stale again: it measures first.)
+  B('restore_trace');
   renderLazy(firstLarge ? estimatedOnScreen() : undefined);
 
+  B('lazy');
   // A flash still running restarts under the other animation name
   // (reader.css), without a forced style and layout to restart it.
   for (const el of visibleChanged) {
@@ -305,7 +313,8 @@ export function apply(p) {
 
   scheduleRail();
   if (headingsTouched) headingsChanged();
-  post({ type: 'applied', version: p.version });
+  B('end');
+  post({ type: 'applied', version: p.version, boot: window.__boot });
   // After the frame that shows it: rAF runs before the paint, the task it
   // queues runs after. The current section is found then too: the page is
   // laid out by that frame, so asking costs no layout of its own.

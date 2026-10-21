@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: Lifecycle
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        SmokeTest.installDiagHooks()
         // No Start Dictation or Emoji & Symbols in the Edit menu (registered,
         // not stored): a read-only reader takes no typing.
         UserDefaults.standard.register(defaults: ["NSDisabledDictationMenuItem": true, "NSDisabledCharacterPaletteMenuItem": true])
