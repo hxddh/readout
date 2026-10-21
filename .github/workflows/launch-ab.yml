@@ -10,6 +10,14 @@ on:
 
 jobs:
   ab:
+    # One variant per job, on its own VM: its first launch there is a real
+    # first launch (a fresh bundle's code-signing assessment, WebKit's first
+    # start on the VM), measured as BOOT; the launches after it as RUN.
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [v38, v39, f1, f2]
+        rep: [1, 2, 3]
     runs-on: macOS-26
     steps:
       - uses: actions/checkout@v5
@@ -23,7 +31,7 @@ jobs:
           set -eo pipefail
           brew install xcodegen
           mkdir -p "$RUNNER_TEMP/apps"
-          for spec in $(grep -v '^#' tools/ab/variants.txt); do
+          for spec in $(grep "^${{ matrix.variant }}=" tools/ab/variants.txt); do
             name=${spec%%=*}; rest=${spec#*=}; sha=${rest%%:*}; exp=""
             case "$rest" in *:*) exp=${rest#*:};; esac
             t="$RUNNER_TEMP/tree-$name"
@@ -42,10 +50,10 @@ jobs:
         run: |
           xcrun swiftc -O tools/ab/ab-launch.swift -o "$RUNNER_TEMP/ab-launch"
           args=""
-          for spec in $(grep -v '^#' tools/ab/variants.txt); do name=${spec%%=*}; args="$args $name=/Applications/ReadoutAB-$name.app"; done
+          for spec in $(grep "^${{ matrix.variant }}=" tools/ab/variants.txt); do name=${spec%%=*}; args="$args $name=/Applications/ReadoutAB-$name.app"; done
           python3 tools/ab/ab-run.py "$RUNNER_TEMP/ab-launch" "$PWD" ab-out "$(cat tools/ab/rounds.txt)" $args
       - uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: ab-out
+          name: ab-out-${{ matrix.variant }}-${{ matrix.rep }}
           path: ab-out

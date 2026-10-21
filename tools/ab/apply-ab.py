@@ -29,6 +29,10 @@ AB = '''        Task { @MainActor in
             if ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "ab" {
                 let deadline = Date().addingTimeInterval(40)
                 while launchPhases["paint"] == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(20)) }
+                try? await Task.sleep(for: .seconds(3))
+                if let page = try? await webView.evaluateJavaScript("JSON.stringify(window.__ab || {})") as? String {
+                    try? page.data(using: .utf8)?.write(to: out.appendingPathComponent("ab-page.json"))
+                }
                 let env = ProcessInfo.processInfo.environment
                 if let second = env["READOUT_SMOKE_SECOND"] {
                     let delay = Double(env["READOUT_AB_WARM_DELAY"] ?? "8") ?? 8
@@ -67,12 +71,39 @@ edit("Shared/ReaderWebView.swift", "        super.init(frame: NSRect(x: 0, y: 0,
 edit("Shared/ReaderWebView.swift", "        load(URLRequest(url: Self.readerURL))\n    }\n\n    @available",
      "        load(URLRequest(url: Self.readerURL))\n        Self.diagPhase?(\"wv_load_called\")\n    }\n\n    @available")
 
+# Page probes (wall clock): each apply, the rAF of the frame after it, the
+# 'painted' task, and every highlightSync call (grammar, ms, when, html?).
+edit("web/src/reader/patch.js", "  post({ type: 'applied', version: p.version });\n",
+     "  (window.__ab ??= { apply: [], raf: [], painted: [], hl: [] }).apply.push(Date.now());\n  post({ type: 'applied', version: p.version });\n")
+edit("web/src/reader/patch.js", "  requestAnimationFrame(() => setTimeout(() => {\n",
+     "  requestAnimationFrame(() => { window.__ab.raf.push(Date.now()); setTimeout(() => {\n    window.__ab.painted.push(Date.now());\n")
+edit("web/src/reader/patch.js", "    post({ type: 'painted', version: p.version });\n  }, 0));\n",
+     "    post({ type: 'painted', version: p.version });\n  }, 0); });\n")
+edit("web/src/reader/enhance.js", "  const html = hl.highlightSync(code, id);\n",
+     "  const abT = performance.now();\n  const html = hl.highlightSync(code, id);\n  if (window.__ab) window.__ab.hl.push([id, Math.round(performance.now() - abT), Date.now(), !!html]);\n")
+
 # Experiments on the 3.9 tree.
 if exp == "dfl":
     # 3.8's order: the spare page at the start of didFinishLaunching.
     edit("App/AppDelegate.swift", "        WebViewPool.shared.prewarm()\n        SmokeTest.noteLaunchPhase(\"spare_created\")\n", "")
     edit("App/AppDelegate.swift", "        SmokeTest.noteLaunchPhase(\"did_finish_launching\")\n",
          "        SmokeTest.noteLaunchPhase(\"did_finish_launching\")\n        WebViewPool.shared.prewarm()\n        SmokeTest.noteLaunchPhase(\"spare_created\")\n")
+elif exp in ("f1", "f2"):
+    # No spare page at launch: the first window makes its own; the spare is
+    # made once that page has painted (WebViewPool.pagePainted).
+    edit("App/AppDelegate.swift", "        WebViewPool.shared.prewarm()\n        SmokeTest.noteLaunchPhase(\"spare_created\")\n", "")
+    if exp == "f2":
+        # And the first window's page starts loading once the window is on screen.
+        edit("Shared/ReaderWebView.swift", "    private(set) var isReady = false\n",
+             "    private(set) var isReady = false\n    private var pageRequested = false\n    func loadIfNeeded() {\n        guard !pageRequested else { return }\n        pageRequested = true\n        Self.diagPhase?(\"wv_deferred_load\")\n        load(URLRequest(url: Self.readerURL))\n        Self.diagPhase?(\"wv_deferred_load_done\")\n    }\n")
+        edit("Shared/ReaderWebView.swift", "    init(bundle: Bundle) {\n", "    init(bundle: Bundle, loadNow: Bool = true) {\n")
+        edit("Shared/ReaderWebView.swift", "        load(URLRequest(url: Self.readerURL))\n        Self.diagPhase?(\"wv_load_called\")\n    }\n",
+             "        if loadNow { pageRequested = true; load(URLRequest(url: Self.readerURL)) }\n        Self.diagPhase?(\"wv_load_called\")\n    }\n")
+        edit("App/ReaderWindowController.swift", "        let w = spare ?? ReaderWebView(bundle: .main)\n", "        let w = spare ?? ReaderWebView(bundle: .main, loadNow: false)\n")
+        edit("App/ReaderWindowController.swift", "        showWindow(nil)\n        window?.makeFirstResponder(webView)\n",
+             "        showWindow(nil)\n        window?.makeFirstResponder(webView)\n        window?.displayIfNeeded()\n        webView.loadIfNeeded()\n")
+        edit("App/ReaderWindowController.swift", "                              onRetarget: { [weak self] target in if let self { self.retargeted(to: target) } })\n        load()\n",
+             "                              onRetarget: { [weak self] target in if let self { self.retargeted(to: target) } })\n        load()\n        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.webView.loadIfNeeded() }\n")
 elif exp:
     sys.exit(f"apply-ab: unknown experiment {exp}")
 print(f"apply-ab: {tree} patched ({exp or 'as is'})")

@@ -58,6 +58,14 @@ def launch(name, app, tag):
             r[k] = round((outer[k] - start) * 1000, 1)
     sec = next((v for k, v in inner.get("first_apply_samples_s", {}).items() if k.endswith("/second.md")), [])
     pai = next((v for k, v in inner.get("first_paint_samples_s", {}).items() if k.endswith("/second.md")), [])
+    try:
+        page = json.loads((smoke / "ab-page.json").read_text())
+    except (OSError, ValueError):
+        page = {}
+    for k in ("apply", "raf", "painted"):
+        if page.get(k):
+            r[f"page_{k}"] = round(page[k][0] - start * 1000, 1)
+    r["hl"] = [[h[0], h[1], round(h[2] - start * 1000), h[3]] for h in page.get("hl", [])[:12]]
     r["warm_applied"] = [round(v * 1000, 1) for v in sec]
     r["warm_painted"] = [round(v * 1000, 1) for v in pai]
     return r
