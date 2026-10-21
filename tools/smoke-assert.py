@@ -637,5 +637,15 @@ check("cold start: every launch phase measured, in order",
 check("cold start: Readout's segments measured",
       all(isinstance(tm.get(k), (int, float)) for k in ("cold_page_ready_ms", "cold_apply_ms", "cold_window_to_load_ms", "cold_dfl_to_window_ms")), tm)
 
+# cold_apply_ms is the second launch's (owner decision 2026-10-21: the job's
+# first launch is the first time WebKit runs on the VM); the first launch ran,
+# painted and is still reported, and the page's split of the measured one is in.
+lp2 = tm.get("launch_phases_second_ms") or {}
+check("cold apply: measured on a second launch, after a first one that painted",
+      isinstance(tm.get("cold_apply_first_boot_ms"), (int, float)) and isinstance(tm.get("cold_apply_ms"), (int, float))
+      and all(isinstance(lp2.get(k), (int, float)) for k in order + ["did_load"]) and isinstance(lp.get("paint"), (int, float)), tm)
+check("cold apply: the page's split reported (setAppearance, block work, layout)",
+      all(isinstance(tm.get(f"cold_page_{k}_ms"), (int, float)) for k in ("setappearance", "blocks", "layout")), tm)
+
 print(f"{len(failures)} failing assertion(s)")
 sys.exit(1 if failures else 0)

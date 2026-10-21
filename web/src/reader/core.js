@@ -37,6 +37,8 @@ export function pageTheme() {
  * explained: the smoke test writes them out (window.readout.trace()).
  */
 const traceLog = [];
+/** The page's first setAppearance and first apply, in ms (the smoke test reports them). */
+export const firstTimings = {};
 export function trace(type, data) {
   // A caller that gives `y` (null: filled in later) spares the layout reading it costs.
   const y = data && 'y' in data ? data.y : Math.round(document.scrollingElement.scrollTop);

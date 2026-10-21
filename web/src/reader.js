@@ -11,7 +11,7 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
+import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell } from './reader/marks.js';
@@ -280,6 +280,7 @@ function apply(p) {
 // ---------------------------------------------------------------- Native API
 
 function setAppearance(o) {
+  const t0 = performance.now();
   // The highlighter starts with the first appearance (or the app's warm-up),
   // which tells Quick Look apart: a preview loads only the grammars it shows.
   if (o.mode === 'quicklook') hl.noPreload();
@@ -336,6 +337,7 @@ function setAppearance(o) {
   if (o.mode === 'quicklook') { enableQuicklook(); staticRemoteImages(); }
   scheduleRail();
   if (!resizeAnchor) settle();
+  firstTimings.setAppearance ??= Math.round(performance.now() - t0);
 }
 
 /**
@@ -379,6 +381,7 @@ window.readout = {
   scrollToFragment,
   captureAnchor,
   trace: traceEntries,
+  firstTimings: () => firstTimings,
   // The find field (⌘F, ⌘G, Return): the next or previous match, and the find bar closed.
   find,
   findEnd,
