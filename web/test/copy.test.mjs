@@ -461,6 +461,19 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
     return [copy('succeeds when the key', 0, 'both hold', 4), copy('Literal', 2, 'here.', 4), copy('Struck', 1, 'too.', 3),
       copy('Money', 1, 'here.', 4), copy('Exclaim', 1, 'footnote', 0), copy('Inline', 1, 'text.', 4), copy('Brackets', 1, 'link.', 4)];
   });
+  // ⌘C on a find match (the find bar selects it once its frame is painted): its Markdown, escaped as any partial copy.
+  const found = [];
+  for (const q of ['~one tilde~', '[ref]']) {
+    found.push(await page.evaluate(q => new Promise(done => {
+      const n = window.readout.find(q);
+      requestAnimationFrame(() => setTimeout(() => setTimeout(() => {
+        const r = getSelection().rangeCount ? getSelection().getRangeAt(0) : null;
+        done({ n, ...(r ? window.__copy(r) : {}) });
+      }, 0), 0));
+    }), q));
+  }
+  await page.evaluate(() => window.readout.findEnd());
+  if (!found[0].handled || found[0].text !== '\\~one tilde~' || found[1].text !== '[ref]') fail(`copy-escapes: ⌘C on a find match: ${JSON.stringify(found.map(f => [f.n, f.text]))}`);
   if (named[0].text !== '- succeeds when the key exists.\n- `p2p` -- succeeds when port 30303 is open.\n- `ready` -- succeeds when both') fail(`copy-escapes: sub-points of an item do not copy as a list: ${JSON.stringify(named[0].text)}`);
   copies.push(...named.map(c => ({ doc: 'copy-escapes.md (by name)', ...c })));
   // Parsed by ReadoutCore as the app parses a file: the text a reader sees, without white space.
