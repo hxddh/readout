@@ -46,26 +46,20 @@ export async function scrollPasses(page, { ms = 6000, inset = 0 } = {}) {
     await page.evaluate(() => { window.__own.length = 0; window.__ownOn = true; window.__stop = false; });
     const run = page.evaluate(({ mode, ms, inset }) => new Promise(resolve => {
       const se = document.scrollingElement, vh = innerHeight;
-      // The next block in document order, whatever holds the blocks.
-      const nextBlk = e => {
-        for (let n = e; n && n.id !== 'ro-doc'; n = n.parentElement) {
-          for (let s = n.nextElementSibling; s; s = s.nextElementSibling) {
-            if (s.classList.contains('blk')) return s;
-            const b = s.querySelector('.blk');
-            if (b) return b;
-          }
-        }
-        return null;
-      };
+      // Viewport rows over content WebKit has not rendered: sampled every
+      // 8 px down the middle of the column, whatever holds the blocks. A hit
+      // on a chunk itself is a skipped chunk (its blocks fill it); on a block,
+      // its content is checked.
       const blank = () => {
         let px = 0;
-        for (let e = document.elementFromPoint(450, inset + 2)?.closest('.blk'); e; e = nextBlk(e)) {
-          const r = e.getBoundingClientRect();
-          if (r.top >= vh) break;
-          const c = e.firstElementChild;
-          if (c && !c.checkVisibility({ contentVisibilityAuto: true })) px += Math.min(r.bottom, vh) - Math.max(r.top, inset);
+        for (let y = inset + 4; y < vh; y += 8) {
+          const hit = document.elementFromPoint(450, y);
+          const box = hit && hit.closest('.blk, .chunk');
+          if (!box) continue;
+          const shown = box.classList.contains('blk') ? (box.firstElementChild ?? box).checkVisibility({ contentVisibilityAuto: true }) : false;
+          if (!shown) px += 8;
         }
-        return Math.max(0, Math.round(px));
+        return px;
       };
       const gaps = [], blanks = [];
       let last = performance.now(), v = 0, flingAt = -1e9;
@@ -141,13 +135,15 @@ export async function interactions(page) {
     for (const dark of [true, false, true, false]) theme.push(await frame(() => window.readout.setAppearance({ dark })));
     out.theme = med(theme);
     if (window.readout.find) {
-      const word = document.elementFromPoint(450, 450).closest('.blk').textContent.match(/[A-Za-z]{6,}/)?.[0] || 'agent';
-      window.readout.find(word);
+      // A word of one text node (a block's textContent runs table cells together).
+      const w = document.createTreeWalker(document.elementFromPoint(450, 450).closest('.blk'), NodeFilter.SHOW_TEXT, { acceptNode: n => /[A-Za-z]{6,}/.test(n.data) ? 1 : 3 });
+      const word = w.nextNode()?.data.match(/[A-Za-z]{6,}/)[0] || 'agent';
+      out.findCount = window.readout.find(word);
       await new Promise(r => setTimeout(r, 1000));
       const next = [];
       for (let i = 0; i < 5; i++) { next.push(await frame(() => window.readout.find(word))); await new Promise(r => setTimeout(r, 300)); }
       out.findNext = med(next);
-      out.findSelected = getSelection().toString().toLowerCase() === word.toLowerCase();
+      out.findSelected = out.findCount > 0 && getSelection().toString().toLowerCase() === word.toLowerCase();
       window.readout.findEnd();
     }
     return out;
