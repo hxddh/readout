@@ -283,10 +283,15 @@ function refresh() {
     search();
     if (!matches.length) cur = -1;
     // The search found nothing (the document had not arrived, the agent had
-    // not written it yet): the first match to come is landed on, as a search does.
-    else if (cur < 0) { const [cmp, strict] = origin(null); cur = next(cmp, strict, false); land(); report(); return; }
+    // not written it yet): from where a search starts.
+    else if (cur < 0) { const [cmp, strict] = origin(null); cur = next(cmp, strict, false); }
+    // Its block removed: the match that took its place in the order.
     else if (!was.el.isConnected) cur = Math.min(cur, matches.length - 1);
     else cur = next(m => m.el !== was.el ? (before(m.el, was.el) ? -1 : 1) : m.start - was.start, false, false);
+    // The current match is another one now: landed on, as a search does
+    // ("n of m" always means a match selected and on screen).
+    const now = matches[cur];
+    if (now && !(was && now.el === was.el && now.start === was.start)) { land(); report(); return; }
   }
   const range = mark();
   // The match just landed on, its text redrawn (a code block highlighted

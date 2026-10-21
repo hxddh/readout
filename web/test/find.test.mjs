@@ -206,10 +206,25 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   await page.evaluate(p => window.readout.apply(p), patch([{ op: 'replace', slot: 32, change: 'content', html: '<p>gone</p>', kind: 'paragraph' }], 3, false));
   await page.waitForTimeout(400);
   check('its match removed: the count drops', /^\d of 3$/.test(await count(page)), await count(page));
+  // The current match's block removed: the one that takes its place is landed on.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await find(page, 'needle');
+  const before = `${await count(page)}@${await selectedSlot(page)}`;
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'remove', slot: 10 }], 4, false));
+  await page.waitForTimeout(600);
+  const after = await page.evaluate(() => {
+    const s = getSelection();
+    const r = s.rangeCount && s.toString() ? s.getRangeAt(0).getBoundingClientRect() : null;
+    return { text: s.toString(), top: r && Math.round(r.top), h: innerHeight };
+  });
+  check('the current match\'s block removed: the next match is selected and on screen',
+    before === '2 of 3@10' && await count(page) === '2 of 2' && await selectedSlot(page) === 20 && after.text === 'needle' && after.top > 0 && after.top < after.h,
+    JSON.stringify({ before, count: await count(page), slot: await selectedSlot(page), after }));
   // After the find bar closed, edits tell the app nothing.
   await page.evaluate(() => window.readout.findEnd());
   const n = await page.evaluate(() => window.__msgs.length);
-  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 33, after: 31, html: '<p>needle</p>', kind: 'paragraph' }], 4, false));
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 33, after: 31, html: '<p>needle</p>', kind: 'paragraph' }], 5, false));
   await page.waitForTimeout(400);
   check('closed: no more counts', await page.evaluate(n => !window.__msgs.slice(n).some(m => m.type === 'found'), n));
   await page.close();
