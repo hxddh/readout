@@ -362,7 +362,7 @@ enum ReaderStrings {
             "copied": NSLocalizedString("Copied", comment: "Code block copy confirmation"),
             "loadImage": NSLocalizedString("Load image from %@", comment: "Remote image placeholder; %@ is the host"),
             "loadAllImages": NSLocalizedString("Load all images from %@", comment: "Remote image placeholder once one image of the host was loaded; %@ is the host"),
-            "rewritten": NSLocalizedString("This file was rewritten", comment: "Notice when most of the document changed"),
+            "rewritten": NSLocalizedString("Rewritten since you last read", comment: "Notice when most of the document changed"),
             "diagramError": NSLocalizedString("Diagram could not be drawn", comment: "Mermaid error prefix"),
             "empty": NSLocalizedString("This file is empty.", comment: "Empty document"),
             "deletedOne": NSLocalizedString("1 block removed", comment: "Deletion marker tooltip"),

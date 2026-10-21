@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import ReadoutCore
 
 /// A single system-wide hotkey via the Carbon event API (no Accessibility permission required).
 final class GlobalHotKey {
@@ -47,12 +48,9 @@ final class GlobalHotKey {
     deinit { unregister() }
 
     static func make(_ choice: AppSettings.HotKeyChoice, action: @escaping () -> Void) -> GlobalHotKey? {
-        let r = UInt32(kVK_ANSI_R)
-        switch choice {
-        case .optCmdR: return GlobalHotKey(keyCode: r, modifiers: UInt32(optionKey | cmdKey), action: action)
-        case .ctrlOptCmdR: return GlobalHotKey(keyCode: r, modifiers: UInt32(controlKey | optionKey | cmdKey), action: action)
-        case .ctrlOptR: return GlobalHotKey(keyCode: r, modifiers: UInt32(controlKey | optionKey), action: action)
-        case .none: return nil
-        }
+        guard choice.isGlobal else { return nil }
+        let m = choice.modifiers
+        let flags = (m.contains(.control) ? controlKey : 0) | (m.contains(.option) ? optionKey : 0) | (m.contains(.command) ? cmdKey : 0)
+        return GlobalHotKey(keyCode: UInt32(kVK_ANSI_R), modifiers: UInt32(flags), action: action)
     }
 }

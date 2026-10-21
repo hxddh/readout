@@ -160,9 +160,8 @@ jobs:
           # smoke capture export (into READOUT_SMOKE_OUT) and the baseline store
           # (Application Support). Any other write API anywhere fails the build.
           WRITES='replaceItemAt|[^a-zA-Z]copyItem\(|[^a-zA-Z]moveItem\(|[^a-zA-Z]linkItem\(|createFile\(|removeItem\(at:|trashItem\(|\.write\(to:|\.write\(toFile:|write\(to: *[a-zA-Z]|forWritingTo|forWritingAtPath|forUpdating|fopen\(|open\(.*O_WRONLY|O_RDWR|NSFileCoordinator'
-          # App/UpdateChecker.swift: Download Update moves the release's DMG into ~/Downloads.
-          if grep -rnE "$WRITES" App Shared QuickLook | grep -vE '^App/(SmokeTest|Settings|UpdateChecker)\.swift:'; then
-            echo "FAIL: file-writing code outside App/SmokeTest.swift, App/Settings.swift (baseline store) and App/UpdateChecker.swift (update download)"; exit 1
+          if grep -rnE "$WRITES" App Shared QuickLook | grep -vE '^App/(SmokeTest|Settings)\.swift:'; then
+            echo "FAIL: file-writing code outside App/SmokeTest.swift and App/Settings.swift (baseline store)"; exit 1
           fi
           if strings -a dist/Readout.app/Contents/MacOS/Readout | grep -E "READOUT_SMOKE_(EDIT|EARLY)|readout-smoke"; then
             echo "FAIL: the signed binary still carries smoke edit code"; exit 1
@@ -238,8 +237,8 @@ jobs:
 
       - name: Assert smoke output
         run: |
-          # The About panel's licence notices, as built into the app.
-          cp /Applications/Readout.app/Contents/Resources/Credits.html smoke-out/ || true
+          # The licence notices About Readout links to, as built into the app.
+          cp /Applications/Readout.app/Contents/Resources/Acknowledgements.md smoke-out/ || true
           python3 tools/smoke-assert.py smoke-out
 
       - name: Hash the signed app
