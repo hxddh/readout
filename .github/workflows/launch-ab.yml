@@ -51,7 +51,11 @@ jobs:
           xcrun swiftc -O tools/ab/ab-launch.swift -o "$RUNNER_TEMP/ab-launch"
           args=""
           for spec in $(grep "^${{ matrix.variant }}=" tools/ab/variants.txt); do name=${spec%%=*}; args="$args $name=/Applications/ReadoutAB-$name.app"; done
-          python3 tools/ab/ab-run.py "$RUNNER_TEMP/ab-launch" "$PWD" ab-out "$(cat tools/ab/rounds.txt)" $args
+          # Documents outside any git repository (as tools/smoke-run.py has
+          # them) in reps 1-2; inside this checkout (untracked) in rep 3.
+          if [ "${{ matrix.rep }}" = 3 ]; then OUT="$PWD/ab-out"; export AB_DOCS_TAG=repo; else OUT="$RUNNER_TEMP/ab-out"; export AB_DOCS_TAG=temp; fi
+          python3 tools/ab/ab-run.py "$RUNNER_TEMP/ab-launch" "$PWD" "$OUT" "$(cat tools/ab/rounds.txt)" $args
+          [ "$OUT" = "$PWD/ab-out" ] || cp -R "$OUT" ab-out
       - uses: actions/upload-artifact@v5
         if: always()
         with:

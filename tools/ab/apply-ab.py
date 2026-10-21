@@ -91,6 +91,9 @@ edit(R, "saved.record(forSourcePath: result.sourcePath) { [weak self] record in 
      "saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from\n                SmokeTest.noteLaunchPhase(\"record\")\n")
 edit(R, "CommitBaseline.find(path: result.sourcePath, current: result.decoded.text) { [weak self] keys in\n",
      "CommitBaseline.find(path: result.sourcePath, current: result.decoded.text) { [weak self] keys in\n                    SmokeTest.noteLaunchPhase(\"commit_baseline\")\n")
+# How long the developer-tools check takes in the git baseline (app log).
+edit(R, "                if !toolsAvailable { toolsAvailable = GitTools.available() }\n",
+     "                let abT0 = Date()\n                if !toolsAvailable { toolsAvailable = GitTools.available() }\n                NSLog(\"ABGIT available %.0f ms (%d)\", Date().timeIntervalSince(abT0) * 1000, toolsAvailable ? 1 : 0)\n")
 # The page: highlighter init start/end, first contentful paint (the frame
 # really painted), read with the rest.
 edit("web/src/highlight.js", "  ready = (async () => {\n", "  (window.__ab ??= { apply: [], raf: [], painted: [], hl: [] }).hlInitStart = Date.now();\n  ready = (async () => {\n")
@@ -112,7 +115,7 @@ elif exp in ("f1", "f2"):
         # And the first window's page starts loading once the window is on screen.
         edit("Shared/ReaderWebView.swift", "    private(set) var isReady = false\n",
              "    private(set) var isReady = false\n    private var pageRequested = false\n    func loadIfNeeded() {\n        guard !pageRequested else { return }\n        pageRequested = true\n        Self.diagPhase?(\"wv_deferred_load\")\n        load(URLRequest(url: Self.readerURL))\n        Self.diagPhase?(\"wv_deferred_load_done\")\n    }\n")
-        edit("Shared/ReaderWebView.swift", "    init(bundle: Bundle) {\n", "    init(bundle: Bundle, loadNow: Bool = true) {\n")
+        edit("Shared/ReaderWebView.swift", "    init(bundle: Bundle) {\n        Self.diagPhase", "    init(bundle: Bundle, loadNow: Bool = true) {\n        Self.diagPhase")
         edit("Shared/ReaderWebView.swift", "        load(URLRequest(url: Self.readerURL))\n        Self.diagPhase?(\"wv_load_called\")\n    }\n",
              "        if loadNow { pageRequested = true; load(URLRequest(url: Self.readerURL)) }\n        Self.diagPhase?(\"wv_load_called\")\n    }\n")
         edit("App/ReaderWindowController.swift", "        let w = spare ?? ReaderWebView(bundle: .main)\n", "        let w = spare ?? ReaderWebView(bundle: .main, loadNow: false)\n")

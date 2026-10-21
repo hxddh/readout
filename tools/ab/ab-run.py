@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 
 launcher, root, out = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
+DOCS_TAG = os.environ.get("AB_DOCS_TAG", "")
 rounds = int(sys.argv[4])
 builds = [a.split("=", 1) for a in sys.argv[5:]]
 BUNDLE = "io.github.hxddh.readout"
@@ -71,6 +72,8 @@ def launch(name, app, tag):
     if page.get("fcp") and page.get("origin"):
         r["page_fcp"] = round(page["origin"] + page["fcp"] - start * 1000, 1)
     r["hl"] = [[h[0], h[1], round(h[2] - start * 1000), h[3]] for h in page.get("hl", [])[:12]]
+    r["git"] = [l.strip()[-40:] for l in (d / "log.txt").read_text(errors="replace").splitlines() if "ABGIT" in l]
+    r["docs"] = DOCS_TAG
     r["warm_applied"] = [round(v * 1000, 1) for v in sec]
     r["warm_painted"] = [round(v * 1000, 1) for v in pai]
     return r
