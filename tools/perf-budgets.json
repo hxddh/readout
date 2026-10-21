@@ -197,7 +197,13 @@
     "warm_open_to_applied_ms: guard 2000 -> 1000. Six main runs measured 348-632 ms (fastest of three",
     "opens); 1000 is 1.6x the highest, and still above the target 150.",
     "ql_second_open_ms (new, reported): a second qlmanage -p right after the first; the extension keeps",
-    "one spare page for the next preview."
+    "one spare page for the next preview.",
+    "3.9 (find): web_find_open_1mb_ms, the find bar's first search in the 1 MB document (find.js",
+    "reads every block's text without layout, counts, selects a match on screen; median of three).",
+    "3.8 laid out the whole document as the find bar opened (findMode: 2.9-7.0 s locally, ~1 s on",
+    "CI) and again as it closed. CI: 46 ms on the first run -> target 50, guard 100.",
+    "web_find_refresh_1mb_ms (new, reported): with a search on, an agent's one-block edit of the 1 MB",
+    "document, the page searching again for the count and the marks (median of three)."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -222,6 +228,8 @@
   "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": 600 },
   "web_first_apply_1mb_painted_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": 2800 },
   "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 30 },
+  "web_find_open_1mb_ms":       { "where": "linux-webkit", "unit": "ms",     "target": 50,   "guard": 100 },
+  "web_find_refresh_1mb_ms":    { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
   "web_stream_append_5mb_ms":   { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
   "web_first_highlight_warm_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 40,   "guard": 80 },
   "web_first_highlight_cold_ts_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": null },

@@ -807,6 +807,10 @@ details ul, details ol { padding-left: 1.5em; }
   .del-pop { box-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.2); }
 }
 
+/* Find (find.js): the current match, and the matches around it. */
+::highlight(ro-find) { background-color: color-mix(in srgb, #ffd60a 40%, transparent); }
+::highlight(ro-find-cur) { background-color: #ffd60a; color: #1d1d1f; }
+
 @media print {
   /* Paper is white: a page shown dark prints with the light colours. */
   :root, :root[data-theme="dark"], :root:not([data-theme="light"]) {

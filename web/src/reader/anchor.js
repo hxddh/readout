@@ -110,7 +110,7 @@ export function topInset() {
 
 /**
  * Re-baselines every block's height for the resize compensator, after a
- * change that reflows the whole page (font size, width, theme, find mode)
+ * change that reflows the whole page (font size, width, theme)
  * and whose effect on the position the caller restores itself.
  */
 export function rebaselineHeights() {
@@ -250,6 +250,38 @@ onKeptScroll(dy => { if (landed) landed.y += dy; });
 export function pinLanding(el) {
   landed = doc.classList.contains('cv')
     ? { el, top: el.getBoundingClientRect().top, until: performance.now() + 1000, y: document.scrollingElement.scrollTop } : null;
+}
+
+/** A long jump aims again every frame for this long (aimAt; reader.js's scrollToEdge). */
+export const AIM_MS = 1000;
+
+/**
+ * A jump to `el` (an outline click, a match found): `off()` is how far the
+ * page is from where it should be, `landed()` runs after each aim. The blocks
+ * it lands on are not laid out at once (content-visibility set on them, and
+ * taken off again, made WebKit lay out the whole document twice per jump:
+ * 5 MB, 1-5 s): the frames after the jump lay them out, the landing stays
+ * put while they do (pinLanding), and the page aims again at whatever still
+ * moves it, until another jump, or until the reader scrolls.
+ */
+let aiming = null;   // the jump being aimed: {y}, where its last aim left the page
+onKeptScroll(dy => { if (aiming) aiming.y += dy; });
+export function aimAt(el, off, landed) {
+  window.scrollBy(0, off());
+  landed();
+  if (!doc.classList.contains('cv')) return;
+  const se = document.scrollingElement;
+  const mine = aiming = { y: se.scrollTop };
+  const until = performance.now() + AIM_MS;
+  const reaim = () => {
+    // Another jump since, or the reader scrolled (the scroll event telling
+    // the TOC may not have run yet): leave the page where it is.
+    if (aiming !== mine || !el.isConnected || Math.abs(se.scrollTop - mine.y) > 2) return;
+    const d = off();
+    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; landed(); }
+    if (performance.now() < until) requestAnimationFrame(reaim);
+  };
+  requestAnimationFrame(reaim);
 }
 
 /**

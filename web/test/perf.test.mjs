@@ -2,7 +2,7 @@
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
 // measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it,
-// and how far the text jumps scrolling up from the end; in a ~5 MB document,
+// the find bar's first search and its refresh after an edit, and how far the text jumps scrolling up from the end; in a ~5 MB document,
 // an edit above the reader, outline jumps, and an agent streaming at its end
 // while the reader follows; on a fresh warmed page, the first apply of a small
 // document whose code block is on screen, then a small plan's private memory;
@@ -120,6 +120,40 @@ for (let i = 0; i < 3; i++) {
   }, patch));
   await page.waitForTimeout(300);
 }
+
+// The find bar's first search in the 1 MB document (⌘F, a word, Return): it
+// reads every block's text (no layout), counts the matches and selects the
+// first one, on screen (going to one off screen is an outline jump's cost:
+// web_toc_jump_5mb_ms). 3.8 laid out the whole document as the find bar
+// opened, and again as it closed. Three times, from nothing found before.
+const findOpen = [];
+for (let i = 0; i < 3; i++) {
+  findOpen.push(await page.evaluate(() => {
+    getSelection().removeAllRanges();
+    const blk = document.elementFromPoint(450, 450).closest('.blk');
+    const word = [blk, blk.nextElementSibling, blk.previousElementSibling].map(b => b && b.textContent.match(/[A-Za-z]{6,}/)).find(Boolean)[0];
+    const t0 = performance.now();
+    const n = window.readout.find(word);
+    const ms = performance.now() - t0;
+    window.readout.findEnd();
+    return n > 0 ? ms : -1;
+  }));
+  await settled();
+}
+if (findOpen.some(ms => ms < 0)) errors.push(`find found nothing: ${findOpen}`);
+// While the find bar is open, an agent's one-block edit: the page searches
+// again for the count and the marks (find.js refresh), per patch.
+await page.evaluate(() => { window.readout.find('the'); });
+const findRefresh = [];
+for (let i = 0; i < 3; i++) {
+  const o = paragraphs[i * 7 + 3];
+  await page.evaluate(p => window.readout.apply(p), { version: 50 + i, reset: false, rewrite: false, ops: [{ ...o, op: 'replace', change: 'content', html: o.html.replace('</p>', ` the edit ${i}</p>`) }],
+    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await page.waitForTimeout(400);
+  findRefresh.push(await page.evaluate(() => performance.getEntriesByName('readout-find-refresh').pop()?.detail ?? -1));
+}
+await page.evaluate(() => window.readout.findEnd());
+if (findRefresh.some(ms => ms < 0)) errors.push(`find refresh not measured: ${findRefresh}`);
 
 // Scrolling up from the end through blocks not laid out yet (each shows at
 // its estimated height until WebKit lays it out, a frame after it came into
@@ -335,6 +369,8 @@ const result = {
   web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
   web_update_20_blocks_1mb_samples_ms: updates.map(Math.round),
+  web_find_open_1mb_ms: Math.round(median(findOpen) * 10) / 10,
+  web_find_refresh_1mb_ms: Math.round(median(findRefresh) * 10) / 10,
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
   web_first_highlight_cold_ts_ms: Math.round(coldHighlight),
   web_tab_private_mb: firstHighlight.privateMB,

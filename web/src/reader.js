@@ -6,13 +6,14 @@
 //   anchor   reading position, resize compensation, #fragment resolution
 //   patch    applying RenderPatches
 //   marks    unread marks, read detection, jumps
+//   find     find in page
 //   rail     change rail
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
-import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding } from './reader/anchor.js';
-import { apply as applyPatch, findMode, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
+import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
+import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelButtons, setCodeWrap, highlightAll, measureTables, highlightIn } from './reader/enhance.js';
@@ -20,6 +21,7 @@ import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/me
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
 import { markdownOf, htmlOf, inDocument, sources, definitionsUsed } from './reader/copy.js';
+import { find, findEnd } from './reader/find.js';
 
 // ---------------------------------------------------------------- Links & keys
 
@@ -155,9 +157,6 @@ function quoteSelection() {
   const s = selectedSlots();
   return { slots: s, links: definitionsUsed(s.map(k => sources.get(slots.get(k)) ?? '').join('\n\n')) };
 }
-
-// A long jump aims again every frame for this long (see scrollToEdge, scrollToSlot).
-const AIM_MS = 1000;
 
 // j and k scroll as far as the arrow keys do; smoothly, as change jumps do,
 // unless the document is large (an instant scroll compensating for a block
@@ -343,40 +342,13 @@ function setAppearance(o) {
  * The TOC's jump to a section: its heading 16 px under the toolbar. The TOC
  * shows that section as the current one until the reader scrolls (the line
  * the current heading is read at lies lower, and a document ending soon
- * after cannot bring the heading up there). In a large document the blocks
- * around the place it lands are laid out over the next frames and move it:
- * it aims again as they get their real heights, unless the reader scrolled.
+ * after cannot bring the heading up there).
  */
-let aiming = null;   // the TOC jump being aimed: {y}, where its last aim left the page
-onKeptScroll(dy => { if (aiming) aiming.y += dy; });
 function scrollToSlot(slot) {
   const el = slots.get(slot);
   if (!el) return;
-  const off = () => el.getBoundingClientRect().top - 16 - topInset();
-  // The blocks it lands on are not laid out at once (content-visibility set
-  // on them, and taken off again, made WebKit lay out the whole document
-  // twice per jump: 5 MB, 1-5 s): the frames after the jump lay them out,
-  // the heading stays put while they do (pinLanding), and the aim below
-  // follows whatever still moves it.
-  const cv = doc.classList.contains('cv');
-  window.scrollBy(0, off());
-  pinActiveHeading(slot);
-  noteLanding(el);
-  pinLanding(el);
+  aimAt(el, () => el.getBoundingClientRect().top - 16 - topInset(), () => { pinActiveHeading(slot); noteLanding(el); pinLanding(el); });
   highlightOnScreen();
-  if (!cv) return;
-  const se = document.scrollingElement;
-  const mine = aiming = { y: se.scrollTop };
-  const until = performance.now() + AIM_MS;
-  const reaim = () => {
-    // Another jump since, or the reader scrolled (the scroll event telling
-    // the TOC may not have run yet): leave the page where it is.
-    if (aiming !== mine || !el.isConnected || Math.abs(se.scrollTop - mine.y) > 2) return;
-    const d = off();
-    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; pinActiveHeading(slot); noteLanding(el); pinLanding(el); }
-    if (performance.now() < until) requestAnimationFrame(reaim);
-  };
-  requestAnimationFrame(reaim);
 }
 
 /**
@@ -407,7 +379,9 @@ window.readout = {
   scrollToFragment,
   captureAnchor,
   trace: traceEntries,
-  findMode,
+  // The find field (⌘F, ⌘G, Return): the next or previous match, and the find bar closed.
+  find,
+  findEnd,
   preparePrint,
   nextChange: () => jump(1),
   previousChange: () => jump(-1),

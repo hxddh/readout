@@ -114,6 +114,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var loaded = false
     /// ⌘P before the first document was applied (`didLoad`): printed then.
     private var printWhenLoaded = false
+    /// A search made before the first document was applied: run after it.
+    private var findWhenLoaded: (() -> Void)?
     /// The first read failed: the next change on disk, or opening the file
     /// again, reads it again instead of waiting for a load that never comes.
     private var loadFailed = false
@@ -260,6 +262,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             return item
         case .search:
             let item = NSSearchToolbarItem(itemIdentifier: id)
+            item.searchField = FindField()
             item.searchField.placeholderString = NSLocalizedString("Find", comment: "Search field placeholder")
             item.searchField.target = self
             item.searchField.action = #selector(searchFieldAction(_:))
@@ -411,10 +414,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             self.applyAppearance()
             self.sendKnownImages()
             self.webView.callEncodingOffMain("apply", self.session.fullPayload(rewrite: false).page)
-            // The new page starts out of find mode, and switches queued before
-            // the crash have run by now: send the state the window is in.
-            self.webView.call("findMode", json: self.findModeOn ? "true" : "false")
         }
+        // The new page has found nothing yet (and a search queued for the old one does not run).
+        endFind()
     }
 
     // MARK: Loading
@@ -506,6 +508,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
                     self.webView.call("scrollToAnchor", json: json)
                 }
+            }
+            // Return in the find field while it loaded: searched now, behind the apply.
+            if let find = self.findWhenLoaded {
+                self.findWhenLoaded = nil
+                find()
             }
             // ⌘P while it loaded: now, queued behind the document's apply.
             if self.printWhenLoaded {
@@ -924,6 +931,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             announce(String(format: NSLocalizedString("Unread change %d of %d: %@", comment: "Change-rail tick label; %d is position, %d is total, %@ is the kind"),
                             index, total, kindText))
             SmokeTest.noteLanded(index: index, total: total, kind: kind)
+        case .found(let current, let total):
+            guard finding else { break }   // a count on its way when the search ended
+            findField?.count = total == 0 ? NSLocalizedString("Not found", comment: "Find field: no match")
+                : current == 0 ? String(format: NSLocalizedString("– of %d", comment: "Find field: matches an edit brought, none current yet"), total)
+                : String(format: NSLocalizedString("%d of %d", comment: "Find field: the current match of how many"), current, total)
+            SmokeTest.noteFound()
         case .ready, .error:
             break   // handled by ReaderWebView
         }
@@ -1299,60 +1312,38 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     @objc func showFind(_ sender: Any?) {
-        guard let item = searchItem else { return }
-        setFindMode(true)
-        item.beginSearchInteraction()
+        searchItem?.beginSearchInteraction()
     }
 
-    /// While finding, the page lays out the whole document: in a large one it
-    /// otherwise skips off-screen blocks, and so would find in page. Sent only
-    /// when it changes: each switch re-lays out the document.
-    private var findModeOn = false
-    private func setFindMode(_ on: Bool) {
-        guard on != findModeOn else { return }
-        findModeOn = on
-        // A cold window's page may not be up yet: deliver once it is.
-        webView.whenReady { [weak self] in
-            guard let self else { return }
-            self.webView.call("findMode", json: on ? "true" : "false")
-            SmokeTest.noteFindMode(on, pageReady: self.webView.isReady)
-        }
-    }
+    /// The page finds (find.js: WebKit's own find skips the blocks a large
+    /// document has not laid out); the field shows the current match of how many.
+    private var findField: FindField? { searchItem?.searchField as? FindField }
 
-    // Find mode stays on while the find bar is open: Return in the field may
-    // end and restart editing, which must not re-lay out the document twice.
-    // It ends on Escape, when editing ends with the field empty, or when the
-    // field has given up focus and its bar is collapsed (closed with text in it).
-    private var editingGeneration = 0
-    func controlTextDidBeginEditing(_ obj: Notification) {
-        editingGeneration += 1
-        setFindMode(true)
-    }
+    // The text edited: the last search's marks and count go (the page keeps
+    // the blocks' text for the next one). Cleared, closed: the search is over.
+    func controlTextDidChange(_ obj: Notification) { endFind(keepText: true) }
+    func searchFieldDidEndSearching(_ sender: NSSearchField) { endFind() }
+    // The field gave up focus and the bar is collapsed (a narrow window), its text still in it: over too.
     func controlTextDidEndEditing(_ obj: Notification) {
-        editingGeneration += 1
-        if searchItem?.searchField.stringValue.isEmpty ?? true {
-            setFindMode(false)
-            return
-        }
-        // Return ends and restarts editing at once: decide once that settled.
-        let generation = editingGeneration
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.editingGeneration == generation, !self.isSearchFieldEditing, self.isSearchCollapsed else { return }
-            self.setFindMode(false)
+            guard let self, let field = self.searchItem?.searchField else { return }
+            let editing = field.currentEditor() != nil && self.window?.firstResponder === field.currentEditor()
+            let collapsed = field.window == nil || field.isHiddenOrHasHiddenAncestor || field.bounds.width < 60
+            if collapsed && !editing { self.endFind() }
         }
     }
-    func searchFieldDidEndSearching(_ sender: NSSearchField) { setFindMode(false) }
 
-    /// The find field is the window's field editor's client (it has focus).
-    private var isSearchFieldEditing: Bool {
-        guard let field = searchItem?.searchField, let editor = field.currentEditor() else { return false }
-        return window?.firstResponder === editor
-    }
+    /// Bumped by every search, clear and close: a search queued for a page
+    /// not up yet runs only if nothing came after it.
+    private var findGeneration = 0
+    /// A search is on (Return or ⌘G since the field was last edited, cleared or closed): the page's counts are shown.
+    private var finding = false
 
-    /// The find bar shows only its button: collapsed, or not in the window at all.
-    private var isSearchCollapsed: Bool {
-        guard let field = searchItem?.searchField, field.window != nil, !field.isHiddenOrHasHiddenAncestor else { return true }
-        return field.bounds.width < 60
+    private func endFind(keepText: Bool = false) {
+        findGeneration += 1
+        finding = false
+        findField?.count = ""
+        if webView.isReady { webView.call("findEnd", json: keepText ? "true" : "false") }
     }
 
     @objc func findNext(_ sender: Any?) { find(backwards: false) }
@@ -1363,27 +1354,25 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func find(backwards: Bool) {
         let text = searchItem?.searchField.stringValue ?? ""
         guard !text.isEmpty else { showFind(nil); return }
-        let config = WKFindConfiguration()
-        config.backwards = backwards
-        config.caseSensitive = false
-        config.wraps = true
-        // Find mode lays out the whole document, so matches off screen in a
-        // large one are found. ⌘G with the find bar closed switches it on for
-        // this search only: left on, it would stay with no bar to close.
-        let onlyForThisSearch = !findModeOn && isSearchCollapsed && !isSearchFieldEditing
-        setFindMode(true)
-        webView.find(text, configuration: config) { [weak self] result in
-            if !result.matchFound { NSSound.beep() }
-            guard let self, onlyForThisSearch, self.isSearchCollapsed, !self.isSearchFieldEditing else { return }
-            self.setFindMode(false)
+        guard let data = try? JSONEncoder().encode(text), let json = String(data: data, encoding: .utf8) else { return }
+        // A cold window's document may not be in its page yet: found once it
+        // is (unless the field was cleared or closed, or searched again, meanwhile).
+        findGeneration += 1
+        finding = true
+        let generation = findGeneration
+        let search = { [weak self] in
+            guard let self, self.findGeneration == generation else { return }
+            self.webView.run("window.readout.find(\(json), \(backwards))") { value, _ in
+                if ((value as? NSNumber)?.intValue ?? 0) == 0 { NSSound.beep() }
+            }
         }
+        if loaded { webView.whenReady(search) } else { findWhenLoaded = search }
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
         if selector == #selector(NSResponder.cancelOperation(_:)) {
-            editingGeneration += 1
             searchItem?.endSearchInteraction()
-            setFindMode(false)
+            endFind()
             window?.makeFirstResponder(webView)
             return true
         }

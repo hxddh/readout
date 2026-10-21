@@ -701,26 +701,6 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('TOC and fragment jumps land below the toolbar inset', Math.abs(slotTop - 68) <= 2 && Math.abs(fragTop - 68) <= 2, JSON.stringify({ slotTop, fragTop }));
 }
 
-// Find in page: a large document lays out all of its blocks while finding.
-{
-  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 200 ? '<p>needle zebracorn here</p>' : `<p>para ${i} short</p>`));
-  await toTop(100);
-  await page.waitForTimeout(300);
-  const before = await topOf(100);
-  await page.evaluate(() => window.readout.findMode(true));
-  const r = await page.evaluate(() => ({ cv: document.getElementById('ro-doc').classList.contains('cv'), top: Math.round(document.querySelector('.blk[data-slot="100"]').getBoundingClientRect().top) }));
-  const found = await page.evaluate(() => {
-    getSelection().removeAllRanges();
-    const f = window.find('zebracorn');
-    const s = getSelection();
-    return { f, slot: s.rangeCount ? s.getRangeAt(0).startContainer.parentElement.closest('.blk')?.dataset.slot : null };
-  });
-  await page.evaluate(() => window.readout.findMode(false));
-  const cvAfter = await page.evaluate(() => document.getElementById('ro-doc').classList.contains('cv'));
-  check('find mode lays out a large document and keeps the place', !r.cv && Math.abs(r.top - before) <= 2 && cvAfter, JSON.stringify({ before, r, cvAfter }));
-  check('find in page reaches block 200 of 400 in find mode', found.f && found.slot === '200', JSON.stringify(found));
-}
-
 // n in a large document lands on the change (no smooth scroll fighting the compensator).
 {
   const r = fixReset(400, i => `<p>para ${i} short</p>`);

@@ -1,5 +1,7 @@
 "%d blocks removed" = "已删除 %d 处";
 "%d of %d tasks done" = "已完成 %d / %d 项任务";
+"%d of %d" = "%d / %d";
+"– of %d" = "– / %d";
 "Unread changes: %d. Press N for the next change, D to see what changed." = "未读变更：%d 处。按 N 跳到下一处，按 D 查看具体变更。";
 "No unread changes" = "没有未读变更";
 "1 block removed" = "已删除 1 处";
@@ -62,6 +64,7 @@
 "Editor" = "编辑器";
 "Agent folders" = "Agent 文件夹";
 "No headings" = "没有标题";
+"Not found" = "未找到";
 "Read what your agents write." = "阅读 Agent 写下的内容。";
 "New Markdown files in the agent folders you add in Settings open in Readout on their own." = "在设置中添加的 Agent 文件夹里新建的 Markdown 文件会自动在 Readout 中打开。";
 "New plans in ~/.claude/plans open in Readout on their own. Add other agent folders in Settings." = "~/.claude/plans 中的新计划会自动在 Readout 中打开。其他 Agent 文件夹可在设置中添加。";
