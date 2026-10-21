@@ -499,9 +499,9 @@ public final class IncrementalParser: @unchecked Sendable {
         return (p, q)
     }
 
-    /// Parses fragments, concurrently from 8 on, on large stacks
-    /// (`ParseThread.concurrentPerform`; GCD's threads have 512 KB); the
-    /// results are in the jobs' order. Fewer run on the caller's thread.
+    /// Parses fragments, concurrently from 8 on (GCD's threads: nesting is
+    /// bounded, `NestingCap`); the results are in the jobs' order. Fewer
+    /// run on the caller's thread.
     static func parseFragments(_ jobs: [(slice: [String], atStart: Bool)], footnoteIDs: Set<String>,
                                resolver: ResourceResolver?, cache: MarkdownParser.RenderCache?) -> [MarkdownParser.Fragment] {
         @Sendable func parse(_ k: Int) -> MarkdownParser.Fragment {
@@ -514,7 +514,7 @@ public final class IncrementalParser: @unchecked Sendable {
         defer { results.deinitialize(); results.deallocate() }
         // Each iteration writes only its own element.
         nonisolated(unsafe) let slots = results
-        ParseThread.concurrentPerform(iterations: jobs.count) { k in slots[k] = parse(k) }
+        DispatchQueue.concurrentPerform(iterations: jobs.count) { k in slots[k] = parse(k) }
         return results.map { $0! }
     }
 
@@ -609,38 +609,90 @@ public final class IncrementalParser: @unchecked Sendable {
         return found ? XXHash64.hash(text) : nil
     }
 
+    /// The link reference definitions in a fragment's `lines` (as parsed:
+    /// footnote definitions blanked), in order. A definition is lines the
+    /// parse made into no block (`blocks`: the lines each covers, 1-based),
+    /// a run of them from one starting with `[`, as written. Inside a block
+    /// quote or list item, and before a paragraph's text (whose block covers
+    /// them too), they are read line by line instead (`definitionLine`).
+    static func linkDefinitions(_ lines: [String], blocks: [(lines: ClosedRange<Int>, kind: BlockKind)]) -> [LinkDefinition] {
+        var found: [(line: Int, definition: LinkDefinition)] = []
+        var covered = [Bool](repeating: false, count: lines.count)
+        for b in blocks {
+            let lo = max(b.lines.lowerBound - 1, 0), hi = min(b.lines.upperBound, lines.count)
+            guard lo < hi else { continue }
+            for i in lo..<hi { covered[i] = true }
+            let container = b.kind == .quote || b.kind == .alert || b.kind == .listItem
+            if container || startsDefinition(lines[lo]) { found += matchedDefinitions(lines[lo..<hi], leading: !container) }
+        }
+        var i = 0
+        while i < lines.count {
+            guard !covered[i], startsDefinition(lines[i]) else { i += 1; continue }
+            var j = i + 1
+            while j < lines.count, !covered[j], !startsDefinition(lines[j]), lines[j].contains(where: { $0 != " " && $0 != "\t" }) { j += 1 }
+            let md = ([String(lines[i].drop { $0 == " " })] + lines[(i + 1)..<j]).joined(separator: "\n")
+            // The label: to the first `]` not escaped, which `:` follows.
+            let u = Array(md.utf8)
+            var label: String? = nil, k = 1, escaped = false
+            while k < u.count {
+                if escaped { escaped = false } else if u[k] == 0x5C { escaped = true } else if u[k] == 0x5D {
+                    if k + 1 < u.count && u[k + 1] == 0x3A { label = String(decoding: u[1..<k], as: UTF8.self) }
+                    break
+                }
+                k += 1
+            }
+            if let label, !label.hasPrefix("^") { found.append((i, LinkDefinition(label: label, md: md))) }
+            i = j
+        }
+        return found.sorted { $0.line < $1.line }.map(\.definition)
+    }
+
+    /// Up to three spaces, then `[`.
+    private static func startsDefinition(_ line: String) -> Bool {
+        line.utf8.prefix(4).drop { $0 == 0x20 }.first == 0x5B
+    }
+
     /// A definition line: the quote and list markers before it, its label, the rest.
     private static let definitionLine = try! NSRegularExpression(
         pattern: #"^((?:[ \t]*(?:>|(?:[-*+]|\d{1,9}[.)])(?=[ \t]|$)))*[ \t]*)\[((?:\\.|[^\]\\])+)\]:(.*)$"#)
     /// A title on the line after a definition: `"…"`, `'…'` or `(…)`.
     private static let titleLine = try! NSRegularExpression(pattern: #"^[ \t>]*(["'(].*["')])[ \t]*$"#)
 
-    /// The link reference definitions in `lines` outside code (the same lines
-    /// `linkDefinitionsHash` reads), as written without their container
-    /// markers; a destination or title on the next line comes along.
-    static func linkDefinitions(_ lines: [String]) -> [LinkDefinition] {
+    /// The definitions in a block's `lines`, one a line (`definitionLine`,
+    /// outside code), as written without their container markers; a
+    /// destination or title on the next line comes along. `leading`: only
+    /// those its first lines are (before a paragraph's text).
+    static func matchedDefinitions(_ lines: ArraySlice<String>, leading: Bool) -> [(line: Int, definition: LinkDefinition)] {
         var fences = FenceTracker()
-        var out: [LinkDefinition] = []
-        for (i, line) in lines.enumerated() {
-            if fences.consume(line) { continue }
-            guard FastBytes.contains(line, 0x5D, 0x3A) else { continue }   // "]:"
+        var out: [(line: Int, definition: LinkDefinition)] = []
+        var i = lines.startIndex
+        while i < lines.endIndex {
+            let line = lines[i]
             let ns = line as NSString
-            guard let m = definitionLine.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else { continue }
+            guard !fences.consume(line), FastBytes.contains(line, 0x5D, 0x3A),   // "]:"
+                  let m = definitionLine.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)) else {
+                if leading { break }
+                i += 1
+                continue
+            }
             let label = ns.substring(with: m.range(at: 2))
-            if label.hasPrefix("^") { continue }
             var rest = ns.substring(with: m.range(at: 3)).trimmingCharacters(in: .whitespaces)
-            let next = i + 1 < lines.count ? lines[i + 1] : ""
+            let next = i + 1 < lines.endIndex ? lines[i + 1] : ""
             let nn = next as NSString
+            var taken = 1
             if rest.isEmpty {
                 // The destination on the next line.
                 let dest = next.drop(while: { $0 == " " || $0 == "\t" || $0 == ">" }).trimmingCharacters(in: .whitespaces)
-                guard !dest.isEmpty else { continue }
+                guard !dest.isEmpty else { if leading { break }; i += 1; continue }
                 rest = dest
+                taken = 2
             } else if !rest.contains(where: { $0 == " " || $0 == "\t" }),
                       let t = titleLine.firstMatch(in: next, range: NSRange(location: 0, length: nn.length)) {
                 rest += " " + nn.substring(with: t.range(at: 1))
+                taken = 2
             }
-            out.append(LinkDefinition(label: label, md: "[\(label)]: \(rest)"))
+            if !label.hasPrefix("^") { out.append((i, LinkDefinition(label: label, md: "[\(label)]: \(rest)"))) }
+            i += taken
         }
         return out
     }
