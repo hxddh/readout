@@ -48,7 +48,10 @@ let re = null;
 let matches = [];       // {el, x, bi, start, end}, in document order: x is the block's text, start and end in it
 let cur = -1;           // the current match
 let shown = '';         // the count last told to the app
-let landed = null;      // {el, at}: the block last landed on, and when
+// Where the current match is: its block and its offset in the block's text.
+// A block removed hands it on to what followed it (null: the end).
+let pos = null;         // {el, start, handed}: handed, from a block removed (a match at it is the next one)
+let landed = null;      // the last landing (selectLater's token)
 let texts = new WeakMap();   // block -> its text (textOf), while finding
 
 /**
@@ -137,6 +140,7 @@ const before = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITIO
  * after it); strict: a match at it is not the next one (it is the last one).
  */
 function origin(was) {
+  if (was && !(was.el && was.el.isConnected)) was = null;
   const sel = getSelection();
   const r = sel.rangeCount && !(selecting && was) ? sel.getRangeAt(0) : null;
   const n = r && r.startContainer, o = r && r.startOffset;
@@ -149,7 +153,7 @@ function origin(was) {
       return -at.comparePoint(n, o);
     }, true];
   }
-  if (was && was.el.isConnected) return [m => m.el !== was.el ? (before(m.el, was.el) ? -1 : 1) : m.start - was.start, true];
+  if (was) return [m => m.el !== was.el ? (before(m.el, was.el) ? -1 : 1) : m.start - was.start, !was.handed];
   const top = blocksOnScreen()[0];
   return [m => !top || m.el === top ? 0 : before(m.el, top) ? -1 : 1, false];
 }
@@ -230,7 +234,8 @@ function land() {
     if (!d.open && !d.querySelector(':scope > summary')?.contains(range.startContainer)) d.open = true;
   }
   range = mark();
-  landed = { el, at: performance.now() };
+  landed = {};
+  pos = { el, start: m.start };
   selectLater();
   // Off screen, the block is not laid out (content-visibility): it is aimed
   // at first, the match once the frames after the jump have laid it out.
@@ -254,6 +259,7 @@ let moved = false;         // blocks added, removed, hidden or shown since
 function changed(records) {
   for (const r of records) {
     if (r.target === doc || r.type === 'attributes') moved = true;
+    if (pos && pos.el && r.target === doc && [...r.removedNodes].includes(pos.el)) pos = { el: r.nextSibling, start: 0, handed: true };
     const e = r.target.nodeType === Node.ELEMENT_NODE ? r.target : r.target.parentElement;
     const blk = e && e !== doc && e.closest('#ro-doc > .blk');
     if (blk) stale.add(blk);
@@ -275,28 +281,25 @@ function reread() {
 }
 let refreshTimer = null;
 function later() { if (!refreshTimer) refreshTimer = setTimeout(refresh, 100); }
+/**
+ * After an edit: the current match is the first one at or after where it
+ * was (wrapping). The same match, its text nodes as they were, is only
+ * marked again; any other (or the same one drawn anew: its selection gone
+ * with its text nodes) is landed on, as a search does. So "n of m" always
+ * means a match selected and on screen.
+ */
 function refresh() {
   refreshTimer = null;
   if (query == null) return;
-  if (reread()) {
-    const was = matches[cur];
-    search();
-    if (!matches.length) cur = -1;
-    // The search found nothing (the document had not arrived, the agent had
-    // not written it yet): from where a search starts.
-    else if (cur < 0) { const [cmp, strict] = origin(null); cur = next(cmp, strict, false); }
-    // Its block removed: the match that took its place in the order.
-    else if (!was.el.isConnected) cur = Math.min(cur, matches.length - 1);
-    else cur = next(m => m.el !== was.el ? (before(m.el, was.el) ? -1 : 1) : m.start - was.start, false, false);
-    // The current match is another one now: landed on, as a search does
-    // ("n of m" always means a match selected and on screen).
-    const now = matches[cur];
-    if (now && !(was && now.el === was.el && now.start === was.start)) { land(); report(); return; }
-  }
-  const range = mark();
-  // The match just landed on, its text redrawn (a code block highlighted
-  // when its grammar arrived, a diagram drawn): selected again.
-  if (range && !selecting && landed && landed.el === matches[cur].el && performance.now() - landed.at < 3000 && getSelection().isCollapsed) select(range);
+  const redrawn = !!(pos && pos.el && stale.has(pos.el));
+  if (reread()) search();
+  if (!matches.length) { cur = -1; mark(); report(); return; }
+  if (!pos) { const [cmp, strict] = origin(null); cur = next(cmp, strict, false); }
+  else if (!pos.el || !pos.el.isConnected) cur = 0;
+  else cur = next(m => m.el !== pos.el ? (before(m.el, pos.el) ? -1 : 1) : m.start - pos.start, false, false);
+  const m = matches[cur];
+  if (pos && m.el === pos.el && m.start === pos.start && !redrawn) mark();
+  else land();
   report();
 }
 
@@ -312,13 +315,13 @@ export function find(text, backwards = false) {
     observer.observe(doc, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   } else changed(observer.takeRecords());
   reread();
-  const was = q === query ? matches[cur] : null;
+  const was = q === query ? pos : null;
   if (q !== query) {
     query = q;
     re = new RegExp(q.split(/ +/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' +'), 'g');
   }
   search();
-  if (!matches.length) { cur = -1; mark(); report(true); return 0; }
+  if (!matches.length) { cur = -1; pos = null; mark(); report(true); return 0; }
   const [cmp, strict] = origin(was);
   cur = next(cmp, strict, backwards);
   land();
@@ -336,6 +339,7 @@ export function findEnd() {
   refreshTimer = null;
   matches = [];
   cur = -1;
+  pos = null;
   shown = '';
   texts = new WeakMap();
   stale.clear();

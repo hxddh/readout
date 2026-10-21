@@ -230,6 +230,46 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   await page.close();
 }
 
+// ---------------------------------------------------------------- Where the current match goes when its block changes
+
+{
+  const page = await open();
+  const paras = Array.from({ length: 30 }, (_, i) => `<p>para ${i + 1}${[3, 30].includes(i + 1) ? ' needle' : ''}</p>`);
+  paras[1] = '<p>needle a needle b needle c</p>';
+  paras[4] = '<p>needle</p>'; paras[5] = '<p>needle</p>';
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const state = async () => {
+    const r = await page.evaluate(() => {
+      const s = getSelection();
+      const rect = s.rangeCount && s.toString() ? s.getRangeAt(0).getBoundingClientRect() : null;
+      return { text: s.toString(), visible: !!rect && rect.top > 0 && rect.top < innerHeight };
+    });
+    return `${await count(page)}@${await selectedSlot(page)}:${r.text}:${r.visible}`;
+  };
+  // The current block rewritten (its text nodes new) long after the landing: selected again.
+  await find(page, 'needle');
+  await page.waitForTimeout(3200);
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'replace', slot: 2, change: 'content', html: '<p>needle a needle b needle c</p>', kind: 'paragraph' }], 2, false));
+  await page.waitForTimeout(400);
+  check('the current block rewritten after 3 s: its match selected again', await state() === '1 of 7@2:needle:true', await state());
+  // The third of three matches in a block, the block removed: on to the first match after it.
+  await find(page, 'needle'); await find(page, 'needle');
+  const third = await state();
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'remove', slot: 2 }], 3, false));
+  await page.waitForTimeout(400);
+  check('the block of the current match removed: the first match after it is landed on', third === '3 of 7@2:needle:true' && await state() === '1 of 4@3:needle:true',
+    JSON.stringify([third, await state()]));
+  // The last block, holding the current match, removed: around to the first.
+  await find(page, 'needle', true);
+  const last = await state();
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'remove', slot: 30 }], 4, false));
+  await page.waitForTimeout(400);
+  check('the last block removed with the current match: around to the first match', last === '4 of 4@30:needle:true' && await state() === '1 of 3@3:needle:true',
+    JSON.stringify([last, await state()]));
+  await page.close();
+}
+
 // ---------------------------------------------------------------- Return before the document arrives
 
 {
