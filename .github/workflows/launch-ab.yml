@@ -16,8 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [v38, v39, fx, fxd]
-        rep: [1, 2, 3]
+        variant: [v38, v39, fx]
+        rep: [1, 2]
     runs-on: macOS-26
     steps:
       - uses: actions/checkout@v5
