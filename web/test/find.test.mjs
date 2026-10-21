@@ -439,6 +439,12 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   const redrawn = await sets();
   const live = await page.evaluate(() => [...CSS.highlights.get('ro-find')].every(r => r.startContainer.isConnected));
   check('a marked block\'s text nodes replaced: the marks are set again, in the new nodes', redrawn === 'ro-find' && live, JSON.stringify({ redrawn, live, slot }));
+  // A longer query whose matches start where the last one's did ("need", then "needle"): the marks cover the new matches.
+  await page.evaluate(() => { window.readout.findEnd(); getSelection().removeAllRanges(); window.scrollTo(0, 0); });
+  await find(page, 'need');
+  await find(page, 'needle');
+  const lengths = await page.evaluate(() => [...CSS.highlights.get('ro-find'), ...CSS.highlights.get('ro-find-cur')].map(r => r.endOffset - r.startOffset));
+  check('a longer query from the same places: the marks cover its matches', lengths.length > 1 && lengths.every(n => n === 6) && await count(page) === '2 of 63', JSON.stringify([lengths, await count(page)]));
   // Painted: the current match #ffd60a, a near one 40% of it (the selection, painted over the current one, taken away).
   await page.evaluate(() => new Promise(r => { getSelection().removeAllRanges(); requestAnimationFrame(() => requestAnimationFrame(r)); }));
   const shot = async name => {

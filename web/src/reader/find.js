@@ -279,13 +279,13 @@ function next(cmp, strict, backwards) {
 // the same text in the same text nodes (Return, an edit elsewhere). They are
 // static ranges: with live ones, WebKit repaints them on every change of the
 // page (an agent's edit anywhere, a block drawn as it comes near).
-let near = null;      // {n, at: [[x, segs, start], ...]}: the number of the first, and each match
+let near = null;      // {q, n, at: [[x, segs, start, end], ...]}: the query, the number of the first, and each match
 let curMark = null;
 const unmark = () => { near = curMark = null; if (HL) { CSS.highlights.delete('ro-find'); CSS.highlights.delete('ro-find-cur'); } };
-const same = (m, [x, segs, start]) => !!m && m.x === x && x.segs === segs && m.start === start;
+const same = (m, [x, segs, start, end]) => !!m && m.x === x && x.segs === segs && m.start === start && m.end === end;
 /** Where the near marks are in matches (a search may have renumbered them), -1 if they are not all as they were. */
 function nearAt() {
-  if (!near) return -1;
+  if (!near || near.q !== query) return -1;
   let k = near.n - base;
   if (!same(matches[k], near.at[0])) k = matches.findIndex(m => same(m, near.at[0]));
   return k >= 0 && near.at.every((a, i) => same(matches[k + i], a)) ? k : -1;
@@ -305,7 +305,7 @@ function mark() {
     while (b + 1 < matches.length && matches[b + 1].bi - m.bi <= NEAR && b - a + 1 < MARKED) b++;
     const h = new Highlight();
     for (let i = a; i <= b; i++) h.add(new StaticRange(i === cur ? range : rangeOf(matches[i])));
-    near = { n: base + a, at: matches.slice(a, b + 1).map(x => [x.x, x.x.segs, x.start]) };
+    near = { q: query, n: base + a, at: matches.slice(a, b + 1).map(x => [x.x, x.x.segs, x.start, x.end]) };
     CSS.highlights.set('ro-find', h);
   }
   if (!sameRange(curMark, range)) CSS.highlights.set('ro-find-cur', new Highlight(curMark = new StaticRange(range)));
