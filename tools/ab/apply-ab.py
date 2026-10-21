@@ -77,8 +77,11 @@ edit("web/src/reader/patch.js", "  post({ type: 'applied', version: p.version })
      "  (window.__ab ??= { apply: [], raf: [], painted: [], hl: [] }).apply.push(Date.now());\n  post({ type: 'applied', version: p.version });\n")
 edit("web/src/reader/patch.js", "  requestAnimationFrame(() => setTimeout(() => {\n",
      "  requestAnimationFrame(() => { window.__ab.raf.push(Date.now()); setTimeout(() => {\n    window.__ab.painted.push(Date.now());\n")
-edit("web/src/reader/patch.js", "    post({ type: 'painted', version: p.version });\n  }, 0));\n",
-     "    post({ type: 'painted', version: p.version });\n  }, 0); });\n")
+pj = tree / "web/src/reader/patch.js"
+js = pj.read_text()
+i = js.index("    post({ type: 'painted', version: p.version });\n")
+j = js.index("  }, 0));\n", i)
+pj.write_text(js[:j] + "  }, 0); });\n" + js[j + len("  }, 0));\n"):])
 edit("web/src/reader/enhance.js", "  const html = hl.highlightSync(code, id);\n",
      "  const abT = performance.now();\n  const html = hl.highlightSync(code, id);\n  if (window.__ab) window.__ab.hl.push([id, Math.round(performance.now() - abT), Date.now(), !!html]);\n")
 
@@ -116,11 +119,12 @@ if exp == "dfl":
     edit("App/AppDelegate.swift", "        WebViewPool.shared.prewarm()\n        SmokeTest.noteLaunchPhase(\"spare_created\")\n", "")
     edit("App/AppDelegate.swift", "        SmokeTest.noteLaunchPhase(\"did_finish_launching\")\n",
          "        SmokeTest.noteLaunchPhase(\"did_finish_launching\")\n        WebViewPool.shared.prewarm()\n        SmokeTest.noteLaunchPhase(\"spare_created\")\n")
-elif exp in ("f1", "f2"):
+elif exp in ("f1", "f2", "defer"):
     # No spare page at launch: the first window makes its own; the spare is
     # made once that page has painted (WebViewPool.pagePainted).
-    edit("App/AppDelegate.swift", "        WebViewPool.shared.prewarm()\n        SmokeTest.noteLaunchPhase(\"spare_created\")\n", "")
-    if exp == "f2":
+    if exp != "defer":
+        edit("App/AppDelegate.swift", "        WebViewPool.shared.prewarm()\n        SmokeTest.noteLaunchPhase(\"spare_created\")\n", "")
+    if exp in ("f2", "defer"):
         # And the first window's page starts loading once the window is on screen.
         edit("Shared/ReaderWebView.swift", "    private(set) var isReady = false\n",
              "    private(set) var isReady = false\n    private var pageRequested = false\n    func loadIfNeeded() {\n        guard !pageRequested else { return }\n        pageRequested = true\n        Self.diagPhase?(\"wv_deferred_load\")\n        load(URLRequest(url: Self.readerURL))\n        Self.diagPhase?(\"wv_deferred_load_done\")\n    }\n")

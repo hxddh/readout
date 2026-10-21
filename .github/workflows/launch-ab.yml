@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [v38, v39, f1, f2]
+        variant: [v38, v39, fx, fxd]
         rep: [1, 2, 3]
     runs-on: macOS-26
     steps:
