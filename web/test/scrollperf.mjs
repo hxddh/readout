@@ -46,20 +46,30 @@ export async function scrollPasses(page, { ms = 6000, inset = 0 } = {}) {
     await page.evaluate(() => { window.__own.length = 0; window.__ownOn = true; window.__stop = false; });
     const run = page.evaluate(({ mode, ms, inset }) => new Promise(resolve => {
       const se = document.scrollingElement, vh = innerHeight;
-      // Viewport rows over content WebKit has not rendered: sampled every
-      // 8 px down the middle of the column, whatever holds the blocks. A hit
-      // on a chunk itself is a skipped chunk (its blocks fill it); on a block,
-      // its content is checked.
+      // Viewport rows over content WebKit has not rendered, whatever holds
+      // the blocks: from what is under the top of the viewport, block by block
+      // through chunks laid out, and a chunk at a time through one skipped
+      // (a hit on a chunk itself is one: its blocks fill it). Asking a block
+      // in a skipped chunk where it is would lay the chunk out: never done.
+      const cvAuto = { contentVisibilityAuto: true };
+      const isChunk = e => !!e && e.classList.contains('chunk');
+      const unitOf = c => { const f = c.querySelector('.blk'); return f && (f.firstElementChild ?? f).checkVisibility(cvAuto) ? f : c; };
+      const next = u => {
+        if (isChunk(u)) return isChunk(u.nextElementSibling) ? unitOf(u.nextElementSibling) : null;
+        for (let n = u.nextElementSibling; n; n = n.nextElementSibling) if (n.classList.contains('blk')) return n;
+        return isChunk(u.parentElement) && isChunk(u.parentElement.nextElementSibling) ? unitOf(u.parentElement.nextElementSibling) : null;
+      };
       const blank = () => {
+        let u = null;
+        for (let y = inset + 2; !u && y < vh; y += 16) { const hit = document.elementFromPoint(450, y); u = hit && (hit.closest('.blk') || hit.closest('.chunk')); }
         let px = 0;
-        for (let y = inset + 4; y < vh; y += 8) {
-          const hit = document.elementFromPoint(450, y);
-          const box = hit && hit.closest('.blk, .chunk');
-          if (!box) continue;
-          const shown = box.classList.contains('blk') ? (box.firstElementChild ?? box).checkVisibility({ contentVisibilityAuto: true }) : false;
-          if (!shown) px += 8;
+        for (; u; u = next(u)) {
+          const r = u.getBoundingClientRect();
+          if (r.top >= vh) break;
+          const shown = !isChunk(u) && (u.firstElementChild ?? u).checkVisibility(cvAuto);
+          if (!shown) px += Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, inset));
         }
-        return px;
+        return Math.round(px);
       };
       const gaps = [], blanks = [];
       let last = performance.now(), v = 0, flingAt = -1e9;
