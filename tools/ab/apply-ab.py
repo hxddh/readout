@@ -172,6 +172,10 @@ edit("App/SmokeTest.swift", "origin: performance.timeOrigin, gaps: window.__abGa
 pj = tree / "Shared/ReaderWebView.swift"
 pj.write_text(pj.read_text().replace("if (now - last > 66) g.push", "if (now - last > 40) g.push", 1))
 
+edit(R, "        window.title = url.lastPathComponent\n        window.representedURL = url\n        // Where the file is: on the tab, not in the subtitle.\n        updateTabToolTip()\n",
+     "        window.title = url.lastPathComponent\n        SmokeTest.noteLaunchPhase(\"win_title\")\n        window.representedURL = url\n        SmokeTest.noteLaunchPhase(\"win_represented\")\n        // Where the file is: on the tab, not in the subtitle.\n        updateTabToolTip()\n        SmokeTest.noteLaunchPhase(\"win_tooltip\")\n")
+edit(R, "        window.setFrameUsingName(Self.frameName)\n\n", "        window.setFrameUsingName(Self.frameName)\n        SmokeTest.noteLaunchPhase(\"win_frame\")\n\n")
+
 # Experiments on the 3.9 tree.
 if exp == "dfl":
     # 3.8's order: the spare page at the start of didFinishLaunching.
@@ -213,6 +217,11 @@ elif exp == "wp":
     css.write_text(css.read_text() + "\n#ro-warm { position: fixed; left: 2px; bottom: 2px; color: var(--bg); pointer-events: none; z-index: -1; }\n")
     edit("web/src/reader/patch.js", "    post({ type: 'painted', version: p.version });\n",
          "    post({ type: 'painted', version: p.version });\n    document.getElementById('ro-warm')?.remove();\n")
+elif exp == "win":
+    # The outline (SwiftUI) and the document proxy icon after the window is on screen.
+    edit(R, "        let sidebarVC = NSHostingController(rootView: TOCView(model: model))\n        sidebarVC.sizingOptions = []\n",
+         "        let sidebarVC = NSViewController()\n        sidebarVC.view = NSView()\n        DispatchQueue.main.async { [weak self, weak sidebarVC] in\n            guard let self, let sidebarVC else { return }\n            let host = NSHostingController(rootView: TOCView(model: self.model))\n            host.sizingOptions = []\n            sidebarVC.addChild(host)\n            host.view.frame = sidebarVC.view.bounds\n            host.view.autoresizingMask = [.width, .height]\n            sidebarVC.view.addSubview(host.view)\n            SmokeTest.noteLaunchPhase(\"outline_installed\")\n        }\n")
+    edit(R, "        window.representedURL = url\n", "        DispatchQueue.main.async { [weak self] in self?.window?.representedURL = self?.url }\n")
 elif exp:
     sys.exit(f"apply-ab: unknown experiment {exp}")
 print(f"apply-ab: {tree} patched ({exp or 'as is'})")
