@@ -2,8 +2,8 @@
 # exp/run.sh : perf.test's scroll and interaction measures for 3.8.0, 3.9.0 and the fix (CI experiment)
 set -x
 R=$(git rev-parse --show-toplevel); cd $R/web
-COMMITS="${COMMITS:-59acabc a6b1e32 ef62f12}"
-FIX="${FIX:-ef62f12}"
+COMMITS="${COMMITS:-59acabc a6b1e32 04b6924}"
+FIX="${FIX:-04b6924}"
 for c in $COMMITS; do ../exp/mk.sh $c || echo "build failed $c"; done
 git show $FIX:web/test/scrollperf.mjs > test/scrollperf.mjs
 mkdir -p ../exp/out
