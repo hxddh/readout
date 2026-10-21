@@ -31,6 +31,7 @@ jobs:
           COMMITS: ${{ inputs.commits }}
           SPECS: ${{ inputs.specs }}
           PASS_MS: "8000"
+          SCROLL_ONLY: "1"
         run: |
           [ -z "$COMMITS" ] && unset COMMITS; [ -z "$SPECS" ] && unset SPECS
           exp/run.sh

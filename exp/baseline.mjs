@@ -51,11 +51,13 @@ const few = chain(500_000, true).ops;
   put('500kb_marks', summary(await scrollPasses(p, { inset: 52 }))); await p.close();
 }
 const one = chain(1_000_000).ops;
-{ const p = await open(one, 52); put('1mb', summary(await scrollPasses(p, { inset: 52 }))); const a = await interactions(p); out.web_select_1mb_ms = a.select; out.web_theme_1mb_ms = a.theme; out.web_drag_1mb_ms = a.drag; out.web_find_next_1mb_ms = a.findNext; await p.close(); }
+const ONLY = !!process.env.SCROLL_ONLY;
+{ const p = await open(one, 52); put('1mb', summary(await scrollPasses(p, { inset: 52 }))); const a = ONLY ? {} : await interactions(p); out.web_select_1mb_ms = a.select; out.web_theme_1mb_ms = a.theme; out.web_drag_1mb_ms = a.drag; out.web_find_next_1mb_ms = a.findNext; await p.close(); }
 const five = chain(5_000_000).ops;
 {
   const p = await open(five, 0);
   put('5mb', summary(await scrollPasses(p)));
+  if (ONLY) { await p.close(); console.log(JSON.stringify(out)); await browser.close(); server.close(); process.exit(0); }
   const a = await interactions(p);
   out.web_select_5mb_ms = a.select; out.web_drag_5mb_ms = a.drag; out.web_theme_5mb_ms = a.theme; out.web_find_next_5mb_ms = a.findNext; out.find_selected_5mb = a.findSelected;
   const jumps = [];
