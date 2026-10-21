@@ -678,7 +678,8 @@ public enum FenceLanguages {
                     }
                 }
             }
-            while i < n, b[i] != 0x0A { i += 1 }
+            // The next line: CR, LF and CRLF all end one (CRLF's LF then ends an empty one).
+            while i < n, b[i] != 0x0A, b[i] != 0x0D { i += 1 }
             i += 1
         }
         return out

@@ -178,6 +178,9 @@ import Testing
     @Test func fencesInAnyContainerAreNamed() {
         let text = "-\t```go\n1) ```ruby\n> > - ```lua\n> quote\nlazy line\n```zig\n\t```perl\n  * + 12. ```php\n"
         #expect(FenceLanguages.scan(text) == ["go", "ruby", "lua", "zig", "perl", "php"])
+        // Classic Mac (CR) line ends, and a mix of CR, LF and CRLF.
+        #expect(FenceLanguages.scan("# Plan\r```go\rpackage main\r```\r- ```rust\r") == ["go", "rust"])
+        #expect(FenceLanguages.scan("a\r\n```go\r\n```\r```lua\n```\n> ```zig\r") == ["go", "lua", "zig"])
     }
 
     @Test func onlyTheFirstBytesOfAHugeFileAreLookedAt() {
