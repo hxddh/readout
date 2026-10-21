@@ -644,6 +644,9 @@ lp2 = tm.get("launch_phases_second_ms") or {}
 check("cold apply: measured on a second launch, after a first one that painted",
       isinstance(tm.get("cold_apply_first_boot_ms"), (int, float)) and isinstance(tm.get("cold_apply_ms"), (int, float))
       and all(isinstance(lp2.get(k), (int, float)) for k in order + ["did_load"]) and isinstance(lp.get("paint"), (int, float)), tm)
+boot_kept = load("boot/sentinel.json")
+check("first launch: a preference and a baseline that were there before it are still there after",
+      boot_kept.get("preference") is True and boot_kept.get("baseline") is True, boot_kept)
 check("cold apply: the page's split reported (setAppearance, block work, layout)",
       all(isinstance(tm.get(f"cold_page_{k}_ms"), (int, float)) for k in ("setappearance", "blocks", "layout")), tm)
 

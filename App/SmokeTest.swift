@@ -25,6 +25,9 @@ import ReadoutCore
 ///                 adds a section to the file opened with `readout -b`
 @MainActor
 enum SmokeTest {
+    /// The harness's warm-up launch (READOUT_SMOKE_PASS=boot): it adds nothing to the recent documents.
+    static var isBootPass: Bool { outputDirectory != nil && ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "boot" }
+
     static var outputDirectory: URL? {
         ProcessInfo.processInfo.environment["READOUT_SMOKE_OUT"].map { URL(fileURLWithPath: $0, isDirectory: true) }
     }
@@ -149,7 +152,6 @@ enum SmokeTest {
                 try? await Task.sleep(for: .seconds(3))
                 await readPageFirstApply(webView)
                 writeTimings(out)
-                NSDocumentController.shared.clearRecentDocuments(nil)
                 NSApp.terminate(nil)
                 return
             }

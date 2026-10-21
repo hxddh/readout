@@ -306,13 +306,51 @@ def main() -> int:
             subprocess.run(["defaults", "delete", "-g", "AppleShowScrollBars"], check=False)
 
 
+BUNDLE_ID = "io.github.hxddh.readout"
+SENTINEL_KEY = "ReadoutSmokeSentinel"
+
+
+class SavedState:
+    """What a launch of the app can leave behind for the next one, as it was
+    before: its defaults domain, its Application Support folder (reading
+    state, baselines) and its saved windows. Restored exactly afterwards, so a
+    launch the harness adds never changes anything it did not create (run on
+    a developer's own account, the reader's data stays theirs)."""
+
+    def __init__(self, scratch: Path):
+        lib = Path.home() / "Library"
+        self.dirs = [lib / "Application Support" / "Readout", lib / "Saved Application State" / f"{BUNDLE_ID}.savedState"]
+        self.scratch = scratch
+        shutil.rmtree(scratch, ignore_errors=True)
+        scratch.mkdir(parents=True)
+        self.kept = []
+        for i, d in enumerate(self.dirs):
+            if d.exists():
+                shutil.copytree(d, scratch / str(i), symlinks=True)
+                self.kept.append(i)
+        self.prefs = scratch / "prefs.plist"
+        self.had_prefs = subprocess.run(["defaults", "export", BUNDLE_ID, str(self.prefs)], capture_output=True).returncode == 0
+
+    def restore(self) -> None:
+        for i, d in enumerate(self.dirs):
+            shutil.rmtree(d, ignore_errors=True)
+            if i in self.kept:
+                shutil.copytree(self.scratch / str(i), d, symlinks=True)
+        subprocess.run(["defaults", "delete", BUNDLE_ID], capture_output=True)
+        if self.had_prefs:
+            subprocess.run(["defaults", "import", BUNDLE_ID, str(self.prefs)], check=False)
+        shutil.rmtree(self.scratch, ignore_errors=True)
+
+
 def boot_pass(app: Path, work: Path, out: Path, clock: dict) -> int:
     """The job's first launch, before the measured one: the same document
     under another name, painted, its timings written to OUT_DIR/boot, then
     quit. WebKit's processes, caches and shaders have then run once on this
-    VM. What the launch leaves behind for the next one is removed: its saved
-    windows and reading state (the app clears its recent documents itself),
-    so the measured launch starts as this one did."""
+    VM. Everything the launch could leave for the next one (SavedState) is put
+    back as it was, so the measured launch starts as this one did; the app
+    adds nothing to the recent documents in this pass. A sentinel preference
+    and baseline, written before, must still be there after
+    (OUT_DIR/boot/sentinel.json, checked by smoke-assert)."""
     boot_dir = work / "boot"
     boot_dir.mkdir(exist_ok=True)
     doc = boot_dir / "boot.md"
@@ -320,21 +358,36 @@ def boot_pass(app: Path, work: Path, out: Path, clock: dict) -> int:
     shutil.copyfile(FIXTURES / "missing-diagram.png", boot_dir / "missing-diagram.png")
     boot_out = out / "boot"
     boot_out.mkdir(exist_ok=True)
+    baselines = Path.home() / "Library" / "Application Support" / "Readout" / "Baselines"
+    baselines.mkdir(parents=True, exist_ok=True)
+    sentinel_file = baselines / "readout-smoke-sentinel.json"
+    token = f"boot-{os.getpid()}-{time.time()}"
+    sentinel_file.write_text(json.dumps({"sentinel": token}))
+    subprocess.run(["defaults", "write", BUNDLE_ID, SENTINEL_KEY, "-string", token], check=False)
+    saved = SavedState(work / "boot-saved-state")
     env = dict(os.environ, READOUT_SMOKE_FILE=str(doc), READOUT_SMOKE_OUT=str(boot_out), READOUT_SMOKE_PASS="boot")
-    with open(boot_out / "smoke-boot.log", "wb") as log:
-        clock["boot_spawn"] = time.time()
-        proc = subprocess.Popen([str(app)], env=env, stdout=log, stderr=subprocess.STDOUT)
-        try:
-            code = proc.wait(timeout=60)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            print("FAIL: the first launch did not paint and quit within 60 seconds")
-            return 1
+    try:
+        with open(boot_out / "smoke-boot.log", "wb") as log:
+            clock["boot_spawn"] = time.time()
+            proc = subprocess.Popen([str(app)], env=env, stdout=log, stderr=subprocess.STDOUT)
+            try:
+                code = proc.wait(timeout=60)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+                print("FAIL: the first launch did not paint and quit within 60 seconds")
+                return 1
+    finally:
+        saved.restore()
+        pref = subprocess.run(["defaults", "read", BUNDLE_ID, SENTINEL_KEY], capture_output=True, text=True).stdout.strip()
+        kept = {"preference": pref == token,
+                "baseline": sentinel_file.exists() and json.loads(sentinel_file.read_text()).get("sentinel") == token}
+        (boot_out / "sentinel.json").write_text(json.dumps(kept) + "\n")
+        print(f"harness: state kept through the first launch: {kept}")
+        # The sentinel is the harness's own: gone before the measured launch.
+        subprocess.run(["defaults", "delete", BUNDLE_ID, SENTINEL_KEY], capture_output=True)
+        sentinel_file.unlink(missing_ok=True)
     print(f"harness: first launch exited with code {code}")
-    home = Path.home() / "Library"
-    shutil.rmtree(home / "Saved Application State" / "io.github.hxddh.readout.savedState", ignore_errors=True)
-    shutil.rmtree(home / "Application Support" / "Readout", ignore_errors=True)
-    subprocess.run(["defaults", "delete", "io.github.hxddh.readout"], capture_output=True)
     return code
 
 
