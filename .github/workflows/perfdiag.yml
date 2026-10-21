@@ -1,0 +1,21 @@
+name: perfdiag
+on:
+  push:
+    branches: [m15/perfdiag]
+jobs:
+  diag:
+    strategy:
+      fail-fast: false
+      matrix: { n: [1, 2, 3, 4] }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - working-directory: web
+        run: npm ci && npm run build && npx playwright install --with-deps webkit
+      - name: cpu
+        run: nproc; lscpu | grep -i 'model name'
+      - name: mini x12
+        working-directory: web
+        run: for i in $(seq 12); do INSTR=1 node test/perfdiag.mjs; echo ----; done
