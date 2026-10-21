@@ -166,24 +166,22 @@ export function holdPlace(anchor, bottom, ratio = false) {
 
 /**
  * Scrolls so `target` sits at the top of the viewport (`gap` above it, else its
- * scroll-margin) or, with `center`, in the middle.
+ * scroll-margin) or, with `center`, in the middle: a jump (aimAt), so a target
+ * in a chunk not laid out yet (a footnote deep in a long list) lands where it
+ * should once the chunk is.
  *
  * Not scrollIntoView: in a large document an off-screen chunk is skipped
  * (content-visibility); right after a scroll WebKit's scrollIntoView on an
- * element inside one scrolls nowhere. The chunk is laid out in the next
- * frame (forceLayout) and the target stays where it landed meanwhile.
+ * element inside one scrolls nowhere.
  */
 export function scrollToElement(target, { center = false, gap } = {}) {
-  const blk = target.closest('#ro-doc > .chunk > .blk');
-  if (blk) forceLayout(blk);
-  const r = target.getBoundingClientRect();
   const margin = gap ?? (parseFloat(getComputedStyle(target).scrollMarginTop) || 0);
-  // The top of the page lies under the window toolbar: aim below it.
-  const inset = topInset();
-  window.scrollBy(0, center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset);
-  // In a chunk not laid out yet, WebKit places the blocks at its top: the
-  // target stays where it landed while the chunk is laid out.
-  if (blk) pinLanding(blk);
+  aimAt(target, () => {
+    const r = target.getBoundingClientRect();
+    // The top of the page lies under the window toolbar: aim below it.
+    const inset = topInset();
+    return center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset;
+  }, () => pinLanding(target));
 }
 
 export function atBottom() {
@@ -243,16 +241,18 @@ export function pinLanding(el) {
 export const AIM_MS = 1000;
 
 /**
- * A jump to `el` (an outline click, a match found): `off()` is how far the
- * page is from where it should be, `landed()` runs after each aim. The chunk
- * it lands in is laid out by the frames after the jump (WebKit places a
- * skipped chunk's blocks at its top until then), the landing stays
- * put while they do (pinLanding), and the page aims again at whatever still
+ * Every jump (a link, a footnote and its back-link, an outline click, a
+ * match found, N, a rail tick, a place restored): `off()` is how far the
+ * page is from where `el` should be, `landed()` runs after each aim. The
+ * chunk it lands in is laid out by the frames after the jump (WebKit places
+ * a skipped chunk's blocks at its top until then), the landing stays put
+ * while they do (pinLanding), and the page aims again at whatever still
  * moves it, until another jump, or until the reader scrolls.
  */
 let aiming = null;   // the jump being aimed: {y}, where its last aim left the page
 onKeptScroll(dy => { if (aiming) aiming.y += dy; });
 export function aimAt(el, off, landed) {
+  forceLayout(el);
   window.scrollBy(0, off());
   landed();
   if (!cv()) return;

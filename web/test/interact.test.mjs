@@ -1313,6 +1313,32 @@ for (const n of [60, 400]) {
   await page.close();
 }
 
+// A link to the 40th footnote of a long footnotes block at the end of a
+// large document (its chunk not laid out: WebKit places its content at the
+// chunk's top until it is): the note lands in the middle of the window, as
+// footnotes do, once its chunk is laid out; its back-link lands the
+// reference there too.
+{
+  const page = await newPage();
+  const notes = Array.from({ length: 60 }, (_, i) => `<li id="fn-${i + 1}"><p>Note ${i + 1}: ${'a longer footnote with reasoning that wraps over lines '.repeat(3)}<a href="#fnref-${i + 1}" data-footnote-backref>↩</a></p></li>`).join('');
+  const n = 8016;
+  await page.evaluate(p => window.readout.apply(p), doc(n + 1, i => i === 4000 ? '<p>See the note<sup><a id="fnref-40" href="#fn-40" data-footnote-ref>40</a></sup>.</p>'
+    : i === n + 1 ? `<section class="footnotes"><ol>${notes}</ol></section>` : i > n - 10 ? `<p style="min-height: 400px">para ${i}</p>` : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(3)}</p>`,
+    i => i === n + 1 ? 'footnotes' : 'paragraph'));
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => window.readout.scrollToSlot(4000));
+  await page.waitForTimeout(1200);
+  const centered = sel => page.evaluate(sel => { const r = document.querySelector(sel).getBoundingClientRect(); return Math.round(r.top + r.height / 2 - innerHeight / 2); }, sel);
+  await page.evaluate(() => document.querySelector('a[href="#fn-40"]').click());
+  await page.waitForTimeout(1500);
+  const note = await centered('#fn-40');
+  await page.evaluate(() => document.querySelector('#fn-40 a[data-footnote-backref]').click());
+  await page.waitForTimeout(1500);
+  const back = await centered('#fnref-40');
+  check('a link to the 40th footnote of a large document lands it mid-window, its back-link the reference', Math.abs(note) <= 2 && Math.abs(back) <= 2, JSON.stringify({ note, back }));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();

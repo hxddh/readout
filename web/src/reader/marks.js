@@ -2,7 +2,7 @@
 // between changes.
 import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem } from './core.js';
 import { place, unplace } from './chunks.js';
-import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding, baseline } from './anchor.js';
+import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding, baseline, aimAt } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -545,21 +545,14 @@ export function jump(dir, first = false) {
   // animation: jump at once, then aim again once the blocks around the
   // target have their real heights.
   const smooth = !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollBy({ top, behavior: smooth ? 'smooth' : 'auto' });
-  // The change it lands on stays where it landed while the blocks around it
-  // are laid out (not the first block on screen, the resize compensation's
-  // usual choice).
-  if (!smooth) pinLanding(target);
+  // The change it lands on stays where it landed while the chunk around it
+  // is laid out (not the first block on screen, the resize compensation's
+  // usual choice), aimed at again as it is (aimAt).
+  if (smooth) window.scrollBy({ top, behavior: 'smooth' });
+  else aimAt(target, () => target.getBoundingClientRect().top - line, () => pinLanding(target));
   focusBlock(target);
   pulse(target);
   visit(target, members);
-  if (!smooth) {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!target.isConnected) return;
-      const off = target.getBoundingClientRect().top - line;
-      if (Math.abs(off) > 2) { window.scrollBy(0, off); pinLanding(target); }
-    }));
-  }
 }
 
 /**

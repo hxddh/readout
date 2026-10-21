@@ -47,7 +47,7 @@ function show(c) {
  * its top). Kept for two frames, then for as long as it is near the screen.
  */
 export function forceLayout(el) {
-  const c = isChunk(el) ? el : chunkOf(el);
+  const c = isChunk(el) ? el : el.closest('#ro-doc > .chunk');
   if (!cv() || !isChunk(c)) return;
   // And the chunk after it, which the rest of the screen below it shows:
   // a chunk on screen is never contained (its paint would clip what blocks

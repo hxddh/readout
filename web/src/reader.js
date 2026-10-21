@@ -12,7 +12,7 @@
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
-import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
+import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
@@ -364,11 +364,11 @@ function highlightOnScreen() { highlightIn(blocksOnScreen()); }
 function scrollToAnchor(a) {
   if (!a) return;
   trace('scrollToAnchor', { slot: a.slot, offset: Math.round(a.offset) });
-  restoreAnchor(a, new Set());
-  // In a large document the place is in a chunk not laid out yet (WebKit
-  // places its blocks at its top until it is): it stays put as it is.
+  // A jump to the block's place (aimAt: in a chunk not laid out yet, it is
+  // aimed at again once the chunk is); a block gone, its neighbours'.
   const el = slots.get(a.slot);
-  if (el) pinLanding(el);
+  if (el) aimAt(el, () => anchorMiss(a, new Set()), () => pinLanding(el));
+  else restoreAnchor(a, new Set());
   highlightOnScreen();
 }
 
