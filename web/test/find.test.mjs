@@ -130,10 +130,15 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   await page.evaluate(() => { window.readout.find('needle'); window.readout.find('needle'); });
   await page.waitForTimeout(100);
   check('Return twice in one frame goes to the second match', await count(page) === '2 of 3' && await selectedSlot(page) === 12, `${await count(page)} ${await selectedSlot(page)}`);
-  // A selection the reader made is where the next search starts.
-  await page.evaluate(() => { const p = document.querySelector('.blk[data-slot="21"] p'); getSelection().selectAllChildren(p); });
+  // A selection the reader made is where the next search starts (Next from the current match, 12, would go to 35).
+  check('(on block 12)', await selectedSlot(page) === 12, String(await selectedSlot(page)));
+  await page.evaluate(() => { const p = document.querySelector('.blk[data-slot="2"] p'); getSelection().selectAllChildren(p); });
   await find(page, 'needle');
-  check('find starts from the reader\'s selection', await selectedSlot(page) === 35, String(await selectedSlot(page)));
+  check('find starts from the reader\'s selection', await selectedSlot(page) === 5, String(await selectedSlot(page)));
+  // So does a click (the caret): from block 30, the next is 35 (from the current match, 5: 12).
+  await page.evaluate(() => { const t = document.querySelector('.blk[data-slot="30"] p').firstChild; getSelection().collapse(t, 2); });
+  await find(page, 'needle');
+  check('find starts from where the reader clicked', await selectedSlot(page) === 35, String(await selectedSlot(page)));
   await page.close();
 }
 
@@ -274,6 +279,23 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   check('an edit before the match in its block keeps it current', before.startsWith('3 of 5@10 sel=needle') && (await state(page)).startsWith('3 of 5@10 sel=needle'), JSON.stringify([before, await state(page)]));
   await find(page, 'needle');
   check('… and Next goes on from it', await count(page) === '4 of 5' && await selectedSlot(page) === 40, await state(page));
+  await page.close();
+}
+
+// A match written earlier in the current block: the current one stays the current one.
+{
+  const page = await open();
+  const paras = paras80.slice();
+  paras[9] = '<p>alpha needle</p>';
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await find(page, 'needle'); await find(page, 'needle');   // block 10
+  await edit(page, [{ op: 'replace', slot: 10, change: 'content', html: '<p>needle alpha needle</p>', kind: 'paragraph' }], 2);
+  await settle(page);
+  const r = await page.evaluate(() => { const s = getSelection(); return { off: s.rangeCount ? s.getRangeAt(0).startOffset : -1, cur: CSS.highlights.get('ro-find-cur') && [...CSS.highlights.get('ro-find-cur')][0].startOffset }; });
+  await find(page, 'needle');
+  check('a match written before the current one in its block: the current mark and the selection stay on it, and Next moves on',
+    r.off === 13 && r.cur === 13 && await count(page) === '4 of 5' && await selectedSlot(page) === 40, JSON.stringify({ r, count: await count(page), slot: await selectedSlot(page) }));
   await page.close();
 }
 

@@ -50,7 +50,7 @@ let cur = -1;           // the current match
 let shown = '';         // the count last told to the app
 // Where the current match is: its block's slot (a reset keeps the slots of
 // the blocks it keeps) and its place among that block's matches.
-let pos = null;         // {slot, ord, next}: next, the slot of the block after it, once it is removed
+let pos = null;         // {slot, ord, start, fromEnd, next}: next, the slot of the block after it, once it is removed
 let own = null;         // the range find selected, while the selection is it
 let observing = false;
 let texts = new WeakMap();   // block -> its text (textOf), while finding
@@ -164,8 +164,7 @@ const topNow = () => { fromTop.top = blocksOnScreen()[0]; return fromTop; };
 
 /**
  * The current match after a search of the page: [index, exact]. exact: in
- * its block still, the same one among the block's matches (clamped: an
- * edit earlier in the block does not make a later one current). Else the
+ * its block still, the one nearest where it was in it. Else the
  * first match after that block, or, the block gone, at or after the block
  * that followed it, else the top of the screen. [-1, false]: none.
  */
@@ -180,9 +179,16 @@ function resolve() {
   const i = next(m => m.el === el ? 0 : before(m.el, el) ? -1 : 1, false, false);
   if (matches[i].el !== el) return [i, false];
   delete pos.next;
-  let k = i;
-  while (k - i < pos.ord && k + 1 < matches.length && matches[k + 1].el === el) k++;
-  return [k, true];
+  // In its block: the match nearest where it was, counted from the block's
+  // start or from its end (text written before it moves it from the start,
+  // text after it from the end); its place among the block's matches decides a tie.
+  let best = i, far = Infinity;
+  for (let k = i; k < matches.length && matches[k].el === el; k++) {
+    const m = matches[k];
+    const d = Math.min(Math.abs(m.start - pos.start), Math.abs(m.x.s.length - m.start - pos.fromEnd));
+    if (d < far || (d === far && Math.abs(k - i - pos.ord) < Math.abs(best - i - pos.ord))) { best = k; far = d; }
+  }
+  return [best, true];
 }
 
 /** The first match `cmp` puts after its origin (`strict`: at it does not count), wrapping. */
@@ -254,6 +260,14 @@ function report(always = false) {
   post({ type: 'found', current: cur + 1, total: matches.length });
 }
 
+/** Remembers where the current match is (pos). */
+function place() {
+  const m = matches[cur];
+  let first = cur;
+  while (first > 0 && matches[first - 1].el === m.el) first--;
+  pos = { slot: +m.el.dataset.slot, ord: cur - first, start: m.start, fromEnd: m.x.s.length - m.start };
+}
+
 /** To the current match (a search): selected, and on screen (it stays where it is if it is already). */
 function land() {
   const m = matches[cur];
@@ -270,9 +284,7 @@ function land() {
     if (!d.open && !d.querySelector(':scope > summary')?.contains(range.startContainer)) d.open = true;
   }
   range = mark();
-  let first = cur;
-  while (first > 0 && matches[first - 1].el === el) first--;
-  pos = { slot: +el.dataset.slot, ord: cur - first };
+  place();
   selectLater();
   // Off screen, the block is not laid out (content-visibility): it is aimed
   // at first, the match once the frames after the jump have laid it out.
@@ -339,6 +351,7 @@ function refresh() {
   if (reread()) search();
   const [i, exact] = resolve();
   cur = i;
+  if (exact) place();   // where it is now, for the next edit
   const range = mark();
   if (range && exact && own && own.collapsed && !selecting) select(range);
   report();
@@ -368,10 +381,10 @@ export function find(text, backwards = false) {
   search();
   if (!matches.length) { cur = -1; pos = null; mark(); report(true); return 0; }
   // Next and Previous go on from the current match, unless the reader has
-  // selected something else since.
+  // selected something else since, or clicked somewhere (the caret).
   const sel = getSelection();
   const r = sel.rangeCount ? sel.getRangeAt(0) : null;
-  const theirs = !!r && !r.collapsed && !selecting && !isOwn() && !!blockOf(r.startContainer);
+  const theirs = !!r && !selecting && !isOwn() && !!blockOf(r.startContainer);
   const [i, exact] = same && !theirs ? resolve() : [-1, false];
   const n = matches.length;
   if (i < 0) { const [cmp, strict] = origin(); cur = next(cmp, strict, backwards); }
