@@ -25,6 +25,9 @@ import ReadoutCore
 ///                 adds a section to the file opened with `readout -b`
 @MainActor
 enum SmokeTest {
+    /// The harness's warm-up launch (READOUT_SMOKE_PASS=boot): it adds nothing to the recent documents.
+    static var isBootPass: Bool { outputDirectory != nil && ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "boot" }
+
     static var outputDirectory: URL? {
         ProcessInfo.processInfo.environment["READOUT_SMOKE_OUT"].map { URL(fileURLWithPath: $0, isDirectory: true) }
     }
@@ -107,13 +110,21 @@ enum SmokeTest {
         return Double(start.tv_sec) + Double(start.tv_usec) / 1_000_000
     }
 
+    /// The first window's page, in ms: its first setAppearance, then the first
+    /// apply's block work and the layout it reads (page time, report only).
+    private static var pageFirstApply: [String: Any] = [:]
+    private static func readPageFirstApply(_ webView: WKWebView) async {
+        if let text = try? await webView.evaluateJavaScript("JSON.stringify(window.readout.firstTimings())") as? String,
+           let data = text.data(using: .utf8), let d = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { pageFirstApply = d }
+    }
+
     /// Timings for tools/smoke-run.py, which adds its own clock readings.
     private static func writeTimings(_ dir: URL) {
         var phases = launchPhases
         if let start = processStart { phases["process_start"] = start }
         let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint,
                                    "first_paint_samples_s": firstPaintSamples, "first_apply_samples_s": firstApplySamples,
-                                   "launch_phases_s": phases]
+                                   "launch_phases_s": phases, "page_first_apply_ms": pageFirstApply]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: dir.appendingPathComponent("timings-app.json"))
         }
@@ -132,6 +143,18 @@ enum SmokeTest {
 
         NSApp.activate()
         Task { @MainActor in
+            // The warm-up launch before the measured one (tools/smoke-run.py):
+            // the first document painted, its timings written, then quit.
+            if ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "boot" {
+                let deadline = Date().addingTimeInterval(30)
+                while launchPhases["paint"] == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                // Let the page finish what follows its first paint (the highlighter, diagrams).
+                try? await Task.sleep(for: .seconds(3))
+                await readPageFirstApply(webView)
+                writeTimings(out)
+                NSApp.terminate(nil)
+                return
+            }
             // The second, Chinese pass (tools/smoke-run.py): menus and windows only.
             if ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "zh" {
                 await localePass(controller: controller, out: out)
@@ -139,6 +162,7 @@ enum SmokeTest {
                 return
             }
             try? await Task.sleep(for: .seconds(3))
+            await readPageFirstApply(webView)
             await capture(webView, window: controller.window, to: out, name: "1-initial")
             await typesetting(webView: webView, out: out)
 

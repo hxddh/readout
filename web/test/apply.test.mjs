@@ -79,6 +79,9 @@ function resetPatch(n, prefix = 'para') {
 
 // 1. Insert order: three blocks prepended at the top must keep document order.
 await page.evaluate(p => window.readout.apply(p), resetPatch(5));
+// The first setAppearance and first apply are timed for the smoke test (report only).
+const firstTimings = await page.evaluate(() => JSON.stringify(window.readout.firstTimings()));
+check('first setAppearance and first apply timed', ['setAppearance', 'blocks', 'layout'].every(k => Number.isFinite(JSON.parse(firstTimings)[k])), firstTimings);
 await page.evaluate(() => window.scrollTo(0, 0));
 await page.evaluate(p => window.readout.apply({
   version: 2, reset: false, rewrite: false,

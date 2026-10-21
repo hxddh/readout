@@ -7,6 +7,12 @@ in the same directory, then an atomic rename over the target.
 
 usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
 
+  0. launches the app once on a copy of plan.md (WORK_DIR/boot/boot.md, output in
+     OUT_DIR/boot), lets it paint and quit, and removes what that launch saved
+     for the next one: the job's first launch is the first time WebKit runs on
+     the VM, so the measured launch is the second (cold_apply_ms; owner decision
+     2026-10-21). cold_start_ms and the launch phases stay the first launch's;
+     its cold_apply_ms is reported as cold_apply_first_boot_ms
   1. copies web/test/fixtures/plan.md (+ image) into WORK_DIR and launches the app on it
   2. 50 ms after the app reports `opened`, replaces it with plan-early.md
      (an agent write racing the first load: the first capture must show it)
@@ -67,28 +73,12 @@ def wait_for(path: Path, proc: subprocess.Popen, timeout: float, poll: float = 0
     return False
 
 
-def write_timings(out: Path, clock: dict, second: Path) -> None:
-    """Combines the harness's clock with the app's into milliseconds."""
-    try:
-        app = json.loads((out / "timings-app.json").read_text())
-    except (OSError, ValueError) as e:
-        print(f"harness: no app timings ({e})")
-        return
-    # On-screen times: the frames that showed a patch (fall back to the apply).
+def launch_timings(app: dict, spawn: float) -> dict:
+    """One launch: process start to its first document on screen, in phases."""
     applied = sorted(app.get("painted_at") or app.get("applied_at", []))
-    after = lambda t: next((a for a in applied if a >= t), None)
     first = applied[0] if applied else None
-    update = after(clock["edit"]) if "edit" in clock else None
-    timings = {
-        # Process launch to the first patch on screen.
-        "cold_start_ms": round((first - clock["spawn"]) * 1000, 1) if first else None,
-        # Agent write (rename) to the patch on screen: FSEvents, debounce, parse, diff, apply.
-        "write_to_update_ms": round((update - clock["edit"]) * 1000, 1) if update else None,
-        # App already running: window request to first patch, for a 77 KB document.
-        # The median of the app's opens of it (three), so one slow moment of a
-        # shared runner does not decide; every sample is kept alongside.
-        "warm_open_ms": None,
-    }
+    # Process launch to the first patch on screen.
+    t = {"cold_start_ms": round((first - spawn) * 1000, 1) if first else None}
     # The cold start in phases (P5), each in ms since the process started
     # (sysctl), and the segments that are Readout's own: the reader page
     # loading (from willFinishLaunching, where the spare page it becomes is
@@ -102,20 +92,75 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
     if start:
         order = ["will_finish_launching", "spare_created", "did_finish_launching", "open_requested",
                  "window_init", "page_ready", "did_load", "apply", "paint"]
-        timings["launch_phases_ms"] = {k: round((phases[k] - start) * 1000, 1) for k in order if k in phases}
-        timings["launch_phases_ms"]["spawn"] = round((clock["spawn"] - start) * 1000, 1)
+        t["launch_phases_ms"] = {k: round((phases[k] - start) * 1000, 1) for k in order if k in phases}
+        t["launch_phases_ms"]["spawn"] = round((spawn - start) * 1000, 1)
     else:
         print(f"harness: no process start time in the app's launch phases {phases}")
     if "will_finish_launching" in phases and "page_ready" in phases:
-        timings["cold_page_ready_ms"] = round((phases["page_ready"] - phases["will_finish_launching"]) * 1000, 1)
+        t["cold_page_ready_ms"] = round((phases["page_ready"] - phases["will_finish_launching"]) * 1000, 1)
     if "did_finish_launching" in phases and "window_init" in phases:
-        timings["cold_dfl_to_window_ms"] = round((phases["window_init"] - phases["did_finish_launching"]) * 1000, 1)
+        t["cold_dfl_to_window_ms"] = round((phases["window_init"] - phases["did_finish_launching"]) * 1000, 1)
     # Readout's own work between the window and its document: reading the
     # file, parsing it, the reading state and the git baseline (no WebKit).
     if "window_init" in phases and "did_load" in phases:
-        timings["cold_window_to_load_ms"] = round((phases["did_load"] - phases["window_init"]) * 1000, 1)
+        t["cold_window_to_load_ms"] = round((phases["did_load"] - phases["window_init"]) * 1000, 1)
     if all(k in phases for k in ("page_ready", "did_load", "apply")):
-        timings["cold_apply_ms"] = round((phases["apply"] - max(phases["page_ready"], phases["did_load"])) * 1000, 1)
+        t["cold_apply_ms"] = round((phases["apply"] - max(phases["page_ready"], phases["did_load"])) * 1000, 1)
+    # The page's side of it (page time): its first setAppearance, then the
+    # first apply's block work and the layout it reads.
+    page = app.get("page_first_apply_ms") or {}
+    for k in ("setAppearance", "blocks", "layout"):
+        if isinstance(page.get(k), (int, float)):
+            t[f"cold_page_{k.lower()}_ms"] = page[k]
+    return t
+
+
+# The launch metrics the first launch of the job keeps (cold_start_ms is a
+# tripwire for a first launch that crashes or hangs; the phases and Readout's
+# segments before the document goes in are the first launch's, as before).
+FIRST_LAUNCH_KEYS = ("cold_start_ms", "launch_phases_ms", "cold_page_ready_ms", "cold_dfl_to_window_ms", "cold_window_to_load_ms")
+
+
+def write_timings(out: Path, clock: dict, second: Path) -> None:
+    """Combines the harness's clock with the app's into milliseconds."""
+    try:
+        app = json.loads((out / "timings-app.json").read_text())
+        boot = json.loads((out / "boot" / "timings-app.json").read_text())
+    except (OSError, ValueError) as e:
+        print(f"harness: no app timings ({e})")
+        return
+    applied = sorted(app.get("painted_at") or app.get("applied_at", []))
+    after = lambda t: next((a for a in applied if a >= t), None)
+    update = after(clock["edit"]) if "edit" in clock else None
+    timings = {
+        # Agent write (rename) to the patch on screen: FSEvents, debounce, parse, diff, apply.
+        "write_to_update_ms": round((update - clock["edit"]) * 1000, 1) if update else None,
+        # App already running: window request to first patch, for a 77 KB document.
+        # The median of the app's opens of it (three), so one slow moment of a
+        # shared runner does not decide; every sample is kept alongside.
+        "warm_open_ms": None,
+    }
+    # Two launches (owner decision 2026-10-21): the first launch of the job,
+    # on a VM just booted, is the first time WebKit runs there (its processes,
+    # caches and shaders start cold: the first document's style and layout
+    # took 2-3x as long as in any later launch on the same runner, with the
+    # same Readout work). That is not what users pay, so cold_apply_ms is the
+    # second launch's (a new process, nothing kept from the first but what
+    # macOS and WebKit cache on disk); the first launch's value is reported as
+    # cold_apply_first_boot_ms. The other launch metrics stay the first launch's.
+    measured = launch_timings(app, clock["spawn"])
+    first_boot = launch_timings(boot, clock["boot_spawn"])
+    timings.update({k: first_boot[k] for k in FIRST_LAUNCH_KEYS if k in first_boot})
+    timings["cold_apply_ms"] = measured.get("cold_apply_ms")
+    timings["cold_apply_first_boot_ms"] = first_boot.get("cold_apply_ms")
+    for k, v in measured.items():
+        if k.startswith("cold_page_") and k != "cold_page_ready_ms":
+            timings[k] = v
+    for k, v in first_boot.items():
+        if k.startswith("cold_page_") and k != "cold_page_ready_ms":
+            timings[k.replace("_ms", "_first_boot_ms")] = v
+    timings["launch_phases_second_ms"] = measured.get("launch_phases_ms")
+    timings["cold_start_second_ms"] = measured.get("cold_start_ms")
 
     def for_second(table):
         found = table.get(str(second.resolve()), table.get(str(second)))
@@ -246,7 +291,11 @@ def main() -> int:
     scroll_bars = subprocess.run(["defaults", "read", "-g", "AppleShowScrollBars"], capture_output=True, text=True)
     subprocess.run(["defaults", "write", "-g", "AppleShowScrollBars", "-string", "WhenScrolling"], check=False)
     try:
-        code = run(app, target, out, env, {}, second, cli_file, hook_plan, project, tmp, tmp_file, link, collide, dangle, agent_dir, late_dir, work)
+        clock = {}
+        code = boot_pass(app, work, out, clock)
+        if code != 0:
+            return code
+        code = run(app, target, out, env, clock, second, cli_file, hook_plan, project, tmp, tmp_file, link, collide, dangle, agent_dir, late_dir, work)
         if code == 0:
             code = locale_pass(app, target, out)
         return code
@@ -255,6 +304,91 @@ def main() -> int:
             subprocess.run(["defaults", "write", "-g", "AppleShowScrollBars", "-string", scroll_bars.stdout.strip()], check=False)
         else:
             subprocess.run(["defaults", "delete", "-g", "AppleShowScrollBars"], check=False)
+
+
+BUNDLE_ID = "io.github.hxddh.readout"
+SENTINEL_KEY = "ReadoutSmokeSentinel"
+
+
+class SavedState:
+    """What a launch of the app can leave behind for the next one, as it was
+    before: its defaults domain, its Application Support folder (reading
+    state, baselines) and its saved windows. Restored exactly afterwards, so a
+    launch the harness adds never changes anything it did not create (run on
+    a developer's own account, the reader's data stays theirs)."""
+
+    def __init__(self, scratch: Path):
+        lib = Path.home() / "Library"
+        self.dirs = [lib / "Application Support" / "Readout", lib / "Saved Application State" / f"{BUNDLE_ID}.savedState"]
+        self.scratch = scratch
+        shutil.rmtree(scratch, ignore_errors=True)
+        scratch.mkdir(parents=True)
+        self.kept = []
+        for i, d in enumerate(self.dirs):
+            if d.exists():
+                shutil.copytree(d, scratch / str(i), symlinks=True)
+                self.kept.append(i)
+        self.prefs = scratch / "prefs.plist"
+        self.had_prefs = subprocess.run(["defaults", "export", BUNDLE_ID, str(self.prefs)], capture_output=True).returncode == 0
+
+    def restore(self) -> None:
+        for i, d in enumerate(self.dirs):
+            shutil.rmtree(d, ignore_errors=True)
+            if i in self.kept:
+                shutil.copytree(self.scratch / str(i), d, symlinks=True)
+        subprocess.run(["defaults", "delete", BUNDLE_ID], capture_output=True)
+        if self.had_prefs:
+            subprocess.run(["defaults", "import", BUNDLE_ID, str(self.prefs)], check=False)
+        shutil.rmtree(self.scratch, ignore_errors=True)
+
+
+def boot_pass(app: Path, work: Path, out: Path, clock: dict) -> int:
+    """The job's first launch, before the measured one: the same document
+    under another name, painted, its timings written to OUT_DIR/boot, then
+    quit. WebKit's processes, caches and shaders have then run once on this
+    VM. Everything the launch could leave for the next one (SavedState) is put
+    back as it was, so the measured launch starts as this one did; the app
+    adds nothing to the recent documents in this pass. A sentinel preference
+    and baseline, written before, must still be there after
+    (OUT_DIR/boot/sentinel.json, checked by smoke-assert)."""
+    boot_dir = work / "boot"
+    boot_dir.mkdir(exist_ok=True)
+    doc = boot_dir / "boot.md"
+    shutil.copyfile(FIXTURES / "plan.md", doc)
+    shutil.copyfile(FIXTURES / "missing-diagram.png", boot_dir / "missing-diagram.png")
+    boot_out = out / "boot"
+    boot_out.mkdir(exist_ok=True)
+    baselines = Path.home() / "Library" / "Application Support" / "Readout" / "Baselines"
+    baselines.mkdir(parents=True, exist_ok=True)
+    sentinel_file = baselines / "readout-smoke-sentinel.json"
+    token = f"boot-{os.getpid()}-{time.time()}"
+    sentinel_file.write_text(json.dumps({"sentinel": token}))
+    subprocess.run(["defaults", "write", BUNDLE_ID, SENTINEL_KEY, "-string", token], check=False)
+    saved = SavedState(work / "boot-saved-state")
+    env = dict(os.environ, READOUT_SMOKE_FILE=str(doc), READOUT_SMOKE_OUT=str(boot_out), READOUT_SMOKE_PASS="boot")
+    try:
+        with open(boot_out / "smoke-boot.log", "wb") as log:
+            clock["boot_spawn"] = time.time()
+            proc = subprocess.Popen([str(app)], env=env, stdout=log, stderr=subprocess.STDOUT)
+            try:
+                code = proc.wait(timeout=60)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+                print("FAIL: the first launch did not paint and quit within 60 seconds")
+                return 1
+    finally:
+        saved.restore()
+        pref = subprocess.run(["defaults", "read", BUNDLE_ID, SENTINEL_KEY], capture_output=True, text=True).stdout.strip()
+        kept = {"preference": pref == token,
+                "baseline": sentinel_file.exists() and json.loads(sentinel_file.read_text()).get("sentinel") == token}
+        (boot_out / "sentinel.json").write_text(json.dumps(kept) + "\n")
+        print(f"harness: state kept through the first launch: {kept}")
+        # The sentinel is the harness's own: gone before the measured launch.
+        subprocess.run(["defaults", "delete", BUNDLE_ID, SENTINEL_KEY], capture_output=True)
+        sentinel_file.unlink(missing_ok=True)
+    print(f"harness: first launch exited with code {code}")
+    return code
 
 
 def locale_pass(app: Path, target: Path, out: Path) -> int:

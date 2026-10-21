@@ -1,5 +1,5 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
-import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused } from './core.js';
+import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, forceLayout, neverLaidOut } from './anchor.js';
 import { renderMarks, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
@@ -114,6 +114,7 @@ export function apply(p) {
   if (p.reset || p.links) setLinks(p.links);
   const isFirst = first;
   first = false;
+  const t0 = performance.now();
   // The document was emptied (truncated): the place it had before counts.
   if (held && slots.size > 0 && Math.abs(document.scrollingElement.scrollTop - held.top) > 2) held = null;   // the reader moved
   if (tail && Math.abs(document.scrollingElement.scrollTop - tail.y) > 2) tail = null;   // the reader scrolled away
@@ -210,6 +211,7 @@ export function apply(p) {
     }
   }
 
+  const t1 = performance.now();
   updateCv();
   // The first open of a large document reads no layout before its first
   // frame: in that frame WebKit lays out only the blocks on screen (the rest
@@ -255,6 +257,8 @@ export function apply(p) {
   // estimate, so blocks above a resumed position that are laid out at another
   // height still keep the place.
   if (firstLarge) for (const el of slots.values()) heights.set(el, parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0);
+
+  if (isFirst) { firstTimings.blocks = Math.round(t1 - t0); firstTimings.layout = Math.round(performance.now() - t1); }
 
   // Restore position in the same task, before the browser paints.
   let restored = false;

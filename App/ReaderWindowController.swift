@@ -1449,7 +1449,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     func windowDidBecomeKey(_ notification: Notification) {
         if !notedRecent {
             // Not the help files inside the app.
-            if !url.path.hasPrefix(Bundle.main.bundleURL.standardizedFileURL.path + "/") {
+            if !url.path.hasPrefix(Bundle.main.bundleURL.standardizedFileURL.path + "/"), !SmokeTest.isBootPass {
                 NSDocumentController.shared.noteNewRecentDocumentURL(url)
             }
             noteLookedAt()   // looked at: the tab's dot stays only for unread changes
