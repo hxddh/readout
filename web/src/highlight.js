@@ -1,7 +1,8 @@
 // Syntax highlighting with Shiki (JavaScript regex engine, no WASM).
 // Grammars are loaded on demand; the three agent output uses most are
-// preloaded (not in Quick Look, which loads only what the preview shows).
-// Shiki itself is loaded on first use.
+// preloaded (not in Quick Look, which loads only what the preview shows), the
+// spare page loads four more, and the languages a document's fences name are
+// loaded while it parses (prepareLangs). Shiki itself is loaded on first use.
 //
 // The grammars come mostly converted: the build (shiki-grammars.mjs) serves
 // each '@shikijs/langs/<id>' import with its patterns already converted to
@@ -74,10 +75,15 @@ const ALIASES = {
   conf: 'ini', env: 'shellscript', ndjson: 'jsonl', protobuf: 'proto',
 };
 
-// Each preloaded grammar costs every tab its memory (12 of them: ~40 MB of
+// Each preloaded grammar costs every tab its memory (12 of them: ~36 MB of
 // a warmed page's private memory); the rest load on first use, which ES2018
-// patterns keep to tens or hundreds of milliseconds.
+// patterns keep to tens or hundreds of milliseconds, or while the document
+// naming them parses (prepareLangs). Every page loads the three agent output
+// uses most; the spare page (warm) also the four small common ones, ~4 MB in
+// all, so their blocks are coloured in a warm open's first paint too. (Go
+// and Swift would cost ~7 MB each.)
 const PRELOAD = ['shellscript', 'json', 'typescript'];
+const SPARE_PRELOAD = ['python', 'rust', 'yaml', 'diff'];
 
 let highlighter = null;
 let ready = null;
@@ -86,7 +92,7 @@ let initialized = false;   // the preloaded grammars are all registered
 const loading = new Map();
 const failed = new Set();  // grammars that could not be loaded (never waited for again)
 const lazyOf = new Map();  // grammar id -> languages it embeds only when they are loaded
-const grammarsOf = new Map();  // preloaded grammar id -> its grammar modules (for the warm-up)
+const grammarsOf = new Map();  // grammar id -> its grammar modules (for the warm-up)
 
 export function resolveLang(lang) {
   if (!lang) return null;
@@ -140,18 +146,50 @@ export function init() {
 // (stopWarmUp, enhance.js). Only on the spare page: a page being read should
 // not spend its main thread on languages it may not show. Never in Quick
 // Look, which preloads nothing. Marks 'readout-hl-warm' when done (perf.test.mjs).
+// The grammars a document being opened names (prepareLangs) are loaded and
+// compiled the same way, ahead of the rest, until it is shown.
 let warming = false;
 let warmStopped = false;
+const work = [];             // warm-up steps, run a slice at a time
+let working = false;
+const warmQueued = new Set();  // grammar ids whose warm-up is queued
 export function warm() {
   return init().then(() => {
     if (!preload || warming || warmStopped) return;
     warming = true;
-    setTimeout(warmUp, WARM_DELAY_MS);
+    for (const id of SPARE_PRELOAD) ensureLang(id);
+    setTimeout(() => {
+      for (const id of WARM_ORDER) if (highlighter.getLoadedLanguages().includes(id)) queueWarm(id);
+      // And the whole path once, as a block is highlighted (both themes, HTML).
+      work.push(() => highlightSync('x', 'json'), () => performance.mark('readout-hl-warm'));
+      runWork();
+    }, WARM_DELAY_MS);
   });
 }
 
 /** The page shows a document: no more warming up. */
 export function stopWarmUp() { warmStopped = true; }
+
+/**
+ * The app has read a document and is parsing it: the grammars its code
+ * fences name (info strings, as written) are loaded and compiled now, ahead
+ * of the spare page's own warm-up, so its first paint finds them ready.
+ */
+export function prepareLangs(names) {
+  if (warmStopped || !Array.isArray(names)) return;
+  // A Markdown block may start with front matter, which is YAML (embedded):
+  // what such a block needs is not known before its code is.
+  const ids = names.slice(0, 16).map(n => resolveLang(String(n)));
+  if (ids.includes('markdown')) ids.push('yaml');
+  for (const id of ids) {
+    if (!id || warmQueued.has(id)) continue;
+    prepare(id, '').then(() => {
+      if (warmStopped || failed.has(id)) return;
+      queueWarm(id, true);
+      runWork();
+    });
+  }
+}
 
 const TS_SAMPLE = [
   'import { readFile } from "node:fs/promises";',
@@ -192,9 +230,68 @@ const SAMPLES = {
   ].join('\n'),
   json: '{\n  "name": "x",\n  "n": 1.5e3,\n  "ok": true,\n  "list": [null, {"a": "b\\n"}]\n}',
   typescript: TS_SAMPLE,
+  python: [
+    'from dataclasses import dataclass',
+    '',
+    '@dataclass',
+    'class Item(Base):',
+    '    """A docstring."""',
+    '    def load(self, path: str = "x", *args, **kw) -> list[int]:',
+    '        with open(path) as f:  # comment',
+    '            return [int(x) for x in f if x.strip() and not x.startswith("#")]',
+    '',
+    'async def main() -> None:',
+    '    try:',
+    '        await run(f"{path!r} {1 + 2:.2f}", r"\\d+", b"x")',
+    '    except (OSError, ValueError) as e:',
+    '        raise SystemExit(1) from e',
+    '    finally:',
+    '        print(lambda x: x ** 2, None, True)',
+  ].join('\n'),
+  rust: [
+    'use std::collections::HashMap;',
+    '',
+    '/// A doc comment.',
+    '#[derive(Debug, Clone)]',
+    "pub struct Store<'a, T: Clone> {",
+    '    items: HashMap<String, T>,',
+    "    path: &'a str,",
+    '}',
+    '',
+    "impl<'a, T: Clone> Store<'a, T> {",
+    '    pub async fn load(&mut self) -> Result<usize, Box<dyn std::error::Error>> {',
+    '        for (i, line) in self.path.lines().enumerate() {',
+    '            if line.is_empty() { continue; }',
+    '            let key = format!("{i}:{}", line.trim());',
+    '            match self.items.get(&key) { Some(_) => {}, None => return Err("x".into()) }',
+    '        }',
+    '        Ok(self.items.len()) // comment',
+    '    }',
+    '}',
+  ].join('\n'),
+  yaml: [
+    '# comment',
+    'name: "value"',
+    'on:',
+    '  push:',
+    '    branches: [main]',
+    'jobs:',
+    '  test:',
+    '    runs-on: ubuntu-latest',
+    '    steps:',
+    '      - uses: actions/checkout@v4',
+    '      - run: |',
+    '          npm ci',
+    '        env: { CI: true, N: 1.5 }',
+  ].join('\n'),
+  diff: 'diff --git a/x.js b/x.js\nindex 1111111..2222222 100644\n--- a/x.js\n+++ b/x.js\n@@ -1,3 +1,3 @@ function f\n-const a = 1;\n+const a = 2;\n context',
+  // Not preloaded (prepareLangs): the same rules as TypeScript.
+  javascript: TS_SAMPLE,
 };
+// Any other language a document names: a few lines most grammars have rules for.
+const GENERIC_SAMPLE = 'import x from "y"; // comment\n# comment\n/* comment */ if (a == 1.5) { return [true, null, \'s\', `t`]; }\nfunc(a, b) -> c:';
 const WARM_DELAY_MS = 5000;
-const WARM_ORDER = ['typescript', 'shellscript', 'json'];   // the slowest first
+const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'rust', 'yaml', 'diff'];   // the slowest first
 // The regexes of a grammar, as the build precompiled them: WebKit compiles
 // each on its first use, which is what makes a grammar's first block slow.
 function regexesOf(id) {
@@ -209,32 +306,39 @@ function regexesOf(id) {
   return [...out];
 }
 
-const SLICE_MS = 8;
-function warmUp() {
-  const ids = WARM_ORDER.filter(id => SAMPLES[id] && highlighter.getLoadedLanguages().includes(id));
-  const work = [];
-  for (const id of ids) {
-    for (const r of regexesOf(id)) work.push(() => { try { r.lastIndex = 0; r.exec(''); } catch { /* not ours to fix */ } });
-    // Then its sample, a line per step (carrying the grammar's state), so
-    // the rules it reaches are set up as they are for a block.
-    let state;
-    for (const line of SAMPLES[id].split('\n')) {
-      work.push(() => {
-        try {
-          const tokens = highlighter.codeToTokensBase(line, { lang: id, theme: 'github-light-default', ...(state ? { grammarState: state } : {}) });
-          state = highlighter.getLastGrammarState(tokens);
-        } catch { state = undefined; }
-      });
-    }
+// A grammar's warm-up: its patterns compiled, then its sample (if it has
+// one) run a line per step (carrying the grammar's state), so the rules it
+// reaches are set up as they are for a block. `first`: ahead of the rest.
+function queueWarm(id, first = false) {
+  if (warmQueued.has(id)) return;
+  warmQueued.add(id);
+  const steps = [];
+  for (const r of regexesOf(id)) steps.push(() => { try { r.lastIndex = 0; r.exec(''); } catch { /* not ours to fix */ } });
+  let state;
+  for (const line of (SAMPLES[id] || GENERIC_SAMPLE).split('\n')) {
+    steps.push(() => {
+      try {
+        const tokens = highlighter.codeToTokensBase(line, { lang: id, theme: 'github-light-default', ...(state ? { grammarState: state } : {}) });
+        state = highlighter.getLastGrammarState(tokens);
+      } catch { state = undefined; }
+    });
   }
-  // And the whole path once, as a block is highlighted (both themes, HTML).
-  work.push(() => highlightSync('x', 'json'));
+  if (first) {
+    steps.push(() => performance.mark('readout-hl-prepared'));   // for the tests
+    work.unshift(...steps);
+  } else work.push(...steps);
+}
+
+const SLICE_MS = 8;
+function runWork() {
+  if (working) return;
+  working = true;
   const next = () => {
-    if (warmStopped) return;
+    if (warmStopped) { working = false; return; }
     const t0 = performance.now();
     do {
       const step = work.shift();
-      if (!step) { performance.mark('readout-hl-warm'); return; }
+      if (!step) { working = false; return; }
       step();
     } while (performance.now() - t0 < SLICE_MS);
     setTimeout(next, 0);
@@ -256,7 +360,7 @@ export function ensureLang(id) {
     const done = registry.then(() => load).then(m => {
       const main = m.default.find(g => g.name === id) || m.default[m.default.length - 1];
       lazyOf.set(id, main?.embeddedLangsLazy || []);
-      if (preload) grammarsOf.set(id, m.default);
+      grammarsOf.set(id, m.default);
       return highlighter.loadLanguage(m.default);
     }).catch(() => { failed.add(id); });
     registry = done;
