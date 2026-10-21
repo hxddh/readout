@@ -1262,6 +1262,37 @@ for (const n of [60, 400]) {
   await page.close();
 }
 
+// 3.9.1 launch: the first window's page is set up (setAppearance) as soon as
+// it is ready, and its document comes when it has been read (later when the
+// git baseline is looked up). The highlighter's set-up, one long task, starts
+// only once that document's frame is painted: never before the first apply,
+// never between its frame and the 'painted' report. Its code is highlighted
+// after that as before.
+{
+  const page = await newPage();
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(() => new Promise(resolve => {
+    const applied = performance.now();
+    window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
+      { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'plan', html: '<h1 id="plan">Plan</h1>' },
+      { op: 'insert', slot: 2, after: 1, kind: 'code', html: '<div class="code-block" data-lang="sh"><pre><code>echo "ok" | tee -a out.log</code></pre></div>' },
+    ] });
+    const t0 = performance.now();
+    const wait = () => {
+      const painted = window.__msgs.some(m => m.type === 'painted');
+      const hl = document.querySelector('.code-block').dataset.hl;
+      if (painted && hl === 'done' || performance.now() - t0 > 15000) {
+        const shiki = performance.getEntriesByType('resource').filter(e => /\/(core|engine-javascript)-\w+\.js$/.test(e.name)).map(e => Math.round(e.startTime - applied));
+        resolve({ shiki, painted, hl });
+      } else setTimeout(wait, 20);
+    };
+    wait();
+  }));
+  check('the first document: the highlighter is set up only after its frame is painted, then its code is highlighted',
+    r.painted && r.hl === 'done' && r.shiki.length === 2 && r.shiki.every(t => t >= 0), JSON.stringify(r));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();
