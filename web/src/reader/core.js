@@ -37,6 +37,18 @@ export function pageTheme() {
  * explained: the smoke test writes them out (window.readout.trace()).
  */
 const traceLog = [];
+// DIAG (temporary): wall-clock boot events for the cold-launch apply.
+window.__boot = window.__boot || [];
+export function boot(label) { if (window.__boot) window.__boot.push([label, Date.now() / 1000]); }
+{
+  let last = performance.now(), n = 0;
+  const iv = setInterval(() => {
+    const now = performance.now();
+    if (now - last > 30) window.__boot?.push([`busy${++n}_${Math.round(now - last - 10)}ms`, (Date.now() - (now - last - 10)) / 1000]);
+    last = now;
+  }, 10);
+  setTimeout(() => clearInterval(iv), 60000);
+}
 export function trace(type, data) {
   // A caller that gives `y` (null: filled in later) spares the layout reading it costs.
   const y = data && 'y' in data ? data.y : Math.round(document.scrollingElement.scrollTop);

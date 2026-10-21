@@ -90,6 +90,13 @@ enum SmokeTest {
     /// window_init, page_ready, did_load, apply and paint. tools/smoke-run.py
     /// splits cold_start_ms with them.
     private static var launchPhases: [String: Double] = [:]
+    static func installDiagHooks() {
+        ReaderWebView.onPhase = { noteLaunchPhase($0) }
+        ReaderWebView.onBoot = { rows in
+            guard outputDirectory != nil else { return }
+            for r in rows { if r.count == 2, let l = r[0] as? String, let t = r[1] as? Double, launchPhases["page_" + l] == nil { launchPhases["page_" + l] = t } }
+        }
+    }
     static func noteLaunchPhase(_ name: String) {
         guard outputDirectory != nil, launchPhases[name] == nil else { return }
         launchPhases[name] = Date().timeIntervalSince1970

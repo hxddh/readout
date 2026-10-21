@@ -11,6 +11,7 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
+import { boot } from './reader/core.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
@@ -270,7 +271,9 @@ window.addEventListener('resize', () => {
 });
 
 function apply(p) {
+  boot('pg_apply_in');
   applyPatch(p);
+  boot('pg_apply_out');
   if (!resizeAnchor) settle();
   // A patch can remove the focused block (a reset removes them all) without
   // a focusout: what there is to quote is said again (posted only if it changed).
@@ -280,6 +283,7 @@ function apply(p) {
 // ---------------------------------------------------------------- Native API
 
 function setAppearance(o) {
+  boot('pg_setappearance');
   // The highlighter starts with the first appearance (or the app's warm-up),
   // which tells Quick Look apart: a preview loads only the grammars it shows.
   if (o.mode === 'quicklook') hl.noPreload();
@@ -405,6 +409,7 @@ window.readout = {
   warm: () => hl.warm(),
 };
 
+boot('pg_ready_posted');
 post({ type: 'ready' });
 
 // ---------------------------------------------------------------- Printing

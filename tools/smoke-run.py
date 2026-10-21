@@ -103,6 +103,7 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
         order = ["will_finish_launching", "spare_created", "did_finish_launching", "open_requested",
                  "window_init", "page_ready", "did_load", "apply", "paint"]
         timings["launch_phases_ms"] = {k: round((phases[k] - start) * 1000, 1) for k in order if k in phases}
+        print("DIAG all phases (ms since process start):", sorted(((round((v - start) * 1000, 1), k) for k, v in phases.items())))
         timings["launch_phases_ms"]["spawn"] = round((clock["spawn"] - start) * 1000, 1)
     else:
         print(f"harness: no process start time in the app's launch phases {phases}")

@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: Lifecycle
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        SmokeTest.installDiagHooks()
         SmokeTest.noteLaunchPhase("will_finish_launching")
         // The spare page first: WebKit starts its web content process while
         // the menus are built and windows restored, and the first window,

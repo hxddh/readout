@@ -109,6 +109,7 @@ async function quietOutput(theme, color) {
 export function init() {
   if (ready) return ready;
   ready = (async () => {
+    window.__boot?.push(['hl_init', Date.now() / 1000]);
     const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] =
       await Promise.all([import('shiki/core'), import('shiki/engine/javascript')]);
     highlighter = await createHighlighterCore({
@@ -119,10 +120,12 @@ export function init() {
       langs: [],
       engine: createJavaScriptRegexEngine({ forgiving: true, target: 'ES2018' }),
     });
+    window.__boot?.push(['hl_created', Date.now() / 1000]);
     // Fetch every preloaded grammar at once; ensureLang registers them one
     // at a time, in this order.
     if (preload) await Promise.all(PRELOAD.map(id => ensureLang(id)));
     initialized = true;
+    window.__boot?.push(['hl_initialized', Date.now() / 1000]);
   })();
   return ready;
 }
@@ -257,7 +260,10 @@ export function ensureLang(id) {
       const main = m.default.find(g => g.name === id) || m.default[m.default.length - 1];
       lazyOf.set(id, main?.embeddedLangsLazy || []);
       if (preload) grammarsOf.set(id, m.default);
-      return highlighter.loadLanguage(m.default);
+      window.__boot?.push(['hl_fetched_' + id, Date.now() / 1000]);
+      const r = highlighter.loadLanguage(m.default);
+      window.__boot?.push(['hl_registered_' + id, Date.now() / 1000]);
+      return r;
     }).catch(() => { failed.add(id); });
     registry = done;
     loading.set(id, done);

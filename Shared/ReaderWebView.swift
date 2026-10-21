@@ -223,6 +223,9 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         super.willOpenMenu(menu, with: event)
     }
 
+    /// DIAG (temporary).
+    static var onBoot: (([[Any]]) -> Void)?
+    static var onPhase: ((String) -> Void)?
     func whenReady(_ block: @escaping () -> Void) {
         if isReady { block() } else { readyCallbacks.append(block) }
     }
@@ -238,6 +241,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
             contextLink = href.isEmpty ? nil : href
             return
         }
+        if type == "applied", let boot = body["boot"] as? [[Any]] { Self.onBoot?(boot) }
         if type == "ready" {
             isReady = true
             let callbacks = readyCallbacks
@@ -297,6 +301,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     call.script = json.map { "window.readout.\(function)(\($0))" } ?? ""
+                    if function == "apply" { Self.onPhase?("apply_encoded") }
                     self?.drainCalls()
                 }
             }
@@ -319,6 +324,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
             if let done = first.asyncCompletion {
                 callAsyncJavaScript(script, in: nil, in: .page, completionHandler: done)
             } else if !script.isEmpty {
+                if script.hasPrefix("window.readout.apply(") { Self.onPhase?("apply_sent") }
                 evaluateJavaScript(script, completionHandler: first.completion)
             }
         }

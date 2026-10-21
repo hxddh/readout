@@ -307,7 +307,7 @@ export function apply(p) {
 
   scheduleRail();
   if (headingsTouched) headingsChanged();
-  post({ type: 'applied', version: p.version });
+  post({ type: 'applied', version: p.version, boot: window.__boot });
   // After the frame that shows it: rAF runs before the paint, the task it
   // queues runs after. The current section is found then too: the page is
   // laid out by that frame, so asking costs no layout of its own.
