@@ -67,6 +67,9 @@ jobs:
       # "true" only when asked for and every secret is there.
       NOTARIZE: ${{ inputs.notarize && secrets.DEVELOPER_ID_P12_BASE64 != '' && secrets.DEVELOPER_ID_P12_PASSWORD != '' && secrets.DEVELOPER_ID_IDENTITY != '' && secrets.NOTARY_API_KEY_P8_BASE64 != '' && secrets.NOTARY_API_KEY_ID != '' && secrets.NOTARY_API_ISSUER_ID != '' }}
     steps:
+      - name: Spotlight off on the runner
+        run: sudo mdutil -a -i off || true
+
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
