@@ -80,7 +80,7 @@ const ALIASES = {
 // patterns keep to tens or hundreds of milliseconds, or while the document
 // naming them parses (prepareLangs). Every page loads the three agent output
 // uses most. The spare page (warm), which a window opens on, also loads the
-// rest of 3.8's twelve and Rust, so their blocks are coloured in a warm
+// rest of 3.8.0's twelve, so their blocks are coloured in a warm
 // open's first paint as in 3.8 (its memory about 3.8's by design); pages
 // not warmed (the first window at launch, background tabs) keep 3.9's three.
 const PRELOAD = ['shellscript', 'json', 'typescript'];

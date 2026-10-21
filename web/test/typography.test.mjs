@@ -1129,14 +1129,14 @@ const v36 = patch([
   check('the app preloads shell, JSON and TypeScript, and nothing else', preloaded === 'json,shellscript,typescript', JSON.stringify(grammarRequests()));
   await page.close();
 
-  // 3.9.1: the spare page also loads the rest of 3.8's twelve and Rust, so a
+  // 3.9.1: the spare page also loads the rest of 3.8's twelve, so a
   // warm open colours them in its first paint as 3.8 did.
   requests.length = 0;
   page = await open(800);
   await page.evaluate(() => window.readout.warm());
   const warmDone = await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
   const spareSet = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).sort().join(',');
-  check("the spare page loads 3.8's twelve grammars and Rust", warmDone && spareSet === 'diff,go,javascript,json,markdown,python,rust,shellscript,sql,swift,typescript,yaml', JSON.stringify({ warmDone, spareSet }));
+  check("the spare page loads 3.8's twelve grammars", warmDone && spareSet === 'diff,go,javascript,json,markdown,python,rust,shellscript,sql,swift,typescript,yaml', JSON.stringify({ warmDone, spareSet }));
   await page.close();
 
   // 3.9.1: the fence languages of a document being parsed (readout.prepare)
