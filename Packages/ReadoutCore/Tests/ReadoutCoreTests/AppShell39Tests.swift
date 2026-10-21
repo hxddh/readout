@@ -84,13 +84,18 @@ import Testing
         let page = try #require(URL(string: "https://github.com/hxddh/readout/releases/tag/v3.9.0"))
         let dmg = try #require(URL(string: "https://github.com/hxddh/readout/releases/download/v3.9.0/Readout-3.9.0.dmg"))
         let zip = try #require(URL(string: "https://github.com/hxddh/readout/releases/download/v3.9.0/Readout-3.9.0.zip"))
-        #expect(ReleaseCheck.downloadURL(assets: [("Readout-3.9.0.zip", zip), ("Readout-3.9.0.DMG", dmg)], page: page) == dmg)
+        let releases = try #require(URL(string: "https://github.com/hxddh/readout/releases"))
+        #expect(ReleaseCheck.downloadURL(assets: [("Readout-3.9.0.zip", zip), ("Readout-3.9.0.DMG", dmg)], page: page, releases: releases) == dmg)
         // No disk image, or one not on GitHub over https: the release page.
-        #expect(ReleaseCheck.downloadURL(assets: [("Readout-3.9.0.zip", zip)], page: page) == page)
+        #expect(ReleaseCheck.downloadURL(assets: [("Readout-3.9.0.zip", zip)], page: page, releases: releases) == page)
         let elsewhere = try #require(URL(string: "http://github.com/x/Readout.dmg"))
         let other = try #require(URL(string: "https://example.com/Readout.dmg"))
-        #expect(ReleaseCheck.downloadURL(assets: [("Readout.dmg", elsewhere), ("Readout.dmg", other)], page: page) == page)
-        #expect(ReleaseCheck.downloadURL(assets: [], page: page) == page)
+        #expect(ReleaseCheck.downloadURL(assets: [("Readout.dmg", elsewhere), ("Readout.dmg", other)], page: page, releases: releases) == page)
+        #expect(ReleaseCheck.downloadURL(assets: [], page: page, releases: releases) == page)
+        // A release page not on GitHub over https (or none): the releases page.
+        #expect(ReleaseCheck.downloadURL(assets: [], page: elsewhere, releases: releases) == releases)
+        #expect(ReleaseCheck.downloadURL(assets: [], page: other, releases: releases) == releases)
+        #expect(ReleaseCheck.downloadURL(assets: [], page: nil, releases: releases) == releases)
     }
 
     @Test func theFolderListIsAsTallAsItsRows() {

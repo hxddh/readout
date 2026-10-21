@@ -137,8 +137,10 @@ extension ReaderChrome {
 
 extension ReleaseCheck {
     /// What Download Update hands to the browser: the release's disk image on
-    /// GitHub (`assets`: name and `browser_download_url`), else its page.
-    public static func downloadURL(assets: [(name: String, url: URL)], page: URL) -> URL {
-        assets.first { $0.name.lowercased().hasSuffix(".dmg") && $0.url.scheme == "https" && $0.url.host == "github.com" }?.url ?? page
+    /// GitHub (`assets`: name and `browser_download_url`), else its page
+    /// (`html_url`), else `releases`: only https on github.com.
+    public static func downloadURL(assets: [(name: String, url: URL)], page: URL?, releases: URL) -> URL {
+        let onGitHub = { (u: URL) in u.scheme == "https" && u.host == "github.com" }
+        return assets.first { $0.name.lowercased().hasSuffix(".dmg") && onGitHub($0.url) }?.url ?? page.flatMap { onGitHub($0) ? $0 : nil } ?? releases
     }
 }
