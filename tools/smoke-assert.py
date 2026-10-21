@@ -626,14 +626,20 @@ check("warm open: Readout's share is measured and within the whole open",
       and tm["warm_open_to_applied_ms"] <= tm["warm_open_ms"], tm)
 
 # P5: the cold start in phases, in the order they happen, from the process
-# start (sysctl); Readout's own segments measured. F5: the spare page is made
-# in willFinishLaunching, before didFinishLaunching and the first open.
+# start (sysctl); Readout's own segments measured. 3.9.1: no spare page before
+# the first window (made in willFinishLaunching, 3.9.0's spare held up the
+# rest of the launch and the window): the first window makes its own page,
+# and the spare for the next open is made once that page has painted.
 lp = tm.get("launch_phases_ms") or {}
-order = ["will_finish_launching", "spare_created", "did_finish_launching", "open_requested", "window_init", "page_ready", "apply", "paint"]
+order = ["will_finish_launching", "did_finish_launching", "open_requested", "window_init", "page_ready", "apply", "paint", "spare_created"]
 print(f"launch phases (ms since process start): {lp}; cold_page_ready_ms {tm.get('cold_page_ready_ms')}, cold_apply_ms {tm.get('cold_apply_ms')}")
 check("cold start: every launch phase measured, in order",
       all(isinstance(lp.get(k), (int, float)) for k in order + ["did_load"])
       and all(0 <= lp[a] <= lp[b] for a, b in zip(order, order[1:])) and lp["did_load"] <= lp["apply"], lp)
+check("cold start: the first window is on screen after it is made and before its document is painted",
+      all(isinstance(lp.get(k), (int, float)) for k in ("window_init", "window_visible", "paint"))
+      and lp["window_init"] <= lp["window_visible"] <= lp["paint"]
+      and all(isinstance(tm.get(k), (int, float)) for k in ("cold_window_visible_ms", "cold_window_visible_first_boot_ms")), tm)
 check("cold start: Readout's segments measured",
       all(isinstance(tm.get(k), (int, float)) for k in ("cold_page_ready_ms", "cold_apply_ms", "cold_window_to_load_ms", "cold_dfl_to_window_ms")), tm)
 
