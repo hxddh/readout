@@ -150,21 +150,20 @@ check('diff bands span the full scroll width', diff.widths.every(w => Math.abs(w
 const tools = await page.evaluate(() => getComputedStyle(document.querySelector('.cb-tools')).backgroundImage);
 check('code toolbar has a fill behind it', tools && tools !== 'none', tools);
 
-// 9. The section link and the change bar line up with the heading's first line.
+// 9. The change bar lines up with the heading's first line (3.9 E9: no
+//    section link in the gutter beside it any more).
 const align = await page.evaluate(() => {
   const out = [];
   for (const blk of document.querySelectorAll('.k-heading')) {
     const h = blk.querySelector('h1, h2');
     const r = h.getBoundingClientRect();
     const lh = parseFloat(getComputedStyle(h).lineHeight);
-    const link = blk.querySelector('.h-link').getBoundingClientRect();
     const barTop = parseFloat(getComputedStyle(blk, '::before').top) + blk.getBoundingClientRect().top;
-    out.push({ id: h.id, linkMid: Math.round((link.top + link.bottom) / 2 - r.top), lh: Math.round(lh), bar: Math.round(barTop - r.top), left: Math.round(link.left - blk.getBoundingClientRect().left) });
+    out.push({ id: h.id, lh: Math.round(lh), bar: Math.round(barTop - r.top), link: !!blk.querySelector('.h-link') });
   }
   return out;
 });
-check('section link sits on the heading\'s first line', align.every(a => a.linkMid > 0 && a.linkMid < a.lh), JSON.stringify(align));
-check('section link stays in the gutter', align.every(a => a.left >= 0 && a.left < 20), JSON.stringify(align));
+check('no section link in the heading\'s gutter', align.length > 0 && align.every(a => !a.link), JSON.stringify(align));
 check('change bar starts at the heading text', align.every(a => a.bar >= 0 && a.bar < a.lh * 0.4), JSON.stringify(align));
 
 // 10. <mark> and <kbd> are styled.
@@ -195,6 +194,13 @@ const contrast = await page.evaluate(() => {
   };
 });
 for (const [k, v] of Object.entries(contrast)) check(`${k} text reaches 4.5:1`, v >= 4.5, `${k}=${v}`);
+// 3.9 E13: front matter is metadata: smaller than the body's small text, keys not bold.
+const fm = await page.evaluate(() => {
+  const root = getComputedStyle(document.documentElement), px = v => parseFloat(v) * parseFloat(root.fontSize);
+  return { size: parseFloat(getComputedStyle(document.querySelector('.front-matter')).fontSize), xs: px(root.getPropertyValue('--fs-xs')),
+    key: +getComputedStyle(document.querySelector('.fm-key')).fontWeight };
+});
+check('front matter is set small, its keys not bold', fm.size === fm.xs && fm.key <= 500, JSON.stringify(fm));
 
 // 12. A rule and the footnotes keep their wider spacing.
 const spacing = await page.evaluate(() => ({
@@ -316,7 +322,7 @@ async function openRaw(width, scheme) {
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
   return p;
 }
-const TOKENS = ['--bg', '--text', '--text-2', '--text-3', '--rule', '--fill', '--fill-2', '--link', '--accent-soft', '--mark-read',
+const TOKENS = ['--bg', '--text', '--text-2', '--text-3', '--rule', '--fill', '--fill-2', '--link', '--accent-soft',
   '--note', '--tip', '--important', '--warning', '--caution', '--pop-bg', '--pop-shadow', '--mark-bg', 'color-scheme'];
 const tokens = pg => pg.evaluate(t => { const cs = getComputedStyle(document.documentElement); return Object.fromEntries(t.map(k => [k, cs.getPropertyValue(k).trim()])); }, TOKENS);
 
@@ -420,7 +426,9 @@ for (const dark of [false, true]) {
       wrapLines: lines, maxCell: Math.max(...[...wide.querySelectorAll('td')].map(c => c.getBoundingClientRect().width)), em30: 30 * parseFloat(cs(wrapCell).fontSize),
       link: { line: cs(link).textDecorationLine, color: cs(link).textDecorationColor, offset: cs(link).textUnderlineOffset, text: cs(link).color },
       fnRef: cs($('.fn-ref a')).textDecorationLine, fnBack: cs($('.fn-back')).textDecorationLine, pathLink: cs($('code.path-link')).textDecorationLine,
-      alertBorder: cs(alert).borderLeftWidth, alertShadow: cs(alert).boxShadow,
+      alertBorder: cs(alert).borderLeftWidth, alertShadow: cs(alert).boxShadow, alertFill: cs(alert).backgroundColor,
+      alertTitle: cs(alert.querySelector('.alert-title')).color,
+      noteColor: (d => { d.style.color = 'var(--note)'; document.body.appendChild(d); const c = cs(d).color; d.remove(); return c; })(document.createElement('div')),
       headless: cs($('#headless thead')).display, headed: cs($('#wide thead')).display,
       num: [cs($('#nums td.num')).textAlign, cs($('#nums th.num')).textAlign, cs($('#nums td')).textAlign],
       katexMargin: [cs(ms.querySelector('.katex-display')).marginTop, cs(ms.querySelector('.katex-display')).marginBottom], mathBg: cs(ms).backgroundImage,
@@ -443,8 +451,10 @@ for (const dark of [false, true]) {
   const alpha = (g.link.color.match(/[\d.]+/g) || []).map(Number)[3];
   check(`links have a subtle underline (${th})`, g.link.line === 'underline' && alpha > 0.25 && alpha < 0.45 && parseFloat(g.link.offset) > 2, JSON.stringify(g.link));
   check(`footnote refs, back links and path links are not underlined (${th})`, g.fnRef === 'none' && g.fnBack === 'none' && g.pathLink === 'none', JSON.stringify([g.fnRef, g.fnBack, g.pathLink]));
-  // 8. Alert edge: an inset shadow that follows the corners, no border.
-  check(`alert edge is an inset shadow, not a border (${th})`, g.alertBorder === '0px' && /inset/.test(g.alertShadow) && /3px 0px 0px/.test(g.alertShadow), JSON.stringify([g.alertBorder, g.alertShadow]));
+  // 8. 3.9 E2: an alert has no coloured edge (beside a change bar it read
+  //    as a second one); its fill and coloured title stay.
+  check(`an alert has no coloured edge, its fill and title colour stay (${th})`,
+    g.alertBorder === '0px' && g.alertShadow === 'none' && g.alertFill !== 'rgba(0, 0, 0, 0)' && g.alertTitle === g.noteColor, JSON.stringify([g.alertBorder, g.alertShadow, g.alertFill, g.alertTitle, g.noteColor]));
   // 9. An empty header row is hidden; a real one is not.
   check(`an empty header row is hidden (${th})`, g.headless === 'none' && g.headed !== 'none', JSON.stringify([g.headless, g.headed]));
   // 13. Numeric columns align right.
@@ -493,22 +503,45 @@ for (const dark of [false, true]) {
   const fill2 = await page.evaluate(c => { const d = document.createElement('div'); d.style.color = c; document.body.appendChild(d); const v = getComputedStyle(d).color; d.remove(); return v; }, hovFill[1]);
   check(`a code button fills under the pointer (${th})`, hovFill[0] === fill2, JSON.stringify([hovFill[0], fill2]));
 
-  // 14, 16. Marks: read marks are a hairline, an edited mark in a grey accent
-  //         stays a full bar; the removed-text popover is raised and unstruck;
+  // 14, 16. Marks (3.9 E1, E3): one bar for every change at full strength,
+  //         3:1 on the page with the default and a grey (Graphite) accent
+  //         (an edit at 55% was 2.0:1, 1.8:1 in grey); a ticked box's change
+  //         is that bar, not a dot; a read mark fades to nothing (not a grey
+  //         hairline). The removed-text popover is raised and unstruck;
   //         word diff keeps a space between a removal and its replacement.
-  await page.evaluate(() => window.readout.setAppearance({ accent: '#8c8c8c' }));
   const [ms, rs] = [vslot('id="p-mod"'), vslot('id="p-read"')];
   await page.evaluate(([m, r]) => window.readout.apply({ version: 2, reset: false, rewrite: false,
     ops: [{ op: 'replace', slot: m, kind: 'paragraph', change: 'content', html: '<p id="p-mod">Modified now.</p>' }],
     marks: [{ slot: m, kind: 'modified', diff: 'Modified <del>before</del><ins>now</ins>.' }],
     deletions: [{ id: 5, after: r, count: 1, preview: 'Removed text.' }], toc: [], tasks: { done: 0, total: 0 } }), [ms, rs]);
-  const mk = await page.evaluate(([m, r]) => {
-    const a = document.querySelector(`.blk[data-slot="${m}"]`), b = document.querySelector(`.blk[data-slot="${r}"]`);
-    a.classList.remove('m-read'); b.classList.add('m-modified', 'm-read');
-    const s = e => { const c = getComputedStyle(e, '::before'); return { w: c.width, o: c.opacity, bg: c.backgroundColor }; };
-    return { mod: s(a), read: s(b) };
-  }, [ms, rs]);
-  check(`with a grey accent an unread edit is not drawn like a read mark (${th})`, parseFloat(mk.mod.w) >= 3 && parseFloat(mk.read.w) <= 1, JSON.stringify(mk));
+  // Measured without the bar's fade (it would be read mid-transition).
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const bars = {};
+  for (const accent of ['#0a84ff', '#8c8c8c']) {
+    await page.evaluate(a => window.readout.setAppearance({ accent: a }), accent);
+    bars[accent] = await page.evaluate(([m, r]) => {
+      const rgb = s => { const n = (s.match(/[\d.]+/g) || []).map(Number); return [n[0], n[1], n[2], n[3] ?? 1]; };
+      const lum = c => { const [x, y, z] = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * x + 0.7152 * y + 0.0722 * z; };
+      const page = rgb(getComputedStyle(document.documentElement).backgroundColor);
+      const a = document.querySelector(`.blk[data-slot="${m}"]`), b = document.querySelector(`.blk[data-slot="${r}"]`);
+      const bar = (el, cls = []) => {
+        el.classList.add(...cls);
+        const c = getComputedStyle(el, '::before'), f = rgb(c.backgroundColor), alpha = f[3] * +c.opacity;
+        const seen = [0, 1, 2].map(i => f[i] * alpha + page[i] * (1 - alpha));
+        const [hi, lo] = [lum(seen), lum(page)].sort((p, q) => q - p);
+        const out = { w: parseFloat(c.width), h: parseFloat(c.height), alpha, ratio: +((hi + 0.05) / (lo + 0.05)).toFixed(2) };
+        el.classList.remove(...cls);
+        return out;
+      };
+      return { edited: bar(a), added: bar(b, ['m-inserted']), ticked: bar(b, ['m-state']), read: bar(b, ['m-modified', 'm-read']) };
+    }, [ms, rs]);
+  }
+  await page.emulateMedia({ reducedMotion: null });
+  check(`every change bar reaches 3:1, with the default and a grey accent (${th})`,
+    Object.values(bars).every(k => [k.edited, k.added, k.ticked].every(x => x.ratio >= 3 && x.w === 3)), JSON.stringify(bars));
+  const g8 = bars['#8c8c8c'];
+  check(`a ticked box is marked with the change bar, not a dot; a read mark is gone (${th})`,
+    g8.ticked.w === g8.added.w && g8.ticked.h === g8.added.h && g8.ticked.h > 10 && g8.read.alpha === 0, JSON.stringify(g8));
   await page.evaluate(m => window.readout.toggleDiff(m), ms);
   await page.evaluate(() => document.querySelector('.del-mark > button').click());
   const pop = await page.evaluate(() => {
@@ -690,6 +723,7 @@ for (const dark of [false, true]) {
       del: cs($('#t-del')).color, text2: cs($('#t-p')).color, bg: root.backgroundColor,
       marker: cs($('#t-li99'), '::marker').color,
       done: cs($('#t-done')).color, open: cs($('#t-open')).color, body: cs($('#t-p')).color,
+      box: cs($('#t-done > .task-box')).backgroundColor, text3: (d => { d.style.color = 'var(--text-3)'; document.body.appendChild(d); const c = cs(d).color; d.remove(); return c; })(document.createElement('div')),
       mark: cs($('#t-mark')).backgroundColor, markText: cs($('#t-mark')).color,
       sizes: { table: cs($('#t-table')).fontSize, footnotes: cs($('#t-fn')).fontSize, code: cs($('#cb-long')).fontSize,
         buttons: cs($('.cb-copy')).fontSize, lang: cs($('.cb-lang')).fontSize },
@@ -722,6 +756,8 @@ for (const dark of [false, true]) {
   check(`struck-through text reaches 4.5:1 (${th})`, contrastOf(parseColor(g.del), bg) >= 4.5, `${g.del} on ${g.bg}`);
   check(`numbered list numbers reach 4.5:1 (${th})`, contrastOf(parseColor(g.marker), bg) >= 4.5, `${g.marker} on ${g.bg}`);
   check(`a ticked task greys its text, not its open sub-items (${th})`, g.done !== g.body && g.open === g.body, JSON.stringify([g.done, g.open, g.body]));
+  // 3.9 E2: the accent means unread: a ticked box is a neutral fill.
+  check(`a ticked box is filled in a neutral colour, not the accent (${th})`, g.box === g.text3 && g.box !== 'rgb(10, 132, 255)', JSON.stringify([g.box, g.text3]));
   const markRGB = over(parseColor(g.mark), bg);
   const hue = (([r, gg, b]) => { const mx = Math.max(r, gg, b), mn = Math.min(r, gg, b); if (mx === mn) return 0; const h = mx === r ? (gg - b) / (mx - mn) : mx === gg ? 2 + (b - r) / (mx - mn) : 4 + (r - gg) / (mx - mn); return (h * 60 + 360) % 360; })(markRGB);
   check(`highlighted text reaches 4.5:1 on its highlight (${th})`, contrastOf(parseColor(g.markText), markRGB) >= 4.5, JSON.stringify({ markRGB, text: g.markText }));
@@ -1014,7 +1050,7 @@ const v36 = patch([
       li: r('b-li').width, table: [r('b-table').left, r('b-table').width], tableScrolls: document.getElementById('b-table').classList.contains('scrolls'),
       longScrolls: pre.scrollWidth > pre.clientWidth, hugeScrolls: huge.scrollWidth > huge.clientWidth,
       barGap: { long: r('b-long').left - bar(blk('b-long')), para: col.left - bar(blk('b-p')) },
-      // As unread (a read mark is a hairline 1 px further in).
+      // As unread (a read mark has faded out).
       bars: { para: unread(blk('b-p')), table: unread(blk('b-table')),
         deletion: (b => b.getBoundingClientRect().left + parseFloat(getComputedStyle(b, '::before').left))(document.querySelector('.del-mark > button')) },
       vw: innerWidth,
@@ -1128,15 +1164,15 @@ const v36 = patch([
   await page.close();
 }
 
-// T9. The empty state and the changes-only notice reach AA (--text-2).
+// T9. The empty state reaches AA (--text-2).
 {
   page = await open(600);
   await page.evaluate(p => window.readout.apply(p), patch([]));
   const c = await page.evaluate(() => {
-    const e = document.getElementById('ro-empty'), u = document.getElementById('ro-caughtup');
-    return { empty: e && getComputedStyle(e).color, caught: getComputedStyle(u).color, bg: getComputedStyle(document.documentElement).backgroundColor };
+    const e = document.getElementById('ro-empty');
+    return { empty: e && getComputedStyle(e).color, bg: getComputedStyle(document.documentElement).backgroundColor };
   });
-  check('the empty and caught-up notes reach 4.5:1', (!c.empty || contrastOf(parseColor(c.empty), parseColor(c.bg)) >= 4.5) && contrastOf(parseColor(c.caught), parseColor(c.bg)) >= 4.5, JSON.stringify(c));
+  check('the empty note reaches 4.5:1', !c.empty || contrastOf(parseColor(c.empty), parseColor(c.bg)) >= 4.5, JSON.stringify(c));
   await page.close();
 }
 

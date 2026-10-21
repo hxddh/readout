@@ -1,40 +1,22 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
-import { doc, root, slots, heights, trace, keptScroll, onKeptScroll, blocksHidden } from './core.js';
+import { doc, root, slots, heights, trace, keptScroll, onKeptScroll } from './core.js';
 import { scheduleRail } from './rail.js';
-
-// Only the changes-only filter hides blocks: without it nothing asks the
-// layout (offsetParent makes WebKit lay out content-visibility's skipped
-// blocks again, the whole page in a large document).
-export function isShown(e) { return !e.hidden && (!blocksHidden || e.offsetParent !== null); }
-
-function blockList() { return Array.from(doc.children).filter(e => e.classList.contains('blk') && isShown(e)); }
 
 /** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
 function topBlock() {
   const line = topInset() + 8;
-  // Nothing hidden (the usual case): a binary search over the page's
-  // children themselves, with no list of every block and no offsetParent
-  // read for each (a layout question per block, in every patch), and no
-  // search of the whole page for a hidden one either.
-  if (!blocksHidden || !doc.querySelector(':scope > .blk[hidden]')) {
-    const kids = doc.children;
-    const blkFrom = i => { for (let j = i; j < kids.length; j++) if (kids[j].classList.contains('blk')) return kids[j]; return null; };
-    let lo = 0, hi = kids.length - 1, found = null;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      const el = blkFrom(mid);
-      if (!el) { hi = mid - 1; continue; }
-      if (el.getBoundingClientRect().bottom > line) { found = el; hi = mid - 1; } else { lo = mid + 1; }
-    }
-    return found;
-  }
-  const list = blockList();
-  let lo = 0, hi = list.length - 1, found = null;
+  // A binary search over the page's children themselves, with no list of
+  // every block and no offsetParent read for each (a layout question per
+  // block, in every patch).
+  const kids = doc.children;
+  const blkFrom = i => { for (let j = i; j < kids.length; j++) if (kids[j].classList.contains('blk')) return kids[j]; return null; };
+  let lo = 0, hi = kids.length - 1, found = null;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    const r = list[mid].getBoundingClientRect();
-    if (r.bottom > line) { found = list[mid]; hi = mid - 1; } else { lo = mid + 1; }
+    const el = blkFrom(mid);
+    if (!el) { hi = mid - 1; continue; }
+    if (el.getBoundingClientRect().bottom > line) { found = el; hi = mid - 1; } else { lo = mid + 1; }
   }
   return found;
 }
@@ -58,7 +40,7 @@ export function captureAnchor() {
 }
 
 function shownSibling(el, dir) {
-  for (let e = el[dir]; e; e = e[dir]) if (e.classList.contains('blk') && isShown(e)) return e;
+  for (let e = el[dir]; e; e = e[dir]) if (e.classList.contains('blk')) return e;
   return null;
 }
 
@@ -91,18 +73,14 @@ function keepBy(dy) {
  */
 export function anchorMiss(a, changedSlots) {
   const el = a && slots.get(a.slot);
-  if (!el || !isShown(el)) return 0;
+  if (!el) return 0;
   const r = el.getBoundingClientRect();
   return r.top + (changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset);
 }
 
 function restoreAnchorTo(a, changedSlots) {
   if (!a) return false;
-  let el = slots.get(a.slot);
-  // The anchor block may have been hidden by the changes-only filter (or
-  // removed): fall back to the nearest visible block in document order,
-  // preferring the previous one so the reader stays with what they read.
-  if (el && !isShown(el)) el = nearestVisible(el);
+  const el = slots.get(a.slot);
   if (el) {
     const r = el.getBoundingClientRect();
     const want = changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset;
@@ -115,8 +93,7 @@ function restoreAnchorTo(a, changedSlots) {
   // bottom of the window toolbar the page scrolls under.
   const inset = topInset();
   for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
-    let n = slot != null ? slots.get(slot) : null;
-    if (n && !isShown(n)) n = nearestVisible(n);
+    const n = slot != null ? slots.get(slot) : null;
     if (n) { keepBy(n.getBoundingClientRect()[edge] - inset); return false; }
   }
   if (a.heading) {
@@ -137,7 +114,7 @@ export function topInset() {
  * and whose effect on the position the caller restores itself.
  */
 export function rebaselineHeights() {
-  for (const el of slots.values()) heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
+  for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
 }
 
 /**
@@ -162,20 +139,6 @@ export function holdPlace(anchor, bottom, ratio = false) {
   else if (anchor) restoreAnchor(anchor, ratio ? new Set([anchor.slot]) : new Set());
 }
 
-/** Nearest visible block to `el` in document order (previous first, then next). */
-function nearestVisible(el) {
-  let p = el.previousElementSibling;
-  while (p) {
-    if (p.classList.contains('blk') && isShown(p)) return p;
-    p = p.previousElementSibling;
-  }
-  let n = el.nextElementSibling;
-  while (n) {
-    if (n.classList.contains('blk') && isShown(n)) return n;
-    n = n.nextElementSibling;
-  }
-  return null;
-}
 
 /**
  * Scrolls so `target` sits at the top of the viewport (`gap` above it, else its
@@ -239,7 +202,7 @@ export function fitsOnScreen() {
 export function blocksOnScreen() {
   const out = [];
   for (let e = topBlock(); e; e = e.nextElementSibling) {
-    if (!e.classList.contains('blk') || (blocksHidden && !isShown(e))) continue;
+    if (!e.classList.contains('blk')) continue;
     if (e.getBoundingClientRect().top >= window.innerHeight) break;
     out.push(e);
   }
@@ -344,7 +307,7 @@ function keptBlock(resized) {
   for (const then of [true, false]) {
     let grown = then ? before : 0;
     for (let e = first; e; e = e.nextElementSibling) {
-      if (!e.classList.contains('blk') || !isShown(e)) continue;
+      if (!e.classList.contains('blk')) continue;
       if (e.getBoundingClientRect().top - grown >= window.innerHeight) break;
       const d = resized.get(e);
       if (d !== undefined) { if (then) grown += d; continue; }

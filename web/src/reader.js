@@ -5,7 +5,7 @@
 //   core     shared state, strings, native message channel
 //   anchor   reading position, resize compensation, #fragment resolution
 //   patch    applying RenderPatches
-//   marks    unread marks, read detection, jumps, Show Only Changes
+//   marks    unread marks, read detection, jumps
 //   find     find in page
 //   rail     change rail
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
@@ -14,9 +14,9 @@ import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
-import { jump, markAllRead, setChangesOnly, initChangesOnly, toggleDiff, toggleDiffInView, setPrinting, closePopups, noteLanding, restartDwell } from './reader/marks.js';
+import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables, highlightIn } from './reader/enhance.js';
+import { relabelButtons, setCodeWrap, highlightAll, measureTables, highlightIn } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
@@ -311,9 +311,8 @@ function setAppearance(o) {
   }
   if (o.strings) {
     mergeStrings(o.strings);
-    relabelHeadingLinks();
+    relabelButtons();
   }
-  if (o.changesOnly !== undefined) initChangesOnly(o.changesOnly);
   if (o.codeWrap !== undefined) setCodeWrap(!!o.codeWrap);
   if (o.topInset !== undefined) {
     // The inset pads the top of the document: a reader inside it keeps their
@@ -365,7 +364,6 @@ function scrollToFragment(o) {
 window.readout = {
   apply,
   setAppearance,
-  setChangesOnly,
   scrollToSlot,
   scrollToAnchor,
   scrollToFragment,
@@ -426,8 +424,8 @@ async function preparePrint() {
 }
 let printFallback = null;
 
-// Printing shows the whole document: folded <details> open, the changes-only
-// filter lifted, all code highlighted; afterwards the screen is as it was.
+// Printing shows the whole document: folded <details> open, all code
+// highlighted; afterwards the screen is as it was.
 let printOpened = [];
 let printAnchor = null;
 // Unfolding and refolding are not content changes: heights are re-baselined
@@ -437,7 +435,6 @@ window.addEventListener('beforeprint', () => {
   printAnchor = captureAnchor();
   printOpened = [...document.querySelectorAll('#ro-doc details:not([open])')];
   printOpened.forEach(d => { d.open = true; });
-  setPrinting(true);
   clearTimeout(printFallback);
   setPrintDiagrams(true);
   highlightAll();
@@ -447,7 +444,6 @@ window.addEventListener('beforeprint', () => {
 window.addEventListener('afterprint', () => {
   printOpened.forEach(d => { d.open = false; });
   printOpened = [];
-  setPrinting(false);
   setPrintDiagrams(false);   // redrawn in the page's theme, in place (from the cache)
   rebaselineHeights();
   if (printAnchor) restoreAnchor(printAnchor, new Set());

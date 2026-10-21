@@ -63,10 +63,10 @@ function touchedBlocks(r) {
   const out = [];
   if (!first || !last) return out;
   for (let e = first; e; e = e.nextElementSibling) {
-    if (e.classList.contains('blk') && !e.hidden) out.push(e);   // Show Only Changes hides blocks: not copied
+    if (e.classList.contains('blk')) out.push(e);
     if (e === last) break;
   }
-  if (out.length && out[out.length - 1] !== last && !last.hidden) return [];   // the ends out of order
+  if (out.length && out[out.length - 1] !== last) return [];   // the ends out of order
   let i = 0, j = out.length;
   while (i < j && !coversText(r, out[i])) i++;
   while (j > i && !coversText(r, out[j - 1])) j--;

@@ -157,7 +157,7 @@ await page.evaluate(() => window.readout.scrollToFragment({ fragment: 'target-se
 const fragTop = await page.evaluate(() => document.getElementById('target-section').getBoundingClientRect().top);
 check('fragment scroll lands on heading', Math.abs(fragTop - 16) < 4, `top=${fragTop}`);
 
-// 6. Changes-only filter: read blocks hide, headings stay, marks still navigate.
+// 6. Section link from the heading's context menu; a silent re-render keeps the unread mark.
 await page.evaluate(p => window.readout.apply({
   version: 8, reset: true, rewrite: false,
   ops: [
@@ -167,21 +167,18 @@ await page.evaluate(p => window.readout.apply({
   ],
   marks: [{ slot: 403, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
 }));
-const linkBtn = await page.evaluate(() => !!document.querySelector('.k-heading .h-link'));
-check('heading has section link button', linkBtn);
-await page.evaluate(() => window.readout.setChangesOnly(true));
-const filtered = await page.evaluate(() => ({
-  readHidden: document.querySelector('.blk[data-slot="402"]').hidden,
-  headVisible: !document.querySelector('.blk[data-slot="401"]').hidden,
-  newVisible: !document.querySelector('.blk[data-slot="403"]').hidden,
-}));
-check('changes-only hides read blocks, keeps heading + new', filtered.readHidden && filtered.headVisible && filtered.newVisible, JSON.stringify(filtered));
-// Clicking the heading link posts a copyLink message with the anchor.
+// 3.9 E9: no hover § in the gutter (it drew over the heading's change
+// bar); a context menu tells the app which heading it opens on, for its
+// Copy Link to Section, and that it is on none elsewhere.
 await page.evaluate(() => { window.__msgs.length = 0; });
-await page.evaluate(() => document.querySelector('.k-heading .h-link').click());
-const copyMsg = await page.evaluate(() => window.__msgs.find(m => m.type === 'copyLink'));
-check('heading link posts copyLink', copyMsg && copyMsg.anchor === 's-a', JSON.stringify(copyMsg));
-// Silent re-render must not drop the unread mark or the filter.
+const ctx = await page.evaluate(() => {
+  const menu = el => { el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true })); return window.__msgs.filter(m => m.type === 'contextHeading').pop(); };
+  return { button: !!document.querySelector('.h-link, .k-heading button'), heading: menu(document.getElementById('s-a')),
+    body: menu(document.querySelector('.blk[data-slot="402"] p')) };
+});
+check('a heading\'s context menu reports its anchor, a paragraph\'s none; no hover link button',
+  !ctx.button && ctx.heading?.anchor === 's-a' && ctx.body?.anchor === '', JSON.stringify(ctx));
+// Silent re-render must not drop the unread mark.
 await page.evaluate(() => window.readout.apply({
   version: 9, reset: false, rewrite: false,
   ops: [{ op: 'replace', slot: 403, html: '<p>new body</p>', kind: 'paragraph', change: 'silent' }],
@@ -189,12 +186,11 @@ await page.evaluate(() => window.readout.apply({
 }));
 const afterSilent = await page.evaluate(() => ({
   marked: document.querySelector('.blk[data-slot="403"]').classList.contains('m-inserted'),
-  readHidden: document.querySelector('.blk[data-slot="402"]').hidden,
 }));
-check('silent re-render keeps mark + filter', afterSilent.marked && afterSilent.readHidden, JSON.stringify(afterSilent));
-await page.evaluate(() => window.readout.setChangesOnly(false));
-const restored = await page.evaluate(() => !document.querySelector('.blk[data-slot="402"]').hidden);
-check('leaving changes-only restores blocks', restored);
+check('silent re-render keeps mark', afterSilent.marked, JSON.stringify(afterSilent));
+// S1: Show Only Changes is gone: no filter call, no "All caught up" state.
+const noFilter = await page.evaluate(() => ({ api: typeof window.readout.setChangesOnly, caught: !!document.getElementById('ro-caughtup') }));
+check('no changes-only filter left in the page', noFilter.api === 'undefined' && !noFilter.caught, JSON.stringify(noFilter));
 
 // 7. Heading ids never collide with reader chrome ids.
 await page.evaluate(() => window.scrollTo(0, 0));
@@ -240,25 +236,21 @@ const idCheck = await page.evaluate(() => {
 });
 check('no duplicate ids with clashing headings', idCheck.dupes.length === 0, JSON.stringify(idCheck.dupes));
 // Large documents use content-visibility, whose containment clips each block:
-// what sits in the gutter (change marks, heading links) must be inside it,
+// what sits in the gutter (change marks) must be inside it,
 // and the layout must not change with the mode.
 const contained = await page.evaluate(() => {
   const doc = document.getElementById('ro-doc');
   const b = document.querySelector('.blk[data-slot="506"]');
-  const h = document.querySelector('.k-heading');
   const before = parseFloat(getComputedStyle(b, '::before').left);
-  const link = h.querySelector('.h-link');
-  const linkLeft = link ? link.getBoundingClientRect().left - h.getBoundingClientRect().left : 0;
   const heights = () => [...doc.querySelectorAll('.blk')].slice(0, 40).map(e => Math.round(e.getBoundingClientRect().height));
   const withCV = heights();
   doc.classList.remove('cv');
   const without = heights();
   doc.classList.add('cv');
-  return { cv: doc.classList.contains('cv'), before, linkLeft, same: JSON.stringify(withCV) === JSON.stringify(without) };
+  return { cv: doc.classList.contains('cv'), before, same: JSON.stringify(withCV) === JSON.stringify(without) };
 });
 check('large document uses content-visibility', contained.cv);
 check('change mark sits inside its block', contained.before >= 0, `left=${contained.before}`);
-check('heading link sits inside its block', contained.linkLeft >= 0, `left=${contained.linkLeft}`);
 check('blocks lay out the same with and without content-visibility', contained.same);
 for (const h of idCheck.heads) {
   check(`heading ${h.id} is static-positioned`, h.position === 'static', `${h.id}: ${h.position}`);
@@ -321,19 +313,16 @@ const afterBad = await page.evaluate(() => document.scrollingElement.scrollTop);
 check('malformed #link is ignored without moving', afterBad === beforeBad, `${beforeBad} -> ${afterBad}`);
 await page.evaluate(() => document.querySelectorAll('a.frag-test').forEach(a => a.remove()));
 
-// 8. Changes-only anchor stability: hidden blocks must not break capture/restore.
+// 8. Anchor stability: a patch above the block at the top does not move it.
 await page.evaluate(() => window.scrollTo(0, 0));
 {
   const ops = [];
-  // Tall blocks: with the filter hiding 9 of 10 blocks, the survivors must
-  // still fill more than a viewport so a middle block can reach the top.
   for (let i = 1; i <= 120; i++) ops.push({ op: 'insert', slot: i, after: i - 1, html: `<p style="min-height:170px">body ${i} with enough text to take vertical space in the viewport</p>`, kind: 'paragraph' });
   const marks = [];
   for (let s = 5; s <= 120; s += 10) marks.push({ slot: s, kind: 'inserted' });
   await page.evaluate(p => window.readout.apply(p), { version: 20, reset: true, rewrite: false, ops, marks, deletions: [], toc: [], tasks: { done: 0, total: 0 } });
 }
-await page.evaluate(() => window.readout.setChangesOnly(true));
-// Put slot 65 at the top of the viewport; hidden blocks above must not confuse capture.
+// Put slot 65 at the top of the viewport.
 await page.evaluate(() => {
   const el = document.querySelector('.blk[data-slot="65"]');
   window.scrollBy(0, el.getBoundingClientRect().top);
@@ -344,11 +333,8 @@ const captureState = await page.evaluate(() => ({ scrollY, scrollHeight: documen
   cv: document.getElementById('ro-doc').classList.contains('cv'),
   shown: [...document.querySelectorAll('#ro-doc > .blk')].filter(e => !e.hidden && e.offsetParent).length,
   top65: document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top }));
-check('changes-only capture sees slot 65', captured && captured.slot === 65, JSON.stringify({ captured, ...captureState }));
+check('capture sees slot 65', captured && captured.slot === 65, JSON.stringify({ captured, ...captureState }));
 // Insert a long unread paragraph after slot 20: slot 65 must not move.
-// Marks are a full snapshot (DocumentSession.payload sends currentMarks), so
-// the patch keeps every existing mark alongside the new one — a patch that
-// dropped them would hide 65 itself and the assertion would prove nothing.
 const top65Before = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
 await page.evaluate((extra) => window.readout.apply({
   version: 21, reset: false, rewrite: false,
@@ -358,73 +344,8 @@ await page.evaluate((extra) => window.readout.apply({
 const top65After = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
 check('slot 65 does not jump after patch above', Math.abs(top65After - top65Before) < 2, `shift=${top65After - top65Before}`);
 
-// 9. Anchor block hidden by the filter: restore falls back to the nearest
-// visible block. Slot 65 sits at the viewport top; a patch that drops its
-// mark hides it, so restore must land on 55 (nearest visible before it).
-// The patch keeps every other mark (full-snapshot semantics): only 65's mark
-// is dropped, so 55 stays visible and the fallback has a real target.
-await page.evaluate(() => window.readout.setChangesOnly(false));
-await page.evaluate(() => {
-  const el = document.querySelector('.blk[data-slot="65"]');
-  window.scrollBy(0, el.getBoundingClientRect().top);
-});
-await page.evaluate(() => window.readout.setChangesOnly(true));
-await page.evaluate((extra) => window.readout.apply({
-  version: 22, reset: false, rewrite: false, ops: [],
-  marks: [...extra, { slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-}), Array.from({ length: 12 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' })).filter(m => m.slot !== 65));
-const fallback = await page.evaluate(() => ({
-  top55: document.querySelector('.blk[data-slot="55"]').getBoundingClientRect().top,
-  hidden65: document.querySelector('.blk[data-slot="65"]').hidden,
-}));
-// Restore must land on 55 (nearest visible before the hidden anchor 65);
-// captureAnchor itself still reports the first block below the viewport top.
-check('hidden anchor falls back to previous visible block',
-  fallback.hidden65 && Math.abs(fallback.top55) < 2, JSON.stringify(fallback));
-
-// 10. Toggling the filter itself keeps position (the anchor block keeps its
-// mark, so it stays visible under the filter; hiding it is section 9's case).
-// Restore the full mark set: with only two visible blocks left, the document
-// is shorter than the viewport and no scroll position can survive a toggle.
-await page.evaluate(() => window.readout.setChangesOnly(false));
-await page.evaluate((extra) => window.readout.apply({
-  version: 23, reset: false, rewrite: false, ops: [],
-  marks: [...extra, { slot: 1001, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-}), Array.from({ length: 12 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' })));
-await page.evaluate(() => {
-  const el = document.querySelector('.blk[data-slot="65"]');
-  window.scrollBy(0, el.getBoundingClientRect().top);
-});
-const vis65Before = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
-await page.evaluate(() => window.readout.setChangesOnly(true));
-await page.evaluate(() => window.readout.setChangesOnly(false));
-const vis65After = await page.evaluate(() => document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top);
-check('filter toggle preserves position', Math.abs(vis65After - vis65Before) < 2, `shift=${vis65After - vis65Before}`);
-
-// 11. Read blocks vanish only on the next patch (or re-toggle), never mid-read.
-// Give slot 41 an unread mark under the filter: it must stay visible across
-// a patch that keeps its mark, and hide once a patch drops the mark.
-await page.evaluate(() => window.readout.setChangesOnly(false));
-await page.evaluate(() => window.readout.apply({
-  version: 24, reset: false, rewrite: false, ops: [],
-  marks: [{ slot: 41, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-}));
-await page.evaluate(() => window.readout.setChangesOnly(true));
-const keptVisible = await page.evaluate(() => {
-  window.readout.apply({ version: 25, reset: false, rewrite: false, ops: [], marks: [{ slot: 41, kind: 'inserted' }], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
-  return !document.querySelector('.blk[data-slot="41"]').hidden;
-});
-check('marked block survives a patch that keeps its mark', keptVisible);
-const hiddenNext = await page.evaluate(() => {
-  window.readout.apply({ version: 26, reset: false, rewrite: false, ops: [], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
-  return document.querySelector('.blk[data-slot="41"]').hidden;
-});
-check('block hides once a later patch drops its mark', hiddenNext);
-
 // 12. Rail tick aria-labels come from the localized strings template.
-// Tall blocks so the rail renders (it hides on short documents); the
-// changes-only filter must be off, or the document is too short to scroll.
-await page.evaluate(() => window.readout.setChangesOnly(false));
+// Tall blocks so the rail renders (it hides on short documents).
 await page.evaluate(p => window.readout.apply(p), {
   version: 30, reset: true, rewrite: false,
   ops: Array.from({ length: 30 }, (_, i) => ({
@@ -444,6 +365,10 @@ await until(w => JSON.stringify([...document.querySelectorAll('#ro-rail button')
 const railLabels = await page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => b.getAttribute('aria-label')));
 check('rail labels use the localized template',
   JSON.stringify(railLabels) === JSON.stringify(wantLabels), JSON.stringify(railLabels));
+// 3.9 E3: one strength for every tick (an edited one at 55% was under 3:1);
+// the label still says which kind.
+const tickOpacity = await page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => getComputedStyle(b).opacity));
+check('an edited rail tick is as strong as an added one', tickOpacity.length === 2 && tickOpacity.every(o => o === '1'), JSON.stringify(tickOpacity));
 
 // The first highlight with a grammar pays for compiling its patterns, and
 // Shiki's 500 ms per-line guard may cut it short. If that cold highlight was
@@ -855,23 +780,13 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('removed-text popup stays open across an unrelated patch', before === 'removed text' && after === 'removed text', JSON.stringify({ before, after }));
 }
 
-// Printing: the changes-only filter is lifted (and comes back afterwards),
-// and preparePrint draws diagrams and highlights code far from the viewport.
+// Printing: preparePrint draws diagrams and highlights code far from the viewport.
 {
   const mm = '<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Print] --> B[Me]</pre></div>';
   const code = '<div class="code-block" data-lang="js"><pre><code>const far = 1;</code></pre></div>';
   const r = fixReset(300, i => i === 280 ? mm : i === 290 ? code : `<p>para ${i}</p>`, i => i === 280 ? 'mermaid' : i === 290 ? 'code' : 'paragraph');
   r.marks = [{ slot: 50, kind: 'inserted' }];
   await page.evaluate(p => window.readout.apply(p), r);
-  await page.evaluate(() => window.readout.setChangesOnly(true));
-  await page.evaluate(() => window.scrollTo(0, 0));
-  const hiddenOnScreen = await page.evaluate(() => document.querySelector('.blk[data-slot="20"]').hidden);
-  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
-  const hiddenPrinting = await page.evaluate(() => document.querySelector('.blk[data-slot="20"]').hidden);
-  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
-  const hiddenAfter = await page.evaluate(() => document.querySelector('.blk[data-slot="20"]').hidden);
-  await page.evaluate(() => window.readout.setChangesOnly(false));
-  check('printing lifts the changes-only filter, then restores it', hiddenOnScreen && !hiddenPrinting && hiddenAfter, JSON.stringify({ hiddenOnScreen, hiddenPrinting, hiddenAfter }));
   await page.evaluate(() => window.scrollTo(0, 0));
   const prepared = await page.evaluate(async () => {
     await window.readout.preparePrint();
@@ -1183,8 +1098,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
     JSON.stringify({ before: [before2.slot, before2.offset], after: after2 && [after2.slot, after2.offset], tail }));
 }
 
-// Headings are named by their text, not by the link button inside them; the
-// button stays a named, focusable button.
+// Headings are named by their text (3.9 E9: no link button beside them any more).
 {
   const r = fixReset(5, i => i === 1 ? '<h2>Overview of <code>the plan</code></h2>'
     : i === 2 ? '<h2>Status <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Passing"></h2>'
@@ -1197,19 +1111,12 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
     + await page.getByRole('heading', { name: 'Status Passing', exact: true }).count()
     // Until it is loaded a remote image is a button, and the heading shows its label.
     + await page.getByRole('heading', { name: 'Build Load image from badge.example', exact: true }).count();
-  const button = page.getByRole('button', { name: 'Copy Link to Section', exact: true }).first();
-  await button.focus();
-  const focused = await page.evaluate(() => document.activeElement?.classList.contains('h-link'));
-  await page.evaluate(() => { window.__msgs.length = 0; });
-  await page.keyboard.press('Enter');
-  const msg = await page.evaluate(() => window.__msgs.find(m => m.type === 'copyLink'));
   await page.evaluate(() => {
     document.querySelector('.remote-img[data-src="https://badge.example/b.svg"]').dataset.remoteId = 'rb';
     window.readout.remoteReady({ id: 'rb', url: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=' });
   });
   const loaded = await page.getByRole('heading', { name: 'Build Green', exact: true }).count();
-  check('a heading is named by its content alone, its link button stays reachable', named === 3 && loaded === 1 && focused && msg?.anchor === 'overview',
-    JSON.stringify({ named, loaded, focused, msg }));
+  check('a heading is named by its content alone', named === 3 && loaded === 1, JSON.stringify({ named, loaded }));
 }
 
 // An update measures the blocks it changed once, after changing them all: one

@@ -17,7 +17,9 @@ public enum PageMessage: Equatable, Sendable {
     /// The block at the top of the viewport and how far it is scrolled.
     case anchor(slot: Int, offset: Double)
     case copy(text: String)
-    case copyLink(anchor: String)
+    /// A context menu is opening: on the heading with this anchor (its menu
+    /// offers Copy Link to Section), or nil off a heading.
+    case contextHeading(anchor: String?)
     case open(href: String)
     case loadRemote(url: String, id: String)
     case openPath(path: String, line: Int, column: Int)
@@ -67,9 +69,9 @@ public enum PageMessage: Equatable, Sendable {
         case "copy":
             guard let text = msg["text"] as? String else { return nil }
             self = .copy(text: text)
-        case "copyLink":
-            guard let anchor = msg["anchor"] as? String, !anchor.isEmpty else { return nil }
-            self = .copyLink(anchor: anchor)
+        case "contextHeading":
+            guard let anchor = msg["anchor"] as? String else { return nil }
+            self = .contextHeading(anchor: anchor.isEmpty ? nil : anchor)
         case "open":
             guard let href = msg["href"] as? String else { return nil }
             self = .open(href: href)

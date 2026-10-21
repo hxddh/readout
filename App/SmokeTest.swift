@@ -949,11 +949,23 @@ enum SmokeTest {
         if let now = try? await webView.evaluateJavaScript("Math.round(performance.now())") as? Double { json["page_now_ms"] = now }
         json["seconds_waited"] = Date().timeIntervalSince(started)
 
+        // Copy Link to Section from a heading's context menu (3.9 E9: no
+        // hover § any more), and none in a paragraph's.
+        let contextMenu: (String) async -> NSMenuItem? = { selector in
+            _ = try? await webView.evaluateJavaScript("document.querySelector('\(selector)')?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))")
+            try? await Task.sleep(for: .milliseconds(300))
+            let menu = NSMenu()
+            (webView as? ReaderWebView)?.onContextMenu?(menu)
+            return menu.items.first { $0.action == #selector(ReaderWindowController.copyLinkToSection(_:)) }
+        }
         NSPasteboard.general.clearContents()
-        _ = try? await webView.evaluateJavaScript("(() => { const l = document.querySelector('.k-heading .h-link'); if (l) l.click(); return !!l; })()")
-        try? await Task.sleep(for: .milliseconds(300))
+        json["section_link_on_paragraph"] = await contextMenu("#ro-doc > .k-paragraph p") != nil
+        if let item = await contextMenu("#ro-doc > .k-heading h1, #ro-doc > .k-heading h2"), let action = item.action {
+            NSApp.sendAction(action, to: item.target, from: item)
+        }
         json["copied_link"] = NSPasteboard.general.string(forType: .string) ?? ""
         json["link_prefix"] = controller.url.path + "#"
+        json["hover_link_buttons"] = (try? await webView.evaluateJavaScript("document.querySelectorAll('.h-link').length")) as? Int ?? -1
         write(json, to: out, "refill.json")
     }
 

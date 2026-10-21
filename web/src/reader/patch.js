@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused } from './core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, isShown, scrollToElement, forceLayout, neverLaidOut } from './anchor.js';
-import { renderMarks, applyChangesOnly, forgetDiff, watching } from './marks.js';
+import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, forceLayout, neverLaidOut } from './anchor.js';
+import { renderMarks, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, measureTables } from './enhance.js';
 import { sources, tight, setLinks } from './copy.js';
@@ -231,8 +231,7 @@ export function apply(p) {
 
   renderMarks(p.marks || [], p.deletions || [], !!p.reset);
 
-  // A silent re-render (checkbox HTML, CJK class) must not disturb the filter.
-  applyChangesOnly();
+  scheduleRail();
 
   if (p.rewrite) showNotice(strings.rewritten);
 
@@ -278,7 +277,7 @@ export function apply(p) {
   // carried down as soon as it scrolls), nor a place the page would have to
   // scroll up to (it is at the top already).
   const own = anchor && slots.get(anchor.slot);
-  const cutShort = !follow && !restored && !!own && isShown(own) && !fromTop && anchorMiss(anchor, changed) > 1;
+  const cutShort = !follow && !restored && !!own && !fromTop && anchorMiss(anchor, changed) > 1;
   if (anchor && !p.rewrite && (slots.size === 0 || cutShort || (place && (following ? !atBottom() : !restored)))) {
     held = { anchor, following, top: document.scrollingElement.scrollTop };
   }
@@ -296,8 +295,11 @@ export function apply(p) {
   renderLazy(firstLarge ? estimatedOnScreen() : undefined);
 
   // A flash still running restarts under the other animation name
-  // (reader.css), without a forced style and layout to restart it.
+  // (reader.css), without a forced style and layout to restart it. A block
+  // with a change bar has its arrival in the bar: no flash (it blinked with
+  // every write while an agent streamed into it).
   for (const el of visibleChanged) {
+    if (el.matches('.m-inserted, .m-modified, .m-state')) continue;
     const again = el.classList.contains('flash') && !el.classList.contains('flash-alt');
     el.classList.add('flash');
     el.classList.toggle('flash-alt', again);

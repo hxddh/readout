@@ -71,11 +71,14 @@ check("refill: the emptied file and its refill were both applied", (refill.get("
 rshift = refill.get("shift")
 check("refill: the reading position is restored (|shift| <= 4)",
       isinstance(rshift, (int, float)) and abs(rshift) <= 4, refill)
-# A heading's link button copies the full path with the anchor.
+# A heading's context menu copies the full path with the anchor (3.9 E9:
+# no hover § button; a paragraph's menu has no such item).
 prefix = refill.get("link_prefix") or "?"
 copied = refill.get("copied_link") or ""
 check("copy link to section copies the full path#anchor",
       prefix.startswith("/") and copied.startswith(prefix) and len(copied) > len(prefix), refill)
+check("copy link to section is in a heading's context menu only, no hover button",
+      refill.get("section_link_on_paragraph") is False and refill.get("hover_link_buttons") == 0, refill)
 
 marks = load("3-marks.json")
 print(f"3-marks: {marks}")
@@ -352,6 +355,9 @@ check("View has Show What Changed, without a key", bool(what) and "key" not in w
 compare = next((i for path, i in tree if i.get("action") == "compareWithLastCommit:" and path[0] == "View"), {})
 check("View has Compare with Last Commit, without a key", compare.get("title") == "Compare with Last Commit" and "key" not in compare, compare)
 check("Help opens the bundled shortcuts", "openHelp:" in by_action, sorted(by_action))
+# 3.9 S1: Show Only Changes is gone, and ⇧⌘K with it.
+check("View has no Show Only Changes, and nothing is on ⇧⌘K",
+      "toggleChangesOnly:" not in by_action and not any((i.get("key") or "").lower() == "⇧⌘k" for _, i in tree), sorted(by_action))
 
 aux = load("aux-windows.json")
 print(f"aux-windows: {aux}")

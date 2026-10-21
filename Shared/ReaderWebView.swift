@@ -325,7 +325,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
     }
 
     func setAppearance(dark: Bool? = nil, accent: NSColor? = nil, width: String? = nil, fontSize: Double? = nil,
-                       strings: [String: String]? = nil, changesOnly: Bool? = nil, codeWrap: Bool? = nil,
+                       strings: [String: String]? = nil, codeWrap: Bool? = nil,
                        mode: String? = nil) {
         var o: [String: Any] = [:]
         if let dark { o["dark"] = dark }
@@ -333,7 +333,6 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         if let width { o["width"] = width }
         if let fontSize { o["fontSize"] = fontSize }
         if let strings { o["strings"] = strings }
-        if let changesOnly { o["changesOnly"] = changesOnly }
         if let codeWrap { o["codeWrap"] = codeWrap }
         if let mode { o["mode"] = mode }
         guard let data = try? JSONSerialization.data(withJSONObject: o), let json = String(data: data, encoding: .utf8) else { return }
@@ -368,8 +367,6 @@ enum ReaderStrings {
             "empty": NSLocalizedString("This file is empty.", comment: "Empty document"),
             "deletedOne": NSLocalizedString("1 block removed", comment: "Deletion marker tooltip"),
             "deletedMany": NSLocalizedString("%d blocks removed", comment: "Deletion marker tooltip; %d is a number"),
-            "caughtUp": NSLocalizedString("All caught up", comment: "Empty state when filtering to changes with none left"),
-            "copyLink": NSLocalizedString("Copy Link to Section", comment: "Heading link button tooltip"),
             "remoteError": NSLocalizedString("Could not load image: %@", comment: "Remote image download failure; %@ is the reason"),
             "railChange": NSLocalizedString("Unread change %d of %d: %@", comment: "Change-rail tick label; %d is position, %d is total, %@ is the kind"),
             "railAdded": NSLocalizedString("added", comment: "Change kind in rail label"),

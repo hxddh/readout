@@ -75,9 +75,7 @@
 "A New Version Is Available" = "有新版本可用";
 "You're Up to Date" = "已是最新版本";
 "Readout %@ is the latest version." = "Readout %@ 已是最新版本。";
-"Show Only Changes" = "只看变更";
 "Copy Link to Section" = "拷贝章节链接";
-"All caught up" = "已全部读完";
 "Could not load image: %@" = "图片加载失败：%@";
 "%@ Is Available…" = "%@ 现已推出…";
 "Unread change %d of %d: %@" = "未读变更 %d / %d：%@";
