@@ -138,7 +138,7 @@ for (let i = 0; i < 3; i++) {
     window.readout.findEnd();
     return n > 0 ? ms : -1;
   }));
-  await twoFrames();
+  await settled();
 }
 if (findOpen.some(ms => ms < 0)) errors.push(`find found nothing: ${findOpen}`);
 // While the find bar is open, an agent's one-block edit: the page searches
