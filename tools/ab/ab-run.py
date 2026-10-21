@@ -75,7 +75,7 @@ def launch(name, app, tag):
     o = page.get("origin")
     if o:
         r["gaps"] = [[round(o + a - start * 1000), b] for a, b in page.get("gaps", [])][:40]
-        r["long"] = [[n, round(o + a - start * 1000), d, src] for n, a, d, src in page.get("long", [])][:60]
+        r["long"] = [[n, round(o + a - start * 1000), d, src] for n, a, d, src in page.get("long", [])][:150]
         r["res"] = [[n, round(o + a - start * 1000), round(o + b - start * 1000)] for n, a, b in page.get("res", [])][:60]
     r["takes"] = [l.strip()[-20:] for l in (d / "log.txt").read_text(errors="replace").splitlines() if "ABTAKE" in l]
     r["git"] = [l.strip()[-40:] for l in (d / "log.txt").read_text(errors="replace").splitlines() if "ABGIT" in l]

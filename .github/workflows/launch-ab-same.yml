@@ -1,0 +1,62 @@
+name: DIAG launch A/B, one VM (temporary)
+
+# Temporary diagnostic for the 3.9.1 launch work: builds several commits
+# (tools/ab/variants.txt: name=sha[:experiment]) with one A/B harness patched
+# in (tools/ab/apply-ab.py) and launches them interleaved on one runner.
+on:
+  push:
+    branches: ['m16/same-*']
+  workflow_dispatch:
+
+jobs:
+  ab:
+    # One variant per job, on its own VM: its first launch there is a real
+    # first launch (a fresh bundle's code-signing assessment, WebKit's first
+    # start on the VM), measured as BOOT; the launches after it as RUN.
+    strategy:
+      fail-fast: false
+      matrix:
+        rep: [1, 2, 3, 4]
+    runs-on: macOS-26
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build variants
+        run: |
+          set -eo pipefail
+          brew install xcodegen
+          mkdir -p "$RUNNER_TEMP/apps"
+          for spec in $(grep -v "^#" tools/ab/variants.txt); do
+            name=${spec%%=*}; rest=${spec#*=}; sha=${rest%%:*}; exp=""
+            case "$rest" in *:*) exp=${rest#*:};; esac
+            t="$RUNNER_TEMP/tree-$name"
+            git worktree add -f "$t" "$sha"
+            python3 tools/ab/apply-ab.py "$t" $exp
+            (cd "$t/web" && npm ci --no-audit --no-fund > /dev/null && npm run build > /dev/null)
+            (cd "$t" && xcodegen generate > /dev/null)
+            (cd "$t" && xcodebuild -project Readout.xcodeproj -scheme Readout -configuration Release \
+              -derivedDataPath build -destination 'generic/platform=macOS' \
+              MARKETING_VERSION=9.9.9 CURRENT_PROJECT_VERSION=999 ARCHS=arm64 ONLY_ACTIVE_ARCH=NO build > "$RUNNER_TEMP/xcb-$name.log" 2>&1) || { grep -E "error" "$RUNNER_TEMP/xcb-$name.log" | grep -v ModuleCache | head -20; exit 1; }
+            ditto "$t/build/Build/Products/Release/Readout.app" "/Applications/ReadoutAB-$name.app"
+            sh "$t/tools/sign.sh" "/Applications/ReadoutAB-$name.app" "-"
+            echo "built $name ($sha $exp)"
+          done
+      - name: A/B launches
+        run: |
+          xcrun swiftc -O tools/ab/ab-launch.swift -o "$RUNNER_TEMP/ab-launch"
+          args=""
+          for spec in $(grep -v "^#" tools/ab/variants.txt); do name=${spec%%=*}; args="$args $name=/Applications/ReadoutAB-$name.app"; done
+          # Documents outside any git repository (as tools/smoke-run.py has
+          # them) in reps 1-2; inside this checkout (untracked) in rep 3.
+          if [ "${{ matrix.rep }}" = 9 ]; then OUT="$PWD/ab-out"; export AB_DOCS_TAG=repo; else OUT="$RUNNER_TEMP/ab-out"; export AB_DOCS_TAG=temp; fi
+          python3 tools/ab/ab-run.py "$RUNNER_TEMP/ab-launch" "$PWD" "$OUT" "$(cat tools/ab/rounds.txt)" $args
+          [ "$OUT" = "$PWD/ab-out" ] || cp -R "$OUT" ab-out
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: ab-same-${{ matrix.rep }}
+          path: ab-out
