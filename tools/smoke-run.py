@@ -81,24 +81,29 @@ def launch_timings(app: dict, spawn: float) -> dict:
     # Process launch to the first patch on screen.
     t = {"cold_start_ms": round((first - spawn) * 1000, 1) if first else None}
     # The cold start in phases (P5), each in ms since the process started
-    # (sysctl), and the segments that are Readout's own: the reader page
-    # loading (from willFinishLaunching, where the spare page it becomes is
-    # made, to its `ready`), didFinishLaunching to the first window (all on
-    # the main thread, before the window exists) and the first document going
-    # in (from the later of that page being ready and the document read, to
-    # the page's apply). The rest is launch, WebKit's first start and the
-    # frame the system paints.
+    # (sysctl), and the segments that are Readout's own: the first window's
+    # page loading (from the window, which makes it, to its `ready`),
+    # didFinishLaunching to the first window (all on the main thread, before
+    # the window exists) and the first document going in (from the later of
+    # that page being ready and the document read, to the page's apply). The
+    # rest is launch, WebKit's first start and the frame the system paints.
+    # The spare page for the next open is made after the first paint.
     phases = app.get("launch_phases_s") or {}
     start = phases.get("process_start")
     if start:
-        order = ["will_finish_launching", "spare_created", "did_finish_launching", "open_requested",
-                 "window_init", "page_ready", "did_load", "apply", "paint"]
+        order = ["will_finish_launching", "did_finish_launching", "open_requested",
+                 "window_init", "window_visible", "page_ready", "did_load", "apply", "paint", "spare_created"]
         t["launch_phases_ms"] = {k: round((phases[k] - start) * 1000, 1) for k in order if k in phases}
         t["launch_phases_ms"]["spawn"] = round((spawn - start) * 1000, 1)
     else:
         print(f"harness: no process start time in the app's launch phases {phases}")
-    if "will_finish_launching" in phases and "page_ready" in phases:
-        t["cold_page_ready_ms"] = round((phases["page_ready"] - phases["will_finish_launching"]) * 1000, 1)
+    # Process launch to the first window on screen (its first occlusion
+    # change to visible): what the reader sees first.
+    if "window_visible" in phases:
+        t["cold_window_visible_ms"] = round((phases["window_visible"] - spawn) * 1000, 1)
+    # The first window's page, from the window (which makes it) to its ready.
+    if "window_init" in phases and "page_ready" in phases:
+        t["cold_page_ready_ms"] = round((phases["page_ready"] - phases["window_init"]) * 1000, 1)
     if "did_finish_launching" in phases and "window_init" in phases:
         t["cold_dfl_to_window_ms"] = round((phases["window_init"] - phases["did_finish_launching"]) * 1000, 1)
     # Readout's own work between the window and its document: reading the
@@ -162,6 +167,11 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
             timings[k.replace("_ms", "_first_boot_ms")] = v
     timings["launch_phases_second_ms"] = measured.get("launch_phases_ms")
     timings["cold_start_second_ms"] = measured.get("cold_start_ms")
+    # Spawn to the first window on screen, the measured launch's (gated) and
+    # the first launch's (reported, with its code-signing assessment and
+    # WebKit's first start on the VM).
+    timings["cold_window_visible_ms"] = measured.get("cold_window_visible_ms")
+    timings["cold_window_visible_first_boot_ms"] = first_boot.get("cold_window_visible_ms")
 
     def for_second(table):
         found = table.get(str(second.resolve()), table.get(str(second)))

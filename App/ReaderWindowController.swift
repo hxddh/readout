@@ -23,6 +23,7 @@ final class WebViewPool: NSObject, WKNavigationDelegate {
             w.call("warm")
         }
         spare = w
+        SmokeTest.noteLaunchPhase("spare_created")
     }
 
     /// The idle spare's web content process died (memory pressure, a crash):
@@ -1421,6 +1422,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     func show() {
         showWindow(nil)
         window?.makeFirstResponder(webView)
+    }
+
+    /// On screen: the first time, a phase of the cold start (SmokeTest).
+    func windowDidChangeOcclusionState(_ notification: Notification) {
+        if window?.occlusionState.contains(.visible) == true { SmokeTest.noteLaunchPhase("window_visible") }
     }
 
     func windowWillClose(_ notification: Notification) {
