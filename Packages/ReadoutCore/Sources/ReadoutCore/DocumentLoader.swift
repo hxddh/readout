@@ -28,9 +28,9 @@ public final class DocumentLoader {
     private let resolver: @MainActor () -> FileResolver
     private let cache = MarkdownParser.RenderCache()
     /// Re-parses only the parts of the file that changed. Used by one read
-    /// at a time (`readInFlight`), each on its own `ParseThread`: a large
-    /// stack, which deeply nested Markdown needs.
+    /// at a time (`readInFlight`), on `parseQueue`.
     private let parser = IncrementalParser()
+    private let parseQueue = DispatchQueue(label: "readout.parse", qos: .userInitiated)
     /// Delay before re-reading a write that looks half-finished.
     private let retryDelay: TimeInterval
 
@@ -44,9 +44,8 @@ public final class DocumentLoader {
     /// point elsewhere again by the time its completion runs).
     public private(set) var lastSourcePath: String?
 
-    // Parse coalescing: rapid successive writes share one in-flight parse;
-    // completions carry a generation and stale ones are dropped.
-    private var readGeneration = 0
+    // Parse coalescing: rapid successive writes share one in-flight parse
+    // (no read starts while one is in flight, so none finishes stale).
     private var readInFlight = false
     private var readAgain = false
     private var pendingCompletions: [(ReadResult?) -> Void] = []
@@ -116,13 +115,11 @@ public final class DocumentLoader {
         }
         readInFlight = true
         parseCount += 1
-        readGeneration += 1
-        let generation = readGeneration
         let url = self.url
         let resolver = self.resolver()
         let cache = self.cache
         let parser = self.parser
-        ParseThread.start {
+        parseQueue.async {
             var result: ReadResult?
             // Resolve first, then read that file: the path and the bytes always belong together.
             let source = RealPath.of(url.path)
@@ -134,15 +131,14 @@ public final class DocumentLoader {
             }
             let finished = result
             DispatchQueue.main.async { [weak self] in
-                MainActor.assumeIsolated { self?.finishRead(generation: generation, result: finished) }
+                MainActor.assumeIsolated { self?.finishRead(result: finished) }
             }
         }
         // The initiating completion waits for this read like any other.
         pendingCompletions.append(completion)
     }
 
-    private func finishRead(generation: Int, result: ReadResult?) {
-        guard generation == readGeneration else { return }  // superseded by a newer read
+    private func finishRead(result: ReadResult?) {
         readInFlight = false
         if readAgain {
             // The file changed while we were parsing: re-read from disk, and
