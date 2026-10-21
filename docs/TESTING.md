@@ -49,9 +49,11 @@ Release app copied to /Applications** — the exact bytes users install — and
   system font
 - Quick Look: `pluginkit` lists `io.github.hxddh.readout.quicklook`, the
   `qlmanage` log has no errors, and the extension's log line reports the
-  preview was applied with 34 of 34 blocks rendered (proof of content, not
+  preview was applied with 36 of 36 blocks rendered (proof of content, not
   just registration; `qlmanage -t` cannot prove this because a preview
-  extension does not produce thumbnails)
+  extension does not produce thumbnails), for two previews in a row (the
+  second may take the spare page the first left). The extension has no
+  `Web/` of its own: it serves the page from the app's `Contents/Resources/Web`
 
 CI prints the actual values before asserting. The thresholds come from the
 `plan.md` fixtures; **a mismatch means the product regressed**.
@@ -96,8 +98,8 @@ over its guard; metrics with `"guard": null` are printed but not gated.
 
 | Where | Measured by | Metrics |
 | --- | --- | --- |
-| mac (Verify signed product) | `PerformanceBudgetTests` in a release build, written to the file named by `READOUT_PERF_OUT`; `tools/smoke-run.py` timings from the signed app | update_100kb, update_1mb, word_diff_100kb (the word-level comparison of 20 edited blocks); cold_start_ms, warm_open_ms, write_to_update_ms |
-| linux-webkit (Web tests) | `node web/test/perf.test.mjs` → `web/test/out/perf-web.json` | web_first_apply_1mb_ms (the synchronous first apply, which reads no layout), web_first_apply_1mb_painted_ms (until the frame showing it is painted), web_update_20_blocks_1mb_ms (including the layout it causes), scroll frame pacing (reported), web_stream_append_5mb_ms (an agent streaming at the end of a 5 MB document the reader follows, per patch including its layout; reported) |
+| mac (Verify signed product) | `PerformanceBudgetTests` in a release build, written to the file named by `READOUT_PERF_OUT`; `tools/smoke-run.py` timings from the signed app; the Quick Look extension's log | update_100kb, update_1mb, word_diff_100kb (the word-level comparison of 20 edited blocks); cold_start_ms and its launch phases, warm_open_ms, write_to_update_ms; ql_open_ms, ql_second_open_ms (reported) |
+| linux-webkit (Web tests) | `node web/test/perf.test.mjs` → `web/test/out/perf-web.json` | web_first_apply_1mb_ms (the synchronous first apply, which reads no layout), web_first_apply_1mb_painted_ms (until the frame showing it is painted), web_update_20_blocks_1mb_ms (including the layout it causes), web_scroll_up_jump_px, web_first_highlight_warm_ms and web_first_highlight_cold_ts_ms (a TypeScript block on a warmed page, and on one not warmed), web_tab_private_mb (a warmed tab's private memory with a small plan, Linux smaps), web_stream_append_5mb_ms (an agent streaming at the end of a 5 MB document the reader follows, per patch including its layout; reported) |
 
 Run locally:
 

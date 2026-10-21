@@ -896,8 +896,9 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   const page = await newPage();
   await page.evaluate(() => window.readout.warm());
   await page.waitForTimeout(1500);   // grammars preloaded, as in a warmed app window
+  // TypeScript: one of the three grammars the app preloads (highlight.js PRELOAD).
   const ops = Array.from({ length: 600 }, (_, k) => k % 5 === 0
-    ? { op: 'insert', slot: k + 1, after: k, kind: 'code', html: `<div class="code-block" data-lang="js"><pre><code>const a${k} = ${k};\nfunction f${k}() { return a${k} * 2; }</code></pre></div>` }
+    ? { op: 'insert', slot: k + 1, after: k, kind: 'code', html: `<div class="code-block" data-lang="ts"><pre><code>const a${k} = ${k};\nfunction f${k}() { return a${k} * 2; }</code></pre></div>` }
     : { op: 'insert', slot: k + 1, after: k, kind: 'paragraph', html: `<p>Para ${k} ${'lorem ipsum '.repeat(10)}</p>` });
   const r = await page.evaluate(ops => new Promise(res => {
     window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], ops });
