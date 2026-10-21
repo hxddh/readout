@@ -288,6 +288,7 @@ function setAppearance(o) {
   // which tells Quick Look apart: a preview loads only the grammars it shows.
   if (o.mode === 'quicklook') hl.noPreload();
   hl.init();
+  boot('pg_hl_init_returned');
   if (o.dark !== undefined) {
     const t = o.dark ? 'dark' : 'light';
     if (root.dataset.theme !== t) {
@@ -340,6 +341,7 @@ function setAppearance(o) {
   if (o.mode === 'quicklook') { enableQuicklook(); staticRemoteImages(); }
   scheduleRail();
   if (!resizeAnchor) settle();
+  boot('pg_setappearance_out');
 }
 
 /**
