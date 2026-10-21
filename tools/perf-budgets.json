@@ -255,6 +255,8 @@
   "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 30 },
   "web_find_open_1mb_ms":       { "where": "linux-webkit", "unit": "ms",     "target": 50,   "guard": 100 },
   "web_find_refresh_1mb_ms":    { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
+  "web_find_refresh_1mb_frame_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": null },
+  "web_find_next_1mb_frame_ms": { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
   "web_stream_append_5mb_ms":   { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
   "web_first_highlight_warm_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 40,   "guard": 80 },
   "web_first_highlight_cold_ts_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": null },
