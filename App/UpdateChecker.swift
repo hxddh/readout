@@ -1,5 +1,4 @@
 import AppKit
-import CoreServices
 import ReadoutCore
 
 /// Lightweight update checker backed by GitHub Releases.
@@ -37,11 +36,6 @@ enum UpdateChecker {
                 case name
                 case url = "browser_download_url"
             }
-        }
-
-        /// The release's disk image, when it has one on GitHub.
-        var dmg: Asset? {
-            assets?.first { $0.name.lowercased().hasSuffix(".dmg") && $0.url.scheme == "https" && $0.url.host == "github.com" }
         }
     }
 
@@ -81,7 +75,7 @@ enum UpdateChecker {
                         let body = rateLimited
                             ? NSLocalizedString("GitHub's limit on update checks from this network was reached. Please try again in an hour.", comment: "Update alert body: GitHub rate limit")
                             : NSLocalizedString("Readout could not reach GitHub. Please try again later.", comment: "Update alert body")
-                        alert(title: NSLocalizedString("Could Not Check for Updates", comment: "Update alert title"), body: body, update: nil)
+                        alert(title: NSLocalizedString("Could Not Check for Updates", comment: "Update alert title"), body: body, download: nil)
                     }
                     return
                 }
@@ -96,7 +90,7 @@ enum UpdateChecker {
                 } else if interactive {
                     alert(title: NSLocalizedString("You're Up to Date", comment: "Update alert title"),
                           body: String(format: NSLocalizedString("Readout %@ is the latest version.", comment: "Update alert body"), currentVersion),
-                          update: nil)
+                          download: nil)
                 }
             }
         }.resume()
@@ -131,210 +125,32 @@ enum UpdateChecker {
     }
 
     /// The application menu's "Readout X Is Available…": the same alert, and
-    /// the same download, as Check for Updates finding it.
+    /// the same Download Update, as Check for Updates finding it.
     static func showFoundUpdate() {
         guard let found else { return }
         offer(found)
     }
 
-    /// A New Version Is Available: the release's notes, Download Update or Later.
+    /// A New Version Is Available: the release's notes, Download Update or
+    /// Later. Download Update hands the release's disk image to the browser,
+    /// which downloads it (with its progress, cancel and quarantine); the
+    /// release page when it has none. Nothing is installed.
     private static func offer(_ release: Release) {
         alert(title: NSLocalizedString("A New Version Is Available", comment: "Update alert title"),
               body: "\(release.name ?? release.tag)\n\n\(ReleaseCheck.plainNotes(release.body ?? ""))",
-              update: (page: release.htmlURL ?? releasesURL, dmg: release.dmg))
+              download: ReleaseCheck.downloadURL(assets: (release.assets ?? []).map { (name: $0.name, url: $0.url) }, page: release.htmlURL ?? releasesURL))
     }
 
     /// `title` is localized by the caller (literal keys, so the strings can be found).
-    private static func alert(title: String, body: String, update: (page: URL, dmg: Release.Asset?)?) {
+    private static func alert(title: String, body: String, download: URL?) {
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = body
-        if let update {
+        if download != nil {
             alert.addButton(withTitle: NSLocalizedString("Download Update", comment: "Button"))
             alert.addButton(withTitle: NSLocalizedString("Later", comment: "Button"))
-            NSApp.activate()
-            guard alert.runModal() == .alertFirstButtonReturn else { return }
-            if let dmg = update.dmg { download(from: dmg.url, name: dmg.name, fallback: update.page) } else { NSWorkspace.shared.open(update.page) }
-        } else {
-            NSApp.activate()
-            alert.runModal()
         }
-    }
-
-    /// The download running, if any: Download Update chosen again meanwhile
-    /// (the alert again, or the menu item) does not start a second one.
-    private static var running: URLSessionDownloadTask?
-    /// Its progress, published on the file in Downloads: Finder and the
-    /// Dock's Downloads stack show it, and can cancel it.
-    private static var progress: Progress?
-    private static var progressObservation: NSKeyValueObservation?
-
-    /// What the last download did, for the smoke test.
-    private(set) static var lastDownload: [String: Any] = [:]
-
-    /// Download Update: the release's disk image into Downloads, its progress
-    /// shown on the file there, then shown in Finder, quarantined as a browser
-    /// download is (Gatekeeper checks it as usual). Nothing is installed. If it
-    /// cannot be downloaded, the release page opens instead (`fallback`).
-    /// False when a download is already running: this one is ignored.
-    /// `directory` (Downloads when nil) and `completion`, which replaces the
-    /// reveal and the fallback, are for the smoke test.
-    @discardableResult
-    static func download(from source: URL, name: String, fallback: URL?, directory: URL? = nil,
-                         completion: ((URL?) -> Void)? = nil) -> Bool {
-        guard running == nil else { return false }
-        var request = URLRequest(url: source, timeoutInterval: 300)
-        request.setValue("Readout/\(currentVersion)", forHTTPHeaderField: "User-Agent")
-        let name = (name as NSString).lastPathComponent
-        // The file it becomes, there from the start, so the progress has a file to show on.
-        let reserved = try? reserveDownload(name: name, in: directory)
-        let target = reserved?.url
-        let task = URLSession.shared.downloadTask(with: request) { temp, response, error in
-            // The temporary file is removed once this returns: move it now.
-            // A file: URL (the smoke test) answers without HTTP.
-            var saved: URL?
-            let ok = (response as? HTTPURLResponse)?.statusCode == 200 || (response != nil && source.isFileURL)
-            if let temp, ok { saved = try? keepDownload(temp, at: reserved, name: name, in: directory, from: source) }
-            // Only the empty file reserved: never one that took its name since.
-            if saved == nil, let reserved, isStill(reserved) { try? FileManager.default.removeItem(at: reserved.url) }
-            // Cancelled from its progress (Finder, the Dock): nothing else happens.
-            let cancelled = (error as? URLError)?.code == .cancelled
-            DispatchQueue.main.async {
-                finishProgress(saved: saved)
-                running = nil
-                if let completion { return completion(saved) }
-                if let saved { NSWorkspace.shared.activateFileViewerSelecting([saved]) }
-                else if let fallback, !cancelled { NSWorkspace.shared.open(fallback) }
-            }
-        }
-        running = task
-        lastDownload = ["name": name, "progress_file": target?.lastPathComponent ?? NSNull()]
-        if let target { publishProgress(for: task, on: target) }
-        task.resume()
-        return true
-    }
-
-    /// A progress on the file in Downloads that follows the task's bytes;
-    /// cancelling it there (Finder, the Dock) cancels the download.
-    private static func publishProgress(for task: URLSessionDownloadTask, on file: URL) {
-        let p = Progress(totalUnitCount: -1)
-        p.kind = .file
-        p.fileOperationKind = .downloading
-        p.fileURL = file
-        p.isCancellable = true
-        p.isPausable = false
-        p.cancellationHandler = { [weak task] in task?.cancel() }
-        p.publish()
-        progress = p
-        progressObservation = task.progress.observe(\.completedUnitCount, options: [.initial, .new]) { taskProgress, _ in
-            let total = taskProgress.totalUnitCount, done = taskProgress.completedUnitCount
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated {
-                    guard let p = progress else { return }
-                    if total > 0 { p.totalUnitCount = total }
-                    p.completedUnitCount = done
-                    lastDownload["progress_updates"] = ((lastDownload["progress_updates"] as? Int) ?? 0) + 1
-                }
-            }
-        }
-    }
-
-    private static func finishProgress(saved: URL?) {
-        progressObservation?.invalidate()
-        progressObservation = nil
-        if let p = progress {
-            if saved != nil {
-                if p.totalUnitCount <= 0 { p.totalUnitCount = 1 }
-                p.completedUnitCount = p.totalUnitCount
-            }
-            lastDownload["progress_published"] = true
-            lastDownload["progress_total"] = p.totalUnitCount
-            lastDownload["progress_completed"] = p.completedUnitCount
-            p.unpublish()
-        }
-        progress = nil
-        lastDownload["saved"] = saved?.lastPathComponent ?? NSNull()
-    }
-
-    /// The empty file a download reserved, and which file it is (device and
-    /// inode): the user may delete it meanwhile and another file take its name.
-    private struct Reserved: Sendable {
-        let url: URL
-        let device: Int64
-        let inode: UInt64
-    }
-
-    /// The file at `path` itself (not a link's target): device and inode, and its size.
-    nonisolated private static func identity(_ path: String) -> (device: Int64, inode: UInt64, size: Int64)? {
-        var st = stat()
-        guard lstat(path, &st) == 0, (st.st_mode & S_IFMT) == S_IFREG else { return nil }
-        return (Int64(st.st_dev), UInt64(st.st_ino), Int64(st.st_size))
-    }
-
-    /// Whether the reserved name is still the empty file reserved.
-    nonisolated private static func isStill(_ r: Reserved) -> Bool {
-        guard let now = identity(r.url.path) else { return false }
-        return now.device == r.device && now.inode == r.inode && now.size == 0
-    }
-
-    /// `name` in `folder` ("Readout-3.7.0 2.dmg" when that is taken).
-    nonisolated private static func freeName(_ name: String, in folder: URL) -> URL {
-        let stem = (name as NSString).deletingPathExtension, ext = (name as NSString).pathExtension
-        var target = folder.appendingPathComponent(name)
-        var n = 2
-        while FileManager.default.fileExists(atPath: target.path) || identity(target.path) != nil {
-            target = folder.appendingPathComponent("\(stem) \(n)" + (ext.isEmpty ? "" : ".\(ext)"))
-            n += 1
-        }
-        return target
-    }
-
-    nonisolated private static func downloadsFolder(_ directory: URL?) throws -> URL {
-        try directory ?? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-    }
-
-    /// An empty file in ~/Downloads under `name` (a free variant when that is
-    /// taken): where the download goes, with its progress on it meanwhile.
-    /// Created exclusively (O_EXCL): a file that arrives under the name
-    /// between looking and creating is never truncated; the next free name is tried.
-    nonisolated private static func reserveDownload(name: String, in directory: URL?) throws -> Reserved {
-        let folder = try downloadsFolder(directory)
-        for _ in 0..<100 {
-            let target = freeName(name, in: folder)
-            let fd = open(target.path, O_CREAT | O_EXCL | O_WRONLY, 0o644)
-            if fd < 0 {
-                if errno == EEXIST { continue }
-                throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
-            }
-            var st = stat()
-            let ok = fstat(fd, &st) == 0
-            close(fd)
-            guard ok else { throw CocoaError(.fileWriteUnknown) }
-            return Reserved(url: target, device: Int64(st.st_dev), inode: UInt64(st.st_ino))
-        }
-        throw CocoaError(.fileWriteFileExists)
-    }
-
-    /// Moves a finished download onto the file reserved for it (into
-    /// Downloads under `name` when there is none) and marks it as downloaded from `source`.
-    /// When the name no longer holds the empty file reserved (the user deleted
-    /// it and another file took the name), that file is left alone and the
-    /// download goes to a free name beside it.
-    nonisolated private static func keepDownload(_ temp: URL, at reserved: Reserved?, name: String, in directory: URL?, from source: URL) throws -> URL {
-        let fm = FileManager.default
-        let target: URL
-        if let reserved, isStill(reserved) {
-            target = reserved.url
-            try fm.removeItem(at: target)
-        } else {
-            target = freeName(name, in: try reserved.map { $0.url.deletingLastPathComponent() } ?? downloadsFolder(directory))
-        }
-        // moveItem never replaces: a file that appeared at `target` meanwhile makes it fail.
-        try fm.moveItem(at: temp, to: target)
-        let quarantine: [String: Any] = [kLSQuarantineAgentNameKey as String: "Readout",
-                                         kLSQuarantineTypeKey as String: kLSQuarantineTypeWebDownload as String,
-                                         kLSQuarantineDataURLKey as String: source]
-        try? (target as NSURL).setResourceValue(quarantine, forKey: .quarantinePropertiesKey)
-        return target
+        NSApp.activate()
+        if alert.runModal() == .alertFirstButtonReturn, let download { NSWorkspace.shared.open(download) }
     }
 }

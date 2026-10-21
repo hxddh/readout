@@ -5,6 +5,7 @@ import ReadoutCore
 @MainActor
 enum MainMenu {
     private static let recentDelegate = RecentMenuDelegate()
+    private static let openLatestTag = 902
 
     static func build(appDelegate: AppDelegate) -> NSMenu {
         let main = NSMenu()
@@ -12,8 +13,7 @@ enum MainMenu {
 
         // App
         let app = NSMenu(title: appName)
-        app.addItem(withTitle: String(format: NSLocalizedString("About %@", comment: "Menu"), appName),
-                    action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        app.addItem(item(String(format: NSLocalizedString("About %@", comment: "Menu"), appName), #selector(AppDelegate.showAbout(_:))))
         app.addItem(item(NSLocalizedString("Check for Updates…", comment: "Menu"), #selector(AppDelegate.checkForUpdates(_:))))
         app.addItem(.separator())
         app.addItem(item(NSLocalizedString("Settings…", comment: "Menu"), #selector(AppDelegate.showSettings(_:)), ","))
@@ -34,7 +34,10 @@ enum MainMenu {
         // File
         let file = NSMenu(title: NSLocalizedString("File", comment: "Menu"))
         file.addItem(item(NSLocalizedString("Open…", comment: "Menu"), #selector(AppDelegate.openDocument(_:)), "o"))
-        file.addItem(item(NSLocalizedString("Open Latest Agent File", comment: "Menu"), #selector(AppDelegate.openLatest(_:)), "o", [.command, .shift]))
+        // One key: the global one (Settings), which works in Readout too.
+        let latest = item(NSLocalizedString("Open Latest Agent File", comment: "Menu"), #selector(AppDelegate.openLatest(_:)), "r")
+        latest.tag = openLatestTag
+        file.addItem(latest)
         let recent = NSMenuItem(title: NSLocalizedString("Open Recent", comment: "Menu"), action: nil, keyEquivalent: "")
         let recentMenu = NSMenu(title: recent.title)
         recentMenu.delegate = recentDelegate
@@ -75,8 +78,6 @@ enum MainMenu {
         findMenu.addItem(item(NSLocalizedString("Find…", comment: "Menu"), #selector(ReaderWindowController.showFind(_:)), "f"))
         findMenu.addItem(item(NSLocalizedString("Find Next", comment: "Menu"), #selector(ReaderWindowController.findNext(_:)), "g"))
         findMenu.addItem(item(NSLocalizedString("Find Previous", comment: "Menu"), #selector(ReaderWindowController.findPrevious(_:)), "g", [.command, .shift]))
-        // No ⌘E: that is Open in Editor here.
-        findMenu.addItem(item(NSLocalizedString("Use Selection for Find", comment: "Menu"), #selector(ReaderWindowController.useSelectionForFind(_:))))
         find.submenu = findMenu
         edit.addItem(find)
         // Reads the selection aloud, or the whole page when nothing is selected (WKWebView answers both).
@@ -119,8 +120,6 @@ enum MainMenu {
         window.addItem(item(NSLocalizedString("Minimize", comment: "Menu"), #selector(NSWindow.performMiniaturize(_:)), "m"))
         window.addItem(item(NSLocalizedString("Zoom", comment: "Menu"), #selector(NSWindow.performZoom(_:))))
         window.addItem(.separator())
-        window.addItem(item(NSLocalizedString("Welcome", comment: "Menu"), #selector(AppDelegate.showWelcome(_:))))
-        window.addItem(.separator())
         window.addItem(item(NSLocalizedString("Bring All to Front", comment: "Menu"), #selector(NSApplication.arrangeInFront(_:))))
         NSApp.windowsMenu = window
         add(window, to: main)
@@ -131,7 +130,30 @@ enum MainMenu {
         NSApp.helpMenu = help
         add(help, to: main)
 
+        setOpenLatestKey(AppSettings.shared.hotKey, in: main)
         return main
+    }
+
+    /// File ▸ Open Latest Agent File's key: the global shortcut, or ⌃⌥⌘R with that off.
+    static func setOpenLatestKey(_ key: OpenLatestKey, in main: NSMenu? = NSApp.mainMenu) {
+        guard let item = main?.items.lazy.compactMap({ $0.submenu?.item(withTag: openLatestTag) }).first else { return }
+        let m = key.modifiers
+        var flags: NSEvent.ModifierFlags = []
+        if m.contains(.control) { flags.insert(.control) }
+        if m.contains(.option) { flags.insert(.option) }
+        if m.contains(.command) { flags.insert(.command) }
+        item.keyEquivalentModifierMask = flags
+    }
+
+    /// Takes out what macOS adds to the Edit menu at launch (AutoFill, Start
+    /// Dictation, Emoji & Symbols), which a read-only reader has no use for.
+    static func trimEditMenu() {
+        guard let edit = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") })?.submenu else { return }
+        let items = edit.items.map { i in
+            SystemMenuItems.Item(action: i.action.map(NSStringFromSelector), submenuActions: i.submenu?.items.compactMap { $0.action.map(NSStringFromSelector) } ?? [],
+                                 isSeparator: i.isSeparatorItem)
+        }
+        for n in SystemMenuItems.removals(items) { edit.removeItem(at: n) }
     }
 
     private static func item(_ title: String, _ action: Selector?, _ key: String = "",

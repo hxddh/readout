@@ -238,8 +238,8 @@ jobs:
 
       - name: Assert smoke output
         run: |
-          # The About panel's licence notices, as built into the app.
-          cp /Applications/Readout.app/Contents/Resources/Credits.html smoke-out/ || true
+          # The licence notices About Readout links to, as built into the app.
+          cp /Applications/Readout.app/Contents/Resources/Acknowledgements.md smoke-out/ || true
           python3 tools/smoke-assert.py smoke-out
 
       - name: Hash the signed app

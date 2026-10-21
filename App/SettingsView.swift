@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import ReadoutCore
 
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
@@ -21,7 +22,8 @@ struct SettingsView: View {
                         .tag(path)
                     }
                 }
-                .frame(minHeight: 96)
+                // As tall as its folders, at least 2 rows, then it scrolls.
+                .frame(height: CGFloat(ReaderChrome.folderListRows(settings.workspaces.count)) * Self.rowHeight + 8)
                 // ⌫ removes the selected folder, as the − button does.
                 .onDeleteCommand(perform: removeSelected)
                 .overlay {
@@ -49,35 +51,34 @@ struct SettingsView: View {
             } header: {
                 Text(NSLocalizedString("Agent folders", comment: "Settings section"))
             } footer: {
-                Text(NSLocalizedString("New Markdown documents your agents create here open in Readout on their own, in the background. The global shortcut opens the most recently written one.", comment: "Settings footer"))
+                Text(NSLocalizedString("New Markdown files here open on their own, in the background.", comment: "Settings footer"))
                     .foregroundStyle(.secondary)
             }
 
             Section {
-                Picker(NSLocalizedString("Global shortcut", comment: "Settings label"), selection: $settings.hotKey) {
-                    ForEach(AppSettings.HotKeyChoice.allCases) { Text($0.title).tag($0) }
-                }
+                // On or off: ⌃⌥⌘R, or the key chosen before 3.9 (⌥⌘R, ⌃⌥R), kept and shown.
+                Toggle(String(format: NSLocalizedString("Open latest agent file with %@ from any app", comment: "Settings toggle; %@ is the shortcut, like ⌃⌥⌘R"), settings.hotKey.title),
+                       isOn: Binding(get: { settings.hotKey.isGlobal }, set: { settings.hotKey = settings.hotKey.turned(on: $0) }))
                 Picker(NSLocalizedString("Editor", comment: "Settings label: the app Open in Editor (⌘E) and path:line links open files in"), selection: $settings.editor) {
                     ForEach(AppSettings.Editor.allCases) { Text($0.title).tag($0) }
                 }
             } footer: {
                 if settings.hotKeyInUse {
-                    Text(NSLocalizedString("This shortcut is in use by another app. Choose another one.", comment: "Settings note: the global shortcut could not be registered"))
+                    Text(NSLocalizedString("Another app uses this shortcut.", comment: "Settings note: the global shortcut could not be registered"))
                         .foregroundStyle(.secondary)
                 }
             }
 
             Section {
-                Toggle(NSLocalizedString("Check for updates automatically", comment: "Settings label"), isOn: $settings.checkForUpdatesAutomatically)
-            } footer: {
-                Text(NSLocalizedString("Readout checks GitHub releases for new versions.", comment: "Settings footer"))
-                    .foregroundStyle(.secondary)
+                Toggle(NSLocalizedString("Check GitHub for updates weekly", comment: "Settings label"), isOn: $settings.checkForUpdatesAutomatically)
             }
         }
         .formStyle(.grouped)
         .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
     }
+
+    private static let rowHeight: CGFloat = 24
 
     /// The folder's own icon; a plain folder icon for one that does not exist
     /// yet (~/.claude/plans before the first plan), not a blank document.

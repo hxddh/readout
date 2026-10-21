@@ -482,7 +482,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             }
             // A whole document: encoded off the main thread, still delivered before the calls below.
             self.webView.callEncodingOffMain("apply", patch.page)
-            // After the apply: in place of the page's own "This file was rewritten".
+            // After the apply: in place of the page's own "Rewritten since you last read".
             if let commitNotice { self.webView.call("notice", Self.text(commitNotice)) }
             SmokeTest.run(controller: self, webView: self.webView)
             // An agent write that landed mid-load: re-read now that the
@@ -672,10 +672,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func updateSubtitle(status: String?? = nil) {
         let status = status ?? model.status
         observeTabBar()
-        if let flash = flashText, status == nil {
-            window?.subtitle = flash
-            return
-        }
         let showsTabBar = window?.tabGroup?.isTabBarVisible ?? false
         switch ReaderChrome.subtitle(status: status, tasks: model.tasks, path: url.path, showsTabBar: showsTabBar, project: projectName) {
         case .status(let s): window?.subtitle = s
@@ -701,21 +697,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         if window?.tab.toolTip != tip { window?.tab.toolTip = tip }
     }
 
-    /// A passing message in the subtitle (a link to a file that is not
-    /// there), for a few seconds; the file's own status wins.
-    private var flashText: String?
-    private var flashWork: DispatchWorkItem?
-    private func flashStatus(_ text: String) {
-        flashText = text
-        updateSubtitle()
-        announce(text)
-        flashWork?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            self?.flashText = nil
-            self?.updateSubtitle()
-        }
-        flashWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: work)
+    /// A passing message (a link to a file that is not there, Compare with
+    /// Last Commit finding nothing, N going on to this document): the page's
+    /// notice, where every passing message shows (VoiceOver reads it:
+    /// role=status). The subtitle keeps only what stays true.
+    private func showNotice(_ text: String) {
+        webView.whenReady { [weak self] in self?.webView.call("notice", text) }
     }
 
     /// Says `text` to VoiceOver now.
@@ -857,29 +844,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             : NSLocalizedString("No unread changes", comment: "Toolbar tooltip")
     }
 
-    /// The next-change button: the arrow with the unread count in a badge of
-    /// the accent colour. NSItemBadge is always red, which reads as an error;
-    /// unread changes are not one. Drawn when shown, in the window's appearance.
+    /// The next-change button: the system arrow, as plain as the find
+    /// field's magnifier beside it. Shown only while something is unread, so
+    /// being there is the signal; how many is in its tooltip and for VoiceOver.
     static func changeImage(count: Int) -> NSImage {
-        let text = count > 99 ? "99+" : String(count)
-        let font = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold)
-        let textSize = (text as NSString).size(withAttributes: [.font: font])
-        let badge = NSSize(width: max(13, ceil(textSize.width) + 6), height: 13)
-        let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
-        let arrow = NSImage(systemSymbolName: "arrow.down", accessibilityDescription: nil)?.withSymbolConfiguration(config) ?? NSImage()
-        let a = arrow.size
-        // The badge sits over the arrow's top right, as the system's does.
-        let size = NSSize(width: ceil(a.width / 2 + 3 + badge.width), height: ceil(max(a.height + 5, badge.height + 6)))
-        let image = NSImage(size: size, flipped: false) { rect in
-            let tinted = arrow.withSymbolConfiguration(config.applying(NSImage.SymbolConfiguration(paletteColors: [.secondaryLabelColor]))) ?? arrow
-            tinted.draw(in: NSRect(x: 0, y: 0, width: a.width, height: a.height))
-            let b = NSRect(x: rect.width - badge.width, y: rect.height - badge.height, width: badge.width, height: badge.height)
-            NSColor.controlAccentColor.setFill()
-            NSBezierPath(roundedRect: b, xRadius: badge.height / 2, yRadius: badge.height / 2).fill()
-            (text as NSString).draw(at: NSPoint(x: b.midX - textSize.width / 2, y: b.midY - textSize.height / 2),
-                                    withAttributes: [.font: font, .foregroundColor: NSColor.white])
-            return true
-        }
+        let image = NSImage(systemSymbolName: "arrow.down", accessibilityDescription: nil) ?? NSImage()
         image.accessibilityDescription = String(format: NSLocalizedString("Unread changes: %d", comment: "Next-change button for VoiceOver; %d is the number"), count)
         return image
     }
@@ -989,7 +958,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case .markdown(let u, let fragment): (NSApp.delegate as? AppDelegate)?.open(u, anchor: fragment, from: self)
         case .missing(let u):
             NSSound.beep()
-            flashStatus(String(format: NSLocalizedString("%@ could not be found.", comment: "Subtitle for a few seconds after a link to a missing file; %@ is the file name"), u.lastPathComponent))
+            showNotice(String(format: NSLocalizedString("%@ could not be found.", comment: "Notice above the document after a link to a missing file; %@ is the file name"), u.lastPathComponent))
         }
     }
 
@@ -1169,10 +1138,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 self.showMarked(against: keys, againstCommit: true)
             case .unchanged:
                 NSSound.beep()
-                self.flashStatus(NSLocalizedString("No changes since the last commit", comment: "Subtitle for a few seconds after Compare with Last Commit: the file is as committed"))
+                self.showNotice(NSLocalizedString("No changes since the last commit", comment: "Notice above the document after Compare with Last Commit: the file is as committed"))
             case .unavailable:
                 NSSound.beep()
-                self.flashStatus(NSLocalizedString("Not in the last commit", comment: "Subtitle for a few seconds after Compare with Last Commit: git has no committed version of the file (untracked, new, not text, or git not available)"))
+                self.showNotice(NSLocalizedString("Not in the last commit", comment: "Notice above the document after Compare with Last Commit: git has no committed version of the file (untracked, new, not text, or git not available)"))
             }
         }
     }
@@ -1213,7 +1182,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     static func text(_ notice: CommitNotice) -> String {
         switch notice {
         case .marked:
-            return NSLocalizedString("Marked against the last commit", comment: "Notice above a document opened for the first time: its changes since the last git commit are marked")
+            return NSLocalizedString("Changes since the last commit", comment: "Notice above a document opened for the first time: its changes since the last git commit are marked")
         case .rewritten:
             return NSLocalizedString("Rewritten since the last commit", comment: "Notice above a document marked against its last git commit when most of it changed since (nothing is marked)")
         }
@@ -1283,18 +1252,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
           return a ? { slot: a.slot, ratio: a.ratio } : null;
         })()
         """
-
-    /// Edit ▸ Find ▸ Use Selection for Find: the selection becomes what ⌘G finds.
-    @objc func useSelectionForFind(_ sender: Any?) {
-        webView.run("getSelection().toString()") { [weak self] value, _ in
-            let text = ((value as? String) ?? "").split(whereSeparator: \.isWhitespace).joined(separator: " ")
-            guard let self, !text.isEmpty else { return NSSound.beep() }
-            self.searchItem?.searchField.stringValue = text
-            let find = NSPasteboard(name: .find)
-            find.clearContents()
-            find.setString(text, forType: .string)
-        }
-    }
 
     /// View ▸ Show What Changed: what the page's D key does (the comparisons of the edited blocks in view).
     @objc func showWhatChanged(_ sender: Any?) { webView.call("toggleDiffInView") }
@@ -1487,7 +1444,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         layoutObservation = nil
         // Nothing to undo in a closed window; the actions hold the controller.
         undoStack.removeAllActions()
-        flashWork?.cancel()
         AppSettings.shared.showSidebar = !sidebarItem.isCollapsed
         onClose?(self)
     }
@@ -1606,13 +1562,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     /// N arrived here from a document with nothing unread left: to the first
-    /// change, with where it is in the subtitle for a moment. Opened behind
+    /// change, saying where it is in the notice. Opened behind
     /// and not looked at yet, nothing is marked: it is read from where it shows.
     func goToFirstChange() {
         if CrossDocument.arrival(unread: session.unreadCount) == .firstChange {
             webView.whenReady { [weak self] in self?.webView.call("firstChange") }
         }
-        flashStatus(String(format: NSLocalizedString("Next unread: %@", comment: "Subtitle for a few seconds after N went on to this document; %@ is its title"),
+        showNotice(String(format: NSLocalizedString("Next unread: %@", comment: "Notice above the document after N went on to this document; %@ is its title"),
                            window?.tab.title.isEmpty == false ? window!.tab.title : url.lastPathComponent))
     }
 }
