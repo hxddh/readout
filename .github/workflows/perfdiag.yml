@@ -7,8 +7,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ref: [fc48b78, e6db579, 5c445ef]
-        n: [1, 2]
+        ref: [fc48b78, 5c445ef]
+        n: [1, 2, 3, 4]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -19,13 +19,14 @@ jobs:
           git checkout -q ${{ matrix.ref }} -- web
           python3 /tmp/instr.py web/src/reader/patch.js
           cp /tmp/mini.mjs web/test/perfdiag.mjs
-          git status --short | head
       - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - working-directory: web
         run: npm ci && npm run build && npx playwright install --with-deps webkit
       - name: cpu
         run: nproc && lscpu | grep -i 'model name'
-      - name: mini x10
+      - name: mini
         working-directory: web
-        run: for i in $(seq 10); do DIAG=$((i % 2)) INSTR=1 node test/perfdiag.mjs; echo "---- DIAG=$((i % 2))"; done
+        run: |
+          for i in $(seq 6); do INSTR=1 node test/perfdiag.mjs; echo "---- plain"; done
+          for i in $(seq 6); do INSTR=1 WAITIDLE=1 node test/perfdiag.mjs; echo "---- waitidle"; done

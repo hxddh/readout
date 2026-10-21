@@ -40,7 +40,14 @@ const out = [];
 for (let i = 0; i < 3; i++) {
   await page.evaluate(y => { window.__ev?.push([Math.round(performance.now()), 'scroll ' + y]); window.scrollTo(0, y); }, 20000 + i * 5000);
   await twoFrames();
-  if (INSTR) await page.evaluate(() => window.__ev.push([Math.round(performance.now()), 'two frames done']));
+  if (INSTR) await page.evaluate(() => { const a = performance.now(); void document.scrollingElement.scrollHeight; document.querySelector('#ro-doc > .blk').getBoundingClientRect(); window.__ev.push([Math.round(a), 'two frames done, layout then ' + Math.round(performance.now() - a) + 'ms']); });
+  if (process.env.WAITIDLE) await page.evaluate(() => new Promise(resolve => {
+    // Idle: eight 50 ms timers in a row each fire within 10 ms of their time.
+    let quiet = 0, due = performance.now() + 50;
+    const tick = () => { const late = performance.now() - due; quiet = late < 10 ? quiet + 1 : 0; if (quiet >= 8) return requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 0))); due = performance.now() + 50; setTimeout(tick, 50); };
+    setTimeout(tick, 50);
+  }));
+  if (INSTR) await page.evaluate(() => window.__ev.push([Math.round(performance.now()), 'ready to update']));
   const patch = { ...edit, version: 2 + i, ops: edit.ops.map(o => ({ ...o, html: o.html.replace('(revised)', `(revised ${i + 1})`) })) };
   out.push(await page.evaluate(([p, diag]) => { let pre = 0; if (diag) { const a = performance.now(); void document.scrollingElement.scrollHeight; document.querySelector('#ro-doc > .blk').getBoundingClientRect(); pre = Math.round(performance.now() - a); } const t0 = performance.now(); window.readout.apply(p); const t1 = performance.now(); void document.scrollingElement.scrollHeight; const t2 = performance.now();
     const near = [...document.querySelectorAll('.code-block')].filter(c => { const r = c.getBoundingClientRect(); return r.bottom > -innerHeight && r.top < 2 * innerHeight; }).map(c => c.dataset.lang + ':' + c.dataset.hl).join(','); (window.__ev || []).push([Math.round(t0), 'UPDATE near=[' + near + '] apply ' + Math.round(t1 - t0) + ' layout ' + Math.round(t2 - t1)]); const ph = window.__ph.map((x, i, a) => i ? x[0] + '=' + (x[1] - a[i-1][1]).toFixed(1) : '').filter(Boolean).join(' '); return [Math.round(t1 - t0), Math.round(t2 - t1), pre, ph]; }, [patch, !!process.env.DIAG]));
