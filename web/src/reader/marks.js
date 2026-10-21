@@ -138,6 +138,7 @@ export function closePopups() {
     if (el) heights.set(el, el.getBoundingClientRect().height);
   }
   walk = [];
+  autoDiff = null;
   restoreAnchor(anchor, new Set());
   scheduleRail();
   return true;
@@ -202,6 +203,7 @@ export function toggleDiffInView() {
   const closed = all.find(el => !openDiffs.has(+el.dataset.slot));
   if (closed) return toggleDiff(+closed.dataset.slot);
   walk = [];
+  if (all.some(el => +el.dataset.slot === autoDiff)) autoDiff = null;
   const anchor = captureAnchor();
   for (const el of all) { closeDiff(+el.dataset.slot); heights.set(el, el.getBoundingClientRect().height); }
   restoreAnchor(anchor, new Set());
@@ -209,8 +211,16 @@ export function toggleDiffInView() {
   return false;
 }
 
-/** Shows or hides what changed in an edited block, keeping the reader's place. */
+/**
+ * Shows or hides what changed in an edited block, keeping the reader's
+ * place: the reader's own (a click, D, the app): N no longer owns it.
+ */
 export function toggleDiff(slot) {
+  if (autoDiff === slot) autoDiff = null;
+  return flipDiff(slot);
+}
+
+function flipDiff(slot) {
   const el = slots.get(slot);
   if (!el || !diffOf.has(slot)) return false;
   const anchor = captureAnchor();
@@ -502,7 +512,7 @@ export function jump(dir, first = false) {
   const list = unreadElements();
   // Nothing to go to: the app goes on to the next document with unread
   // changes, and beeps when there is none (`jump`: N's, not D's).
-  if (!list.length) { post({ type: 'nothing', jump: true }); return; }
+  if (!list.length) { closeAutoDiff(); post({ type: 'nothing', jump: true }); return; }
   // Runs: unread blocks one right after the other.
   const run = [0];
   for (let i = 1; i < list.length; i++) run.push(nextShown(list[i - 1]) === list[i] ? run[i - 1] : run[i - 1] + 1);
@@ -557,10 +567,15 @@ export function jump(dir, first = false) {
 let autoDiff = null;   // the slot whose comparison N opened
 function showWhatChangedOn(target) {
   const slot = +target.dataset.slot;
-  if (autoDiff !== null && autoDiff !== slot && openDiffs.has(autoDiff)) toggleDiff(autoDiff);
-  if (autoDiff !== slot) autoDiff = null;
+  if (autoDiff !== slot) closeAutoDiff();
   // Nothing to show for an edit whose earlier text was not kept.
-  if (diffOf.get(slot) && !openDiffs.has(slot) && toggleDiff(slot)) autoDiff = slot;
+  if (diffOf.get(slot) && !openDiffs.has(slot) && flipDiff(slot)) autoDiff = slot;
+}
+
+/** N moves on (to another change, or on to the next document): its comparison closes. */
+function closeAutoDiff() {
+  if (autoDiff !== null && openDiffs.has(autoDiff)) flipDiff(autoDiff);
+  autoDiff = null;
 }
 
 /**

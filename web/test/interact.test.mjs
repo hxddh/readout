@@ -1230,6 +1230,37 @@ for (const n of [60, 400]) {
   await page.close();
 }
 
+// 39. E4 (review): a comparison N opened closes when N, with nothing left
+//     here, goes on to the next document; and one the reader closed and
+//     opened again (a click, D, Escape) is theirs: N moving on leaves it.
+{
+  const page = await newPage();
+  const diff = 'para <del>old</del><ins>new</ins>';
+  const r = doc(60, i => `<p style="min-height:100px">para ${i}</p>`);
+  r.marks = [{ slot: 10, kind: 'modified', diff }];
+  await page.evaluate(p => { window.scrollTo(0, 0); window.__msgs.length = 0; window.readout.apply(p); }, r);
+  const open = () => page.evaluate(() => [...document.querySelectorAll('.blk.wd-open')].map(b => +b.dataset.slot));
+  await key(page, 'n'); await page.waitForTimeout(700);
+  const landed = await open();
+  await key(page, 'n'); await page.waitForTimeout(150);   // 10 is read: nothing left here
+  const handedOff = await page.evaluate(() => window.__msgs.some(m => m.type === 'nothing' && m.jump));
+  const afterHandOff = await open();
+  check('the comparison N opened closes when N goes on to the next document',
+    JSON.stringify(landed) === '[10]' && handedOff && afterHandOff.length === 0, JSON.stringify({ landed, handedOff, afterHandOff }));
+
+  const r2 = doc(60, i => `<p style="min-height:100px">para ${i}</p>`);
+  r2.marks = [{ slot: 10, kind: 'modified', diff }, { slot: 30, kind: 'modified', diff }, { slot: 45, kind: 'modified', diff }];
+  await page.evaluate(p => { window.scrollTo(0, 0); window.readout.apply(p); }, r2);
+  const kept = [];
+  await key(page, 'n'); await page.waitForTimeout(700);                       // N opens 10
+  await page.evaluate(() => { window.readout.toggleDiff(10); window.readout.toggleDiff(10); });   // closed and opened again by the reader
+  await key(page, 'n'); await page.waitForTimeout(700); kept.push(await open());   // on 30: 10 stays
+  await key(page, 'Escape'); await key(page, 'd');                             // Escape closes all, D opens 30 again
+  await key(page, 'n'); await page.waitForTimeout(700); kept.push(await open());   // on 45: 30 stays
+  check('a comparison the reader reopened stays when N moves on', JSON.stringify(kept) === JSON.stringify([[10, 30], [30, 45]]), JSON.stringify(kept));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();
