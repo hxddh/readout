@@ -1,5 +1,4 @@
 import AppKit
-import CoreServices
 import SwiftUI
 import WebKit
 import ReadoutCore
@@ -168,9 +167,6 @@ enum SmokeTest {
             await chinesePunctuation(webView: webView, out: out)
             _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
             try? await Task.sleep(for: .milliseconds(500))
-            // The next-change button's image as drawn in an active window (the
-            // CI runner's windows are inactive, which greys toolbar items).
-            badgeShot(out)
             // Open what changed in the edited table (the edit mark's action).
             _ = try? await webView.evaluateJavaScript("(() => { const t = document.querySelector('.blk.k-table.m-modified'); return t ? window.readout.toggleDiff(+t.dataset.slot) : false; })()")
             try? await Task.sleep(for: .milliseconds(300))
@@ -275,10 +271,21 @@ enum SmokeTest {
             let settingsWindow = NSApp.windows.first { $0.contentViewController is NSHostingController<SettingsView> }
             var aux: [String: Any] = ["settings_tabbing_disallowed": settingsWindow?.tabbingMode == .disallowed]
             settingsWindow?.close()
-            app?.showWelcome(nil)
+            // Open Latest Agent File with nothing written yet (S2, 3.9): the
+            // welcome window, no alert. (An alert would stop the run here.)
+            let none = out.appendingPathComponent("no-agent-files", isDirectory: true)
+            try? FileManager.default.createDirectory(at: none, withIntermediateDirectories: true)
+            WorkspaceIndex.shared.configure([none.path])
+            app?.openLatest(nil)
+            let welcomeDeadline = Date().addingTimeInterval(5)
+            let welcomeWindow = { NSApp.windows.first(where: { $0.contentViewController is NSHostingController<WelcomeView> }) }
+            while welcomeWindow()?.isVisible != true && Date() < welcomeDeadline { try? await Task.sleep(for: .milliseconds(50)) }
+            aux["open_latest_none_welcome"] = welcomeWindow()?.isVisible ?? false
+            aux["open_latest_none_modal"] = NSApp.modalWindow != nil
+            aux["acknowledgements_bundled"] = Bundle.main.url(forResource: "Acknowledgements", withExtension: "md") != nil
             try? await Task.sleep(for: .seconds(1.5))
             screen(out, "6-welcome")
-            if let welcome = NSApp.windows.first(where: { $0.contentViewController is NSHostingController<WelcomeView> }) {
+            if let welcome = welcomeWindow() {
                 aux["welcome_tabbing_disallowed"] = welcome.tabbingMode == .disallowed
                 aux["welcome_minimize_hidden"] = welcome.standardWindowButton(.miniaturizeButton)?.isHidden ?? false
                 aux["welcome_zoom_hidden"] = welcome.standardWindowButton(.zoomButton)?.isHidden ?? false
@@ -291,7 +298,6 @@ enum SmokeTest {
             restoration(controller: controller, out: out)
             await restoredTabs(out: out)
             await crossDocument(controller: controller, out: out)
-            await updateDownload(out: out)
             writeTimings(out)
             NSApp.terminate(nil)
         }
@@ -510,42 +516,6 @@ enum SmokeTest {
         _ = try? await webView.evaluateJavaScript("window.scrollTo(0, 0); 1")
     }
 
-    /// Download Update (A3), from a local file standing in for the release's
-    /// DMG, into a folder of the smoke output: a second request while it runs
-    /// is ignored, and its progress is published on the file it becomes.
-    private static func updateDownload(out: URL) async {
-        guard let source = ProcessInfo.processInfo.environment["READOUT_SMOKE_UPDATE_FILE"].map({ URL(fileURLWithPath: $0) }) else { return }
-        let dir = out.appendingPathComponent("update-download", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        final class Box { var done = false; var saved: URL? }
-        let box = Box()
-        let first = UpdateChecker.download(from: source, name: "Readout-99.0.0.dmg", fallback: nil, directory: dir) { saved in
-            box.saved = saved
-            box.done = true
-        }
-        let duringFiles = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
-        let second = UpdateChecker.download(from: source, name: "Readout-99.0.0.dmg", fallback: nil, directory: dir) { _ in }
-        let deadline = Date().addingTimeInterval(20)
-        while !box.done && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
-        let firstDownload = UpdateChecker.lastDownload
-        // A third once it finished starts again (and is let finish).
-        let after = UpdateChecker.download(from: source, name: "Readout-99.0.0.dmg", fallback: nil, directory: dir) { _ in }
-        try? await Task.sleep(for: .seconds(2))
-        let files = ((try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []).sorted()
-        let size = { (u: URL?) -> Int in (u.flatMap { try? FileManager.default.attributesOfItem(atPath: $0.path)[.size] as? Int }) ?? -1 }
-        var json: [String: Any] = ["first_started": first, "second_started": second, "started_after_finish": after,
-                                   "finished": box.done, "files_while_running": duringFiles.sorted(), "files": files,
-                                   "saved": box.saved?.lastPathComponent ?? NSNull(),
-                                   "saved_bytes": size(box.saved), "source_bytes": size(source)]
-        json["last"] = firstDownload
-        if let saved = box.saved {
-            let q = (try? (saved as NSURL).resourceValues(forKeys: [.quarantinePropertiesKey]))?[.quarantinePropertiesKey] as? [String: Any]
-            json["quarantine_agent"] = q?[kLSQuarantineAgentNameKey as String] as? String ?? NSNull()
-        }
-        write(json, to: out, "update-download.json")
-        try? FileManager.default.removeItem(at: dir)
-    }
-
     /// How two PNG shots differ, over the whole image or within `x`/`y`
     /// (pixels): how many pixels differ in any channel, and the largest
     /// difference of one channel (0-255).
@@ -714,7 +684,7 @@ enum SmokeTest {
         try? await Task.sleep(for: .milliseconds(600))
         let unseen = readers().first { ($0.window?.tabGroup?.selectedWindow ?? $0.window) === $0.window && $0.window?.title == reading() }
         json["unseen"] = ["to": reading(), "unread": unseen?.model.unread ?? -1, "looked_at": unseen?.notedRecent ?? true,
-                          "landed": landed, "subtitle": unseen?.window?.subtitle ?? ""]
+                          "landed": landed, "notice": await noticeText(unseen), "subtitle": unseen?.window?.subtitle ?? ""]
         // As if the reader had looked at every document: only unread changes wait now.
         for r in readers() { r.noteLookedAt() }
         try? await Task.sleep(for: .milliseconds(300))
@@ -733,6 +703,7 @@ enum SmokeTest {
         json["to_had_unread"] = destination?.model.unread ?? -1
         try? await Task.sleep(for: .milliseconds(300))
         json["landed"] = landed
+        json["to_notice"] = await noticeText(destination)
         json["to_subtitle"] = destination?.window?.subtitle ?? ""
         json["badge_after_read"] = NSApp.dockTile.badgeLabel ?? ""
         json["showing_unread_after_read"] = readers().filter(\.showsUnread).count
@@ -742,6 +713,13 @@ enum SmokeTest {
         json["went_with_none_left"] = app?.goToNextUnread(from: controller) ?? true
         json["badge_none"] = NSApp.dockTile.badgeLabel ?? ""
         write(json, to: out, "cross-document.json")
+    }
+
+    /// The page's notice in `reader`'s window ("" when none shows).
+    private static func noticeText(_ reader: ReaderWindowController?) async -> String {
+        guard let web = reader?.window?.contentView?.firstDescendant(ofType: WKWebView.self) else { return "" }
+        let script = "document.getElementById('ro-notice').hidden ? '' : document.getElementById('ro-notice').textContent"
+        return (try? await web.evaluateJavaScript(script)) as? String ?? ""
     }
 
     /// A file opened for the first time in a git repository, changed since
@@ -800,11 +778,12 @@ enum SmokeTest {
         reader.window?.undoManager?.removeAllActions()
         compared = []
         let before = appliedCount
-        let subtitle = reader.window?.subtitle ?? ""
+        let shown = (try? await web.evaluateJavaScript(notice)) as? String ?? ""
         reader.compareWithLastCommit(nil)
-        // Marked and applied, or a message in the subtitle instead (nothing to compare with).
+        // Marked and applied, or only a notice instead (nothing to compare with).
         let deadline = Date().addingTimeInterval(10)
-        while (compared.isEmpty || appliedCount == before) && reader.window?.subtitle == subtitle && Date() < deadline {
+        while (compared.isEmpty || appliedCount == before) && Date() < deadline {
+            if compared.isEmpty, ((try? await web.evaluateJavaScript(notice)) as? String ?? "") != shown { break }
             try? await Task.sleep(for: .milliseconds(50))
         }
         try? await Task.sleep(for: .milliseconds(500))
@@ -1346,6 +1325,10 @@ enum SmokeTest {
         windowShot(main, out, "tabs-unread")
     }
 
+    /// `found` events the page sent (each search tells its count).
+    private static var foundCount = 0
+    static func noteFound() { if outputDirectory != nil { foundCount += 1 } }
+
     /// The find field finds in the page (find.js): Return selects a match and
     /// the field says which of how many, Return again goes on, Escape takes the
     /// marks away. Then in a window whose page is not up yet (the pool's spare
@@ -1354,9 +1337,13 @@ enum SmokeTest {
         func field(_ c: ReaderWindowController?) -> FindField? {
             c?.window?.toolbar?.items.compactMap { $0 as? NSSearchToolbarItem }.first?.searchField as? FindField
         }
-        func counted(_ f: FindField, from old: String) async -> String {
+        // The search `act` starts, and the count the page tells after it (a
+        // new event: a single match wraps to the same "1 of 1").
+        func counted(_ f: FindField, _ act: () -> Void) async -> String {
+            let seen = foundCount
+            act()
             let deadline = Date().addingTimeInterval(10)
-            while f.count == old && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+            while foundCount == seen && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
             return f.count
         }
         guard let f = field(controller) else { return write(["error": "no find field"], to: out, "find.json") }
@@ -1365,12 +1352,10 @@ enum SmokeTest {
         controller.showFind(nil)
         f.stringValue = word
         let enter = #selector(NSResponder.insertNewline(_:))
-        _ = controller.control(f, textView: NSTextView(), doCommandBy: enter)
-        let first = await counted(f, from: "")
+        let first = await counted(f) { _ = controller.control(f, textView: NSTextView(), doCommandBy: enter) }
         try? await Task.sleep(for: .milliseconds(300))   // selected once the landing is painted
         let selected = (try? await webView.evaluateJavaScript("getSelection().toString()") as? String) ?? ""
-        _ = controller.control(f, textView: NSTextView(), doCommandBy: enter)
-        let second = await counted(f, from: first)
+        let second = await counted(f) { _ = controller.control(f, textView: NSTextView(), doCommandBy: enter) }
         _ = controller.control(f, textView: NSTextView(), doCommandBy: #selector(NSResponder.cancelOperation(_:)))
         try? await Task.sleep(for: .milliseconds(300))
         let marks = (try? await webView.evaluateJavaScript("CSS.highlights.size") as? NSNumber)?.intValue ?? -1
@@ -1385,8 +1370,7 @@ enum SmokeTest {
             if let cold = app?.reader(for: dir.appendingPathComponent("cold-b.md")), let cf = field(cold) {
                 cold.showFind(nil)
                 cf.stringValue = "cold"
-                cold.findNext(nil)
-                json["cold"] = await counted(cf, from: "")
+                json["cold"] = await counted(cf) { cold.findNext(nil) }
             }
         }
         write(json, to: out, "find.json")
@@ -1394,26 +1378,6 @@ enum SmokeTest {
 
     private static func mark(_ dir: URL, _ name: String) {
         try? Data().write(to: dir.appendingPathComponent(name))
-    }
-
-    private static func badgeShot(_ out: URL) {
-        for (name, appearance) in [("badge-light", NSAppearance.Name.aqua), ("badge-dark", .darkAqua)] {
-            NSAppearance(named: appearance)?.performAsCurrentDrawingAppearance {
-                let image = ReaderWindowController.changeImage(count: 5)
-                let scale: CGFloat = 4
-                guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(image.size.width * scale), pixelsHigh: Int(image.size.height * scale),
-                                                 bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                                                 colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return }
-                rep.size = image.size
-                NSGraphicsContext.saveGraphicsState()
-                NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-                (appearance == .aqua ? NSColor.white : NSColor(white: 0.12, alpha: 1)).setFill()
-                NSRect(origin: .zero, size: image.size).fill()
-                image.draw(in: NSRect(origin: .zero, size: image.size))
-                NSGraphicsContext.restoreGraphicsState()
-                try? rep.representation(using: .png, properties: [:])?.write(to: out.appendingPathComponent("\(name).png"))
-            }
-        }
     }
 
     /// One window, without its shadow: `screencapture -l` (no desktop around it).

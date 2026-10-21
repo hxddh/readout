@@ -115,7 +115,7 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   await find(page, 'needle', true);
   seen.push(`${await count(page)}@${await selectedSlot(page)}`);
   check('Next counts on and wraps; Previous goes back', JSON.stringify(seen) === JSON.stringify(['1 of 3@5', '2 of 3@12', '3 of 3@35', '1 of 3@5', '3 of 3@35']), JSON.stringify(seen));
-  check('the current match is selected (⌘C, Use Selection for Find)', await selected(page) === 'needle', await selected(page));
+  check('the current match is selected (⌘C, Copy as Quote)', await selected(page) === 'needle', await selected(page));
   const nothing = await find(page, 'zzzzq');
   check('no match: 0 of 0, no marks', nothing === 0 && await count(page) === '0 of 0'
     && await page.evaluate(() => !CSS.highlights.has('ro-find-cur')), await count(page));
@@ -146,6 +146,7 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
     '<p>Ｗide and İstanbul and café decomposed</p>',
     '<p>这是<span class="em-dot">重</span><span class="em-dot">点</span>内容，读者</p>',
     '<p>ガイドを読む。カイドではない。</p>',
+    '<p>Ὀδυσσεύς ΟΔΥΣΣΕΥΣ οδυσσευς</p>',
     '<p>math <span class="katex"><span class="katex-mathml"><math><semantics><annotation>zebra</annotation></semantics></math></span><span class="katex-html" aria-hidden="true">x</span></span></p>',
     '<div class="code-block" data-lang="sh"><pre><code>echo zebra</code></pre></div>',
     '<details><summary>Folded</summary><p>zebra inside</p></details>',
@@ -156,6 +157,8 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   check('case and accents do not count', await total('cafe') === 2 && await total('naive') === 1 && await total('RESUME') === 1 && await total('istanbul') === 1,
     JSON.stringify([await total('cafe'), await total('naive'), await total('RESUME'), await total('istanbul')]));
   check('a decomposed accent is found and selected whole', await total('café decomposed') === 1 && await selected(page) === 'café decomposed', JSON.stringify(await selected(page)));
+  check('Greek: final sigma is sigma, case and accents do not count', await total('ΟΔΥΣΣΕΥΣ') === 3 && await total('οδυσσευσ') === 3 && await total('ς') === 0 + await total('σ'),
+    JSON.stringify([await total('ΟΔΥΣΣΕΥΣ'), await total('οδυσσευσ')]));
   check('Chinese is found, across emphasis marks', await total('重点内容') === 1 && await selected(page) === '重点内容' && await total('读者') === 1, await selected(page));
   check('Japanese is found, its voicing marks counting', await total('ガイド') === 1 && await selected(page) === 'ガイド' && await total('カイド') === 1 && await total('読む') === 1,
     JSON.stringify([await total('ガイド'), await total('カイド')]));

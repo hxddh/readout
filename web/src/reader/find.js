@@ -2,8 +2,8 @@
 // and previous match). WebKit's own find skips blocks content-visibility has
 // not laid out, so it needed the whole document laid out while the find bar
 // was open (1 MB: seconds as it opened, and again as it closed). Here each
-// block's text is read without layout, the match is selected (⌘C, Use
-// Selection for Find), and the matches are marked with the CSS Custom
+// block's text is read without layout, the match is selected (⌘C, Copy
+// as Quote), and the matches are marked with the CSS Custom
 // Highlight API: only those in the blocks around the current one (marking
 // every match of a large document makes WebKit's paint take tens of seconds).
 import { doc, post } from './core.js';
@@ -26,10 +26,19 @@ const SEP = '\0';
 // Case and accents do not count, as in the system's find ("cafe" finds
 // "Café"); the kana voicing marks do (か does not find が), as in WebKit's.
 const MARKS = /(?![\u3099\u309a])\p{M}/gu;
+// Lowercase letters that have another lowercase form of the same case (all
+// of them one character, so offsets stay as they are): final sigma is sigma,
+// long s is s, Greek symbol forms are their letters. Foldings that change
+// the length (ß, which WebKit's find matches with "ss") are not made.
+const VARIANT = { 'µ': 'μ', 'ı': 'i', 'ſ': 's', 'ς': 'σ', 'ϐ': 'β', 'ϑ': 'θ', 'ϕ': 'φ', 'ϖ': 'π', 'ϰ': 'κ', 'ϱ': 'ρ', 'ϵ': 'ε',
+  'ᲀ': 'в', 'ᲁ': 'д', 'ᲂ': 'о', 'ᲃ': 'с', 'ᲄ': 'т', 'ᲅ': 'т', 'ᲆ': 'ъ', 'ᲇ': 'ѣ', 'ᲈ': 'ꙋ', 'ι': 'ι' };
+const VARIANTS = new RegExp(`[${Object.keys(VARIANT).join('')}]`, 'g');
 // Only text with letters that can carry an accent is decomposed (most text
 // has none: plain ASCII, punctuation, CJK).
-const ACCENTED = /[\u00c0-\u1fff\u20d0-\u20ff\ufb00-\ufb4f]/;
-const fold = s => (ACCENTED.test(s) ? s.toLowerCase().normalize('NFD').replace(MARKS, '').normalize('NFC') : s.toLowerCase()).replace(/\s/g, ' ');
+const ACCENTED = /[\u00b5\u00c0-\u1fff\u20d0-\u20ff\ufb00-\ufb4f]/;
+const fold = s => (ACCENTED.test(s)
+  ? s.toLowerCase().normalize('NFD').replace(MARKS, '').normalize('NFC').replace(VARIANTS, c => VARIANT[c])
+  : s.toLowerCase()).replace(/\s/g, ' ');
 const NEAR = 10;      // blocks either side of the current match whose matches are marked
 const MARKED = 300;   // and at most this many marks
 const HL = typeof CSS !== 'undefined' && 'highlights' in CSS;
@@ -197,9 +206,10 @@ function selectNow() {
   if (m) select(rangeOf(m));
 }
 
-function report() {
+/** Tells the app the count: after every search, after an edit only when it changed. */
+function report(always = false) {
   const now = `${cur + 1}/${matches.length}`;
-  if (now === shown) return;
+  if (now === shown && !always) return;
   shown = now;
   post({ type: 'found', current: cur + 1, total: matches.length });
 }
@@ -300,11 +310,11 @@ export function find(text, backwards = false) {
     re = new RegExp(q.split(/ +/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' +'), 'g');
   }
   search();
-  if (!matches.length) { cur = -1; mark(); report(); return 0; }
+  if (!matches.length) { cur = -1; mark(); report(true); return 0; }
   const [cmp, strict] = origin(was);
   cur = next(cmp, strict, backwards);
   land();
-  report();
+  report(true);
   return matches.length;
 }
 

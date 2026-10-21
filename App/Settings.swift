@@ -24,18 +24,8 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    enum HotKeyChoice: String, CaseIterable, Identifiable {
-        case optCmdR, ctrlOptCmdR, ctrlOptR, none
-        var id: String { rawValue }
-        var title: String {
-            switch self {
-            case .optCmdR: return "⌥⌘R"
-            case .ctrlOptCmdR: return "⌃⌥⌘R"
-            case .ctrlOptR: return "⌃⌥R"
-            case .none: return NSLocalizedString("Off", comment: "No global shortcut")
-            }
-        }
-    }
+    /// Open Latest Agent File's key (`hotKey`; Settings turns it on or off).
+    typealias HotKeyChoice = OpenLatestKey
 
     @Published var workspaces: [String] { didSet { d.set(workspaces, forKey: "workspaces") } }
     @Published var editor: Editor { didSet { d.set(editor.rawValue, forKey: "editor") } }
@@ -60,8 +50,8 @@ final class AppSettings: ObservableObject {
         }
         workspaces = ws ?? []
         editor = Editor(rawValue: d.string(forKey: "editor") ?? "") ?? .system
-        // Not ⌥⌘R, which Safari and Xcode use. A stored choice is the user's own and is kept.
-        hotKey = HotKeyChoice(rawValue: d.string(forKey: "hotKey") ?? "") ?? .ctrlOptCmdR
+        // A stored choice is the user's own and is kept (OpenLatestKey).
+        hotKey = HotKeyChoice(stored: d.string(forKey: "hotKey"))
         let fs = d.double(forKey: "fontSize")
         fontSize = fs == 0 ? 16 : fs
         wide = d.bool(forKey: "wide")
@@ -255,53 +245,38 @@ enum BaselineStore {
 @MainActor
 enum EditorOpener {
     static func open(path: String, line: Int, column: Int) {
-        let editor = AppSettings.shared.editor
-        // urlPathAllowed leaves "?" and "#" unescaped: a file literally named
-        // "foo#bar.md" would truncate the editor URL at the fragment.
-        var allowed = CharacterSet.urlPathAllowed
-        allowed.remove(charactersIn: "?#")
-        let enc = path.addingPercentEncoding(withAllowedCharacters: allowed) ?? path
-        let pos = line > 0 ? ":\(line)" + (column > 0 ? ":\(column)" : "") : ""
-        var url: URL?
-        switch editor {
-        case .vscode: url = URL(string: "vscode://file\(enc)\(pos)")
-        case .cursor: url = URL(string: "cursor://file\(enc)\(pos)")
-        case .zed: url = URL(string: "zed://file\(enc)\(pos)")
-        case .sublime: url = EditorURL.sublime(path: path, line: line)
-        case .xcode:
+        let file = URL(fileURLWithPath: path)
+        // "Default app": the app the file opens in, at the line when it is an
+        // editor that can (LineEditor). A choice in Settings overrides it.
+        let app = AppSettings.shared.editor == .system ? defaultEditor(for: file) : nil
+        let editor = LineEditor(rawValue: AppSettings.shared.editor.rawValue)
+            ?? app.flatMap { Bundle(url: $0)?.bundleIdentifier }.flatMap(LineEditor.init(bundleIdentifier:))
+        if editor == .xcode {
             let p = Process()
             p.executableURL = URL(fileURLWithPath: "/usr/bin/xed")
             p.arguments = line > 0 ? ["-l", String(line), path] : [path]
             if (try? p.run()) != nil { return }
-        case .system: break
         }
-        if let url, NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
+        if let url = editor?.url(path: path, line: line, column: column), NSWorkspace.shared.urlForApplication(toOpen: url) != nil {
             NSWorkspace.shared.open(url)
+        } else if let app = app ?? defaultEditor(for: file) {
+            NSWorkspace.shared.open([file], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
         } else {
-            openInDefaultEditor(URL(fileURLWithPath: path))
+            NSSound.beep()
         }
     }
 
-    /// Opens the file in the app the system picks for it, unless that is
-    /// Readout itself (the default app for Markdown): then in the default
-    /// plain-text editor, or TextEdit.
-    private static func openInDefaultEditor(_ file: URL) {
+    /// The app the system picks for the file, unless that is Readout itself
+    /// (the default app for Markdown): then the default plain-text editor, or TextEdit.
+    private static func defaultEditor(for file: URL) -> URL? {
         let ws = NSWorkspace.shared
         let isReadout = { (app: URL?) -> Bool in
             guard let app else { return false }
             return Bundle(url: app)?.bundleIdentifier == Bundle.main.bundleIdentifier
                 || app.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
         }
-        let app = ws.urlForApplication(toOpen: file)
-        guard isReadout(app) else {
-            ws.open(file)
-            return
-        }
-        var editor = ws.urlForApplication(toOpen: .plainText)
-        if editor == nil || isReadout(editor) {
-            editor = ws.urlForApplication(withBundleIdentifier: "com.apple.TextEdit")
-        }
-        guard let editor else { return NSSound.beep() }
-        ws.open([file], withApplicationAt: editor, configuration: NSWorkspace.OpenConfiguration())
+        if let app = ws.urlForApplication(toOpen: file), !isReadout(app) { return app }
+        if let editor = ws.urlForApplication(toOpen: .plainText), !isReadout(editor) { return editor }
+        return ws.urlForApplication(withBundleIdentifier: "com.apple.TextEdit")
     }
 }

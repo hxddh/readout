@@ -8,7 +8,6 @@ thresholds below. Thresholds were taken from those printed values for
 web/test/fixtures/plan.md -> plan-v2.md and must NOT be edited to make a
 run pass — a mismatch means the product regressed.
 """
-import html
 import json
 import re
 import sys
@@ -238,7 +237,7 @@ first = re.fullmatch(r"(\d+) of (\d+)", find.get("first") or "")
 second = re.fullmatch(r"(\d+) of (\d+)", find.get("second") or "")
 check("find: Return lands on a match, the field showing which of how many",
       first is not None and 1 <= int(first[1]) <= int(first[2]), find)
-check("find: the match is selected (Copy, Use Selection for Find)",
+check("find: the match is selected (Copy, Copy as Quote)",
       (find.get("selected") or "").lower() == (find.get("word") or "").lower() != "", find)
 check("find: Return again goes on to the next match",
       second is not None and first is not None and second[2] == first[2]
@@ -325,11 +324,22 @@ def menu_items(items, path=()):
 tree = list(menu_items(menus.get("menus") or []))
 check("menus.json has the whole menu bar", len(tree) > 40, len(tree))
 by_action = {i.get("action"): i for _, i in tree if i.get("action")}
+latest = by_action.get("openLatest:") or {}
+check("File ▸ Open Latest Agent File has ⌃⌥⌘R, and nothing has ⇧⌘O (S3, 3.9)",
+      latest.get("key") == "⌃⌥⌘r" and not any((i.get("key") or "").lower() == "⇧⌘o" for _, i in tree), latest)
 close_all = by_action.get("closeAll:") or {}
 check("File has Close All as the ⌥⌘W alternate of Close",
       close_all.get("key") == "⌥⌘w" and close_all.get("alternate") is True, close_all)
-use_sel = by_action.get("useSelectionForFind:") or {}
-check("Find has Use Selection for Find, without ⌘E", bool(use_sel) and "key" not in use_sel, use_sel)
+# 3.9 (S8, S9): no Use Selection for Find, no Window ▸ Welcome, and none of
+# what macOS adds to an Edit menu (AutoFill, Start Dictation, Emoji & Symbols).
+check("Find has no Use Selection for Find; Window has no Welcome",
+      "useSelectionForFind:" not in by_action and "showWelcome:" not in by_action, sorted(by_action))
+added = [" ▸ ".join(path) for path, i in tree if path[0] == "Edit"
+         and (i.get("action") in ("startDictation:", "orderFrontCharacterPalette:") or (i.get("action") or "").startswith("_handleInsertFrom"))]
+check("Edit has no AutoFill, Start Dictation or Emoji & Symbols", not added, added)
+edit_top = [i for i in next((m.get("items") or [] for m in menus.get("menus") or [] if m.get("title") == "Edit"), [])]
+check("Edit ends with Speech, no separator left over",
+      bool(edit_top) and edit_top[-1].get("title") == "Speech", [i.get("title") or "-" for i in edit_top])
 check("⌘E stays Open in Editor", (by_action.get("openInEditor:") or {}).get("key") == "⌘e", by_action.get("openInEditor:"))
 check("Edit has Speech: Start and Stop Speaking",
       "startSpeaking:" in by_action and "stopSpeaking:" in by_action, sorted(by_action))
@@ -348,8 +358,11 @@ check("settings: never a tab", aux.get("settings_tabbing_disallowed") is True, a
 check("welcome: never a tab, no minimize or zoom button",
       aux.get("welcome_tabbing_disallowed") is True and aux.get("welcome_minimize_hidden") is True
       and aux.get("welcome_zoom_hidden") is True, aux)
-check("welcome: named, and not listed twice in the Window menu",
+check("welcome: named, and not listed in the Window menu",
       bool(aux.get("welcome_title")) and aux.get("welcome_in_window_menu") is False, aux)
+check("Open Latest Agent File with nothing written: the welcome window, no alert (S2)",
+      aux.get("open_latest_none_welcome") is True and aux.get("open_latest_none_modal") is False, aux)
+check("About: Acknowledgements.md is in the app", aux.get("acknowledgements_bundled") is True, aux)
 
 for name in ["window-light.png", "window-dark.png", "cjk-light.png"]:
     check(f"{name} captured", (OUT / name).exists() and (OUT / name).stat().st_size > 10000)
@@ -464,7 +477,8 @@ print(f"cross-document: {cd}")
 cu = cd.get("unseen") or {}
 check("cross-document N: goes on to a document not looked at yet, as it shows",
       cu.get("to") not in (None, "", cd.get("unseen_from")) and cu.get("unread") == 0 and cu.get("looked_at") is False
-      and cu.get("landed") == [] and (cu.get("subtitle") or "").startswith("Next unread: "), cd)
+      and cu.get("landed") == [] and (cu.get("notice") or "").startswith("Next unread: ")
+      and "Next unread" not in (cu.get("subtitle") or ""), cd)
 check("Dock badge: the documents whose tabs show the dot (unread, or not looked at yet)",
       cd.get("badge_before") == str(cd.get("attention_before")) and (cd.get("attention_before") or 0) > (cd.get("showing_unread_before") or 0), cd)
 check("Dock badge: once every document was looked at, those with unread changes",
@@ -472,7 +486,9 @@ check("Dock badge: once every document was looked at, those with unread changes"
 check("cross-document N: goes on to the tab with unread changes, at its first change",
       cd.get("to") == "background.md" and cd.get("from") != cd.get("to") and (cd.get("to_had_unread") or 0) > 0
       and len(cd.get("landed") or []) >= 1 and (cd["landed"][0].get("index") == 1), cd)
-check("cross-document N: says where it went in the subtitle", "Opened with readout -b" in (cd.get("to_subtitle") or ""), cd)
+# Passing messages are the page's notice; the subtitle keeps lasting state (E6, 3.9).
+check("cross-document N: says where it went in the notice, not the subtitle",
+      "Opened with readout -b" in (cd.get("to_notice") or "") and "Next unread" not in (cd.get("to_subtitle") or ""), cd)
 check("cross-document N: nowhere to go once nothing is unread anywhere", cd.get("went_with_none_left") is False, cd)
 check("Dock badge: the number of documents showing unread changes once all were looked at, none at 0",
       (cd.get("showing_unread_before") or 0) >= 1
@@ -516,7 +532,7 @@ def page(name):
 gt, gu = page("tracked"), page("untracked")
 check("git: a committed file changed since is marked against the commit, and the notice says so",
       gb.get("tools") is True and (gb["tracked"].get("unread") or 0) >= 2 and (gt.get("marks") or 0) >= 2
-      and gt.get("notice") == "Marked against the last commit", gb)
+      and gt.get("notice") == "Changes since the last commit", gb)
 check("git: an untracked file opens unmarked, without the notice",
       (gb.get("untracked") or {}).get("unread") == 0 and gu.get("marks") == 0 and gu.get("notice") == "", gb)
 # View ▸ Compare with Last Commit (N1, 3.8): with everything read, what changed
@@ -526,12 +542,12 @@ check("compare: enabled in a repository, not outside one",
       gc.get("enabled") is True and gcu.get("enabled") is True and gb.get("compare_enabled_outside") is False, gb)
 check("compare: a read document is marked against the last commit again, with the notice",
       gc.get("unread_read") == 0 and (gc.get("unread_compared") or 0) >= 2 and (gc.get("marks_compared") or 0) >= 2
-      and gc.get("notice") == "Marked against the last commit", gb)
+      and gc.get("notice") == "Changes since the last commit", gb)
 check("compare: Undo brings back what was read",
       gc.get("undo_title") == "Undo Compare with Last Commit" and gc.get("unread_undone") == 0 and gc.get("marks_undone") == 0
       and gc.get("notice_undone") == "", gb)
-check("compare: an untracked file says there is nothing to compare with",
-      gcu.get("unread_compared") == 0 and gcu.get("subtitle") == "Not in the last commit", gb)
+check("compare: an untracked file says there is nothing to compare with, in the notice",
+      gcu.get("unread_compared") == 0 and gcu.get("notice") == "Not in the last commit" and gcu.get("subtitle") != "Not in the last commit", gb)
 
 # ⌘P before the document has loaded (3.7 review): printed once it is, the
 # document and not the empty page; asked twice meanwhile, printed once.
@@ -541,12 +557,12 @@ check("print before the first load prints the document once it is applied",
       ep.get("opened") is True and ep.get("loaded_when_asked") is False and len(ep.get("printed") or []) == 1
       and (ep["printed"][0] or 0) >= 1 and ep["printed"][0] == ep.get("page_blocks"), ep)
 
-credits = OUT / "Credits.html"
+ack = OUT / "Acknowledgements.md"
 sys.path.insert(0, str(ROOT / "tools"))
-from credits import production_packages  # noqa: E402
-text = credits.read_text() if credits.exists() else ""
-absent = [n for n in production_packages() if html.escape(n) not in text]
-check("Credits.html in the app names every production dependency", credits.exists() and not absent, absent[:20])
+from credits import production_packages, unescape  # noqa: E402
+text = unescape(ack.read_text()) if ack.exists() else ""
+absent = [n for n in production_packages() if n not in text]
+check("Acknowledgements.md in the app names every production dependency", ack.exists() and not absent, absent[:20])
 
 logp = OUT / "smoke-out.log"
 log = logp.read_text() if logp.exists() else ""
@@ -597,21 +613,6 @@ tm = load("timings.json")
 check("warm open: Readout's share is measured and within the whole open",
       isinstance(tm.get("warm_open_to_applied_ms"), (int, float)) and isinstance(tm.get("warm_open_ms"), (int, float))
       and tm["warm_open_to_applied_ms"] <= tm["warm_open_ms"], tm)
-
-# A3: Download Update ignores a second request while one runs, puts the file
-# where its progress shows from the start, publishes that progress and
-# completes it, and quarantines the file as a browser download.
-ud = load("update-download.json")
-last = ud.get("last") or {}
-print(f"update download: {ud}")
-check("update download: a second request while one runs is ignored",
-      ud.get("first_started") is True and ud.get("second_started") is False and ud.get("started_after_finish") is True, ud)
-check("update download: the whole file, quarantined, where its progress was shown",
-      ud.get("finished") is True and ud.get("saved") == "Readout-99.0.0.dmg" and ud.get("saved_bytes") == ud.get("source_bytes") > 0
-      and "Readout-99.0.0.dmg" in (ud.get("files_while_running") or []) and ud.get("quarantine_agent") == "Readout", ud)
-check("update download: progress published on the file and completed",
-      last.get("progress_file") == "Readout-99.0.0.dmg" and last.get("progress_published") is True
-      and isinstance(last.get("progress_total"), int) and last["progress_total"] > 0 and last.get("progress_completed") == last["progress_total"], last)
 
 # P5: the cold start in phases, in the order they happen, from the process
 # start (sysctl); Readout's own two segments measured.
