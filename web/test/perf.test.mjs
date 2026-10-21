@@ -2,6 +2,7 @@
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
 // measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it,
+// the find bar's first search,
 // how far the text jumps scrolling up from the end, and frame
 // pacing while scrolling through the whole page; on a fresh warmed page,
 // the first apply of a small document whose code block is on screen; then, in a
@@ -102,6 +103,27 @@ for (let i = 0; i < 3; i++) {
   }, patch));
   await page.waitForTimeout(300);
 }
+
+// The find bar's first search in the 1 MB document (⌘F, a word, Return): it
+// reads every block's text (no layout), counts the matches and selects the
+// first one, on screen (going to one off screen is an outline jump's cost:
+// web_toc_jump_5mb_ms). 3.8 laid out the whole document as the find bar
+// opened, and again as it closed. Three times, from nothing found before.
+const findOpen = [];
+for (let i = 0; i < 3; i++) {
+  findOpen.push(await page.evaluate(() => {
+    getSelection().removeAllRanges();
+    const blk = document.elementFromPoint(450, 450).closest('.blk');
+    const word = [blk, blk.nextElementSibling, blk.previousElementSibling].map(b => b && b.textContent.match(/[A-Za-z]{6,}/)).find(Boolean)[0];
+    const t0 = performance.now();
+    const n = window.readout.find(word);
+    const ms = performance.now() - t0;
+    window.readout.findEnd();
+    return n > 0 ? ms : -1;
+  }));
+  await twoFrames();
+}
+if (findOpen.some(ms => ms < 0)) errors.push(`find found nothing: ${findOpen}`);
 
 // Scrolling up from the end through blocks not laid out yet (each shows at
 // its estimated height until WebKit lays it out, a frame after it came into
@@ -278,6 +300,7 @@ const result = {
   web_first_apply_1mb_ms: Math.round(firstApply.sync),
   web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
+  web_find_open_1mb_ms: Math.round(median(findOpen) * 10) / 10,
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
   web_hl_warm_longest_step_ms: firstHighlight.warmStep,
   web_scroll_frames: gaps.length,

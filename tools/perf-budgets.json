@@ -173,7 +173,11 @@
     "it): target 29 (the reading rounded up), guard 33 (1.15x). cold_start_ms gets back a loose",
     "guard, 12800 (the 3.7 one, 1.5x-1.9x the 6895-8534 readings above): a tripwire for a launch",
     "that crashes or hangs, not a speed budget; cold_apply_ms and cold_window_to_load_ms stay the",
-    "gated share Readout owns."
+    "gated share Readout owns.",
+    "3.9 (find): web_find_open_1mb_ms, the find bar's first search in the 1 MB document (find.js",
+    "reads every block's text without layout, counts, selects a match on screen; median of three).",
+    "3.8 laid out the whole document as the find bar opened (findMode: 2.9-7.0 s locally, ~1 s on",
+    "CI) and again as it closed. CI runs: CI_FIND_NUMBERS -> target 50, guard 100."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -196,6 +200,7 @@
   "web_first_apply_1mb_ms":     { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": 600 },
   "web_first_apply_1mb_painted_ms": { "where": "linux-webkit", "unit": "ms", "target": null, "guard": 2800 },
   "web_update_20_blocks_1mb_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": 30 },
+  "web_find_open_1mb_ms":       { "where": "linux-webkit", "unit": "ms",     "target": 50,   "guard": 100 },
   "web_stream_append_5mb_ms":   { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
   "web_first_highlight_warm_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 40,   "guard": 80 },
   "web_hl_warm_longest_step_ms":{ "where": "linux-webkit", "unit": "ms",     "target": 16,   "guard": null },

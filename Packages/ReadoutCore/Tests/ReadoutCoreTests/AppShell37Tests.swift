@@ -51,4 +51,11 @@ import Testing
         #expect(PageMessage(["type": "landed", "index": NSNumber(value: 0), "total": NSNumber(value: 5), "kind": "railAdded"]) == nil)
         #expect(PageMessage(["type": "landed", "index": NSNumber(value: 1), "total": NSNumber(value: 1)]) == nil)
     }
+
+    @Test func aFindCountDecodes() {
+        #expect(PageMessage(["type": "found", "current": NSNumber(value: 3), "total": NSNumber(value: 12)]) == .found(current: 3, total: 12))
+        #expect(PageMessage(["type": "found", "current": NSNumber(value: 0), "total": NSNumber(value: 0)]) == .found(current: 0, total: 0))
+        #expect(PageMessage(["type": "found", "current": NSNumber(value: 4), "total": NSNumber(value: 3)]) == nil)
+        #expect(PageMessage(["type": "found", "total": NSNumber(value: 3)]) == nil)
+    }
 }

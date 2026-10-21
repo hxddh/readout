@@ -45,6 +45,9 @@ public enum PageMessage: Equatable, Sendable {
     /// among the unread changes (1-based) and its kind (`railAdded`,
     /// `railEdited`, `railRemoved`, `railTask`), for VoiceOver.
     case landed(index: Int, total: Int, kind: String)
+    /// The find field's search: which match is the current one (1-based; 0:
+    /// none) of how many, after a search or an edit while finding.
+    case found(current: Int, total: Int)
 
     public init?(_ msg: [String: Any]) {
         func int(_ v: Any?) -> Int? { (v as? NSNumber)?.intValue ?? (v as? Int) }
@@ -93,6 +96,9 @@ public enum PageMessage: Equatable, Sendable {
             guard let index = int(msg["index"]), let total = int(msg["total"]), index >= 1, index <= total,
                   let kind = msg["kind"] as? String else { return nil }
             self = .landed(index: index, total: total, kind: kind)
+        case "found":
+            guard let current = int(msg["current"]), let total = int(msg["total"]), current >= 0, current <= total else { return nil }
+            self = .found(current: current, total: total)
         case "error":
             self = .error(message: msg["message"] as? String ?? "")
         default:

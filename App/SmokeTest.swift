@@ -267,7 +267,7 @@ enum SmokeTest {
             await backgroundOpens(out: out)
             await commitBaseline(out: out)
             await earlyPrint(out: out)
-            await findModeSwitches(controller: controller, out: out)
+            await findInPage(controller: controller, webView: webView, out: out)
             writeMenus(out)
             app?.showSettings(nil)
             try? await Task.sleep(for: .seconds(1.5))
@@ -1346,55 +1346,50 @@ enum SmokeTest {
         windowShot(main, out, "tabs-unread")
     }
 
-    /// Find-mode switches the page was sent (each re-lays out the document).
-    private static var findModeCalls: [Bool] = []
-    /// Whether the page was up when each switch was delivered.
-    private static var findModeReady: [Bool] = []
-    static func noteFindMode(_ on: Bool, pageReady: Bool) {
-        guard outputDirectory != nil else { return }
-        findModeCalls.append(on)
-        findModeReady.append(pageReady)
-    }
-
-    /// Find bar open, Return twice with editing ending and restarting around
-    /// it, then Escape: find mode goes on once and off once.
-    private static func findModeSwitches(controller: ReaderWindowController, out: URL) async {
-        guard let field = controller.window?.toolbar?.items.compactMap({ $0 as? NSSearchToolbarItem }).first?.searchField else { return }
-        findModeCalls = []
-        controller.showFind(nil)
-        field.stringValue = "Readout"
-        let note = Notification(name: NSControl.textDidEndEditingNotification, object: field)
-        for _ in 0..<2 {
-            controller.controlTextDidEndEditing(note)
-            controller.controlTextDidBeginEditing(note)
-            _ = controller.control(field, textView: NSTextView(), doCommandBy: #selector(NSResponder.insertNewline(_:)))
-            try? await Task.sleep(for: .milliseconds(200))
+    /// The find field finds in the page (find.js): Return selects a match and
+    /// the field says which of how many, Return again goes on, Escape takes the
+    /// marks away. Then in a window whose page is not up yet (the pool's spare
+    /// went to the window opened just before): found once it is.
+    private static func findInPage(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
+        func field(_ c: ReaderWindowController?) -> FindField? {
+            c?.window?.toolbar?.items.compactMap { $0 as? NSSearchToolbarItem }.first?.searchField as? FindField
         }
-        _ = controller.control(field, textView: NSTextView(), doCommandBy: #selector(NSResponder.cancelOperation(_:)))
-        field.stringValue = ""
-        controller.controlTextDidEndEditing(note)
+        func counted(_ f: FindField, from old: String) async -> String {
+            let deadline = Date().addingTimeInterval(10)
+            while f.count == old && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+            return f.count
+        }
+        guard let f = field(controller) else { return write(["error": "no find field"], to: out, "find.json") }
+        // A word of the block in the middle of the window.
+        let word = (try? await webView.evaluateJavaScript("(() => { const b = document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest('.blk') || document.querySelector('.blk'); return (b.textContent.match(/[A-Za-z]{5,}/) || ['Readout'])[0]; })()") as? String) ?? "Readout"
+        controller.showFind(nil)
+        f.stringValue = word
+        let enter = #selector(NSResponder.insertNewline(_:))
+        _ = controller.control(f, textView: NSTextView(), doCommandBy: enter)
+        let first = await counted(f, from: "")
+        try? await Task.sleep(for: .milliseconds(300))   // selected once the landing is painted
+        let selected = (try? await webView.evaluateJavaScript("getSelection().toString()") as? String) ?? ""
+        _ = controller.control(f, textView: NSTextView(), doCommandBy: enter)
+        let second = await counted(f, from: first)
+        _ = controller.control(f, textView: NSTextView(), doCommandBy: #selector(NSResponder.cancelOperation(_:)))
         try? await Task.sleep(for: .milliseconds(300))
-        var json: [String: Any] = ["calls": findModeCalls]
-        // Find asked for in a window whose page is not up yet (the pool's spare
-        // went to the window opened just before): delivered once it is.
+        let marks = (try? await webView.evaluateJavaScript("CSS.highlights.size") as? NSNumber)?.intValue ?? -1
+        var json: [String: Any] = ["word": word, "first": first, "second": second, "selected": selected,
+                                   "after_escape": f.count, "marks_after_escape": marks]
+        f.stringValue = ""
         if let tmp = ProcessInfo.processInfo.environment["READOUT_SMOKE_TMP_FILE"] {
             let dir = URL(fileURLWithPath: tmp).deletingLastPathComponent()
             let app = NSApp.delegate as? AppDelegate
-            findModeCalls = []
-            findModeReady = []
             app?.open(dir.appendingPathComponent("cold-a.md"))
             app?.open(dir.appendingPathComponent("cold-b.md"))
-            if let cold = app?.reader(for: dir.appendingPathComponent("cold-b.md")) {
+            if let cold = app?.reader(for: dir.appendingPathComponent("cold-b.md")), let cf = field(cold) {
                 cold.showFind(nil)
-                let deadline = Date().addingTimeInterval(10)
-                while findModeCalls.isEmpty && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
-                json["cold_calls"] = findModeCalls
-                json["cold_ready"] = findModeReady
+                cf.stringValue = "cold"
+                cold.findNext(nil)
+                json["cold"] = await counted(cf, from: "")
             }
         }
-        if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
-            try? data.write(to: out.appendingPathComponent("find-mode.json"))
-        }
+        write(json, to: out, "find.json")
     }
 
     private static func mark(_ dir: URL, _ name: String) {
