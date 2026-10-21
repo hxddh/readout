@@ -1143,31 +1143,40 @@ const v36 = patch([
   // are loaded and compiled before its apply, which then colours their
   // blocks in its first paint: a language never preloaded (Kotlin), and a
   // name as written in the fence (an alias, upper case).
-  const firstPaint = (pg, id, lang, code) => pg.evaluate(([id, lang, code]) => {
+  // blocks: [id, lang, code]; each block's state when the apply returns,
+  // and whether its YAML front matter (if any) has a key token of its own.
+  const firstPaint = (pg, blocks) => pg.evaluate(blocks => {
     window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-      ops: [{ op: 'insert', slot: 1, after: 0, kind: 'code', cjk: false, html: `<div class="code-block" id="${id}" data-lang="${lang}"><pre><code>${code}</code></pre></div>` }] });
-    const cb = document.getElementById(id);
-    return { hl: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]') };
-  }, [id, lang, code]);
+      ops: blocks.map(([id, lang, code], i) => ({ op: 'insert', slot: i + 1, after: i, kind: 'code', cjk: false, html: `<div class="code-block" id="${id}" data-lang="${lang}"><pre><code>${code}</code></pre></div>` })) });
+    return Object.fromEntries(blocks.map(([id]) => {
+      const cb = document.getElementById(id);
+      return [id, { hl: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]'), key: [...cb.querySelectorAll('pre.shiki span')].some(s => s.textContent === 'name') }];
+    }));
+  }, blocks);
+  const FM = ['p-fm', 'markdown', '---\nname: plan\n---\n# Title'];
+  const ok = b => b.hl === 'done' && b.colored;
   requests.length = 0;
   page = await open(800);
-  await page.evaluate(() => window.readout.prepare(['Kotlin', 'kt', 'no-such-language']));
-  const ktIn = await until(page, () => performance.getEntriesByName('readout-hl-prepared').length > 0, 20000);
-  const kt = await firstPaint(page, 'p-kt', 'kotlin', 'fun main() { println("hi") } // c');
-  check('a fence language prepared while the document parses is coloured in its first paint', ktIn && kt.hl === 'done' && kt.colored, JSON.stringify({ ktIn, kt, requested: requests.filter(u => /kotlin-/.test(u)).length }));
+  await page.evaluate(() => window.readout.prepare(['Kotlin', 'kt', 'no-such-language', 'md']));
+  // Kotlin, Markdown, and YAML with it (a Markdown block may start with front matter).
+  const appIn = await until(page, () => performance.getEntriesByName('readout-hl-prepared').length >= 3, 20000);
+  const app = await firstPaint(page, [['p-kt', 'kotlin', 'fun main() { println("hi") } // c'], FM]);
+  check('a fence language prepared while the document parses is coloured in its first paint', appIn && ok(app['p-kt']), JSON.stringify({ appIn, app }));
+  check('a prepared Markdown fence starting with front matter has its YAML in its first paint', ok(app['p-fm']) && app['p-fm'].key, JSON.stringify(app['p-fm']));
   await page.close();
-  // Quick Look too, loading only what the document names.
+  // Quick Look too, loading only what the document names (and YAML with Markdown).
   requests.length = 0;
   page = await browser.newPage({ viewport: { width: 800, height: 700 } });
   collectPageErrors(page, errors);
   await page.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await page.goto(`${base}/reader.html`);
   await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await page.evaluate(() => { window.readout.setAppearance({ dark: false, width: 'narrow', fontSize: 15, mode: 'quicklook' }); window.readout.prepare(['go']); });
-  const goIn = await until(page, () => performance.getEntriesByName('readout-hl-prepared').length > 0, 20000);
-  const qlPrepared = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).join(',');
-  const go = await firstPaint(page, 'p-go', 'go', 'package main\nfunc main() {}');
-  check('Quick Look prepares only the grammars the document names, coloured in its first paint', goIn && qlPrepared === 'go' && go.hl === 'done' && go.colored, JSON.stringify({ goIn, qlPrepared, go }));
+  await page.evaluate(() => { window.readout.setAppearance({ dark: false, width: 'narrow', fontSize: 15, mode: 'quicklook' }); window.readout.prepare(['go', 'markdown']); });
+  const qlIn = await until(page, () => performance.getEntriesByName('readout-hl-prepared').length >= 3, 20000);
+  const qlPrepared = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).sort().join(',');
+  const qlp = await firstPaint(page, [['p-go', 'go', 'package main\nfunc main() {}'], FM]);
+  check('Quick Look prepares only the grammars the document names, coloured in its first paint', qlIn && qlPrepared === 'go,markdown,yaml' && ok(qlp['p-go']), JSON.stringify({ qlIn, qlPrepared, qlp }));
+  check('in Quick Look a prepared Markdown fence starting with front matter has its YAML in its first paint', ok(qlp['p-fm']) && qlp['p-fm'].key, JSON.stringify(qlp['p-fm']));
   await page.close();
 }
 

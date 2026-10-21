@@ -177,8 +177,11 @@ export function stopWarmUp() { warmStopped = true; }
  */
 export function prepareLangs(names) {
   if (warmStopped || !Array.isArray(names)) return;
-  for (const name of names.slice(0, 16)) {
-    const id = resolveLang(String(name));
+  // A Markdown block may start with front matter, which is YAML (embedded):
+  // what such a block needs is not known before its code is.
+  const ids = names.slice(0, 16).map(n => resolveLang(String(n)));
+  if (ids.includes('markdown')) ids.push('yaml');
+  for (const id of ids) {
     if (!id || warmQueued.has(id)) continue;
     prepare(id, '').then(() => {
       if (warmStopped || failed.has(id)) return;
