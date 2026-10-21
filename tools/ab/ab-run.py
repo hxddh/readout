@@ -42,8 +42,38 @@ def launch(name, app, tag):
     env = dict(os.environ, READOUT_SMOKE_FILE=str(docs / "plan.md"), READOUT_SMOKE_OUT=str(smoke),
                READOUT_SMOKE_PASS="ab", READOUT_SMOKE_SECOND=str(docs / "second.md"))
     binary = Path(app) / "Contents" / "MacOS" / "Readout"
+    samplers = []
+    if os.environ.get("AB_SAMPLE") and not tag.startswith("boot"):
+        # Samples (sudo sample) of the processes' main threads over the first
+        # seconds: the app, its web content process and the GPU process.
+        import threading
+
+        def sampler():
+            time.sleep(float(os.environ.get("AB_SAMPLE_AT", "0.5")))
+            procs = {}
+            for _ in range(200):
+                out_ps = subprocess.run(["ps", "-axo", "pid=,lstart=,comm="], capture_output=True, text=True).stdout
+                for line in out_ps.splitlines():
+                    parts = line.split()
+                    if not parts: continue
+                    comm = " ".join(parts[6:])
+                    for key in ("WebContent", "GPU"):
+                        if key in comm and "WebKit" in comm:
+                            procs.setdefault(key, set()).add(int(parts[0]))
+                if "WebContent" in procs: break
+                time.sleep(0.02)
+            app = subprocess.run(["pgrep", "-n", "-f", str(binary)], capture_output=True, text=True).stdout.strip()
+            targets = [("app", app)] + [(k, str(max(v))) for k, v in procs.items()]
+            for name, pid in targets:
+                if not pid: continue
+                samplers.append(subprocess.Popen(["sudo", "sample", pid, os.environ.get("AB_SAMPLE_S", "3"), "1", "-mayDie", "-file", str(d / f"sample-{name}.txt")],
+                                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
+        threading.Thread(target=sampler, daemon=True).start()
     with open(d / "log.txt", "wb") as log:
         subprocess.run([str(launcher), str(binary), str(d / "outer.json")], env=env, stdout=log, stderr=subprocess.STDOUT, timeout=150)
+    for sp in samplers:
+        try: sp.wait(timeout=30)
+        except Exception: pass
     try:
         outer = json.loads((d / "outer.json").read_text())
         inner = json.loads((smoke / "timings-app.json").read_text())
