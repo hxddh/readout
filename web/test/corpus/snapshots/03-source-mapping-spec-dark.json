@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "3f73b804",
+   "style": "e39e5442",
    "content": "8f33a5bd",
    "text": "Reactor Source Mapping — Design Spec"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 70,
-   "style": "2dc03549",
+   "style": "e9ddc5e2",
    "content": "6fd3e7ff",
    "text": "Map every running UI element back to the C# sour"
   },
@@ -24,7 +24,7 @@
    "kind": "rule",
    "top": 140,
    "h": 47,
-   "style": "ff26dca4",
+   "style": "0b0adbf1",
    "content": "811c9dc5",
    "text": ""
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 188,
    "h": 42,
-   "style": "4cb67bdd",
+   "style": "31e41a5d",
    "content": "005ef20f",
    "text": "Status"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 230,
    "h": 122,
-   "style": "02426e11",
+   "style": "e4434da4",
    "content": "60b66114",
    "text": "Shipped (2026-08-31) via Approach 3 (Roslyn inte"
   },
@@ -51,7 +51,7 @@
    "kind": "table",
    "top": 352,
    "h": 120,
-   "style": "b580fc96",
+   "style": "74004403",
    "content": "51f67905",
    "text": "PRCommitScope#114733a35999Per-element source map"
   },
@@ -60,7 +60,7 @@
    "kind": "quote",
    "top": 472,
    "h": 1099,
-   "style": "d3d09a68",
+   "style": "461e93a5",
    "content": "dc06248b",
    "text": "What shipped, in one place. For usage documentat"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 1572,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "a09395a5",
    "text": "How the original design fared"
   },
@@ -78,7 +78,7 @@
    "kind": "paragraph",
    "top": 1613,
    "h": 122,
-   "style": "a027d6df",
+   "style": "f04dd5c0",
    "content": "28fe1175",
    "text": "The problem statement, design goals, and Approac"
   },
@@ -87,7 +87,7 @@
    "kind": "paragraph",
    "top": 1735,
    "h": 122,
-   "style": "4b642216",
+   "style": "c4b6a061",
    "content": "03aeb0fe",
    "text": "Two throwaway spikes were built and measured hea"
   },
@@ -96,7 +96,7 @@
    "kind": "table",
    "top": 1857,
    "h": 706,
-   "style": "4c267b5c",
+   "style": "5359eeb5",
    "content": "b62fd996",
    "text": "SectionOriginal claimOutcomeApproach 1 (recommen"
   },
@@ -105,7 +105,7 @@
    "kind": "paragraph",
    "top": 2563,
    "h": 96,
-   "style": "ae713dd9",
+   "style": "f2f49200",
    "content": "20900d23",
    "text": "Two limitations that both spikes measured as unf"
   },
@@ -114,7 +114,7 @@
    "kind": "rule",
    "top": 2658,
    "h": 47,
-   "style": "ff26dca4",
+   "style": "0b0adbf1",
    "content": "811c9dc5",
    "text": ""
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 2705,
    "h": 42,
-   "style": "4cb67bdd",
+   "style": "31e41a5d",
    "content": "448c5c7c",
    "text": "Problem"
   },
@@ -132,7 +132,7 @@
    "kind": "paragraph",
    "top": 2748,
    "h": 174,
-   "style": "0860c376",
+   "style": "97412775",
    "content": "fda20615",
    "text": "When inspecting a live Microsoft.UI.Reactor (Rea"
   },
@@ -141,7 +141,7 @@
    "kind": "rule",
    "top": 2922,
    "h": 47,
-   "style": "ff26dca4",
+   "style": "0b0adbf1",
    "content": "811c9dc5",
    "text": ""
   },
@@ -150,7 +150,7 @@
    "kind": "heading",
    "top": 2969,
    "h": 42,
-   "style": "4cb67bdd",
+   "style": "31e41a5d",
    "content": "aeb1dda7",
    "text": "Design Goals"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 3011,
    "h": 28,
-   "style": "f28011f1",
+   "style": "d81eee3a",
    "content": "70066ed0",
    "text": "Zero production cost — source tracking is stripp"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 3040,
    "h": 54,
-   "style": "62c59294",
+   "style": "bde93e87",
    "content": "d23f8e34",
    "text": "No custom build tooling — works with stock dotne"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 3094,
    "h": 54,
-   "style": "279415c0",
+   "style": "da306de9",
    "content": "ebdefa57",
    "text": "Per-element granularity — every element in the t"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 3148,
    "h": 54,
-   "style": "8e6278b7",
+   "style": "91e58106",
    "content": "544bae2f",
    "text": "IDE integration — the --preview server can open "
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 3203,
    "h": 71,
-   "style": "9cce65b5",
+   "style": "92a79c3e",
    "content": "98d06da2",
    "text": "Extensible — the design leaves room for future e"
   },
@@ -204,7 +204,7 @@
    "kind": "quote",
    "top": 3273,
    "h": 521,
-   "style": "dce391a1",
+   "style": "3e25f064",
    "content": "e63ee80b",
    "text": "Goals 1 and 2 restated (2026-08-26).Goal 1 canno"
   },
@@ -213,7 +213,7 @@
    "kind": "rule",
    "top": 3794,
    "h": 47,
-   "style": "ff26dca4",
+   "style": "0b0adbf1",
    "content": "811c9dc5",
    "text": ""
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 3842,
    "h": 42,
-   "style": "4cb67bdd",
+   "style": "31e41a5d",
    "content": "cab643a7",
    "text": "Research: Approaches Investigated"
   },
@@ -231,7 +231,7 @@
    "kind": "paragraph",
    "top": 3884,
    "h": 122,
-   "style": "df5bf5dc",
+   "style": "5018b675",
    "content": "6f0f39b8",
    "text": "Six approaches were evaluated. Amended 2026-08-2"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 4006,
    "h": 65,
-   "style": "e67b01a1",
+   "style": "bd6f24b4",
    "content": "366ec448",
    "text": "Approach 1: CallerInfo Attributes ⚠️ Superseded "
   },
@@ -249,7 +249,7 @@
    "kind": "paragraph",
    "top": 4071,
    "h": 70,
-   "style": "2bfb8535",
+   "style": "f8351844",
    "content": "e9f024ea",
    "text": "C# provides [CallerFilePath] and [CallerLineNumb"
   },
@@ -258,7 +258,7 @@
    "kind": "code",
    "top": 4140,
    "h": 162,
-   "style": "60b57316",
+   "style": "e40b82bf",
    "content": "d6146a30",
    "text": "public static Element Text(string content, [Call"
   },
@@ -267,7 +267,7 @@
    "kind": "paragraph",
    "top": 4302,
    "h": 70,
-   "style": "bfea7f3e",
+   "style": "48c73e51",
    "content": "7c28617c",
    "text": "Text(\"Hello\") is compiled to Text(\"Hello\", @\"C:\\"
   },
@@ -276,7 +276,7 @@
    "kind": "table",
    "top": 4372,
    "h": 322,
-   "style": "cca79b5d",
+   "style": "1210aa66",
    "content": "b1a45db9",
    "text": "AspectDetailRuntime costNone — compiler injects "
   },
@@ -285,7 +285,7 @@
    "kind": "paragraph",
    "top": 4693,
    "h": 70,
-   "style": "1bd2e480",
+   "style": "aec5dad3",
    "content": "3c52f134",
    "text": "Used by: NUnit/xUnit assertions, ArgumentNullExc"
   },
@@ -294,7 +294,7 @@
    "kind": "quote",
    "top": 4763,
    "h": 482,
-   "style": "dc3037d0",
+   "style": "2ec8ea1f",
    "content": "e6316818",
    "text": "Blocker found by spike (2026-08-26): params fact"
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 5245,
    "h": 65,
-   "style": "e67b01a1",
+   "style": "bd6f24b4",
    "content": "9fabdd63",
    "text": "Approach 2: WinUI Attached Properties ✅ Recommen"
   },
@@ -312,7 +312,7 @@
    "kind": "quote",
    "top": 5310,
    "h": 401,
-   "style": "a42c41a6",
+   "style": "cd57ae25",
    "content": "f1ffde75",
    "text": "The principle is right and the work is already d"
   },
@@ -321,7 +321,7 @@
    "kind": "html",
    "top": 5710,
    "h": 89,
-   "style": "633cc428",
+   "style": "d3f870ed",
    "content": "e6cb7e73",
    "text": "Original proposal (historical — superseded by th"
   },
@@ -330,7 +330,7 @@
    "kind": "quote",
    "top": 5800,
    "h": 200,
-   "style": "be1b119b",
+   "style": "10abff26",
    "content": "de2af065",
    "text": "Correction to the \"Used by\" line above (2026-08-"
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 5999,
    "h": 65,
-   "style": "e67b01a1",
+   "style": "bd6f24b4",
    "content": "86591022",
    "text": "Approach 3: React-Style Compile-Time Source Tran"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 6064,
    "h": 96,
-   "style": "71d83c4b",
+   "style": "cca4a850",
    "content": "a65066b9",
    "text": "React's Babel plugin injected __source: { fileNa"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 6160,
    "h": 96,
-   "style": "c537b9c1",
+   "style": "59899fdc",
    "content": "a731f7d3",
    "text": "Original verdict (2024, superseded): \"Unnecessar"
   },
@@ -366,7 +366,7 @@
    "kind": "quote",
    "top": 6255,
    "h": 1170,
-   "style": "aadf720b",
+   "style": "b5b1e9d2",
    "content": "452c2446",
    "text": "Superseded (2026-08-26), then shipped (2026-08-3"
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 7425,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "55e02b1b",
    "text": "Approach 4: Flutter's Kernel Transformer Pattern"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 7467,
    "h": 122,
-   "style": "e7b6bf1b",
+   "style": "8b2e5c22",
    "content": "f6576148",
    "text": "Flutter uses a Dart compiler transformer that mo"
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 7589,
    "h": 122,
-   "style": "cce596e8",
+   "style": "1faf7cc1",
    "content": "2a75a3cb",
    "text": "Verdict: Architecturally interesting but overkil"
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 7710,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "3659d564",
    "text": "Approach 5: PDB + Runtime Stack Walking"
   },
@@ -411,7 +411,7 @@
    "kind": "paragraph",
    "top": 7752,
    "h": 96,
-   "style": "53fdbcb0",
+   "style": "ee604935",
    "content": "97f2b4bc",
    "text": "Capture a StackTrace at element creation time, r"
   },
@@ -420,7 +420,7 @@
    "kind": "code",
    "top": 7848,
    "h": 102,
-   "style": "14eacd90",
+   "style": "13d980c1",
    "content": "60a3a84b",
    "text": "var frame = new StackFrame(skipFrames: 1, fNeedF"
   },
@@ -429,7 +429,7 @@
    "kind": "paragraph",
    "top": 7949,
    "h": 122,
-   "style": "5132d456",
+   "style": "a9d35871",
    "content": "0ef1e44f",
    "text": "Verdict: new StackTrace(fNeedFileInfo: true) cos"
   },
@@ -438,7 +438,7 @@
    "kind": "paragraph",
    "top": 8071,
    "h": 44,
-   "style": "4718acf0",
+   "style": "00d55ead",
    "content": "e0eba81a",
    "text": "Used by: Visual Studio debugger (ICorDebug), Sen"
   },
@@ -447,7 +447,7 @@
    "kind": "heading",
    "top": 8115,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "a15524ec",
    "text": "Approach 6: Lazy PDB Resolution via Out-of-Proce"
   },
@@ -456,7 +456,7 @@
    "kind": "paragraph",
    "top": 8157,
    "h": 96,
-   "style": "04f0406b",
+   "style": "ca8adf84",
    "content": "686580d6",
    "text": "Store only the method token + IL offset at creat"
   },
@@ -465,7 +465,7 @@
    "kind": "paragraph",
    "top": 8252,
    "h": 122,
-   "style": "022d81b6",
+   "style": "21b5d715",
    "content": "7699dbf8",
    "text": "Verdict: Promising as a future enhancement for t"
   },
@@ -474,7 +474,7 @@
    "kind": "rule",
    "top": 8374,
    "h": 47,
-   "style": "ff26dca4",
+   "style": "0b0adbf1",
    "content": "811c9dc5",
    "text": ""
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 8421,
    "h": 42,
-   "style": "4cb67bdd",
+   "style": "31e41a5d",
    "content": "9bfef3d7",
    "text": "Recommended Plan"
   },
@@ -492,7 +492,7 @@
    "kind": "quote",
    "top": 8464,
    "h": 148,
-   "style": "e77ac99a",
+   "style": "53350129",
    "content": "4b148fa8",
    "text": "Amended (2026-08-26): the mechanism changed from"
   },
@@ -501,7 +501,7 @@
    "kind": "paragraph",
    "top": 8611,
    "h": 122,
-   "style": "b59f0588",
+   "style": "085fe4fb",
    "content": "d6bb85eb",
    "text": "Combine Approaches 3 + 2: interceptors populate "
   },
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 8733,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "bf49675d",
    "text": "Phase 1: Element Source Tracking"
   },
@@ -519,7 +519,7 @@
    "kind": "heading",
    "top": 8775,
    "h": 36,
-   "style": "f89b6b91",
+   "style": "f3891421",
    "content": "f55c60cb",
    "text": "1.1 Add CallSite to the Element base record"
   },
@@ -528,7 +528,7 @@
    "kind": "quote",
    "top": 8811,
    "h": 1135,
-   "style": "b970eeb7",
+   "style": "7e9d0044",
    "content": "f77e8a6f",
    "text": "Amended (2026-08-26): the original name does not"
   },
@@ -537,7 +537,7 @@
    "kind": "paragraph",
    "top": 9946,
    "h": 70,
-   "style": "46c6eef5",
+   "style": "be70bb36",
    "content": "6d7f0cea",
    "text": "As shipped (src/Reactor/Core/SourceLocation.cs, "
   },
@@ -546,7 +546,7 @@
    "kind": "code",
    "top": 10015,
    "h": 682,
-   "style": "4dc1dc8c",
+   "style": "536a41c7",
    "content": "2dc8383e",
    "text": "// namespace Microsoft.UI.Reactor.Core /// <summ"
   },
@@ -555,7 +555,7 @@
    "kind": "quote",
    "top": 10697,
    "h": 148,
-   "style": "1f6262fb",
+   "style": "2129d474",
    "content": "ba222209",
    "text": "Note FilePath semantics. Under a deterministic b"
   },
@@ -564,7 +564,7 @@
    "kind": "heading",
    "top": 10845,
    "h": 36,
-   "style": "424d9b06",
+   "style": "0facd7e6",
    "content": "82790cdc",
    "text": "1.2 Populate CallSite at every factory call site"
   },
@@ -573,7 +573,7 @@
    "kind": "quote",
    "top": 10881,
    "h": 313,
-   "style": "e5946887",
+   "style": "6f4657de",
    "content": "d1fee7fe",
    "text": "Amended (2026-08-26): superseded by Approach 3. "
   },
@@ -582,7 +582,7 @@
    "kind": "html",
    "top": 11194,
    "h": 63,
-   "style": "e059883f",
+   "style": "bbba9fb2",
    "content": "b431ccb4",
    "text": "Original CallerInfo mechanics (historical) Every"
   },
@@ -591,7 +591,7 @@
    "kind": "paragraph",
    "top": 11257,
    "h": 70,
-   "style": "b01b9a84",
+   "style": "00763e15",
    "content": "85c27a8f",
    "text": "Under either mechanism, with preserves CallSite "
   },
@@ -600,7 +600,7 @@
    "kind": "heading",
    "top": 11326,
    "h": 36,
-   "style": "c0928488",
+   "style": "dbb6e398",
    "content": "4aa183de",
    "text": "1.3 Add SourceInfo attached property for WinUI c"
   },
@@ -609,7 +609,7 @@
    "kind": "quote",
    "top": 11362,
    "h": 574,
-   "style": "68c402e6",
+   "style": "ac63cb91",
    "content": "31952de2",
    "text": "Amended (2026-08-26): do not implement this. A c"
   },
@@ -618,7 +618,7 @@
    "kind": "html",
    "top": 11937,
    "h": 63,
-   "style": "43b082d8",
+   "style": "446c60c1",
    "content": "d79dc498",
    "text": "Original proposal (historical — do not implement"
   },
@@ -627,7 +627,7 @@
    "kind": "heading",
    "top": 12000,
    "h": 36,
-   "style": "1d67a267",
+   "style": "e1501d77",
    "content": "f8a7aba5",
    "text": "1.4 Write source info during reconciliation — RE"
   },
@@ -636,7 +636,7 @@
    "kind": "quote",
    "top": 12036,
    "h": 243,
-   "style": "97e5fe3e",
+   "style": "c687d0a7",
    "content": "64daa9d5",
    "text": "Amended (2026-08-26): do not implement this eith"
   },
@@ -645,7 +645,7 @@
    "kind": "html",
    "top": 12279,
    "h": 63,
-   "style": "59cc1dfb",
+   "style": "6fe34bf6",
    "content": "d74f6fad",
    "text": "Original proposal (historical — do not implement"
   },
@@ -654,7 +654,7 @@
    "kind": "heading",
    "top": 12342,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "fafd5d29",
    "text": "Phase 2: Preview Server Integration"
   },
@@ -663,7 +663,7 @@
    "kind": "heading",
    "top": 12384,
    "h": 36,
-   "style": "d87876d9",
+   "style": "eabaf151",
    "content": "c06a09d3",
    "text": "2.1 Add source location to the element inspector"
   },
@@ -672,7 +672,7 @@
    "kind": "paragraph",
    "top": 12420,
    "h": 70,
-   "style": "0c1e9873",
+   "style": "6713adb6",
    "content": "51f9055c",
    "text": "The --preview mode already runs a PreviewCapture"
   },
@@ -681,7 +681,7 @@
    "kind": "code",
    "top": 12490,
    "h": 62,
-   "style": "ec0a1fa1",
+   "style": "b9dcdb2c",
    "content": "b5aca826",
    "text": "GET /api/elements"
   },
@@ -690,7 +690,7 @@
    "kind": "paragraph",
    "top": 12551,
    "h": 44,
-   "style": "c29f3c90",
+   "style": "8b2954e9",
    "content": "928640a1",
    "text": "Returns a JSON tree:"
   },
@@ -699,7 +699,7 @@
    "kind": "code",
    "top": 12595,
    "h": 202,
-   "style": "67071b6a",
+   "style": "e3f01c9f",
    "content": "1c62e201",
    "text": "{ \"type\": \"StackPanel\", \"source\": \"MainPage.cs:3"
   },
@@ -708,7 +708,7 @@
    "kind": "heading",
    "top": 12797,
    "h": 36,
-   "style": "d87876d9",
+   "style": "eabaf151",
    "content": "8502b03f",
    "text": "2.2 Add \"go to source\" endpoint"
   },
@@ -717,7 +717,7 @@
    "kind": "code",
    "top": 12833,
    "h": 82,
-   "style": "d7226e87",
+   "style": "ecbe82fc",
    "content": "bffa39e7",
    "text": "POST /api/open-source { \"file\": \"C:\\\\src\\\\MainPa"
   },
@@ -726,7 +726,7 @@
    "kind": "paragraph",
    "top": 12914,
    "h": 70,
-   "style": "17803d39",
+   "style": "a7a8d31c",
    "content": "235c6b09",
    "text": "This endpoint launches the IDE at the specified "
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 12984,
    "h": 28,
-   "style": "3e6fcbee",
+   "style": "1d480719",
    "content": "b02574d3",
    "text": "VS Code: code --goto {file}:{line}"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 13012,
    "h": 28,
-   "style": "47649a97",
+   "style": "b701cb68",
    "content": "8c734dff",
    "text": "Visual Studio: devenv /edit {file} /command \"Edi"
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 13041,
    "h": 71,
-   "style": "4e8512bf",
+   "style": "78e6415a",
    "content": "b93154b2",
    "text": "Generic: Use the REACTOR_EDITOR environment vari"
   },
@@ -762,7 +762,7 @@
    "kind": "heading",
    "top": 13112,
    "h": 36,
-   "style": "d87876d9",
+   "style": "eabaf151",
    "content": "90dd7c72",
    "text": "2.3 Click-to-source in the dev tools overlay"
   },
@@ -771,7 +771,7 @@
    "kind": "paragraph",
    "top": 13148,
    "h": 44,
-   "style": "74e3a8cf",
+   "style": "fbe55ccc",
    "content": "2b08e226",
    "text": "When --preview is running with dev tools enabled"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 13191,
    "h": 28,
-   "style": "289b9614",
+   "style": "6f24d665",
    "content": "126434f9",
    "text": "User activates inspect mode (keyboard shortcut o"
   },
@@ -789,7 +789,7 @@
    "kind": "listItem",
    "top": 13219,
    "h": 28,
-   "style": "604b2713",
+   "style": "68c8d7c6",
    "content": "c667c129",
    "text": "Hovering an element highlights it and shows sour"
   },
@@ -798,7 +798,7 @@
    "kind": "listItem",
    "top": 13248,
    "h": 45,
-   "style": "ee84cb4c",
+   "style": "9ae0ab65",
    "content": "d1e6d19c",
    "text": "Clicking opens the source in the IDE via the /ap"
   },
@@ -807,7 +807,7 @@
    "kind": "rule",
    "top": 13293,
    "h": 47,
-   "style": "ff26dca4",
+   "style": "0b0adbf1",
    "content": "811c9dc5",
    "text": ""
   },
@@ -816,7 +816,7 @@
    "kind": "heading",
    "top": 13340,
    "h": 42,
-   "style": "4cb67bdd",
+   "style": "31e41a5d",
    "content": "bc33dbeb",
    "text": "Implementation Scope"
   },
@@ -825,7 +825,7 @@
    "kind": "quote",
    "top": 13383,
    "h": 96,
-   "style": "b785afe6",
+   "style": "065f9b89",
    "content": "77c3bd59",
    "text": "Amended (2026-08-26) to reflect the recommended "
   },
@@ -834,7 +834,7 @@
    "kind": "table",
    "top": 13478,
    "h": 789,
-   "style": "dc358d2a",
+   "style": "35eb1be3",
    "content": "98caa22e",
    "text": "ItemFiles affectedEffortSourceLocation struct + "
   },
@@ -843,7 +843,7 @@
    "kind": "quote",
    "top": 14267,
    "h": 226,
-   "style": "e0f748ea",
+   "style": "13d354f7",
    "content": "59e73853",
    "text": "Packaging hazard. A missing opt-in is a hard bui"
   },
@@ -852,7 +852,7 @@
    "kind": "heading",
    "top": 14492,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "1a6cf1ef",
    "text": "What does NOT change"
   },
@@ -861,7 +861,7 @@
    "kind": "listItem",
    "top": 14534,
    "h": 54,
-   "style": "063b6cea",
+   "style": "fd483b5d",
    "content": "df15caab",
    "text": "Public API signatures — under Approach 3, zero o"
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 14589,
    "h": 54,
-   "style": "025e1848",
+   "style": "24b7e855",
    "content": "3ec64fff",
    "text": "Element semantics — CallSite does not participat"
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 14643,
    "h": 54,
-   "style": "cb710dd2",
+   "style": "c0477fc5",
    "content": "0ba75970",
    "text": "Unstamped allocation — bucketed storage keeps th"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 14697,
    "h": 71,
-   "style": "aaf34642",
+   "style": "9bf80fe9",
    "content": "3242d011",
    "text": "Release builds by default — ReactorSourceMap def"
   },
@@ -897,7 +897,7 @@
    "kind": "heading",
    "top": 14768,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "f5a26a2b",
    "text": "Record equality note — REAL, and it needed three"
   },
@@ -906,7 +906,7 @@
    "kind": "quote",
    "top": 14810,
    "h": 724,
-   "style": "29a4b7cb",
+   "style": "ae6b7214",
    "content": "c84d0be2",
    "text": "Correction (2026-09-01). An earlier amendment re"
   },
@@ -915,7 +915,7 @@
    "kind": "paragraph",
    "top": 15534,
    "h": 70,
-   "style": "17803d39",
+   "style": "a7a8d31c",
    "content": "353647fe",
    "text": "The original text below correctly anticipated th"
   },
@@ -924,7 +924,7 @@
    "kind": "rule",
    "top": 15603,
    "h": 47,
-   "style": "ff26dca4",
+   "style": "0b0adbf1",
    "content": "811c9dc5",
    "text": ""
   },
@@ -933,7 +933,7 @@
    "kind": "heading",
    "top": 15651,
    "h": 42,
-   "style": "4cb67bdd",
+   "style": "31e41a5d",
    "content": "0498ec40",
    "text": "Future Extensions"
   },
@@ -942,7 +942,7 @@
    "kind": "paragraph",
    "top": 15693,
    "h": 70,
-   "style": "17803d39",
+   "style": "a7a8d31c",
    "content": "4c59ec76",
    "text": "These are not in scope for the initial implement"
   },
@@ -951,7 +951,7 @@
    "kind": "heading",
    "top": 15763,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "bb3cda40",
    "text": "Stack-based resolution for helper methods"
   },
@@ -960,7 +960,7 @@
    "kind": "quote",
    "top": 15805,
    "h": 629,
-   "style": "b6eb89f0",
+   "style": "5c62977b",
    "content": "3301e059",
    "text": "SOLVED in PR #1161 (2026-08-31) — [ReactorSource"
   },
@@ -969,7 +969,7 @@
    "kind": "html",
    "top": 16434,
    "h": 89,
-   "style": "5ac3c007",
+   "style": "680583aa",
    "content": "f4689d26",
    "text": "Original proposal (historical — superseded by [R"
   },
@@ -978,7 +978,7 @@
    "kind": "heading",
    "top": 16523,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "1fcbb1d3",
    "text": "Visual Studio integration"
   },
@@ -987,7 +987,7 @@
    "kind": "quote",
    "top": 16565,
    "h": 689,
-   "style": "ab863406",
+   "style": "a352c617",
    "content": "80f1aa08",
    "text": "Amended (2026-08-26). The original text below is"
   },
@@ -996,7 +996,7 @@
    "kind": "html",
    "top": 17254,
    "h": 63,
-   "style": "4cdb0ce0",
+   "style": "4548a277",
    "content": "52ef5594",
    "text": "Original text (historical — factually incorrect "
   },
@@ -1005,7 +1005,7 @@
    "kind": "heading",
    "top": 17317,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "0b840255",
    "text": "Source map file (out-of-band)"
   },
@@ -1014,7 +1014,7 @@
    "kind": "paragraph",
    "top": 17359,
    "h": 122,
-   "style": "531f6777",
+   "style": "1685faec",
    "content": "83bc0447",
    "text": "For scenarios where embedded metadata is undesir"
   },
@@ -1023,7 +1023,7 @@
    "kind": "quote",
    "top": 17481,
    "h": 697,
-   "style": "a9314fc4",
+   "style": "5e573b3b",
    "content": "4d04f553",
    "text": "Amended (2026-08-26): the sketched schema does n"
   },
@@ -1032,7 +1032,7 @@
    "kind": "rule",
    "top": 18178,
    "h": 47,
-   "style": "ff26dca4",
+   "style": "0b0adbf1",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1041,7 +1041,7 @@
    "kind": "heading",
    "top": 18225,
    "h": 42,
-   "style": "4cb67bdd",
+   "style": "31e41a5d",
    "content": "e03983de",
    "text": "Measured results (2026-08-26)"
   },
@@ -1050,7 +1050,7 @@
    "kind": "paragraph",
    "top": 18267,
    "h": 174,
-   "style": "b5b29c2f",
+   "style": "92982524",
    "content": "d1d7fb19",
    "text": "Two throwaway spikes, built in parallel and meas"
   },
@@ -1059,7 +1059,7 @@
    "kind": "table",
    "top": 18441,
    "h": 502,
-   "style": "00d2965e",
+   "style": "00730ac3",
    "content": "dbac188c",
    "text": "AxisApproach 1 (CallerInfo)Approach 3 (intercept"
   },
@@ -1068,7 +1068,7 @@
    "kind": "paragraph",
    "top": 18943,
    "h": 148,
-   "style": "fd119d71",
+   "style": "cfe7ddba",
    "content": "63b8f253",
    "text": "Method: M12 Pool_Rent_HotPath, Release, 1000 ite"
   },
@@ -1077,7 +1077,7 @@
    "kind": "heading",
    "top": 19091,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "98cf537f",
    "text": "Hot Reload staleness — the deciding measurement"
   },
@@ -1086,7 +1086,7 @@
    "kind": "paragraph",
    "top": 19133,
    "h": 70,
-   "style": "933629d2",
+   "style": "9a57c5b7",
    "content": "0a49f51b",
    "text": "Both mechanisms in one dotnet watch process, sam"
   },
@@ -1095,7 +1095,7 @@
    "kind": "code",
    "top": 19202,
    "h": 122,
-   "style": "a56e7deb",
+   "style": "65239584",
    "content": "6f23feb6",
    "text": "dotnet watch 🔥 C# and Razor changes applied in "
   },
@@ -1104,7 +1104,7 @@
    "kind": "paragraph",
    "top": 19324,
    "h": 200,
-   "style": "6999800c",
+   "style": "eb56cf8d",
    "content": "f6b9f16e",
    "text": "Mechanism: [CallerLineNumber] is baked into the "
   },
@@ -1113,7 +1113,7 @@
    "kind": "heading",
    "top": 19524,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "bc74c4b2",
    "text": "Known limitations at decision time — both since "
   },
@@ -1122,7 +1122,7 @@
    "kind": "paragraph",
    "top": 19565,
    "h": 148,
-   "style": "af693e61",
+   "style": "6923c962",
    "content": "239ff117",
    "text": "Both of the following were measured by both spik"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 19713,
    "h": 210,
-   "style": "b4c4f3ce",
+   "style": "18d89ac5",
    "content": "b73ecce3",
    "text": "implicit operator Element(string) (declared on E"
   },
@@ -1140,7 +1140,7 @@
    "kind": "listItem",
    "top": 19923,
    "h": 71,
-   "style": "dc7f6509",
+   "style": "72a9b876",
    "content": "4505667d",
    "text": "Helper-method attribution — see Stack-based reso"
   },
@@ -1149,7 +1149,7 @@
    "kind": "heading",
    "top": 19994,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "7c0a4e0f",
    "text": "Still open"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 20036,
    "h": 54,
-   "style": "4b44fb9b",
+   "style": "d6133096",
    "content": "f2438daa",
    "text": "Non-Factories entry points. Constructing an elem"
   },
@@ -1167,7 +1167,7 @@
    "kind": "listItem",
    "top": 20090,
    "h": 123,
-   "style": "a8c27b87",
+   "style": "63e49e1c",
    "content": "c3c8030e",
    "text": "Decorator targets resolve through IDecoratorElem"
   }

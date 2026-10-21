@@ -12,7 +12,7 @@ good measure, but Linux is the gate.
 ## 2. Web patch-engine tests (WebKit)
 
 `web/test/apply.test.mjs` drives `reader.html` through insert order, anchor
-stability, follow semantics, fragment scroll and the changes-only filter.
+stability, follow semantics, and fragment scroll.
 It runs in **WebKit — the engine that ships in WKWebView** — via Playwright.
 `BROWSER` selects the engine (`webkit` default, `chromium`/`firefox`
 available for debugging engine-specific behavior).

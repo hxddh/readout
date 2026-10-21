@@ -123,8 +123,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var deleted = false
     private var lastAnchor: (slot: Int, offset: Double)?
     private var saveWork: DispatchWorkItem?
-    /// Hides every block without an unread mark; headings stay visible as context.
-    private var changesOnly = false
     /// Fragment from a cross-file link (other.md#section), scrolled to after load.
     private var pendingAnchor: String?
     /// The project folder the document's paths are relative to (an agent's
@@ -296,7 +294,10 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             webView.setValue(true, forKey: "usesAutomaticContentInsetBackgroundFill")
         }
         webView.onMessage = { [weak self] msg in self?.handle(msg) }
-        webView.onContextMenu = { [weak self] menu in self?.addQuoteItem(to: menu) }
+        webView.onContextMenu = { [weak self] menu in
+            self?.addQuoteItem(to: menu)
+            self?.addSectionLinkItem(to: menu)
+        }
         // Proxied remote images: the page posts loadRemote, we download with a
         // cookie-free ephemeral session and serve the bytes back over readout:.
         // Quick Look never sets this, so remote loading stays disabled there.
@@ -370,8 +371,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         webView.underPageBackgroundColor = dark ? NSColor(srgbRed: 0x1e / 255, green: 0x1e / 255, blue: 0x1f / 255, alpha: 1) : .white
         webView.whenReady { [weak self] in
             self?.webView.setAppearance(dark: dark, accent: .controlAccentColor, width: settings.wide ? "wide" : "narrow",
-                                        fontSize: settings.fontSize, strings: ReaderStrings.all,
-                                        changesOnly: self?.changesOnly, codeWrap: settings.codeWrap)
+                                        fontSize: settings.fontSize, strings: ReaderStrings.all, codeWrap: settings.codeWrap)
         }
         lastTopInset = -1
         DispatchQueue.main.async { [weak self] in self?.updateTopInset() }
@@ -876,10 +876,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case .copy(let text):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
-        case .copyLink(let anchor):
-            // Section link: "<full path>#<anchor>" on the clipboard, usable from anywhere.
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString("\(url.path)#\(anchor)", forType: .string)
+        case .contextHeading(let anchor):
+            contextHeading = anchor
         case .applied:
             ReaderPerf.signposter.emitEvent("applied")
             SmokeTest.noteApplied()
@@ -1053,11 +1051,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     @objc func nextChange(_ sender: Any?) { webView.call("nextChange") }
     @objc func previousChange(_ sender: Any?) { webView.call("previousChange") }
-
-    @objc func toggleChangesOnly(_ sender: Any?) {
-        changesOnly.toggle()
-        webView.call("setChangesOnly", json: changesOnly ? "true" : "false")
-    }
 
     @objc func markAllRead(_ sender: Any?) {
         guard session.unreadCount > 0 else { return }
@@ -1418,9 +1411,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case #selector(showWhatChanged(_:)):
             // As the page's D key: with nothing to compare, the page beeps.
             return loaded
-        case #selector(toggleChangesOnly(_:)):
-            item.state = changesOnly ? .on : .off
-            return session.unreadCount > 0 || changesOnly
         case #selector(toggleWidth(_:)):
             item.state = AppSettings.shared.wide ? .on : .off
             return true
@@ -1537,6 +1527,30 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
         }
+    }
+
+    // MARK: Copy Link to Section
+
+    /// The heading the context menu is opening on (the page says, just before).
+    private var contextHeading: String?
+
+    /// A heading's context menu: Copy Link to Section first.
+    func addSectionLinkItem(to menu: NSMenu) {
+        guard let anchor = contextHeading else { return }
+        contextHeading = nil
+        let item = NSMenuItem(title: NSLocalizedString("Copy Link to Section", comment: "Context menu of a heading"),
+                              action: #selector(copyLinkToSection(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = anchor
+        menu.insertItem(item, at: 0)
+        if menu.items.count > 1 { menu.insertItem(.separator(), at: 1) }
+    }
+
+    /// Section link: "<full path>#<anchor>" on the clipboard, usable from anywhere.
+    @objc func copyLinkToSection(_ sender: NSMenuItem) {
+        guard let anchor = sender.representedObject as? String else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString("\(url.path)#\(anchor)", forType: .string)
     }
 
     /// The page's context menu: Copy as Quote after Copy, when text is selected.

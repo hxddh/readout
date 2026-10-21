@@ -153,6 +153,11 @@ public enum ReaderChrome {
         return levels.dropFirst().min() ?? top
     }
 
+    /// Whether an outline row shows its section's task count. Not the lone
+    /// title above the sections (its level under `baseLevel`): it holds every
+    /// task, and the window subtitle says that count already.
+    public static func outlineShowsTasks(level: Int, baseLevel: Int) -> Bool { level >= baseLevel }
+
     /// Where Help ▸ Readout Help goes: the keyboard shortcuts bundled with
     /// the app (Help/Keyboard*.md), opened in Readout itself, offline, in
     /// the reader's language.

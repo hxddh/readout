@@ -6,10 +6,9 @@ A file is **waiting** when it has unread changes, or was opened in the backgroun
 
 | Key | Action |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change, then the next waiting file |
+| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change (on an edited block, shows which words changed, until you move on), then the next waiting file |
 | <kbd>D</kbd> | Show / hide the words that changed in edited blocks on screen (also **View ▸ Show What Changed**) |
 | <kbd>⌘K</kbd> | Mark all as read (<kbd>⌘Z</kbd> undoes it) |
-| <kbd>⇧⌘K</kbd> | Show only changes |
 | <kbd>J</kbd> / <kbd>K</kbd> | Scroll down / up |
 | <kbd>G</kbd> / <kbd>⇧G</kbd> (also <kbd>⌘↑</kbd> / <kbd>⌘↓</kbd>) | Jump to top / end |
 | <kbd>Esc</kbd> | Close an open comparison or removed-text popup |

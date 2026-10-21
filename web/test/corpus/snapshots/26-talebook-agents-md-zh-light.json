@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "364d23db",
+   "style": "e42d530c",
    "content": "672ad072",
    "text": "CLAUDE.md"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 46,
-   "style": "57ef03cd",
+   "style": "45f98445",
    "content": "8c50a88d",
    "text": "本文件为 Claude Code（claude.ai/code）在此仓库中工作时提供指引。"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 116,
    "h": 65,
-   "style": "a27d5d88",
+   "style": "eae38fca",
    "content": "ce95461c",
    "text": "项目概述"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 181,
    "h": 46,
-   "style": "c76b8432",
+   "style": "358117ea",
    "content": "84feb095",
    "text": "Talebook 是基于 Calibre 的个人电子书管理系统："
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 227,
    "h": 31,
-   "style": "95246f53",
+   "style": "4e2d4a4f",
    "content": "bfadcbef",
    "text": "webserver/ — Python 后端（Tornado + Calibre），详见 web"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 258,
    "h": 47,
-   "style": "23902c49",
+   "style": "7d1698a5",
    "content": "4f9a79ee",
    "text": "app/ — 前端（Nuxt 4 + Vue 3 + Vuetify），详见 app/CLAUD"
   },
@@ -60,7 +60,7 @@
    "kind": "paragraph",
    "top": 305,
    "h": 74,
-   "style": "8f5cd4a6",
+   "style": "b641ff0e",
    "content": "da207c68",
    "text": "生产环境由 Nginx 托管静态前端，并将 /api/ 、/get/ 、/read/ 、/aut"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 379,
    "h": 65,
-   "style": "a27d5d88",
+   "style": "eae38fca",
    "content": "3981122c",
    "text": "常用命令"
   },
@@ -78,7 +78,7 @@
    "kind": "code",
    "top": 444,
    "h": 282,
-   "style": "9ec275e9",
+   "style": "f174e965",
    "content": "e36974dc",
    "text": "# 后端依赖 make init # 后端测试与检查 make pytest make lint"
   },
@@ -87,7 +87,7 @@
    "kind": "paragraph",
    "top": 726,
    "h": 46,
-   "style": "cac800db",
+   "style": "97f0bf23",
    "content": "61646f38",
    "text": "前端命令见 app/CLAUDE.md 。"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 771,
    "h": 65,
-   "style": "a27d5d88",
+   "style": "eae38fca",
    "content": "0d1a93ab",
    "text": "开发规范"
   },
@@ -105,7 +105,7 @@
    "kind": "heading",
    "top": 836,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "ca6b1cec",
    "text": "领域规格文档"
   },
@@ -114,7 +114,7 @@
    "kind": "paragraph",
    "top": 878,
    "h": 74,
-   "style": "ce10015e",
+   "style": "46a91036",
    "content": "480305d8",
    "text": "spec/ 是 Talebook 的领域规格文档，描述产品是什么、按什么规则运转。它与 desi"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 952,
    "h": 31,
-   "style": "a94bccd5",
+   "style": "4fb0b411",
    "content": "2b508824",
    "text": "spec/ 回答「是什么」：当前的产品应然，唯一一份，总是最新，无时态。"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 983,
    "h": 75,
-   "style": "5cc95363",
+   "style": "4141ba2f",
    "content": "ee322e7b",
    "text": "design/ 回答「怎么做」：某次改动的论证与验证记录，有时态，带 WIP/ACTIVE/SU"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 1058,
    "h": 46,
-   "style": "57ef03cd",
+   "style": "45f98445",
    "content": "13ac7af4",
    "text": "规格文档的约束："
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1103,
    "h": 31,
-   "style": "05934ea3",
+   "style": "709b489f",
    "content": "5c703640",
    "text": "领域定义只写在 spec/ ，不在别处重复。"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1134,
    "h": 59,
-   "style": "2332c712",
+   "style": "52cd7016",
    "content": "8da7744b",
    "text": "不写未实现、不写已废弃、不写变更历史。设计已定但代码未落地的功能不进入 spec/ ，它留在对应"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1193,
    "h": 59,
-   "style": "c805d5b7",
+   "style": "2ccaa0a3",
    "content": "004a6454",
    "text": "目录与文件名使用中文；协议、格式与外部产品的专名保留原写法（OPDS、WebDAV、BRS、TX"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1252,
    "h": 59,
-   "style": "03f1aabb",
+   "style": "acb2064f",
    "content": "803c1bd3",
    "text": "每篇固定七节，顺序为：定义（含「不是什么」边界）、使用场景、功能、术语与界面用词、行为逻辑、关联"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 1310,
    "h": 31,
-   "style": "5e1f73b5",
+   "style": "46608379",
    "content": "94130970",
    "text": "术语表四列：标准用词、英文、含义、示例；示例必须是具体的书、作者或读者动作。"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 1341,
    "h": 115,
-   "style": "cc8ee03d",
+   "style": "57734761",
    "content": "99cd53c1",
    "text": "正文（第 1–6 节）解释产品行为与规则，第 7 节回答「在代码里的什么位置」。不要在正文里写概"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1456,
    "h": 87,
-   "style": "4cc8e22a",
+   "style": "3a59624e",
    "content": "30ef7965",
    "text": "第 7 节拆为数据存储、API 接口、关键定义、代码落点、界面文案五张子表，按需缺省：不适用时整"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 1542,
    "h": 31,
-   "style": "5e1f73b5",
+   "style": "46608379",
    "content": "b4aa4c2c",
    "text": "文件名与文中主术语以领域术语为准，界面用词只写在第 4 节。"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 1573,
    "h": 75,
-   "style": "edb13dad",
+   "style": "3fd92c99",
    "content": "0d57c416",
    "text": "spec/索引.md 是唯一不遵守七节骨架的文件：它必须存在、必须收录每一篇，且指向 spec/"
   },
@@ -231,7 +231,7 @@
    "kind": "paragraph",
    "top": 1648,
    "h": 102,
-   "style": "b2f23ddd",
+   "style": "667f1ae5",
    "content": "d3fba9b7",
    "text": "改变产品行为的改动，必须在同一个 PR 内更新 spec/ 对应篇目；内部方案的「影响范围」需注"
   },
@@ -240,7 +240,7 @@
    "kind": "paragraph",
    "top": 1750,
    "h": 158,
-   "style": "1d2488c6",
+   "style": "714b600e",
    "content": "fba897c2",
    "text": "运行 make check-spec 校验：章节结构与顺序、一级标题与文件名一致、定义一节含「不"
   },
@@ -249,7 +249,7 @@
    "kind": "heading",
    "top": 1908,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "ee141a44",
    "text": "开发流程与内部方案"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 1950,
    "h": 46,
-   "style": "57ef03cd",
+   "style": "45f98445",
    "content": "0cbce8f0",
    "text": "重要改动必须执行以下五阶段流程："
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 1995,
    "h": 31,
-   "style": "d4e5ada3",
+   "style": "c3df46df",
    "content": "25708e14",
    "text": "复述需求。"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 2026,
    "h": 31,
-   "style": "c1e0c06f",
+   "style": "9f21bca3",
    "content": "545ef6bb",
    "text": "使用 grill 逐项澄清设计决策和边界。"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2057,
    "h": 31,
-   "style": "c1e0c06f",
+   "style": "9f21bca3",
    "content": "e86c6681",
    "text": "编码前创建 WIP 方案文档。"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2087,
    "h": 31,
-   "style": "c1e0c06f",
+   "style": "9f21bca3",
    "content": "030d887e",
    "text": "按方案编码；grill、反馈、设计迭代和实现偏离都先更新同一份 WIP 再继续。"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 2118,
    "h": 47,
-   "style": "bad2dcb8",
+   "style": "9602d90c",
    "content": "96a3a807",
    "text": "完成测试、回写测试结果，将这份唯一方案转为 ACTIVE 后再合并。"
   },
@@ -312,7 +312,7 @@
    "kind": "paragraph",
    "top": 2165,
    "h": 130,
-   "style": "09ce39c8",
+   "style": "b42c9a20",
    "content": "e54f677f",
    "text": "以下改动必须创建方案：新功能或用户可感知行为变化；API、数据结构、库表、权限、部署、配置或兼容"
   },
@@ -321,7 +321,7 @@
    "kind": "heading",
    "top": 2295,
    "h": 36,
-   "style": "d67f72ee",
+   "style": "4671c2dd",
    "content": "6f9268e1",
    "text": "大型功能的本地界面审查"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 2331,
    "h": 130,
-   "style": "84e31996",
+   "style": "5ac5751e",
    "content": "8ae4ff07",
    "text": "本节所称大型功能，仅包括新功能、用户可感知行为变化和跨模块功能。大型功能只要影响页面、交互、文案"
   },
@@ -339,7 +339,7 @@
    "kind": "paragraph",
    "top": 2460,
    "h": 130,
-   "style": "49b6a04b",
+   "style": "56b191f3",
    "content": "36705e70",
    "text": "审查出现 HIGH 或 MEDIUM 问题时不得转为 ACTIVE；修复后必须重新执行 inte"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 2590,
    "h": 46,
-   "style": "4fd79377",
+   "style": "52193a2f",
    "content": "c0cdefd8",
    "text": "内部方案使用中文，路径格式为 design/<module>/yyyymmdd-<feature"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 2636,
    "h": 87,
-   "style": "f2fd70e0",
+   "style": "32e254ac",
    "content": "c14c0f0b",
    "text": "<module> 优先使用实际代码目录，例如 app 、webserver 、docker 、s"
   },
@@ -366,7 +366,7 @@
    "kind": "listItem",
    "top": 2722,
    "h": 31,
-   "style": "faaa5caa",
+   "style": "8c941766",
    "content": "0d908c99",
    "text": "<feature> 使用小写英文 kebab-case；日期使用方案首次创建日期。"
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 2753,
    "h": 59,
-   "style": "2d20915f",
+   "style": "3e7126fb",
    "content": "ebfb0b3b",
    "text": "状态仅允许 wip、active 和 superseded 。WIP 表示开发或测试中，ACTI"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 2812,
    "h": 87,
-   "style": "9709e8b7",
+   "style": "904b9ef3",
    "content": "0f2103e6",
    "text": "同一个工作只维护一份方案。同一 Issue、PR 或连续任务中的 grill、反馈轮次、候选方案"
   },
@@ -393,7 +393,7 @@
    "kind": "listItem",
    "top": 2898,
    "h": 59,
-   "style": "c2a30c89",
+   "style": "f2b16c8d",
    "content": "945080da",
    "text": ".wip.html 不允许合并。工作完成前保留唯一 WIP；验证完成后将它改名并更新为 ACTI"
   },
@@ -402,7 +402,7 @@
    "kind": "listItem",
    "top": 2957,
    "h": 59,
-   "style": "03f1aabb",
+   "style": "acb2064f",
    "content": "aa7694ab",
    "text": "ACTIVE 生效后仅允许修正错字、链接和非实质说明。目标、接口、数据、流程或核心设计发生变化时"
   },
@@ -411,7 +411,7 @@
    "kind": "listItem",
    "top": 3016,
    "h": 87,
-   "style": "f14c2791",
+   "style": "44c347fd",
    "content": "02afcf65",
    "text": "SUPERSEDED 仅用于已经合并并独立生效的 ACTIVE 被另一个后续工作替代的情形；替代"
   },
@@ -420,7 +420,7 @@
    "kind": "listItem",
    "top": 3103,
    "h": 75,
-   "style": "8f2b58ce",
+   "style": "2f1f25e2",
    "content": "5fee6142",
    "text": "模板文件 design/TEMPLATE.html 是上述方案路径规则的唯一例外；它不参与 WI"
   },
@@ -429,7 +429,7 @@
    "kind": "paragraph",
    "top": 3178,
    "h": 158,
-   "style": "a5ecf8e8",
+   "style": "2f84dd70",
    "content": "6fcf6459",
    "text": "新建方案默认复制 design/TEMPLATE.html 作为基础格式。模板提供顶部元信息、核"
   },
@@ -438,7 +438,7 @@
    "kind": "code",
    "top": 3335,
    "h": 62,
-   "style": "45f9dea9",
+   "style": "611911a5",
    "content": "59e649d0",
    "text": "cp design/TEMPLATE.html design/<module>/yyyymmdd"
   },
@@ -447,7 +447,7 @@
    "kind": "paragraph",
    "top": 3397,
    "h": 102,
-   "style": "c6fc83ee",
+   "style": "6a721e56",
    "content": "78b47e69",
    "text": "方案必须是可离线阅读的单文件 HTML。允许内联 CSS、SVG 和少量交互 JavaScrip"
   },
@@ -456,7 +456,7 @@
    "kind": "paragraph",
    "top": 3499,
    "h": 102,
-   "style": "c6fc83ee",
+   "style": "6a721e56",
    "content": "42d553c7",
    "text": "创建方案时，测试结果应标记为待验证并记录计划验证项。测试完成后回写实际命令、验证页面、结果、失败"
   },
@@ -465,7 +465,7 @@
    "kind": "paragraph",
    "top": 3600,
    "h": 102,
-   "style": "d6a81c62",
+   "style": "58f03f7a",
    "content": "aad073bb",
    "text": "运行 make check-design 校验方案路径、状态、HTML 基本结构、单文件资源约束"
   },
@@ -474,7 +474,7 @@
    "kind": "paragraph",
    "top": 3702,
    "h": 102,
-   "style": "06fb0962",
+   "style": "bc4ff59a",
    "content": "022fe8fe",
    "text": "自然语言中输出文件路径、目录路径或 URL 时，路径与后续中英文标点之间必须留一个空格。例如“请"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 3804,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "da5ce99d",
    "text": "API 设计规范"
   },
@@ -492,7 +492,7 @@
    "kind": "listItem",
    "top": 3845,
    "h": 351,
-   "style": "c047b5c7",
+   "style": "e774de3b",
    "content": "cf023554",
    "text": "HTTP 接口应当遵守 RESTFUL 的 API 设计原则: 例如，设计 作者 的 别名 功能"
   },
@@ -501,7 +501,7 @@
    "kind": "heading",
    "top": 4196,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "e21a4af4",
    "text": "Pull Request 提交规范"
   },
@@ -510,7 +510,7 @@
    "kind": "listItem",
    "top": 4238,
    "h": 31,
-   "style": "0fc8b639",
+   "style": "839d78e5",
    "content": "778b276d",
    "text": "PR 时使用中文描述。"
   },
@@ -519,7 +519,7 @@
    "kind": "listItem",
    "top": 4269,
    "h": 59,
-   "style": "03f1aabb",
+   "style": "acb2064f",
    "content": "b9d9e383",
    "text": "PR 标题应准确概括改动，正文不得为空或只重复提交消息。正文至少包含：背景或目标、关键改动、实际"
   },
@@ -528,7 +528,7 @@
    "kind": "listItem",
    "top": 4328,
    "h": 59,
-   "style": "03f1aabb",
+   "style": "acb2064f",
    "content": "caf2b54a",
    "text": "测试结果必须列出实际执行的命令与结果；未执行的项目应说明原因和风险，不得写成已通过。"
   },
@@ -537,7 +537,7 @@
    "kind": "listItem",
    "top": 4386,
    "h": 59,
-   "style": "03f1aabb",
+   "style": "acb2064f",
    "content": "5441f234",
    "text": "涉及界面、布局、交互或其他可视结果时必须附带截图；其他改动在截图有助于评审理解时也应优先附带。无"
   },
@@ -546,7 +546,7 @@
    "kind": "listItem",
    "top": 4445,
    "h": 87,
-   "style": "93cd871e",
+   "style": "e55409da",
    "content": "db8f2119",
    "text": "PR 引用 design/ 下的 ACTIVE 单文件 HTML 方案时，必须同时提供 GitH"
   },
@@ -555,7 +555,7 @@
    "kind": "listItem",
    "top": 4532,
    "h": 110,
-   "style": "02165852",
+   "style": "95a9a0f6",
    "content": "ecbf5bfa",
    "text": "固定链接按以下格式转换： https://github.com/<owner>/<repo>/b"
   },
@@ -564,7 +564,7 @@
    "kind": "listItem",
    "top": 4642,
    "h": 221,
-   "style": "4eed3e5d",
+   "style": "831be951",
    "content": "0af867df",
    "text": "示例： GitHub 文件：https://github.com/talebook/talebo"
   },
@@ -573,7 +573,7 @@
    "kind": "heading",
    "top": 4863,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "88c3418d",
    "text": "测试"
   },
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 4905,
    "h": 31,
-   "style": "67c13ada",
+   "style": "5a1be9c6",
    "content": "ac5614c4",
    "text": "每次新增或修改功能，必须附带对应的测试用例，不允许只改业务代码不写测试。"
   },
@@ -591,7 +591,7 @@
    "kind": "listItem",
    "top": 4936,
    "h": 31,
-   "style": "05260ed3",
+   "style": "95003d3f",
    "content": "604ba6b7",
    "text": "后端改动在 tests/ 中添加用例，前端改动在 app/test/ 中添加用例。"
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 4966,
    "h": 47,
-   "style": "5a33881a",
+   "style": "ab50298e",
    "content": "979e1d8c",
    "text": "具体写法见各子目录的 CLAUDE.md。"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 5014,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "ee68c0d7",
    "text": "前端验收"
   },
@@ -618,7 +618,7 @@
    "kind": "listItem",
    "top": 5055,
    "h": 87,
-   "style": "4c5a465b",
+   "style": "faa8930f",
    "content": "e7495c66",
    "text": "修改前端交互、样式、主题、页面布局或弹窗时，除单元/组件测试外，必须使用 Chrome DevT"
   },
@@ -627,7 +627,7 @@
    "kind": "listItem",
    "top": 5142,
    "h": 87,
-   "style": "9709e8b7",
+   "style": "904b9ef3",
    "content": "a3e6d1be",
    "text": "修改界面时允许使用 mock API 完成组件测试、E2E 和快速回归等隔离自测。mock 环境"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 5229,
    "h": 87,
-   "style": "9709e8b7",
+   "style": "904b9ef3",
    "content": "2cb06051",
    "text": "用户要求本地体验、查看实际效果或提供可访问地址时，必须使用 Docker 运行 Talebook"
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 5316,
    "h": 115,
-   "style": "914bf175",
+   "style": "44b04101",
    "content": "b0fcf032",
    "text": "只要智能体需要手动启动并保留 Nuxt dev server，无论用户是否已明确要求体验，都必须"
   },
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 5430,
    "h": 59,
-   "style": "03f1aabb",
+   "style": "acb2064f",
    "content": "879960a9",
    "text": "自动化测试命令可以管理短生命周期的 mock 与临时页面服务作为上述规则的唯一例外；这些服务不得"
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 5489,
    "h": 59,
-   "style": "7eee95c4",
+   "style": "1ea2cb00",
    "content": "65cd14b9",
    "text": "前端改动完成后，如果需要 dev server 才能体验，必须启动符合上述 Docker 后端约"
   },
@@ -672,7 +672,7 @@
    "kind": "listItem",
    "top": 5548,
    "h": 87,
-   "style": "1953b67d",
+   "style": "1d7425d1",
    "content": "9b15fa21",
    "text": "永远禁止设置 CHOKIDAR_USEPOLLING=true 启动 Nuxt、Vite 或其他"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 5634,
    "h": 87,
-   "style": "9709e8b7",
+   "style": "904b9ef3",
    "content": "bfdef56a",
    "text": "文件监听或热更新异常时，必须停止 dev server 并报告现象，改用原生文件事件、手动刷新或"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 5721,
    "h": 250,
-   "style": "fcf902a6",
+   "style": "65a37812",
    "content": "d71ce913",
    "text": "前端本地体验默认使用两个终端启动： # 终端 1：Docker 后端 make dev # 确认"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 5971,
    "h": 75,
-   "style": "c6ff3dda",
+   "style": "fe667c9e",
    "content": "2e365be7",
    "text": "如需使用本仓库 mock API 自测，应由测试步骤控制 mock 与临时前端进程的生命周期；不"
   },
@@ -708,7 +708,7 @@
    "kind": "heading",
    "top": 6046,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "60d0effb",
    "text": "提交前检查"
   },
@@ -717,7 +717,7 @@
    "kind": "code",
    "top": 6088,
    "h": 162,
-   "style": "01c84c7a",
+   "style": "e6b8525e",
    "content": "dda0adf9",
    "text": "make lint-py-fix # 后端：用 black + isort 自动修复格式，开发完"
   },
@@ -726,7 +726,7 @@
    "kind": "heading",
    "top": 6250,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "d44151db",
    "text": "代码风格"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 6292,
    "h": 31,
-   "style": "8afa3b4e",
+   "style": "3f12456a",
    "content": "574900da",
    "text": "Python 行宽上限 120 字符（见 pyproject.toml black 配置）。"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 6323,
    "h": 115,
-   "style": "b81f1e14",
+   "style": "fab34990",
    "content": "41733b48",
    "text": "后端新增 JSON 接口默认使用 @js + @auth 装饰器，返回 {\"err\": \"ok\""
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 6437,
    "h": 31,
-   "style": "26100e5f",
+   "style": "b43029cb",
    "content": "62353c98",
    "text": "前端 API 调用统一使用 plugins/talebook.js 的 backend() 函数"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 6468,
    "h": 187,
-   "style": "c0db9bcb",
+   "style": "512c904f",
    "content": "36bf29fb",
    "text": "前端 i18n 文案（app/i18n/locales/*.json ）中禁止出现字面量 @ 和"
   },
@@ -771,7 +771,7 @@
    "kind": "heading",
    "top": 6655,
    "h": 42,
-   "style": "3f6b6a45",
+   "style": "0a2a63b5",
    "content": "62b6ec21",
    "text": "目录规范"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 6697,
    "h": 31,
-   "style": "d6e95cc6",
+   "style": "97be92b2",
    "content": "2389011c",
    "text": "scripts/ 目录存放迁移、构造数据、临时测试和工程检查脚本。"
   },
@@ -789,7 +789,7 @@
    "kind": "listItem",
    "top": 6728,
    "h": 31,
-   "style": "5699e563",
+   "style": "47c8c017",
    "content": "32292cfe",
    "text": "document/ 目录存放面向产品使用者的安装、使用和接口说明等文档。"
   },
@@ -798,7 +798,7 @@
    "kind": "listItem",
    "top": 6759,
    "h": 59,
-   "style": "e6e9be5f",
+   "style": "e81f2df3",
    "content": "cb93ceee",
    "text": "design/ 目录存放内部开发方案和已生效的架构决策；同一工作的中间过程写回唯一 WIP，不另"
   },
@@ -807,7 +807,7 @@
    "kind": "listItem",
    "top": 6817,
    "h": 47,
-   "style": "ae00e0a7",
+   "style": "9b520743",
    "content": "a51bd340",
    "text": "spec/ 目录存放领域规格文档，描述产品当前的应然；唯一一份、总是最新、无时态。"
   }
