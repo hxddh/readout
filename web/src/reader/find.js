@@ -6,7 +6,7 @@
 // as Quote), and the matches are marked with the CSS Custom
 // Highlight API: only those in the blocks around the current one (marking
 // every match of a large document makes WebKit's paint take tens of seconds).
-import { doc, post } from './core.js';
+import { doc, slots, post } from './core.js';
 import { aimAt, pinLanding, topInset, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
 import { highlightIn } from './enhance.js';
@@ -48,10 +48,11 @@ let re = null;
 let matches = [];       // {el, x, bi, start, end}, in document order: x is the block's text, start and end in it
 let cur = -1;           // the current match
 let shown = '';         // the count last told to the app
-// Where the current match is: its block and its offset in the block's text.
-// A block removed hands it on to what followed it (null: the end).
-let pos = null;         // {el, start, handed}: handed, from a block removed (a match at it is the next one)
-let landed = null;      // the last landing (selectLater's token)
+// Where the current match is: its block's slot (a reset keeps the slots of
+// the blocks it keeps) and its place among that block's matches.
+let pos = null;         // {slot, ord, next}: next, the slot of the block after it, once it is removed
+let own = null;         // the range find selected, while the selection is it
+let observing = false;
 let texts = new WeakMap();   // block -> its text (textOf), while finding
 
 /**
@@ -132,20 +133,20 @@ function rangeOf(m) {
 
 const before = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
+const blockOf = n => n && doc.contains(n) ? (n.nodeType === Node.ELEMENT_NODE ? n : n.parentElement).closest('#ro-doc > .blk') : null;
+
 /**
- * Where the next match is looked for from: the selection (the last match,
- * or text the reader selected), else the last match (not selected yet, or
- * its text redrawn since), else the block at the top of the screen.
- * [cmp, strict]: cmp compares a match with it (< 0 before it, 0 at it, > 0
- * after it); strict: a match at it is not the next one (it is the last one).
+ * Where a new search looks from: the selection (the last match, or text
+ * the reader selected), else the block at the top of the screen. [cmp,
+ * strict]: cmp compares a match with it (< 0 before it, 0 at it, > 0 after
+ * it); strict: a match at it is not the next one (it is the last one).
  */
-function origin(was) {
-  if (was && !(was.el && was.el.isConnected)) was = null;
+function origin() {
   const sel = getSelection();
-  const r = sel.rangeCount && !(selecting && was) ? sel.getRangeAt(0) : null;
-  const n = r && r.startContainer, o = r && r.startOffset;
-  const blk = n && doc.contains(n) && (n.nodeType === Node.ELEMENT_NODE ? n : n.parentElement).closest('#ro-doc > .blk');
+  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  const blk = r && blockOf(r.startContainer);
   if (blk) {
+    const { startContainer: n, startOffset: o } = r;
     return [m => {
       if (m.el !== blk) return before(m.el, blk) ? -1 : 1;
       const at = document.createRange();
@@ -153,9 +154,35 @@ function origin(was) {
       return -at.comparePoint(n, o);
     }, true];
   }
-  if (was) return [m => m.el !== was.el ? (before(m.el, was.el) ? -1 : 1) : m.start - was.start, !was.handed];
-  const top = blocksOnScreen()[0];
-  return [m => !top || m.el === top ? 0 : before(m.el, top) ? -1 : 1, false];
+  return [fromTop, false];
+}
+function fromTop(m) {
+  const top = fromTop.top;
+  return !top || m.el === top ? 0 : before(m.el, top) ? -1 : 1;
+}
+const topNow = () => { fromTop.top = blocksOnScreen()[0]; return fromTop; };
+
+/**
+ * The current match after a search of the page: [index, exact]. exact: in
+ * its block still, the same one among the block's matches (clamped: an
+ * edit earlier in the block does not make a later one current). Else the
+ * first match after that block, or, the block gone, at or after the block
+ * that followed it, else the top of the screen. [-1, false]: none.
+ */
+function resolve() {
+  if (!pos || !matches.length) return [-1, false];
+  const el = slots.get(pos.slot);
+  if (!el || !el.isConnected) {
+    const after = pos.next && slots.get(pos.next);
+    if (after && after.isConnected) return [next(m => m.el === after ? 0 : before(m.el, after) ? -1 : 1, false, false), false];
+    return [next(topNow(), false, false), false];
+  }
+  const i = next(m => m.el === el ? 0 : before(m.el, el) ? -1 : 1, false, false);
+  if (matches[i].el !== el) return [i, false];
+  delete pos.next;
+  let k = i;
+  while (k - i < pos.ord && k + 1 < matches.length && matches[k + 1].el === el) k++;
+  return [k, true];
 }
 
 /** The first match `cmp` puts after its origin (`strict`: at it does not count), wrapping. */
@@ -191,7 +218,16 @@ function select(range) {
   const sel = getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
+  own = range;
 }
+const isOwn = () => {
+  const sel = getSelection();
+  const r = own && sel.rangeCount ? sel.getRangeAt(0) : null;
+  return !!r && r.startContainer === own.startContainer && r.startOffset === own.startOffset
+    && r.endContainer === own.endContainer && r.endOffset === own.endOffset;
+};
+// The reader selecting something else: the selection is theirs.
+document.addEventListener('selectionchange', () => { if (own && !isOwn()) own = null; });
 
 /**
  * The match landed on is selected once the frame showing it is painted (its
@@ -201,7 +237,7 @@ function select(range) {
  */
 let selecting = null;   // the landing whose match is still to be selected
 function selectLater() {
-  const mine = selecting = landed;
+  const mine = selecting = {};
   requestAnimationFrame(() => setTimeout(() => { if (selecting === mine) selectNow(); }, 0));
 }
 function selectNow() {
@@ -210,7 +246,7 @@ function selectNow() {
   if (m) select(rangeOf(m));
 }
 
-/** Tells the app the count: after every search, after an edit only when it changed. */
+/** Tells the app the count (current 0: none yet): after every search, after an edit only when it changed. */
 function report(always = false) {
   const now = `${cur + 1}/${matches.length}`;
   if (now === shown && !always) return;
@@ -218,7 +254,7 @@ function report(always = false) {
   post({ type: 'found', current: cur + 1, total: matches.length });
 }
 
-/** To the current match: selected, and on screen (it stays where it is if it is already). */
+/** To the current match (a search): selected, and on screen (it stays where it is if it is already). */
 function land() {
   const m = matches[cur];
   const el = m.el;
@@ -234,8 +270,9 @@ function land() {
     if (!d.open && !d.querySelector(':scope > summary')?.contains(range.startContainer)) d.open = true;
   }
   range = mark();
-  landed = {};
-  pos = { el, start: m.start };
+  let first = cur;
+  while (first > 0 && matches[first - 1].el === el) first--;
+  pos = { slot: +el.dataset.slot, ord: cur - first };
   selectLater();
   // Off screen, the block is not laid out (content-visibility): it is aimed
   // at first, the match once the frames after the jump have laid it out.
@@ -259,7 +296,13 @@ let moved = false;         // blocks added, removed, hidden or shown since
 function changed(records) {
   for (const r of records) {
     if (r.target === doc || r.type === 'attributes') moved = true;
-    if (pos && pos.el && r.target === doc && [...r.removedNodes].includes(pos.el)) pos = { el: r.nextSibling, start: 0, handed: true };
+    // The current match's block (or the one after it) removed: what followed it is where it was.
+    if (pos && r.target === doc) {
+      for (const n of r.removedNodes) {
+        const slot = n.dataset ? +n.dataset.slot : NaN;
+        if (slot === (pos.next ?? pos.slot)) { const after = r.nextSibling && r.nextSibling.closest?.('.blk') ? r.nextSibling : null; pos.next = after ? +after.dataset.slot : 0; }
+      }
+    }
     const e = r.target.nodeType === Node.ELEMENT_NODE ? r.target : r.target.parentElement;
     const blk = e && e !== doc && e.closest('#ro-doc > .blk');
     if (blk) stale.add(blk);
@@ -282,25 +325,25 @@ function reread() {
 let refreshTimer = null;
 function later() { if (!refreshTimer) refreshTimer = setTimeout(refresh, 100); }
 /**
- * After an edit: the current match is the first one at or after where it
- * was (wrapping). The same match, its text nodes as they were, is only
- * marked again; any other (or the same one drawn anew: its selection gone
- * with its text nodes) is landed on, as a search does. So "n of m" always
- * means a match selected and on screen.
+ * After an edit (an agent writing, a reset, a block drawn): the count and
+ * the marks follow, and that is all. An edit never moves the reader or
+ * takes their selection: the current match is found again where it was
+ * (resolve), and selected again only if find's selection was on it and the
+ * edit took it (its text nodes replaced). A search that found nothing
+ * shows the count of what an edit brings ("– of 3") until the next Return.
  */
 function refresh() {
   refreshTimer = null;
   if (query == null) return;
-  const redrawn = !!(pos && pos.el && stale.has(pos.el));
+  const t0 = performance.now();
   if (reread()) search();
-  if (!matches.length) { cur = -1; mark(); report(); return; }
-  if (!pos) { const [cmp, strict] = origin(null); cur = next(cmp, strict, false); }
-  else if (!pos.el || !pos.el.isConnected) cur = 0;
-  else cur = next(m => m.el !== pos.el ? (before(m.el, pos.el) ? -1 : 1) : m.start - pos.start, false, false);
-  const m = matches[cur];
-  if (pos && m.el === pos.el && m.start === pos.start && !redrawn) mark();
-  else land();
+  const [i, exact] = resolve();
+  cur = i;
+  const range = mark();
+  if (range && exact && own && own.collapsed && !selecting) select(range);
   report();
+  performance.clearMarks('readout-find-refresh');
+  performance.mark('readout-find-refresh', { detail: performance.now() - t0 });
 }
 
 /**
@@ -308,41 +351,56 @@ function refresh() {
  * selected, marked and on screen. Returns how many matches there are.
  */
 export function find(text, backwards = false) {
-  const q = fold(String(text ?? ''));
-  if (!q.trim()) { findEnd(); return 0; }
-  if (query == null) {
+  const q = fold(String(text ?? '').trim());
+  if (!q) { findEnd(); return 0; }
+  if (!observing) {
+    observing = true;
     texts = new WeakMap();
     observer.observe(doc, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
   } else changed(observer.takeRecords());
   reread();
-  const was = q === query ? pos : null;
-  if (q !== query) {
+  const same = q === query;
+  if (!same) {
     query = q;
+    pos = null;
     re = new RegExp(q.split(/ +/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' +'), 'g');
   }
   search();
   if (!matches.length) { cur = -1; pos = null; mark(); report(true); return 0; }
-  const [cmp, strict] = origin(was);
-  cur = next(cmp, strict, backwards);
+  // Next and Previous go on from the current match, unless the reader has
+  // selected something else since.
+  const sel = getSelection();
+  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  const theirs = !!r && !r.collapsed && !selecting && !isOwn() && !!blockOf(r.startContainer);
+  const [i, exact] = same && !theirs ? resolve() : [-1, false];
+  const n = matches.length;
+  if (i < 0) { const [cmp, strict] = origin(); cur = next(cmp, strict, backwards); }
+  else if (exact) cur = (i + (backwards ? n - 1 : 1)) % n;
+  else cur = backwards ? (i + n - 1) % n : i;
   land();
   report(true);
   return matches.length;
 }
 
-/** The find bar closed (Escape, the field emptied): the marks go; the selection stays. */
-export function findEnd() {
-  if (query == null) return;
+/**
+ * The search over: the marks go, the selection stays. `keep`: the find bar
+ * is still open (its text edited), the blocks' text is kept for the next search.
+ */
+export function findEnd(keep = false) {
   if (selecting) selectNow();
   query = null;
-  observer.disconnect();
   clearTimeout(refreshTimer);
   refreshTimer = null;
   matches = [];
   cur = -1;
   pos = null;
   shown = '';
+  if (HL) { CSS.highlights.delete('ro-find'); CSS.highlights.delete('ro-find-cur'); }
+  if (keep) return;
+  observing = false;
+  observer.disconnect();
   texts = new WeakMap();
   stale.clear();
   moved = false;
-  if (HL) { CSS.highlights.delete('ro-find'); CSS.highlights.delete('ro-find-cur'); }
+  own = null;
 }

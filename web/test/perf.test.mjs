@@ -2,7 +2,7 @@
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
 // measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it,
-// the find bar's first search, and how far the text jumps scrolling up from the end; in a ~5 MB document,
+// the find bar's first search and its refresh after an edit, and how far the text jumps scrolling up from the end; in a ~5 MB document,
 // an edit above the reader, outline jumps, and an agent streaming at its end
 // while the reader follows; on a fresh warmed page, the first apply of a small
 // document whose code block is on screen, then a small plan's private memory;
@@ -125,6 +125,19 @@ for (let i = 0; i < 3; i++) {
   await twoFrames();
 }
 if (findOpen.some(ms => ms < 0)) errors.push(`find found nothing: ${findOpen}`);
+// While the find bar is open, an agent's one-block edit: the page searches
+// again for the count and the marks (find.js refresh), per patch.
+await page.evaluate(() => { window.readout.find('the'); });
+const findRefresh = [];
+for (let i = 0; i < 3; i++) {
+  const o = paragraphs[i * 7 + 3];
+  await page.evaluate(p => window.readout.apply(p), { version: 50 + i, reset: false, rewrite: false, ops: [{ ...o, op: 'replace', change: 'content', html: o.html.replace('</p>', ` the edit ${i}</p>`) }],
+    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await page.waitForTimeout(400);
+  findRefresh.push(await page.evaluate(() => performance.getEntriesByName('readout-find-refresh').pop()?.detail ?? -1));
+}
+await page.evaluate(() => window.readout.findEnd());
+if (findRefresh.some(ms => ms < 0)) errors.push(`find refresh not measured: ${findRefresh}`);
 
 // Scrolling up from the end through blocks not laid out yet (each shows at
 // its estimated height until WebKit lays it out, a frame after it came into
@@ -340,6 +353,7 @@ const result = {
   web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
   web_find_open_1mb_ms: Math.round(median(findOpen) * 10) / 10,
+  web_find_refresh_1mb_ms: Math.round(median(findRefresh) * 10) / 10,
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
   web_first_highlight_cold_ts_ms: Math.round(coldHighlight),
   web_tab_private_mb: firstHighlight.privateMB,

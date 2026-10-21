@@ -1,6 +1,7 @@
 "%d blocks removed" = "已删除 %d 处";
 "%d of %d tasks done" = "已完成 %d / %d 项任务";
 "%d of %d" = "%d / %d";
+"– of %d" = "– / %d";
 "Unread changes: %d. Press N for the next change, D to see what changed." = "未读变更：%d 处。按 N 跳到下一处，按 D 查看具体变更。";
 "No unread changes" = "没有未读变更";
 "1 block removed" = "已删除 1 处";

@@ -932,7 +932,9 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                             index, total, kindText))
             SmokeTest.noteLanded(index: index, total: total, kind: kind)
         case .found(let current, let total):
+            guard finding else { break }   // a count on its way when the search ended
             findField?.count = total == 0 ? NSLocalizedString("Not found", comment: "Find field: no match")
+                : current == 0 ? String(format: NSLocalizedString("– of %d", comment: "Find field: matches an edit brought, none current yet"), total)
                 : String(format: NSLocalizedString("%d of %d", comment: "Find field: the current match of how many"), current, total)
             SmokeTest.noteFound()
         case .ready, .error:
@@ -1317,18 +1319,31 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// document has not laid out); the field shows the current match of how many.
     private var findField: FindField? { searchItem?.searchField as? FindField }
 
-    // Another search (the text edited, the field cleared): the last one's marks and count go.
-    func controlTextDidChange(_ obj: Notification) { endFind() }
+    // The text edited: the last search's marks and count go (the page keeps
+    // the blocks' text for the next one). Cleared, closed: the search is over.
+    func controlTextDidChange(_ obj: Notification) { endFind(keepText: true) }
     func searchFieldDidEndSearching(_ sender: NSSearchField) { endFind() }
+    // The field gave up focus and the bar is collapsed (a narrow window), its text still in it: over too.
+    func controlTextDidEndEditing(_ obj: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let field = self.searchItem?.searchField else { return }
+            let editing = field.currentEditor() != nil && self.window?.firstResponder === field.currentEditor()
+            let collapsed = field.window == nil || field.isHiddenOrHasHiddenAncestor || field.bounds.width < 60
+            if collapsed && !editing { self.endFind() }
+        }
+    }
 
     /// Bumped by every search, clear and close: a search queued for a page
     /// not up yet runs only if nothing came after it.
     private var findGeneration = 0
+    /// A search is on (Return or ⌘G since the field was last edited, cleared or closed): the page's counts are shown.
+    private var finding = false
 
-    private func endFind() {
+    private func endFind(keepText: Bool = false) {
         findGeneration += 1
+        finding = false
         findField?.count = ""
-        if webView.isReady { webView.call("findEnd") }
+        if webView.isReady { webView.call("findEnd", json: keepText ? "true" : "false") }
     }
 
     @objc func findNext(_ sender: Any?) { find(backwards: false) }
@@ -1343,6 +1358,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // A cold window's document may not be in its page yet: found once it
         // is (unless the field was cleared or closed, or searched again, meanwhile).
         findGeneration += 1
+        finding = true
         let generation = findGeneration
         let search = { [weak self] in
             guard let self, self.findGeneration == generation else { return }

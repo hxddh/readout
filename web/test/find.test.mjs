@@ -50,7 +50,7 @@ const find = (page, text, back = false) => page.evaluate(([t, b]) => new Promise
   requestAnimationFrame(() => setTimeout(() => r(n), 0));
 }), [text, back]);
 const selected = page => page.evaluate(() => getSelection().toString());
-const selectedSlot = page => page.evaluate(() => { const s = getSelection(); return s.rangeCount ? +s.getRangeAt(0).startContainer.parentElement.closest('.blk').dataset.slot : null; });
+const selectedSlot = page => page.evaluate(() => { const s = getSelection(); const n = s.rangeCount ? s.getRangeAt(0).startContainer : null; const b = n && (n.nodeType === 1 ? n : n.parentElement)?.closest('.blk'); return b ? +b.dataset.slot : null; });
 
 // ---------------------------------------------------------------- A 1 MB document
 
@@ -184,6 +184,17 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
 }
 
 // ---------------------------------------------------------------- Edits while the find bar is open
+// An agent's edit never moves the reader or takes their selection: the count
+// and the marks follow it, and that is all.
+
+// Where the page is and what is selected: "count@slot sel=… y=…".
+const state = async page => {
+  const r = await page.evaluate(() => ({ text: getSelection().toString(), y: Math.round(scrollY) }));
+  return `${await count(page)}@${await selectedSlot(page)} sel=${r.text} y=${r.y}`;
+};
+const edit = (page, ops, v) => page.evaluate(p => window.readout.apply(p), patch(ops, v, false));
+const settle = page => page.waitForTimeout(400);
+const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 70].includes(i + 1) ? ' needle' : ''}</p>`);
 
 {
   const page = await open();
@@ -194,44 +205,99 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   await find(page, 'needle');
   check('before the edit: 2 of 2 on block 20', await count(page) === '2 of 2' && await selectedSlot(page) === 20, await count(page));
   // The agent adds one above the current match and one at the end.
-  await page.evaluate(p => window.readout.apply(p), patch([
+  await edit(page, [
     { op: 'insert', slot: 31, after: 3, html: '<p>a new needle</p>', kind: 'paragraph' },
     { op: 'insert', slot: 32, after: 30, html: '<p>needle at the end</p>', kind: 'paragraph' },
-  ], 2, false));
-  await page.waitForTimeout(400);
-  check('an edit while finding updates the count, the current match kept', await count(page) === '3 of 4', await count(page));
+  ], 2);
+  await settle(page);
+  check('an edit while finding updates the count, the current match kept', await count(page) === '3 of 4' && await selectedSlot(page) === 20, await count(page));
   await find(page, 'needle');
   check('Next goes on from it', await count(page) === '4 of 4' && await selectedSlot(page) === 32, `${await count(page)} ${await selectedSlot(page)}`);
-  // The current match's own block rewritten without it.
-  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'replace', slot: 32, change: 'content', html: '<p>gone</p>', kind: 'paragraph' }], 3, false));
-  await page.waitForTimeout(400);
-  check('its match removed: the count drops', /^\d of 3$/.test(await count(page)), await count(page));
-  // The current match's block removed: the one that takes its place is landed on.
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await find(page, 'needle');
-  const before = `${await count(page)}@${await selectedSlot(page)}`;
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'remove', slot: 10 }], 4, false));
-  await page.waitForTimeout(600);
-  const after = await page.evaluate(() => {
-    const s = getSelection();
-    const r = s.rangeCount && s.toString() ? s.getRangeAt(0).getBoundingClientRect() : null;
-    return { text: s.toString(), top: r && Math.round(r.top), h: innerHeight };
-  });
-  check('the current match\'s block removed: the next match is selected and on screen',
-    before === '2 of 3@10' && await count(page) === '2 of 2' && await selectedSlot(page) === 20 && after.text === 'needle' && after.top > 0 && after.top < after.h,
-    JSON.stringify({ before, count: await count(page), slot: await selectedSlot(page), after }));
   // After the find bar closed, edits tell the app nothing.
   await page.evaluate(() => window.readout.findEnd());
   const n = await page.evaluate(() => window.__msgs.length);
-  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 33, after: 31, html: '<p>needle</p>', kind: 'paragraph' }], 5, false));
-  await page.waitForTimeout(400);
+  await edit(page, [{ op: 'insert', slot: 33, after: 31, html: '<p>needle</p>', kind: 'paragraph' }], 3);
+  await settle(page);
   check('closed: no more counts', await page.evaluate(n => !window.__msgs.slice(n).some(m => m.type === 'found'), n));
   await page.close();
 }
 
-// ---------------------------------------------------------------- Where the current match goes when its block changes
+// A reset with the same blocks (a file truncated and written again): the place and the count stay.
+{
+  const page = await open();
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras80)));
+  await find(page, 'needle'); await find(page, 'needle');
+  const before = await state(page);
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras80), 2, true));
+  await settle(page);
+  check('a reset with the same blocks keeps the place, the count and the match', before.startsWith('2 of 3@40') && await state(page) === before, JSON.stringify([before, await state(page)]));
+  await page.close();
+}
 
+// The current match's block drawn again or edited while the reader is elsewhere, with their own selection.
+{
+  const page = await open();
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras80)));
+  await find(page, 'needle'); await find(page, 'needle');   // 2 of 3, block 40
+  await page.evaluate(() => { window.scrollTo(0, document.scrollingElement.scrollHeight); getSelection().selectAllChildren(document.querySelector('.blk[data-slot="78"] p')); });
+  await settle(page);
+  const before = await state(page);
+  await edit(page, [{ op: 'replace', slot: 40, change: 'silent', html: '<p>para 40 needle</p>', kind: 'paragraph' }], 2);
+  await settle(page);
+  const redrawn = await state(page);
+  await edit(page, [{ op: 'replace', slot: 40, change: 'content', html: '<p>para 40 needle and more</p>', kind: 'paragraph' }], 3);
+  await settle(page);
+  check('the current block drawn again or edited: the reader stays where they are, their selection kept',
+    before === '2 of 3@78 sel=para 78 y=' + before.split('y=')[1] && redrawn === before && await state(page) === before, JSON.stringify([before, redrawn, await state(page)]));
+  // Without a selection of their own, scrolled away: find's selection comes back, the page does not move.
+  await page.evaluate(() => { window.readout.findEnd(); getSelection().removeAllRanges(); window.scrollTo(0, 0); });
+  await find(page, 'needle'); await find(page, 'needle');   // block 40
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settle(page);
+  await edit(page, [{ op: 'replace', slot: 40, change: 'content', html: '<p>para 40 needle again</p>', kind: 'paragraph' }], 4);
+  await settle(page);
+  check('the current block rewritten: its match selected again where it is, the page not moved', await state(page) === '2 of 3@40 sel=needle y=0', await state(page));
+  await page.close();
+}
+
+// An edit before the match in its own block: the same match stays current.
+{
+  const page = await open();
+  const paras = paras80.slice();
+  paras[9] = '<p>needle one needle two</p>';
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await find(page, 'needle'); await find(page, 'needle'); await find(page, 'needle');   // the second in block 10
+  const before = await state(page);
+  await edit(page, [{ op: 'replace', slot: 10, change: 'content', html: '<p>more words: needle one needle two</p>', kind: 'paragraph' }], 2);
+  await settle(page);
+  check('an edit before the match in its block keeps it current', before.startsWith('3 of 5@10 sel=needle') && (await state(page)).startsWith('3 of 5@10 sel=needle'), JSON.stringify([before, await state(page)]));
+  await find(page, 'needle');
+  check('… and Next goes on from it', await count(page) === '4 of 5' && await selectedSlot(page) === 40, await state(page));
+  await page.close();
+}
+
+// "Not found", then the agent writes a match: counted, not landed on.
+{
+  const page = await open();
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras80)));
+  const nothing = await find(page, 'zzunique');
+  await page.evaluate(() => { window.scrollTo(0, 0); getSelection().removeAllRanges(); });
+  await edit(page, [{ op: 'replace', slot: 75, change: 'content', html: '<p>zzunique</p>', kind: 'paragraph' }], 2);
+  await settle(page);
+  check('a match an edit brings after "Not found" is counted, not landed on', nothing === 0 && await state(page) === '0 of 1@null sel= y=0', await state(page));
+  await find(page, 'zzunique');
+  check('… and Return goes to it', await count(page) === '1 of 1' && await selectedSlot(page) === 75, await state(page));
+  // A search made before the document arrives: the same.
+  const page2 = await open();
+  const none = await find(page2, 'needle');
+  await page2.evaluate(p => window.readout.apply(p), patch(blocks(paras80)));
+  await settle(page2);
+  check('a search made before the document arrived counts its matches when it does', none === 0 && await count(page2) === '0 of 3', await count(page2));
+  await page.close(); await page2.close();
+}
+
+// The current match's block removed: the count follows; Next goes to the match after where it was.
 {
   const page = await open();
   const paras = Array.from({ length: 30 }, (_, i) => `<p>para ${i + 1}${[3, 30].includes(i + 1) ? ' needle' : ''}</p>`);
@@ -239,53 +305,25 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   paras[4] = '<p>needle</p>'; paras[5] = '<p>needle</p>';
   await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
   await page.evaluate(() => window.scrollTo(0, 0));
-  const state = async () => {
-    const r = await page.evaluate(() => {
-      const s = getSelection();
-      const rect = s.rangeCount && s.toString() ? s.getRangeAt(0).getBoundingClientRect() : null;
-      return { text: s.toString(), visible: !!rect && rect.top > 0 && rect.top < innerHeight };
-    });
-    return `${await count(page)}@${await selectedSlot(page)}:${r.text}:${r.visible}`;
-  };
-  // The current block rewritten (its text nodes new) long after the landing: selected again.
+  await find(page, 'needle'); await find(page, 'needle'); await find(page, 'needle');   // the third in block 2
+  const third = await state(page);
+  await edit(page, [{ op: 'remove', slot: 2 }], 2);
+  await settle(page);
+  const removed = await state(page);
   await find(page, 'needle');
-  await page.waitForTimeout(3200);
-  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'replace', slot: 2, change: 'content', html: '<p>needle a needle b needle c</p>', kind: 'paragraph' }], 2, false));
-  await page.waitForTimeout(400);
-  check('the current block rewritten after 3 s: its match selected again', await state() === '1 of 7@2:needle:true', await state());
-  // The third of three matches in a block, the block removed: on to the first match after it.
-  await find(page, 'needle'); await find(page, 'needle');
-  const third = await state();
-  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'remove', slot: 2 }], 3, false));
-  await page.waitForTimeout(400);
-  check('the block of the current match removed: the first match after it is landed on', third === '3 of 7@2:needle:true' && await state() === '1 of 4@3:needle:true',
-    JSON.stringify([third, await state()]));
-  // The last block, holding the current match, removed: around to the first.
-  await find(page, 'needle', true);
-  const last = await state();
-  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'remove', slot: 30 }], 4, false));
-  await page.waitForTimeout(400);
-  check('the last block removed with the current match: around to the first match', last === '4 of 4@30:needle:true' && await state() === '1 of 3@3:needle:true',
-    JSON.stringify([last, await state()]));
-  await page.close();
-}
-
-// ---------------------------------------------------------------- Return before the document arrives
-
-{
-  const page = await open();
-  const nothing = await find(page, 'needle');
-  const paras = Array.from({ length: 60 }, (_, i) => `<p>para ${i + 1}${[40, 50].includes(i + 1) ? ' needle' : ''}</p>`);
-  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
-  await page.waitForTimeout(1500);
-  const r = await page.evaluate(() => {
-    const s = getSelection();
-    const rect = s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
-    return { text: s.toString(), top: rect && Math.round(rect.top), h: innerHeight };
-  });
-  check('a search made before the document arrived lands on its first match when it does ("1 of 2" is selected and on screen)',
-    nothing === 0 && await count(page) === '1 of 2' && r.text === 'needle' && await selectedSlot(page) === 40 && r.top > 0 && r.top < r.h,
-    JSON.stringify({ nothing, count: await count(page), r }));
+  check('the block of the current match removed: the count follows, and Next lands on the first match after it',
+    third.startsWith('3 of 7@2') && removed.startsWith('1 of 4@') && removed.endsWith(third.split(' ').pop()) && (await state(page)).startsWith('1 of 4@3 sel=needle'),
+    JSON.stringify([third, removed, await state(page)]));
+  // ⌘G within 100 ms of its block going: from where it was.
+  await find(page, 'needle'); await find(page, 'needle');   // block 6
+  await page.evaluate(p => { window.readout.apply(p); window.readout.find('needle'); }, patch([{ op: 'remove', slot: 6 }], 3, false));
+  await page.waitForTimeout(100);
+  check('⌘G right after the current block went: the match after it', await count(page) === '3 of 3' && await selectedSlot(page) === 30, await state(page));
+  // The last block, holding the current match, removed: Next goes around to the first.
+  await edit(page, [{ op: 'remove', slot: 30 }], 4);
+  await settle(page);
+  await find(page, 'needle');
+  check('the last block removed with the current match: Next goes around to the first match', (await state(page)).startsWith('1 of 2@3 sel=needle'), await state(page));
   await page.close();
 }
 
