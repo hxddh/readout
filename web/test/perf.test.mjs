@@ -2,7 +2,7 @@
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
 // measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it,
-// the find bar's first search and its refresh after an edit, and how far the text jumps scrolling up from the end; in a ~5 MB document,
+// the find bar's first search, an edit and Next while finding (to the painted frame), and how far the text jumps scrolling up from the end; in a ~5 MB document,
 // an edit above the reader, outline jumps, Return in a one-letter find, and an agent streaming at its end
 // while the reader follows; on a fresh warmed page, the first apply of a small
 // document whose code block is on screen, then a small plan's private memory;
@@ -141,16 +141,45 @@ for (let i = 0; i < 3; i++) {
   await settled();
 }
 if (findOpen.some(ms => ms < 0)) errors.push(`find found nothing: ${findOpen}`);
-// While the find bar is open, an agent's one-block edit: the page searches
-// again for the count and the marks (find.js refresh), per patch.
-await page.evaluate(() => { window.readout.find('the'); });
-const findRefresh = [];
-for (let i = 0; i < 3; i++) {
+// While the find bar is open: an agent's one-block edit, five times, and
+// Return (Next) seven times. Each timed to the painted frame (a task queued
+// from a frame's animation callbacks runs after its paint): the edit, the
+// longest frame in the half second after it (the apply's frame, then the
+// page searching again for the count and the marks: find.js refresh, 100 ms
+// later; its own time is web_find_refresh_1mb_ms); Next, the call until the
+// frame showing the match it lands on (the match is selected in the next
+// frame, reported in the samples). 3.9.0: every Return and every edit set
+// the highlights again, which repaints all 300 near marks.
+await page.evaluate(() => {
+  // fn(), then the frames painted until `ms` after it (two at least): [the call, from it to the first frame, each frame after].
+  window.painted = (fn, ms) => new Promise(resolve => {
+    const t0 = performance.now();
+    fn();
+    const ts = [t0, performance.now()];
+    const tick = () => requestAnimationFrame(() => setTimeout(() => {
+      ts.push(performance.now());
+      if (ts.length < 4 || ts.at(-1) - t0 < ms) return tick();
+      resolve(ts.slice(1).map((t, i) => t - ts[i]));
+    }, 0));
+    tick();
+  });
+  window.readout.find('the');
+});
+await page.waitForTimeout(500);
+const findRefresh = [], findRefreshFrame = [];
+for (let i = 0; i < 5; i++) {
   const o = paragraphs[i * 7 + 3];
-  await page.evaluate(p => window.readout.apply(p), { version: 50 + i, reset: false, rewrite: false, ops: [{ ...o, op: 'replace', change: 'content', html: o.html.replace('</p>', ` the edit ${i}</p>`) }],
-    marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
-  await page.waitForTimeout(400);
+  const gaps = await page.evaluate(p => window.painted(() => window.readout.apply(p), 500), { version: 50 + i, reset: false, rewrite: false,
+    ops: [{ ...o, op: 'replace', change: 'content', html: o.html.replace('</p>', ` the edit ${i}</p>`) }], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  findRefreshFrame.push(Math.max(gaps[0] + gaps[1], ...gaps.slice(2)));
   findRefresh.push(await page.evaluate(() => performance.getEntriesByName('readout-find-refresh').pop()?.detail ?? -1));
+  await page.waitForTimeout(200);
+}
+const findNext = [];
+for (let i = 0; i < 7; i++) {
+  const gaps = await page.evaluate(() => window.painted(() => window.readout.find('the'), 100));
+  findNext.push([gaps[0], gaps[0] + gaps[1], gaps[2]].map(Math.round));   // [the call, to the frame showing the match, the next frame (selected)]
+  await page.waitForTimeout(200);
 }
 await page.evaluate(() => window.readout.findEnd());
 if (findRefresh.some(ms => ms < 0)) errors.push(`find refresh not measured: ${findRefresh}`);
@@ -396,6 +425,10 @@ const result = {
   web_update_20_blocks_1mb_samples_ms: updates.map(Math.round),
   web_find_open_1mb_ms: Math.round(median(findOpen) * 10) / 10,
   web_find_refresh_1mb_ms: Math.round(median(findRefresh) * 10) / 10,
+  web_find_refresh_1mb_frame_ms: Math.round(median(findRefreshFrame)),
+  web_find_refresh_1mb_frame_samples_ms: findRefreshFrame.map(Math.round),
+  web_find_next_1mb_frame_ms: median(findNext.map(x => x[1])),
+  web_find_next_1mb_frame_samples_ms: findNext,   // [the call, to the frame showing the match, the next frame (the match selected)]
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
   web_first_highlight_cold_ts_ms: Math.round(coldHighlight),
   web_tab_private_mb: firstHighlight.privateMB,
