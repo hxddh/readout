@@ -65,6 +65,11 @@ def launch(name, app, tag):
     for k in ("apply", "raf", "painted"):
         if page.get(k):
             r[f"page_{k}"] = round(page[k][0] - start * 1000, 1)
+    for k in ("hlInitStart", "hlInitDone"):
+        if page.get(k):
+            r[f"page_{k}"] = round(page[k] - start * 1000, 1)
+    if page.get("fcp") and page.get("origin"):
+        r["page_fcp"] = round(page["origin"] + page["fcp"] - start * 1000, 1)
     r["hl"] = [[h[0], h[1], round(h[2] - start * 1000), h[3]] for h in page.get("hl", [])[:12]]
     r["warm_applied"] = [round(v * 1000, 1) for v in sec]
     r["warm_painted"] = [round(v * 1000, 1) for v in pai]

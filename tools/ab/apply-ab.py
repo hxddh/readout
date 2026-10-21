@@ -82,6 +82,22 @@ edit("web/src/reader/patch.js", "    post({ type: 'painted', version: p.version 
 edit("web/src/reader/enhance.js", "  const html = hl.highlightSync(code, id);\n",
      "  const abT = performance.now();\n  const html = hl.highlightSync(code, id);\n  if (window.__ab) window.__ab.hl.push([id, Math.round(performance.now() - abT), Date.now(), !!html]);\n")
 
+# The first document's load, on the main thread: started, parsed (result
+# back), reading state found, git baseline found.
+R = "App/ReaderWindowController.swift"
+edit(R, "        let saved = BaselineStore.prefetch(url)\n        loader.loadInitial { [weak self] result in\n",
+     "        let saved = BaselineStore.prefetch(url)\n        SmokeTest.noteLaunchPhase(\"load_start\")\n        loader.loadInitial { [weak self] result in\n            SmokeTest.noteLaunchPhase(\"load_result\")\n")
+edit(R, "saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from\n",
+     "saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from\n                SmokeTest.noteLaunchPhase(\"record\")\n")
+edit(R, "CommitBaseline.find(path: result.sourcePath, current: result.decoded.text) { [weak self] keys in\n",
+     "CommitBaseline.find(path: result.sourcePath, current: result.decoded.text) { [weak self] keys in\n                    SmokeTest.noteLaunchPhase(\"commit_baseline\")\n")
+# The page: highlighter init start/end, first contentful paint (the frame
+# really painted), read with the rest.
+edit("web/src/highlight.js", "  ready = (async () => {\n", "  (window.__ab ??= { apply: [], raf: [], painted: [], hl: [] }).hlInitStart = Date.now();\n  ready = (async () => {\n")
+edit("web/src/highlight.js", "    initialized = true;\n", "    initialized = true;\n    window.__ab.hlInitDone = Date.now();\n")
+edit("App/SmokeTest.swift", 'evaluateJavaScript("JSON.stringify(window.__ab || {})")',
+     'evaluateJavaScript("JSON.stringify(Object.assign(window.__ab || {}, { fcp: (performance.getEntriesByType(\'paint\').find(e => e.name === \'first-contentful-paint\') || {}).startTime, origin: performance.timeOrigin }))")')
+
 # Experiments on the 3.9 tree.
 if exp == "dfl":
     # 3.8's order: the spare page at the start of didFinishLaunching.

@@ -41,7 +41,7 @@ jobs:
             (cd "$t" && xcodegen generate > /dev/null)
             (cd "$t" && xcodebuild -project Readout.xcodeproj -scheme Readout -configuration Release \
               -derivedDataPath build -destination 'generic/platform=macOS' \
-              MARKETING_VERSION=9.9.9 CURRENT_PROJECT_VERSION=999 ARCHS=arm64 ONLY_ACTIVE_ARCH=NO build 2>&1 | tail -3)
+              MARKETING_VERSION=9.9.9 CURRENT_PROJECT_VERSION=999 ARCHS=arm64 ONLY_ACTIVE_ARCH=NO build > "$RUNNER_TEMP/xcb-$name.log" 2>&1) || { grep -E "error" "$RUNNER_TEMP/xcb-$name.log" | grep -v ModuleCache | head -20; exit 1; }
             ditto "$t/build/Build/Products/Release/Readout.app" "/Applications/ReadoutAB-$name.app"
             sh "$t/tools/sign.sh" "/Applications/ReadoutAB-$name.app" "-"
             echo "built $name ($sha $exp)"
