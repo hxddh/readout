@@ -48,7 +48,8 @@ function show(c) {
  */
 export function forceLayout(el) {
   const c = isChunk(el) ? el : el.closest('#ro-doc > .chunk');
-  if (!cv() || !isChunk(c)) return;
+  // Near the screen already: it is laid out, and so are its neighbours.
+  if (!cv() || !isChunk(c) || c.classList.contains('near')) return;
   // And the chunk after it, which the rest of the screen below it shows:
   // a chunk on screen is never contained (its paint would clip what blocks
   // draw past the gutters, wide code and tables).
