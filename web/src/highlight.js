@@ -75,15 +75,16 @@ const ALIASES = {
   conf: 'ini', env: 'shellscript', ndjson: 'jsonl', protobuf: 'proto',
 };
 
-// Each preloaded grammar costs every tab its memory (12 of them: ~36 MB of
-// a warmed page's private memory); the rest load on first use, which ES2018
+// Each preloaded grammar costs a tab its memory (12 of them: ~36 MB of a
+// warmed page's private memory); the rest load on first use, which ES2018
 // patterns keep to tens or hundreds of milliseconds, or while the document
 // naming them parses (prepareLangs). Every page loads the three agent output
-// uses most; the spare page (warm) also the four small common ones, ~4 MB in
-// all, so their blocks are coloured in a warm open's first paint too. (Go
-// and Swift would cost ~7 MB each.)
+// uses most. The spare page (warm), which a window opens on, also loads the
+// rest of 3.8's twelve and Rust, so their blocks are coloured in a warm
+// open's first paint as in 3.8 (its memory about 3.8's by design); pages
+// not warmed (the first window at launch, background tabs) keep 3.9's three.
 const PRELOAD = ['shellscript', 'json', 'typescript'];
-const SPARE_PRELOAD = ['python', 'rust', 'yaml', 'diff'];
+const SPARE_PRELOAD = ['javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'];
 
 let highlighter = null;
 let ready = null;
@@ -145,7 +146,8 @@ export function init() {
 // is the longest step), and nothing more is done once it shows a document
 // (stopWarmUp, enhance.js). Only on the spare page: a page being read should
 // not spend its main thread on languages it may not show. Never in Quick
-// Look, which preloads nothing. Marks 'readout-hl-warm' when done (perf.test.mjs).
+// Look, which preloads nothing. Marks 'readout-hl-warm' when done, with its
+// time and longest slice (perf.test.mjs).
 // The grammars a document being opened names (prepareLangs) are loaded and
 // compiled the same way, ahead of the rest, until it is shown.
 let warming = false;
@@ -161,7 +163,9 @@ export function warm() {
     setTimeout(() => {
       for (const id of WARM_ORDER) if (highlighter.getLoadedLanguages().includes(id)) queueWarm(id);
       // And the whole path once, as a block is highlighted (both themes, HTML).
-      work.push(() => highlightSync('x', 'json'), () => performance.mark('readout-hl-warm'));
+      const start = performance.now();
+      work.push(() => highlightSync('x', 'json'),
+        () => performance.mark('readout-hl-warm', { detail: { ms: performance.now() - start, longestSlice } }));
       runWork();
     }, WARM_DELAY_MS);
   });
@@ -285,13 +289,77 @@ const SAMPLES = {
     '        env: { CI: true, N: 1.5 }',
   ].join('\n'),
   diff: 'diff --git a/x.js b/x.js\nindex 1111111..2222222 100644\n--- a/x.js\n+++ b/x.js\n@@ -1,3 +1,3 @@ function f\n-const a = 1;\n+const a = 2;\n context',
-  // Not preloaded (prepareLangs): the same rules as TypeScript.
   javascript: TS_SAMPLE,
+  swift: [
+    'import Foundation',
+    '',
+    '/// A doc comment.',
+    '@MainActor final class Store<T: Codable>: ObservableObject {',
+    '    @Published private(set) var items: [String: T] = [:]',
+    '    init(path: URL, strict: Bool = false) throws { self.path = path }',
+    '    func load() async throws -> Int {',
+    '        guard let data = try? Data(contentsOf: path) else { return 0 }',
+    '        for (i, line) in String(decoding: data, as: UTF8.self).split(separator: "\\n").enumerated() where !line.isEmpty {',
+    '            items["\\(i)"] = try JSONDecoder().decode(T.self, from: Data(line.utf8))',
+    '        }',
+    '        return items.count  // comment',
+    '    }',
+    '}',
+    'enum Mode { case on, off }',
+    'let total = [1, 2].map { $0 * 2 }.reduce(0, +) * 1.5',
+  ].join('\n'),
+  go: [
+    'package main',
+    '',
+    'import (',
+    '\t"context"',
+    '\t"fmt"',
+    ')',
+    '',
+    '// Store is a store.',
+    'type Store[T any] struct {',
+    '\tItems map[string]T `json:"items"`',
+    '}',
+    '',
+    'func (s *Store[T]) Load(ctx context.Context, path string) (int, error) {',
+    '\tfor i, line := range strings.Split(path, "\\n") {',
+    '\t\tif line == "" {',
+    '\t\t\tcontinue',
+    '\t\t}',
+    '\t\ts.Items[fmt.Sprintf("%d", i)] = *new(T)',
+    '\t}',
+    '\tgo func() { defer close(ch); ch <- 1 }()',
+    '\treturn len(s.Items), nil',
+    '}',
+  ].join('\n'),
+  markdown: [
+    '# Title',
+    '',
+    'Some *text*, **bold** and `code`, a [link](https://example.com "t") and ![image](a.png).',
+    '',
+    '> A quote',
+    '',
+    '1. One',
+    '- [ ] Task',
+    '',
+    '| a | b |',
+    '| - | - |',
+    '| 1 | 2 |',
+  ].join('\n'),
+  sql: [
+    "WITH t AS (SELECT id, name FROM users WHERE created_at > NOW() - INTERVAL '7 days')",
+    'SELECT a.id, COUNT(*) AS n, SUM(b.x) / 1.5 FROM t a',
+    'LEFT JOIN orders b ON b.user_id = a.id',
+    "WHERE a.name LIKE '%x%' AND b.status IN ('open', 'done')",
+    'GROUP BY a.id HAVING COUNT(*) > 1 ORDER BY n DESC LIMIT 10; -- comment',
+    'CREATE TABLE IF NOT EXISTS x (id INTEGER PRIMARY KEY, v TEXT NOT NULL);',
+    "INSERT INTO x VALUES (1, 'a');",
+  ].join('\n'),
 };
 // Any other language a document names: a few lines most grammars have rules for.
 const GENERIC_SAMPLE = 'import x from "y"; // comment\n# comment\n/* comment */ if (a == 1.5) { return [true, null, \'s\', `t`]; }\nfunc(a, b) -> c:';
 const WARM_DELAY_MS = 5000;
-const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'rust', 'yaml', 'diff'];   // the slowest first
+const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript', 'go', 'swift', 'rust', 'yaml', 'markdown', 'sql', 'diff'];   // 3.8's order
 // The regexes of a grammar, as the build precompiled them: WebKit compiles
 // each on its first use, which is what makes a grammar's first block slow.
 function regexesOf(id) {
@@ -330,6 +398,7 @@ function queueWarm(id, first = false) {
 }
 
 const SLICE_MS = 8;
+let longestSlice = 0;   // the longest a window taking the page could wait (perf.test.mjs)
 function runWork() {
   if (working) return;
   working = true;
@@ -341,6 +410,7 @@ function runWork() {
       if (!step) { working = false; return; }
       step();
     } while (performance.now() - t0 < SLICE_MS);
+    longestSlice = Math.max(longestSlice, performance.now() - t0);
     setTimeout(next, 0);
   };
   next();

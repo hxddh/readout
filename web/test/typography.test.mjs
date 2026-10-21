@@ -1096,7 +1096,7 @@ const v36 = patch([
 // P11. Quick Look loads no grammar (nor Shiki) before a code block needs one;
 //      the app preloads the three agent output uses most.
 {
-  const grammarRequests = () => requests.filter(u => /\/chunks\/(shellscript|json|typescript|python|swift|go|rust|yaml|diff|markdown|sql)-/.test(u));
+  const grammarRequests = () => requests.filter(u => /\/chunks\/(shellscript|json|typescript|javascript|python|swift|go|rust|yaml|diff|markdown|sql)-/.test(u));
   const openQuick = async quick => {
     const pg = await browser.newPage({ viewport: { width: 800, height: 700 } });
     pg.on('pageerror', e => errors.push(String(e)));
@@ -1129,14 +1129,14 @@ const v36 = patch([
   check('the app preloads shell, JSON and TypeScript, and nothing else', preloaded === 'json,shellscript,typescript', JSON.stringify(grammarRequests()));
   await page.close();
 
-  // 3.9.1: the spare page also loads Python, Rust, YAML and diff (small and
-  // common, ~4 MB in all), so a warm open colours them in its first paint.
+  // 3.9.1: the spare page also loads the rest of 3.8's twelve and Rust, so a
+  // warm open colours them in its first paint as 3.8 did.
   requests.length = 0;
   page = await open(800);
   await page.evaluate(() => window.readout.warm());
   const warmDone = await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
   const spareSet = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).sort().join(',');
-  check('the spare page loads shell, JSON, TypeScript, Python, Rust, YAML and diff', warmDone && spareSet === 'diff,json,python,rust,shellscript,typescript,yaml', JSON.stringify({ warmDone, spareSet }));
+  check("the spare page loads 3.8's twelve grammars and Rust", warmDone && spareSet === 'diff,go,javascript,json,markdown,python,rust,shellscript,sql,swift,typescript,yaml', JSON.stringify({ warmDone, spareSet }));
   await page.close();
 
   // 3.9.1: the fence languages of a document being parsed (readout.prepare)
