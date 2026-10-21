@@ -5,7 +5,8 @@
 // the find bar's first search, an edit and Next while finding (to the painted frame), and how far the text jumps scrolling up from the end; in a ~5 MB document,
 // an edit above the reader, outline jumps, Return in a one-letter find, and an agent streaming at its end
 // while the reader follows; on a fresh warmed page, the first apply of a small
-// document whose code block is on screen, then a small plan's private memory;
+// document whose code block is on screen, then of one with a Python and a YAML
+// block (both coloured in that apply), then a small plan's private memory;
 // on a fresh page not warmed, how long its first TypeScript block takes to
 // highlight; scrolling 500 KB (with and without change marks), 1 MB and
 // 5 MB documents (frame gaps, the page's own longest callback, blank area),
@@ -369,6 +370,9 @@ console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 100
 // A TypeScript block for the first-highlight measures.
 const TS_CODE = 'import { readFile } from "node:fs/promises";\n\n// Load the plan and count its open tasks.\nexport async function openTasks(path: string): Promise<number> {\n  const text = await readFile(path, "utf8");\n  return text.split("\\n").filter(l => /^- \\[ \\]/.test(l)).length;\n}';
 
+const PY_CODE = 'from pathlib import Path\n\n\ndef open_tasks(path: str) -> int:\n    """Count the open tasks."""\n    text = Path(path).read_text()\n    return sum(1 for l in text.splitlines() if l.startswith("- [ ]"))  # unchecked\n';
+const YAML_CODE = 'name: ci\non:\n  push:\n    branches: [main]\njobs:\n  test:\n    runs-on: ubuntu-24.04\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm test\n        env: { CI: true }\n';
+
 // A page's WebContent process (Linux): the WebKit web processes this
 // script started, and their private memory (smaps_rollup), in MB.
 function webProcesses() {
@@ -418,14 +422,30 @@ const firstHighlight = await (async () => {
     ] });
     return { ms: performance.now() - t0, hl: document.querySelector('.code-block').dataset.hl };
   }, TS_CODE);
+  // Then, in the same warmed tab, a document with a Python and a YAML block
+  // on screen (grammars the spare page loads and compiles besides the three
+  // every page preloads): both coloured inside the synchronous apply, so in
+  // its first paint (3.9.0 painted them plain and coloured them 50-180 ms later).
+  const pyYaml = await p.evaluate(([py, yaml]) => {
+    const esc = c => c.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const t0 = performance.now();
+    window.readout.apply({ version: 2, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
+      { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'setup', html: '<h1 id="setup">Setup</h1>' },
+      { op: 'insert', slot: 2, after: 1, kind: 'code', html: `<div class="code-block" data-lang="python"><pre><code>${esc(py)}</code></pre></div>` },
+      { op: 'insert', slot: 3, after: 2, kind: 'code', html: `<div class="code-block" data-lang="yaml"><pre><code>${esc(yaml)}</code></pre></div>` },
+    ] });
+    const ms = performance.now() - t0;
+    return { ms, plain: [...document.querySelectorAll('.code-block')].filter(cb => cb.dataset.hl !== 'done' || !cb.querySelector('pre.shiki span[style]')).map(cb => cb.dataset.lang) };
+  }, [PY_CODE, YAML_CODE]);
   // Then a small plan in the same tab, as a window opened from the spare
   // page shows it: the WebContent process's private memory (Linux smaps).
   await p.evaluate(plan => window.readout.apply(plan), JSON.parse(readFileSync('test/corpus/patches/01-sdd-fix-loop-plan.json', 'utf8')));
   await p.waitForTimeout(3000);
   const privateMB = privateMemoryMB(pid);
   await p.close();
-  return { ...r, warmed, privateMB };
+  return { ...r, warmed, privateMB, pyYaml };
 })();
+if (firstHighlight.pyYaml.plain.length) errors.push(`warmed page painted code plain first: ${firstHighlight.pyYaml.plain.join(', ')}`);
 if (!firstHighlight.warmed || firstHighlight.hl !== 'done') errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
 if (firstHighlight.privateMB == null) errors.push('tab private memory not measured');
 
@@ -481,6 +501,8 @@ const result = {
   web_find_next_1mb_frame_samples_ms: findNext,   // [the call, to the frame showing the match, the next frame (the match selected)]
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
   web_first_highlight_cold_ts_ms: Math.round(coldHighlight),
+  web_first_highlight_warm_py_yaml_ms: Math.round(firstHighlight.pyYaml.ms),
+  web_warm_first_paint_plain_blocks: firstHighlight.pyYaml.plain.length,
   web_tab_private_mb: firstHighlight.privateMB,
   web_stream_doc_bytes: stream.bytes,
   web_stream_doc_blocks: stream.blocks,

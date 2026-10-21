@@ -71,8 +71,22 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             let created = Date()
             log.notice("preview view created in \(Int(created.timeIntervalSince(requested) * 1000), privacy: .public) ms (spare page: \(self.usedSpare ? "yes" : "no", privacy: .public))")
             // CI's ql_page_ready_ms: view created to its page's ready.
-            webView.whenReady {
+            webView.whenReady { [weak self, weak webView] in
                 log.notice("preview page ready in \(Int(Date().timeIntervalSince(created) * 1000), privacy: .public) ms")
+                guard let self, let webView else { return }
+                // The app's default text size (Actual Size), in the preview's appearance.
+                // First, so the grammars prepared below are the only ones loaded.
+                webView.setAppearance(dark: self.isDark, accent: .controlAccentColor, width: "narrow", fontSize: 16,
+                                      strings: ReaderStrings.all, mode: "quicklook")
+                // Light or dark switched while the preview is open: it follows.
+                self.appearanceObservation = webView.observe(\.effectiveAppearance) { [weak self] _, _ in
+                    DispatchQueue.main.async {
+                        MainActor.assumeIsolated {
+                            guard let self, let webView = self.webView else { return }
+                            webView.setAppearance(dark: self.isDark, accent: .controlAccentColor)
+                        }
+                    }
+                }
             }
             return webView
         }
@@ -82,6 +96,13 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let (patch, blocks) = try await Task.detached(priority: .userInitiated) { () async throws -> (RenderPatch, Int) in
             let data = try Data(contentsOf: url)
             let text = FileContent.decode(data).text
+            // Its fence languages first: the page loads their grammars while
+            // it parses (a page up already, the spare: one still loading
+            // takes the document as soon as it is ready).
+            let langs = FenceLanguages.scan(text)
+            if !langs.isEmpty {
+                DispatchQueue.main.async { MainActor.assumeIsolated { if webView.isReady { webView.call("prepare", langs) } } }
+            }
             // The incremental parser's first parse cuts the document into
             // fragments parsed concurrently: the same document as
             // MarkdownParser.parse, sooner for a long one.
@@ -111,20 +132,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                         log.notice("preview \(how, privacy: .public): rendered \(rendered, privacy: .public) of \(blocks, privacy: .public) blocks in \(ms, privacy: .public) ms")
                     }
                 }
-                webView.whenReady { [weak self, weak webView] in
-                    guard let self, let webView else { return }
-                    // The app's default text size (Actual Size), in the preview's appearance.
-                    webView.setAppearance(dark: self.isDark, accent: .controlAccentColor, width: "narrow", fontSize: 16,
-                                          strings: ReaderStrings.all, mode: "quicklook")
-                    // Light or dark switched while the preview is open: it follows.
-                    self.appearanceObservation = webView.observe(\.effectiveAppearance) { [weak self] _, _ in
-                        DispatchQueue.main.async {
-                            MainActor.assumeIsolated {
-                                guard let self, let webView = self.webView else { return }
-                                webView.setAppearance(dark: self.isDark, accent: .controlAccentColor)
-                            }
-                        }
-                    }
+                webView.whenReady { [weak webView] in
+                    guard let webView else { return }
                     webView.onMessage = { msg in if msg["type"] as? String == "applied" { finish("applied") } }
                     webView.call("apply", patch.page)
                 }

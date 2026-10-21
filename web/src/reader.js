@@ -410,6 +410,8 @@ window.readout = {
   remoteFailed,
   remoteKnown,
   warm: () => hl.warm(),
+  // The fence languages of the document being parsed (before its apply).
+  prepare: langs => hl.prepareLangs(langs),
 };
 
 post({ type: 'ready' });
