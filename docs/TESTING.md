@@ -28,7 +28,7 @@ installs WebKit with `npx playwright install --with-deps webkit`.
 
 `web/test/copy.test.mjs` also copies random selections and parses each copy
 again with ReadoutCore (`readout-dump`, built with `swift build`, or the
-binary in `READOUT_DUMP`): the copy must read as the selection did.
+binary in `READOUT_DUMP`; with neither, it fails and says how to set it): the copy must read as the selection did.
 `COPY_FUZZ` sets the selections per document (default 8).
 
 ## 3. Signed-product smoke test
