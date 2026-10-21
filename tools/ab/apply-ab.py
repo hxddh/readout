@@ -88,8 +88,14 @@ edit("web/src/reader/enhance.js", "  const html = hl.highlightSync(code, id);\n"
 # The first document's load, on the main thread: started, parsed (result
 # back), reading state found, git baseline found.
 R = "App/ReaderWindowController.swift"
-edit(R, "        let saved = BaselineStore.prefetch(url)\n        loader.loadInitial { [weak self] result in\n",
-     "        let saved = BaselineStore.prefetch(url)\n        SmokeTest.noteLaunchPhase(\"load_start\")\n        loader.loadInitial { [weak self] result in\n            SmokeTest.noteLaunchPhase(\"load_result\")\n")
+rw = (tree / R).read_text()
+if "        loader.loadInitial { [weak self] result in\n" in rw:
+    edit(R, "        loader.loadInitial { [weak self] result in\n",
+         "        SmokeTest.noteLaunchPhase(\"load_start\")\n        loader.loadInitial { [weak self] result in\n            SmokeTest.noteLaunchPhase(\"load_result\")\n")
+else:
+    edit(R, "        }) { [weak self] result in\n            guard let self else { return }\n            guard let result else {\n",
+         "        }) { [weak self] result in\n            SmokeTest.noteLaunchPhase(\"load_result\")\n            guard let self else { return }\n            guard let result else {\n")
+    edit(R, "        let saved = BaselineStore.prefetch(url)\n", "        let saved = BaselineStore.prefetch(url)\n        SmokeTest.noteLaunchPhase(\"load_start\")\n")
 edit(R, "saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from\n",
      "saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from\n                SmokeTest.noteLaunchPhase(\"record\")\n")
 edit(R, "CommitBaseline.find(path: result.sourcePath, current: result.decoded.text) { [weak self] keys in\n",
