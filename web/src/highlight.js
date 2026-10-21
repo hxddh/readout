@@ -106,22 +106,9 @@ async function quietOutput(theme, color) {
   return { ...t, tokenColors: [...t.tokenColors, { scope: 'meta.output.shell-session', settings: { foreground: color } }] };
 }
 
-// Setting the highlighter up (Shiki, its engine, the themes and preloaded
-// grammars) is one long task on the page: up to a second on a slow Mac. A
-// page about to show its first document starts it once that document is
-// painted (patch.js), so it never holds up the first apply or its frame (in
-// 3.9.0 it landed right after the frame, ahead of the page reporting it
-// painted, and the app's next spare page waited for it); the spare page
-// starts it with its warm-up, Quick Look and printing with their first apply.
-let startNow;
-const started = new Promise(r => { startNow = r; });
-export function start() { startNow(); }
-
 export function init() {
   if (ready) return ready;
   ready = (async () => {
-    await started;
-    performance.mark('readout-hl-start');
     const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] =
       await Promise.all([import('shiki/core'), import('shiki/engine/javascript')]);
     highlighter = await createHighlighterCore({
@@ -156,7 +143,6 @@ export function init() {
 let warming = false;
 let warmStopped = false;
 export function warm() {
-  start();
   return init().then(() => {
     if (!preload || warming || warmStopped) return;
     warming = true;

@@ -6,7 +6,6 @@ import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, measureTables } from './enhance.js';
 import { sources, tight, setLinks } from './copy.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
-import { start as startHighlighter } from '../highlight.js';
 
 const notice = document.getElementById('ro-notice');
 let first = true;
@@ -323,7 +322,6 @@ export function apply(p) {
     reportActiveHeading();
     if (firstLarge) measureSkippedTables();
     post({ type: 'painted', version: p.version });
-    startHighlighter();   // after the first document's frame (highlight.js)
   }, 0));
 }
 
