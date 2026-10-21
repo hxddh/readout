@@ -426,9 +426,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // size) off the main thread, while the document parses.
         let saved = BaselineStore.prefetch(url)
         // The languages its code fences name, as soon as the file is read:
-        // the page loads and compiles their grammars while it parses.
+        // the page loads and compiles their grammars while it parses. Only
+        // to a page already up (the spare page): one still loading (the
+        // first window at launch) takes the document the moment it is ready,
+        // with no time to gain and its first paint to make.
         loader.loadInitial(fenceLanguages: { [weak self] langs in
-            self?.webView.whenReady { [weak self] in self?.webView.call("prepare", langs) }
+            guard let webView = self?.webView, webView.isReady else { return }
+            webView.call("prepare", langs)
         }) { [weak self] result in
             guard let self else { return }
             guard let result else {

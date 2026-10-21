@@ -96,10 +96,12 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let (patch, blocks) = try await Task.detached(priority: .userInitiated) { () async throws -> (RenderPatch, Int) in
             let data = try Data(contentsOf: url)
             let text = FileContent.decode(data).text
-            // Its fence languages first: the page loads their grammars while it parses.
+            // Its fence languages first: the page loads their grammars while
+            // it parses (a page up already, the spare: one still loading
+            // takes the document as soon as it is ready).
             let langs = FenceLanguages.scan(text)
             if !langs.isEmpty {
-                DispatchQueue.main.async { MainActor.assumeIsolated { webView.whenReady { webView.call("prepare", langs) } } }
+                DispatchQueue.main.async { MainActor.assumeIsolated { if webView.isReady { webView.call("prepare", langs) } } }
             }
             // The incremental parser's first parse cuts the document into
             // fragments parsed concurrently: the same document as
