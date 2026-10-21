@@ -100,7 +100,7 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   // the app gives each one on screen (margins stay inside a block), for a
   // page that is the same on every run. (Removing the class instead left
   // some blocks contained and others not, depending on timing.)
-  await page.addStyleTag({ content: '#ro-doc.cv > .blk { content-visibility: visible !important; contain: layout style paint; }' });
+  await page.addStyleTag({ content: '#ro-doc.cv > .chunk:not(.near) { content-visibility: visible !important; }' });
   // Walk the page so every lazy renderer fires, then wait until none is pending.
   const walk = async () => {
     const height = await page.evaluate(() => document.scrollingElement.scrollHeight);
@@ -185,7 +185,7 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
       return out;
     };
     const top0 = document.getElementById('ro-doc').getBoundingClientRect().top + window.scrollY;
-    const blocks = [...document.querySelectorAll('#ro-doc > .blk, #ro-doc > .del-mark')].map(b => {
+    const blocks = [...document.querySelectorAll('#ro-doc > .chunk > .blk, #ro-doc > .chunk > .del-mark')].map(b => {
       origin = null;
       const parts = [describe(b)];
       origin = b.getBoundingClientRect();

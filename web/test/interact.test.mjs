@@ -71,12 +71,23 @@ async function settledTop(page, sel) {
   }), sel);
 }
 
+// Scrolls block `slot`'s top to `at` px, and again once the frames after
+// have laid out its chunk (until then WebKit places a skipped chunk's blocks
+// at its top).
+async function scrollToBlock(page, slot, at = 0) {
+  for (let k = 0; k < 2; k++) {
+    await page.evaluate(([slot, at]) => window.scrollBy(0, document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top - at), [slot, at]);
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 50)))));
+  }
+}
+
 // Counts writes that set or clear content-visibility on the document's blocks,
-// from watchCv until cvWrites.
+// from watchCv until cvWrites. (The chunks holding them are laid out ahead
+// of the screen by their own content-visibility: not a block's.)
 const watchCv = page => page.evaluate(() => {
   window.__cv = 0;
   window.__cvObserver = new MutationObserver(ms => {
-    for (const m of ms) if (/content-visibility/.test(m.oldValue || '') !== /content-visibility/.test(m.target.getAttribute('style') || '')) window.__cv++;
+    for (const m of ms) if (m.target.classList.contains('blk') && /content-visibility/.test(m.oldValue || '') !== /content-visibility/.test(m.target.getAttribute('style') || '')) window.__cv++;
   });
   window.__cvObserver.observe(document.getElementById('ro-doc'), { subtree: true, attributes: true, attributeFilter: ['style'], attributeOldValue: true });
 });
@@ -615,7 +626,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   check('the first open of a large document reads no layout before its first frame',
     Object.keys(first.reads).length === 0 && first.code7 !== 'pending' && first.active >= 1, JSON.stringify(first));
   // Heights from the resize observer: a block above the reader that grows does not push them down.
-  await page.evaluate(() => window.scrollBy(0, document.querySelector('.blk[data-slot="300"]').getBoundingClientRect().top));
+  await scrollToBlock(page, 300);
   // Measured once the page has settled (the blocks the scroll brought on
   // screen laid out, their compensation made), not after a fixed time a
   // loaded machine can overrun (it measured -38 then, once in four runs).
@@ -663,7 +674,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.evaluate(p => window.readout.apply(p), big);
   await page.waitForTimeout(500);
   const near = await page.evaluate(() => document.querySelector('.blk[data-slot="3"] .table-wrap').classList.contains('scrolls'));
-  await page.evaluate(() => window.scrollBy(0, document.querySelector('.blk[data-slot="350"]').getBoundingClientRect().top - 100));
+  await scrollToBlock(page, 350, 100);
   await settledTop(page, '.blk[data-slot="350"]');
   const far = await page.evaluate(() => document.querySelector('.blk[data-slot="350"] .table-wrap').classList.contains('scrolls'));
   const r = { near, far, writes: await cvWrites(page) };
@@ -975,18 +986,19 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.evaluate(p => window.readout.apply(p), doc(600));
   // Block 300 on screen (laid out), then the reader 30 blocks further on.
   for (const s of [300, 330]) {
-    await page.evaluate(s => window.scrollBy(0, document.querySelector(`.blk[data-slot="${s}"]`).getBoundingClientRect().top), s);
+    await scrollToBlock(page, s);
     await settledTop(page, `.blk[data-slot="${s}"]`);
   }
   const r = await page.evaluate(p => {
     const el = document.querySelector('.blk[data-slot="300"]');
-    const before = el.style.containIntrinsicSize;
+    // The chunk's: content-visibility is decided per chunk.
+    const before = el.parentElement.style.containIntrinsicSize;
     const reader = document.querySelector('.blk[data-slot="330"]').getBoundingClientRect().top;
     let reads = 0;
     const d = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetParent');
     Object.defineProperty(HTMLElement.prototype, 'offsetParent', { ...d, get() { reads++; return d.get.call(this); } });
     try { window.readout.apply(p); } finally { Object.defineProperty(HTMLElement.prototype, 'offsetParent', d); }
-    return { before, after: el.style.containIntrinsicSize, reads, edited: el.textContent.startsWith('edited'),
+    return { before, after: el.parentElement.style.containIntrinsicSize, reads, edited: el.textContent.startsWith('edited'),
       moved: Math.round(document.querySelector('.blk[data-slot="330"]').getBoundingClientRect().top - reader) };
   }, patch(2, [{ op: 'replace', slot: 300, kind: 'paragraph', change: 'content', html: `<p>edited ${'and much longer now '.repeat(40)}</p>` }],
     { marks: [{ slot: 300, kind: 'modified' }] }));
@@ -1099,7 +1111,9 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 // 34. P10: blocks a following reader's patches lay out at once at the end
 //     go back to content-visibility many at a time, not each in a frame of
 //     its own two frames later (each such frame laid out the whole document
-//     again: 5 MB, ~0.1 s per append).
+//     again: 5 MB, ~0.1 s per append). Content-visibility is a chunk's, and
+//     appended blocks join the last chunk: no block's is set, and a chunk's
+//     at most once for each new chunk the appends start.
 {
   const page = await newPage();
   await page.evaluate(p => window.readout.apply(p), doc(400));
@@ -1113,10 +1127,11 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
     const tick = () => { frame++; requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
     const clears = new Set();
-    let sets = 0;
+    let sets = 0, blockWrites = 0;
     const mo = new MutationObserver(ms => {
       for (const m of ms) {
         const was = /content-visibility/.test(m.oldValue || ''), is = /content-visibility/.test(m.target.getAttribute('style') || '');
+        if (m.target.classList.contains('blk') && was !== is) blockWrites++;
         if (was && !is) clears.add(frame); else if (!was && is) sets++;
       }
     });
@@ -1129,12 +1144,12 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
       const se = document.scrollingElement;
       left.push(Math.round(se.scrollHeight - se.scrollTop - innerHeight));
       if (s < 440) requestAnimationFrame(() => requestAnimationFrame(add));
-      else setTimeout(() => { mo.disconnect(); resolve({ sets, clearFrames: clears.size, maxLeft: Math.max(...left) }); }, 300);
+      else setTimeout(() => { mo.disconnect(); resolve({ sets, blockWrites, clearFrames: clears.size, maxLeft: Math.max(...left) }); }, 300);
     };
     add();
   }));
   check('a following reader\'s forced blocks go back many at a time, not one frame each',
-    r.sets === 40 && r.clearFrames >= 1 && r.clearFrames <= 2 && r.maxLeft <= 1, JSON.stringify(r));
+    r.blockWrites === 0 && r.sets <= 3 && r.clearFrames <= 2 && r.maxLeft <= 1, JSON.stringify(r));
   await page.close();
 }
 
@@ -1173,9 +1188,9 @@ for (const n of [60, 400]) {
   const big = `<div class="code-block" data-lang="text"><pre><code>${Array.from({ length: 2000 }, (_, i) => `line ${i}`).join('\n')}</code></pre></div>`;
   const r = await page.evaluate(p => {
     const el = document.querySelector('.blk[data-slot="500"]');
-    const h0 = document.scrollingElement.scrollHeight, before = el.style.containIntrinsicSize;
+    const h0 = document.scrollingElement.scrollHeight, before = el.parentElement.style.containIntrinsicSize;
     window.readout.apply(p);
-    return { before, after: el.style.containIntrinsicSize, grew: document.scrollingElement.scrollHeight - h0 };
+    return { before, after: el.parentElement.style.containIntrinsicSize, grew: document.scrollingElement.scrollHeight - h0 };
   }, patch(2, [{ op: 'replace', slot: 500, kind: 'code', change: 'content', html: big }]));
   check('an edit to a block never laid out gives it the new estimate', r.before !== r.after && r.grew > 30000, JSON.stringify(r));
   await page.close();

@@ -1,7 +1,8 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes.
-import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused } from './core.js';
-import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding } from './anchor.js';
+import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem } from './core.js';
+import { place, unplace } from './chunks.js';
+import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding, baseline } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -81,10 +82,13 @@ export function renderMarks(marks, deletions, reset = false) {
     const btn = mark.firstChild;
     if (btn.title !== title) { btn.title = title; btn.setAttribute('aria-label', title); }
     const after = d.after ? slots.get(d.after) : null;
-    if (after) { if (after.nextElementSibling !== mark) after.after(mark); }
+    // Moved, it leaves its chunk as any item does (an emptied chunk goes).
+    const move = () => { if (isChunk(mark.parentElement)) unplace(mark); };
+    if (after) { if (after.nextElementSibling !== mark) { move(); after.after(mark); } }
     else {
-      if (firstBlock === undefined) firstBlock = doc.querySelector(':scope > .blk');
-      if (mark.nextElementSibling !== firstBlock || !mark.isConnected) doc.insertBefore(mark, firstBlock);
+      if (firstBlock === undefined) firstBlock = doc.querySelector(':scope > .chunk > .blk');
+      if (!firstBlock) { if (!mark.isConnected) place(mark, null); }
+      else if (mark.nextElementSibling !== firstBlock || !mark.isConnected) { move(); firstBlock.before(mark); }
     }
   }
   scheduleShow();
@@ -109,7 +113,7 @@ function makeDelMark(id) {
 function dropDelMark(id, mark) {
   readObserver.unobserve(mark);
   disarmRead(mark);
-  mark.remove();
+  if (isChunk(mark.parentElement)) unplace(mark); else mark.remove();
   if (delMarks.get(id) === mark) delMarks.delete(id);
 }
 
@@ -135,7 +139,7 @@ export function closePopups() {
   for (const slot of [...openDiffs]) {
     closeDiff(slot);
     const el = slots.get(slot);
-    if (el) heights.set(el, el.getBoundingClientRect().height);
+    if (el) baseline(el);
   }
   walk = [];
   autoDiff = null;
@@ -205,7 +209,7 @@ export function toggleDiffInView() {
   walk = [];
   if (all.some(el => +el.dataset.slot === autoDiff)) autoDiff = null;
   const anchor = captureAnchor();
-  for (const el of all) { closeDiff(+el.dataset.slot); heights.set(el, el.getBoundingClientRect().height); }
+  for (const el of all) { closeDiff(+el.dataset.slot); baseline(el); }
   restoreAnchor(anchor, new Set());
   scheduleRail();
   return false;
@@ -226,7 +230,7 @@ function flipDiff(slot) {
   const anchor = captureAnchor();
   if (openDiffs.has(slot)) closeDiff(slot); else showDiff(el, diffOf.get(slot));
   // The panel is part of the block, not new content: keep the height baseline.
-  heights.set(el, el.getBoundingClientRect().height);
+  baseline(el);
   restoreAnchor(anchor, new Set());
   scheduleRail();
   return openDiffs.has(slot);
@@ -235,7 +239,7 @@ function flipDiff(slot) {
 // The edit mark in the gutter opens the comparison: a click on an edited
 // block left of its text.
 doc.addEventListener('click', ev => {
-  const el = ev.target.closest('#ro-doc > .blk.wd-has');
+  const el = ev.target.closest('#ro-doc > .chunk > .blk.wd-has');
   if (!el || ev.target.closest('a, button, .wd-panel')) return;
   const text = el.firstElementChild;
   if (!text || ev.clientX >= text.getBoundingClientRect().left) return;
@@ -475,10 +479,10 @@ export function unreadElements() {
 function inDocumentOrder(els) {
   if (els.length < 2) return els;
   // Many of them: one walk over the page costs less than sorting them.
-  if (els.length * 16 > doc.children.length) {
+  if (els.length * 16 > slots.size) {
     const want = new Set(els);
     const out = [];
-    for (let e = doc.firstElementChild; e; e = e.nextElementSibling) if (want.has(e)) out.push(e);
+    for (let e = firstItem(); e; e = nextItem(e)) if (want.has(e)) out.push(e);
     return out;
   }
   return els.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
@@ -486,7 +490,7 @@ function inDocumentOrder(els) {
 
 /** The block or removal marker shown right after `el` (null: none). */
 function nextShown(el) {
-  for (let e = el.nextElementSibling; e; e = e.nextElementSibling) {
+  for (let e = nextItem(el); e; e = nextItem(e)) {
     if (!e.classList.contains('blk') && !e.classList.contains('del-mark')) continue;
     return e;
   }

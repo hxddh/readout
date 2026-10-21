@@ -9,7 +9,7 @@
 // selection inside one code block, code span or formula copies just that code
 // or TeX, as it always did. Rich text (Notes, Pages, Mail, Slack, Notion) is
 // the selected HTML without the page's controls, panels and state.
-import { doc } from './core.js';
+import { doc, isChunk, itemOf, firstItem, lastItem, nextItem, prevItem } from './core.js';
 
 /** block element -> its Markdown source (patch.js sets it from `op.src`). */
 export const sources = new WeakMap();
@@ -72,7 +72,7 @@ function touchedBlocks(r) {
   const last = endBlock(r.endContainer, r.endOffset, true);
   const out = [];
   if (!first || !last) return out;
-  for (let e = first; e; e = e.nextElementSibling) {
+  for (let e = first; e; e = nextItem(e)) {
     if (e.classList.contains('blk')) out.push(e);
     if (e === last) break;
   }
@@ -85,17 +85,19 @@ function touchedBlocks(r) {
 
 /** The block a range end lies in, or the nearest one inside the range from that end. */
 function endBlock(node, offset, atEnd) {
-  const step = e => atEnd ? e.previousElementSibling : e.nextElementSibling;
+  const step = e => atEnd ? prevItem(e) : nextItem(e);
   let e;
-  if (node === doc) {
-    const n = atEnd ? doc.childNodes[offset - 1] : doc.childNodes[offset];
-    if (!n) return atEnd ? doc.lastElementChild : null;
-    e = n.nodeType === Node.ELEMENT_NODE ? n : (atEnd ? n.previousElementSibling : n.nextElementSibling);
+  if (node === doc || isChunk(node)) {
+    // Between two chunks, or two items of a chunk: the item on the range's side.
+    let n = atEnd ? node.childNodes[offset - 1] : node.childNodes[offset];
+    while (n && n.nodeType !== Node.ELEMENT_NODE) n = atEnd ? n.previousSibling : n.nextSibling;
+    if (n && isChunk(n)) n = atEnd ? n.lastElementChild : n.firstElementChild;
+    else if (!n && node === doc) return atEnd ? lastItem() : null;
+    else if (!n) n = atEnd ? (node.firstElementChild ? prevItem(node.firstElementChild) : null) : (node.lastElementChild ? nextItem(node.lastElementChild) : null);
+    e = n && itemOf(n);
   }
-  else if (doc.contains(node)) {
-    e = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-    while (e.parentElement !== doc) e = e.parentElement;
-  } else if (node.contains(doc)) e = atEnd ? doc.lastElementChild : doc.firstElementChild;
+  else if (doc.contains(node)) e = itemOf(node);
+  else if (node.contains(doc)) e = atEnd ? lastItem() : firstItem();
   else return null;
   // A removed-text marker or another child that is not a block: the next block inward.
   while (e && !e.classList.contains('blk')) e = step(e);
@@ -192,8 +194,8 @@ export function markdownOf(r) {
 
 /** The block before `b` (a removed-text marker between them is not one). */
 function previousBlock(b) {
-  let e = b.previousElementSibling;
-  while (e && !e.classList.contains('blk')) e = e.previousElementSibling;
+  let e = prevItem(b);
+  while (e && !e.classList.contains('blk')) e = prevItem(e);
   return e;
 }
 
@@ -570,7 +572,7 @@ export function htmlOf(range) {
     }
     if (body.rows.length) f.replaceWith(table); else f.remove();
   }
-  for (const b of box.querySelectorAll('.blk')) b.replaceWith(...b.childNodes);
+  for (const b of box.querySelectorAll('.chunk, .blk')) b.replaceWith(...b.childNodes);
   box.querySelectorAll('[tabindex]').forEach(e => e.removeAttribute('tabindex'));
   safeHTML(box);
   return box.innerHTML;

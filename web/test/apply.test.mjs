@@ -334,7 +334,7 @@ const captured = await page.evaluate(() => window.readout.captureAnchor());
 // Failed once in 58 CI runs (null), never locally: say where the page was if it happens again.
 const captureState = await page.evaluate(() => ({ scrollY, scrollHeight: document.scrollingElement.scrollHeight,
   cv: document.getElementById('ro-doc').classList.contains('cv'),
-  shown: [...document.querySelectorAll('#ro-doc > .blk')].filter(e => !e.hidden && e.offsetParent).length,
+  shown: [...document.querySelectorAll('#ro-doc > .chunk > .blk')].filter(e => !e.hidden && e.offsetParent).length,
   top65: document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top }));
 check('capture sees slot 65', captured && captured.slot === 65, JSON.stringify({ captured, ...captureState }));
 // Insert a long unread paragraph after slot 20: slot 65 must not move.
@@ -493,7 +493,7 @@ check('an edited rail tick is as strong as an added one', tickOpacity.length ===
     window.scrollTo(0, el.offsetTop - 300);
     await new Promise(r => requestAnimationFrame(r));
     // The block at the top of the view: what the reader is looking at.
-    const ref = [...document.querySelectorAll('#ro-doc > .blk')].find(b => b.getBoundingClientRect().top >= 0);
+    const ref = [...document.querySelectorAll('#ro-doc > .chunk > .blk')].find(b => b.getBoundingClientRect().top >= 0);
     const top0 = ref.getBoundingClientRect().top;
     const textLeft = el.firstElementChild.getBoundingClientRect().left;
     const y = el.getBoundingClientRect().top + 8;
@@ -649,6 +649,45 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     ops: [{ op: 'insert', slot: 1, after: 0, html: '<p>hello</p>', kind: 'paragraph' }], marks: [{ slot: 1, kind: 'inserted' }] }));
   const after = await page.evaluate(() => !!document.getElementById('ro-empty'));
   check('empty-file notice goes when content arrives', shown && !after, JSON.stringify({ shown, after }));
+}
+
+// Chunks (chunks.js): a document's blocks are grouped in chunks of 32. Order,
+// spacing and the reader's place are the same across a chunk's edge: a
+// heading right after a rule sits flush whether or not a chunk starts
+// between them, and an agent inserting in the middle of a full chunk, then
+// removing blocks until chunks empty, keeps the blocks in order, no chunk
+// empty or past 64, the reader where they were.
+{
+  const kind = i => i === 10 || i === 32 ? 'rule' : i === 11 || i === 33 ? 'heading' : 'paragraph';
+  const html = i => kind(i) === 'rule' ? '<hr>' : kind(i) === 'heading' ? `<h2>Section ${i}</h2>` : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(300, html, kind));
+  const flush = await page.evaluate(() => {
+    const h = s => document.querySelector(`.blk[data-slot="${s}"]`);
+    return { sameChunk: h(10).parentElement === h(11).parentElement, acrossChunks: h(32).parentElement !== h(33).parentElement,
+      inner: getComputedStyle(h(11).firstElementChild).marginTop, edge: getComputedStyle(h(33).firstElementChild).marginTop };
+  });
+  check('a heading after a rule sits flush across a chunk\'s edge as within one', flush.sameChunk && flush.acrossChunks && flush.inner === flush.edge && flush.inner === '0px', JSON.stringify(flush));
+  await toTop(150);
+  await settled();
+  const before = await topOf(150);
+  // 40 blocks into the middle of the chunk holding 100 (it grows past 64 and splits), then 120 blocks removed (chunks empty and merge).
+  const ins = Array.from({ length: 40 }, (_, k) => ({ op: 'insert', slot: 1000 + k, after: k ? 1000 + k - 1 : 100, kind: 'paragraph', html: `<p>inserted ${k}</p>` }));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: ins }));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 120 }, (_, k) => ({ op: 'remove', slot: 20 + k })).filter(o => o.slot !== 33 && o.slot !== 32) }));
+  await settled();
+  const shape = await page.evaluate(() => {
+    const chunks = [...document.querySelectorAll('#ro-doc > .chunk')];
+    const order = [...document.querySelectorAll('#ro-doc .blk')].map(b => +b.dataset.slot);
+    return { sizes: chunks.map(c => c.childElementCount), order, top150: Math.round(document.querySelector('.blk[data-slot="150"]').getBoundingClientRect().top) };
+  });
+  const expected = [];
+  for (let i = 1; i <= 300; i++) {
+    if (!(i >= 20 && i < 140 && i !== 32 && i !== 33)) expected.push(i);
+    if (i === 100) for (let k = 0; k < 40; k++) expected.push(1000 + k);
+  }
+  check('blocks inserted into a full chunk and removed until chunks empty keep their order, chunks neither empty nor past 64, the reader in place',
+    JSON.stringify(shape.order) === JSON.stringify(expected) && shape.sizes.every(n => n > 0 && n <= 64) && Math.abs(shape.top150 - before) <= 1,
+    JSON.stringify({ sizes: shape.sizes, before, top150: shape.top150, n: shape.order.length }));
 }
 
 // The block at the top of the viewport is removed: the block after it takes
@@ -1013,7 +1052,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await toTop(30, 30);   // block 29 ends under the toolbar, block 30 shows below it
   await page.waitForTimeout(300);
   const under = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('#ro-doc > .blk')].find(e => e.getBoundingClientRect().bottom > 8);
+    const b = [...document.querySelectorAll('#ro-doc > .chunk > .blk')].find(e => e.getBoundingClientRect().bottom > 8);
     return { slot: +b.dataset.slot, bottom: Math.round(b.getBoundingClientRect().bottom) };
   });
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: under.slot }], deletions: [{ id: 1, after: under.slot - 1, count: 1, preview: 'x' }] }));
@@ -1146,9 +1185,11 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   check('a 25-op update lays out the page once while applying', layouts <= 2, `layouts=${layouts}`);
 }
 
-// While the reader scrolls through a large document, blocks resize as they
-// are laid out: the rail is redrawn a few times a second, not every frame,
-// and its last state is drawn.
+// While the reader scrolls through a large document, blocks resize (laid
+// out as they come near, images and diagrams arriving): the rail is redrawn a
+// few times a second, not every frame, and its last state is drawn. Chunks
+// lay their blocks out a few at a time, so a block on screen also grows by a
+// pixel every frame: a resize in every frame, as per-block layout gave.
 {
   const r = fixReset(400, i => `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(1 + (i * 7) % 13)}</p>`);
   r.marks = Array.from({ length: 40 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' }));
@@ -1157,20 +1198,24 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.waitForTimeout(400);
   const r2 = await page.evaluate(() => new Promise(resolve => {
     const rail = document.getElementById('ro-rail');
-    let rebuilds = 0, resizes = 0;
+    let rebuilds = 0, resizes = 0, frames = 0, grown = 0;
     const mo = new MutationObserver(recs => { for (const rec of recs) if (rec.removedNodes.length) rebuilds++; });
     mo.observe(rail, { childList: true });
     const ro = new ResizeObserver(() => { resizes++; });
-    for (const b of document.querySelectorAll('#ro-doc > .blk')) ro.observe(b);
+    for (const b of document.querySelectorAll('#ro-doc > .chunk > .blk')) ro.observe(b);
     const start = performance.now();
     const step = () => {
       window.scrollBy(0, 120);
+      frames++;
+      const grow = document.elementFromPoint(400, 400)?.closest('.blk');
+      if (grow) grown++;
+      if (grow) grow.style.minHeight = `${grow.getBoundingClientRect().height + 1}px`;
       if (performance.now() - start < 1500) requestAnimationFrame(step);
-      else setTimeout(() => { mo.disconnect(); ro.disconnect(); resolve({ rebuilds, resizes, ticks: rail.children.length }); }, 500);
+      else setTimeout(() => { mo.disconnect(); ro.disconnect(); resolve({ rebuilds, resizes, frames, grown, ticks: rail.children.length }); }, 500);
     };
     requestAnimationFrame(step);
   }));
-  const unread = await page.evaluate(() => document.querySelectorAll('#ro-doc > .blk.m-inserted:not(.m-read)').length);
+  const unread = await page.evaluate(() => document.querySelectorAll('#ro-doc > .chunk > .blk.m-inserted:not(.m-read)').length);
   // 1.5 s of scrolling plus the half second after: at most one redraw per 250 ms.
   check('the rail is redrawn at most every 250 ms while blocks resize', r2.resizes > 20 && r2.rebuilds <= 9 && r2.ticks === unread,
     JSON.stringify({ ...r2, unread }));

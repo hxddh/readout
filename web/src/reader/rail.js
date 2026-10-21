@@ -2,6 +2,7 @@
 import { strings, quicklook } from './core.js';
 import { unreadElements, focusBlock, visit, pulse } from './marks.js';
 import { scrollToElement, topInset } from './anchor.js';
+import { roughRect } from './chunks.js';
 
 const rail = document.getElementById('ro-rail');
 let railQueued = false;
@@ -39,7 +40,7 @@ function drawRail() {
   const inset = Math.min(topInset(), window.innerHeight / 2);
   const track = window.innerHeight - inset;
   // All reads before any write, so the page is laid out once.
-  const rects = list.map(el => el.getBoundingClientRect());
+  const rects = list.map(roughRect);
   rail.replaceChildren();
   for (let i = 0; i < list.length; i++) {
     const el = list[i];

@@ -186,7 +186,7 @@ for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
 
   // 2-4. Per block.
   const res = await page.evaluate(stride => {
-    const blocks = [...document.querySelectorAll('#ro-doc > .blk')];
+    const blocks = [...document.querySelectorAll('#ro-doc > .chunk > .blk')];
     const out = [];
     blocks.forEach((b, i) => {
       const r = document.createRange(); r.selectNodeContents(b);
@@ -271,7 +271,7 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
   const got = await page.evaluate(() => {
     const doc = document.getElementById('ro-doc');
     const range = el => { const r = document.createRange(); r.selectNodeContents(el); return r; };
-    const blockOf = (sel, text) => [...doc.querySelectorAll(`:scope > .blk${sel}`)].find(b => b.textContent.includes(text));
+    const blockOf = (sel, text) => [...doc.querySelectorAll(`:scope > .chunk > .blk${sel}`)].find(b => b.textContent.includes(text));
     const all = window.__copy(range(doc));
     const refPara = window.__copy(range(blockOf('.k-paragraph', 'reference link')));
     // Part of one plain paragraph: no page control in it, so on main WebKit copied it with Readout's styles.
@@ -365,7 +365,7 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
   await page.waitForTimeout(300);
   const got = await page.evaluate(() => {
     const doc = document.getElementById('ro-doc');
-    const blockOf = text => [...doc.querySelectorAll(':scope > .blk')].find(b => b.textContent.includes(text));
+    const blockOf = text => [...doc.querySelectorAll(':scope > .chunk > .blk')].find(b => b.textContent.includes(text));
     const range = (a, z) => { const r = document.createRange(); r.setStart(a, 0); r.setEnd(z, z.childNodes.length); return r; };
     return {
       open: doc.querySelector('details').open,
@@ -427,7 +427,7 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
     const ms = performance.now() - t0;
     removeEventListener('copy', grab);
     // A third of it (~200,000 characters): Markdown only too (F8: WebKit takes 0.3 s for 400 KB of rich text).
-    const blocks = document.querySelectorAll('#ro-doc > .blk');
+    const blocks = document.querySelectorAll('#ro-doc > .chunk > .blk');
     r.setEnd(blocks[Math.floor(blocks.length / 3)], 0);
     const third = window.__copy(r);
     return { ms, chars: text.length, html: html.length, third: { chars: third.text.length, html: third.html.length } };

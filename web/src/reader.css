@@ -127,9 +127,19 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
   overflow-wrap: break-word;
 }
 
-/* Large documents: let WebKit skip layout for off-screen blocks. */
-#ro-doc.cv > .blk {
-  content-visibility: auto;
+/* The document's blocks come in chunks (chunks.js). Large documents let
+   WebKit skip laying out the chunks away from the screen; those near it
+   (.near) are laid out ahead, so a chunk on screen is never contained. A
+   chunk spans the side gutters, as a block does; its content box is the
+   document's, so blocks lay out as without it. */
+#ro-doc.cv > .chunk:not(.near) { content-visibility: auto; }
+/* WebKit repositions every sticky box in every frame that scrolls, skipped
+   or not (5 MB: most of each frame): table headers stick only near the screen. */
+#ro-doc.cv > .chunk:not(.near) :is(.table-wrap thead th, .table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child) { position: static; }
+#ro-doc > .chunk {
+  display: flow-root;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
 }
 
 /* ---------- Blocks ---------- */
@@ -140,7 +150,7 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    it extends over the side gutters, so containment never clips what sits
    there (change marks, heading links, list numbers). Spacing below is set
    for margins that do not collapse between blocks. */
-#ro-doc > .blk {
+#ro-doc > .chunk > .blk {
   display: flow-root;
   margin-inline: calc(-1 * (var(--gutter) + var(--out)));
   padding-inline: calc(var(--gutter) + var(--out));
@@ -159,23 +169,23 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    4 rem to the window's edge: its first column, which is read down like the
    text, and its change bar stay on the text's edge. */
 @property --out { syntax: "<length>"; inherits: true; initial-value: 0px; }
-#ro-doc > .blk:is(.k-code, .k-table) {
+#ro-doc > .chunk > .blk:is(.k-code, .k-table) {
   --bleed: clamp(0px, (100vw - 8rem - 1.35 * var(--measure)) * 1000, 0.175 * var(--measure));
 }
 /* In the code's own font: 1ch is a column (the code is 0.84 of this size, --fs-code). */
-#ro-doc > .blk.k-code {
+#ro-doc > .chunk > .blk.k-code {
   font-family: var(--mono);
   --out: clamp(0px, ((var(--cb-cols, 0) * 1ch + 2.1em) * 0.84 - var(--measure)) * 1000, var(--bleed));
 }
-:root[data-code-wrap="on"] #ro-doc > .blk.k-code { --out: 0px; }
-#ro-doc > .blk.k-code > .code-block { margin-inline: calc(-1 * var(--out)); }
+:root[data-code-wrap="on"] #ro-doc > .chunk > .blk.k-code { --out: 0px; }
+#ro-doc > .chunk > .blk.k-code > .code-block { margin-inline: calc(-1 * var(--out)); }
 @media not print {
-  #ro-doc > .blk.k-table:has(> .table-wrap.scrolls) {
+  #ro-doc > .chunk > .blk.k-table:has(> .table-wrap.scrolls) {
     --out-end: clamp(0px, var(--tb-w, 0px) - var(--measure), min(var(--bleed) * 1000, 2 * var(--bleed), (100vw - var(--measure)) / 2 - 4rem));
     margin-inline-end: calc(-1 * (var(--gutter) + var(--out-end)));
     padding-inline-end: calc(var(--gutter) + var(--out-end));
   }
-  #ro-doc > .blk.k-table > .table-wrap.scrolls { margin-inline-end: calc(-1 * var(--out-end)); }
+  #ro-doc > .chunk > .blk.k-table > .table-wrap.scrolls { margin-inline-end: calc(-1 * var(--out-end)); }
 }
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
 /* CJK emphasis: upright (Han and kana have no italic), with emphasis dots
@@ -221,7 +231,7 @@ em.cjk-em-long { font-weight: 500; }
    the tests run. */
 @font-face { font-family: ro-zh-punct; src: local("PingFangSC-Regular"), local("Noto Sans CJK SC"); unicode-range: U+2018-2019, U+201C-201D, U+2014, U+2026; font-weight: 1 549; }
 @font-face { font-family: ro-zh-punct; src: local("PingFangSC-Semibold"), local("Noto Sans CJK SC Bold"); unicode-range: U+2018-2019, U+201C-201D, U+2014, U+2026; font-weight: 550 1000; }
-#ro-doc > .blk:lang(zh):not(.k-code) { font-family: ro-zh-punct, var(--font); }
+#ro-doc > .chunk > .blk:lang(zh):not(.k-code) { font-family: ro-zh-punct, var(--font); }
 /* CJK: trim the doubled space of adjacent full-width punctuation where WebKit supports it. */
 @supports (text-spacing-trim: space-first) { html { text-spacing-trim: space-first; } }
 
@@ -261,9 +271,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 /* The first heading, or the one right under the front matter, starts at the
    top; one right under a rule leaves the rule's 2em as the gap. */
-#ro-doc > .k-heading:first-child:has(> :is(h1, h2)),
-#ro-doc > .k-frontMatter + .k-heading:has(> :is(h1, h2)),
-#ro-doc > .k-rule + .k-heading { --h-mt: 0rem; }
+#ro-doc > .chunk:first-child > .k-heading:first-child:has(> :is(h1, h2)),
+#ro-doc > .chunk > .k-frontMatter + .k-heading:has(> :is(h1, h2)),
+#ro-doc > .chunk > .k-rule + .k-heading,
+/* The same first in a chunk, after the chunk before (chunks.js: a selector
+   reaching into the chunk before made WebKit restyle every chunk on each change). */
+#ro-doc > .chunk > .k-heading.h-flush:first-child { --h-mt: 0rem; }
 .k-heading > :is(h1, h2, h3, h4, h5, h6) { font-size: var(--h-fs); margin: var(--h-mt) 0 var(--h-mb); }
 .k-heading h1 { letter-spacing: -0.015em; font-weight: 700; }
 .k-heading h2 { letter-spacing: -0.01em; }
@@ -363,8 +376,8 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: var(--flow); }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):last-child { margin-bottom: 0; }
 li { margin: 0.12em 0; }
 /* Each item is a block of its own: half the gap on each side of it. */
-#ro-doc > .blk > .li-block > li { margin-top: 0.06em; }
-#ro-doc > .blk > .li-block:not(.li-loose) > li { margin-bottom: 0.06em; }
+#ro-doc > .chunk > .blk > .li-block > li { margin-top: 0.06em; }
+#ro-doc > .chunk > .blk > .li-block:not(.li-loose) > li { margin-bottom: 0.06em; }
 li::marker { color: var(--text-3); }
 /* Numbers are text: AA, like the secondary text (bullets stay quieter). */
 ol > li::marker { color: var(--text-2); }
@@ -760,7 +773,7 @@ details ul, details ol { padding-left: 1.5em; }
 #ro-notice[hidden] { display: none; }
 
 /* A block a jump moved the keyboard focus to shows no focus ring (it is where the jump landed). */
-#ro-doc > [tabindex="-1"]:focus { outline: none; }
+#ro-doc > .chunk > [tabindex="-1"]:focus { outline: none; }
 
 /* Empty state */
 #ro-empty { color: var(--text-2); font-size: var(--fs-sm); padding-top: 18vh; text-align: center; }
@@ -837,9 +850,10 @@ details ul, details ol { padding-left: 1.5em; }
   /* Room on the left for list numbers past 99, which hang a little out of
      the column (on screen into the gutter, here past the paper's edge). */
   #ro-doc { padding: 0 0 0 1rem; max-width: none; }
-  #ro-doc.cv > .blk { content-visibility: visible; }
-  #ro-doc > .blk { margin-inline: 0; padding-inline: 0; }
-  #ro-doc > .blk:is(.k-code, .k-table) { --bleed: 0px; }
+  #ro-doc.cv > .chunk, #ro-doc.cv > .chunk:not(.near) { content-visibility: visible; }
+  #ro-doc > .chunk { margin-inline: 0; padding-inline: 0; }
+  #ro-doc > .chunk > .blk { margin-inline: 0; padding-inline: 0; }
+  #ro-doc > .chunk > .blk:is(.k-code, .k-table) { --bleed: 0px; }
   :is(td, th)[data-nw], :is(td, th) code[data-nw] { white-space: normal; }
   .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
   /* Never cut a code block, table row, diagram, formula, image or alert across pages. */

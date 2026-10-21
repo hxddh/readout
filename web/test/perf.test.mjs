@@ -7,7 +7,10 @@
 // while the reader follows; on a fresh warmed page, the first apply of a small
 // document whose code block is on screen, then a small plan's private memory;
 // on a fresh page not warmed, how long its first TypeScript block takes to
-// highlight. Writes the numbers to
+// highlight; scrolling 500 KB (with and without change marks), 1 MB and
+// 5 MB documents (frame gaps, the page's own longest callback, blank area),
+// a selection change, a mouse drag, the dark/light switch and find Next, an
+// agent streaming at 5 MB (frame gaps) and inserting in its middle. Writes the numbers to
 // test/out/perf-web.json; tools/perf-assert.py checks them against
 // tools/perf-budgets.json.
 //
@@ -18,6 +21,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { extname, join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { collectPageErrors } from './pageerrors.mjs';
+import { instrument, scrollPasses, summary, interactions, streamFrames, insertMiddle } from './scrollperf.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const server = http.createServer((req, res) => {
@@ -30,14 +34,16 @@ const base = `http://127.0.0.1:${server.address().port}`;
 
 // Chain corpus patches into one document of at least `target` bytes of HTML.
 const files = readdirSync('test/corpus/patches').filter(f => f.endsWith('.json')).sort();
-function chain(target) {
+// `few`: an agent's plan or report with few code blocks (one in 15 kept, no diagrams).
+function chain(target, few = false) {
   const ops = [];
-  let slot = 0, bytes = 0;
+  let slot = 0, bytes = 0, codes = 0;
   for (let round = 0; bytes < target; round++) {
     for (const f of files) {
       const p = JSON.parse(readFileSync(`test/corpus/patches/${f}`, 'utf8'));
       for (const op of p.ops) {
         if (op.op !== 'insert') continue;
+        if (few && (op.kind === 'mermaid' || (op.kind === 'code' && codes++ % 15))) continue;
         ++slot;
         ops.push({ ...op, slot, after: slot - 1, anchor: op.anchor ? `${op.anchor}-${round}-${slot}` : undefined });
         bytes += op.html.length;
@@ -175,6 +181,39 @@ const scrollUpJump = await page.evaluate(() => new Promise(async resolve => {
 
 await page.close();
 
+// Scrolling down through parts not seen yet (scrollperf.mjs), on a page set
+// up as a window is (the toolbar inset): a 500 KB agent document with few
+// code blocks, static and with every eighth block changed and unread, and the
+// 1 MB document, then its interactions.
+async function scrollDoc(docOps, { marks = false, act = false } = {}) {
+  const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
+  collectPageErrors(p, errors, `scroll ${docOps.length} blocks: `);
+  await instrument(p);
+  await p.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16, topInset: 52 }));
+  await p.evaluate(p => window.readout.apply(p), { version: 1, reset: true, rewrite: false, ops: docOps, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p.waitForTimeout(1500);
+  if (marks) {
+    const changed = docOps.filter((_, i) => i % 8 === 3);
+    await p.evaluate(p => window.readout.apply(p), { version: 2, reset: false, rewrite: false, deletions: [], toc: [], tasks: { done: 0, total: 0 },
+      ops: changed.map(o => ({ ...o, op: 'replace', change: 'modified', html: o.html.replace(/<\/(p|li|td|h\d)>/, ' (revised)</$1>') })),
+      marks: changed.map((o, i) => ({ slot: o.slot, kind: i % 2 ? 'modified' : 'inserted' })) });
+    await p.waitForTimeout(1000);
+  }
+  const r = { scroll: summary(await scrollPasses(p, { inset: 52 })), act: act ? await interactions(p) : null };
+  await p.close();
+  return r;
+}
+const few = chain(500_000, true).ops;
+const scroll500 = await scrollDoc(few);
+const scroll500m = await scrollDoc(few, { marks: true });
+const scroll1 = await scrollDoc(ops, { act: true });
+
 // An agent streaming at the end of a ~5 MB document, the reader following:
 // every fifth patch appends a paragraph, the others write on into it (the
 // agent's last block growing), each with the unread marks of the last
@@ -187,6 +226,7 @@ const streamStart = Date.now();
 const stream = await (async () => {
   const p5 = await browser.newPage({ viewport: { width: 900, height: 900 } });
   collectPageErrors(p5, errors, '5 MB: ');
+  await instrument(p5);
   await p5.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -206,9 +246,8 @@ const stream = await (async () => {
   await frames();
   await p5.waitForTimeout(500);
   const above = await p5.evaluate(() => {
-    let e = document.elementFromPoint(450, 300).closest('.blk');
-    for (let i = 0; i < 50; i++) e = e.previousElementSibling;
-    return +e.dataset.slot;
+    const blocks = [...document.querySelectorAll('#ro-doc .blk')];
+    return +blocks[blocks.indexOf(document.elementFromPoint(450, 300).closest('.blk')) - 50].dataset.slot;
   });
   const aboveOp = doc5.ops.find(o => o.slot === above);
   const edits = [];
@@ -228,7 +267,7 @@ const stream = await (async () => {
     await frames();
     await p5.waitForTimeout(300);
     jumps.push(await p5.evaluate(frac => new Promise(resolve => {
-      const hs = document.querySelectorAll('#ro-doc > .blk.k-heading');
+      const hs = document.querySelectorAll('#ro-doc > .chunk > .blk.k-heading');
       const h = hs[Math.floor(hs.length * frac)];
       const t0 = performance.now();
       window.readout.scrollToSlot(+h.dataset.slot);
@@ -261,6 +300,13 @@ const stream = await (async () => {
     await p5.waitForTimeout(500);
   }
   await p5.evaluate(() => window.readout.findEnd());
+  // Scrolling the 5 MB document, then its interactions; an agent inserting
+  // in its middle; then streaming at its end with a patch every 100 ms.
+  const scroll5 = summary(await scrollPasses(p5));
+  const act5 = await interactions(p5);
+  const insert = await insertMiddle(p5, doc5.ops, doc5.ops.length + 1000);
+  const streamed = await streamFrames(p5, doc5.ops.length);
+  const streamFrame = summary({ gaps: streamed.gaps, blank: [], own: [] });
   // To the end, again once the blocks there are laid out at their real
   // heights (the first scroll lands where their estimates put it).
   for (let k = 0; k < 3; k++) {
@@ -268,7 +314,7 @@ const stream = await (async () => {
     await frames();
     await p5.waitForTimeout(300);
   }
-  let slot5 = doc5.ops.length, last = slot5;
+  let slot5 = streamed.slot, last = slot5;
   const marks = [];
   const times = [];
   for (let i = 0; i < 40; i++) {
@@ -286,7 +332,8 @@ const stream = await (async () => {
   }
   const left = await p5.evaluate(() => { const s = document.scrollingElement; return Math.round(s.scrollHeight - s.scrollTop - innerHeight); });
   await p5.close();
-  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps), letter: median(oneLetter.map(x => x.ms)), letterSamples: oneLetter.map(x => [x.call, x.first, x.ms].map(Math.round)) };
+  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps), letter: median(oneLetter.map(x => x.ms)), letterSamples: oneLetter.map(x => [x.call, x.first, x.ms].map(Math.round)),
+    scroll5, act5, insert, streamFrame };
 })();
 console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 1000)} s`);
 
@@ -387,6 +434,7 @@ const coldHighlight = await (async () => {
 })();
 if (coldHighlight < 0) errors.push('cold first highlight not measured');
 
+if (!stream.act5.findSelected) errors.push("find Next at 5 MB did not select its match");
 const result = {
   web_doc_bytes: bytes,
   web_doc_blocks: ops.length,
@@ -408,6 +456,20 @@ const result = {
   web_find_one_letter_5mb_ms: Math.round(stream.letter),
   web_find_one_letter_5mb_samples_ms: stream.letterSamples,   // [the call, the first frame, both frames]
   web_scroll_up_jump_px: scrollUpJump,
+  ...Object.fromEntries([['500kb', scroll500.scroll], ['500kb_marks', scroll500m.scroll], ['1mb', scroll1.scroll], ['5mb', stream.scroll5]].flatMap(([k, v]) => [
+    [`web_scroll_${k}_frame_p95_ms`, v.p95], [`web_scroll_${k}_frame_max_ms`, v.max], [`web_scroll_${k}_long_frames`, v.long], [`web_scroll_${k}_frames`, v.frames]])),
+  web_scroll_blank_px: [scroll500, scroll500m, scroll1].reduce((a, r) => a + r.scroll.blankPx, stream.scroll5.blankPx),
+  web_scroll_blank_frames: [scroll500, scroll500m, scroll1].reduce((a, r) => a + r.scroll.blankFrames, stream.scroll5.blankFrames),
+  web_scroll_own_longest_ms: Math.max(scroll500.scroll.ownMax, scroll500m.scroll.ownMax, scroll1.scroll.ownMax, stream.scroll5.ownMax),
+  web_select_1mb_ms: Math.round(scroll1.act.select * 10) / 10,
+  web_select_5mb_ms: Math.round(stream.act5.select * 10) / 10,
+  web_drag_5mb_ms: Math.round(stream.act5.drag),
+  web_theme_1mb_ms: Math.round(scroll1.act.theme),
+  web_theme_5mb_ms: Math.round(stream.act5.theme),
+  web_find_next_5mb_ms: Math.round(stream.act5.findNext * 10) / 10,
+  web_insert_middle_5mb_ms: Math.round(stream.insert * 10) / 10,
+  web_stream_frame_p95_5mb_ms: stream.streamFrame.p95,
+  web_stream_long_frames_5mb: stream.streamFrame.long,
   errors,
 };
 mkdirSync('test/out', { recursive: true });

@@ -142,12 +142,19 @@ function breakAfterSlashes(el) {
  * the page lays out twice, and twice more when a table had to wrap again.
  */
 export function measureTables(tables = doc.querySelectorAll('.table-wrap')) {
-  const list = [...tables].filter(t => t.isConnected);
+  // A table in a chunk content-visibility skips is measured when it comes
+  // on screen (skippedTables): asked now, WebKit would lay the chunk out to
+  // answer, every such chunk once.
+  const list = [];
+  for (const t of tables) {
+    if (!t.isConnected) continue;
+    if (t.checkVisibility({ contentVisibilityAuto: true })) list.push(t); else skippedTables.observe(t);
+  }
   for (const t of list) t.classList.remove('scrolls', 'nw-off');
   const wide = list.filter(t => t.scrollWidth > t.clientWidth + 1);
   for (const t of wide) t.classList.add('scrolls');
   // How far a table of its own block widens: its width, read once it takes it.
-  const own = wide.filter(t => t.parentElement.matches('#ro-doc > .blk.k-table'));
+  const own = wide.filter(t => t.parentElement.matches('#ro-doc > .chunk > .blk.k-table'));
   const widths = own.map(t => t.firstElementChild.getBoundingClientRect().width);
   // (Set only when it changed: a style change on a block makes WebKit lay out
   // a large document's skipped blocks again.)
@@ -161,6 +168,24 @@ export function measureTables(tables = doc.querySelectorAll('.table-wrap')) {
   const still = retry.filter(t => t.scrollWidth > t.clientWidth + 1);
   for (const t of still) t.classList.replace('nw-off', 'scrolls');
 }
+
+/**
+ * Tables in chunks not laid out, measured when they come on screen, their
+ * chunk laid out by then (not all at once, laid out for the moment: 1 MB,
+ * 66 tables, ~1 s).
+ */
+const skippedTables = new IntersectionObserver(entries => {
+  const shown = [];
+  for (const e of entries) {
+    if (!e.isIntersecting) continue;
+    skippedTables.unobserve(e.target);
+    // Its chunk still skipped (WebKit places its content at its top until
+    // a frame lays it out): asked again in the next frame.
+    if (e.target.checkVisibility({ contentVisibilityAuto: true })) shown.push(e.target);
+    else requestAnimationFrame(() => { if (e.target.isConnected) skippedTables.observe(e.target); });
+  }
+  if (shown.length) measureTables(shown);
+});
 
 // New tables are measured together, in the next frame.
 const queuedTables = new Set();

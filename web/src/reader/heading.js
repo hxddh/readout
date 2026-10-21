@@ -1,6 +1,7 @@
 // Reports the heading at the top of the viewport so the native TOC can follow.
 import { doc, slots, post, onKeptScroll } from './core.js';
 import { topInset } from './anchor.js';
+import { roughRect } from './chunks.js';
 
 let lastActive = null;
 let headings = null;   // in document order; reset whenever blocks change
@@ -22,7 +23,7 @@ export function headingsChanged() { headings = null; }
 // app adds the item; WebKit gives the menu no way to ask). Told for every
 // menu, '' off a heading, so none is left over from the last.
 document.addEventListener('contextmenu', e => {
-  const h = e.target instanceof Element ? e.target.closest('#ro-doc > .k-heading') : null;
+  const h = e.target instanceof Element ? e.target.closest('#ro-doc > .chunk > .k-heading') : null;
   post({ type: 'contextHeading', anchor: h?.dataset.anchor || '' });
 }, true);
 
@@ -44,7 +45,7 @@ export function reportActiveHeading() {
   let lo = 0, hi = headings.length - 1, active = null;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if (headings[mid].getBoundingClientRect().top <= line) { active = headings[mid]; lo = mid + 1; } else hi = mid - 1;
+    if (roughRect(headings[mid]).top <= line) { active = headings[mid]; lo = mid + 1; } else hi = mid - 1;
   }
   const slot = active ? +active.dataset.slot : (headings[0] ? +headings[0].dataset.slot : 0);
   report(slot);

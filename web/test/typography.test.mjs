@@ -214,7 +214,7 @@ check('a heading under a rule keeps the rule\'s 2em, not 2em plus its own margin
 check('footnotes keep their space above', spacing.fnAbove > 0, JSON.stringify(spacing));
 
 // 13. Han characters get Japanese forms next to kana, Chinese forms otherwise.
-const langs = await page.evaluate(() => [...document.querySelectorAll('#ro-doc > .blk')].map(b => b.lang || ''));
+const langs = await page.evaluate(() => [...document.querySelectorAll('#ro-doc > .chunk > .blk')].map(b => b.lang || ''));
 const ja = slotOf('日本語'), zh = slotOf('中文段落'), en = slotOf('Body under');
 check('a block with kana is lang=ja', langs[ja - 1] === 'ja', JSON.stringify(langs));
 check('a Chinese block is lang=zh', langs[zh - 1] === 'zh', JSON.stringify(langs));
@@ -1203,11 +1203,15 @@ const v36 = patch([
     await pg.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync(`test/corpus/patches/${name}.json`, 'utf8')));
     await pg.waitForTimeout(200);
     // Each on screen first: in a large document a table far down is measured
-    // when it comes on screen (its block laid out by then).
+    // when it comes on screen (its block laid out by then). Scrolled to again
+    // once its chunk is laid out: until then WebKit places a skipped chunk's
+    // content at its top.
     const r = [];
     for (const i of which) {
-      await pg.evaluate(i => window.scrollBy(0, document.querySelectorAll('.table-wrap')[i].getBoundingClientRect().top - 100), i);
-      await pg.waitForTimeout(300);
+      for (let k = 0; k < 2; k++) {
+        await pg.evaluate(i => window.scrollBy(0, document.querySelectorAll('.table-wrap')[i].getBoundingClientRect().top - 100), i);
+        await pg.waitForTimeout(300);
+      }
       r.push(await pg.evaluate(i => { const t = document.querySelectorAll('.table-wrap')[i]; return { i, scrolls: t.classList.contains('scrolls'), over: t.scrollWidth - t.clientWidth }; }, i));
     }
     await pg.close();

@@ -3,12 +3,12 @@
 // not laid out, so it needed the whole document laid out while the find bar
 // was open (1 MB: seconds as it opened, and again as it closed). Here each
 // block's text is read without layout, the match is selected (⌘C, Copy
-// as Quote; up to SELECTABLE blocks), and the matches are marked with the CSS Custom
+// as Quote, Speak), and the matches are marked with the CSS Custom
 // Highlight API: only those in the blocks around the current one (marking
 // every match of a large document makes WebKit's paint take tens of seconds).
 // Every match is counted, but only a window of them around the current one
 // is kept (a one-letter search of 5 MB matches 300,000 times).
-import { doc, slots, post } from './core.js';
+import { doc, slots, post, firstItem, nextItem, isChunk } from './core.js';
 import { aimAt, pinLanding, topInset, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
 import { highlightIn } from './enhance.js';
@@ -44,11 +44,6 @@ const fold = s => (ACCENTED.test(s)
 const NEAR = 10;      // blocks either side of the current match whose matches are marked
 const MARKED = 300;   // and at most this many marks
 const KEPT = 10_000;  // matches kept, around the current one
-// Past this many blocks the match is not selected: WebKit answers a change of
-// the selection by checking every content-visibility block against it, which
-// grows faster than the document (Linux WebKit: 1 MB 0.1 s, 2 MB 1.1 s, 5 MB 11 s;
-// the reader selecting with the mouse pays the same).
-const SELECTABLE = 5_000;
 const HL = typeof CSS !== 'undefined' && 'highlights' in CSS;
 
 let query = null;       // the folded text searched for; null: not finding
@@ -62,7 +57,6 @@ let shown = '';         // the count last told to the app
 // the blocks it keeps) and its place among that block's matches.
 let pos = null;         // {slot, ord, start, fromEnd, next}: next, the slot of the block after it, once it is removed
 let own = null;         // the range find selected, while the selection is it
-let left = null;        // in a document too large to select in: the selection find left as it was, while it is
 let observing = false;
 let texts = new WeakMap();   // block -> its text (textOf), while finding
 
@@ -121,7 +115,7 @@ function search(at) {
   total = 0;
   let center = at && at.n != null ? at.n : 0;
   let bi = 0;
-  for (let e = doc.firstElementChild; e; e = e.nextElementSibling) {
+  for (let e = firstItem(); e; e = nextItem(e)) {
     if (!e.classList.contains('blk')) continue;
     bi++;
     if (e.hidden) continue;
@@ -196,7 +190,7 @@ function rangeOf(m) {
 
 const before = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
-const blockOf = n => n && doc.contains(n) ? (n.nodeType === Node.ELEMENT_NODE ? n : n.parentElement).closest('#ro-doc > .blk') : null;
+const blockOf = n => n && doc.contains(n) ? (n.nodeType === Node.ELEMENT_NODE ? n : n.parentElement).closest('#ro-doc > .chunk > .blk') : null;
 
 /**
  * Where a new search looks from: the selection (the last match, or text
@@ -297,16 +291,15 @@ const sameRange = (a, b) => !!a && !!b && a.startContainer === b.startContainer 
 const isOwn = () => {
   const sel = getSelection();
   const r = sel.rangeCount ? sel.getRangeAt(0) : null;
-  return sameRange(own, r) || sameRange(left, r);
+  return sameRange(own, r);
 };
 // The reader selecting something else: the selection is theirs.
-document.addEventListener('selectionchange', () => { if ((own || left) && !isOwn()) own = left = null; });
+document.addEventListener('selectionchange', () => { if (own && !isOwn()) own = null; });
 
 /**
  * The match landed on is selected once the frame showing it is painted (its
- * mark shows it until then): in a large document WebKit answers any change
- * of the selection by laying out the blocks content-visibility skips again
- * (1 MB: about as long as the search itself).
+ * mark shows it until then): a change of the selection costs WebKit a check
+ * of every element content-visibility can skip (a few hundred chunks).
  */
 let selecting = null;   // the landing whose match is still to be selected
 function selectLater() {
@@ -317,9 +310,7 @@ function selectNow() {
   selecting = null;
   const m = matches[cur];
   if (!m) return;
-  if (doc.childElementCount <= SELECTABLE) return select(rangeOf(m));
-  const sel = getSelection();
-  left = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+  select(rangeOf(m));
 }
 
 /** Tells the app the count (current 0: none yet): after every search, after an edit only when it changed. */
@@ -376,16 +367,20 @@ const stale = new Set();   // blocks changed since their text was read
 let moved = false;         // blocks added, removed, hidden or shown since
 function changed(records) {
   for (const r of records) {
-    if (r.target === doc || r.type === 'attributes') moved = true;
+    const items = r.target === doc || isChunk(r.target);
+    if (items || r.type === 'attributes') moved = true;
     // The current match's block (or the one after it) removed: what followed it is where it was.
-    if (pos && r.target === doc) {
+    if (pos && items) {
       for (const n of r.removedNodes) {
         const slot = n.dataset ? +n.dataset.slot : NaN;
-        if (slot === (pos.next ?? pos.slot)) { const after = r.nextSibling && r.nextSibling.closest?.('.blk') ? r.nextSibling : null; pos.next = after ? +after.dataset.slot : 0; }
+        if (slot !== (pos.next ?? pos.slot)) continue;
+        let after = r.nextSibling?.nodeType === Node.ELEMENT_NODE ? r.nextSibling : r.previousSibling?.nodeType === Node.ELEMENT_NODE ? nextItem(r.previousSibling) : null;
+        while (after && !after.classList.contains('blk')) after = nextItem(after);
+        pos.next = after ? +after.dataset.slot : 0;
       }
     }
     const e = r.target.nodeType === Node.ELEMENT_NODE ? r.target : r.target.parentElement;
-    const blk = e && e !== doc && e.closest('#ro-doc > .blk');
+    const blk = e && e !== doc && e.closest('#ro-doc > .chunk > .blk');
     if (blk) stale.add(blk);
   }
 }
@@ -484,5 +479,5 @@ export function findEnd(keep = false) {
   texts = new WeakMap();
   stale.clear();
   moved = false;
-  own = left = null;
+  own = null;
 }

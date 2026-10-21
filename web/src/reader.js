@@ -11,7 +11,7 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings } from './reader/core.js';
+import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
 import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell } from './reader/marks.js';
@@ -98,7 +98,7 @@ const textSelected = () => {
 };
 const focusedBlock = () => {
   const a = document.activeElement;
-  return a && doc.contains(a) ? a.closest('#ro-doc > .blk[data-slot]') : null;
+  return a && doc.contains(a) ? a.closest('#ro-doc > .chunk > .blk[data-slot]') : null;
 };
 // `has`: text is selected (the context menu's Copy as Quote); `focused`: a
 // block has the keyboard's focus (Edit ▸ Copy as Quote quotes it when no text
@@ -128,7 +128,7 @@ function selectedSlots() {
     const r = sel.getRangeAt(i);
     const touched = [];
     let seen = false;
-    for (let e = doc.firstElementChild; e; e = e.nextElementSibling) {
+    for (let e = firstItem(); e; e = nextItem(e)) {
       if (!e.classList.contains('blk')) continue;
       if (!r.intersectsNode(e)) { if (seen) break; continue; }
       seen = true;
@@ -365,6 +365,10 @@ function scrollToAnchor(a) {
   if (!a) return;
   trace('scrollToAnchor', { slot: a.slot, offset: Math.round(a.offset) });
   restoreAnchor(a, new Set());
+  // In a large document the place is in a chunk not laid out yet (WebKit
+  // places its blocks at its top until it is): it stays put as it is.
+  const el = slots.get(a.slot);
+  if (el) pinLanding(el);
   highlightOnScreen();
 }
 
