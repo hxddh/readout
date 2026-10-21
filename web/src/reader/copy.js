@@ -212,14 +212,20 @@ function partial(r, b, alone) {
   // A run of text in one paragraph, heading, item or cell: inline Markdown,
   // without the block's own marker when it is all that is copied.
   const leaf = within.closest('p, h1, h2, h3, h4, h5, h6, td, th, li, summary');
-  if (alone && leaf && !box.querySelector(BLOCKS)) return unmark(inline(box).trim());
+  if (alone && leaf && !box.querySelector(BLOCKS + ', li')) return literal(unmark(inline(box).trim()));
+  // Items of one nested list (sub-points of an item): that list, on its own.
+  if (alone && within.matches('ul, ol') && within.parentElement.closest('li')) {
+    const shell = within.cloneNode(false);
+    shell.append(...box.childNodes);
+    return literal(list(shell, b));
+  }
   // Part of a table: the rows it touches, whole, under the table's header.
   const t = b.querySelector('table');
   if (t && b.classList.contains('k-table')) {
     const rows = [...t.querySelectorAll('tbody tr')].filter(tr => r.intersectsNode(tr));
     const copy = document.createElement('table');
     copy.appendChild(document.createElement('tbody')).append(...rows.map(tr => tr.cloneNode(true)));
-    return table(copy, b);
+    return literal(table(copy, b));
   }
   // An item keeps the marker its source wrote (`*`, `7)`): a different one starts another list.
   hint = b.classList.contains('k-listItem') ? /^(?:[-*+]|\d{1,9}[.)])/.exec(sources.get(b) || '')?.[0] : null;
@@ -242,7 +248,7 @@ const isBlock = n => n.nodeType === Node.ELEMENT_NODE && n.matches(BLOCKS + ', l
 
 /** Markdown for the content of `el` (a block, or a clone of part of one); `orig` is the block it came from. */
 function convertBlock(el, orig) {
-  return chunks(el, orig).join('\n\n');
+  return literal(chunks(el, orig).join('\n\n'));
 }
 
 function chunks(parent, orig, tight = false) {
@@ -366,15 +372,62 @@ function inline(el) {
   return s;
 }
 
-/** Text that would start a block where it starts a line (`22) `, `- `, `# `, `> `) keeps reading as text. */
+/** Text that would start a block where it starts a line (`22) `, `- `, `# `, `> `, `===`) keeps reading as text. */
 function unmark(s) {
-  return s.replace(/^([ \t]*)(?:(\d{1,9})([.)])(?=[ \t]|$)|([-+])(?=[ \t])|(#{1,6})(?=[ \t]|$)|(>))/gm,
+  return s.replace(/^([ \t]*)(?:(\d{1,9})([.)])(?=[ \t]|$)|([-+](?=[ \t]|$)|-(?=-*[ \t]*$)|=(?==*[ \t]*$))|(#{1,6})(?=[ \t]|$)|(>))/gm,
     (m, sp, num, delim, bullet, hash, gt) => sp + (num ? num + '\\' + delim : bullet ? '\\' + bullet : hash ? '\\' + hash : '\\>'));
 }
 
 function escapeText(t) {
   // `<` that could open a tag or an autolink, `&` that could be an entity: as text.
-  return t.replace(/[\\`*]/g, '\\$&').replace(/<(?=[A-Za-z\/!?])/g, '\\<').replace(/&(?=#?\w+;)/g, '\\&').replace(/(^|[^\p{L}\p{N}])_|_(?=$|[^\p{L}\p{N}])/gu, m => m.replace('_', '\\_'));
+  // `]`, `!`, `~`, `$` and a last `<` are Markdown only by what follows them: marked (literal() decides).
+  return t.replace(/[\\`*]/g, '\\$&').replace(/<(?=[A-Za-z\/!?])/g, '\\<').replace(/&(?=#?\w+;)/g, '\\&').replace(/(^|[^\p{L}\p{N}])_|_(?=$|[^\p{L}\p{N}])/gu, m => m.replace('_', '\\_')).replace(/[\]!~$]|<$/g, MAYBE + '$&');
+}
+
+// Before a text character that is Markdown only in context (escapeText);
+// a noncharacter, never in a document.
+const MAYBE = '\uFDD0';
+
+/**
+ * `s` with its marked characters escaped where they would be Markdown, and
+ * as they are elsewhere (copies stay clean): `]` before `(` or `[` (a link),
+ * `!` before `[` (an image), `~` with another in the run (strikethrough),
+ * `$` where Readout opens math (MathProtector), `<` before a tag or address
+ * (a link the page made of text after it).
+ */
+function literal(s) {
+  if (!s.includes(MAYBE)) return s;
+  // An escaped `$` moves where a later one closes: again until none opens.
+  for (let more = true; more;) {
+    more = false;
+    s = s.replace(/\uFDD0\$/g, (m, i, t) => opensMath(t, i + 2) ? (more = true, '\\$') : m);
+  }
+  return s.replace(/\uFDD0([\]!~$<])/g, (m, c, i, t) => {
+    const next = t[i + 2] === MAYBE ? t[i + 3] : t[i + 2];
+    if (c === ']') return next === '(' || next === '[' ? '\\]' : c;
+    if (c === '!') return next === '[' ? '\\!' : c;
+    if (c === '<') return /[A-Za-z\/!?]/.test(next || '') ? '\\<' : c;
+    if (c === '~') {
+      const later = t.indexOf('~', i + 2), end = t.indexOf('\n\n', i);
+      return (t[i - 1] === '~' && t[i - 2] !== MAYBE) || (later >= 0 && (end < 0 || later < end)) ? '\\~' : c;
+    }
+    return c;
+  });
+}
+
+/** Whether the `$` before `t[k]` opens inline math: `$$`, or GitHub's strict `$x$` on one line. */
+function opensMath(t, k) {
+  const at = j => t[j] === MAYBE ? t[j + 1] : t[j];
+  const c = at(k);
+  if (c === '$') return true;
+  if (c === undefined || /\s/.test(c)) return false;
+  for (let j = k; j < t.length && t[j] !== '\n'; j++) {
+    if (t[j] === '\\') { j++; continue; }
+    if (t[j] !== '$') continue;
+    const prev = t[j - 1] === MAYBE ? t[j - 2] : t[j - 1], next = at(j + 1);
+    return !/\s/.test(prev) && !(next && /\p{N}/u.test(next)) && next !== '$';
+  }
+  return false;
 }
 
 function wrap(mark, inner) {
@@ -418,7 +471,8 @@ function inl(n) {
       const href = n.getAttribute('href') || '';
       if (n.hasAttribute('data-footnote-ref')) return `[^${decodeURIComponent(href.replace(/^#user-content-fn-/, ''))}]`;
       const text = inline(n);
-      if (text === href || 'mailto:' + text === href || 'http://' + text === href) return text;
+      const bare = text.replaceAll(MAYBE, '');
+      if (bare === href || 'mailto:' + bare === href || 'http://' + bare === href) return bare;
       // The page titles links with their address (a tooltip): not the source's title.
       const title = n.getAttribute('title') === href ? null : n.getAttribute('title');
       return `[${text}](${/[\s()]/.test(href) ? `<${href}>` : href}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`;
