@@ -164,8 +164,9 @@ export function warm() {
       for (const id of WARM_ORDER) if (highlighter.getLoadedLanguages().includes(id)) queueWarm(id);
       // And the whole path once, as a block is highlighted (both themes, HTML).
       const start = performance.now();
-      work.push(() => highlightSync('x', 'json'),
-        () => performance.mark('readout-hl-warm', { detail: { ms: performance.now() - start, longestSlice } }));
+      work.push(() => highlightSync('x', 'json'));
+      // Marked once the queue is empty, its last slice counted.
+      warmDone = () => performance.mark('readout-hl-warm', { detail: { ms: performance.now() - start, longestSlice } });
       runWork();
     }, WARM_DELAY_MS);
   });
@@ -399,19 +400,22 @@ function queueWarm(id, first = false) {
 
 const SLICE_MS = 8;
 let longestSlice = 0;   // the longest a window taking the page could wait (perf.test.mjs)
+let warmDone = null;    // the spare page's warm-up mark, once its work is done
 function runWork() {
   if (working) return;
   working = true;
   const next = () => {
     if (warmStopped) { working = false; return; }
     const t0 = performance.now();
+    let step;
     do {
-      const step = work.shift();
-      if (!step) { working = false; return; }
-      step();
-    } while (performance.now() - t0 < SLICE_MS);
+      step = work.shift();
+      if (step) step();
+    } while (step && performance.now() - t0 < SLICE_MS);
     longestSlice = Math.max(longestSlice, performance.now() - t0);
-    setTimeout(next, 0);
+    if (step) { setTimeout(next, 0); return; }
+    working = false;
+    if (warmDone) { const done = warmDone; warmDone = null; done(); }
   };
   next();
 }

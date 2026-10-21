@@ -1239,6 +1239,26 @@ const v36 = patch([
   const stopped = await page.evaluate(() => performance.getEntriesByName('readout-hl-warm').length === 0);
   check('a warmed spare page compiles the common grammars, and stops once it shows a document', done && stopped, JSON.stringify({ done, stopped }));
   await page.close();
+  // Its longest slice (web_hl_warm_longest_slice_ms) counts the last one too:
+  // here the last is made the longest, its one highlight held up 150 ms (the
+  // tokenize limit is read only by a block's highlight, the warm-up's last step).
+  page = await browser.newPage({ viewport: { width: 700, height: 800 } });
+  collectPageErrors(page, errors);
+  await page.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    Object.defineProperty(globalThis, 'READOUT_TOKENIZE_LIMIT', { get() {
+      if (!window.__held) { window.__held = true; for (const t = performance.now(); performance.now() - t < 150;); }
+      return 500;
+    } });
+  });
+  await page.goto(`${base}/reader.html`);
+  await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await page.evaluate(() => { window.readout.setAppearance({ dark: false }); window.readout.warm(); });
+  await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
+  const last = await page.evaluate(() => ({ held: !!window.__held, longest: performance.getEntriesByName('readout-hl-warm')[0].detail.longestSlice }));
+  check("the warm-up's longest slice counts its last slice", last.held && last.longest >= 150, JSON.stringify(last));
+  await page.close();
 }
 
 // 3.7 typesetting.
