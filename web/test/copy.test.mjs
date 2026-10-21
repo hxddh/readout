@@ -18,7 +18,7 @@
 //    Edit ▸ Select All copies the document; escaped text stays text.
 //    5b: a source-only edit (copy-edit.json); 5c: safe rich text (copy-unsafe.json).
 // 6. A large selection (C7): ~650,000 characters copy in well under a second, as
-//    Markdown only (rich text is skipped above 500,000 characters).
+//    Markdown only (rich text is skipped above 100,000 characters, F8).
 // 7. Random selections (B1, B4): two seeded random text positions over any
 //    blocks, in every document and fixtures/copy-escapes.md; each copy parsed
 //    again by ReadoutCore (readout-dump) reads as the selection did.
@@ -396,7 +396,7 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
 }
 
 // 6. A large selection (C7): the copy costs what the two end blocks do, not
-//    every block's layout (main: 35 s at 5 MB); past 500,000 characters, no rich text.
+//    every block's layout (main: 35 s at 5 MB); past 100,000 characters, no rich text (F8).
 {
   const ops = [];
   let slot = 0, bytes = 0;
@@ -426,11 +426,16 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
     document.execCommand('copy');
     const ms = performance.now() - t0;
     removeEventListener('copy', grab);
-    return { ms, chars: text.length, html: html.length };
+    // A third of it (~200,000 characters): Markdown only too (F8: WebKit takes 0.3 s for 400 KB of rich text).
+    const blocks = document.querySelectorAll('#ro-doc > .blk');
+    r.setEnd(blocks[Math.floor(blocks.length / 3)], 0);
+    const third = window.__copy(r);
+    return { ms, chars: text.length, html: html.length, third: { chars: third.text.length, html: third.html.length } };
   });
   console.log(`copy: ${ops.length} blocks (${bytes} characters of source) copied in ${big.ms.toFixed(0)} ms, ${big.chars} characters, rich text ${big.html}`);
   if (big.ms > 1000) fail(`a large copy took ${big.ms.toFixed(0)} ms`);
   if (big.chars <= 500_000 || big.html !== 0) fail(`a large copy: ${big.chars} characters of Markdown, ${big.html} of rich text (want none)`);
+  if (big.third.chars <= 100_000 || big.third.chars >= 500_000 || big.third.html !== 0) fail(`a copy of a third: ${big.third.chars} characters of Markdown, ${big.third.html} of rich text (want none)`);
 }
 
 // 7. Random selections, parsed again by ReadoutCore.
