@@ -101,6 +101,15 @@ edit("web/src/highlight.js", "    initialized = true;\n", "    initialized = tru
 edit("App/SmokeTest.swift", 'evaluateJavaScript("JSON.stringify(window.__ab || {})")',
      'evaluateJavaScript("JSON.stringify(Object.assign(window.__ab || {}, { fcp: (performance.getEntriesByType(\'paint\').find(e => e.name === \'first-contentful-paint\') || {}).startTime, origin: performance.timeOrigin }))")')
 
+# Main-thread gaps of the page (a 16 ms timer loop late by > 50 ms) and the
+# resources it loaded, read with the rest.
+p = tree / "web/src/reader.js"
+p.write_text(p.read_text() + "\n;(() => { const g = (window.__abGaps = []); let last = performance.now(); const t = () => { const now = performance.now(); if (now - last > 66) g.push([Math.round(last), Math.round(now - last)]); last = now; if (now < 30000) setTimeout(t, 16); }; setTimeout(t, 16); })();\n")
+edit("App/SmokeTest.swift", "origin: performance.timeOrigin }", "origin: performance.timeOrigin, gaps: window.__abGaps, res: performance.getEntriesByType('resource').map(e => [e.name.split('/').pop().slice(0, 24), Math.round(e.startTime), Math.round(e.responseEnd)]) }")
+# Each take of a page: was there a spare, was it ready (app log).
+edit("App/ReaderWindowController.swift", "        let w = spare ?? ReaderWebView(bundle: .main",
+     "        NSLog(\"ABTAKE spare=%d ready=%d\", spare == nil ? 0 : 1, spare?.isReady == true ? 1 : 0)\n        let w = spare ?? ReaderWebView(bundle: .main")
+
 # Experiments on the 3.9 tree.
 if exp == "dfl":
     # 3.8's order: the spare page at the start of didFinishLaunching.

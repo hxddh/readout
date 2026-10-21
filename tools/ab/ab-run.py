@@ -72,6 +72,11 @@ def launch(name, app, tag):
     if page.get("fcp") and page.get("origin"):
         r["page_fcp"] = round(page["origin"] + page["fcp"] - start * 1000, 1)
     r["hl"] = [[h[0], h[1], round(h[2] - start * 1000), h[3]] for h in page.get("hl", [])[:12]]
+    o = page.get("origin")
+    if o:
+        r["gaps"] = [[round(o + a - start * 1000), b] for a, b in page.get("gaps", [])][:40]
+        r["res"] = [[n, round(o + a - start * 1000), round(o + b - start * 1000)] for n, a, b in page.get("res", [])][:60]
+    r["takes"] = [l.strip()[-20:] for l in (d / "log.txt").read_text(errors="replace").splitlines() if "ABTAKE" in l]
     r["git"] = [l.strip()[-40:] for l in (d / "log.txt").read_text(errors="replace").splitlines() if "ABGIT" in l]
     r["docs"] = DOCS_TAG
     r["warm_applied"] = [round(v * 1000, 1) for v in sec]
