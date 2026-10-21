@@ -1,7 +1,7 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
-// between changes, and the "Show Only Changes" filter.
-import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, blocksHidden, setBlocksHidden, focused } from './core.js';
-import { captureAnchor, restoreAnchor, isShown, atBottom, fitsOnScreen, topInset, pinLanding } from './anchor.js';
+// between changes.
+import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused } from './core.js';
+import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -12,12 +12,10 @@ const diffOf = new Map();   // slot -> word-level comparison HTML of an edited b
 const openDiffs = new Set(); // slots whose comparison is shown
 const previewOf = new Map(); // deletion id -> removed text (each patch sends it once)
 const readTimers = new Map();
-let changesOnly = false;
-let printing = false;   // printing shows the whole document
 
 export function renderMarks(marks, deletions, reset = false) {
   // Comparisons and removed texts arrive once; later patches leave them out.
-  if (reset) { diffOf.clear(); previewOf.clear(); arrivals.clear(); }
+  if (reset) { diffOf.clear(); previewOf.clear(); arrivals.clear(); autoDiff = null; }
   unreadOrder = null;
   if (quicklook) return;
   const next = new Map();
@@ -192,7 +190,7 @@ export function forgetDiff(slot) { diffOf.delete(slot); }
  */
 let walk = [];
 export function toggleDiffInView() {
-  const live = slot => { const el = slots.get(slot); return el && diffOf.has(slot) && isShown(el) ? el : null; };
+  const live = slot => { const el = slots.get(slot); return el && diffOf.has(slot) ? el : null; };
   const inView = [...diffOf.keys()].map(live).filter(el => el && inViewport(el));
   // Nothing in view to compare: the app says so (a beep), as for N.
   if (!inView.length) { walk = []; post({ type: 'nothing' }); return false; }
@@ -335,8 +333,11 @@ function markRead(el) {
   else { pendingRead.slots.push(+el.dataset.slot); marked.delete(+el.dataset.slot); }
   clearTimeout(markRead.flush);
   markRead.flush = setTimeout(flushRead, 150);
-  setTimeout(() => { if (el.classList.contains('m-read')) unmark(el); }, 10000);
+  setTimeout(() => { if (el.classList.contains('m-read')) unmark(el); }, FADE_MS);
 }
+
+/** A read mark's fade (reader.css, 600 ms), and a little more. */
+const FADE_MS = 700;
 
 /** A read mark's fade is over: the block carries no mark, a removal marker goes. */
 function unmark(el) {
@@ -458,9 +459,7 @@ export function unreadElements() {
     for (const m of delMarks.values()) els.push(m);
     unreadOrder = inDocumentOrder(els);
   }
-  // `offsetParent === null` covers `hidden` blocks in changes-only mode, so the
-  // rail, jumps and the caught-up state all ignore filtered-out blocks.
-  return unreadOrder.filter(e => isUnread(e) && (!blocksHidden || e.offsetParent !== null));
+  return unreadOrder.filter(isUnread);
 }
 
 function inDocumentOrder(els) {
@@ -479,7 +478,6 @@ function inDocumentOrder(els) {
 function nextShown(el) {
   for (let e = el.nextElementSibling; e; e = e.nextElementSibling) {
     if (!e.classList.contains('blk') && !e.classList.contains('del-mark')) continue;
-    if (blocksHidden && e.offsetParent === null) continue;
     return e;
   }
   return null;
@@ -526,6 +524,7 @@ export function jump(dir, first = false) {
   if (dir < 0) while (i > 0 && run[i - 1] === run[i] && !skip.has(list[i - 1])) i--;
   const target = list[i];
   const members = list.filter((e, k) => k >= i && run[k] === run[i]);
+  showWhatChangedOn(target);
   const top = target.getBoundingClientRect().top - line;
   // In a large document the blocks a smooth scroll passes are laid out on
   // the way and change height, and the compensation for them fights the
@@ -547,6 +546,21 @@ export function jump(dir, first = false) {
       if (Math.abs(off) > 2) { window.scrollBy(0, off); pinLanding(target); }
     }));
   }
+}
+
+/**
+ * N landing on an edited block shows which words changed (no D to learn);
+ * the comparison N opened closes as N moves on. One the reader opened (D, a
+ * click) stays as they left it. Before the scroll: what closes above the
+ * target is kept out of the way of where N aims.
+ */
+let autoDiff = null;   // the slot whose comparison N opened
+function showWhatChangedOn(target) {
+  const slot = +target.dataset.slot;
+  if (autoDiff !== null && autoDiff !== slot && openDiffs.has(autoDiff)) toggleDiff(autoDiff);
+  if (autoDiff !== slot) autoDiff = null;
+  // Nothing to show for an edit whose earlier text was not kept.
+  if (diffOf.get(slot) && !openDiffs.has(slot) && toggleDiff(slot)) autoDiff = slot;
 }
 
 /**
@@ -579,66 +593,7 @@ export function markAllRead() {
   marked.clear();
   setTimeout(() => {
     for (const el of read) if (el.classList.contains('m-read')) unmark(el);
-    applyChangesOnly();
     scheduleRail();
-  }, 700);
+  }, FADE_MS);
 }
 
-// ---------------------------------------------------------------- Show Only Changes
-
-const caughtup = document.getElementById('ro-caughtup');
-
-/**
- * "Show Only Changes": hides read blocks so the reader sees just what's new.
- * Headings stay visible as context; blocks with unread marks or deletion
- * markers (and headings) are kept. Hidden blocks leave the anchor and jump
- * math untouched — `unreadElements()` already skips them via offsetParent.
- */
-let filtered = false;   // the filter may have hidden blocks
-export function applyChangesOnly() {
-  const on = changesOnly && !printing;
-  // Off, and nothing hidden by it: no walk over every block (each patch of
-  // a large document comes here).
-  if (!on && !filtered) {
-    if (caughtup && !caughtup.hidden) { caughtup.textContent = ''; caughtup.hidden = true; }
-    scheduleRail();
-    return;
-  }
-  filtered = on;
-  const toggled = [];
-  for (const el of slots.values()) {
-    const keep = el.classList.contains('k-heading')
-      || el.classList.contains('m-inserted') || el.classList.contains('m-modified')
-      || el.classList.contains('m-state') || el.nextElementSibling?.classList.contains('del-mark');
-    const hide = on && !keep;
-    if (el.hidden !== hide) { el.hidden = hide; toggled.push(el); }
-  }
-  // Hiding/showing is a filter, not a content change: re-baseline the
-  // height so the resize compensator does not "correct" the reflow that
-  // anchor restore already accounts for (double compensation scrolls away).
-  // Read after all writes: one layout, not one per block.
-  setBlocksHidden(on);
-  for (const el of toggled) heights.set(el, el.hidden ? 0 : el.getBoundingClientRect().height);
-  for (const m of delMarks.values()) m.hidden = false;
-  if (caughtup) {
-    const anyVisible = on && unreadElements().length === 0 && slots.size > 0;
-    caughtup.textContent = anyVisible ? (strings.caughtUp || 'All caught up') : '';
-    caughtup.hidden = !anyVisible;
-  }
-  scheduleRail();
-}
-
-/** Lifts the filter while printing (the caller keeps the place). */
-export function setPrinting(on) { printing = !!on; applyChangesOnly(); }
-
-/** Sets the filter without moving (initial appearance). */
-export function initChangesOnly(on) { changesOnly = !!on; applyChangesOnly(); }
-
-export function setChangesOnly(on) {
-  // Toggling the filter reflows the document: capture first, restore after,
-  // so the reader keeps their place (with nearest-visible fallback).
-  const anchor = captureAnchor();
-  changesOnly = !!on;
-  applyChangesOnly();
-  restoreAnchor(anchor, new Set());
-}

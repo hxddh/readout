@@ -138,8 +138,8 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.close();
 }
 
-// 3. The section link sits beside the heading, which is named by its own
-//    content as the browser computes it; headings balance their lines.
+// 3. A heading is named by its own content as the browser computes it;
+//    headings balance their lines.
 {
   const page = await newPage();
   await page.evaluate(p => window.readout.apply(p), patch(1, [
@@ -152,26 +152,12 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   const names = [];
   const walk = n => { if (/heading/i.test(n.role)) names.push(n.name); (n.children || []).forEach(walk); };
   walk(await page.accessibility.snapshot({ interestingOnly: false }));
-  const place = await page.evaluate(() => [...document.querySelectorAll('.k-heading')].map(b => {
-    const link = b.querySelector('.h-link');
-    return { parent: link.parentElement === b, first: b.firstElementChild.localName, label: b.querySelector('h1, h2').getAttribute('aria-label') };
-  }));
+  const place = await page.evaluate(() => [...document.querySelectorAll('.k-heading')].map(b => ({
+    only: b.children.length === 1, first: b.firstElementChild.localName, label: b.querySelector('h1, h2').getAttribute('aria-label') })));
   const math = names.find(n => /^Cost of/.test(n)) || '';
-  check('a heading with math is named by the browser from its content, the formula once, not by its link',
-    /O\s*\(\s*n\s*2\s*\)/.test(math) && !/n\^2/.test(math) && !/Copy Link/.test(names.join('|')) && place.every(p => p.parent && /^h\d$/.test(p.first) && p.label === null),
+  check('a heading with math is named by the browser from its content, the formula once',
+    /O\s*\(\s*n\s*2\s*\)/.test(math) && !/n\^2/.test(math) && !/Copy Link/.test(names.join('|')) && place.every(p => p.only && /^h\d$/.test(p.first) && p.label === null),
     JSON.stringify({ names, place }));
-  // The link stays on the heading's first line, in the gutter, and works from the keyboard.
-  const align = await page.evaluate(() => [...document.querySelectorAll('.k-heading')].map(b => {
-    const h = b.querySelector('h1, h2'), r = h.getBoundingClientRect(), l = b.querySelector('.h-link').getBoundingClientRect();
-    return { mid: Math.round((l.top + l.bottom) / 2 - r.top), lh: Math.round(parseFloat(getComputedStyle(h).lineHeight)), left: Math.round(l.left - b.getBoundingClientRect().left), right: Math.round(r.left - l.right) };
-  }));
-  check('the section link sits on the heading\'s first line, in the gutter', align.every(a => a.mid > 0 && a.mid < a.lh && a.left >= 0 && a.right >= 0), JSON.stringify(align));
-  await page.getByRole('button', { name: 'Copy Link to Section' }).nth(1).focus();
-  await page.evaluate(() => { window.__msgs.length = 0; });
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(250);
-  const msg = await page.evaluate(() => ({ copy: window.__msgs.find(m => m.type === 'copyLink'), shown: getComputedStyle(document.activeElement).opacity }));
-  check('the section link is reached and used from the keyboard, and shows while focused', msg.copy?.anchor === 'long' && msg.shown === '1', JSON.stringify(msg));
   // Balanced: the two lines of the long heading are about as long as each other.
   const lines = await page.evaluate(() => {
     const h = document.getElementById('long');
@@ -354,7 +340,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.close();
 }
 
-// 8. Quick Look: no Copy buttons, no section links, remote images as text.
+// 8. Quick Look: no Copy buttons, remote images as text.
 {
   const page = await newPage({ appearance: { mode: 'quicklook' } });
   await page.evaluate(p => window.readout.apply(p), patch(1, [
@@ -364,12 +350,11 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   ], { reset: true }));
   const r = await page.evaluate(() => ({
     copy: getComputedStyle(document.querySelector('.cb-copy')).display,
-    link: getComputedStyle(document.querySelector('.h-link')).display,
     remoteButtons: document.querySelectorAll('.remote-img button').length,
     remoteText: document.querySelector('.remote-img').textContent,
   }));
-  check('Quick Look shows no Copy button, no section link, and remote images as text only',
-    r.copy === 'none' && r.link === 'none' && r.remoteButtons === 0 && r.remoteText.includes('img.example'), JSON.stringify(r));
+  check('Quick Look shows no Copy button, and remote images as text only',
+    r.copy === 'none' && r.remoteButtons === 0 && r.remoteText.includes('img.example'), JSON.stringify(r));
   await page.close();
 }
 
@@ -640,9 +625,10 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.waitForTimeout(100);
   const after = await top300();
   check('heights taken from the resize observer still keep the place', Math.abs(after - before) <= 1, JSON.stringify({ before, after }));
-  // A patch in the middle of reading.
+  // A patch in the middle of reading. 301 changes without a mark (the
+  // only changes that still flash, 3.9 E1: a block with a bar does not).
   const edit = (v, text) => patch(v, [301, 302, 450].map(slot => ({ op: 'replace', slot, kind: 'paragraph', change: 'content', html: `<p>${text} ${slot}</p>` })),
-    { marks: [301, 302, 450].map(slot => ({ slot, kind: 'modified' })) });
+    { marks: [302, 450].map(slot => ({ slot, kind: 'modified' })) });
   const reads = await page.evaluate(p => {
     for (const k of Object.keys(window.__layoutReads)) delete window.__layoutReads[k];
     window.__counting = true;
@@ -653,11 +639,13 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   const flash1 = await page.evaluate(() => document.querySelector('.blk[data-slot="301"]').className);
   await page.evaluate(p => window.readout.apply(p), edit(3, 'edited again'));
   const flash2 = await page.evaluate(() => document.querySelector('.blk[data-slot="301"]').className);
+  const barred = await page.evaluate(() => document.querySelector('.blk[data-slot="302"]').className);
   // (The anchor block's own offsetParent, and the scroll height that tells
   // whether the reader follows the end, read before the patch changes anything.)
   check('a patch reads no offsetParent per block, forces no reflow for the flash, and no scroll height after it',
     (reads.offsetParent || 0) <= 4 && !reads.offsetWidth && (reads.scrollHeight || 0) <= 1, JSON.stringify(reads));
   check('a flash running restarts under the other name', /\bflash\b/.test(flash1) && !/flash-alt/.test(flash1) && /flash-alt/.test(flash2), JSON.stringify({ flash1, flash2 }));
+  check('a block with a change bar does not flash, written to again and again', /m-modified/.test(barred) && !/flash/.test(barred), barred);
   await page.close();
 }
 
@@ -980,7 +968,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 
 // 30. P1: an edit above the reader leaves a block that has been laid out its
 //     contain-intrinsic-size (content-visibility keeps its last size), and
-//     reads no offsetParent while the changes-only filter is off.
+//     reads no offsetParent.
 {
   const page = await newPage();
   await page.evaluate(p => window.readout.apply(p), doc(600));
@@ -1003,11 +991,6 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
     { marks: [{ slot: 300, kind: 'modified' }] }));
   check('an edit above the reader keeps a laid-out block\'s intrinsic size, reads no offsetParent, keeps the place',
     r.before && r.before === r.after && r.reads === 0 && r.edited && Math.abs(r.moved) <= 1, JSON.stringify(r));
-  // With the changes-only filter on, hidden blocks are still told apart.
-  await page.evaluate(() => window.readout.setChangesOnly(true));
-  const shown = await page.evaluate(() => [...document.querySelectorAll('#ro-doc > .blk')].filter(e => !e.hidden).map(e => +e.dataset.slot));
-  await page.evaluate(() => window.readout.setChangesOnly(false));
-  check('the changes-only filter still shows only the change', JSON.stringify(shown) === '[300]', JSON.stringify(shown));
   await page.close();
 }
 
@@ -1194,6 +1177,56 @@ for (const n of [60, 400]) {
     return { before, after: el.style.containIntrinsicSize, grew: document.scrollingElement.scrollHeight - h0 };
   }, patch(2, [{ op: 'replace', slot: 500, kind: 'code', change: 'content', html: big }]));
   check('an edit to a block never laid out gives it the new estimate', r.before !== r.after && r.grew > 30000, JSON.stringify(r));
+  await page.close();
+}
+
+// 37. 3.9 E1: one mark per change, gone once read: the bar fades out and
+//     the block carries no mark a moment later (no hairline for 10 s), a
+//     removal marker too. Reduced motion: no fade.
+{
+  const page = await newPage();
+  const r = doc(30, i => `<p style="min-height:60px">para ${i}</p>`);
+  r.marks = [{ slot: 3, kind: 'inserted' }];
+  r.deletions = [{ id: 7, after: 3, count: 1, preview: 'gone' }];
+  await page.evaluate(p => { window.scrollTo(0, 0); window.__msgs.length = 0; window.readout.apply(p); }, r);
+  await key(page, 'n');
+  const readAt = await page.evaluate(() => new Promise(res => { const t0 = Date.now(); const poll = () => window.__msgs.some(m => m.type === 'read' && m.slots.includes(3)) ? res(Date.now() - t0) : Date.now() - t0 > 3000 ? res(-1) : setTimeout(poll, 20); poll(); }));
+  await page.waitForTimeout(1200);
+  const after = await page.evaluate(() => {
+    const b = document.querySelector('.blk[data-slot="3"]');
+    return { cls: b.className, bar: getComputedStyle(b, '::before').backgroundColor, del: !!document.querySelector('.del-mark') };
+  });
+  check('a read bar fades out and its mark goes within a second, a removal marker too',
+    readAt >= 0 && !/m-(inserted|read)/.test(after.cls) && after.bar === 'rgba(0, 0, 0, 0)' && !after.del, JSON.stringify({ readAt, ...after }));
+  const motion = await page.evaluate(() => ({ bar: getComputedStyle(document.querySelector('.blk'), '::before').transitionDuration }));
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(p => window.readout.apply(p), patch(2, [], { deletions: [{ id: 8, after: 5, count: 1 }] }));
+  const still = await page.evaluate(() => ({ bar: getComputedStyle(document.querySelector('.blk'), '::before').transitionDuration,
+    del: getComputedStyle(document.querySelector('.del-mark > button'), '::before').transitionDuration }));
+  check('a read mark fades, and with reduced motion it does not', /0\.6s/.test(motion.bar) && /^0s/.test(still.bar) && /^0s/.test(still.del), JSON.stringify({ motion, still }));
+  await page.close();
+}
+
+// 38. 3.9 E4: N landing on an edited block shows which words changed; the
+//     comparison N opened closes as N moves on. One opened by D or a click
+//     stays as the reader left it; an edit with no earlier text opens none.
+{
+  const page = await newPage();
+  const r = doc(80, i => `<p style="min-height:100px">para ${i}</p>`);
+  const diff = 'para <del>old</del><ins>new</ins>';
+  r.marks = [{ slot: 10, kind: 'modified', diff }, { slot: 25, kind: 'modified', diff }, { slot: 40, kind: 'modified', diff: '' }, { slot: 55, kind: 'modified', diff }, { slot: 70, kind: 'inserted' }];
+  await page.evaluate(p => { window.scrollTo(0, 0); window.readout.apply(p); }, r);
+  const open = () => page.evaluate(() => [...document.querySelectorAll('.blk.wd-open')].map(b => +b.dataset.slot));
+  const steps = [];
+  await key(page, 'n'); await page.waitForTimeout(700); steps.push(await open());          // on 10
+  await key(page, 'n'); await page.waitForTimeout(700); steps.push(await open());          // on 25: 10 closes
+  await page.evaluate(() => window.readout.toggleDiff(10));                                 // the reader opens 10 again
+  await key(page, 'n'); await page.waitForTimeout(700); steps.push(await open());          // on 40 (nothing to compare): 25 closes
+  await key(page, 'n'); await page.waitForTimeout(700); steps.push(await open());          // on 55
+  await key(page, 'n'); await page.waitForTimeout(700); steps.push(await open());          // on 70 (added): 55 closes, 10 stays
+  const want = [[10], [25], [10], [10, 55], [10]];
+  check('N on an edited block opens its comparison and closes it moving on; one the reader opened stays',
+    JSON.stringify(steps) === JSON.stringify(want), JSON.stringify(steps));
   await page.close();
 }
 

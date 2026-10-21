@@ -99,10 +99,15 @@ private struct TOCRow: View {
         String(format: NSLocalizedString("%d of %d tasks done", comment: "Window subtitle"), entry.tasks.done, entry.tasks.total)
     }
 
+    /// The count shows once: not on the lone title, whose count is the window subtitle's.
+    private var showsTasks: Bool {
+        entry.tasks.total > 0 && ReaderChrome.outlineShowsTasks(level: entry.level, baseLevel: minLevel)
+    }
+
     /// One element per row: the heading, its tasks, then whether it has unread changes.
     private var accessibilityText: String {
         var parts = [entry.title.isEmpty ? "—" : entry.title]
-        if entry.tasks.total > 0 { parts.append(tasksLabel) }
+        if showsTasks { parts.append(tasksLabel) }
         if unread { parts.append(NSLocalizedString("Unread changes", comment: "Accessibility label of the change rail beside the page")) }
         return parts.joined(separator: ", ")
     }
@@ -114,7 +119,7 @@ private struct TOCRow: View {
                 .lineLimit(2)
                 .truncationMode(.tail)
             Spacer(minLength: 4)
-            if entry.tasks.total > 0 {
+            if showsTasks {
                 Text("\(entry.tasks.done)/\(entry.tasks.total)")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(entry.tasks.done == entry.tasks.total ? .secondary : .tertiary)

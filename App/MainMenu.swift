@@ -96,7 +96,6 @@ enum MainMenu {
         view.addItem(item(NSLocalizedString("Next Change", comment: "Menu"), #selector(ReaderWindowController.nextChange(_:)), "]"))
         view.addItem(item(NSLocalizedString("Previous Change", comment: "Menu"), #selector(ReaderWindowController.previousChange(_:)), "["))
         view.addItem(item(NSLocalizedString("Mark All as Read", comment: "Menu"), #selector(ReaderWindowController.markAllRead(_:)), "k"))
-        view.addItem(item(NSLocalizedString("Show Only Changes", comment: "Menu"), #selector(ReaderWindowController.toggleChangesOnly(_:)), "K", [.command, .shift]))
         // The page's D key, findable in the menu (a single letter is no menu key equivalent).
         view.addItem(item(NSLocalizedString("Show What Changed", comment: "Menu: show the word-level comparison of the edited blocks in view (the D key)"), #selector(ReaderWindowController.showWhatChanged(_:))))
         // What changed since the last commit marked again (⌘Z undoes it); for files in a git repository. No key: none is free and obvious.

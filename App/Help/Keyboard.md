@@ -4,10 +4,9 @@
 
 | Key | Action |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change; with none left, the next document that has some, or that was opened behind and not looked at yet |
+| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change (on an edited block, shows which words changed, until you move on); with none left, the next document that has some, or that was opened behind and not looked at yet |
 | <kbd>D</kbd> | Show which words changed in the edited blocks in view, top first; once all are shown, hide them (also **View ▸ Show What Changed**) |
 | <kbd>⌘K</kbd> | Mark all as read (<kbd>⌘Z</kbd> undoes it) |
-| <kbd>⇧⌘K</kbd> | Show only changes |
 | <kbd>J</kbd> / <kbd>K</kbd> | Scroll down / up |
 | <kbd>G</kbd> / <kbd>⇧G</kbd> (also <kbd>⌘↑</kbd> / <kbd>⌘↓</kbd>) | Jump to top / end |
 | <kbd>Esc</kbd> | Close an open comparison or removed-text popup |
