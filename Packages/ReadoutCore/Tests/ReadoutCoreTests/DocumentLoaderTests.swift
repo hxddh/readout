@@ -174,6 +174,18 @@ import Testing
         #expect(FenceLanguages.scan(text) == ["python", "bash", "yaml", "diff"])
     }
 
+    /// Container markers in any mix, before the fence: all skipped.
+    @Test func fencesInAnyContainerAreNamed() {
+        let text = "-\t```go\n1) ```ruby\n> > - ```lua\n> quote\nlazy line\n```zig\n\t```perl\n  * + 12. ```php\n"
+        #expect(FenceLanguages.scan(text) == ["go", "ruby", "lua", "zig", "perl", "php"])
+    }
+
+    @Test func onlyTheFirstBytesOfAHugeFileAreLookedAt() {
+        let text = String(repeating: "x\n", count: 100) + "```late\n```"
+        #expect(FenceLanguages.scan(text, maxBytes: 100).isEmpty)
+        #expect(FenceLanguages.scan(text) == ["late"])
+    }
+
     @Test func codeSpansAreNotFences() {
         #expect(FenceLanguages.scan("``js`` and `a`\nno fences here\n").isEmpty)
         // Indented four spaces it is code, not a fence; a quick look names it anyway (harmless).
