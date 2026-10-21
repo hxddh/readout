@@ -27,7 +27,9 @@ import Testing
     func listsInQuotesAreCapped(_ name: String) throws {
         let text = try #require(CoreFixes38Tests.deep.first { $0.name == name }).text
         let capped = try #require(NestingCap.apply(text), "\(name): NestingCap flattens nothing")
-        #expect(capped.lines.count == 150 - (NestingCap.containers - (name == "quote-in-quote-4sp-150" ? 2 : 1)), "\(name): \(capped.lines.sorted().prefix(3))")
+        // From the 17th level on: the items are at the quote's level plus one (plus two in a quote in a quote, or in a quote in an item).
+        let before = name == "quote-in-quote-4sp-150" || name == "list-in-list-quote-150" ? 2 : 1
+        #expect(capped.lines.count == 150 - (NestingCap.containers - before), "\(name): \(capped.lines.sorted().prefix(3))")
         nonisolated(unsafe) var full: [String] = [], incremental: [String] = []
         #expect(CoreFixes38Tests.onSmallStack {
             full = MarkdownParser.parse(text).blocks.map(\.html)
@@ -61,29 +63,9 @@ import Testing
     }
 
     /// Fragments parsed concurrently (`IncrementalParser.parseFragments`,
-    /// from 8 on) run on large stacks, not GCD's (512 KB on macOS), whatever
-    /// thread asks: every iteration once, all of them before it returns.
-    @Test func concurrentFragmentsRunOnLargeStacks() {
-        final class Seen: @unchecked Sendable { let lock = NSLock(); var sizes: [Int: Int] = [:] }
-        let seen = Seen()
-        #expect(CoreFixes38Tests.onSmallStack {
-            ParseThread.concurrentPerform(iterations: 64) { k in
-                let size = Thread.current.stackSize
-                seen.lock.lock(); seen.sizes[k, default: 0] += size; seen.lock.unlock()
-            }
-        })
-        #expect(seen.sizes.count == 64)
-        #expect(seen.sizes.values.allSatisfy { $0 >= ParseThread.stackSize }, "\(Set(seen.sizes.values))")
-        // Many batches, from several threads at once: each returns with its own done (its closure released).
-        final class Sum: @unchecked Sendable { let lock = NSLock(); var total = 0 }
-        let sum = Sum()
-        DispatchQueue.concurrentPerform(iterations: 4) { _ in
-            for n in 1...200 {
-                ParseThread.concurrentPerform(iterations: n % 17 + 1) { _ in sum.lock.lock(); sum.total += 1; sum.lock.unlock() }
-            }
-        }
-        #expect(sum.total == 4 * (1...200).reduce(0) { $0 + $1 % 17 + 1 })
-        // A document of many fragments, each nested deep in a quote, asked from a small stack.
+    /// from 8 on) run on GCD's threads, 512 KB on macOS: a document of many
+    /// fragments, each nested deep in a quote, asked from a small stack.
+    @Test func concurrentFragmentsParseOnSmallStacks() {
         let text = (0..<12).map { "Section \($0).\n\n" + (0..<60).map { "> " + String(repeating: "  ", count: $0) + "- item" }.joined(separator: "\n") }
             .joined(separator: "\n\n")
         nonisolated(unsafe) var full: [String] = [], incremental: [String] = []
@@ -92,44 +74,6 @@ import Testing
             incremental = IncrementalParser().parse(text).blocks.map(\.html)
         })
         #expect(!full.isEmpty && full == incremental)
-    }
-
-    /// A batch asked for from inside a batch (review of #76) runs: on a
-    /// pool of one thread, that thread would otherwise wait on itself.
-    static func completes(within seconds: Double = 20, _ body: @escaping @Sendable () -> Void) -> Bool {
-        let done = DispatchSemaphore(value: 0)
-        ParseThread.start { body(); done.signal() }
-        return done.wait(timeout: .now() + seconds) == .success
-    }
-
-    @Test func aNestedBatchCompletes() {
-        final class Count: @unchecked Sendable { let lock = NSLock(); var n = 0; func add() { lock.lock(); n += 1; lock.unlock() } }
-        let one = ParsePool(width: 1), count = Count()
-        // From a thread that is not a ParseThread: only the pool's one thread runs the outer batch.
-        let other = DispatchSemaphore(value: 0)
-        Thread { one.perform(8) { _ in one.perform(4) { _ in count.add() } }; other.signal() }.start()
-        #expect(other.wait(timeout: .now() + 20) == .success, "a nested batch on a pool of one thread never ended")
-        #expect(count.n == 32)
-        // The shared pool, nested from a ParseThread, as the review ran it.
-        let shared = Count()
-        #expect(Self.completes {
-            ParseThread.concurrentPerform(iterations: 64) { _ in ParseThread.concurrentPerform(iterations: 4) { _ in shared.add() } }
-        }, "concurrentPerform(64) { concurrentPerform(4) } never ended")
-        #expect(shared.n == 256)
-    }
-
-    /// A caller on a large stack takes iterations itself, as GCD's does.
-    @Test func aLargeStackCallerTakesIterations() {
-        final class Seen: @unchecked Sendable { let lock = NSLock(); var callerRan = 0; var caller: Thread? }
-        let one = ParsePool(width: 1), seen = Seen()
-        #expect(Self.completes {
-            seen.caller = Thread.current
-            one.perform(16) { _ in
-                usleep(2_000)
-                if Thread.current === seen.caller { seen.lock.lock(); seen.callerRan += 1; seen.lock.unlock() }
-            }
-        })
-        #expect(seen.callerRan > 0, "the calling ParseThread took no iteration")
     }
 
     /// A line escaped at a later marker keeps its earlier item open (review
@@ -152,8 +96,7 @@ import Testing
     }
 
     /// Compare with Last Commit (#72) parses the committed text where it is
-    /// called (CommitBaseline.queue, a GCD thread), not on a ParseThread as
-    /// the first-open baseline (#75) does.
+    /// called (CommitBaseline.queue, a GCD thread).
     struct Git: GitRunning {
         let text: String
         func run(_ arguments: [String], in directory: String) -> Data? { Data(text.utf8) }
@@ -170,7 +113,7 @@ import Testing
 
     /// Compare with Last Commit (#72) and Mark All as Read's undo reload the
     /// session (`reload(baseline:)`): the link definitions (#74) must survive,
-    /// for ⌘C (the reset patch carries them) and Copy as Quote (`session.links`).
+    /// for ⌘C and Copy as Quote (the reset patch carries them to the page).
     @Test func reloadKeepsTheLinkDefinitions() {
         let text = "See [the spec][spec] first.\n\n[spec]: https://example.com/spec \"Spec\"\n"
         let s = DocumentSession()
@@ -179,8 +122,6 @@ import Testing
         #expect(s.links.count == 1)
         let reloaded = s.reload(baseline: [])
         #expect(s.links.count == 1, "session.links after reload: \(s.links)")
-        #expect(reloaded.links?.count == 1, "reset patch after reload carries links: \(String(describing: reloaded.links))")
-        let quote = QuoteFormatter.quote(blocks: s.blocks, slots: Set(s.blocks.map(\.slot)), path: "plan.md", links: s.links) ?? ""
-        #expect(quote.contains("[spec]: https://example.com/spec"), "\(quote)")
+        #expect(reloaded.links == opened.links, "reset patch after reload carries links: \(String(describing: reloaded.links))")
     }
 }

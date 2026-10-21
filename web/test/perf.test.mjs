@@ -88,13 +88,29 @@ const firstApply = await page.evaluate(p => new Promise(resolve => {
 await page.waitForTimeout(1500);
 
 // A 20-block update in the middle of reading, three times, each with new
-// text: the apply plus the layout it causes. Two frames pass after the
-// scroll, so the layout it causes is done and not counted in the update.
+// text: the apply plus the layout it causes. The page settles after the
+// scroll first, so what the scroll causes is not counted in the update: the
+// blocks it brings on screen laid out at their real heights, the resize
+// observer keeping the place (a scroll of its own, then the page laid out
+// again), the code on screen highlighted. Two frames were not enough: right
+// after them a layout of the whole page (70-130 ms on CI) was still due, and
+// the first read of the update paid it, in every first update and in about
+// one run in ten in the second too, which made the median.
 const updates = [];
-const twoFrames = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+const settled = () => page.evaluate(() => new Promise(resolve => {
+  // Eight 50 ms timers in a row on time (the main thread free for 400 ms), then two frames.
+  let quiet = 0, due = performance.now() + 50;
+  const tick = () => {
+    quiet = performance.now() - due < 10 ? quiet + 1 : 0;
+    if (quiet >= 8) return requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    due = performance.now() + 50;
+    setTimeout(tick, 50);
+  };
+  setTimeout(tick, 50);
+}));
 for (let i = 0; i < 3; i++) {
   await page.evaluate(y => window.scrollTo(0, y), 20000 + i * 5000);
-  await twoFrames();
+  await settled();
   const patch = { ...edit, version: 2 + i, ops: edit.ops.map(o => ({ ...o, html: o.html.replace('(revised)', `(revised ${i + 1})`) })) };
   updates.push(await page.evaluate(p => {
     const t0 = performance.now();
@@ -352,6 +368,7 @@ const result = {
   web_first_apply_1mb_ms: Math.round(firstApply.sync),
   web_first_apply_1mb_painted_ms: Math.round(firstApply.painted),
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
+  web_update_20_blocks_1mb_samples_ms: updates.map(Math.round),
   web_find_open_1mb_ms: Math.round(median(findOpen) * 10) / 10,
   web_find_refresh_1mb_ms: Math.round(median(findRefresh) * 10) / 10,
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),

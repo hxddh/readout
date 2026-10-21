@@ -1508,11 +1508,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     /// Edit ▸ Copy as Quote (⇧⌘C): the Markdown source of the blocks the
     /// selection touches, as a blockquote, and the file's lines and section.
     @objc func copyAsQuote(_ sender: Any?) {
-        webView.run("window.readout.selectedSlots()") { [weak self] value, _ in
+        webView.run("window.readout.quoteSelection()") { [weak self] value, _ in
             guard let self else { return }
-            let slots = Set(((value as? [Any]) ?? []).compactMap { ($0 as? NSNumber)?.intValue })
+            let selection = value as? [String: Any]
+            let slots = Set(((selection?["slots"] as? [Any]) ?? []).compactMap { ($0 as? NSNumber)?.intValue })
             let path = QuoteFormatter.displayPath(self.url.path, projectRoot: self.projectRoot.path)
-            guard let text = QuoteFormatter.quote(blocks: self.session.blocks, slots: slots, path: path, links: self.session.links) else { return NSSound.beep() }
+            guard let text = QuoteFormatter.quote(blocks: self.session.blocks, slots: slots, path: path,
+                                                  definitions: selection?["links"] as? [String] ?? []) else { return NSSound.beep() }
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
         }
@@ -1630,32 +1632,31 @@ enum CommitBaseline {
     nonisolated(unsafe) private static var toolsAvailable = false
 
     static func find(path: String, current: String, completion: @escaping @MainActor ([BlockKey]?) -> Void) {
-        // The app's own files (help) are no one's commit.
-        guard !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/") else { return completion(nil) }
-        queue.async {
-            var keys: [BlockKey]? = nil
-            if GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil {
-                if !toolsAvailable { toolsAvailable = GitTools.available() }
-                if toolsAvailable, let text = GitBaseline.headText(for: path, current: current, git: ProcessGit()) {
-                    // On a large stack, as the document itself (`ParseThread`).
-                    keys = ParseThread.sync { MarkdownParser.parse(text).blocks.map(BlockKey.init) }
-                }
-            }
-            let found = keys
-            DispatchQueue.main.async { MainActor.assumeIsolated { completion(found) } }
-        }
+        withGit(path: path, otherwise: nil, {
+            GitBaseline.headText(for: path, current: current, git: ProcessGit()).map { MarkdownParser.parse($0).blocks.map(BlockKey.init) }
+        }, completion: completion)
     }
 
     /// View ▸ Compare with Last Commit: the version the window `displayed`
     /// against the committed version of the file at `path` (its real path),
     /// with the guards of `find`. Only git's HEAD blob is read.
     static func compare(path: String, displayed: [BlockKey], completion: @escaping @MainActor (CommitComparison) -> Void) {
-        guard !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/") else { return completion(.unavailable) }
+        withGit(path: path, otherwise: .unavailable, {
+            GitBaseline.compare(path: path, displayed: displayed, git: ProcessGit())
+        }, completion: completion)
+    }
+
+    /// `work`'s result on `queue` for a file in a git repository with git
+    /// there to ask, else `otherwise`; `completion` gets it on the main actor.
+    private static func withGit<T: Sendable>(path: String, otherwise: T, _ work: @escaping @Sendable () -> T,
+                                             completion: @escaping @MainActor (T) -> Void) {
+        // The app's own files (help) are no one's commit.
+        guard !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/") else { return completion(otherwise) }
         queue.async {
-            var result = CommitComparison.unavailable
+            var result = otherwise
             if GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil {
                 if !toolsAvailable { toolsAvailable = GitTools.available() }
-                if toolsAvailable { result = GitBaseline.compare(path: path, displayed: displayed, git: ProcessGit()) }
+                if toolsAvailable { result = work() }
             }
             let found = result
             DispatchQueue.main.async { MainActor.assumeIsolated { completion(found) } }

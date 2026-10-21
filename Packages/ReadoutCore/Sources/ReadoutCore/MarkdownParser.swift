@@ -309,6 +309,10 @@ public enum MarkdownParser {
         }
 
         let nodes = Array(document.children)
+        // The lines of each node, where they are not a block's own (HTML
+        // comments; what a `<details>` gathers): where link definitions are not.
+        var covers: [(lines: ClosedRange<Int>, kind: BlockKind)] = []
+        var gathered = Set<Int>()
         var index = 0
         while index < nodes.count {
             let node = nodes[index]
@@ -323,10 +327,13 @@ public enum MarkdownParser {
                 var inner: [Markup] = []
                 var closing = ""
                 var last = range.upperBound
+                covers.append((range, .html))
                 while index < nodes.count, depth > 0 {
                     let next = nodes[index]
                     index += 1
-                    last = lineRange(next).upperBound
+                    let r = lineRange(next)
+                    last = r.upperBound
+                    covers.append((r, next is BlockQuote ? .quote : next is ListItemContainer ? .listItem : next is Paragraph ? .paragraph : .html))
                     if let nh = next as? HTMLBlock {
                         depth += Self.detailsDepth(nh.rawHTML)
                         if depth <= 0 { closing = nh.html; break }
@@ -347,6 +354,7 @@ public enum MarkdownParser {
                         return renderer.block(n)
                     }.joined() + HTML.sanitize(closing, resolver: probe)
                 }
+                gathered.insert(blocks.count)
                 blocks.append(make(.html, h, range: range.lowerBound...last, html: html(), taskNodes: inner))
                 continue
             }
@@ -405,7 +413,7 @@ public enum MarkdownParser {
             case let h as HTMLBlock:
                 // HTML comments are invisible; skip them so they never produce empty blocks.
                 let trimmed = h.rawHTML.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.hasPrefix("<!--") && trimmed.hasSuffix("-->") { continue }
+                if trimmed.hasPrefix("<!--") && trimmed.hasSuffix("-->") { covers.append((range, .html)); continue }
                 blocks.append(make(.html, h, range: range, html: HTML.sanitize(h.html, resolver: probe)))
             default:
                 blocks.append(make(.paragraph, node, range: range, html: renderer.block(node)))
@@ -441,7 +449,8 @@ public enum MarkdownParser {
             }
         }
         // Definitions are not blocks: copying a block that uses one appends it.
-        let links = refsKey.isEmpty ? [] : IncrementalParser.linkDefinitions(parseLines)
+        let links = refsKey.isEmpty ? [] : IncrementalParser.linkDefinitions(
+            parseLines, blocks: blocks.indices.filter { !gathered.contains($0) }.map { (blocks[$0].lines, blocks[$0].kind) } + covers)
         return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys, links: links)
     }
 

@@ -99,6 +99,40 @@ const key = (page, k, o = {}) => page.evaluate(([k, o]) => document.dispatchEven
   await page.close();
 }
 
+// 1a. Copy as Quote's link definitions come from the page, as ⌘C's do
+//     (3.9, B8: one implementation): those the selected blocks' sources use,
+//     in the order of first use; not a footnote reference, not one a block holds.
+{
+  const page = await newPage();
+  const srcs = ['[x][C] then [a]', 'no links', '[^a] and [b]\n\n[b]: https://b'];
+  const ops = srcs.map((src, i) => ({ op: 'insert', slot: i + 1, after: i, html: `<p>block ${i + 1}</p>`, kind: 'paragraph', src }));
+  const links = ['a', 'b', 'c'].map(l => ({ label: l, md: `[${l}]: https://${l}` }));
+  await page.evaluate(p => window.readout.apply(p), patch(1, ops, { reset: true, links }));
+  const r = await page.evaluate(async () => {
+    const tick = () => new Promise(r => setTimeout(r, 50));
+    const sel = getSelection();
+    const out = [];
+    for (const s of [1, 2, 3]) {
+      const t = document.querySelector(`.blk[data-slot="${s}"] p`).firstChild;
+      const range = document.createRange();
+      range.setStart(t, 1);
+      range.setEnd(t, 4);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      await tick();
+      out.push(window.readout.quoteSelection());
+    }
+    sel.removeAllRanges();
+    return out;
+  });
+  check('Copy as Quote: the definitions a block uses, in the order of first use',
+    JSON.stringify(r[0]) === JSON.stringify({ slots: [1], links: ['[c]: https://c', '[a]: https://a'] }), JSON.stringify(r[0]));
+  check('Copy as Quote: no definitions for a block without references', JSON.stringify(r[1]) === JSON.stringify({ slots: [2], links: [] }), JSON.stringify(r[1]));
+  check('Copy as Quote: a footnote reference is no label; a definition the block holds is not added again',
+    JSON.stringify(r[2]) === JSON.stringify({ slots: [3], links: [] }), JSON.stringify(r[2]));
+  await page.close();
+}
+
 // 1b. U4 (3.8): N lands on a change with no text selected; Copy as Quote
 //     quotes that block (the page says there is something to quote), so
 //     "N, then ⇧⌘C" needs no mouse. A text selection still wins; focus
