@@ -32,11 +32,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         SmokeTest.noteLaunchPhase("will_finish_launching")
-        // The spare page first: WebKit starts its web content process while
-        // the menus are built and windows restored, and the first window,
-        // restored or opened, takes it.
-        WebViewPool.shared.prewarm()
-        SmokeTest.noteLaunchPhase("spare_created")
+        // No spare page here: made this early, WebKit's start held up the
+        // rest of the launch and the first window (3.9.0). The first window
+        // makes its own page; the spare follows its first paint (WebViewPool).
         // No Start Dictation or Emoji & Symbols in the Edit menu (registered,
         // not stored): a read-only reader takes no typing.
         UserDefaults.standard.register(defaults: ["NSDisabledDictationMenuItem": true, "NSDisabledCharacterPaletteMenuItem": true])
@@ -86,6 +84,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let prop = event?.paramDescriptor(forKeyword: AEKeyword(keyAEPropData))
         let loginItem = LaunchWelcome.isLoginItemLaunch(eventID: event.map { UInt32($0.eventID) }, propData: prop.map { UInt32($0.enumCodeValue) })
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            // No window at launch (the welcome window, a login item): the
+            // page the next open takes is made now.
+            if self?.windows.isEmpty == true { WebViewPool.shared.prewarm() }
             guard let self, LaunchWelcome.shows(openedAtLaunch: self.openedAtLaunch, windowsOpen: !self.windows.isEmpty, loginItem: loginItem) else { return }
             self.showWelcome(nil)
         }
