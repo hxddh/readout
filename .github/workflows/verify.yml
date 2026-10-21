@@ -172,8 +172,14 @@ jobs:
         run: |
           rm -rf /Applications/Readout.app
           ditto dist/Readout.app /Applications/Readout.app
+          echo "DIAG before launch: $(sysctl -n vm.loadavg) cpus $(sysctl -n hw.ncpu)"; ps -Ao %cpu,comm -r | head -8
+          if [ -n "$DIAG_QUIET" ]; then for i in $(seq 90); do l=$(sysctl -n vm.loadavg | awk '{print $2}'); echo "load $l"; awk "BEGIN{exit !($l < 1.5)}" && break; sleep 2; done; ps -Ao %cpu,comm -r | head -8; fi
+          (for i in $(seq 40); do echo "== t$i $(date +%s.%N | cut -c1-14)"; ps -Ao %cpu,comm -r | head -6; sleep 0.5; done) > cpu-sample.log 2>&1 &
           python3 tools/smoke-run.py /Applications/Readout.app/Contents/MacOS/Readout "$RUNNER_TEMP/smoke" smoke-out
 
+      - name: DIAG cpu during the cold launch
+        if: always()
+        run: cat cpu-sample.log | cut -c1-90 | head -200 || true
       - name: DIAG extra smoke runs (temporary)
         continue-on-error: true
         run: |
