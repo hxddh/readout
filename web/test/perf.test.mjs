@@ -476,6 +476,8 @@ const result = {
   web_find_refresh_1mb_frame_ms: Math.round(median(findRefreshFrame)),
   web_find_refresh_1mb_frame_samples_ms: findRefreshFrame.map(Math.round),
   web_find_next_1mb_frame_ms: median(findNext.map(x => x[1])),
+  // Return to the frame showing the match selected (3.8.0, WebKit's own find: ~30 ms and ~20 ms more for the selection).
+  web_find_next_1mb_selected_ms: median(findNext.map(x => x[1] + x[2])),
   web_find_next_1mb_frame_samples_ms: findNext,   // [the call, to the frame showing the match, the next frame (the match selected)]
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
   web_first_highlight_cold_ts_ms: Math.round(coldHighlight),

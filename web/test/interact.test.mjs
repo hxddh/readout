@@ -1277,6 +1277,42 @@ for (const n of [60, 400]) {
   await page.close();
 }
 
+// Tables in chunks not laid out are watched until they come on screen: a
+// table that leaves the page first (its block removed, rewritten, or the
+// document reset) is no longer watched (an agent session rewriting tables
+// would otherwise keep every old one alive).
+{
+  const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(page, errors, 'tables watched: ');
+  await page.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    const watched = window.__watchedTables = new Set();
+    const { observe, unobserve } = IntersectionObserver.prototype;
+    IntersectionObserver.prototype.observe = function (t) { if (t.classList?.contains('table-wrap')) watched.add(t); return observe.call(this, t); };
+    IntersectionObserver.prototype.unobserve = function (t) { watched.delete(t); return unobserve.call(this, t); };
+  });
+  await page.goto(`${base}/reader.html`);
+  await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  const words = ['Implementation', 'Responsibility', 'Configuration', 'Documentation', 'Compatibility', 'Infrastructure', 'Observability'];
+  const table = `<div class="table-wrap"><table><thead><tr>${words.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody><tr>${words.map(w => `<td>${w}</td>`).join('')}</tr></tbody></table></div>`;
+  const isTable = i => i % 40 === 0;
+  await page.evaluate(p => window.readout.apply(p), doc(600, i => isTable(i) ? table : `<p>para ${i}</p>`, i => isTable(i) ? 'table' : 'paragraph'));
+  await page.waitForTimeout(500);
+  const watched = () => page.evaluate(() => { const all = [...window.__watchedTables]; return { all: all.length, detached: all.filter(t => !t.isConnected).length }; });
+  const first = await watched();
+  await page.evaluate(p => window.readout.apply(p), patch(2, [{ op: 'remove', slot: 400 }, { op: 'replace', slot: 480, kind: 'paragraph', change: 'content', html: '<p>no table now</p>' }]));
+  await page.waitForTimeout(300);
+  const edited = await watched();
+  await page.evaluate(p => window.readout.apply(p), { ...doc(50), version: 3 });
+  await page.waitForTimeout(300);
+  const reset = await watched();
+  check('tables that leave the page before coming on screen are no longer watched',
+    first.all > 5 && first.detached === 0 && edited.detached === 0 && edited.all === first.all - 2 && reset.all === 0, JSON.stringify({ first, edited, reset }));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();

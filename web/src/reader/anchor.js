@@ -296,8 +296,9 @@ function keptBlock(resized, chunks, firstChunks) {
   for (const then of [true, false]) {
     let grown = then ? before : 0;
     for (let e = first; e;) {
+      // A chunk laid out for the first time (or not yet) had nothing on screen to keep.
       const c = e.parentElement;
-      if (c !== own && (firstChunks.has(c) || neverLaidOut(c))) {
+      if (firstChunks.has(c) || neverLaidOut(c)) {
         if (then) grown += chunks.get(c) || 0;
         e = nextItem(c.lastElementChild);
         continue;

@@ -410,7 +410,7 @@ enum SmokeTest {
     private static func chinesePunctuation(webView: WKWebView, out: URL) async {
         let script = #"""
             (() => {
-              const blk = [...document.querySelectorAll('#ro-doc > .blk')].find(b => b.lang === 'zh' && b.textContent.includes('\u201C'));
+              const blk = [...document.querySelectorAll('#ro-doc > .chunk > .blk')].find(b => b.lang === 'zh' && b.textContent.includes('\u201C'));
               if (!blk) return JSON.stringify({ found: false });
               const host = blk.querySelector('p') || blk;
               const width = font => {
@@ -590,7 +590,7 @@ enum SmokeTest {
     private static func copyAsQuote(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
         controller.show()
         let select = """
-            (() => { const b = [...document.querySelectorAll('#ro-doc > .blk.k-paragraph')].filter(e => e.textContent.trim().length > 20);
+            (() => { const b = [...document.querySelectorAll('#ro-doc > .chunk > .blk.k-paragraph')].filter(e => e.textContent.trim().length > 20);
               const a = b[1], z = b[2]; if (!a || !z) return null;
               const t = n => { const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT); let x; while ((x = w.nextNode())) if (x.textContent.trim().length > 4) return x; return null; };
               const r = document.createRange(); r.setStart(t(a), 2); r.setEnd(t(z), 3);
@@ -608,7 +608,7 @@ enum SmokeTest {
         try? await Task.sleep(for: .milliseconds(300))
         let enabledAfterDeselect = controller.validateMenuItem(item)
         // No text selected, the keyboard on a block (where N goes): that block is quoted.
-        let focus = "(() => { const b = [...document.querySelectorAll('#ro-doc > .blk.k-paragraph')].filter(e => e.textContent.trim().length > 20)[1]; if (!b) return null; if (!b.hasAttribute('tabindex')) b.tabIndex = -1; b.focus(); return +b.dataset.slot; })()"
+        let focus = "(() => { const b = [...document.querySelectorAll('#ro-doc > .chunk > .blk.k-paragraph')].filter(e => e.textContent.trim().length > 20)[1]; if (!b) return null; if (!b.hasAttribute('tabindex')) b.tabIndex = -1; b.focus(); return +b.dataset.slot; })()"
         let focused = try? await webView.evaluateJavaScript(focus)
         try? await Task.sleep(for: .milliseconds(300))
         let enabledFocused = controller.validateMenuItem(item)
@@ -628,7 +628,7 @@ enum SmokeTest {
     private static func copyAsMarkdown(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
         controller.show()
         let select = """
-            (() => { const b = [...document.querySelectorAll('#ro-doc > .blk.k-listItem')].filter(e => e.querySelector('.task-box'));
+            (() => { const b = [...document.querySelectorAll('#ro-doc > .chunk > .blk.k-listItem')].filter(e => e.querySelector('.task-box'));
               if (b.length < 2) return null;
               const r = document.createRange(); r.setStart(b[0], 0); r.setEnd(b[1], b[1].childNodes.length);
               const s = getSelection(); s.removeAllRanges(); s.addRange(r); return [+b[0].dataset.slot, +b[1].dataset.slot]; })()
@@ -934,7 +934,7 @@ enum SmokeTest {
         try? await Task.sleep(for: .seconds(1.2))
         // Diagnostics, so a failure can be explained: where the page was, the
         // anchor block and the blocks above it, and what else is in the flow.
-        let state = "(() => { const r = window.__refill; const b = [...document.querySelectorAll('#ro-doc > .blk')]; const i = r ? b.findIndex(e => +e.dataset.slot === r.slot) : -1; const e = i >= 0 ? b[i] : null; return JSON.stringify({ scrollY: Math.round(scrollY), scrollHeight: document.scrollingElement.scrollHeight, innerHeight, anchorTop: e ? Math.round(e.getBoundingClientRect().top * 10) / 10 : null, captured: window.readout.captureAnchor(), above: (i >= 0 ? b.slice(0, i) : []).map(x => [+x.dataset.slot, x.className.replace(/^blk /, ''), Math.round(x.getBoundingClientRect().height)]), extra: [...document.querySelectorAll('#ro-doc > :not(.blk)')].map(x => [x.id || x.className, Math.round(x.getBoundingClientRect().height)]) }); })()"
+        let state = "(() => { const r = window.__refill; const b = [...document.querySelectorAll('#ro-doc > .chunk > .blk')]; const i = r ? b.findIndex(e => +e.dataset.slot === r.slot) : -1; const e = i >= 0 ? b[i] : null; return JSON.stringify({ scrollY: Math.round(scrollY), scrollHeight: document.scrollingElement.scrollHeight, innerHeight, anchorTop: e ? Math.round(e.getBoundingClientRect().top * 10) / 10 : null, captured: window.readout.captureAnchor(), above: (i >= 0 ? b.slice(0, i) : []).map(x => [+x.dataset.slot, x.className.replace(/^blk /, ''), Math.round(x.getBoundingClientRect().height)]), extra: [...document.querySelectorAll('#ro-doc > :not(.blk)')].map(x => [x.id || x.className, Math.round(x.getBoundingClientRect().height)]) }); })()"
         func pageState() async -> Any? {
             guard let text = try? await webView.evaluateJavaScript(state) as? String, let data = text.data(using: .utf8) else { return nil }
             return try? JSONSerialization.jsonObject(with: data)
@@ -983,8 +983,8 @@ enum SmokeTest {
             return menu.items.first { $0.action == #selector(ReaderWindowController.copyLinkToSection(_:)) }
         }
         NSPasteboard.general.clearContents()
-        json["section_link_on_paragraph"] = await contextMenu("#ro-doc > .k-paragraph p") != nil
-        if let item = await contextMenu("#ro-doc > .k-heading h1, #ro-doc > .k-heading h2"), let action = item.action {
+        json["section_link_on_paragraph"] = await contextMenu("#ro-doc > .chunk > .k-paragraph p") != nil
+        if let item = await contextMenu("#ro-doc > .chunk > .k-heading h1, #ro-doc > .chunk > .k-heading h2"), let action = item.action {
             NSApp.sendAction(action, to: item.target, from: item)
         }
         json["copied_link"] = NSPasteboard.general.string(forType: .string) ?? ""

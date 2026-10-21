@@ -187,6 +187,11 @@ const skippedTables = new IntersectionObserver(entries => {
   if (shown.length) measureTables(shown);
 });
 
+/** Tables of `el` (a block leaving the page or getting new content) no longer watched. */
+export function forgetTables(el) {
+  for (const t of el.querySelectorAll('.table-wrap')) skippedTables.unobserve(t);
+}
+
 // New tables are measured together, in the next frame.
 const queuedTables = new Set();
 function queueTable(t) {
