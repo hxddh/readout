@@ -153,7 +153,7 @@ enum MainMenu {
             SystemMenuItems.Item(action: i.action.map(NSStringFromSelector), submenuActions: i.submenu?.items.compactMap { $0.action.map(NSStringFromSelector) } ?? [],
                                  isSeparator: i.isSeparatorItem)
         }
-        for n in SystemMenuItems.removals(items) { edit.removeItem(at: n) }
+        for n in SystemMenuItems.removals(items) { edit.removeItem(edit.items[n]) }
     }
 
     private static func item(_ title: String, _ action: Selector?, _ key: String = "",
