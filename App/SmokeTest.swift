@@ -86,8 +86,10 @@ enum SmokeTest {
     }
 
     /// When each phase of the launch first happened (wall clock, seconds):
-    /// did_finish_launching, then for the first window window_init, page_ready,
-    /// did_load, apply and paint. tools/smoke-run.py splits cold_start_ms with them.
+    /// will_finish_launching, spare_created (the spare page made),
+    /// did_finish_launching, open_requested, then for the first window
+    /// window_init, page_ready, did_load, apply and paint. tools/smoke-run.py
+    /// splits cold_start_ms with them.
     private static var launchPhases: [String: Double] = [:]
     static func noteLaunchPhase(_ name: String) {
         guard outputDirectory != nil, launchPhases[name] == nil else { return }

@@ -31,12 +31,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: Lifecycle
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        SmokeTest.noteLaunchPhase("will_finish_launching")
+        // The spare page first: WebKit starts its web content process while
+        // the menus are built and windows restored, and the first window,
+        // restored or opened, takes it.
+        WebViewPool.shared.prewarm()
+        SmokeTest.noteLaunchPhase("spare_created")
         NSApp.mainMenu = MainMenu.build(appDelegate: self)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         SmokeTest.noteLaunchPhase("did_finish_launching")
-        WebViewPool.shared.prewarm()
         // Windows restored from the last launch are back by now: their tabs too.
         regroupRestoredTabs()
         DispatchQueue.main.async { [weak self] in self?.regroupRestoredTabs() }
@@ -146,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// it (⌘W) goes back to the document the link was in.
     func open(_ url: URL, anchor: String? = nil, mode: OpenMode = .request, projectRoot: String? = nil,
               from source: ReaderWindowController? = nil) {
+        SmokeTest.noteLaunchPhase("open_requested")
         var url = url.standardizedFileURL
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else {

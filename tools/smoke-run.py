@@ -90,21 +90,26 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
         "warm_open_ms": None,
     }
     # The cold start in phases (P5), each in ms since the process started
-    # (sysctl), and the two segments that are Readout's own: the reader page
-    # loading (from didFinishLaunching, where the spare page it becomes is
-    # made, to its `ready`) and the first document going in (from the later of
-    # that page being ready and the document read, to the page's apply). The
-    # rest is launch, WebKit's first start and the frame the system paints.
+    # (sysctl), and the segments that are Readout's own: the reader page
+    # loading (from willFinishLaunching, where the spare page it becomes is
+    # made, to its `ready`), didFinishLaunching to the first window (all on
+    # the main thread, before the window exists) and the first document going
+    # in (from the later of that page being ready and the document read, to
+    # the page's apply). The rest is launch, WebKit's first start and the
+    # frame the system paints.
     phases = app.get("launch_phases_s") or {}
     start = phases.get("process_start")
     if start:
-        order = ["did_finish_launching", "window_init", "page_ready", "did_load", "apply", "paint"]
+        order = ["will_finish_launching", "spare_created", "did_finish_launching", "open_requested",
+                 "window_init", "page_ready", "did_load", "apply", "paint"]
         timings["launch_phases_ms"] = {k: round((phases[k] - start) * 1000, 1) for k in order if k in phases}
         timings["launch_phases_ms"]["spawn"] = round((clock["spawn"] - start) * 1000, 1)
     else:
         print(f"harness: no process start time in the app's launch phases {phases}")
-    if "did_finish_launching" in phases and "page_ready" in phases:
-        timings["cold_page_ready_ms"] = round((phases["page_ready"] - phases["did_finish_launching"]) * 1000, 1)
+    if "will_finish_launching" in phases and "page_ready" in phases:
+        timings["cold_page_ready_ms"] = round((phases["page_ready"] - phases["will_finish_launching"]) * 1000, 1)
+    if "did_finish_launching" in phases and "window_init" in phases:
+        timings["cold_dfl_to_window_ms"] = round((phases["window_init"] - phases["did_finish_launching"]) * 1000, 1)
     # Readout's own work between the window and its document: reading the
     # file, parsing it, the reading state and the git baseline (no WebKit).
     if "window_init" in phases and "did_load" in phases:

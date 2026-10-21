@@ -182,41 +182,59 @@ jobs:
           sleep 2
           pluginkit -mAvvv -p com.apple.quicklook.preview > smoke-out/ql-pluginkit.log 2>&1 || true
           cat smoke-out/ql-pluginkit.log
+          # The extension serves the reader page from the app's
+          # Contents/Resources/Web (F7): it ships no copy of its own.
+          APPEX=/Applications/Readout.app/Contents/PlugIns/ReadoutQuickLook.appex
+          if [ -e "$APPEX/Contents/Resources/Web" ]; then echo "FAIL: the Quick Look extension carries its own Web/"; exit 1; fi
+          du -sk /Applications/Readout.app "$APPEX" /Applications/Readout.app/Contents/Resources/Web
           qlmanage -r >/dev/null 2>&1 || true
           START=$(date '+%Y-%m-%d %H:%M:%S')
-          (qlmanage -p "$RUNNER_TEMP/smoke/plan.md" > smoke-out/qlmanage.log 2>&1 &)
+          # Two previews, one after the other: the second may find the spare
+          # page the first left in the extension (F6), if its process is still running.
           # The extension logs one line per preview with the rendered block
           # count: wait for it (up to ~20 s on a slow runner), not a fixed time.
-          WAIT_END=$((SECONDS + 20))
-          while :; do
+          for N in 1 2; do
+            (qlmanage -p "$RUNNER_TEMP/smoke/plan.md" >> smoke-out/qlmanage.log 2>&1 &)
+            WAIT_END=$((SECONDS + 20))
+            while :; do
+              sleep 1
+              log show --start "$START" --style compact \
+                --predicate 'subsystem == "io.github.hxddh.readout.quicklook"' > smoke-out/ql-render.log 2>&1 || true
+              if [ "$(grep -cE 'preview (applied|timed out): rendered' smoke-out/ql-render.log)" -ge "$N" ]; then
+                echo "Quick Look preview $N logged"
+                break
+              fi
+              if [ "$SECONDS" -ge "$WAIT_END" ]; then
+                echo "Quick Look preview $N not logged within 20 s"
+                break
+              fi
+            done
+            sleep 2   # the spare page for the next preview is made after this one shows
+            pkill -f qlmanage || true
             sleep 1
-            log show --start "$START" --style compact \
-              --predicate 'subsystem == "io.github.hxddh.readout.quicklook"' > smoke-out/ql-render.log 2>&1 || true
-            if grep -qE 'preview (applied|timed out): rendered' smoke-out/ql-render.log; then
-              echo "Quick Look preview logged"
-              break
-            fi
-            if [ "$SECONDS" -ge "$WAIT_END" ]; then
-              echo "Quick Look preview not logged within 20 s"
-              break
-            fi
           done
-          pkill -f qlmanage || true
-          sleep 1
           cat smoke-out/qlmanage.log || true
           cat smoke-out/ql-render.log
           # Reported, not gated: the extension's own time from request to apply,
-          # and from its web view created (before the parse) to its page's ready.
+          # and from its web view created (before the parse) to its page's ready;
+          # the second preview's time, whether it took the spare page and ran in
+          # the first one's process.
           python3 - smoke-out/ql-render.log smoke-out/ql-timings.json <<'EOF'
           import json, re, sys
           log = open(sys.argv[1]).read()
           out = {}
-          m = re.search(r"rendered -?\d+ of \d+ blocks in (\d+) ms", log)
-          if m:
-              out["ql_open_ms"] = int(m.group(1))
+          opens = re.findall(r"\[(\d+):[0-9a-f]+\].*rendered -?\d+ of \d+ blocks in (\d+) ms", log)
+          if opens:
+              out["ql_open_ms"] = int(opens[0][1])
+          if len(opens) > 1:
+              out["ql_second_open_ms"] = int(opens[1][1])
+              out["ql_second_same_process"] = opens[0][0] == opens[1][0]
           m = re.search(r"preview page ready in (\d+) ms", log)
           if m:
               out["ql_page_ready_ms"] = int(m.group(1))
+          spare = re.findall(r"preview view created in \d+ ms \(spare page: (yes|no)\)", log)
+          if len(spare) > 1:
+              out["ql_second_used_spare"] = spare[1] == "yes"
           json.dump(out, open(sys.argv[2], "w"))
           EOF
           cat smoke-out/ql-timings.json
