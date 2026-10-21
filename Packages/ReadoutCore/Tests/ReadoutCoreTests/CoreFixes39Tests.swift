@@ -47,10 +47,23 @@ import Markdown
         let openers = ["> ", "- ", "1. ", "* ", "+ ", ">", "  ", "    ", "\t", "> - ", "- > ", "10) ", "-\t",
                        "[", "**", "*", "_", "__", "~~", "![", "<span>", "[^a]: ", "<details>\n\n"]
         let closers = ["](u)", "**", "*", "_", "__", "~~", "](u) ", "</span>"]
-        for k in 0..<120 {
+        let rounds = Int(ProcessInfo.processInfo.environment["READOUT_CAP_ROUNDS"] ?? "") ?? 150
+        for k in 0..<rounds {
             let levels = Int.random(in: 20...300, using: &rng)
             var text = ""
-            switch k % 4 {
+            switch k % 5 {
+            case 4:
+                // Tabs and spaces mixed into container prefixes (cmark's
+                // columns are bytes on the line: tabs, partial tabs and
+                // multibyte text before a marker change nothing).
+                let parts = ["\t", " \t", "\t ", "  ", ">", ">\t", "> ", "-\t", "- ", "*\t", "1.\t", "1. ", "中 ", "\t> -\t"]
+                var indent = ""
+                for i in 0..<levels {
+                    var prefix = indent
+                    for _ in 0..<Int.random(in: 1...4, using: &rng) { prefix += parts.randomElement(using: &rng)! }
+                    text += prefix + ["l\(i)", "*a [x", "中文 **b", ""].randomElement(using: &rng)! + (Int.random(in: 0..<4, using: &rng) == 0 ? "\n\n" : "\n")
+                    if Bool.random(using: &rng) { indent += ["\t", " \t", "> ", ">\t", "  "].randomElement(using: &rng)! }
+                }
             case 0:
                 for _ in 0..<levels { text += openers.randomElement(using: &rng)! }
                 text += "x"
@@ -70,8 +83,33 @@ import Markdown
                 }
             }
             let d = Self.cappedDepth(text)
-            #expect(d <= Self.deepest, "shape \(k % 4), \(levels) levels: depth \(d)")
+            #expect(d <= Self.deepest, "shape \(k % 5), \(levels) levels: depth \(d)")
             if d > Self.deepest { return }
+        }
+    }
+
+    /// Tabs before deep markers (review of #83): cmark-gfm's start columns
+    /// are byte offsets on the line, partial tabs and multibyte text
+    /// before a marker included, so the escapes land on the markers.
+    @Test func tabsBeforeDeepMarkersAreCapped() {
+        let shapes: [String] = [
+            String(repeating: ">\t", count: 40) + "x",
+            (0..<40).map { _ in " >\t" }.joined() + "x",
+            String(repeating: "-\t", count: 40) + "x",
+            (0..<60).map { String(repeating: "\t", count: $0) + "- i" }.joined(separator: "\n"),
+            (0..<60).map { String(repeating: " \t", count: $0) + "* i" }.joined(separator: "\n"),
+            (0..<60).map { _ in String(repeating: ">\t", count: 30) + "q" }.joined(separator: "\n"),
+            (0..<80).map { String(repeating: "\t", count: $0) + "-\t>\tx" }.joined(separator: "\n"),
+            "- 中文\n" + (0..<60).map { String(repeating: "  ", count: $0) + "- 中文 > x" }.joined(separator: "\n"),
+            (0..<60).map { String(repeating: "\t", count: $0) + "1.\t中文 **b" }.joined(separator: "\n"),
+        ]
+        for text in shapes {
+            #expect(Self.cappedDepth(text) <= Self.deepest, "\(text.prefix(40).debugDescription)")
+            // Capped: past 16 levels nothing nests (and it parses on a small stack).
+            #expect(NestingCap.apply(text) != nil, "\(text.prefix(40).debugDescription)")
+            nonisolated(unsafe) var blocks = 0
+            #expect(CoreFixes38Tests.onSmallStack { blocks = IncrementalParser().parse(text).blocks.count })
+            #expect(blocks > 0)
         }
     }
 
