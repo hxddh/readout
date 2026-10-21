@@ -205,6 +205,14 @@ elif exp == "hld":
 elif exp == "hln":
     # No preloaded grammars: only the document's own.
     edit("web/src/highlight.js", "const PRELOAD = ['shellscript', 'json', 'typescript'];", "const PRELOAD = [];")
+elif exp == "wp":
+    # Text painted (in the page's background colour) as soon as the page
+    # loads: WebKit's first text drawing on the GPU starts then, not with the document.
+    edit("web/src/reader.html", "<body>\n", "<body>\n<div id=\"ro-warm\" aria-hidden=\"true\">Readout 读 Aa 0</div>\n")
+    css = tree / "web/src/reader.css"
+    css.write_text(css.read_text() + "\n#ro-warm { position: fixed; left: 2px; bottom: 2px; color: var(--bg); pointer-events: none; z-index: -1; }\n")
+    edit("web/src/reader/patch.js", "    post({ type: 'painted', version: p.version });\n",
+         "    post({ type: 'painted', version: p.version });\n    document.getElementById('ro-warm')?.remove();\n")
 elif exp:
     sys.exit(f"apply-ab: unknown experiment {exp}")
 print(f"apply-ab: {tree} patched ({exp or 'as is'})")
