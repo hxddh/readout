@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Writes Credits.html: the licences of the third-party code inside Readout.
+"""Writes Acknowledgements.md: the licences of the third-party code inside Readout.
 
-The standard About panel (Readout ▸ About Readout) shows Credits.html from the
-app's Resources. The web bundle is minified without its legal comments
-(web/build.mjs), so this file is where those notices live.
+Readout ▸ About Readout links to it (Resources/Acknowledgements.md), and Readout
+opens it like any document: its own typesetting, ⌘F. The web bundle is minified
+without its legal comments (web/build.mjs), so this file is where those notices live.
 
 usage: tools/credits.py --out PATH [--checkouts DIR]
 
@@ -16,12 +16,13 @@ usage: tools/credits.py --out PATH [--checkouts DIR]
        .build/checkouts).
 
 Fails when a package's licence text cannot be found: a notice is never left out.
-`production_packages()` is also what tools/smoke-assert.py checks the file against.
+`production_packages()` and `unescape()` are also what tools/smoke-assert.py
+checks the file with.
 """
 import argparse
-import html
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -63,8 +64,28 @@ def swift_packages() -> list:
 
 
 def production_packages() -> list:
-    """Every name Credits.html must mention."""
+    """Every name Acknowledgements.md must mention."""
     return sorted({n for n, *_ in npm_packages()} | {i for i, *_ in swift_packages()})
+
+
+# Licence text is prose, not Markdown: every character Markdown (or Readout's
+# math) could take as syntax is escaped, so it reads as written.
+SPECIAL = re.compile(r"([\\`*_\[\]<>|~$&#])")
+LINE_START = re.compile(r"^([-+=])|^(\d+)([.)])")
+
+
+def escape(text: str) -> str:
+    text = SPECIAL.sub(r"\\\1", text)
+    return LINE_START.sub(lambda m: "\\" + m[1] if m[1] else m[2] + "\\" + m[3], text)
+
+
+def unescape(text: str) -> str:
+    return re.sub(r"\\([!-/:-@\[-`{-~])", r"\1", text)
+
+
+def paragraphs(text: str) -> list:
+    """The licence's paragraphs, each on one line: hard wraps reflow."""
+    return [escape(" ".join(p.split())) for p in re.split(r"\n\s*\n", text) if p.strip()]
 
 
 def licence_texts(folder: Path) -> list:
@@ -113,22 +134,15 @@ def main() -> None:
     for title, sub, texts in entries:
         key = tuple(t for _, t in texts)
         groups.setdefault(key, []).append((title, sub))
-    parts = ["<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>",
-             "body{font:11px -apple-system,'Helvetica Neue',sans-serif}",
-             "h3{font-size:11px;margin:14px 0 2px}p{margin:0;color:#666}",
-             "pre{font:9px Menlo,monospace;white-space:pre-wrap;margin:4px 0 0}",
-             "</style></head><body>",
-             "<p>Readout includes the following third-party software.</p>"]
+    parts = ["# Acknowledgements", "", "Readout includes the following third-party software.", ""]
     for texts, packages in groups.items():
-        names = ", ".join(html.escape(t) for t, _ in packages)
-        subs = "; ".join(html.escape(f"{t} {s}") for t, s in packages)
-        parts.append(f"<h3>{names}</h3><p>{subs}</p>")
+        parts += ["## " + escape(", ".join(t for t, _ in packages)), "", escape("; ".join(f"{t} {s}" for t, s in packages)), ""]
         for text in texts:
-            parts.append(f"<pre>{html.escape(text)}</pre>")
-    parts.append("</body></html>")
+            for p in paragraphs(text):
+                parts += [p, ""]
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text("\n".join(parts) + "\n")
+    out.write_text("\n".join(parts))
     print(f"credits: {len(entries)} packages ({len(groups)} licence texts) -> {out} ({out.stat().st_size} bytes)")
 
 

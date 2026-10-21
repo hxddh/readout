@@ -15,10 +15,10 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 
 - **Live, without losing your place.** Readout watches the file (including atomic save-and-rename writes). Updates are applied block by block, so the paragraph you are reading stays put. If you are at the end, it follows the agent like a terminal.
 - **Shows what changed.** New and edited blocks get a thin bar in the margin; click an edited block's bar to see which words changed since you read it. Removed text leaves a small marker that opens to show it in full. Marks fade once you have actually read them. Press <kbd>N</kbd> for the next change, <kbd>⌘K</kbd> to mark everything read (<kbd>⌘Z</kbd> brings the marks back). Readout remembers what you had read, even across launches. For a file in a git repository, **View → Compare with Last Commit** marks what changed since the last commit (<kbd>⌘Z</kbd> undoes it).
-- **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42`, and links such as `[main](src/app/main.swift#L42)`, open in your editor at that line. A link to another Markdown document opens it as the next tab; <kbd>⌘W</kbd> takes you back.
+- **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English, syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42`, and links such as `[main](src/app/main.swift#L42)`, open in your editor at that line (the file's default app, when it is VS Code, Cursor, Zed, Xcode or Sublime Text, or the editor chosen in Settings). A link to another Markdown document opens it as the next tab; <kbd>⌘W</kbd> takes you back.
 - **Outline with progress.** The sidebar lists headings and how many tasks in each section are done.
 - **Focus on what's new.** Filter the document to unread changes only (<kbd>⇧⌘K</kbd>), see task progress in the window subtitle, and copy a link to any section by hovering its heading.
-- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A new Markdown document an agent creates there opens in Readout on its own, in the background, without taking focus from your terminal (edits to files that were already there, such as a README, do not). Press <kbd>⌃⌥⌘R</kbd> anywhere to open the most recently written one. The Dock icon's badge counts the documents waiting for you: unread changes, or opened behind and not looked at yet. Using Codex? Add your project folder in Settings. To have Readout running whenever an agent writes, add it in **System Settings → General → Login Items**; opened at login, it shows no welcome window.
+- **Opens what your agents write.** Add the folders your agents write to in Settings (Claude Code's `~/.claude/plans` is added automatically). A new Markdown document an agent creates there opens in Readout on its own, in the background, without taking focus from your terminal (edits to files that were already there, such as a README, do not). Press <kbd>⌃⌥⌘R</kbd> anywhere to open the most recently written one. The Dock icon's badge counts the files *waiting* for you: with unread changes, or opened in the background and not looked at yet. Using Codex? Add your project folder in Settings. To have Readout running whenever an agent writes, add it in **System Settings → General → Login Items**; opened at login, it shows no welcome window.
 - **Quick Look.** Press Space on a `.md` file in Finder (it works once Readout has been opened from Applications).
 - **Read-only by design.** Readout never writes to your files.
 
@@ -30,7 +30,7 @@ Every release is ad-hoc signed, not notarized, so macOS refuses to open it the f
 
 To check a download, put `SHA256SUMS` from the release next to the DMG and ZIP and run `shasum -a 256 -c SHA256SUMS` (only the DMG: `grep dmg SHA256SUMS | shasum -a 256 -c`).
 
-Readout checks GitHub Releases for new versions (**Readout → Check for Updates…**). **Download Update** saves the new DMG to your Downloads folder, with its progress on the file there (Finder and the Dock's Downloads stack show it), then shows it in Finder; Readout installs nothing itself. When a weekly check finds a new version, the Readout menu says so; choosing it offers the same download.
+Readout checks GitHub Releases for new versions (**Readout → Check for Updates…**). **Download Update** hands the new DMG to your browser, which downloads it; Readout installs nothing itself. When a weekly check finds a new version, the Readout menu says so; choosing it offers the same.
 
 ## Privacy
 
@@ -111,26 +111,14 @@ Any app or web page can open such a URL (browsers ask you first), as it can ask 
 
 | Key | Action |
 | --- | --- |
-| <kbd>N</kbd> / <kbd>⇧N</kbd> (also <kbd>⌘]</kbd> / <kbd>⌘[</kbd>) | Next / previous unread change; with none left, <kbd>N</kbd> goes on to the next document with unread changes, or opened behind and not looked at yet |
-| <kbd>D</kbd> | Show which words changed in the edited blocks in view, top first; once all are shown, hide them |
+| <kbd>N</kbd> / <kbd>⇧N</kbd> | Next / previous unread change, then the next waiting file |
+| <kbd>D</kbd> | Show / hide the words that changed in edited blocks on screen |
 | <kbd>⌘K</kbd> | Mark all as read (<kbd>⌘Z</kbd> undoes it) |
-| <kbd>⇧⌘K</kbd> | Show only changes |
-| <kbd>⇧⌘O</kbd> | Open the latest agent file: an open one with unread changes, or opened behind and not looked at yet, comes first |
-| <kbd>⌃⌥⌘R</kbd> | Open the latest agent file from anywhere (global; change or turn off in Settings) |
-| <kbd>⌘F</kbd>, <kbd>⌘G</kbd> / <kbd>⇧⌘G</kbd> | Find, find next / previous |
-| <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Text size |
-| <kbd>⌥⌘\</kbd> | Narrow / wide text |
-| <kbd>⌃⌘S</kbd> | Toggle sidebar |
-| <kbd>⌘E</kbd> | Open the file in your editor, at the line you are reading (or the selection) |
-| <kbd>⇧⌘R</kbd> | Reveal in Finder |
-| <kbd>⌘C</kbd> | Copy the selection as Markdown (whole blocks exactly as the file writes them); apps that take rich text get it formatted |
-| <kbd>⇧⌘C</kbd> | Copy as Quote: the selected blocks' Markdown (with nothing selected, the block <kbd>N</kbd> went to) as a quote, with the file's lines and section |
-| <kbd>⌥⌘C</kbd> | Copy the file's path |
-| <kbd>⌘P</kbd> | Print |
-| <kbd>⌥⌘W</kbd> | Close all windows |
-| <kbd>J</kbd> / <kbd>K</kbd>, <kbd>G</kbd> / <kbd>⇧G</kbd> | Scroll, jump to top / end |
+| <kbd>⌃⌥⌘R</kbd> | Open the latest agent file, from any app |
+| <kbd>⌘E</kbd> | Open in your editor, at the line you are reading |
+| <kbd>⇧⌘C</kbd> | Copy as Quote, with file and lines, for your agent |
 
-**Help → Readout Help** shows these shortcuts in Readout, offline.
+Every shortcut is in **Help → Readout Help**, in Readout, offline.
 
 ## How it works
 
