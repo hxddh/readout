@@ -26,6 +26,9 @@ const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
 await page.addInitScript(instr => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
   if (instr) { window.__ev = []; new MutationObserver(ms => { for (const m of ms) if (m.target.classList?.contains('code-block')) window.__ev.push([Math.round(performance.now()), 'hl:' + m.target.dataset.hl + ':' + m.target.dataset.lang]); })
     .observe(document, { subtree: true, attributes: true, attributeFilter: ['data-hl'] });
+    const wrapObs = (C, name) => { const O = window[C]; window[C] = class extends O { constructor(cb, o) { super((e, ob) => { const a = performance.now(); cb(e, ob); const d = performance.now() - a; window.__ev.push([Math.round(a), name + ' n=' + e.length + ' ' + Math.round(d) + 'ms']); }, o); } }; };
+    wrapObs('ResizeObserver', 'RO'); wrapObs('IntersectionObserver', 'IO');
+    const st = window.setTimeout; window.setTimeout = (f, ms, ...a) => st(typeof f === 'function' ? (...x) => { const t = performance.now(); f(...x); const d = performance.now() - t; if (d > 15) window.__ev.push([Math.round(t), 'task ' + Math.round(d) + 'ms (timeout ' + ms + ') ' + (f.name || '')]); } : f, ms, ...a);
     const L = new PerformanceObserver(l => { for (const e of l.getEntries()) if (e.name.includes('.js')) window.__ev.push([Math.round(e.responseEnd), 'fetched ' + e.name.split('/').pop()]); }); try { L.observe({ entryTypes: ['resource'] }); } catch {} } }, INSTR);
 await page.goto(`${base}/reader.html`);
 await page.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
@@ -35,8 +38,9 @@ await page.waitForTimeout(WAIT);
 const twoFrames = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 const out = [];
 for (let i = 0; i < 3; i++) {
-  await page.evaluate(y => window.scrollTo(0, y), 20000 + i * 5000);
+  await page.evaluate(y => { window.__ev?.push([Math.round(performance.now()), 'scroll ' + y]); window.scrollTo(0, y); }, 20000 + i * 5000);
   await twoFrames();
+  if (INSTR) await page.evaluate(() => window.__ev.push([Math.round(performance.now()), 'two frames done']));
   const patch = { ...edit, version: 2 + i, ops: edit.ops.map(o => ({ ...o, html: o.html.replace('(revised)', `(revised ${i + 1})`) })) };
   out.push(await page.evaluate(([p, diag]) => { let pre = 0; if (diag) { const a = performance.now(); void document.scrollingElement.scrollHeight; document.querySelector('#ro-doc > .blk').getBoundingClientRect(); pre = Math.round(performance.now() - a); } const t0 = performance.now(); window.readout.apply(p); const t1 = performance.now(); void document.scrollingElement.scrollHeight; const t2 = performance.now();
     const near = [...document.querySelectorAll('.code-block')].filter(c => { const r = c.getBoundingClientRect(); return r.bottom > -innerHeight && r.top < 2 * innerHeight; }).map(c => c.dataset.lang + ':' + c.dataset.hl).join(','); (window.__ev || []).push([Math.round(t0), 'UPDATE near=[' + near + '] apply ' + Math.round(t1 - t0) + ' layout ' + Math.round(t2 - t1)]); const ph = window.__ph.map((x, i, a) => i ? x[0] + '=' + (x[1] - a[i-1][1]).toFixed(1) : '').filter(Boolean).join(' '); return [Math.round(t1 - t0), Math.round(t2 - t1), pre, ph]; }, [patch, !!process.env.DIAG]));

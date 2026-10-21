@@ -109,9 +109,7 @@ function titleLinks(el) {
 /**
  * Applies a RenderPatch: {version, reset, rewrite, ops, marks, deletions, toc, tasks, title}.
  */
-const __T = n => { (window.__ph ||= []).push([n, performance.now()]); };
 export function apply(p) {
-  window.__ph = []; __T('start');
   // Link definitions (copy.js): every reset sends them (none: absent), another patch when they changed.
   if (p.reset || p.links) setLinks(p.links);
   const isFirst = first;
@@ -121,7 +119,6 @@ export function apply(p) {
   if (tail && Math.abs(document.scrollingElement.scrollTop - tail.y) > 2) tail = null;   // the reader scrolled away
   const place = held;
   held = null;
-  __T('held');
   const anchor = isFirst ? null : place ? place.anchor : captureAnchor();
   // A place taken now at the top of the page.
   const fromTop = !place && (isFirst || document.scrollingElement.scrollTop <= 0);
@@ -139,7 +136,6 @@ export function apply(p) {
   // whatever its predecessor's position (the page's bottom padding keeps the
   // last block well above the bottom of the viewport). So does the agent
   // writing on into that last block (a replace of it).
-  __T('anchor');
   let changeNearViewport = false;
   if (following && !p.reset) {
     let last = doc.lastElementChild;
@@ -161,7 +157,6 @@ export function apply(p) {
   // A rewrite is a new document: read from the reader's section, or its top,
   // with the notice saying so (not from its end, even for a reader who had
   // followed the old one to its end).
-  __T('near');
   const follow = following && !p.rewrite && (p.reset || changeNearViewport);
   const changed = new Set();
   const rerendered = [];   // silent replaces: new HTML, no mark
@@ -215,7 +210,6 @@ export function apply(p) {
     }
   }
 
-  __T('ops');
   updateCv();
   // The first open of a large document reads no layout before its first
   // frame: in that frame WebKit lays out only the blocks on screen (the rest
@@ -235,10 +229,8 @@ export function apply(p) {
     doc.appendChild(e);
   }
 
-  __T('cv');
   renderMarks(p.marks || [], p.deletions || [], !!p.reset);
 
-  __T('marks');
   scheduleRail();
 
   if (p.rewrite) showNotice(strings.rewritten);
@@ -246,17 +238,14 @@ export function apply(p) {
   // In a large document a new block counts at its estimated height until
   // it is laid out: lay out the new ones now so the end is the real end.
   // (They go back to content-visibility later, many together: forceLayout.)
-  __T('rail');
   const forced = follow ? inserted.filter(el => el.isConnected) : [];
   for (const el of forced) forceLayout(el);
 
   // Every change to the page is made by now: what follows reads its layout,
   // which is laid out once (a read between two changes lays it out again,
   // in a large document the cost of the whole patch over again).
-  __T('forced');
   for (const el of maybeVisible) if (el.isConnected && inViewport(el)) visibleChanged.push(el);
 
-  __T('visible');
   // Re-baseline heights of touched blocks so the resize compensator does not count this patch twice.
   for (const slot of changed) { const el = slots.get(slot); if (el) heights.set(el, el.getBoundingClientRect().height); }
   for (const el of rerendered) if (el.isConnected) heights.set(el, el.getBoundingClientRect().height);
@@ -267,7 +256,6 @@ export function apply(p) {
   // height still keep the place.
   if (firstLarge) for (const el of slots.values()) heights.set(el, parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0);
 
-  __T('heights');
   // Restore position in the same task, before the browser paints.
   let restored = false;
   if (follow) {
@@ -288,7 +276,6 @@ export function apply(p) {
   // the top (a short page that grew above them: they stay at the top, not
   // carried down as soon as it scrolls), nor a place the page would have to
   // scroll up to (it is at the top already).
-  __T('restore');
   const own = anchor && slots.get(anchor.slot);
   const cutShort = !follow && !restored && !!own && !fromTop && anchorMiss(anchor, changed) > 1;
   if (anchor && !p.rewrite && (slots.size === 0 || cutShort || (place && (following ? !atBottom() : !restored)))) {
@@ -305,10 +292,8 @@ export function apply(p) {
 
   // (Code coming on screen is highlighted before the flash's class changes
   // make the page's style stale again: it measures first.)
-  __T('trace');
   renderLazy(firstLarge ? estimatedOnScreen() : undefined);
 
-  __T('lazy');
   // A flash still running restarts under the other animation name
   // (reader.css), without a forced style and layout to restart it. A block
   // with a change bar has its arrival in the bar: no flash (it blinked with
@@ -320,10 +305,8 @@ export function apply(p) {
     el.classList.toggle('flash-alt', again);
   }
 
-  __T('flash');
   scheduleRail();
   if (headingsTouched) headingsChanged();
-  __T('headings');
   post({ type: 'applied', version: p.version });
   // After the frame that shows it: rAF runs before the paint, the task it
   // queues runs after. The current section is found then too: the page is

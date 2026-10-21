@@ -6,16 +6,26 @@ jobs:
   diag:
     strategy:
       fail-fast: false
-      matrix: { n: [1, 2, 3, 4] }
+      matrix:
+        ref: [fc48b78, e6db579, 5c445ef]
+        n: [1, 2]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with: { fetch-depth: 300 }
+      - name: overlay
+        run: |
+          cp tools/perfdiag/mini.mjs tools/perfdiag/instr.py /tmp/
+          git checkout -q ${{ matrix.ref }} -- web
+          python3 /tmp/instr.py web/src/reader/patch.js
+          cp /tmp/mini.mjs web/test/perfdiag.mjs
+          git status --short | head
       - uses: actions/setup-node@v5
-        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+        with: { node-version: 22 }
       - working-directory: web
         run: npm ci && npm run build && npx playwright install --with-deps webkit
       - name: cpu
-        run: nproc; lscpu | grep -i 'model name'
-      - name: mini x12
+        run: nproc && lscpu | grep -i 'model name'
+      - name: mini x10
         working-directory: web
-        run: for i in $(seq 12); do INSTR=1 node test/perfdiag.mjs; echo ----; done
+        run: for i in $(seq 10); do DIAG=$((i % 2)) INSTR=1 node test/perfdiag.mjs; echo "---- DIAG=$((i % 2))"; done
