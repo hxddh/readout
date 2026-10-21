@@ -24,8 +24,22 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     /// loaded (WebKit's process start and the page's load are most of a
     /// preview's time) while the extension stays running.
     private static var spare: ReaderWebView?
+    private static let spareWatch = SpareWatch()
     private static func makeSpare() {
-        if spare == nil { spare = ReaderWebView(bundle: appBundle) }
+        guard spare == nil else { return }
+        let w = ReaderWebView(bundle: appBundle)
+        w.navigationDelegate = spareWatch
+        spare = w
+    }
+    /// The spare's web content process died while it waited (memory
+    /// pressure, a crash): it is dropped, and the next preview makes its own
+    /// page, as without a spare (the app's WebViewPool does the same).
+    private final class SpareWatch: NSObject, WKNavigationDelegate {
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            MainActor.assumeIsolated {
+                if webView === PreviewViewController.spare { PreviewViewController.spare = nil }
+            }
+        }
     }
 
     override var nibName: NSNib.Name? { nil }
@@ -34,6 +48,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         usedSpare = Self.spare != nil
         let w = Self.spare ?? ReaderWebView(bundle: Self.appBundle)
         Self.spare = nil
+        w.navigationDelegate = nil
         w.autoresizingMask = [.width, .height]
         webView = w
         view = w
