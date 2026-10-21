@@ -60,8 +60,12 @@ public final class DocumentLoader {
     }
 
     /// First read: accepted as-is (nil when the file cannot be read).
-    public func loadInitial(_ completion: @escaping (ReadResult?) -> Void) {
-        read { [weak self] result in
+    /// `fenceLanguages`: the languages the file's code fences name, called on
+    /// the main actor as soon as the file is read, before it is parsed (the
+    /// page loads their grammars meanwhile).
+    public func loadInitial(fenceLanguages: (@MainActor @Sendable ([String]) -> Void)? = nil,
+                            _ completion: @escaping (ReadResult?) -> Void) {
+        read(fenceLanguages: fenceLanguages) { [weak self] result in
             if let self, let result {
                 self.lastHash = result.hash
                 self.lastSize = result.size
@@ -105,7 +109,8 @@ public final class DocumentLoader {
     /// for the document), so the same text renders differently.
     public func forgetContent() { lastHash = nil }
 
-    private func read(_ completion: @escaping (ReadResult?) -> Void) {
+    private func read(fenceLanguages: (@MainActor @Sendable ([String]) -> Void)? = nil,
+                      _ completion: @escaping (ReadResult?) -> Void) {
         // Coalesce: if a parse is already running, queue the completion for
         // the follow-up read instead of queueing another full parse behind it.
         if readInFlight {
@@ -125,6 +130,10 @@ public final class DocumentLoader {
             let source = RealPath.of(url.path)
             if let data = try? Data(contentsOf: URL(fileURLWithPath: source)) {
                 let decoded = FileContent.decode(data)
+                if let fenceLanguages {
+                    let langs = FenceLanguages.scan(decoded.text)
+                    if !langs.isEmpty { DispatchQueue.main.async { MainActor.assumeIsolated { fenceLanguages(langs) } } }
+                }
                 cache.beginGeneration()
                 let doc = parser.parse(decoded.text, resolver: resolver, cache: cache)
                 result = ReadResult(doc: doc, hash: XXHash64.hash(data), size: data.count, decoded: decoded, sourcePath: source)

@@ -633,3 +633,55 @@ struct FenceTracker: Equatable {
         return (col - start, p, false)
     }
 }
+
+/// The languages a document's code fences name: each fence info string's
+/// first word, lowercased, in order of first use, each once. The page
+/// starts loading their grammars while the document parses. Deliberately
+/// over-inclusive, not CommonMark: on every line any run of spaces, tabs and
+/// container markers (`>`, `-`, `+`, `*`, `1.`, `1)`) is skipped before a
+/// fence of 3+ backticks or tildes. A line that only looks like a fence
+/// costs one grammar loaded early; a fence missed, a plain first paint.
+public enum FenceLanguages {
+    /// Only the first `maxBytes` are looked at (a huge file's later fences load when shown).
+    public static func scan(_ text: String, limit: Int = 16, maxBytes: Int = 4 << 20) -> [String] {
+        if let r = text.utf8.withContiguousStorageIfAvailable({ scan($0, limit: limit, maxBytes: maxBytes) }) { return r }
+        return Array(text.utf8.prefix(maxBytes)).withUnsafeBufferPointer { scan($0, limit: limit, maxBytes: maxBytes) }
+    }
+
+    private static func scan(_ b: UnsafeBufferPointer<UInt8>, limit: Int, maxBytes: Int) -> [String] {
+        var out: [String] = []
+        let n = min(b.count, maxBytes)
+        var i = 0
+        while i < n, out.count < limit {
+            // Spaces, tabs, > - + * and digits followed by . or ): skipped.
+            while i < n {
+                let c = b[i]
+                if c == 0x20 || c == 0x09 || c == 0x3E || c == 0x2D || c == 0x2B || c == 0x2A { i += 1; continue }
+                if c >= 0x30, c <= 0x39 {
+                    var k = i
+                    while k < n, b[k] >= 0x30, b[k] <= 0x39 { k += 1 }
+                    if k < n, b[k] == 0x2E || b[k] == 0x29 { i = k + 1; continue }
+                }
+                break
+            }
+            // A fence: 3+ backticks or tildes, then the info string's first word.
+            if i < n, b[i] == 0x60 || b[i] == 0x7E {
+                let fence = b[i], open = i
+                while i < n, b[i] == fence { i += 1 }
+                if i - open >= 3 {
+                    while i < n, b[i] == 0x20 || b[i] == 0x09 { i += 1 }
+                    let start = i
+                    while i < n, i - start < 32, ![0x20, 0x09, 0x0A, 0x0D, 0x60, 0x7B].contains(b[i]) { i += 1 }   // space tab EOL ` {
+                    if i > start, let word = String(bytes: UnsafeBufferPointer(rebasing: b[start..<i]), encoding: .utf8)?.lowercased(),
+                       !out.contains(word) {
+                        out.append(word)
+                    }
+                }
+            }
+            // The next line: CR, LF and CRLF all end one (CRLF's LF then ends an empty one).
+            while i < n, b[i] != 0x0A, b[i] != 0x0D { i += 1 }
+            i += 1
+        }
+        return out
+    }
+}
