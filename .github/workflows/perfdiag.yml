@@ -3,12 +3,37 @@ on:
   push:
     branches: [m15/perfdiag]
 jobs:
-  diag:
+  full:
+    strategy:
+      fail-fast: false
+      matrix:
+        harness: [main, fixed]
+        n: [1, 2, 3, 4]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 300 }
+      - name: overlay
+        run: |
+          cp tools/perfdiag/perf-fixed.mjs /tmp/
+          git checkout -q 5c445ef -- web
+          if [ "${{ matrix.harness }}" = fixed ]; then cp /tmp/perf-fixed.mjs web/test/perf.test.mjs; fi
+          git diff --stat HEAD -- web/test/perf.test.mjs
+      - uses: actions/setup-node@v5
+        with: { node-version: 22 }
+      - working-directory: web
+        run: npm ci && npm run build && npx playwright install --with-deps webkit
+      - name: cpu
+        run: lscpu | grep -i 'model name'
+      - name: perf x6
+        working-directory: web
+        run: for i in $(seq 6); do node test/perf.test.mjs | grep -E 'web_update_20|web_first_apply_1mb_ms'; echo ----; done
+  mini:
     strategy:
       fail-fast: false
       matrix:
         ref: [fc48b78, 5c445ef]
-        n: [1, 2, 3, 4]
+        n: [1, 2, 3]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -24,9 +49,7 @@ jobs:
       - working-directory: web
         run: npm ci && npm run build && npx playwright install --with-deps webkit
       - name: cpu
-        run: nproc && lscpu | grep -i 'model name'
-      - name: mini
+        run: lscpu | grep -i 'model name'
+      - name: mini plain x16 (no probes)
         working-directory: web
-        run: |
-          for i in $(seq 6); do INSTR=1 node test/perfdiag.mjs; echo "---- plain"; done
-          for i in $(seq 6); do INSTR=1 WAITIDLE=1 node test/perfdiag.mjs; echo "---- waitidle"; done
+        run: for i in $(seq 16); do node test/perfdiag.mjs; done
