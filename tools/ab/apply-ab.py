@@ -114,6 +114,12 @@ edit("App/SmokeTest.swift", "origin: performance.timeOrigin }", "origin: perform
 edit("App/ReaderWindowController.swift", "        let w = spare ?? ReaderWebView(bundle: .main",
      "        NSLog(\"ABTAKE spare=%d ready=%d\", spare == nil ? 0 : 1, spare?.isReady == true ? 1 : 0)\n        let w = spare ?? ReaderWebView(bundle: .main")
 
+# Every window's page: made or taken, ready, first apply, painted (app log).
+edit(R, "        self.pendingAnchor = pendingAnchor\n",
+     "        self.pendingAnchor = pendingAnchor\n        NSLog(\"ABWIN %@ ready=%d\", url.lastPathComponent, webView.isReady ? 1 : 0)\n        do { let name = url.lastPathComponent; webView.whenReady { NSLog(\"ABREADY %@\", name) } }\n")
+edit(R, "                SmokeTest.noteLaunchPhase(\"apply\")\n", "                SmokeTest.noteLaunchPhase(\"apply\")\n                NSLog(\"ABAPPLIED %@\", url.lastPathComponent)\n")
+edit(R, "                SmokeTest.noteLaunchPhase(\"paint\")\n", "                SmokeTest.noteLaunchPhase(\"paint\")\n                NSLog(\"ABPAINTED %@\", url.lastPathComponent)\n")
+
 # Experiments on the 3.9 tree.
 if exp == "dfl":
     # 3.8's order: the spare page at the start of didFinishLaunching.

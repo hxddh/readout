@@ -1,0 +1,58 @@
+name: DIAG smoke harness probes (temporary)
+
+# Temporary: runs the CI smoke harness (tools/smoke-run.py of each tree) three
+# times on a build with tools/ab/apply-ab.py's probes, and prints each window's
+# page take/ready/apply/paint around the warm opens.
+on:
+  push:
+    branches: ['m16/smoke-*']
+
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [v39, fx]
+    runs-on: macOS-26
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build
+        run: |
+          set -eo pipefail
+          brew install xcodegen
+          spec=$(grep "^${{ matrix.variant }}=" tools/ab/variants.txt)
+          name=${spec%%=*}; rest=${spec#*=}; sha=${rest%%:*}; exp=""
+          case "$rest" in *:*) exp=${rest#*:};; esac
+          t="$RUNNER_TEMP/tree"
+          git worktree add -f "$t" "$sha"
+          python3 tools/ab/apply-ab.py "$t" $exp
+          (cd "$t/web" && npm ci --no-audit --no-fund > /dev/null && npm run build > /dev/null)
+          (cd "$t" && xcodegen generate > /dev/null)
+          (cd "$t" && xcodebuild -project Readout.xcodeproj -scheme Readout -configuration Release \
+            -derivedDataPath build -destination 'generic/platform=macOS' \
+            MARKETING_VERSION=9.9.9 CURRENT_PROJECT_VERSION=999 ARCHS=arm64 ONLY_ACTIVE_ARCH=NO build > "$RUNNER_TEMP/xcb.log" 2>&1) || { grep -E "error" "$RUNNER_TEMP/xcb.log" | head -20; exit 1; }
+          rm -rf /Applications/Readout.app
+          ditto "$t/build/Build/Products/Release/Readout.app" /Applications/Readout.app
+          sh "$t/tools/sign.sh" /Applications/Readout.app "-"
+      - name: Smoke runs
+        run: |
+          t="$RUNNER_TEMP/tree"
+          for i in 1 2 3; do
+            python3 "$t/tools/smoke-run.py" /Applications/Readout.app/Contents/MacOS/Readout "$RUNNER_TEMP/smoke-$i" "smoke-$i" > "smoke-$i.txt" 2>&1 || true
+            echo "== run $i"
+            grep -o "harness: timings .*" "smoke-$i.txt" | python3 -c "import sys,ast; s=sys.stdin.read().strip(); d=ast.literal_eval(s[len('harness: timings '):]) if s else {}; print({k: d.get(k) for k in ('cold_start_ms','cold_start_second_ms','cold_window_visible_ms','cold_window_visible_first_boot_ms','warm_open_to_applied_samples_ms','warm_open_samples_ms','cold_apply_ms')}); print(d.get('launch_phases_second_ms'))"
+            grep -E "AB(TAKE|WIN|READY|APPLIED|PAINTED)" "smoke-$i/smoke-out.log" | sed -E 's/^([0-9-]+ [0-9:.]+).*(AB[A-Z]+.*)$/\1 \2/' | tail -40
+          done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: smoke-diag-${{ matrix.variant }}
+          path: |
+            smoke-*.txt
+            smoke-*/smoke-out.log
+            smoke-*/timings*.json
