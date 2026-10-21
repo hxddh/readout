@@ -83,14 +83,8 @@ extension GitBaseline {
     /// HEAD blob is read.
     public static func compare(path: String, displayed: [BlockKey], git: GitRunning,
                                exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> CommitComparison {
-        guard repository(containing: path, exists: exists) != nil else { return .unavailable }
-        let dir = (path as NSString).deletingLastPathComponent
-        let name = (path as NSString).lastPathComponent
-        // As headText: relative to the folder git runs in (a submodule's or worktree's own HEAD).
-        guard let data = git.run(["--no-pager", "show", "HEAD:./" + name], in: dir),
-              let text = committedText(head: data) else { return .unavailable }
-        // On a large stack, as the document itself: callers run this on a GCD queue.
-        let committed = ParseThread.sync { MarkdownParser.parse(text).blocks.map(BlockKey.init) }
+        guard let text = head(of: path, git: git, exists: exists).flatMap(committedText(head:)) else { return .unavailable }
+        let committed = MarkdownParser.parse(text).blocks.map(BlockKey.init)
         return committed == displayed ? .unchanged : .baseline(committed)
     }
 }

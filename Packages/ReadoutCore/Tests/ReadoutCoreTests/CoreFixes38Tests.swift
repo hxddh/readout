@@ -29,15 +29,17 @@ import Testing
         // A line escaped at its `>` keeps its item open for the lines below (review of #76).
         ("item-quote-150", (0..<150).map { String(repeating: "  ", count: $0) + "- > x" }.joined(separator: "\n")),
         ("quoted-item-quote-150", (0..<150).map { "> " + String(repeating: "  ", count: $0) + "- > item" }.joined(separator: "\n")),
+        // 3.9 (audit B2): emphasis around images, which the 3.8 guard under-counted (160 KB; 16 MB stacks overflowed).
+        ("emph-image-20000", String(repeating: "*![", count: 20000) + "x" + String(repeating: "](u)*", count: 20000)),
     ]
 
     /// `body` on a thread with a 512 KB stack (a GCD worker's on macOS,
     /// where `IncrementalParser` parses fragments concurrently): on 3.7 it
     /// crashed the process.
-    static func onSmallStack(_ body: @escaping @Sendable () -> Void) -> Bool {
+    static func onSmallStack(_ size: Int = 512 * 1024, _ body: @escaping @Sendable () -> Void) -> Bool {
         let done = DispatchSemaphore(value: 0)
         let t = Thread { body(); done.signal() }
-        t.stackSize = 512 * 1024
+        t.stackSize = size
         t.start()
         return done.wait(timeout: .now() + 60) == .success
     }
@@ -166,13 +168,30 @@ import Testing
         }
     }
 
-    /// Document loading parses on a thread with a large stack.
-    @Test func parseThreadHasALargeStack() async {
-        let text = String(repeating: "  ", count: 1) + "- x"
-        let size = ParseThread.sync { (Thread.current.stackSize, MarkdownParser.parse(text).blocks.count) }
-        #expect(size.0 >= ParseThread.stackSize && size.1 == 1)
-        let n = await ParseThread.run { Thread.current.stackSize }
-        #expect(n >= ParseThread.stackSize)
+    /// The deepest a document gets past the guard (`NestingCap`): 16 list
+    /// levels (a list and an item each), a table in the last item, and 16
+    /// inline levels in a cell of its body. It parses on a GCD thread's 512 KB stack: in
+    /// a release build swift-markdown's conversion takes about 2.8 KB a level
+    /// and the renderer 0.5 KB, some 170 KB in all (Linux, Swift 6.1). A
+    /// debug build's frames are about three times as large: 1 MB here.
+    @Test func theDeepestDocumentFitsASmallStack() {
+        let list = (0..<NestingCap.containers).map { String(repeating: "  ", count: $0) + "- level \($0 + 1)" }.joined(separator: "\n")
+        let inline = String(repeating: "*a ![", count: NestingCap.inlines / 2) + "x" + String(repeating: "](u) b*", count: NestingCap.inlines / 2)
+        let indent = String(repeating: " ", count: 2 * NestingCap.containers)
+        let text = list + "\n\n" + indent + "| h |\n" + indent + "|---|\n" + indent + "| " + inline + " |\n"
+        #expect(NestingCap.apply(text) == nil)
+        #expect(CoreFixes39Tests.cappedDepth(text) == CoreFixes39Tests.deepest)
+        #if DEBUG
+        let stack = 1 << 20
+        #else
+        let stack = 512 << 10
+        #endif
+        nonisolated(unsafe) var full: [String] = [], incremental: [String] = []
+        #expect(Self.onSmallStack(stack) {
+            full = MarkdownParser.parse(text).blocks.map(\.html)
+            incremental = IncrementalParser().parse(text).blocks.map(\.html)
+        })
+        #expect(!full.isEmpty && full == incremental)
     }
 
     // MARK: B2: a variation selector after `*` or `_`

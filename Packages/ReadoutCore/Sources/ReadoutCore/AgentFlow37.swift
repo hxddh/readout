@@ -21,9 +21,9 @@ public enum QuoteFormatter {
     /// The quote of the blocks of `blocks` (in document order) whose slots are
     /// in `slots`, cited as `path`; nil when none of them is there. Each block
     /// is its source as copying has it (`Block.copySource`: hard breaks and
-    /// front matter's fences kept), followed by the definitions of `links`
-    /// its reference links use.
-    public static func quote(blocks: [Block], slots: Set<Int>, path: String, links: [LinkDefinition] = []) -> String? {
+    /// front matter's fences kept), followed by the link `definitions` they
+    /// use (as written; the page finds them, as for ⌘C: `quoteSelection`).
+    public static func quote(blocks: [Block], slots: Set<Int>, path: String, definitions: [String] = []) -> String? {
         let picked = blocks.filter { slots.contains($0.slot) }
         guard let first = picked.first else { return nil }
         var body = ""
@@ -35,8 +35,7 @@ public enum QuoteFormatter {
             body += b.copySource
             previous = b
         }
-        let used = LinkDefinition.used(by: body, in: links)
-        if !used.isEmpty { body += "\n\n" + used.map(\.md).joined(separator: "\n") }
+        if !definitions.isEmpty { body += "\n\n" + definitions.joined(separator: "\n") }
         // The footnotes section gathers definitions from anywhere in the file:
         // its lines say nothing about where the rest of the selection is.
         let ranged = picked.filter { $0.kind != .footnotes }
@@ -192,12 +191,15 @@ public enum GitBaseline {
     /// unchanged since, or git missing, failing or too slow.
     public static func headText(for path: String, current: String, git: GitRunning,
                                 exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> String? {
+        head(of: path, git: git, exists: exists).flatMap { baselineText(head: $0, current: current) }
+    }
+
+    /// The bytes of the committed version of the file at `path`, or nil:
+    /// outside a repository, not committed, or git failing or too slow.
+    static func head(of path: String, git: GitRunning, exists: (String) -> Bool) -> Data? {
         guard repository(containing: path, exists: exists) != nil else { return nil }
-        let dir = (path as NSString).deletingLastPathComponent
-        let name = (path as NSString).lastPathComponent
         // Relative to the folder git runs in: a submodule's or worktree's own HEAD.
-        guard let data = git.run(["--no-pager", "show", "HEAD:./" + name], in: dir) else { return nil }
-        return baselineText(head: data, current: current)
+        return git.run(["--no-pager", "show", "HEAD:./" + (path as NSString).lastPathComponent], in: (path as NSString).deletingLastPathComponent)
     }
 }
 

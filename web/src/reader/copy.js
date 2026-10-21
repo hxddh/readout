@@ -26,10 +26,14 @@ export function setLinks(list) {
 }
 const labelOf = s => s.trim().split(/[ \t\n]+/).join(' ').toLowerCase();
 
-/** `md` and, after a blank line, the definitions its reference links (`[text][label]`, `[label]`) use. */
-function withDefinitions(md) {
-  if (!links.size || !md.includes('[')) return md;
+/**
+ * The definitions `md`'s reference links (`[text][label]`, `[label]`) use,
+ * in the order of their first use, but those it holds itself. ⌘C appends
+ * them, and so does Copy as Quote (the app asks: `quoteSelection`).
+ */
+export function definitionsUsed(md) {
   const used = [];
+  if (!links.size || !md.includes('[')) return used;
   const seen = new Set();
   for (const m of md.matchAll(/\[((?:\\.|[^[\]\\])+)\]/g)) {
     const label = labelOf(m[1]);
@@ -38,6 +42,12 @@ function withDefinitions(md) {
     const d = links.get(label);
     if (d && !md.includes(d)) used.push(d);
   }
+  return used;
+}
+
+/** `md` and, after a blank line, the definitions it uses. */
+function withDefinitions(md) {
+  const used = definitionsUsed(md);
   return used.length ? md + '\n\n' + used.join('\n') : md;
 }
 

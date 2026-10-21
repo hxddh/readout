@@ -101,14 +101,6 @@ import Testing
         #expect(MarkdownParser.parse("Just [text].\n").links.isEmpty)
     }
 
-    @Test func usedDefinitionsAreTheOnesTheTextRefersTo() {
-        let defs = MarkdownParser.parse("[a]: https://a\n[b]: https://b\n[c]: https://c\n\nx [a] [B][] [t][c] [^a]\n").links
-        #expect(LinkDefinition.used(by: "[x][C] then [a]", in: defs).map(\.md) == ["[c]: https://c", "[a]: https://a"])
-        #expect(LinkDefinition.used(by: "no links", in: defs).isEmpty)
-        // A footnote reference is not a link label; a definition already in the text is not added again.
-        #expect(LinkDefinition.used(by: "[^a] and [b]\n\n[b]: https://b", in: defs).isEmpty)
-    }
-
     @Test func patchesCarryTheDefinitionsWhenTheyChange() throws {
         let s = DocumentSession()
         let first = s.load(MarkdownParser.parse("Use [x].\n\n[x]: https://one\n"))
@@ -135,7 +127,8 @@ import Testing
     @Test func copyAsQuoteKeepsHardBreaksFrontMatterAndReferenceDefinitions() throws {
         var b = MarkdownParser.parse("---\nstatus: draft\n---\n\n# Plan\n\nLine one,  \nline two with [the spec][spec].\n\n[spec]: https://example.com/spec\n")
         for i in b.blocks.indices { b.blocks[i].slot = i + 1 }
-        let quote = try #require(QuoteFormatter.quote(blocks: b.blocks, slots: [1, 3], path: "p.md", links: b.links))
+        // The definitions the blocks use come from the page (`quoteSelection`, as ⌘C's: web/test/flow.test.mjs).
+        let quote = try #require(QuoteFormatter.quote(blocks: b.blocks, slots: [1, 3], path: "p.md", definitions: b.links.map(\.md)))
         // (Written with \n: an editor would strip the hard break's two spaces from a literal.)
         #expect(quote == "> ---\n> status: draft\n> ---\n>\n> Line one,  \n> line two with [the spec][spec].\n>\n"
                 + "> [spec]: https://example.com/spec\n— p.md#L1-L8")

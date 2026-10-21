@@ -309,6 +309,8 @@ public enum MarkdownParser {
         }
 
         let nodes = Array(document.children)
+        // HTML comments: no block, but no definition either.
+        var comments: [ClosedRange<Int>] = []
         var index = 0
         while index < nodes.count {
             let node = nodes[index]
@@ -405,7 +407,7 @@ public enum MarkdownParser {
             case let h as HTMLBlock:
                 // HTML comments are invisible; skip them so they never produce empty blocks.
                 let trimmed = h.rawHTML.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.hasPrefix("<!--") && trimmed.hasSuffix("-->") { continue }
+                if trimmed.hasPrefix("<!--") && trimmed.hasSuffix("-->") { comments.append(range); continue }
                 blocks.append(make(.html, h, range: range, html: HTML.sanitize(h.html, resolver: probe)))
             default:
                 blocks.append(make(.paragraph, node, range: range, html: renderer.block(node)))
@@ -441,7 +443,8 @@ public enum MarkdownParser {
             }
         }
         // Definitions are not blocks: copying a block that uses one appends it.
-        let links = refsKey.isEmpty ? [] : IncrementalParser.linkDefinitions(parseLines)
+        let links = refsKey.isEmpty ? [] : IncrementalParser.linkDefinitions(
+            parseLines, blocks: blocks.map { ($0.lines, $0.kind) } + comments.map { ($0, .html) })
         return Fragment(blocks: blocks, notes: notes, cacheKeys: cacheKeys, links: links)
     }
 

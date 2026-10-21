@@ -19,7 +19,7 @@ import { relabelHeadingLinks, setCodeWrap, highlightAll, measureTables, highligh
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
-import { markdownOf, htmlOf, inDocument } from './reader/copy.js';
+import { markdownOf, htmlOf, inDocument, sources, definitionsUsed } from './reader/copy.js';
 
 // ---------------------------------------------------------------- Links & keys
 
@@ -144,6 +144,16 @@ function selectedSlots() {
     for (const e of touched) out.push(+e.dataset.slot);
   }
   return [...new Set(out)];
+}
+
+/**
+ * Copy as Quote (the app quotes the blocks' source): the slots of the
+ * blocks the selection touches, and the link definitions those blocks use,
+ * as ⌘C appends them.
+ */
+function quoteSelection() {
+  const s = selectedSlots();
+  return { slots: s, links: definitionsUsed(s.map(k => sources.get(slots.get(k)) ?? '').join('\n\n')) };
 }
 
 // A long jump aims again every frame for this long (see scrollToEdge, scrollToSlot).
@@ -406,6 +416,7 @@ window.readout = {
   // N went on from another document with nothing unread left: to this one's first change.
   firstChange: () => jump(1, true),
   selectedSlots,
+  quoteSelection,
   // A passing note above the document ("Marked against the last commit").
   notice: text => { if (text) showNotice(String(text)); },
   // The app's notice no longer holds (Compare with Last Commit undone): gone now, if it is the one showing.
