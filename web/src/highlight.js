@@ -268,13 +268,16 @@ export function ensureLang(id) {
 // Some grammars color embedded code only in languages that happen to be
 // loaded (markdown's fenced code, Vue's <style lang>). So that a block
 // comes out the same whenever it is highlighted, everything it could
-// embed is loaded first: for markdown, the languages its fences name; for
-// the others, every language they embed lazily.
+// embed is loaded first: for markdown, the languages its fences name and
+// YAML for front matter (a block starting with ---); for the others, every
+// language they embed lazily.
 const FENCE = /^[ \t]*(?:`{3,}|~{3,})[ \t]*([^\s`{]+)/gm;
 
 function embedded(id, code) {
   const out = new Set();
-  const names = id === 'markdown' ? [...code.matchAll(FENCE)].map(m => m[1]) : (lazyOf.get(id) || []);
+  const names = id === 'markdown'
+    ? [...code.matchAll(FENCE)].map(m => m[1]).concat(/^-{3,}/.test(code) ? ['yaml'] : [])
+    : (lazyOf.get(id) || []);
   for (const name of names) {
     const d = resolveLang(name);
     if (d && d !== id) out.add(d);
