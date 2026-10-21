@@ -215,6 +215,25 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   await page.close();
 }
 
+// ---------------------------------------------------------------- Return before the document arrives
+
+{
+  const page = await open();
+  const nothing = await find(page, 'needle');
+  const paras = Array.from({ length: 60 }, (_, i) => `<p>para ${i + 1}${[40, 50].includes(i + 1) ? ' needle' : ''}</p>`);
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
+  await page.waitForTimeout(1500);
+  const r = await page.evaluate(() => {
+    const s = getSelection();
+    const rect = s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+    return { text: s.toString(), top: rect && Math.round(rect.top), h: innerHeight };
+  });
+  check('a search made before the document arrived lands on its first match when it does ("1 of 2" is selected and on screen)',
+    nothing === 0 && await count(page) === '1 of 2' && r.text === 'needle' && await selectedSlot(page) === 40 && r.top > 0 && r.top < r.h,
+    JSON.stringify({ nothing, count: await count(page), r }));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, JSON.stringify(errors));
 await browser.close();
 server.close();

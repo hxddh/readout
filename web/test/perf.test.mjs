@@ -2,12 +2,12 @@
 //
 // Builds a ~1 MB document by chaining the real-agent corpus patches, then
 // measures: the first apply (synchronous, and until painted), a 20-block update patch on top of it,
-// the find bar's first search,
-// how far the text jumps scrolling up from the end, and frame
-// pacing while scrolling through the whole page; on a fresh warmed page,
-// the first apply of a small document whose code block is on screen; then, in a
-// ~5 MB document, an edit above the reader, outline jumps, and an agent
-// streaming at its end while the reader follows. Writes the numbers to
+// the find bar's first search, and how far the text jumps scrolling up from the end; in a ~5 MB document,
+// an edit above the reader, outline jumps, and an agent streaming at its end
+// while the reader follows; on a fresh warmed page, the first apply of a small
+// document whose code block is on screen, then a small plan's private memory;
+// on a fresh page not warmed, how long its first TypeScript block takes to
+// highlight. Writes the numbers to
 // test/out/perf-web.json; tools/perf-assert.py checks them against
 // tools/perf-budgets.json.
 //
@@ -16,6 +16,7 @@ import { webkit } from 'playwright';
 import http from 'node:http';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import { execSync } from 'node:child_process';
 import { collectPageErrors } from './pageerrors.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
@@ -143,28 +144,6 @@ const scrollUpJump = await page.evaluate(() => new Promise(async resolve => {
   after();
 }));
 
-// Scroll through the whole page in 600 even steps, one per frame, and record
-// frame gaps (each step lands on content not yet laid out). Headless WebKit
-// on a shared CI machine paces frames unevenly, so these are reported, not
-// gated (tools/perf-budgets.json).
-await page.evaluate(() => window.scrollTo(0, 0));
-await page.waitForTimeout(500);
-const scroll = await page.evaluate(() => new Promise(resolve => {
-  const gaps = [];
-  const steps = 600;
-  const stride = Math.ceil((document.scrollingElement.scrollHeight - innerHeight) / steps);
-  let last = performance.now();
-  const frame = now => {
-    gaps.push(now - last);
-    last = now;
-    if (gaps.length > steps) return resolve({ gaps, stride });
-    window.scrollBy(0, stride);
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
-}));
-const gaps = scroll.gaps.slice(1);
-const sorted = gaps.slice().sort((a, b) => a - b);
 await page.close();
 
 // An agent streaming at the end of a ~5 MB document, the reader following:
@@ -257,11 +236,33 @@ const stream = await (async () => {
 })();
 console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 1000)} s`);
 
+// A TypeScript block for the first-highlight measures.
+const TS_CODE = 'import { readFile } from "node:fs/promises";\n\n// Load the plan and count its open tasks.\nexport async function openTasks(path: string): Promise<number> {\n  const text = await readFile(path, "utf8");\n  return text.split("\\n").filter(l => /^- \\[ \\]/.test(l)).length;\n}';
+
+// A page's WebContent process (Linux): the WebKit web processes this
+// script started, and their private memory (smaps_rollup), in MB.
+function webProcesses() {
+  const rows = execSync('ps -eo pid,ppid,comm', { encoding: 'utf8' }).trim().split('\n').slice(1).map(l => l.trim().split(/\s+/));
+  const kids = new Map();
+  for (const [pid, ppid] of rows) kids.set(ppid, [...(kids.get(ppid) || []), pid]);
+  const mine = new Set(), queue = [String(process.pid)];
+  while (queue.length) for (const k of kids.get(queue.pop()) || []) { mine.add(k); queue.push(k); }
+  return rows.filter(r => mine.has(r[0]) && /WebProces/.test(r[2])).map(r => r[0]);
+}
+function privateMemoryMB(pid) {
+  try {
+    const t = readFileSync(`/proc/${pid}/smaps_rollup`, 'utf8');
+    const kb = k => +(t.match(new RegExp(`^${k}:\\s+(\\d+)`, 'm'))?.[1] || 0);
+    return Math.round((kb('Private_Dirty') + kb('Private_Clean')) / 1024);
+  } catch { return null; }
+}
+
 // The first code block of a warm open: a fresh page warmed as the app's
 // spare page is (its grammars preloaded and compiled in idle time), then a
 // small document with a TypeScript block on screen, highlighted inside the
 // synchronous first apply.
 const firstHighlight = await (async () => {
+  const before = new Set(webProcesses());
   const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
   collectPageErrors(p, errors);
   await p.addInitScript(() => {
@@ -270,6 +271,7 @@ const firstHighlight = await (async () => {
   });
   await p.goto(`${base}/reader.html`);
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
+  const pid = webProcesses().find(x => !before.has(x));
   await p.evaluate(() => { window.readout.warm(); window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }); });
   const warmed = await p.evaluate(() => new Promise(r => {
     const end = performance.now() + 40000;
@@ -277,9 +279,6 @@ const firstHighlight = await (async () => {
     t();
   }));
   await p.waitForTimeout(200);
-  // The warm-up's longest step: what a window taking the page mid-warm-up could wait for.
-  const warmStep = await p.evaluate(() => Math.round(performance.getEntriesByName('readout-hl-warm')[0]?.detail?.longest ?? -1));
-  const code = 'import { readFile } from "node:fs/promises";\n\n// Load the plan and count its open tasks.\nexport async function openTasks(path: string): Promise<number> {\n  const text = await readFile(path, "utf8");\n  return text.split("\\n").filter(l => /^- \\[ \\]/.test(l)).length;\n}';
   const r = await p.evaluate(code => {
     const t0 = performance.now();
     window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
@@ -288,11 +287,51 @@ const firstHighlight = await (async () => {
       { op: 'insert', slot: 3, after: 2, kind: 'code', html: `<div class="code-block" data-lang="ts"><pre><code>${code.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre></div>` },
     ] });
     return { ms: performance.now() - t0, hl: document.querySelector('.code-block').dataset.hl };
-  }, code);
+  }, TS_CODE);
+  // Then a small plan in the same tab, as a window opened from the spare
+  // page shows it: the WebContent process's private memory (Linux smaps).
+  await p.evaluate(plan => window.readout.apply(plan), JSON.parse(readFileSync('test/corpus/patches/01-sdd-fix-loop-plan.json', 'utf8')));
+  await p.waitForTimeout(3000);
+  const privateMB = privateMemoryMB(pid);
   await p.close();
-  return { ...r, warmed, warmStep };
+  return { ...r, warmed, privateMB };
 })();
 if (!firstHighlight.warmed || firstHighlight.hl !== 'done') errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
+if (firstHighlight.privateMB == null) errors.push('tab private memory not measured');
+
+// The first TypeScript block on a page not warmed up (the first window at
+// launch takes the spare page before its warm-up; a burst of background tabs
+// gets pages made for them): the page set up as a window does, the document
+// applied at once, until its code block is highlighted. Every grammar
+// pattern is compiled on that block's first match.
+const coldHighlight = await (async () => {
+  const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
+  const ms = await p.evaluate(code => new Promise(resolve => {
+    window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 });
+    const t0 = performance.now();
+    window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
+      { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'plan', html: '<h1 id="plan">Plan</h1>' },
+      { op: 'insert', slot: 2, after: 1, kind: 'code', html: `<div class="code-block" data-lang="ts"><pre><code>${code.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre></div>` },
+    ] });
+    const wait = () => {
+      const hl = document.querySelector('.code-block').dataset.hl;
+      if (hl === 'done') resolve(performance.now() - t0);
+      else if (performance.now() - t0 > 30000) resolve(-1);
+      else setTimeout(wait, 5);
+    };
+    wait();
+  }), TS_CODE);
+  await p.close();
+  return ms;
+})();
+if (coldHighlight < 0) errors.push('cold first highlight not measured');
 
 const result = {
   web_doc_bytes: bytes,
@@ -302,12 +341,8 @@ const result = {
   web_update_20_blocks_1mb_ms: Math.round(median(updates) * 10) / 10,
   web_find_open_1mb_ms: Math.round(median(findOpen) * 10) / 10,
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
-  web_hl_warm_longest_step_ms: firstHighlight.warmStep,
-  web_scroll_frames: gaps.length,
-  web_scroll_stride_px: scroll.stride,
-  web_scroll_frame_p95_ms: Math.round(sorted[Math.floor(sorted.length * 0.95)] * 10) / 10,
-  web_scroll_frame_max_ms: Math.round(sorted[sorted.length - 1]),
-  web_scroll_long_frames: gaps.filter(g => g > 50).length,
+  web_first_highlight_cold_ts_ms: Math.round(coldHighlight),
+  web_tab_private_mb: firstHighlight.privateMB,
   web_stream_doc_bytes: stream.bytes,
   web_stream_doc_blocks: stream.blocks,
   web_stream_append_5mb_ms: Math.round(stream.ms * 10) / 10,

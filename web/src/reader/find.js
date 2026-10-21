@@ -282,7 +282,10 @@ function refresh() {
     const was = matches[cur];
     search();
     if (!matches.length) cur = -1;
-    else if (!was || !was.el.isConnected) cur = Math.min(Math.max(cur, 0), matches.length - 1);
+    // The search found nothing (the document had not arrived, the agent had
+    // not written it yet): the first match to come is landed on, as a search does.
+    else if (cur < 0) { const [cmp, strict] = origin(null); cur = next(cmp, strict, false); land(); report(); return; }
+    else if (!was.el.isConnected) cur = Math.min(cur, matches.length - 1);
     else cur = next(m => m.el !== was.el ? (before(m.el, was.el) ? -1 : 1) : m.start - was.start, false, false);
   }
   const range = mark();

@@ -15,7 +15,13 @@ final class WebViewPool: NSObject, WKNavigationDelegate {
         guard spare == nil else { return }
         let w = ReaderWebView(bundle: .main)
         w.navigationDelegate = self
-        w.whenReady { w.call("warm") }
+        // Only a page still waiting as the spare warms up: one taken before
+        // its ready (the first window at launch) shows a document and loads
+        // what that document needs, not every preloaded grammar.
+        w.whenReady { [weak self, weak w] in
+            guard let self, let w, self.spare === w else { return }
+            w.call("warm")
+        }
         spare = w
     }
 
@@ -108,6 +114,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private var loaded = false
     /// ⌘P before the first document was applied (`didLoad`): printed then.
     private var printWhenLoaded = false
+    /// A search made before the first document was applied: run after it.
+    private var findWhenLoaded: (() -> Void)?
     /// The first read failed: the next change on disk, or opening the file
     /// again, reads it again instead of waiting for a load that never comes.
     private var loadFailed = false
@@ -407,8 +415,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             self.sendKnownImages()
             self.webView.callEncodingOffMain("apply", self.session.fullPayload(rewrite: false).page)
         }
-        // The new page has found nothing yet.
-        findField?.count = ""
+        // The new page has found nothing yet (and a search queued for the old one does not run).
+        endFind()
     }
 
     // MARK: Loading
@@ -500,6 +508,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
                 if let data = try? JSONSerialization.data(withJSONObject: anchor), let json = String(data: data, encoding: .utf8) {
                     self.webView.call("scrollToAnchor", json: json)
                 }
+            }
+            // Return in the find field while it loaded: searched now, behind the apply.
+            if let find = self.findWhenLoaded {
+                self.findWhenLoaded = nil
+                find()
             }
             // ⌘P while it loaded: now, queued behind the document's apply.
             if self.printWhenLoaded {
@@ -1315,7 +1328,12 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     func controlTextDidChange(_ obj: Notification) { endFind() }
     func searchFieldDidEndSearching(_ sender: NSSearchField) { endFind() }
 
+    /// Bumped by every search, clear and close: a search queued for a page
+    /// not up yet runs only if nothing came after it.
+    private var findGeneration = 0
+
     private func endFind() {
+        findGeneration += 1
         findField?.count = ""
         if webView.isReady { webView.call("findEnd") }
     }
@@ -1329,12 +1347,17 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         let text = searchItem?.searchField.stringValue ?? ""
         guard !text.isEmpty else { showFind(nil); return }
         guard let data = try? JSONEncoder().encode(text), let json = String(data: data, encoding: .utf8) else { return }
-        // A cold window's page may not be up yet: found once it is.
-        webView.whenReady { [weak self] in
-            self?.webView.run("window.readout.find(\(json), \(backwards))") { value, _ in
+        // A cold window's document may not be in its page yet: found once it
+        // is (unless the field was cleared or closed, or searched again, meanwhile).
+        findGeneration += 1
+        let generation = findGeneration
+        let search = { [weak self] in
+            guard let self, self.findGeneration == generation else { return }
+            self.webView.run("window.readout.find(\(json), \(backwards))") { value, _ in
                 if ((value as? NSNumber)?.intValue ?? 0) == 0 { NSSound.beep() }
             }
         }
+        if loaded { webView.whenReady(search) } else { findWhenLoaded = search }
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {

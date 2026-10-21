@@ -8,10 +8,10 @@
     "corpus": "node test/corpus.test.mjs"
   },
   "dependencies": {
-    "@shikijs/langs-precompiled": "4.5.0",
     "esbuild": "0.28.2",
     "katex": "0.19.0",
     "mermaid": "12.1.0",
+    "oniguruma-to-es": "4.3.6",
     "shiki": "4.5.0"
   },
   "devDependencies": {

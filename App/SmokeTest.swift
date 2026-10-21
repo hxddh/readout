@@ -85,8 +85,10 @@ enum SmokeTest {
     }
 
     /// When each phase of the launch first happened (wall clock, seconds):
-    /// did_finish_launching, then for the first window window_init, page_ready,
-    /// did_load, apply and paint. tools/smoke-run.py splits cold_start_ms with them.
+    /// will_finish_launching, spare_created (the spare page made),
+    /// did_finish_launching, open_requested, then for the first window
+    /// window_init, page_ready, did_load, apply and paint. tools/smoke-run.py
+    /// splits cold_start_ms with them.
     private static var launchPhases: [String: Double] = [:]
     static func noteLaunchPhase(_ name: String) {
         guard outputDirectory != nil, launchPhases[name] == nil else { return }
@@ -1332,7 +1334,8 @@ enum SmokeTest {
     /// The find field finds in the page (find.js): Return selects a match and
     /// the field says which of how many, Return again goes on, Escape takes the
     /// marks away. Then in a window whose page is not up yet (the pool's spare
-    /// went to the window opened just before): found once it is.
+    /// went to the window opened just before): a search cleared meanwhile never
+    /// runs, one left is made once its document is in the page.
     private static func findInPage(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
         func field(_ c: ReaderWindowController?) -> FindField? {
             c?.window?.toolbar?.items.compactMap { $0 as? NSSearchToolbarItem }.first?.searchField as? FindField
@@ -1367,10 +1370,28 @@ enum SmokeTest {
             let app = NSApp.delegate as? AppDelegate
             app?.open(dir.appendingPathComponent("cold-a.md"))
             app?.open(dir.appendingPathComponent("cold-b.md"))
-            if let cold = app?.reader(for: dir.appendingPathComponent("cold-b.md")), let cf = field(cold) {
-                cold.showFind(nil)
+            app?.open(dir.appendingPathComponent("cold-c.md"))
+            let b = app?.reader(for: dir.appendingPathComponent("cold-b.md")), c = app?.reader(for: dir.appendingPathComponent("cold-c.md"))
+            // Searched and cleared before its document is in the page: the search never runs.
+            if let c, let cf = field(c) {
+                json["cleared_loaded_at_search"] = c.isLoaded
+                c.showFind(nil)
                 cf.stringValue = "cold"
-                json["cold"] = await counted(cf) { cold.findNext(nil) }
+                c.findNext(nil)
+                cf.stringValue = ""
+                c.searchFieldDidEndSearching(cf)
+            }
+            if let b, let bf = field(b) {
+                json["cold_loaded_at_search"] = b.isLoaded
+                b.showFind(nil)
+                bf.stringValue = "cold"
+                json["cold"] = await counted(bf) { b.findNext(nil) }
+            }
+            if let c, let cf = field(c) {
+                let deadline = Date().addingTimeInterval(10)
+                while !c.isLoaded && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                try? await Task.sleep(for: .seconds(1))
+                json["cold_cleared"] = cf.count
             }
         }
         write(json, to: out, "find.json")
