@@ -1128,6 +1128,47 @@ const v36 = patch([
   const preloaded = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).sort().join(',');
   check('the app preloads shell, JSON and TypeScript, and nothing else', preloaded === 'json,shellscript,typescript', JSON.stringify(grammarRequests()));
   await page.close();
+
+  // 3.9.1: the spare page also loads Python, Rust, YAML and diff (small and
+  // common, ~4 MB in all), so a warm open colours them in its first paint.
+  requests.length = 0;
+  page = await open(800);
+  await page.evaluate(() => window.readout.warm());
+  const warmDone = await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
+  const spareSet = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).sort().join(',');
+  check('the spare page loads shell, JSON, TypeScript, Python, Rust, YAML and diff', warmDone && spareSet === 'diff,json,python,rust,shellscript,typescript,yaml', JSON.stringify({ warmDone, spareSet }));
+  await page.close();
+
+  // 3.9.1: the fence languages of a document being parsed (readout.prepare)
+  // are loaded and compiled before its apply, which then colours their
+  // blocks in its first paint: a language never preloaded (Kotlin), and a
+  // name as written in the fence (an alias, upper case).
+  const firstPaint = (pg, id, lang, code) => pg.evaluate(([id, lang, code]) => {
+    window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+      ops: [{ op: 'insert', slot: 1, after: 0, kind: 'code', cjk: false, html: `<div class="code-block" id="${id}" data-lang="${lang}"><pre><code>${code}</code></pre></div>` }] });
+    const cb = document.getElementById(id);
+    return { hl: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]') };
+  }, [id, lang, code]);
+  requests.length = 0;
+  page = await open(800);
+  await page.evaluate(() => window.readout.prepare(['Kotlin', 'kt', 'no-such-language']));
+  const ktIn = await until(page, () => performance.getEntriesByName('readout-hl-prepared').length > 0, 20000);
+  const kt = await firstPaint(page, 'p-kt', 'kotlin', 'fun main() { println("hi") } // c');
+  check('a fence language prepared while the document parses is coloured in its first paint', ktIn && kt.hl === 'done' && kt.colored, JSON.stringify({ ktIn, kt, requested: requests.filter(u => /kotlin-/.test(u)).length }));
+  await page.close();
+  // Quick Look too, loading only what the document names.
+  requests.length = 0;
+  page = await browser.newPage({ viewport: { width: 800, height: 700 } });
+  collectPageErrors(page, errors);
+  await page.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await page.goto(`${base}/reader.html`);
+  await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await page.evaluate(() => { window.readout.setAppearance({ dark: false, width: 'narrow', fontSize: 15, mode: 'quicklook' }); window.readout.prepare(['go']); });
+  const goIn = await until(page, () => performance.getEntriesByName('readout-hl-prepared').length > 0, 20000);
+  const qlPrepared = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).join(',');
+  const go = await firstPaint(page, 'p-go', 'go', 'package main\nfunc main() {}');
+  check('Quick Look prepares only the grammars the document names, coloured in its first paint', goIn && qlPrepared === 'go' && go.hl === 'done' && go.colored, JSON.stringify({ goIn, qlPrepared, go }));
+  await page.close();
 }
 
 // P10. A diagram whose source keeps changing (an agent writing it) keeps its
