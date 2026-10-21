@@ -143,6 +143,10 @@ elif exp in ("f1", "f2", "defer"):
              "        showWindow(nil)\n        window?.makeFirstResponder(webView)\n        window?.displayIfNeeded()\n        webView.loadIfNeeded()\n")
         edit("App/ReaderWindowController.swift", "                              onRetarget: { [weak self] target in if let self { self.retargeted(to: target) } })\n        load()\n",
              "                              onRetarget: { [weak self] target in if let self { self.retargeted(to: target) } })\n        load()\n        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in self?.webView.loadIfNeeded() }\n")
+elif exp == "nomm":
+    # Mermaid's flowchart warm-up 3 s after the first paint instead of the next idle moment.
+    edit("web/src/reader/mermaid.js", "  requestAnimationFrame(() => setTimeout(() => idle(warmUp, { timeout: 3000 }), 0));\n",
+         "  setTimeout(() => idle(warmUp, { timeout: 3000 }), 3000);\n")
 elif exp:
     sys.exit(f"apply-ab: unknown experiment {exp}")
 print(f"apply-ab: {tree} patched ({exp or 'as is'})")
