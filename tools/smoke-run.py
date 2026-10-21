@@ -43,6 +43,7 @@ so screenshots look as they do with a trackpad.
 """
 import json
 import os
+import plistlib
 import shutil
 import subprocess
 import sys
@@ -315,30 +316,48 @@ class SavedState:
     before: its defaults domain, its Application Support folder (reading
     state, baselines) and its saved windows. Restored exactly afterwards, so a
     launch the harness adds never changes anything it did not create (run on
-    a developer's own account, the reader's data stays theirs)."""
+    a developer's own account, the reader's data stays theirs).
+
+    Nothing of theirs is deleted before what replaces it is in place: each
+    folder's copy is made beside it (NAME.smoke-kept, same volume), and the
+    restore renames the launch's folder aside, then the copy into place, and
+    only then deletes the launch's. The defaults are imported over the
+    launch's, then the keys it added are deleted. An interrupted run leaves
+    the copy beside the folder; the next run stops until it is looked at."""
 
     def __init__(self, scratch: Path):
         lib = Path.home() / "Library"
         self.dirs = [lib / "Application Support" / "Readout", lib / "Saved Application State" / f"{BUNDLE_ID}.savedState"]
         self.scratch = scratch
+        for d in self.dirs:
+            if d.with_name(d.name + ".smoke-kept").exists():
+                sys.exit(f"FAIL: {d.with_name(d.name + '.smoke-kept')} is left from an interrupted run: "
+                         f"it may hold the only copy of {d.name}; put it back or remove it, then run again")
         shutil.rmtree(scratch, ignore_errors=True)
         scratch.mkdir(parents=True)
-        self.kept = []
-        for i, d in enumerate(self.dirs):
+        for d in self.dirs:
             if d.exists():
-                shutil.copytree(d, scratch / str(i), symlinks=True)
-                self.kept.append(i)
+                shutil.copytree(d, d.with_name(d.name + ".smoke-kept"), symlinks=True)
         self.prefs = scratch / "prefs.plist"
         self.had_prefs = subprocess.run(["defaults", "export", BUNDLE_ID, str(self.prefs)], capture_output=True).returncode == 0
 
     def restore(self) -> None:
-        for i, d in enumerate(self.dirs):
-            shutil.rmtree(d, ignore_errors=True)
-            if i in self.kept:
-                shutil.copytree(self.scratch / str(i), d, symlinks=True)
-        subprocess.run(["defaults", "delete", BUNDLE_ID], capture_output=True)
+        for d in self.dirs:
+            kept, aside = d.with_name(d.name + ".smoke-kept"), d.with_name(d.name + ".smoke-boot")
+            shutil.rmtree(aside, ignore_errors=True)
+            if d.exists():
+                os.rename(d, aside)
+            if kept.exists():
+                os.rename(kept, d)
+            shutil.rmtree(aside, ignore_errors=True)
         if self.had_prefs:
             subprocess.run(["defaults", "import", BUNDLE_ID, str(self.prefs)], check=False)
+            before = plistlib.loads(self.prefs.read_bytes())
+            now = subprocess.run(["defaults", "export", BUNDLE_ID, "-"], capture_output=True).stdout
+            for key in set(plistlib.loads(now) if now else {}) - set(before):
+                subprocess.run(["defaults", "delete", BUNDLE_ID, key], capture_output=True)
+        else:
+            subprocess.run(["defaults", "delete", BUNDLE_ID], capture_output=True)
         shutil.rmtree(self.scratch, ignore_errors=True)
 
 
