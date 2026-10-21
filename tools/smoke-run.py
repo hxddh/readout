@@ -187,9 +187,10 @@ def main() -> int:
     locked = tmp / "locked.md"
     locked.write_text("# Locked\n")
     os.chmod(locked, 0)
-    # Two windows opened back to back: the second one's page starts cold.
+    # Windows opened back to back: the second and third ones' pages start cold.
     (tmp / "cold-a.md").write_text("# Cold A\n")
     (tmp / "cold-b.md").write_text("# Cold B\n")
+    (tmp / "cold-c.md").write_text("# Cold C\n")
     cli_file = work / "background.md"
     cli_file.write_text("# Opened with readout -b\n")
     # A plan outside its project, as Claude Code keeps them (~/.claude/plans),

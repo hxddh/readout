@@ -233,12 +233,22 @@ check("navigation: a web link can be copied",
       nav.get("context_menu_web") == ["WKMenuItemIdentifierDownloadLinkedFile", "WKMenuItemIdentifierCopyLink", "-",
                                       "WKMenuItemIdentifierCopy", "-", "WKMenuItemIdentifierLookUp"], nav)
 
-find = load("find-mode.json")
-print(f"find-mode: {find}")
-# Return in the find field must not switch find mode (a full re-layout) off and on again.
-check("find mode switches on once and off once", find.get("calls") == [True, False], find)
-check("find mode in a cold window is delivered once its page is up",
-      find.get("cold_calls") == [True] and find.get("cold_ready") == [True], find)
+find = load("find.json")
+print(f"find: {find}")
+# The page finds (3.9): Return selects a match and the field says which of how many; Return again goes on.
+first = re.fullmatch(r"(\d+) of (\d+)", find.get("first") or "")
+second = re.fullmatch(r"(\d+) of (\d+)", find.get("second") or "")
+check("find: Return lands on a match, the field showing which of how many",
+      first is not None and 1 <= int(first[1]) <= int(first[2]), find)
+check("find: the match is selected (Copy, Copy as Quote)",
+      (find.get("selected") or "").lower() == (find.get("word") or "").lower() != "", find)
+check("find: Return again goes on to the next match",
+      second is not None and first is not None and second[2] == first[2]
+      and (int(second[1]) == int(first[1]) % int(first[2]) + 1), find)
+check("find: Escape takes the marks and the count away",
+      find.get("after_escape") == "" and find.get("marks_after_escape") == 0, find)
+check("find: a search cleared before the document was in the page never runs", find.get("cold_cleared") == "", find)
+check("find: a window whose document was not in its page yet finds once it is", find.get("cold") == "1 of 1", find)
 
 col = live.get("collide") or {}
 # Retargeted onto a file another window shows: that window keeps the path; the link's window stays owned.

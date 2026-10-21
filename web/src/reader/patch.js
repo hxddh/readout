@@ -1,6 +1,6 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused } from './core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, keepPlace, scrollToElement, forceLayout, neverLaidOut } from './anchor.js';
+import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, forceLayout, neverLaidOut } from './anchor.js';
 import { renderMarks, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, measureTables } from './enhance.js';
@@ -402,14 +402,5 @@ function countDownNotice() {
   }, NOTICE_MS);
 }
 
-// Large documents let WebKit skip laying out off-screen blocks
-// (content-visibility), but find in page skips that content too: while the
-// find bar is open the whole document is laid out.
-let finding = false;
-function updateCv() { doc.classList.toggle('cv', slots.size > 250 && !finding); }
-
-export function findMode(on) {
-  on = !!on;
-  if (on === finding) return;
-  keepPlace(() => { finding = on; updateCv(); });
-}
+// Large documents let WebKit skip laying out off-screen blocks (content-visibility).
+function updateCv() { doc.classList.toggle('cv', slots.size > 250); }
