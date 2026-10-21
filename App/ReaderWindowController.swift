@@ -425,7 +425,11 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // The reading state is read and decoded (JSON ~1.6× the document's
         // size) off the main thread, while the document parses.
         let saved = BaselineStore.prefetch(url)
-        loader.loadInitial { [weak self] result in
+        // The languages its code fences name, as soon as the file is read:
+        // the page loads and compiles their grammars while it parses.
+        loader.loadInitial(fenceLanguages: { [weak self] langs in
+            self?.webView.whenReady { [weak self] in self?.webView.call("prepare", langs) }
+        }) { [weak self] result in
             guard let self else { return }
             guard let result else {
                 self.loadFailed = true

@@ -36,6 +36,21 @@ import Testing
         #expect(texts(r) == ["# Plan", "First step."])
     }
 
+    /// 3.9.1: the fence languages reach the page before the parsed document does.
+    @Test func fenceLanguagesArriveBeforeTheParse() async throws {
+        try write("# Plan\n\n```python\nx = 1\n```\n\n- ```Go\n  package main\n  ```\n")
+        let l = loader()
+        var events: [String] = []
+        let r: DocumentLoader.ReadResult? = await withCheckedContinuation { cont in
+            l.loadInitial(fenceLanguages: { events.append("langs " + $0.joined(separator: ",")) }) { r in
+                events.append("parsed")
+                cont.resume(returning: r)
+            }
+        }
+        #expect(r != nil)
+        #expect(events == ["langs python,go", "parsed"])
+    }
+
     @Test func unreadableFileYieldsNil() async {
         let r = await initial(loader())
         #expect(r == nil)
@@ -132,5 +147,43 @@ import Testing
         // Two retries, then the valid prefix is shown rather than waiting forever.
         #expect(Date().timeIntervalSince(start) >= 0.1)
         #expect(texts(r) == ["# Plan"])
+    }
+}
+
+/// 3.9.1: the languages a document's fences name, read without parsing it.
+@Suite struct FenceLanguagesTests {
+    @Test func namesEachFenceLanguageOnceInOrder() {
+        let text = """
+        # Plan
+        ```Python title="x"
+        print(1)
+        ```
+        > ```bash
+        > ls
+        > ```
+        1. ```yaml{.line-numbers}
+           a: 1
+           ```
+        ~~~ diff
+        -a
+        ~~~
+        ```python
+        ```
+        ``inline`` and ```
+        """
+        #expect(FenceLanguages.scan(text) == ["python", "bash", "yaml", "diff"])
+    }
+
+    @Test func codeSpansAreNotFences() {
+        #expect(FenceLanguages.scan("``js`` and `a`\nno fences here\n").isEmpty)
+        // Indented four spaces it is code, not a fence; a quick look names it anyway (harmless).
+        #expect(FenceLanguages.scan("``js``\n    ```rust\n").count == 1)
+        #expect(FenceLanguages.scan("").isEmpty)
+    }
+
+    @Test func stopsAtTheLimit() {
+        let text = (0..<40).map { "```l\($0)\n```" }.joined(separator: "\n")
+        #expect(FenceLanguages.scan(text).count == 16)
+        #expect(FenceLanguages.scan(text, limit: 3) == ["l0", "l1", "l2"])
     }
 }

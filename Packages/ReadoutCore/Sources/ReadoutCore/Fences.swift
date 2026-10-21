@@ -633,3 +633,61 @@ struct FenceTracker: Equatable {
         return (col - start, p, false)
     }
 }
+
+/// The languages a document's code fences name: each fence info string's
+/// first word, lowercased, in order of first use, each once. The page
+/// starts loading their grammars while the document parses. A quick look at
+/// line starts, not CommonMark: a fence in a quote or list item counts, and
+/// a line that only looks like a fence (inside another one) may add a name;
+/// either way only a grammar is loaded early, nothing renders differently.
+public enum FenceLanguages {
+    public static func scan(_ text: String, limit: Int = 16) -> [String] {
+        if let r = text.utf8.withContiguousStorageIfAvailable({ scan($0, limit: limit) }) { return r }
+        return Array(text.utf8).withUnsafeBufferPointer { scan($0, limit: limit) }
+    }
+
+    private static func scan(_ b: UnsafeBufferPointer<UInt8>, limit: Int) -> [String] {
+        var out: [String] = []
+        let n = b.count
+        var i = 0
+        while i < n, out.count < limit {
+            // Past quote markers, indentation and list markers.
+            var j = i
+            while j < n, j - i < 40 {
+                let c = b[j]
+                if c == 0x20 || c == 0x09 || c == 0x3E { j += 1; continue }                 // space, tab, >
+                if (c == 0x2D || c == 0x2A || c == 0x2B), j + 1 < n, b[j + 1] == 0x20 { j += 2; continue }   // - * +
+                if c >= 0x30, c <= 0x39 {                                                // 1. 1)
+                    var k = j
+                    while k < n, k - j < 9, b[k] >= 0x30, b[k] <= 0x39 { k += 1 }
+                    if k + 1 < n, b[k] == 0x2E || b[k] == 0x29, b[k + 1] == 0x20 { j = k + 2; continue }
+                }
+                break
+            }
+            // A fence: three or more backticks or tildes, then the info string's first word.
+            if j < n, b[j] == 0x60 || b[j] == 0x7E {
+                let fence = b[j]
+                var k = j
+                while k < n, b[k] == fence { k += 1 }
+                if k - j >= 3 {
+                    while k < n, b[k] == 0x20 || b[k] == 0x09 { k += 1 }
+                    let start = k
+                    while k < n, k - start < 32 {
+                        let c = b[k]
+                        if c == 0x20 || c == 0x09 || c == 0x0A || c == 0x0D || c == 0x60 || c == 0x7B { break }   // space, tab, EOL, `, {
+                        k += 1
+                    }
+                    if k > start, let word = String(bytes: UnsafeBufferPointer(rebasing: b[start..<k]), encoding: .utf8)?.lowercased(),
+                       !out.contains(word) {
+                        out.append(word)
+                    }
+                    j = k
+                }
+            }
+            // The next line.
+            while j < n, b[j] != 0x0A { j += 1 }
+            i = j + 1
+        }
+        return out
+    }
+}
