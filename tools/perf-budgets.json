@@ -222,7 +222,9 @@
     "document (about 300,000 matches): the two frames after the call, median of three. Before: 7.3 s locally",
     "(WebKit checking every content-visibility block against the new selection); after 0.4 s locally,",
     "most of it the landing's own layout (a word that matches 18,000 times costs about the same).",
-    "Reported until CI runs of it are in."
+    "The first CI run measured 1026 ms (web_toc_jump_5mb_ms 242 in the same run); the samples are printed",
+    "as web_find_one_letter_5mb_samples_ms ([the call, the first frame, both frames]). Reported until",
+    "more CI runs of it are in."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },

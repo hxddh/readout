@@ -250,9 +250,13 @@ const stream = await (async () => {
   await p5.waitForTimeout(1500);
   for (let i = 0; i < 3; i++) {
     oneLetter.push(await p5.evaluate(() => new Promise(resolve => {
+      const c0 = performance.now();
       window.readout.find('e');
       const t0 = performance.now();
-      requestAnimationFrame(() => setTimeout(() => requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0)), 0));
+      requestAnimationFrame(() => setTimeout(() => {
+        const t1 = performance.now();
+        requestAnimationFrame(() => setTimeout(() => resolve({ ms: performance.now() - t0, call: t0 - c0, first: t1 - t0 }), 0));
+      }, 0));
     })));
     await p5.waitForTimeout(500);
   }
@@ -282,7 +286,7 @@ const stream = await (async () => {
   }
   const left = await p5.evaluate(() => { const s = document.scrollingElement; return Math.round(s.scrollHeight - s.scrollTop - innerHeight); });
   await p5.close();
-  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps), letter: median(oneLetter) };
+  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps), letter: median(oneLetter.map(x => x.ms)), letterSamples: oneLetter.map(x => [x.call, x.first, x.ms].map(Math.round)) };
 })();
 console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 1000)} s`);
 
@@ -402,6 +406,7 @@ const result = {
   web_edit_above_5mb_ms: Math.round(stream.edit * 10) / 10,
   web_toc_jump_5mb_ms: Math.round(stream.jump),
   web_find_one_letter_5mb_ms: Math.round(stream.letter),
+  web_find_one_letter_5mb_samples_ms: stream.letterSamples,   // [the call, the first frame, both frames]
   web_scroll_up_jump_px: scrollUpJump,
   errors,
 };
