@@ -14,7 +14,6 @@ export function enhance(el) {
   for (const t of el.querySelectorAll('.table-wrap')) { setupTable(t); queueTable(t); }
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
   for (const m of el.querySelectorAll('.mermaid-block')) { setupMermaid(m); diagrams.add(m); }
-  for (const h of el.classList.contains('k-heading') ? [el] : []) setupHeadingLink(h);
   if (el.querySelector('.math, .math-block')) renderMath(el);
   setLang(el);
   markCjkEmphasis(el);
@@ -178,31 +177,6 @@ window.addEventListener('resize', () => {
   requestAnimationFrame(() => { tablesQueued = false; measureTables(); });
 });
 
-/** Hover link button on headings: copies a `#anchor` link for the section. */
-function setupHeadingLink(h) {
-  if (h.querySelector('.h-link')) return;
-  const anchor = h.dataset.anchor;
-  if (!anchor) return;
-  const btn = document.createElement('button');
-  btn.className = 'h-link';
-  btn.type = 'button';
-  btn.dataset.label = '§';
-  btn.title = strings.copyLink || 'Copy Link to Section';
-  btn.setAttribute('aria-label', btn.title);
-  btn.addEventListener('click', ev => {
-    ev.stopPropagation();
-    post({ type: 'copyLink', anchor });
-    btn.dataset.label = '✓';
-    setTimeout(() => { btn.dataset.label = '§'; }, 1200);
-  });
-  // Beside the heading, not inside it: the heading is named by its own
-  // content as the browser computes it (math by its MathML, the button's
-  // label not part of it), and an out-of-flow child does not stop WebKit
-  // balancing its lines. CSS puts it in the gutter on the first line. After
-  // the heading, so the heading stays the block's first element.
-  h.appendChild(btn);
-}
-
 /**
  * Code wrapping is one choice for every code block, remembered by the app.
  * Wrapping reflows the page, so the reading position is kept.
@@ -220,12 +194,8 @@ function toggleCodeWrap() {
   post({ type: 'setCodeWrap', on });
 }
 
-/** Re-labels heading link buttons after the strings change. */
-export function relabelHeadingLinks() {
-  for (const h of doc.querySelectorAll('.k-heading .h-link')) {
-    h.title = strings.copyLink || h.title;
-    h.setAttribute('aria-label', h.title);
-  }
+/** Re-labels the code blocks' buttons after the strings change. */
+export function relabelButtons() {
   for (const w of doc.querySelectorAll('.cb-wrap')) {
     setLabel(w, strings.wrap || w.dataset.label);
     w.title = strings.wrapTitle || w.title;
@@ -235,7 +205,7 @@ export function relabelHeadingLinks() {
 
 /**
  * Control labels are CSS generated content (see reader.css), so a selection
- * across a code block or heading never copies "Copy", "Wrap", "§" or the language.
+ * across a code block never copies "Copy", "Wrap" or the language.
  */
 function setLabel(el, text) {
   el.dataset.label = text;

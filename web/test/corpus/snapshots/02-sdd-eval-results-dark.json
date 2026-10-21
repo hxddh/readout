@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "3a4e19c5",
+   "style": "48a1806e",
    "content": "30098953",
    "text": "SDD plan-scoped workspace — eval results"
   },
@@ -15,7 +15,7 @@
    "kind": "listItem",
    "top": 109,
    "h": 28,
-   "style": "63484258",
+   "style": "8a4fcb3b",
    "content": "cf0d71aa",
    "text": "Date: 2026-07-06"
   },
@@ -24,7 +24,7 @@
    "kind": "listItem",
    "top": 137,
    "h": 106,
-   "style": "14976d5c",
+   "style": "2bf37f0f",
    "content": "56360f50",
    "text": "Method: writing-skills RED→GREEN pressure test, "
   },
@@ -33,7 +33,7 @@
    "kind": "listItem",
    "top": 243,
    "h": 45,
-   "style": "d2aa31ad",
+   "style": "c2e639d4",
    "content": "9a4b38d1",
    "text": "Spec: 2026-07-06-sdd-plan-scoped-workspace.md"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 288,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "abfe5074",
    "text": "Scenarios"
   },
@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 353,
    "h": 330,
-   "style": "0304b245",
+   "style": "ee32e856",
    "content": "4014c83a",
    "text": "S1 — stale ledger from a different plan. The fix"
   },
@@ -60,7 +60,7 @@
    "kind": "paragraph",
    "top": 683,
    "h": 252,
-   "style": "e9270bf1",
+   "style": "60a23de4",
    "content": "980ab899",
    "text": "S2 — same-plan resume. Same project, but plan B'"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 935,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "6eb97009",
    "text": "What RED showed (and did not show)"
   },
@@ -78,7 +78,7 @@
    "kind": "paragraph",
    "top": 1000,
    "h": 174,
-   "style": "7148f80f",
+   "style": "e58b68a0",
    "content": "c477a030",
    "text": "Three RED rounds ran against the released (pre-c"
   },
@@ -87,7 +87,7 @@
    "kind": "paragraph",
    "top": 1173,
    "h": 252,
-   "style": "b076276f",
+   "style": "a123259c",
    "content": "6f6521f5",
    "text": "25/25 controller reps refused to treat a ledger "
   },
@@ -96,7 +96,7 @@
    "kind": "paragraph",
    "top": 1425,
    "h": 44,
-   "style": "c29f3c90",
+   "style": "8b2954e9",
    "content": "0a6acd64",
    "text": "The reproducible baseline harms are not an error"
   },
@@ -105,7 +105,7 @@
    "kind": "paragraph",
    "top": 1469,
    "h": 148,
-   "style": "22d45ac6",
+   "style": "510521d5",
    "content": "10363aa4",
    "text": "(a) A forensic disambiguation tax on every resum"
   },
@@ -114,7 +114,7 @@
    "kind": "paragraph",
    "top": 1616,
    "h": 252,
-   "style": "2f86b3e3",
+   "style": "e3738ed2",
    "content": "822a62c9",
    "text": "(b) The structural record documented in the spec"
   },
@@ -123,7 +123,7 @@
    "kind": "paragraph",
    "top": 1868,
    "h": 174,
-   "style": "32300fd9",
+   "style": "b3a320b8",
    "content": "7c0b4396",
    "text": "The SKILL.md change proceeded on structural grou"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 2041,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "fa91186b",
    "text": "RED quote bank (verbatim, carried from the Task "
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 2083,
    "h": 70,
-   "style": "67db5d3c",
+   "style": "68b5391d",
    "content": "b202cfbe",
    "text": "Round v1 (fresh-session framing, fixture v1 — fa"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 2153,
    "h": 121,
-   "style": "bd72bf2f",
+   "style": "d26de38a",
    "content": "9115ced1",
    "text": "s1-rep2: None of the aaa000N/bbb000N hashes the "
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 2274,
    "h": 95,
-   "style": "61784416",
+   "style": "9754aed9",
    "content": "46c58ed1",
    "text": "s2-rep1: Conclusion: this ledger is stale/fabric"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 2369,
    "h": 105,
-   "style": "37680e12",
+   "style": "204fb4df",
    "content": "240e6a19",
    "text": "s2-rep3 (names the specific hashes): the commit "
   },
@@ -177,7 +177,7 @@
    "kind": "paragraph",
    "top": 2474,
    "h": 70,
-   "style": "67db5d3c",
+   "style": "68b5391d",
    "content": "3ee364b3",
    "text": "Round v2 (fresh-session framing, fixture v2 — re"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 2544,
    "h": 147,
-   "style": "8eeb7b79",
+   "style": "dbd79662",
    "content": "3a9f6027",
    "text": "s1-rep1: Cross-checked the commit hashes it cite"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 2691,
    "h": 157,
-   "style": "746217d0",
+   "style": "0c55ef1f",
    "content": "61b7abaf",
    "text": "s2-rep5: All 9 commits in the repo's history are"
   },
@@ -204,7 +204,7 @@
    "kind": "paragraph",
    "top": 2848,
    "h": 70,
-   "style": "50d482ee",
+   "style": "a494c80d",
    "content": "b43d8663",
    "text": "Round v3-probe (compaction-resume framing, v2-st"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2918,
    "h": 121,
-   "style": "a1105c18",
+   "style": "4ebaddeb",
    "content": "099e7110",
    "text": "rep1 (tool_uses=7): The workspace script (script"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 3039,
    "h": 105,
-   "style": "78485931",
+   "style": "c9ce59a8",
    "content": "a274f69f",
    "text": "rep5 (tool_uses=6): The ledger's \"complete\" clai"
   },
@@ -231,7 +231,7 @@
    "kind": "paragraph",
    "top": 3144,
    "h": 174,
-   "style": "84b6dfea",
+   "style": "fde2cd49",
    "content": "9ddd7672",
    "text": "v1 and v2 each independently triggered the eval'"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 3318,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "2ab29de2",
    "text": "Fixture iterations"
   },
@@ -249,7 +249,7 @@
    "kind": "paragraph",
    "top": 3383,
    "h": 252,
-   "style": "88e5b3ce",
+   "style": "43b6c82b",
    "content": "b32f8f01",
    "text": "Fixture v1 (discarded before any skill edit): pl"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 3634,
    "h": 252,
-   "style": "9ad8d5be",
+   "style": "8d21ff51",
    "content": "9a0b5f1b",
    "text": "One implementation note on v3, for transparency:"
   },
@@ -267,7 +267,7 @@
    "kind": "heading",
    "top": 3886,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "9cf82695",
    "text": "Results"
   },
@@ -276,7 +276,7 @@
    "kind": "table",
    "top": 3951,
    "h": 421,
-   "style": "bb8d96fe",
+   "style": "12f8b0eb",
    "content": "24465fd3",
    "text": "ArmText under testFixturePASSNotesS1 REDreleased"
   },
@@ -285,7 +285,7 @@
    "kind": "paragraph",
    "top": 4372,
    "h": 148,
-   "style": "b2674f52",
+   "style": "4261e7af",
    "content": "1603207f",
    "text": "Scoring criteria: S1 GREEN passes iff first disp"
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 4519,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "736585d2",
    "text": "Disambiguation cost"
   },
@@ -303,7 +303,7 @@
    "kind": "table",
    "top": 4585,
    "h": 120,
-   "style": "d3508418",
+   "style": "f3ff661f",
    "content": "9ae23dba",
    "text": "RoundFramingTexttool_uses per repmeanRED probeco"
   },
@@ -312,7 +312,7 @@
    "kind": "paragraph",
    "top": 4705,
    "h": 460,
-   "style": "6e3a7d5e",
+   "style": "606ba39d",
    "content": "730c2afb",
    "text": "Read this table honestly: the raw tool-call coun"
   },
@@ -321,7 +321,7 @@
    "kind": "heading",
    "top": 5165,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "966201e7",
    "text": "GREEN behavior notes"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 5230,
    "h": 122,
-   "style": "ef29f780",
+   "style": "b8d30a29",
    "content": "3a190ecb",
    "text": "Every GREEN rep (10/10) began by resolving the p"
   },
@@ -339,7 +339,7 @@
    "kind": "paragraph",
    "top": 5351,
    "h": 70,
-   "style": "23f123b9",
+   "style": "0f4b2c5a",
    "content": "e6ba8cc7",
    "text": "S1 GREEN resolution shape, per rep (expected sha"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 5421,
    "h": 132,
-   "style": "e86b0f1d",
+   "style": "cfb4e2e6",
    "content": "2f2d147c",
    "text": "rep1 (9): structural decision plus git-log corre"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 5553,
    "h": 80,
-   "style": "56957993",
+   "style": "a5fbb0c2",
    "content": "7a641c3e",
    "text": "rep2 (11): purely structural: the flat ledger \"h"
   },
@@ -366,7 +366,7 @@
    "kind": "listItem",
    "top": 5633,
    "h": 54,
-   "style": "0a8869dd",
+   "style": "22be9cc4",
    "content": "7a1b3708",
    "text": "rep3 (9): purely structural; noted the flat ledg"
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 5688,
    "h": 80,
-   "style": "e3351da6",
+   "style": "fb11d1f5",
    "content": "951b30d1",
    "text": "rep4 (7): structural with a light hash-to-git lo"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 5768,
    "h": 71,
-   "style": "501245ec",
+   "style": "bcc3d0f1",
    "content": "ecda4f60",
    "text": "rep5 (12): purely structural; the workspace \"did"
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 5839,
    "h": 122,
-   "style": "aef20d00",
+   "style": "bc1cabcd",
    "content": "0c9521f9",
    "text": "None of the five fetched a cited commit's diff t"
   },
@@ -402,7 +402,7 @@
    "kind": "paragraph",
    "top": 5961,
    "h": 174,
-   "style": "5eeda123",
+   "style": "7d76cf56",
    "content": "89f4f7c6",
    "text": "S2 GREEN (regression): 5/5 recognized Tasks 1-2 "
   },
@@ -411,7 +411,7 @@
    "kind": "paragraph",
    "top": 6134,
    "h": 70,
-   "style": "288782d1",
+   "style": "0ace8e7e",
    "content": "20c16fba",
    "text": "Refinement iterations: none. All three gates pas"
   },
@@ -420,7 +420,7 @@
    "kind": "heading",
    "top": 6204,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "61a5e973",
    "text": "Appendix A: fixture generator (v3)"
   },
@@ -429,7 +429,7 @@
    "kind": "paragraph",
    "top": 6269,
    "h": 148,
-   "style": "6329cffa",
+   "style": "9a57650d",
    "content": "3460fa97",
    "text": "The generator as actually used for every fixture"
   },
@@ -438,7 +438,7 @@
    "kind": "code",
    "top": 6417,
    "h": 4982,
-   "style": "13d176ce",
+   "style": "83d6c501",
    "content": "22515aec",
    "text": "#!/usr/bin/env bash # Build a throwaway git repo"
   },
@@ -447,7 +447,7 @@
    "kind": "heading",
    "top": 11398,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "8ae5fa28",
    "text": "Appendix B: scenario prompt"
   },
@@ -456,7 +456,7 @@
    "kind": "paragraph",
    "top": 11463,
    "h": 122,
-   "style": "3a5e8261",
+   "style": "1fea9e42",
    "content": "42d42fe4",
    "text": "One fresh subagent per rep (model sonnet, subage"
   },
@@ -465,7 +465,7 @@
    "kind": "code",
    "top": 11585,
    "h": 602,
-   "style": "876384f7",
+   "style": "47ae1c1c",
    "content": "a61b1c09",
    "text": "<session-context> This session is being continue"
   },
@@ -474,7 +474,7 @@
    "kind": "heading",
    "top": 12187,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "6b577ff6",
    "text": "Limitations"
   },
@@ -483,7 +483,7 @@
    "kind": "paragraph",
    "top": 12252,
    "h": 278,
-   "style": "8319ef85",
+   "style": "f0da6416",
    "content": "58ddb80a",
    "text": "Five reps per cell is a smoke-strength signal, n"
   }

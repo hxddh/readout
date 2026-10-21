@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "93733f57",
+   "style": "f25f6296",
    "content": "4c6dfb02",
    "text": "Daemon install: generated units invoke a nonexis"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 109,
    "h": 96,
-   "style": "1f5d4978",
+   "style": "cd44aae1",
    "content": "50cdb277",
    "text": "Issue: #437Also tracked as: audit finding H20 (A"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 204,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "448c5c7c",
    "text": "Problem"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 269,
    "h": 70,
-   "style": "60261875",
+   "style": "4be52b94",
    "content": "7e0f82cc",
    "text": "agentsh daemon install writes a service unit tha"
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 339,
    "h": 28,
-   "style": "d77e8a23",
+   "style": "5052078c",
    "content": "376bc97f",
    "text": "internal/cli/daemon.go:208 — ExecStart=%s server"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 367,
    "h": 45,
-   "style": "a67aaf56",
+   "style": "e9585af3",
    "content": "6cc63e6e",
    "text": "internal/cli/daemon.go:362 — <string>--daemon</s"
   },
@@ -60,7 +60,7 @@
    "kind": "paragraph",
    "top": 412,
    "h": 70,
-   "style": "33e7e17e",
+   "style": "d0aafeef",
    "content": "928b9bfd",
    "text": "internal/cli/server.go registers only --config, "
   },
@@ -69,7 +69,7 @@
    "kind": "code",
    "top": 482,
    "h": 82,
-   "style": "94c80400",
+   "style": "17e95cff",
    "content": "a9ee6a34",
    "text": "$ agentsh server --daemon unknown flag: --daemon"
   },
@@ -78,7 +78,7 @@
    "kind": "paragraph",
    "top": 564,
    "h": 96,
-   "style": "82c0c5ad",
+   "style": "376819aa",
    "content": "1654d2a8",
    "text": "Both service managers then restart it forever — "
   },
@@ -87,7 +87,7 @@
    "kind": "paragraph",
    "top": 659,
    "h": 44,
-   "style": "817eef10",
+   "style": "1d2fd669",
    "content": "e76f0ca2",
    "text": "agentsh daemon install is broken end-to-end on b"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 703,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "d5a0afe7",
    "text": "Constraint that shapes the fix"
   },
@@ -105,7 +105,7 @@
    "kind": "paragraph",
    "top": 768,
    "h": 122,
-   "style": "3c3b016c",
+   "style": "bdcaa63b",
    "content": "82bf89d8",
    "text": "Correcting the templates does not repair an exis"
   },
@@ -114,7 +114,7 @@
    "kind": "paragraph",
    "top": 890,
    "h": 70,
-   "style": "17803d39",
+   "style": "a7a8d31c",
    "content": "63410096",
    "text": "The fix therefore has to work from both directio"
   },
@@ -123,7 +123,7 @@
    "kind": "heading",
    "top": 959,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "e88d02ef",
    "text": "Design"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 1024,
    "h": 42,
-   "style": "15add113",
+   "style": "0d1d547e",
    "content": "10a39ef2",
    "text": "1. Register --daemon as a hidden, deprecated no-"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 1066,
    "h": 44,
-   "style": "3ca79404",
+   "style": "0abb8723",
    "content": "162abaf8",
    "text": "In newServerCmd (internal/cli/server.go):"
   },
@@ -150,7 +150,7 @@
    "kind": "code",
    "top": 1110,
    "h": 102,
-   "style": "7e2d4af1",
+   "style": "adf9ffa4",
    "content": "b38ecafa",
    "text": "cmd.Flags().Bool(\"daemon\", false, \"Deprecated: a"
   },
@@ -159,7 +159,7 @@
    "kind": "paragraph",
    "top": 1212,
    "h": 148,
-   "style": "d73d2811",
+   "style": "67a3b332",
    "content": "a97de5ad",
    "text": "A no-op is the semantically correct shim, not a "
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 1359,
    "h": 122,
-   "style": "b233da4e",
+   "style": "e2bede3d",
    "content": "986a45f9",
    "text": "pflag.MarkDeprecated also sets Hidden, keeping t"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1481,
    "h": 42,
-   "style": "1ed8a99b",
+   "style": "5fd88cba",
    "content": "ea2aceb0",
    "text": "2. Drop --daemon from both templates"
   },
@@ -186,7 +186,7 @@
    "kind": "code",
    "top": 1523,
    "h": 82,
-   "style": "cfe58307",
+   "style": "a994f38c",
    "content": "4309c51f",
    "text": "-ExecStart=%s server --daemon +ExecStart=%s serv"
   },
@@ -195,7 +195,7 @@
    "kind": "code",
    "top": 1604,
    "h": 102,
-   "style": "e2a8b6b9",
+   "style": "39704e14",
    "content": "7d9b19e9",
    "text": "<string>server</string> - <string>--daemon</stri"
   },
@@ -204,7 +204,7 @@
    "kind": "paragraph",
    "top": 1706,
    "h": 70,
-   "style": "17803d39",
+   "style": "a7a8d31c",
    "content": "7468914b",
    "text": "Newly generated units are clean; the flag surviv"
   },
@@ -213,7 +213,7 @@
    "kind": "heading",
    "top": 1776,
    "h": 42,
-   "style": "ad78b59c",
+   "style": "4e24b665",
    "content": "f4b8b8e8",
    "text": "3. Regression guard"
   },
@@ -222,7 +222,7 @@
    "kind": "paragraph",
    "top": 1818,
    "h": 96,
-   "style": "d90b52af",
+   "style": "48b51fe6",
    "content": "e00f29d4",
    "text": "In internal/cli/daemon_test.go, render each temp"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 1913,
    "h": 54,
-   "style": "2863a4b3",
+   "style": "1ccd17c0",
    "content": "98150398",
    "text": "argvFromSystemdUnit — take the ExecStart= line, "
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 1968,
    "h": 54,
-   "style": "2f75d82d",
+   "style": "c7d59c38",
    "content": "185b43b4",
    "text": "argvFromLaunchdPlist — take the <string> values "
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2022,
    "h": 71,
-   "style": "47064361",
+   "style": "57ae023c",
    "content": "a3009d0c",
    "text": "For each: NewRoot(\"test\").Find(argv) must resolv"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 2093,
    "h": 148,
-   "style": "28cf2128",
+   "style": "c59700ff",
    "content": "297afb56",
    "text": "This covers the whole failure class rather than "
   },
@@ -267,7 +267,7 @@
    "kind": "paragraph",
    "top": 2240,
    "h": 96,
-   "style": "001fa40b",
+   "style": "347d8dd4",
    "content": "d902a347",
    "text": "A second, smaller test asserts server --daemon s"
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 2336,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "82a16ffe",
    "text": "Verification"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2401,
    "h": 28,
-   "style": "f313895a",
+   "style": "f55bf4f5",
    "content": "43d9873c",
    "text": "go test ./internal/cli/... and full go test ./.."
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2429,
    "h": 28,
-   "style": "e4aa9bc6",
+   "style": "1c7f45ed",
    "content": "74fa6eaf",
    "text": "GOOS=windows go build ./... (per AGENTS.md)"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 2458,
    "h": 71,
-   "style": "443fae24",
+   "style": "280b40e1",
    "content": "a2384546",
    "text": "go run ./cmd/agentsh server --daemon reaches con"
   },
@@ -312,7 +312,7 @@
    "kind": "heading",
    "top": 2529,
    "h": 65,
-   "style": "a5e8146d",
+   "style": "995d752c",
    "content": "48620364",
    "text": "Out of scope"
   },
@@ -321,7 +321,7 @@
    "kind": "paragraph",
    "top": 2594,
    "h": 44,
-   "style": "c29f3c90",
+   "style": "8b2954e9",
    "content": "59ff78e7",
    "text": "Examined and deliberately left alone:"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 2637,
    "h": 106,
-   "style": "8246b4bf",
+   "style": "79c09d22",
    "content": "60def19b",
    "text": "ProtectSystem=strict in the systemd unit makes /"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 2744,
    "h": 54,
-   "style": "c364d271",
+   "style": "56e4f01e",
    "content": "5abd38a4",
    "text": "Auto-repairing stale unit files on agentsh daemo"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 2798,
    "h": 71,
-   "style": "211ee7f3",
+   "style": "d647857e",
    "content": "c22ea20e",
    "text": "AUDIT-FINDINGS.md is a point-in-time report with"
   }

@@ -21,6 +21,10 @@ import Testing
         // N with no change left: the page says so and the app beeps.
         #expect(PageMessage(["type": "nothing"]) == .nothing)
         #expect(PageMessage(["type": "wrapped"]) == .wrapped)
+        // 3.9 E9: a context menu on a heading offers Copy Link to Section;
+        // the page says which heading, or none, for every menu.
+        #expect(PageMessage(["type": "contextHeading", "anchor": "plan"]) == .contextHeading(anchor: "plan"))
+        #expect(PageMessage(["type": "contextHeading", "anchor": ""]) == .contextHeading(anchor: nil))
     }
 
     @Test func rejectsMalformedMessages() {
@@ -28,7 +32,9 @@ import Testing
         #expect(PageMessage(["type": "nope"]) == nil)
         #expect(PageMessage(["type": "activeHeading"]) == nil)
         #expect(PageMessage(["type": "anchor", "anchor": NSNull()]) == nil)   // captureAnchor() can be null
-        #expect(PageMessage(["type": "copyLink", "anchor": ""]) == nil)
+        #expect(PageMessage(["type": "contextHeading"]) == nil)
+        // The hover § button is gone (3.9 E9): nothing posts copyLink.
+        #expect(PageMessage(["type": "copyLink", "anchor": "plan"]) == nil)
         #expect(PageMessage(["type": "loadRemote", "url": "https://x/a.png"]) == nil)
     }
 }

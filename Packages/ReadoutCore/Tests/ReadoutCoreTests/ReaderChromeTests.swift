@@ -76,6 +76,17 @@ import Testing
         #expect(ReaderChrome.outlineBaseLevel([]) == 1)
     }
 
+    /// 3.9 E12: the task count shows once. The lone title row leaves it to
+    /// the window subtitle; its sections keep theirs.
+    @Test func theLoneTitleRowShowsNoTaskCount() {
+        let base = ReaderChrome.outlineBaseLevel([1, 2, 3, 2])
+        #expect(!ReaderChrome.outlineShowsTasks(level: 1, baseLevel: base))
+        #expect(ReaderChrome.outlineShowsTasks(level: 2, baseLevel: base))
+        #expect(ReaderChrome.outlineShowsTasks(level: 3, baseLevel: base))
+        // Several top-level headings: each one's count is its own.
+        #expect(ReaderChrome.outlineShowsTasks(level: 1, baseLevel: ReaderChrome.outlineBaseLevel([1, 2, 1, 2])))
+    }
+
     /// Help opens the shortcuts bundled with the app, in Readout, offline
     /// (3.5 opened the README on GitHub in the browser).
     @Test func helpOpensTheKeyboardShortcutsInTheReadersLanguage() {
@@ -91,7 +102,7 @@ import Testing
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         for name in ["Keyboard.md", "Keyboard.zh-Hans.md"] {
             let text = try String(contentsOf: root.appendingPathComponent("App/Help/\(name)"), encoding: .utf8)
-            for key in ["⌘E", "⇧⌘R", "⌥⌘C", "⌘P", "⌥⌘W", "⌘K", "⇧⌘K", "⌥⌘\\"] {
+            for key in ["⌘E", "⇧⌘R", "⌥⌘C", "⌘P", "⌥⌘W", "⌘K", "⌥⌘\\"] {
                 #expect(text.contains(key), "\(name) lacks \(key)")
             }
         }

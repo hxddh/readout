@@ -49,7 +49,6 @@ function drawRail() {
     const key = kindKey(el);
     // Task changes fall back to "edited" until the app sends a word for them.
     const kind = strings[key] || (key === 'railTask' && strings.railEdited) || key;
-    if (key === 'railEdited' || key === 'railTask') tick.className = 'mod';
     const height = Math.max(TICK_MIN_PX, (rects[i].height / total) * track);
     tick.style.top = `${Math.min(window.innerHeight - height, inset + (top / total) * track)}px`;
     if (height > TICK_MIN_PX) tick.style.height = `${height}px`;
