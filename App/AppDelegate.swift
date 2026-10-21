@@ -37,11 +37,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // restored or opened, takes it.
         WebViewPool.shared.prewarm()
         SmokeTest.noteLaunchPhase("spare_created")
+        // No Start Dictation or Emoji & Symbols in the Edit menu (registered,
+        // not stored): a read-only reader takes no typing.
+        UserDefaults.standard.register(defaults: ["NSDisabledDictationMenuItem": true, "NSDisabledCharacterPaletteMenuItem": true])
         NSApp.mainMenu = MainMenu.build(appDelegate: self)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         SmokeTest.noteLaunchPhase("did_finish_launching")
+        // macOS has added its Edit items by now, or does right after.
+        MainMenu.trimEditMenu()
+        DispatchQueue.main.async { MainMenu.trimEditMenu() }
         // Windows restored from the last launch are back by now: their tabs too.
         regroupRestoredTabs()
         DispatchQueue.main.async { [weak self] in self?.regroupRestoredTabs() }
@@ -54,8 +60,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.hotKey?.unregister()
             self?.hotKey = GlobalHotKey.make(choice) { [weak self] in self?.openLatest(nil) }
             // Registration fails when another app holds the combination: say so where it is chosen.
-            let inUse = choice != .none && self?.hotKey == nil
+            let inUse = choice.isGlobal && self?.hotKey == nil
             if settings.hotKeyInUse != inUse { settings.hotKeyInUse = inUse }
+            // The menu has the same key (⌃⌥⌘R inside Readout with the global one off).
+            MainMenu.setOpenLatestKey(choice)
         }.store(in: &cancellables)
         // Turning automatic checks on takes effect now, not at the next launch.
         settings.$checkForUpdatesAutomatically.dropFirst().removeDuplicates().sink { on in
@@ -407,13 +415,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             open(url)
             NSApp.activate()
         } else {
-            let alert = NSAlert()
-            alert.messageText = NSLocalizedString("No recent Markdown files", comment: "Alert title")
-            alert.informativeText = NSLocalizedString("Add the folders your agents write to in Settings. Readout then opens the most recently written Markdown file with this command.", comment: "Alert body")
-            alert.addButton(withTitle: NSLocalizedString("Open Settings", comment: "Button"))
-            alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Button"))
-            NSApp.activate()
-            if alert.runModal() == .alertFirstButtonReturn { showSettings(nil) }
+            // Nothing written yet: the welcome window says where files come
+            // from. Already in front, it has nothing more to say.
+            if NSApp.isActive && welcome?.isKeyWindow == true { NSSound.beep() }
+            showWelcome(nil)
         }
     }
 
@@ -430,7 +435,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let w = NSWindow(contentViewController: host)
             w.styleMask = [.titled, .closable, .fullSizeContentView]
             w.titlebarAppearsTransparent = true
-            // Named for VoiceOver and Mission Control; Window ▸ Welcome is its menu item.
+            // Named for VoiceOver and Mission Control; not in the Window menu.
             w.title = NSLocalizedString("Welcome", comment: "Window title")
             w.titleVisibility = .hidden
             w.isExcludedFromWindowsMenu = true
@@ -474,6 +479,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func checkForUpdates(_ sender: Any?) { UpdateChecker.check(interactive: true) }
 
+    /// Readout ▸ About Readout: the standard panel, with one line for credits
+    /// that links to the licences (Acknowledgements.md, made at build time by
+    /// tools/credits.py), opened in Readout itself.
+    @objc func showAbout(_ sender: Any?) {
+        let center = NSMutableParagraphStyle()
+        center.alignment = .center
+        let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+                                                         .foregroundColor: NSColor.secondaryLabelColor, .paragraphStyle: center]
+        let credits = NSMutableAttributedString(string: NSLocalizedString("Includes open-source software: ", comment: "About panel, before the Acknowledgements link"),
+                                                attributes: attributes)
+        if let file = Bundle.main.url(forResource: "Acknowledgements", withExtension: "md"), let link = OpenLink.url(path: file.path) {
+            var linked = attributes
+            linked[.link] = link
+            credits.append(NSAttributedString(string: NSLocalizedString("Acknowledgements", comment: "About panel link: the third-party licences"), attributes: linked))
+        }
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
+        NSApp.activate()
+    }
+
     /// Background check found an update: surface it as an application-menu
     /// item that offers it as Check for Updates does (its notes, Download
     /// Update: the same download). Never pops up, never activates — the
@@ -507,8 +531,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 // MARK: - Welcome
 
 struct WelcomeView: View {
-    /// Fixed size: open, open latest and drop a file. Recent files live in File ▸ Open Recent.
-    static let height: CGFloat = 430
+    /// Fixed size: open and open latest; a file dropped anywhere on it opens. Recent files live in File ▸ Open Recent.
+    static let height: CGFloat = 320
 
     let onOpen: () -> Void
     let onOpenLatest: () -> Void
@@ -539,50 +563,40 @@ struct WelcomeView: View {
                 .padding(.horizontal, 40)
                 .padding(.top, 8)
 
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(style: StrokeStyle(lineWidth: 1.25, dash: [5, 4]))
-                .foregroundStyle(targeted ? Color.accentColor : Color.secondary.opacity(0.35))
-                .background(RoundedRectangle(cornerRadius: 12).fill(targeted ? Color.accentColor.opacity(0.06) : .clear))
-                .overlay(
-                    Text(NSLocalizedString("Drop a Markdown file here", comment: "Welcome drop target"))
-                        .foregroundStyle(.secondary)
-                )
-                .frame(height: 96)
-                .padding(.horizontal, 32)
-                .padding(.top, 22)
-                .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
-                    for p in providers {
-                        _ = p.loadObject(ofClass: URL.self) { url, _ in
-                            guard let url else { return }
-                            let ext = url.pathExtension.lowercased()
-                            guard WorkspaceIndex.markdownExtensions.contains(ext) else {
-                                NSSound.beep()
-                                return
-                            }
-                            DispatchQueue.main.async { onOpenURL(url) }
-                        }
-                    }
-                    return true
-                }
-
             HStack(spacing: 10) {
                 Button(NSLocalizedString("Open…", comment: "Button"), action: onOpen)
                     .keyboardShortcut("o", modifiers: .command)
                 Button(action: onOpenLatest) {
                     HStack(spacing: 6) {
                         Text(NSLocalizedString("Open Latest Agent File", comment: "Menu"))
-                        if settings.hotKey != .none && !settings.hotKeyInUse {
+                        if !settings.hotKeyInUse {
                             Text(settings.hotKey.title).foregroundStyle(.secondary)
                         }
                     }
                 }
             }
             .controlSize(.large)
-            .padding(.top, 20)
+            .padding(.top, 24)
 
             Spacer(minLength: 24)
         }
         .frame(width: 460, height: Self.height)
+        // A Markdown file dropped anywhere on the window opens: a ring in the
+        // accent colour while one is over it, nothing to read when there is none.
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.accentColor, lineWidth: 3).opacity(targeted ? 1 : 0).padding(4))
+        .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
+            for p in providers {
+                _ = p.loadObject(ofClass: URL.self) { url, _ in
+                    guard let url else { return }
+                    guard WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else {
+                        NSSound.beep()
+                        return
+                    }
+                    DispatchQueue.main.async { onOpenURL(url) }
+                }
+            }
+            return true
+        }
     }
 
 }

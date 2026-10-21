@@ -47,14 +47,14 @@ targets:
       - target: ReadoutQuickLook
         embed: true
         codeSign: true
-    # Readout ▸ About Readout shows Resources/Credits.html: the licences of the
-    # npm and Swift packages inside the app (the web bundle drops their comments).
+    # Readout ▸ About Readout links to Resources/Acknowledgements.md: the licences
+    # of the npm and Swift packages inside the app (the web bundle drops their comments).
     postBuildScripts:
-      - name: Third-party notices (Credits.html)
+      - name: Third-party notices (Acknowledgements.md)
         basedOnDependencyAnalysis: false
         script: |
           python3 "$SRCROOT/tools/credits.py" --checkouts "$BUILD_DIR/../../SourcePackages/checkouts" \
-            --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Credits.html"
+            --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Acknowledgements.md"
     info:
       path: App/Info.plist
       properties:

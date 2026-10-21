@@ -227,10 +227,7 @@ def main() -> int:
     git_untracked = repo / "docs" / "untracked.md"
     git_untracked.write_text("# Untracked\n\nNever committed.\n")
 
-    # Stands in for a release's DMG in the Download Update check (A3): 4 MB, so it takes a few progress steps.
-    update_file = tmp / "update.dmg"
-    update_file.write_bytes(os.urandom(4 * 1024 * 1024))
-    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out), READOUT_SMOKE_UPDATE_FILE=str(update_file),
+    env = dict(os.environ, READOUT_SMOKE_FILE=str(target), READOUT_SMOKE_OUT=str(out),
                READOUT_SMOKE_SECOND=str(second), READOUT_SMOKE_AGENT_FOLDER=str(agent_dir),
                READOUT_SMOKE_TMP_FILE=str(tmp_file), READOUT_SMOKE_LINK_FILE=str(link),
                READOUT_SMOKE_CLI_FILE=str(cli_file), READOUT_SMOKE_HOOK_PLAN=str(hook_plan), READOUT_SMOKE_COLLIDE_LINK=str(collide),
