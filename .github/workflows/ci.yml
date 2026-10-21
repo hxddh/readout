@@ -26,7 +26,7 @@ jobs:
       - name: Deps
         working-directory: web
         run: npm ci && npm i --no-save @shikijs/langs-precompiled@4.5.0 && npx playwright install --with-deps webkit
-      - name: Scroll
+      - name: Baselines
         env:
           COMMITS: ${{ inputs.commits }}
           SPECS: ${{ inputs.specs }}
