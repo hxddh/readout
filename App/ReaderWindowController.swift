@@ -15,7 +15,13 @@ final class WebViewPool: NSObject, WKNavigationDelegate {
         guard spare == nil else { return }
         let w = ReaderWebView(bundle: .main)
         w.navigationDelegate = self
-        w.whenReady { w.call("warm") }
+        // Only a page still waiting as the spare warms up: one taken before
+        // its ready (the first window at launch) shows a document and loads
+        // what that document needs, not every preloaded grammar.
+        w.whenReady { [weak self, weak w] in
+            guard let self, let w, self.spare === w else { return }
+            w.call("warm")
+        }
         spare = w
     }
 

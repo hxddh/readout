@@ -116,12 +116,11 @@ targets:
   ReadoutQuickLook:
     type: app-extension
     platform: macOS
+    # No Web/ of its own: previews are served from the containing app's
+    # Contents/Resources/Web (PreviewViewController.appBundle).
     sources:
       - path: QuickLook
       - path: Shared
-      - path: web/build/Web
-        type: folder
-        buildPhase: resources
     dependencies:
       - package: ReadoutCore
       - sdk: Quartz.framework

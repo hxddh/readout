@@ -10,11 +10,45 @@ private let log = Logger(subsystem: "io.github.hxddh.readout.quicklook", categor
 final class PreviewViewController: NSViewController, QLPreviewingController {
     private var webView: ReaderWebView?
     private var appearanceObservation: NSKeyValueObservation?
+    private var usedSpare = false
+
+    /// The containing app (Readout.app/Contents/PlugIns/ReadoutQuickLook.appex):
+    /// its Contents/Resources/Web serves the reader page, so the extension
+    /// ships no copy of its own.
+    private static let appBundle: Bundle = {
+        let appex = Bundle(for: PreviewViewController.self).bundleURL
+        return Bundle(url: appex.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()) ?? .main
+    }()
+
+    /// A page made after each preview for the next one, which then finds it
+    /// loaded (WebKit's process start and the page's load are most of a
+    /// preview's time) while the extension stays running.
+    private static var spare: ReaderWebView?
+    private static let spareWatch = SpareWatch()
+    private static func makeSpare() {
+        guard spare == nil else { return }
+        let w = ReaderWebView(bundle: appBundle)
+        w.navigationDelegate = spareWatch
+        spare = w
+    }
+    /// The spare's web content process died while it waited (memory
+    /// pressure, a crash): it is dropped, and the next preview makes its own
+    /// page, as without a spare (the app's WebViewPool does the same).
+    private final class SpareWatch: NSObject, WKNavigationDelegate {
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            MainActor.assumeIsolated {
+                if webView === PreviewViewController.spare { PreviewViewController.spare = nil }
+            }
+        }
+    }
 
     override var nibName: NSNib.Name? { nil }
 
     override func loadView() {
-        let w = ReaderWebView(bundle: Bundle(for: PreviewViewController.self))
+        usedSpare = Self.spare != nil
+        let w = Self.spare ?? ReaderWebView(bundle: Self.appBundle)
+        Self.spare = nil
+        w.navigationDelegate = nil
         w.autoresizingMask = [.width, .height]
         webView = w
         view = w
@@ -35,7 +69,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             _ = self.view
             guard let webView = self.webView else { return nil }
             let created = Date()
-            log.notice("preview view created in \(Int(created.timeIntervalSince(requested) * 1000), privacy: .public) ms")
+            log.notice("preview view created in \(Int(created.timeIntervalSince(requested) * 1000), privacy: .public) ms (spare page: \(self.usedSpare ? "yes" : "no", privacy: .public))")
             // CI's ql_page_ready_ms: view created to its page's ready.
             webView.whenReady {
                 log.notice("preview page ready in \(Int(Date().timeIntervalSince(created) * 1000), privacy: .public) ms")
@@ -71,6 +105,8 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                     resumed = true
                     cont.resume()
                     webView?.onMessage = nil
+                    // The next preview's page, once this one is shown.
+                    DispatchQueue.main.async { MainActor.assumeIsolated { Self.makeSpare() } }
                     let ms = Int(Date().timeIntervalSince(requested) * 1000)
                     // One line per preview, so CI (and Console) can see that
                     // content actually rendered, not just that we registered.

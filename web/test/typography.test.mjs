@@ -1058,7 +1058,7 @@ const v36 = patch([
 }
 
 // P11. Quick Look loads no grammar (nor Shiki) before a code block needs one;
-//      the app preloads the common ones.
+//      the app preloads the three agent output uses most.
 {
   const grammarRequests = () => requests.filter(u => /\/chunks\/(shellscript|json|typescript|python|swift|go|rust|yaml|diff|markdown|sql)-/.test(u));
   const openQuick = async quick => {
@@ -1080,9 +1080,17 @@ const v36 = patch([
   const qlAfter = grammarRequests();
   check('Quick Look loads no grammar before a code block needs one', ql === 0, `${ql} requested`);
   check('Quick Look highlights the code it shows, loading only its grammar', qlDone && qlAfter.length === 1 && /go-/.test(qlAfter[0]), JSON.stringify(qlAfter));
+  // Markdown's front matter is YAML: loaded with it, whatever is preloaded,
+  // so the block highlights the same in Quick Look, a warmed tab or a cold one.
+  await page.evaluate(p => window.readout.apply(p), patch([['code', '<div class="code-block" id="q-fm" data-lang="markdown"><pre><code>---\nname: plan\n---\n# Title</code></pre></div>']], 3));
+  const fmDone = await until(page, () => document.getElementById('q-fm')?.dataset.hl === 'done');
+  const fmKey = await page.evaluate(() => [...document.querySelectorAll('#q-fm pre.shiki span')].some(s => s.textContent === 'name'));
+  check('a Markdown block with front matter highlights its YAML', fmDone && fmKey, JSON.stringify({ fmDone, fmKey }));
   await page.close();
   page = await openQuick(false);
-  check('the app preloads the common grammars', grammarRequests().length >= 10, JSON.stringify(grammarRequests()));
+  // Only the three agent output uses most: each preloaded grammar costs every tab memory.
+  const preloaded = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).sort().join(',');
+  check('the app preloads shell, JSON and TypeScript, and nothing else', preloaded === 'json,shellscript,typescript', JSON.stringify(grammarRequests()));
   await page.close();
 }
 

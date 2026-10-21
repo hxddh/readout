@@ -590,6 +590,10 @@ check("quicklook preview rendered", bool(m), qrt[-500:])
 if m:
     check("quicklook preview applied (not timed out)", m.group(1) == "applied", m.group(0))
     check("quicklook rendered == 36 blocks", m.group(2) == "36" and m.group(3) == "36", m.group(0))
+# F6: a second preview (on the spare page the first left, when the extension
+# kept running) renders the same document in full.
+previews = re.findall(r"preview (applied|timed out): rendered (-?\d+) of (\d+) blocks", qrt)
+check("quicklook second preview applied, 36 blocks", len(previews) >= 2 and previews[1] == ("applied", "36", "36"), previews)
 # The preview is asked for, then applied: both logged (ql_open_ms comes from the second).
 check("quicklook logs the request", "preview requested" in qrt, qrt[-500:])
 # P9: the web view is made before the document is parsed, and its page's
@@ -606,15 +610,16 @@ check("warm open: Readout's share is measured and within the whole open",
       and tm["warm_open_to_applied_ms"] <= tm["warm_open_ms"], tm)
 
 # P5: the cold start in phases, in the order they happen, from the process
-# start (sysctl); Readout's own two segments measured.
+# start (sysctl); Readout's own segments measured. F5: the spare page is made
+# in willFinishLaunching, before didFinishLaunching and the first open.
 lp = tm.get("launch_phases_ms") or {}
-order = ["did_finish_launching", "window_init", "page_ready", "apply", "paint"]
+order = ["will_finish_launching", "spare_created", "did_finish_launching", "open_requested", "window_init", "page_ready", "apply", "paint"]
 print(f"launch phases (ms since process start): {lp}; cold_page_ready_ms {tm.get('cold_page_ready_ms')}, cold_apply_ms {tm.get('cold_apply_ms')}")
 check("cold start: every launch phase measured, in order",
       all(isinstance(lp.get(k), (int, float)) for k in order + ["did_load"])
       and all(0 <= lp[a] <= lp[b] for a, b in zip(order, order[1:])) and lp["did_load"] <= lp["apply"], lp)
 check("cold start: Readout's segments measured",
-      all(isinstance(tm.get(k), (int, float)) for k in ("cold_page_ready_ms", "cold_apply_ms", "cold_window_to_load_ms")), tm)
+      all(isinstance(tm.get(k), (int, float)) for k in ("cold_page_ready_ms", "cold_apply_ms", "cold_window_to_load_ms", "cold_dfl_to_window_ms")), tm)
 
 print(f"{len(failures)} failing assertion(s)")
 sys.exit(1 if failures else 0)
