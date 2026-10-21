@@ -44,6 +44,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - name: Build readout-dump in the background (copy round trips)
+        run: nohup swift build --package-path Packages/ReadoutCore --product readout-dump > "$RUNNER_TEMP/readout-dump.log" 2>&1 &
       - uses: actions/setup-node@v5
         with:
           node-version: 22

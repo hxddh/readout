@@ -18,14 +18,20 @@
 //    Edit ▸ Select All copies the document; escaped text stays text.
 //    5b: a source-only edit (copy-edit.json); 5c: safe rich text (copy-unsafe.json).
 // 6. A large selection (C7): ~650,000 characters copy in well under a second, as
-//    Markdown only (rich text is skipped above 500,000 characters).
+//    Markdown only (rich text is skipped above 100,000 characters, F8).
+// 7. Random selections (B1, B4): two seeded random text positions over any
+//    blocks, in every document and fixtures/copy-escapes.md; each copy parsed
+//    again by ReadoutCore (readout-dump) reads as the selection did.
+//    COPY_FUZZ selections per document (default 8; 12 times that on copy-escapes).
 //
 // Partial and cross-block selections are tried on every STRIDE-th block
 // (default 3, bounded for CI); COPY_STRIDE=1 tries every block.
 // Usage: node test/copy.test.mjs [--quick]
 import { webkit } from 'playwright';
 import http from 'node:http';
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync, execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { extname, join } from 'node:path';
 import { marked } from 'marked';
 import { collectPageErrors } from './pageerrors.mjs';
@@ -102,6 +108,30 @@ await page.evaluate(() => {
     window.removeEventListener('copy', grab);
     return out;
   };
+  // n random selections (two text positions, any blocks; seeded): what each selects and copies.
+  window.__fuzz = (n, seed) => {
+    let s = seed >>> 0;
+    const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 2 ** 32; };
+    // Left out, by design: code, formulas, diagrams and front matter copy their source, footnotes their definitions.
+    const skip = 'button, .cb-tools, code, pre, .katex, .math, .math-block, .math-display, .mermaid-block, .front-matter, .wd-panel, .del-pop, .del-mark, .k-footnotes, .fn-ref, details, .alert-title';
+    const w = document.createTreeWalker(document.getElementById('ro-doc'), NodeFilter.SHOW_TEXT, { acceptNode: t => t.data.length && !t.parentElement.closest(skip) && t.parentElement.getClientRects().length ? 1 : 3 });
+    const nodes = []; for (let t; (t = w.nextNode());) nodes.push(t);
+    const out = [];
+    for (let i = 0; nodes.length > 1 && i < n; i++) {
+      const x = Math.floor(rnd() * nodes.length), y = Math.min(nodes.length - 1, x + (rnd() < 0.5 ? 0 : Math.floor(rnd() * 12)));
+      const a = nodes[x], z = nodes[y];
+      const ao = Math.floor(rnd() * (a.data.length + 1));
+      const zo = x === y ? ao + Math.floor(rnd() * (z.data.length - ao + 1)) : Math.floor(rnd() * (z.data.length + 1));
+      const r = document.createRange(); r.setStart(a, ao); r.setEnd(z, zo);
+      if (/[\uDC00-\uDFFF]/.test(a.data[ao] || '') || /[\uDC00-\uDFFF]/.test(z.data[zo] || '')) continue;   // half a character
+      const box = document.createElement('div'); box.appendChild(r.cloneContents());
+      if (r.collapsed || box.querySelector(skip)) continue;
+      const c = window.__copy(r);
+      // A part of a table copies the rows it touches, whole.
+      if (c.selected.trim() && !r.commonAncestorContainer.parentElement?.closest('table')) out.push({ selected: c.selected, text: c.text });
+    }
+    return out;
+  };
   // A position `frac` of the way through an element's visible text.
   window.__point = (el, frac) => {
     const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: n => n.data.trim() && !n.parentElement.closest('button, .cb-tools, .katex-mathml, .mermaid-src, .front-matter') && n.parentElement.getClientRects().length ? 1 : 3 });
@@ -125,8 +155,13 @@ const entities = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' 
 const textWords = s => s.replace(/\[!(\w+)\]/g, '').replace(/\b(note|tip|important|warning|caution)\b/gi, '').toLowerCase().replace(/[\s​]+/g, ' ').replace(/[*_`~\\[\]()|>#$-]/g, '').replace(/\s+/g, '').trim();
 const words = html => textWords(html.replace(/<[^>]+>/g, ' ').replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, e) => entities[e]));
 
+// Random selections for 7: what they select and copy, without a table's rows (copied whole, by design).
+const FUZZ = Math.max(0, +(process.env.COPY_FUZZ ?? 8));
+const copies = [];
+const fuzz = (doc, got) => { for (const c of got) if (!/^(?:> ?)*\|.*\|$/m.test(c.text)) copies.push({ doc, ...c }); };
+
 let exact = 0, structural = 0, blankDiffs = 0, partials = 0, wholes = 0;
-for (const name of quick ? docs.slice(0, 4) : docs) {
+for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
   const patch = JSON.parse(readFileSync(`${CORPUS}/patches/${name}`, 'utf8'));
   const source = readFileSync(`${CORPUS}/${name.replace(/\.json$/, '.md')}`, 'utf8');
   await page.evaluate(p => window.readout.apply(p), patch);
@@ -173,6 +208,7 @@ for (const name of quick ? docs.slice(0, 4) : docs) {
     });
     return out;
   }, STRIDE);
+  fuzz(name, await page.evaluate(([n, seed]) => window.__fuzz(n, seed), [FUZZ, k * 7 + 11]));
   const srcOf = new Map(patch.ops.map(o => [o.slot, o.src]));
   for (const r of res) {
     if (!r.selected) continue;   // an empty block: nothing to select
@@ -360,7 +396,7 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
 }
 
 // 6. A large selection (C7): the copy costs what the two end blocks do, not
-//    every block's layout (main: 35 s at 5 MB); past 500,000 characters, no rich text.
+//    every block's layout (main: 35 s at 5 MB); past 100,000 characters, no rich text (F8).
 {
   const ops = [];
   let slot = 0, bytes = 0;
@@ -390,11 +426,79 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
     document.execCommand('copy');
     const ms = performance.now() - t0;
     removeEventListener('copy', grab);
-    return { ms, chars: text.length, html: html.length };
+    // A third of it (~200,000 characters): Markdown only too (F8: WebKit takes 0.3 s for 400 KB of rich text).
+    const blocks = document.querySelectorAll('#ro-doc > .blk');
+    r.setEnd(blocks[Math.floor(blocks.length / 3)], 0);
+    const third = window.__copy(r);
+    return { ms, chars: text.length, html: html.length, third: { chars: third.text.length, html: third.html.length } };
   });
   console.log(`copy: ${ops.length} blocks (${bytes} characters of source) copied in ${big.ms.toFixed(0)} ms, ${big.chars} characters, rich text ${big.html}`);
   if (big.ms > 1000) fail(`a large copy took ${big.ms.toFixed(0)} ms`);
   if (big.chars <= 500_000 || big.html !== 0) fail(`a large copy: ${big.chars} characters of Markdown, ${big.html} of rich text (want none)`);
+  if (big.third.chars <= 100_000 || big.third.chars >= 500_000 || big.third.html !== 0) fail(`a copy of a third: ${big.third.chars} characters of Markdown, ${big.third.html} of rich text (want none)`);
+}
+
+// 7. Random selections, parsed again by ReadoutCore.
+{
+  for (const [k, f] of ['copy-cases.json', 'copy-escapes.json'].entries()) {
+    await page.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync(`test/fixtures/${f}`, 'utf8')));
+    await page.waitForTimeout(200);
+    fuzz(f, await page.evaluate(([n, seed]) => window.__fuzz(n, seed), [k ? FUZZ * 12 : FUZZ, 1000 + k]));
+  }
+  // By name (copy-escapes.md): sub-points of an item (B1), escaped text inside a paragraph (B4).
+  const named = await page.evaluate(() => {
+    const find = (s, from) => {
+      const w = document.createTreeWalker(document.getElementById('ro-doc'), NodeFilter.SHOW_TEXT);
+      if (from) w.currentNode = from;
+      for (let n = from || w.nextNode(); n; n = w.nextNode()) if (n.data.includes(s)) return n;
+    };
+    const copy = (a, ao, z, zo) => {
+      const na = find(a), nz = find(z, na), r = document.createRange();
+      r.setStart(na, na.data.indexOf(a) + ao); r.setEnd(nz, nz.data.indexOf(z) + zo);
+      const c = window.__copy(r);
+      return { selected: c.selected, text: c.text };
+    };
+    return [copy('succeeds when the key', 0, 'both hold', 4), copy('Literal', 2, 'here.', 4), copy('Struck', 1, 'too.', 3),
+      copy('Money', 1, 'here.', 4), copy('Exclaim', 1, 'footnote', 0), copy('Inline', 1, 'text.', 4), copy('Brackets', 1, 'link.', 4)];
+  });
+  // ⌘C on a find match (the find bar selects it once its frame is painted): its Markdown, escaped as any partial copy.
+  const found = [];
+  for (const q of ['~one tilde~', '[ref]']) {
+    found.push(await page.evaluate(q => new Promise(done => {
+      const n = window.readout.find(q);
+      requestAnimationFrame(() => setTimeout(() => setTimeout(() => {
+        const r = getSelection().rangeCount ? getSelection().getRangeAt(0) : null;
+        done({ n, ...(r ? window.__copy(r) : {}) });
+      }, 0), 0));
+    }), q));
+  }
+  await page.evaluate(() => window.readout.findEnd());
+  if (!found[0].handled || found[0].text !== '\\~one tilde~' || found[1].text !== '[ref]') fail(`copy-escapes: ⌘C on a find match: ${JSON.stringify(found.map(f => [f.n, f.text]))}`);
+  if (named[0].text !== '- succeeds when the key exists.\n- `p2p` -- succeeds when port 30303 is open.\n- `ready` -- succeeds when both') fail(`copy-escapes: sub-points of an item do not copy as a list: ${JSON.stringify(named[0].text)}`);
+  copies.push(...named.map(c => ({ doc: 'copy-escapes.md (by name)', ...c })));
+  // Parsed by ReadoutCore as the app parses a file: the text a reader sees, without white space.
+  const dump = process.env.READOUT_DUMP || (() => {
+    const pkg = ['--package-path', '../Packages/ReadoutCore'];
+    execFileSync('swift', ['build', ...pkg, '--product', 'readout-dump'], { stdio: ['ignore', 'ignore', 'inherit'] });
+    return join(execFileSync('swift', ['build', ...pkg, '--show-bin-path'], { encoding: 'utf8' }).trim(), 'readout-dump');
+  })();
+  const dir = 'test/out/copy-fuzz';
+  mkdirSync(dir, { recursive: true });
+  const squash = t => t.replace(/[\s​]+/g, '');
+  const visible = html => html.replace(/<[^>]+>/g, '').replace(/&(lt|gt|quot|#39|nbsp|amp);/g, (_, e) => entities[e]);
+  const run = promisify(execFile);
+  let bad = 0;
+  for (let i = 0; i < copies.length; i += 8) {
+    await Promise.all(copies.slice(i, i + 8).map(async (c, j) => {
+      const file = `${dir}/${i + j}.md`;
+      writeFileSync(file, c.text);
+      const [patch] = JSON.parse((await run(dump, [file], { maxBuffer: 1 << 26 })).stdout);
+      const seen = squash(patch.ops.filter(o => o.kind !== 'footnotes').map(o => visible(o.html)).join(''));
+      if (seen !== squash(c.selected) && bad++ < 10) fail(`${c.doc}: a random selection reads differently when its copy is parsed again\n  selected: ${JSON.stringify(c.selected).slice(0, 300)}\n  copied:   ${JSON.stringify(c.text).slice(0, 300)}\n  reads:    ${JSON.stringify(seen).slice(0, 300)}`);
+    }));
+  }
+  if (bad > 10) fail(`${bad - 10} more random selections read differently`);
+  console.log(`copy: ${copies.length} random selections parsed again by ReadoutCore, ${bad} read differently`);
 }
 
 if (errors.length) fail(`page errors: ${errors.join('; ')}`);

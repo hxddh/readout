@@ -62,7 +62,7 @@ doc.addEventListener('click', ev => {
 // plain text (an agent's prompt, a terminal, an editor) and as clean HTML in
 // rich text (copy.js). A selection inside an open comparison or removed-text
 // panel copies as the browser copies it.
-const RICH_LIMIT = 500_000;
+const RICH_LIMIT = 100_000;
 function fillClipboard(data) {
   const sel = getSelection();
   if (!data || !sel || sel.isCollapsed || !sel.rangeCount) return false;
