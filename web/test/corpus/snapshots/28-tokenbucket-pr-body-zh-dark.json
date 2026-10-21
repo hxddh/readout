@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 42,
-   "style": "31e41a5d",
+   "style": "782fa331",
    "content": "414eb5b3",
    "text": "Summary"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 54,
    "h": 158,
-   "style": "150306a3",
+   "style": "fc155327",
    "content": "368f915c",
    "text": "修复 Binance OHLC 在 USE_HTTP_PROXY=true 场景下因缺失 req"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 212,
    "h": 102,
-   "style": "5dd85032",
+   "style": "d84ba85a",
    "content": "fdfd0ef5",
    "text": "同时补充了 Futures Kline 按 limit 分段权重、Spot/Margin 使用统"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 314,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "3d12df9a",
    "text": "Validation"
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 379,
    "h": 54,
-   "style": "fac05f53",
+   "style": "d97df339",
    "content": "65e5e8c9",
    "text": "./node_modules/typescript/bin/tsc --noEmit --pro"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 433,
    "h": 45,
-   "style": "559ed779",
+   "style": "cc757505",
    "content": "e3f4508e",
    "text": "rush build --to @yuants/vendor-binance（workdir: "
   },
@@ -60,7 +60,7 @@
    "kind": "heading",
    "top": 478,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "0c5b177b",
    "text": "Risks"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 543,
    "h": 31,
-   "style": "036e1aba",
+   "style": "ff5c263a",
    "content": "0620204f",
    "text": "当前缺少代理场景的集成测试，真实代理链路仍建议补充端到端验证"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 574,
    "h": 47,
-   "style": "ab0ae49b",
+   "style": "debaa01b",
    "content": "96e815af",
    "text": "public-api 中其他 endpoint 仍有模板重复，后续可继续收敛统一"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 621,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "769c309d",
    "text": "Rollback"
   },
@@ -96,7 +96,7 @@
    "kind": "paragraph",
    "top": 686,
    "h": 102,
-   "style": "37a1c916",
+   "style": "881f27ee",
    "content": "57a2bc75",
    "text": "回滚 apps/vendor-binance/src/api/public-api.ts 中新增"
   }

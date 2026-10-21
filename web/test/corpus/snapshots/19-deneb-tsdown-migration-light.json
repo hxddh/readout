@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "7fc1f3ec",
+   "style": "86f76090",
    "content": "23f19ab1",
    "text": "tsup → tsdown Migration Implementation Plan (#75"
   },
@@ -15,7 +15,7 @@
    "kind": "quote",
    "top": 109,
    "h": 96,
-   "style": "4f36265a",
+   "style": "e66511e8",
    "content": "bb9c2018",
    "text": "For agentic workers: REQUIRED SUB-SKILL: Use sup"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 204,
    "h": 96,
-   "style": "00bec696",
+   "style": "d4c0b0fe",
    "content": "a6816161",
    "text": "Goal: Migrate @deneb-viz/app-core and @deneb-viz"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 300,
    "h": 252,
-   "style": "4938578c",
+   "style": "79a13a6e",
    "content": "472e4e29",
    "text": "Architecture: Two-stage migration per upstream g"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 552,
    "h": 70,
-   "style": "15c02bee",
+   "style": "0f35d756",
    "content": "95b51e2f",
    "text": "Tech Stack: tsdown 0.22.14 → 0.23.0 (Rolldown), "
   },
@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 621,
    "h": 70,
-   "style": "abe89ce6",
+   "style": "b6c3dd3e",
    "content": "8796e599",
    "text": "Spec: docs/brainstorms/2026-09-14-tsup-migration"
   },
@@ -60,7 +60,7 @@
    "kind": "rule",
    "top": 691,
    "h": 47,
-   "style": "ff49195b",
+   "style": "6f4afa85",
    "content": "811c9dc5",
    "text": ""
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 738,
    "h": 42,
-   "style": "20530395",
+   "style": "bd97f929",
    "content": "8c8bcf90",
    "text": "Preconditions"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 781,
    "h": 54,
-   "style": "9eae8ac5",
+   "style": "c941fa83",
    "content": "bd435eb6",
    "text": "Branch chore/750-tsdown off main at 5838d2f2 (po"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 835,
    "h": 54,
-   "style": "0dfacf33",
+   "style": "f317cd25",
    "content": "e1a9c7e0",
    "text": "Commits: (1) stage-1 migration on 0.22.14 (confi"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 889,
    "h": 132,
-   "style": "70d2899e",
+   "style": "5c835862",
    "content": "29822372",
    "text": "Current state, verified 2026-09-14: both package"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1021,
    "h": 175,
-   "style": "66352a06",
+   "style": "ddb230ae",
    "content": "e15c2ad0",
    "text": "The consumer contract that must survive unchange"
   },
@@ -114,7 +114,7 @@
    "kind": "heading",
    "top": 1196,
    "h": 42,
-   "style": "c89f779d",
+   "style": "a1003bb9",
    "content": "2c5c675b",
    "text": "Task 1: Baseline capture (no commit)"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1238,
    "h": 45,
-   "style": "24acb8fb",
+   "style": "0e779b81",
    "content": "4891fa3a",
    "text": "Step 1: Certified baseline package (PowerShell)"
   },
@@ -132,7 +132,7 @@
    "kind": "code",
    "top": 1283,
    "h": 202,
-   "style": "cdaa00be",
+   "style": "6b91797c",
    "content": "9153e919",
    "text": "Copy-Item .env .env.backup Copy-Item .env.ci .en"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 1485,
    "h": 70,
-   "style": "12cb3ecb",
+   "style": "0c856de3",
    "content": "03b91aa2",
    "text": "Expected: build exit 0; baseline artifact copied"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1554,
    "h": 45,
-   "style": "b7a0da38",
+   "style": "017a6fba",
    "content": "f935c684",
    "text": "Step 2: Record the two packages' current dist in"
   },
@@ -159,7 +159,7 @@
    "kind": "code",
    "top": 1599,
    "h": 82,
-   "style": "ceb42959",
+   "style": "82e2a005",
    "content": "cc3723ab",
    "text": "Get-ChildItem -Recurse packages/app-core/dist, p"
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 1680,
    "h": 70,
-   "style": "a5265a89",
+   "style": "f79ec141",
    "content": "423c567a",
    "text": "Expected: a saved listing (used in Task 4 to che"
   },
@@ -177,7 +177,7 @@
    "kind": "rule",
    "top": 1750,
    "h": 47,
-   "style": "ff49195b",
+   "style": "6f4afa85",
    "content": "811c9dc5",
    "text": ""
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 1797,
    "h": 32,
-   "style": "6accf7ab",
+   "style": "3a44d38f",
    "content": "bde7673f",
    "text": "Task 2: Stage-1 migration on tsdown 0.22.14 — co"
   },
@@ -195,7 +195,7 @@
    "kind": "paragraph",
    "top": 1830,
    "h": 44,
-   "style": "29822f91",
+   "style": "b40131ef",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1873,
    "h": 61,
-   "style": "c3db01e1",
+   "style": "999f54f7",
    "content": "4a408940",
    "text": "Modify: packages/app-core/package.json, packages"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 1934,
    "h": 113,
-   "style": "c543ab57",
+   "style": "4c469613",
    "content": "75d04104",
    "text": "Modify/Rename: packages/app-core/tsup.config.ts,"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2048,
    "h": 35,
-   "style": "69af64d2",
+   "style": "49e4d764",
    "content": "cc0b289a",
    "text": "Modify: package.json (root — remove tsup devDepe"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2083,
    "h": 45,
-   "style": "cf6244d1",
+   "style": "8b79b3c7",
    "content": "242b39f6",
    "text": "Step 1: Dry-run the migrator and review"
   },
@@ -240,7 +240,7 @@
    "kind": "code",
    "top": 2128,
    "h": 62,
-   "style": "2ff7e7c8",
+   "style": "b8ea40a0",
    "content": "af643631",
    "text": "npx tsdown-migrate@latest packages/app-core pack"
   },
@@ -249,7 +249,7 @@
    "kind": "paragraph",
    "top": 2190,
    "h": 70,
-   "style": "c7ae5476",
+   "style": "945c5a6e",
    "content": "87a559ac",
    "text": "Read the preview. Expected: it proposes config/s"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 2259,
    "h": 71,
-   "style": "9e5d6728",
+   "style": "34bc698e",
    "content": "ab10a8dd",
    "text": "Step 2: Run it for real (no auto-install; deps a"
   },
@@ -267,7 +267,7 @@
    "kind": "code",
    "top": 2330,
    "h": 62,
-   "style": "9aefa8f1",
+   "style": "2c2ba469",
    "content": "3f48a826",
    "text": "npx tsdown-migrate@latest packages/app-core pack"
   },
@@ -276,7 +276,7 @@
    "kind": "paragraph",
    "top": 2391,
    "h": 226,
-   "style": "e5dd54e6",
+   "style": "eb3bf320",
    "content": "6383dffe",
    "text": "Then, in BOTH packages/app-core/package.json and"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2617,
    "h": 45,
-   "style": "0bce4be1",
+   "style": "7366dc17",
    "content": "da65d219",
    "text": "Step 3: Port the raw worker-text loader in both "
   },
@@ -294,7 +294,7 @@
    "kind": "paragraph",
    "top": 2662,
    "h": 96,
-   "style": "2616d514",
+   "style": "ac8252ee",
    "content": "ad2b2fb2",
    "text": "The esbuild plugin (esbuildPlugins with the raw "
   },
@@ -303,7 +303,7 @@
    "kind": "code",
    "top": 2757,
    "h": 302,
-   "style": "2ac3c24e",
+   "style": "3c314ae2",
    "content": "045dfdf0",
    "text": "const rawWorkerText = { name: 'raw-worker-text',"
   },
@@ -312,7 +312,7 @@
    "kind": "paragraph",
    "top": 3059,
    "h": 44,
-   "style": "62146bb4",
+   "style": "fc91e1dc",
    "content": "7497761e",
    "text": "(import fs from 'fs'; is already present in both"
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 3103,
    "h": 45,
-   "style": "1060da9f",
+   "style": "40d5b0f5",
    "content": "5c75ebc8",
    "text": "Step 4: Pin worker output filenames in both work"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 3147,
    "h": 96,
-   "style": "018f2a21",
+   "style": "80fb7dc3",
    "content": "20f5a563",
    "text": "tsdown's IIFE output defaults to [name].iife.js;"
   },
@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 3243,
    "h": 102,
-   "style": "5beb4e64",
+   "style": "eee9dcac",
    "content": "d628b67e",
    "text": "outputOptions: { entryFileNames: '[name].worker."
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 3344,
    "h": 45,
-   "style": "ce0d2aa2",
+   "style": "5d894d48",
    "content": "b7b9a5f3",
    "text": "Step 5: PNG loader decision (app-core main confi"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 3389,
    "h": 122,
-   "style": "7becaa88",
+   "style": "7617a9e4",
    "content": "573fd6a0",
    "text": "The config has loader: { '.png': 'dataurl' }. Bu"
   },
@@ -366,7 +366,7 @@
    "kind": "code",
    "top": 3511,
    "h": 242,
-   "style": "0c30aeb3",
+   "style": "6430089d",
    "content": "df4d47c3",
    "text": "const pngDataUrl = { name: 'png-dataurl', load(i"
   },
@@ -375,7 +375,7 @@
    "kind": "paragraph",
    "top": 3752,
    "h": 96,
-   "style": "2e26f81c",
+   "style": "5bb3dfee",
    "content": "3953c4f5",
    "text": "Verify which path was taken and record it for th"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 3848,
    "h": 45,
-   "style": "46e49fb7",
+   "style": "68ecb749",
    "content": "d215f17f",
    "text": "Step 6: Build to zero deprecation warnings"
   },
@@ -393,7 +393,7 @@
    "kind": "code",
    "top": 3893,
    "h": 62,
-   "style": "e568fb45",
+   "style": "40c1f00d",
    "content": "59d1d46d",
    "text": "npm run build -w @deneb-viz/app-core 2>&1 | grep"
   },
@@ -402,7 +402,7 @@
    "kind": "paragraph",
    "top": 3954,
    "h": 96,
-   "style": "bd495aef",
+   "style": "999641b7",
    "content": "2f38eb4c",
    "text": "Iterate on the configs until BOTH builds complet"
   },
@@ -411,7 +411,7 @@
    "kind": "listItem",
    "top": 4050,
    "h": 61,
-   "style": "e9961815",
+   "style": "cd40b977",
    "content": "58bef493",
    "text": "Entries unchanged (app-core: src/index.ts + src/"
   },
@@ -420,7 +420,7 @@
    "kind": "listItem",
    "top": 4111,
    "h": 61,
-   "style": "da01a967",
+   "style": "94f80685",
    "content": "b7a610b5",
    "text": "format esm (main) / iife (workers); dts on for m"
   },
@@ -429,7 +429,7 @@
    "kind": "listItem",
    "top": 4173,
    "h": 139,
-   "style": "bd79b40b",
+   "style": "be3448f7",
    "content": "286c8e91",
    "text": "Every external entry survives as an equivalent d"
   },
@@ -438,7 +438,7 @@
    "kind": "listItem",
    "top": 4312,
    "h": 61,
-   "style": "c83419fe",
+   "style": "a60a697c",
    "content": "045dd2f3",
    "text": "json-processing's splitting: false is dropped (t"
   },
@@ -447,7 +447,7 @@
    "kind": "listItem",
    "top": 4373,
    "h": 45,
-   "style": "fb62343f",
+   "style": "82a93413",
    "content": "62ee2751",
    "text": "Step 7: Commit"
   },
@@ -456,7 +456,7 @@
    "kind": "code",
    "top": 4418,
    "h": 242,
-   "style": "a18669c1",
+   "style": "9af1b85f",
    "content": "9b7cebc5",
    "text": "git add -A git commit -m \"chore: migrate app-cor"
   },
@@ -465,7 +465,7 @@
    "kind": "rule",
    "top": 4660,
    "h": 47,
-   "style": "ff49195b",
+   "style": "6f4afa85",
    "content": "811c9dc5",
    "text": ""
   },
@@ -474,7 +474,7 @@
    "kind": "heading",
    "top": 4707,
    "h": 32,
-   "style": "6accf7ab",
+   "style": "3a44d38f",
    "content": "9deb6163",
    "text": "Task 3: Stage-2 bump to 0.23.0 — commit 2"
   },
@@ -483,7 +483,7 @@
    "kind": "listItem",
    "top": 4739,
    "h": 45,
-   "style": "faea50c5",
+   "style": "e759bf79",
    "content": "adebd946",
    "text": "Step 1: Bump both packages"
   },
@@ -492,7 +492,7 @@
    "kind": "paragraph",
    "top": 4784,
    "h": 122,
-   "style": "a644c475",
+   "style": "4ac787ad",
    "content": "de74e1d7",
    "text": "In both packages' package.json: \"tsdown\": \"0.22."
   },
@@ -501,7 +501,7 @@
    "kind": "listItem",
    "top": 4905,
    "h": 45,
-   "style": "09c74226",
+   "style": "a7f07562",
    "content": "8f75d976",
    "text": "Step 2: Commit"
   },
@@ -510,7 +510,7 @@
    "kind": "code",
    "top": 4950,
    "h": 182,
-   "style": "f8a36c58",
+   "style": "43094680",
    "content": "255222a4",
    "text": "git add -A git commit -m \"chore: bump tsdown to "
   },
@@ -519,7 +519,7 @@
    "kind": "rule",
    "top": 5132,
    "h": 47,
-   "style": "ff49195b",
+   "style": "6f4afa85",
    "content": "811c9dc5",
    "text": ""
   },
@@ -528,7 +528,7 @@
    "kind": "heading",
    "top": 5179,
    "h": 32,
-   "style": "6accf7ab",
+   "style": "3a44d38f",
    "content": "cf98e286",
    "text": "Task 4: Verification battery, PR"
   },
@@ -537,7 +537,7 @@
    "kind": "listItem",
    "top": 5211,
    "h": 45,
-   "style": "9d0b412f",
+   "style": "5ed0b72b",
    "content": "fc82ea94",
    "text": "Step 1: Dist contract check"
   },
@@ -546,7 +546,7 @@
    "kind": "code",
    "top": 5256,
    "h": 62,
-   "style": "f4c3e076",
+   "style": "faef672e",
    "content": "1e74bfed",
    "text": "Get-ChildItem -Recurse packages/app-core/dist, p"
   },
@@ -555,7 +555,7 @@
    "kind": "paragraph",
    "top": 5317,
    "h": 148,
-   "style": "fbfb2005",
+   "style": "3774806d",
    "content": "0663601d",
    "text": "Compare with the Task 1 inventory (bash: diff \"$"
   },
@@ -564,7 +564,7 @@
    "kind": "paragraph",
    "top": 5465,
    "h": 70,
-   "style": "ffa12116",
+   "style": "dfde1efe",
    "content": "15011574",
    "text": "Also confirm no .iife.js files exist: ls package"
   },
@@ -573,7 +573,7 @@
    "kind": "listItem",
    "top": 5535,
    "h": 45,
-   "style": "96514b48",
+   "style": "a8531a02",
    "content": "c70aa082",
    "text": "Step 2: Externals stayed external"
   },
@@ -582,7 +582,7 @@
    "kind": "code",
    "top": 5579,
    "h": 82,
-   "style": "04558451",
+   "style": "51ec9ccd",
    "content": "554aa603",
    "text": "grep -l \"from *['\\\"]@deneb-viz/powerbi-compat\" p"
   },
@@ -591,7 +591,7 @@
    "kind": "paragraph",
    "top": 5661,
    "h": 148,
-   "style": "66d89d99",
+   "style": "3fdb2541",
    "content": "5aa58812",
    "text": "Expected: the import statements for @deneb-viz/p"
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 5809,
    "h": 45,
-   "style": "0ba769d0",
+   "style": "1b42ec2e",
    "content": "4e33b4bd",
    "text": "Step 3: Full build + full suite"
   },
@@ -609,7 +609,7 @@
    "kind": "paragraph",
    "top": 5853,
    "h": 96,
-   "style": "b8fe8ea6",
+   "style": "b84b1f84",
    "content": "073a32a8",
    "text": "Run: npm run build (ALL workspaces — includes we"
   },
@@ -618,7 +618,7 @@
    "kind": "listItem",
    "top": 5949,
    "h": 45,
-   "style": "9fc38ccf",
+   "style": "34d2a383",
    "content": "874ea419",
    "text": "Step 4: Dev smoke"
   },
@@ -627,7 +627,7 @@
    "kind": "paragraph",
    "top": 5993,
    "h": 148,
-   "style": "6178df32",
+   "style": "8da89cc6",
    "content": "89bb8503",
    "text": "Run npm run dev in the background; wait for webp"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 6141,
    "h": 45,
-   "style": "10d13914",
+   "style": "91a5d46a",
    "content": "a42123db",
    "text": "Step 5: Package parity (non-JS parts) + size"
   },
@@ -645,7 +645,7 @@
    "kind": "paragraph",
    "top": 6185,
    "h": 44,
-   "style": "7fb69621",
+   "style": "5e24b3b7",
    "content": "94fcadae",
    "text": "Same env-swap build as Task 1 Step 1, then:"
   },
@@ -654,7 +654,7 @@
    "kind": "code",
    "top": 6229,
    "h": 82,
-   "style": "431d3edf",
+   "style": "b520c5eb",
    "content": "934bdda7",
    "text": "npm run verify-package-parity -- dist/baseline-p"
   },
@@ -663,7 +663,7 @@
    "kind": "paragraph",
    "top": 6311,
    "h": 122,
-   "style": "be903f54",
+   "style": "f6f09a9c",
    "content": "93cfa21b",
    "text": "Expected: exit 1 with content.js DIFF only — cap"
   },
@@ -672,7 +672,7 @@
    "kind": "listItem",
    "top": 6432,
    "h": 45,
-   "style": "cec44d91",
+   "style": "a4180cdd",
    "content": "cd5a03fb",
    "text": "Step 6: Full local CI"
   },
@@ -681,7 +681,7 @@
    "kind": "paragraph",
    "top": 6477,
    "h": 44,
-   "style": "bbeee624",
+   "style": "228302ee",
    "content": "b7d929d7",
    "text": "Run: npm run ci:local. Expected: ALL CHECKS PASS"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 6520,
    "h": 45,
-   "style": "0b76f1ac",
+   "style": "f07668b6",
    "content": "2df1bc48",
    "text": "Step 7: Push and raise the PR"
   },
@@ -699,7 +699,7 @@
    "kind": "code",
    "top": 6565,
    "h": 82,
-   "style": "d05155cf",
+   "style": "efdcf05b",
    "content": "66deb99c",
    "text": "git push -u origin chore/750-tsdown gh pr create"
   },
@@ -708,7 +708,7 @@
    "kind": "paragraph",
    "top": 6647,
    "h": 122,
-   "style": "fcccb107",
+   "style": "d3d2f5db",
    "content": "9065ffb9",
    "text": "PR body: closes #750; the two-stage story; the t"
   },
@@ -717,7 +717,7 @@
    "kind": "code",
    "top": 6768,
    "h": 62,
-   "style": "c4b4fe0b",
+   "style": "65138503",
    "content": "bb95266b",
    "text": "🤖 Generated with [Claude Code](https://claude.c"
   },
@@ -726,7 +726,7 @@
    "kind": "rule",
    "top": 6830,
    "h": 47,
-   "style": "ff49195b",
+   "style": "6f4afa85",
    "content": "811c9dc5",
    "text": ""
   },
@@ -735,7 +735,7 @@
    "kind": "heading",
    "top": 6878,
    "h": 42,
-   "style": "20530395",
+   "style": "bd97f929",
    "content": "fac89240",
    "text": "Deliberate simplifications"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 6920,
    "h": 80,
-   "style": "f7ea813d",
+   "style": "11596a17",
    "content": "9d5090f2",
    "text": "Config content beyond the two hand-ported pieces"
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 7000,
    "h": 54,
-   "style": "0dfacf33",
+   "style": "f317cd25",
    "content": "4be12a27",
    "text": "The raw/PNG plugins are duplicated per config (m"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 7055,
    "h": 71,
-   "style": "197aa236",
+   "style": "581879b4",
    "content": "8e0e3afb",
    "text": "No attempt to preserve splitting: false in json-"
   },
@@ -771,7 +771,7 @@
    "kind": "heading",
    "top": 7126,
    "h": 65,
-   "style": "4fe571ba",
+   "style": "f4a9b6ce",
    "content": "c1a491a2",
    "text": "Risks → where caught"
   },
@@ -780,7 +780,7 @@
    "kind": "table",
    "top": 7191,
    "h": 364,
-   "style": "ef061d3d",
+   "style": "e30b9bc9",
    "content": "d41ea24d",
    "text": "RiskCaught byWorker filename drift breaking the "
   }

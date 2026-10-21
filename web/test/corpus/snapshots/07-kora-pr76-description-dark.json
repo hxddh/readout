@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "48a1806e",
+   "style": "db7a6c92",
    "content": "b7e381f0",
    "text": "PR #76: Docker Build and Runtime Healthcheck Con"
   },
@@ -15,7 +15,7 @@
    "kind": "heading",
    "top": 109,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "414eb5b3",
    "text": "Summary"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 174,
    "h": 148,
-   "style": "8b7c8d21",
+   "style": "2cc3de0d",
    "content": "301aebb3",
    "text": "This PR adds a HEALTHCHECK instruction to the Do"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 321,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "448c5c7c",
    "text": "Problem"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 387,
    "h": 96,
-   "style": "84f7ca52",
+   "style": "3bd85baa",
    "content": "292729cd",
    "text": "Before this change, health checking was defined "
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 482,
    "h": 80,
-   "style": "5ddc1caa",
+   "style": "f5e64bbc",
    "content": "e0867bba",
    "text": "Running the image with plain docker run (outside"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 563,
    "h": 80,
-   "style": "c7bd6ad8",
+   "style": "675ff8ba",
    "content": "80ca2109",
    "text": "The healthcheck contract (which script to call, "
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 643,
    "h": 97,
-   "style": "b82565f4",
+   "style": "5213b7e2",
    "content": "a5330a15",
    "text": "The root .dockerignore did not exclude markdown "
   },
@@ -78,7 +78,7 @@
    "kind": "heading",
    "top": 740,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "0ae7b79e",
    "text": "Solution"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 805,
    "h": 42,
-   "style": "4e24b665",
+   "style": "cb0099e1",
    "content": "148cab65",
    "text": "Dockerfile HEALTHCHECK"
   },
@@ -96,7 +96,7 @@
    "kind": "paragraph",
    "top": 847,
    "h": 44,
-   "style": "50b1b9c8",
+   "style": "1ddf80a4",
    "content": "bb3fe867",
    "text": "A HEALTHCHECK instruction was added to the runti"
   },
@@ -105,7 +105,7 @@
    "kind": "code",
    "top": 890,
    "h": 82,
-   "style": "03b8ccf3",
+   "style": "35fc2b5f",
    "content": "aab28e1b",
    "text": "HEALTHCHECK --interval=10s --timeout=5s --retrie"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 972,
    "h": 80,
-   "style": "a3259433",
+   "style": "d15df341",
    "content": "0f41daa3",
    "text": "The timing parameters (interval, timeout, retrie"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1052,
    "h": 54,
-   "style": "d05c3d9a",
+   "style": "2db4c47c",
    "content": "38214950",
    "text": "The default healthcheck mode is p2p (set inside "
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1107,
    "h": 54,
-   "style": "289b5c69",
+   "style": "b53fb373",
    "content": "87514c48",
    "text": "Compose services override this to HEALTHCHECK_MO"
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1161,
    "h": 156,
-   "style": "38c7bb7a",
+   "style": "8b35bc36",
    "content": "1551c181",
    "text": "The HEALTHCHECK_MODE environment variable suppor"
   },
@@ -150,7 +150,7 @@
    "kind": "heading",
    "top": 1317,
    "h": 42,
-   "style": "4e24b665",
+   "style": "cb0099e1",
    "content": "073a1953",
    "text": ".dockerignore extensions"
   },
@@ -159,7 +159,7 @@
    "kind": "paragraph",
    "top": 1359,
    "h": 70,
-   "style": "234a73d7",
+   "style": "123a9417",
    "content": "c40ae474",
    "text": "The root .dockerignore now excludes markdown fil"
   },
@@ -168,7 +168,7 @@
    "kind": "code",
    "top": 1429,
    "h": 142,
-   "style": "1289a293",
+   "style": "3a6eb27b",
    "content": "1e220fbe",
    "text": "*.md !README.md !bin/**/README.md !crates/**/REA"
   },
@@ -177,7 +177,7 @@
    "kind": "paragraph",
    "top": 1571,
    "h": 70,
-   "style": "50691eca",
+   "style": "89a45686",
    "content": "c1f5183a",
    "text": "This keeps the build context small without break"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 1640,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "595c27ef",
    "text": "Files Modified"
   },
@@ -195,7 +195,7 @@
    "kind": "table",
    "top": 1705,
    "h": 162,
-   "style": "a70a17f5",
+   "style": "9df621cd",
    "content": "1b5e6fe4",
    "text": "FileChangedocker/DockerfileAdded HEALTHCHECK ins"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 1868,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "1cab1101",
    "text": "Breaking Changes"
   },
@@ -213,7 +213,7 @@
    "kind": "paragraph",
    "top": 1933,
    "h": 122,
-   "style": "d313ad97",
+   "style": "a5ef56a7",
    "content": "974dbeb9",
    "text": "None. Existing Compose-based workflows are unaff"
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 2054,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "584162cb",
    "text": "Migration"
   },
@@ -231,7 +231,7 @@
    "kind": "paragraph",
    "top": 2120,
    "h": 44,
-   "style": "eb7ad327",
+   "style": "5e98efcb",
    "content": "20da0f53",
    "text": "No migration steps are required. The change is f"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 2163,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "0535d93b",
    "text": "Testing"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2228,
    "h": 122,
-   "style": "fdfb94a8",
+   "style": "82ba5d7e",
    "content": "bd9d2674",
    "text": "Validate Compose configuration:docker compose -f"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 2350,
    "h": 122,
-   "style": "f8cf36d6",
+   "style": "1c5665d0",
    "content": "5ad8f7a3",
    "text": "Check Dockerfile syntax:docker build --check -f "
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 2471,
    "h": 148,
-   "style": "f3d1e3a7",
+   "style": "735cd03b",
    "content": "c9cde1f7",
    "text": "Build the image locally:cd docker && just buildC"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 2619,
    "h": 148,
-   "style": "a1cc077f",
+   "style": "cac30913",
    "content": "e7381f3d",
    "text": "Verify the healthcheck is embedded in the image:"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 2766,
    "h": 188,
-   "style": "87e82b88",
+   "style": "4b0fc19c",
    "content": "0dd898e3",
    "text": "Run a standalone container and observe health st"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2954,
    "h": 151,
-   "style": "873a0d1b",
+   "style": "0a1edb67",
    "content": "561428df",
    "text": "Run the devnet and verify validators become heal"
   }
