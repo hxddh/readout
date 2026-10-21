@@ -6,6 +6,7 @@ import http from 'node:http';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { collectPageErrors } from './pageerrors.mjs';
+import { PNG } from 'pngjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
 const server = http.createServer((req, res) => {
@@ -123,8 +124,9 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   const marks = await page.evaluate(() => ({ cur: CSS.highlights.get('ro-find-cur')?.size, near: CSS.highlights.get('ro-find')?.size }));
   await page.evaluate(() => window.readout.findEnd());
   const ended = await page.evaluate(() => ({ hl: CSS.highlights.size, sel: getSelection().toString() }));
+  // The near marks hold the current match too (5 and 12; 35 is far off), so that they stay as they are when Next moves to one of them.
   check('the matches in the blocks around the current one are marked (not those far off), and the marks go when the find bar closes (the selection stays)',
-    marks.cur === 1 && marks.near === 1 && ended.hl === 0 && ended.sel === 'needle', JSON.stringify({ marks, ended }));
+    marks.cur === 1 && marks.near === 2 && ended.hl === 0 && ended.sel === 'needle', JSON.stringify({ marks, ended }));
   // Return twice before the first landing is painted (and selected): on to the next match.
   await page.evaluate(() => { getSelection().removeAllRanges(); window.scrollTo(0, 0); window.readout.findEnd(); });
   await page.evaluate(() => { window.readout.find('needle'); window.readout.find('needle'); });
@@ -383,6 +385,72 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await settle(page2);
   check('a search made before the document arrived counts its matches when it does', none === 0 && await count(page2) === '0 of 3', await count(page2));
   await page.close(); await page2.close();
+}
+
+// Setting a highlight repaints every range of every highlight (300 near
+// marks: a slow frame per Return and per edit): each is set only when it
+// changes. Next among the near marks sets only the current match's; an
+// edit that leaves them as they are sets none; they are static ranges (with
+// live ones WebKit repaints the highlights on any change of the page).
+{
+  const page = await open();
+  const paras = Array.from({ length: 60 }, (_, i) => `<p>para ${i + 1} needle</p>`);
+  paras[29] = '<p>para 30 <code>needle</code> needle</p>';
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+    window.__sets = [];
+    const set = HighlightRegistry.prototype.set;   // on the prototype: the registry's wrapper may be collected, and a property on it with it
+    HighlightRegistry.prototype.set = function (k, v) { window.__sets.push(k); return set.call(this, k, v); };
+  });
+  const sets = () => page.evaluate(() => window.__sets.splice(0).join(' '));
+  const marked = () => page.evaluate(() => [...CSS.highlights.get('ro-find')].map(r => +r.startContainer.parentElement.closest('.blk').dataset.slot));
+  await find(page, 'needle');
+  const first = await sets();
+  await find(page, 'needle'); await find(page, 'needle');
+  const next = await sets();
+  const statics = await page.evaluate(() => [...CSS.highlights.get('ro-find'), ...CSS.highlights.get('ro-find-cur')].every(r => r instanceof StaticRange));
+  check('Next among the marked matches sets only the current match\'s mark; the marks are static ranges',
+    first === 'ro-find ro-find-cur' && next === 'ro-find-cur ro-find-cur' && statics && await count(page) === '3 of 61', JSON.stringify({ first, next, statics, n: await count(page) }));
+  // Next on and on: the marks always reach five blocks (NEAR / 2) past the current match, both ways.
+  let short = null;
+  for (let i = 0; i < 20 && !short; i++) {
+    await find(page, 'needle');
+    const [cur, near] = await Promise.all([page.evaluate(() => +[...CSS.highlights.get('ro-find-cur')][0].startContainer.parentElement.closest('.blk').dataset.slot), marked()]);
+    for (let k = Math.max(1, cur - 5); k <= Math.min(60, cur + 5); k++) if (!near.includes(k)) short = { cur, near, k };
+  }
+  const walked = (await sets()).split(' ').filter(k => k === 'ro-find').length;
+  check('Next on and on: the matches within five blocks of the current one are always marked, the marks set again only now and then',
+    !short && walked > 0 && walked <= 6 && await count(page) === '23 of 61', JSON.stringify({ short, walked, n: await count(page) }));
+  // An agent's edit far off: the count follows, no mark is set again.
+  await edit(page, [{ op: 'replace', slot: 55, change: 'content', html: '<p>para 55 needle needle</p>', kind: 'paragraph' }], 2);
+  await settle(page);
+  const farOff = [await sets(), await count(page)];
+  // An edit above them renumbers the matches: they are the same ones, not set again.
+  await edit(page, [{ op: 'replace', slot: 1, change: 'content', html: '<p>needle para 1 needle</p>', kind: 'paragraph' }], 3);
+  await settle(page);
+  const above = [await sets(), await count(page)];
+  check('an edit away from the marks, or renumbering them, sets none of them',
+    JSON.stringify([farOff, above]) === JSON.stringify([['', '23 of 62'], ['', '24 of 63']]), JSON.stringify([farOff, above]));
+  // A marked block's text nodes replaced, its text the same (code highlighted, a block drawn again): marked again, in the new nodes.
+  const slot = (await marked())[0];
+  await page.evaluate(s => { const p = document.querySelector(`.blk[data-slot="${s}"] p`); p.replaceChild(document.createTextNode(p.firstChild.data), p.firstChild); }, slot);
+  await settle(page);
+  const redrawn = await sets();
+  const live = await page.evaluate(() => [...CSS.highlights.get('ro-find')].every(r => r.startContainer.isConnected));
+  check('a marked block\'s text nodes replaced: the marks are set again, in the new nodes', redrawn === 'ro-find' && live, JSON.stringify({ redrawn, live, slot }));
+  // Painted: the current match #ffd60a, a near one 40% of it (the selection, painted over the current one, taken away).
+  await page.evaluate(() => new Promise(r => { getSelection().removeAllRanges(); requestAnimationFrame(() => requestAnimationFrame(r)); }));
+  const shot = async name => {
+    const box = await page.evaluate(name => { const s = [...CSS.highlights.get(name)].find(r => { const b = r.startContainer.parentElement.getBoundingClientRect(); return b.top > 0 && b.bottom < innerHeight; }); const r = document.createRange(); r.setStart(s.startContainer, s.startOffset); r.setEnd(s.endContainer, s.endOffset); const b = r.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height }; }, name);
+    const png = PNG.sync.read(await page.screenshot({ clip: box }));
+    const px = new Map();
+    for (let i = 0; i < png.data.length; i += 4) { const k = [0, 1, 2].map(c => png.data[i + c] >> 3 << 3).join(','); px.set(k, (px.get(k) || 0) + 1); }
+    return [...px].sort((a, b) => b[1] - a[1])[0][0].split(',').map(Number);   // the most common colour
+  };
+  const [curPx, nearPx] = [await shot('ro-find-cur'), await shot('ro-find')];
+  check('the marks are painted', curPx[0] >= 240 && curPx[1] >= 200 && curPx[2] <= 24 && nearPx[0] >= 240 && nearPx[1] >= 224 && nearPx[2] >= 120 && nearPx[2] <= 192, JSON.stringify({ curPx, nearPx }));
+  await page.close();
 }
 
 // The current match's block removed: the count follows; Next goes to the match after where it was.
