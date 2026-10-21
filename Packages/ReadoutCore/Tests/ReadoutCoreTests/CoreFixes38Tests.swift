@@ -29,15 +29,17 @@ import Testing
         // A line escaped at its `>` keeps its item open for the lines below (review of #76).
         ("item-quote-150", (0..<150).map { String(repeating: "  ", count: $0) + "- > x" }.joined(separator: "\n")),
         ("quoted-item-quote-150", (0..<150).map { "> " + String(repeating: "  ", count: $0) + "- > item" }.joined(separator: "\n")),
+        // 3.9 (audit B2): emphasis around images, which the 3.8 guard under-counted (160 KB; 16 MB stacks overflowed).
+        ("emph-image-20000", String(repeating: "*![", count: 20000) + "x" + String(repeating: "](u)*", count: 20000)),
     ]
 
     /// `body` on a thread with a 512 KB stack (a GCD worker's on macOS,
     /// where `IncrementalParser` parses fragments concurrently): on 3.7 it
     /// crashed the process.
-    static func onSmallStack(_ body: @escaping @Sendable () -> Void) -> Bool {
+    static func onSmallStack(_ size: Int = 512 * 1024, _ body: @escaping @Sendable () -> Void) -> Bool {
         let done = DispatchSemaphore(value: 0)
         let t = Thread { body(); done.signal() }
-        t.stackSize = 512 * 1024
+        t.stackSize = size
         t.start()
         return done.wait(timeout: .now() + 60) == .success
     }
@@ -166,13 +168,34 @@ import Testing
         }
     }
 
-    /// Document loading parses on a thread with a large stack.
-    @Test func parseThreadHasALargeStack() async {
-        let text = String(repeating: "  ", count: 1) + "- x"
-        let size = ParseThread.sync { (Thread.current.stackSize, MarkdownParser.parse(text).blocks.count) }
-        #expect(size.0 >= ParseThread.stackSize && size.1 == 1)
-        let n = await ParseThread.run { Thread.current.stackSize }
-        #expect(n >= ParseThread.stackSize)
+    /// The deepest documents get past the guard (`NestingCap`): at most
+    /// `levels` levels of swift-markdown's tree, which parse on a GCD
+    /// thread's 512 KB stack in a debug build too (about 10 KB a level
+    /// there, 3.3 KB in a release one). Shapes: 16 list levels with a table
+    /// and 16 inline levels in a cell (the inlines go past `levels`: escaped),
+    /// 16 list levels with inlines up to the limit, 16 quotes with 16
+    /// inlines, and a paragraph continued by indented bullet lines (review
+    /// of #83). CI runs this in the release build too (verify.yml).
+    static let deepestShapes: [String] = {
+        let list = (0..<NestingCap.containers).map { String(repeating: "  ", count: $0) + "- level \($0 + 1)" }.joined(separator: "\n")
+        let inline = String(repeating: "*a ![", count: NestingCap.inlines / 2) + "x" + String(repeating: "](u) b*", count: NestingCap.inlines / 2)
+        let indent = String(repeating: " ", count: 2 * NestingCap.containers)
+        let table = list + "\n\n" + indent + "| h |\n" + indent + "|---|\n" + indent + "| " + inline + " |\n"
+        let few = String(repeating: "*a ![", count: 2) + "x" + String(repeating: "](u) b*", count: 2)
+        let bullets = "x\n" + String(repeating: "    - *![*![*![*![*![\n", count: 20) + String(repeating: "    - ](u)*](u)*](u)*](u)*](u)*\n", count: 20)
+        return [table, list + " " + few, String(repeating: "> ", count: 16) + inline, bullets]
+    }()
+
+    @Test(arguments: deepestShapes.indices)
+    func theDeepestDocumentsFitASmallStack(_ k: Int) {
+        let text = Self.deepestShapes[k]
+        #expect(CoreFixes39Tests.cappedDepth(text) <= NestingCap.levels)
+        nonisolated(unsafe) var full: [String] = [], incremental: [String] = []
+        #expect(Self.onSmallStack {
+            full = MarkdownParser.parse(text).blocks.map(\.html)
+            incremental = IncrementalParser().parse(text).blocks.map(\.html)
+        })
+        #expect(!full.isEmpty && full == incremental)
     }
 
     // MARK: B2: a variation selector after `*` or `_`

@@ -381,7 +381,7 @@ struct FenceTracker: Equatable {
         if outdented && (isHeading || isBreak || first == 0x3E) { closeItems(rightOf: cols.columns) }
         // Headings, breaks and setext underlines end a paragraph; other text continues or starts one.
         var underline = false
-        if inParagraph && relative < 4 && first == 0x3D {   // =
+        if continues && relative < 4 && first == 0x3D {   // = (a lazy line is no underline)
             var k = indent
             while k < n && u[k] == 0x3D { k += 1 }
             underline = restBlank(k)

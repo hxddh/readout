@@ -9,11 +9,17 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-markdown.git", from: "0.7.0"),
+        // swift-markdown's own cmark-gfm, for its C API (NestingCap).
+        .package(url: "https://github.com/swiftlang/swift-cmark.git", from: "0.7.0"),
     ],
     targets: [
         .target(
             name: "ReadoutCore",
-            dependencies: [.product(name: "Markdown", package: "swift-markdown")]
+            dependencies: [
+                .product(name: "Markdown", package: "swift-markdown"),
+                .product(name: "cmark-gfm", package: "swift-cmark"),
+                .product(name: "cmark-gfm-extensions", package: "swift-cmark"),
+            ]
         ),
         .executableTarget(
             name: "readout-dump",
