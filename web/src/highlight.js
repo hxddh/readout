@@ -1,13 +1,14 @@
 // Syntax highlighting with Shiki (JavaScript regex engine, no WASM).
-// Grammars are loaded on demand; common ones are preloaded during warm-up
-// (not in Quick Look, which loads only what the preview shows). Shiki itself
-// is loaded on first use.
+// Grammars are loaded on demand; the three agent output uses most are
+// preloaded (not in Quick Look, which loads only what the preview shows).
+// Shiki itself is loaded on first use.
 //
-// The grammars come mostly precompiled: the build (shiki-grammars.mjs) serves
+// The grammars come mostly converted: the build (shiki-grammars.mjs) serves
 // each '@shikijs/langs/<id>' import with its patterns already converted to
-// JavaScript regexes, except the few TextMate rewrites before matching, which
-// stay Oniguruma source and are converted here, as before. The highlighting
-// is the same (test/grammars.test.mjs); a grammar's first use is faster.
+// ES2018 JavaScript regexes, except the few TextMate rewrites before
+// matching, which stay Oniguruma source and are converted here, for ES2018
+// too. The highlighting is Shiki's (test/grammars.test.mjs); a grammar's first
+// use is faster.
 
 const LANGS = {
   shellscript: () => import('@shikijs/langs/shellscript'),
@@ -73,7 +74,10 @@ const ALIASES = {
   conf: 'ini', env: 'shellscript', ndjson: 'jsonl', protobuf: 'proto',
 };
 
-const PRELOAD = ['shellscript', 'json', 'typescript', 'javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'];
+// Each preloaded grammar costs every tab its memory (12 of them: ~40 MB of
+// a warmed page's private memory); the rest load on first use, which ES2018
+// patterns keep to tens or hundreds of milliseconds.
+const PRELOAD = ['shellscript', 'json', 'typescript'];
 
 let highlighter = null;
 let ready = null;
@@ -113,7 +117,7 @@ export function init() {
         quietOutput(import('@shikijs/themes/github-dark-default'), '#a8a8ae'),
       ],
       langs: [],
-      engine: createJavaScriptRegexEngine({ forgiving: true }),
+      engine: createJavaScriptRegexEngine({ forgiving: true, target: 'ES2018' }),
     });
     // Fetch every preloaded grammar at once; ensureLang registers them one
     // at a time, in this order.
@@ -135,8 +139,7 @@ export function init() {
 // is the longest step), and nothing more is done once it shows a document
 // (stopWarmUp, enhance.js). Only on the spare page: a page being read should
 // not spend its main thread on languages it may not show. Never in Quick
-// Look, which preloads nothing. Marks 'readout-hl-warm' when done, with the
-// longest step (perf.test.mjs).
+// Look, which preloads nothing. Marks 'readout-hl-warm' when done (perf.test.mjs).
 let warming = false;
 let warmStopped = false;
 export function warm() {
@@ -189,130 +192,9 @@ const SAMPLES = {
   ].join('\n'),
   json: '{\n  "name": "x",\n  "n": 1.5e3,\n  "ok": true,\n  "list": [null, {"a": "b\\n"}]\n}',
   typescript: TS_SAMPLE,
-  javascript: TS_SAMPLE,
-  python: [
-    'from dataclasses import dataclass',
-    '',
-    '@dataclass',
-    'class Item(Base):',
-    '    """A docstring."""',
-    '    def load(self, path: str = "x", *args, **kw) -> list[int]:',
-    '        with open(path) as f:  # comment',
-    '            return [int(x) for x in f if x.strip() and not x.startswith("#")]',
-    '',
-    'async def main() -> None:',
-    '    try:',
-    '        await run(f"{path!r} {1 + 2:.2f}", r"\\d+", b"x")',
-    '    except (OSError, ValueError) as e:',
-    '        raise SystemExit(1) from e',
-    '    finally:',
-    '        print(lambda x: x ** 2, None, True)',
-  ].join('\n'),
-  swift: [
-    'import Foundation',
-    '',
-    '/// A doc comment.',
-    '@MainActor final class Store<T: Codable>: ObservableObject {',
-    '    @Published private(set) var items: [String: T] = [:]',
-    '    init(path: URL, strict: Bool = false) throws { self.path = path }',
-    '    func load() async throws -> Int {',
-    '        guard let data = try? Data(contentsOf: path) else { return 0 }',
-    '        for (i, line) in String(decoding: data, as: UTF8.self).split(separator: "\\n").enumerated() where !line.isEmpty {',
-    '            items["\\(i)"] = try JSONDecoder().decode(T.self, from: Data(line.utf8))',
-    '        }',
-    '        return items.count  // comment',
-    '    }',
-    '}',
-    'enum Mode { case on, off }',
-    'let total = [1, 2].map { $0 * 2 }.reduce(0, +) * 1.5',
-  ].join('\n'),
-  go: [
-    'package main',
-    '',
-    'import (',
-    '\t"context"',
-    '\t"fmt"',
-    ')',
-    '',
-    '// Store is a store.',
-    'type Store[T any] struct {',
-    '\tItems map[string]T `json:"items"`',
-    '}',
-    '',
-    'func (s *Store[T]) Load(ctx context.Context, path string) (int, error) {',
-    '\tfor i, line := range strings.Split(path, "\\n") {',
-    '\t\tif line == "" {',
-    '\t\t\tcontinue',
-    '\t\t}',
-    '\t\ts.Items[fmt.Sprintf("%d", i)] = *new(T)',
-    '\t}',
-    '\tgo func() { defer close(ch); ch <- 1 }()',
-    '\treturn len(s.Items), nil',
-    '}',
-  ].join('\n'),
-  rust: [
-    'use std::collections::HashMap;',
-    '',
-    '/// A doc comment.',
-    '#[derive(Debug, Clone)]',
-    "pub struct Store<'a, T: Clone> {",
-    '    items: HashMap<String, T>,',
-    "    path: &'a str,",
-    '}',
-    '',
-    "impl<'a, T: Clone> Store<'a, T> {",
-    '    pub async fn load(&mut self) -> Result<usize, Box<dyn std::error::Error>> {',
-    '        for (i, line) in self.path.lines().enumerate() {',
-    '            if line.is_empty() { continue; }',
-    '            let key = format!("{i}:{}", line.trim());',
-    '            match self.items.get(&key) { Some(_) => {}, None => return Err("x".into()) }',
-    '        }',
-    '        Ok(self.items.len()) // comment',
-    '    }',
-    '}',
-  ].join('\n'),
-  yaml: [
-    '# comment',
-    'name: "value"',
-    'on:',
-    '  push:',
-    '    branches: [main]',
-    'jobs:',
-    '  test:',
-    '    runs-on: ubuntu-latest',
-    '    steps:',
-    '      - uses: actions/checkout@v4',
-    '      - run: |',
-    '          npm ci',
-    '        env: { CI: true, N: 1.5 }',
-  ].join('\n'),
-  diff: 'diff --git a/x.js b/x.js\nindex 1111111..2222222 100644\n--- a/x.js\n+++ b/x.js\n@@ -1,3 +1,3 @@ function f\n-const a = 1;\n+const a = 2;\n context',
-  markdown: [
-    '# Title',
-    '',
-    'Some *text*, **bold** and `code`, a [link](https://example.com "t") and ![image](a.png).',
-    '',
-    '> A quote',
-    '',
-    '1. One',
-    '- [ ] Task',
-    '',
-    '| a | b |',
-    '| - | - |',
-    '| 1 | 2 |',
-  ].join('\n'),
-  sql: [
-    "WITH t AS (SELECT id, name FROM users WHERE created_at > NOW() - INTERVAL '7 days')",
-    'SELECT a.id, COUNT(*) AS n, SUM(b.x) / 1.5 FROM t a',
-    'LEFT JOIN orders b ON b.user_id = a.id',
-    "WHERE a.name LIKE '%x%' AND b.status IN ('open', 'done')",
-    'GROUP BY a.id HAVING COUNT(*) > 1 ORDER BY n DESC LIMIT 10; -- comment',
-    'CREATE TABLE IF NOT EXISTS x (id INTEGER PRIMARY KEY, v TEXT NOT NULL);',
-    "INSERT INTO x VALUES (1, 'a');",
-  ].join('\n'),
 };
 const WARM_DELAY_MS = 5000;
-const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript', 'go', 'swift', 'rust', 'yaml', 'markdown', 'sql', 'diff'];
+const WARM_ORDER = ['typescript', 'shellscript', 'json'];   // the slowest first
 // The regexes of a grammar, as the build precompiled them: WebKit compiles
 // each on its first use, which is what makes a grammar's first block slow.
 function regexesOf(id) {
@@ -347,16 +229,13 @@ function warmUp() {
   }
   // And the whole path once, as a block is highlighted (both themes, HTML).
   work.push(() => highlightSync('x', 'json'));
-  let longest = 0;
   const next = () => {
     if (warmStopped) return;
     const t0 = performance.now();
     do {
       const step = work.shift();
-      if (!step) { performance.mark('readout-hl-warm', { detail: { longest } }); return; }
-      const s0 = performance.now();
+      if (!step) { performance.mark('readout-hl-warm'); return; }
       step();
-      longest = Math.max(longest, performance.now() - s0);
     } while (performance.now() - t0 < SLICE_MS);
     setTimeout(next, 0);
   };

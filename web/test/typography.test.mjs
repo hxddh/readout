@@ -1058,7 +1058,7 @@ const v36 = patch([
 }
 
 // P11. Quick Look loads no grammar (nor Shiki) before a code block needs one;
-//      the app preloads the common ones.
+//      the app preloads the three agent output uses most.
 {
   const grammarRequests = () => requests.filter(u => /\/chunks\/(shellscript|json|typescript|python|swift|go|rust|yaml|diff|markdown|sql)-/.test(u));
   const openQuick = async quick => {
@@ -1082,7 +1082,9 @@ const v36 = patch([
   check('Quick Look highlights the code it shows, loading only its grammar', qlDone && qlAfter.length === 1 && /go-/.test(qlAfter[0]), JSON.stringify(qlAfter));
   await page.close();
   page = await openQuick(false);
-  check('the app preloads the common grammars', grammarRequests().length >= 10, JSON.stringify(grammarRequests()));
+  // Only the three agent output uses most: each preloaded grammar costs every tab memory.
+  const preloaded = grammarRequests().map(u => u.match(/\/chunks\/([a-z]+)-/)[1]).sort().join(',');
+  check('the app preloads shell, JSON and TypeScript, and nothing else', preloaded === 'json,shellscript,typescript', JSON.stringify(grammarRequests()));
   await page.close();
 }
 

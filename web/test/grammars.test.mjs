@@ -1,7 +1,8 @@
-// The grammars the reader ships (shiki-grammars.mjs: precompiled where
-// TextMate allows it) highlight exactly as Shiki's own grammars do, on every
-// code block of the corpus and on patterns that depend on what precompiling
-// would break (\G anchors, back-references from an end pattern).
+// The grammars the reader ships (shiki-grammars.mjs: converted to ES2018
+// regexes at build time where TextMate allows it), with the engine the reader
+// uses (target ES2018), highlight exactly as Shiki's own grammars and engine
+// do, on every code block of the corpus and on patterns that depend on what
+// converting would break (\G anchors, back-references from an end pattern).
 // Usage: node test/grammars.test.mjs   (Node only, no browser)
 import * as esbuild from 'esbuild';
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -37,19 +38,28 @@ const count = v => {
   else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) { if (typeof x === 'string' && /^(match|begin|end|while)$/.test(k)) source++; else count(x); }
 };
 for (const id of ids) count(shipped[id].at(-1));
-check('most grammar patterns ship precompiled', compiled > 4 * source, JSON.stringify({ compiled, source }));
+check('most grammar patterns ship converted', compiled > 4 * source, JSON.stringify({ compiled, source }));
 
-async function highlighter(grammars) {
-  const h = await createHighlighterCore({ themes: [import('@shikijs/themes/github-light-default'), import('@shikijs/themes/github-dark-default')], langs: [], engine: createJavaScriptRegexEngine({ forgiving: true }) });
+async function highlighter(grammars, engine) {
+  const h = await createHighlighterCore({ themes: [import('@shikijs/themes/github-light-default'), import('@shikijs/themes/github-dark-default')], langs: [], engine: createJavaScriptRegexEngine({ forgiving: true, ...engine }) });
   for (const id of ids) await h.loadLanguage(grammars[id]);
   return h;
 }
 const runtime = {};
 for (const id of ids) runtime[id] = (await import(`@shikijs/langs/${id}`)).default;
-const [a, b] = [await highlighter(runtime), await highlighter(shipped)];
+const [a, b] = [await highlighter(runtime), await highlighter(shipped, { target: 'ES2018' })];
+
+// Converted for ES2018: no pattern the reader compiles carries the v flag,
+// which WebKit compiles hundreds of times slower.
+const vFlag = Object.values(shipped).flat().flatMap(function walk(v) {
+  if (v instanceof RegExp) return v.flags.includes('v') ? [v.source.slice(0, 40)] : [];
+  if (v && typeof v === 'object') return Object.values(v).flatMap(walk);
+  return [];
+});
+check('no shipped pattern uses the v flag', vFlag.length === 0, vFlag.slice(0, 3).join(' | '));
 const html = (h, code, id) => h.codeToHtml(code, { lang: id, themes: { light: 'github-light-default', dark: 'github-dark-default' }, defaultColor: false, tokenizeTimeLimit: 0 });
 
-// Code that precompiling every pattern gets wrong.
+// Code that converting every pattern gets wrong.
 const samples = [
   ['shellscript', 'grep -n "2.2 Dropout" -A 5 README.md\ngit commit -m "content: update"'],   // \G: arguments
   ['shellscript', 'cat <<EOF > out.txt\nhello $USER\nEOF\necho done'],                         // end refers to begin
