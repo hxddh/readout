@@ -26,6 +26,11 @@ BROWSER=chromium npm test                 # Chromium, for comparison only
 `playwright` is pinned to an exact version in `web/package.json`; CI
 installs WebKit with `npx playwright install --with-deps webkit`.
 
+`web/test/copy.test.mjs` also copies random selections and parses each copy
+again with ReadoutCore (`readout-dump`, built with `swift build`, or the
+binary in `READOUT_DUMP`): the copy must read as the selection did.
+`COPY_FUZZ` sets the selections per document (default 8).
+
 ## 3. Signed-product smoke test
 
 `tools/smoke-run.py` launches the built app on a copy of `plan.md` and
