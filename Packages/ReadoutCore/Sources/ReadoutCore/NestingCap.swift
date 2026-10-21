@@ -14,8 +14,10 @@ import Glibc
 /// item's marker is escaped (`\>`, `\-`, `1\.`): the rest is text in the
 /// deepest container. Past `inlines` levels of links, images, emphasis and
 /// strikethrough, every opener in the paragraph, heading or table holding
-/// them is escaped (`\[`, `\*`): it shows as written. Only nesting no real
-/// document has changes (markdown-it's CommonMark preset stops at 20 levels).
+/// them is escaped (`\[`, `\*`): it shows as written, and so are inlines
+/// past `levels` of the tree as a whole (inline nesting deep in containers).
+/// Only nesting no real document has changes (markdown-it's CommonMark
+/// preset stops at 20 levels).
 ///
 /// The levels are cmark-gfm's own, as swift-markdown will parse the text:
 /// its C API builds and walks the tree without recursing. That parse runs
@@ -26,11 +28,16 @@ import Glibc
 /// the Markdown parser gets (math and footnote references already tokens,
 /// `MathProtector`).
 ///
-/// So bounded, a parse fits a GCD thread's 512 KB stack, with room to spare
+/// So bounded, a parse fits a GCD thread's 512 KB stack: swift-markdown's
+/// conversion and the renderer take about 3.3 KB a level in a release
+/// build (some 160 KB for 40), about 10 KB in a debug one (some 430 KB)
 /// (`CoreFixes38Tests.theDeepestDocumentFitsASmallStack`).
 enum NestingCap {
     static let containers = 16
     static let inlines = 16
+    /// Levels of the tree as a whole (what the stack holds: see the type's
+    /// comment). Inlines past it are escaped as past `inlines`.
+    static let levels = 40
 
     /// `text` flattened, and the 0-based lines changed; nil when nothing is.
     static func apply(_ text: String) -> (text: String, lines: Set<Int>)? {
@@ -67,19 +74,19 @@ enum NestingCap {
         return memchr(base + s, 0x0A, u.count - s).map { base.distance(to: $0.assumingMemoryBound(to: UInt8.self)) } ?? u.count
     }
 
-    /// Whether `u` may nest past the limits (an upper bound). A line holds
-    /// no more containers than its `>` and half its other leading columns
-    /// (an item's content is at least two columns past the item's marker;
-    /// one when the marker ends the line); a paragraph no more inline
-    /// levels than its `[` and half its `*`, `_` and `~`. A paragraph ends at a
-    /// blank line (in a quote too) and where an item with text starts (a
-    /// bullet always does; `2.` may be the paragraph's text).
+    /// Whether `u` may nest past the limits: an upper bound, which may only
+    /// ever say yes too often. A line holds no more containers than its `>`
+    /// and half its other leading columns (an item's content is at least
+    /// two columns past its marker; one when the marker ends the line); a
+    /// paragraph no more inline levels than its `[` and half its `*`, `_`
+    /// and `~`. Counted per run of lines between blank ones (a paragraph
+    /// never spans one), whatever the lines start with.
     static func mayNest(_ u: UnsafeBufferPointer<UInt8>) -> Bool {
         let n = u.count
-        var s = 0, openers = 0, delimiters = 0
+        var s = 0, openers = 0, delimiters = 0, deepest = 0
         while s < n {
             let e = lineEnd(u, s)
-            var i = s, columns = 0, quotes = 0, marker = false, bullet = false
+            var i = s, columns = 0, quotes = 0
             while i < e {
                 let c = u[i]
                 if c == 0x20 { columns += 1; i += 1; continue }
@@ -93,23 +100,27 @@ enum NestingCap {
                     k += 1
                 }
                 guard k == e || isSpace(u[k]) else { break }
-                bullet = k == i + 1
                 columns += k - i
                 i = k
-                marker = true
             }
-            if quotes + (columns - quotes + 1) / 2 > containers { return true }
-            if i == e ? !marker : bullet { openers = 0; delimiters = 0 }
+            if u[s..<e].allSatisfy(isSpace) { openers = 0; delimiters = 0; deepest = 0 }
+            deepest = max(deepest, quotes + (columns - quotes + 1) / 2)
             while i < e {
                 let c = u[i]
                 if c == 0x5B { openers += 1 } else if c == 0x2A || c == 0x5F || c == 0x7E { delimiters += 1 }
                 i += 1
             }
-            if openers + delimiters / 2 > inlines { return true }
+            let inline = openers + delimiters / 2
+            if deepest > containers || inline > inlines || treeLevels(containers: deepest, inline: inline) > levels { return true }
             s = e + 1
         }
         return false
     }
+
+    /// The most levels swift-markdown's tree has: the document, a list and
+    /// an item per container, a table's three, the paragraph, the inlines
+    /// and their text.
+    static func treeLevels(containers: Int, inline: Int) -> Int { 1 + 2 * containers + 3 + 1 + inline + 1 }
 
     /// The escapes taking apart what nests past the limits in `u` as
     /// cmark-gfm parses it (swift-markdown's options and extensions), in order.
@@ -149,24 +160,31 @@ enum NestingCap {
         }
         // The blocks whose openers all go (a paragraph, a heading, a table).
         var blocks: [UnsafeMutablePointer<cmark_node>] = []
-        var levels = 0, quotes = 0, inline = 0
+        var open = 0, quotes = 0, inline = 0
+        // Nodes open (the document, blocks, inlines; not leaves).
+        var depth = 0
         // The block last entered: the one holding the inlines that follow.
         var leaf: UnsafeMutablePointer<cmark_node>? = nil
         while case let event = cmark_iter_next(iter), event != CMARK_EVENT_DONE {
             guard let node = cmark_iter_get_node(iter) else { continue }
             let type = cmark_node_get_type(node), enter = event == CMARK_EVENT_ENTER
+            switch type {
+            case CMARK_NODE_HTML_BLOCK, CMARK_NODE_THEMATIC_BREAK, CMARK_NODE_CODE_BLOCK, CMARK_NODE_TEXT,
+                 CMARK_NODE_SOFTBREAK, CMARK_NODE_LINEBREAK, CMARK_NODE_CODE, CMARK_NODE_HTML_INLINE: break   // leaves: no exit
+            default: depth += enter ? 1 : -1
+            }
             if enter && type.rawValue & 0xC000 != 0xC000 { leaf = node }
             if type == CMARK_NODE_BLOCK_QUOTE || type == CMARK_NODE_ITEM {
                 let quote = type == CMARK_NODE_BLOCK_QUOTE
-                guard enter else { levels -= 1; if quote { quotes -= 1 }; continue }
-                levels += 1
+                guard enter else { open -= 1; if quote { quotes -= 1 }; continue }
+                open += 1
                 if quote { quotes += 1 }
-                guard levels > containers, var at = offset(node) else { continue }
+                guard open > containers, var at = offset(node) else { continue }
                 if !quote {
                     // A list number keeps its digits: `1\.`.
                     while at < u.count, u[at] >= 0x30, u[at] <= 0x39 { at += 1 }
                     escape(at)
-                } else if levels == containers + 1 {
+                } else if open == containers + 1 {
                     // On the lines it goes on to as well (what it holds goes
                     // with it): there, its `>` is the line's `quotes`th.
                     escape(at)
@@ -182,7 +200,8 @@ enum NestingCap {
                         || (type.rawValue & 0xC000 == 0xC000 && type.rawValue > CMARK_NODE_ATTRIBUTE.rawValue) {   // ~~ (an extension's)
                 guard enter else { inline -= 1; continue }
                 inline += 1
-                guard inline > inlines else { continue }
+                // Its text one level below, a table's body row one more in swift-markdown.
+                guard inline > inlines || depth + 2 > levels else { continue }
                 // The block holding it: a paragraph or heading, or a table cell's table.
                 guard var block = leaf, blocks.last != block else { continue }
                 if String(cString: cmark_node_get_type_string(block)) == "table_cell",

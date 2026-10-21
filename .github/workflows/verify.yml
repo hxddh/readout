@@ -246,6 +246,10 @@ jobs:
           READOUT_PERF_OUT="$PWD/smoke-out/perf-core.json" \
             swift test --package-path Packages/ReadoutCore -c release --filter PerformanceBudgetTests
 
+      - name: Deepest documents on 512 KB stacks (release build)
+        # The shipped build's frames: the capped documents parse on a GCD thread's stack (NestingCap).
+        run: swift test --package-path Packages/ReadoutCore -c release --filter "theDeepestDocumentsFitASmallStack|indentedBulletLinesAreOneParagraph|deepNestingParsesOnASmallStack"
+
       - name: Speed budgets
         run: python3 tools/perf-assert.py mac smoke-out/perf-core.json smoke-out/timings.json smoke-out/ql-timings.json
 

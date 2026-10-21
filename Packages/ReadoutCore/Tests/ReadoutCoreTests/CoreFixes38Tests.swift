@@ -168,26 +168,30 @@ import Testing
         }
     }
 
-    /// The deepest a document gets past the guard (`NestingCap`): 16 list
-    /// levels (a list and an item each), a table in the last item, and 16
-    /// inline levels in a cell of its body. It parses on a GCD thread's 512 KB stack: in
-    /// a release build swift-markdown's conversion takes about 2.8 KB a level
-    /// and the renderer 0.5 KB, some 170 KB in all (Linux, Swift 6.1). A
-    /// debug build's frames are about three times as large: 1 MB here.
-    @Test func theDeepestDocumentFitsASmallStack() {
+    /// The deepest documents get past the guard (`NestingCap`): at most
+    /// `levels` levels of swift-markdown's tree, which parse on a GCD
+    /// thread's 512 KB stack in a debug build too (about 10 KB a level
+    /// there, 3.3 KB in a release one). Shapes: 16 list levels with a table
+    /// and 16 inline levels in a cell (the inlines go past `levels`: escaped),
+    /// 16 list levels with inlines up to the limit, 16 quotes with 16
+    /// inlines, and a paragraph continued by indented bullet lines (review
+    /// of #83). CI runs this in the release build too (verify.yml).
+    static let deepestShapes: [String] = {
         let list = (0..<NestingCap.containers).map { String(repeating: "  ", count: $0) + "- level \($0 + 1)" }.joined(separator: "\n")
         let inline = String(repeating: "*a ![", count: NestingCap.inlines / 2) + "x" + String(repeating: "](u) b*", count: NestingCap.inlines / 2)
         let indent = String(repeating: " ", count: 2 * NestingCap.containers)
-        let text = list + "\n\n" + indent + "| h |\n" + indent + "|---|\n" + indent + "| " + inline + " |\n"
-        #expect(NestingCap.apply(text) == nil)
-        #expect(CoreFixes39Tests.cappedDepth(text) == CoreFixes39Tests.deepest)
-        #if DEBUG
-        let stack = 1 << 20
-        #else
-        let stack = 512 << 10
-        #endif
+        let table = list + "\n\n" + indent + "| h |\n" + indent + "|---|\n" + indent + "| " + inline + " |\n"
+        let few = String(repeating: "*a ![", count: 2) + "x" + String(repeating: "](u) b*", count: 2)
+        let bullets = "x\n" + String(repeating: "    - *![*![*![*![*![\n", count: 20) + String(repeating: "    - ](u)*](u)*](u)*](u)*](u)*\n", count: 20)
+        return [table, list + " " + few, String(repeating: "> ", count: 16) + inline, bullets]
+    }()
+
+    @Test(arguments: deepestShapes.indices)
+    func theDeepestDocumentsFitASmallStack(_ k: Int) {
+        let text = Self.deepestShapes[k]
+        #expect(CoreFixes39Tests.cappedDepth(text) <= NestingCap.levels)
         nonisolated(unsafe) var full: [String] = [], incremental: [String] = []
-        #expect(Self.onSmallStack(stack) {
+        #expect(Self.onSmallStack {
             full = MarkdownParser.parse(text).blocks.map(\.html)
             incremental = IncrementalParser().parse(text).blocks.map(\.html)
         })

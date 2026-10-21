@@ -20,9 +20,8 @@ import Markdown
         return d
     }
 
-    /// The most a tree gets past the guard: lists and items (16 each), a
-    /// table (4), 16 inline levels, the document and the text.
-    static let deepest = 2 * NestingCap.containers + 4 + NestingCap.inlines + 2
+    /// The most levels a tree has past the guard.
+    static let deepest = NestingCap.levels
 
     // MARK: B2, B6: the depth is cmark-gfm's own
 
@@ -51,7 +50,21 @@ import Markdown
         for k in 0..<rounds {
             let levels = Int.random(in: 20...300, using: &rng)
             var text = ""
-            switch k % 5 {
+            switch k % 7 {
+            case 5, 6:
+                // Deep over many lines of one paragraph: inline openers, then
+                // closers, a few a line, each line led by what may continue a
+                // paragraph (a bullet indented four past its container, `2.`,
+                // a lazy line, quote and item prefixes): review of #83.
+                let container = ["", "> ", "- ", "> > ", "1. ", "  - "].randomElement(using: &rng)!
+                let inside = container.isEmpty ? "" : String(repeating: " ", count: container.count).replacingOccurrences(of: "  ", with: container.hasPrefix(">") ? "> " : "  ")
+                let leads = ["    - ", "    * ", "    + ", "2. ", "", "     ", "    1) "]
+                text = container + "x\n"
+                let per = Int.random(in: 1...6, using: &rng), lines = max(1, levels / per)
+                let open = ["*![", "[", "**", "_", "~~", "*["].randomElement(using: &rng)!
+                let close = ["](u)*", "](u)", "**", "_", "~~", "](u)*"][["*![", "[", "**", "_", "~~", "*["].firstIndex(of: open)!]
+                for _ in 0..<lines { text += (k % 7 == 5 ? inside : container) + leads.randomElement(using: &rng)! + String(repeating: open, count: per) + "\n" }
+                for _ in 0..<lines { text += (k % 7 == 5 ? inside : container) + leads.randomElement(using: &rng)! + String(repeating: close, count: per) + "\n" }
             case 4:
                 // Tabs and spaces mixed into container prefixes (cmark's
                 // columns are bytes on the line: tabs, partial tabs and
@@ -83,7 +96,7 @@ import Markdown
                 }
             }
             let d = Self.cappedDepth(text)
-            #expect(d <= Self.deepest, "shape \(k % 5), \(levels) levels: depth \(d)")
+            #expect(d <= Self.deepest, "shape \(k % 7), \(levels) levels: depth \(d)")
             if d > Self.deepest { return }
         }
     }
@@ -110,6 +123,26 @@ import Markdown
             nonisolated(unsafe) var blocks = 0
             #expect(CoreFixes38Tests.onSmallStack { blocks = IncrementalParser().parse(text).blocks.count })
             #expect(blocks > 0)
+        }
+    }
+
+    /// A paragraph continued by bullet lines indented four columns past its
+    /// container (they are its text, not items) nests over all of them: the
+    /// pre-check counted from each bullet afresh and let it through (review
+    /// of #83: 1 KB, 203 levels, a crash on a 512 KB stack). In a quote and
+    /// in an item too.
+    @Test func indentedBulletLinesAreOneParagraph() {
+        func shape(_ container: String, _ inside: String, _ n: Int) -> String {
+            container + "x\n" + String(repeating: inside + "    - *![*![*![*![*![\n", count: n) + String(repeating: inside + "    - ](u)*](u)*](u)*](u)*](u)*\n", count: n)
+        }
+        for text in [shape("", "", 20), shape("", "", 2000), shape("> ", "> ", 200), shape("- ", "  ", 200), shape("> - ", ">   ", 200)] {
+            #expect(Self.cappedDepth(text) <= Self.deepest, "\(text.prefix(30).debugDescription)")
+            nonisolated(unsafe) var full = -1, incremental = -1
+            #expect(CoreFixes38Tests.onSmallStack {
+                full = MarkdownParser.parse(text).blocks.count
+                incremental = IncrementalParser().parse(text).blocks.count
+            })
+            #expect(full > 0 && full == incremental)
         }
     }
 
@@ -143,6 +176,9 @@ import Markdown
         // destination on the next line joins it.)
         #expect(doc.links.map(\.md) == ["[a]: /a", "[b]: /b 'B'", "[c]: /c", "[d]: /d", "[e]: /e", "[f]: /f"], "\(doc.links.map(\.md))")
         #expect(doc.links.map(\.label) == ["a", "b", "c", "d", "e", "f"])
+        // In a `<details>` the parse gathers into one block (review of #83).
+        #expect(MarkdownParser.parse("<details>\n<summary>S</summary>\n\n[a]: /a\n\nInside.\n\n</details>\n\nSee [a].").links.map(\.md) == ["[a]: /a"])
+        #expect(MarkdownParser.parse("<details>\n\n> [q]: /q\n\n</details>\n\nSee [q].").links.map(\.md) == ["[q]: /q"])
     }
 
     // MARK: B5a: a lazy `=` line is no setext underline
