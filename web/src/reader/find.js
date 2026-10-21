@@ -154,7 +154,22 @@ function around() {
     if (after && after.isConnected) return { el: after, ord: 0 };
   }
   const sel = getSelection();
-  return { el: (sel.rangeCount && blockOf(sel.getRangeAt(0).startContainer)) || blocksOnScreen()[0], ord: 0 };
+  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  const el = r && blockOf(r.startContainer);
+  if (!el) return { el: blocksOnScreen()[0], ord: 0 };
+  // In its block: the place of the first match at or after the selection's start (a block can hold more than KEPT).
+  let x = texts.get(el);
+  if (!x) texts.set(el, x = textOf(el));
+  const { startContainer: n, startOffset: o } = r;
+  let at = x.s.length;
+  for (const [start, node, map] of x.segs) {
+    if (node === n) { at = start + (map ? Math.max(0, map.findIndex(v => v >= o)) : o); break; }
+    if (n.nodeType !== Node.TEXT_NODE && r.comparePoint(node, 0) >= 0) { at = start; break; }
+  }
+  let ord = 0;
+  re.lastIndex = 0;
+  for (let m; (m = re.exec(x.s)) && m.index < at;) ord++;
+  return { el, ord };
 }
 /** Makes match number `n` of the document (wrapping) the current one, keeping those around it if they are not kept. */
 function goTo(n) {

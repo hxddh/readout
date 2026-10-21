@@ -256,6 +256,20 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
     JSON.stringify(seen) === JSON.stringify(['1 of 15000@1', '15000 of 15000@30', '14999 of 15000@30', '1 of 15000@1']), JSON.stringify(seen));
   const marks = await page.evaluate(() => CSS.highlights.get('ro-find')?.size);
   check('… and only those around the current one are marked', marks > 0 && marks <= 300, String(marks));
+  // One block of more matches than are kept, the caret after its 12,000th: Next and Previous are its neighbours.
+  await page.evaluate(() => window.readout.findEnd());
+  await page.evaluate(p => window.readout.apply(p), patch(blocks([`<p>${'q '.repeat(15000)}</p>`, '<p>after</p>']), 5));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => getSelection().collapse(document.querySelector('.blk[data-slot="1"] p').firstChild, 2 * 12000 - 1));
+  await find(page, 'q');
+  const nextOne = await count(page);
+  await page.evaluate(() => { window.readout.findEnd(); getSelection().collapse(document.querySelector('.blk[data-slot="1"] p').firstChild, 2 * 12000 - 1); });
+  await find(page, 'q', true);
+  check('a block of 15,000 matches, the caret after the 12,000th: Next is the 12,001st, Previous the 12,000th', nextOne === '12001 of 15000' && await count(page) === '12000 of 15000',
+    JSON.stringify([nextOne, await count(page)]));
+  await page.evaluate(p => window.readout.apply(p), patch(blocks(paras), 6));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { getSelection().removeAllRanges(); window.scrollTo(0, 0); });
   await find(page, 'q', true);
   await edit(page, [{ op: 'replace', slot: 1, change: 'content', html: `<p>para1 q ${'q '.repeat(500)}</p>`, kind: 'paragraph' }], 2);
   await settle(page);
