@@ -1,127 +1,41 @@
 name: CI
-
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
     inputs:
-      notarize:
-        description: "Notarization check: verify signs with the Developer ID, notarizes and staples the app and DMG (publishes nothing; ad hoc when the secrets are not set)"
-        type: boolean
-        default: false
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
+      commits:
+        type: string
+        default: ""
+      specs:
+        type: string
+        default: ""
 jobs:
-  core:
-    name: Core tests (Linux)
-    runs-on: ubuntu-latest
-    container: swift:6.1-noble
+  scroll:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
-      - name: Test
-        run: swift test --package-path Packages/ReadoutCore
-      - name: Instructions and page payload (1 MB, valgrind)
-        run: |
-          apt-get update -qq && apt-get install -y -qq valgrind python3 > /dev/null
-          swift build -c release --package-path Packages/ReadoutCore --product perf-probe
-          probe=Packages/ReadoutCore/.build/release/perf-probe
-          n=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 update)
-          a=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 append)
-          t=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 tail)
-          o=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 open-unique)
-          d=$(sh Packages/ReadoutCore/Tools/perf-instructions.sh $probe web/test/corpus 1000000 mid)
-          b=$($probe web/test/corpus 1000000 bytes append)
-          echo "perf instructions: update_1mb $n, append_1mb $a, tail_1mb $t, mid_1mb $d, open_1mb_unique $o; append page payload $b bytes"
-          python3 -c 'import json, sys; m = lambda v: round(int(v) / 1e6, 1); json.dump({"update_1mb_minstr": m(sys.argv[1]), "append_1mb_minstr": m(sys.argv[2]), "open_1mb_unique_minstr": m(sys.argv[3]), "append_patch_bytes_1mb": int(sys.argv[4]), "tail_1mb_minstr": m(sys.argv[5]), "mid_1mb_minstr": m(sys.argv[6])}, open("perf-instr.json", "w"))' "$n" "$a" "$o" "$b" "$t" "$d"
-          python3 tools/perf-assert.py linux-callgrind perf-instr.json
-
-  webkit:
-    name: Web tests (WebKit)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - name: Build readout-dump in the background (copy round trips)
-        run: nohup swift build --package-path Packages/ReadoutCore --product readout-dump > "$RUNNER_TEMP/readout-dump.log" 2>&1 &
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Build web renderer
+      - name: Deps
         working-directory: web
-        run: npm ci && npm run build
-      - name: Install WebKit
-        working-directory: web
-        run: npx playwright install --with-deps webkit
-      - name: Patch-engine tests (WebKit)
-        working-directory: web
-        run: npm test
+        run: npm ci && npm i --no-save @shikijs/langs-precompiled@4.5.0 && npx playwright install --with-deps webkit
+      - name: Scroll
         env:
-          BROWSER: webkit
-      - name: Page speed (1 MB document)
-        working-directory: web
-        run: node test/perf.test.mjs && python3 ../tools/perf-assert.py linux-webkit test/out/perf-web.json
-      - name: Upload page speed
+          COMMITS: ${{ inputs.commits }}
+          SPECS: ${{ inputs.specs }}
+          PASS_MS: "8000"
+        run: |
+          [ -z "$COMMITS" ] && unset COMMITS; [ -z "$SPECS" ] && unset SPECS
+          exp/run.sh
+      - uses: actions/upload-artifact@v5
         if: always()
-        uses: actions/upload-artifact@v5
         with:
-          name: perf-web
-          path: web/test/out/perf-web.json
-          retention-days: 30
-
-  corpus:
-    name: Rendering baselines (WebKit)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Build web renderer
-        working-directory: web
-        run: npm ci && npm run build
-      - name: Install WebKit
-        working-directory: web
-        run: npx playwright install --with-deps webkit
-      - name: Corpus snapshots and screenshots
-        working-directory: web
-        run: npm run corpus
-      - name: Upload actual renderings, diffs and full pages
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: corpus-actual
-          path: web/test/out/corpus
-          retention-days: 14
-
-  verify:
-    name: Verify signed product
-    needs: [core, webkit]
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.notarize) }}
-    uses: ./.github/workflows/verify.yml
-    with:
-      version: 0.0.0-ci
-      build: ci
-      configuration: Release
-
-  # Actions ▸ CI ▸ Run workflow ▸ notarize: the notarization lane on this
-  # commit, end to end, without a release (docs/RELEASING.md). Only a dispatch
-  # by someone with write access gets here; pull requests and pushes never
-  # pass secrets to verify.
-  notarize-check:
-    name: Notarization check
-    needs: [core, webkit]
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.notarize }}
-    uses: ./.github/workflows/verify.yml
-    with:
-      version: 0.0.0-notarize
-      build: ci
-      configuration: Release
-      notarize: true
-    secrets: inherit
+          name: scroll-${{ matrix.os }}
+          path: exp/out
