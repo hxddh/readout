@@ -120,7 +120,7 @@ enum SmokeTest {
 
     /// How long a call into the first window's page waited at worst in the
     /// 2 s after its first document was on screen, in ms: one is planned
-    /// every 50 ms, and each counts from the time it was planned for to the
+    /// every 50 ms from 50 ms after the paint, and each counts from the time it was planned for to the
     /// page's answer, so a freeze of the app's main thread (which delays the
     /// call being made) counts as much as one of the page's. What a click or
     /// a key pressed then waits for.
@@ -128,10 +128,11 @@ enum SmokeTest {
     private static func probeAfterFirstPaint(_ webView: WKWebView) async {
         let deadline = Date().addingTimeInterval(30)
         while launchPhases["paint"] == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(5)) }
-        guard launchPhases["paint"] != nil else { return }
-        let start = Date()
+        guard let paint = launchPhases["paint"] else { return }
+        // Planned from the paint itself, not from when this task woke to see it.
+        let start = Date(timeIntervalSince1970: paint)
         var longest = 0.0
-        var planned = start
+        var planned = start.addingTimeInterval(0.05)
         while planned.timeIntervalSince(start) < 2 {
             let wait = planned.timeIntervalSinceNow
             if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
