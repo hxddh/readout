@@ -518,6 +518,12 @@ export function highlightSync(code, id) {
   return highlightPart(code, id)?.html ?? null;
 }
 
+/** Whether `code` can be highlighted now: its grammar and those of the code embedded in it loaded. */
+export function canHighlight(code, id) {
+  if (!initialized || !id || !loaded(id)) return false;
+  return embedded(id, code).every(d => loaded(d) && embedded(d, '').every(dd => loaded(dd)));
+}
+
 /**
  * Like highlightSync, for code that goes on from `state` (what highlighting
  * the lines before it left): its HTML and the state it leaves, so a long

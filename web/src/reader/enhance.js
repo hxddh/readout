@@ -380,6 +380,9 @@ const parts = new WeakMap();   // code block -> {at, state, head, inner}: the li
 function highlightParts(cb, code, id, whole) {
   const lines = code.split('\n');
   if (lines.length <= PART_LINES * 1.5) return hl.highlightSync(code, id);
+  // Every grammar the whole block needs (a part may be inside code embedded
+  // from a fence in an earlier one) loaded first.
+  if (!parts.has(cb) && !hl.canHighlight(code, id)) return null;
   const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [] };
   do {
     const r = hl.highlightPart(lines.slice(p.at, p.at + PART_LINES).join('\n'), id, p.state);
@@ -478,29 +481,20 @@ function pump() {
   setTimeout(() => {
     pumping = false;
     const start = performance.now();
-    const scrolling = start - scrolledAt < QUIET_SCROLL_MS;
-    let later = null, n = 0;
+    let n = 0;
     // At least one a turn, however slow the clock says it is.
     while (queue.length && (n++ === 0 || performance.now() - start < SLICE_MS)) {
       const el = queue.shift();
-      if (!el.isConnected) continue;
-      // While the reader scrolls, only the code on screen is highlighted (a
-      // block takes up to tens of milliseconds, a frame that stalls); what
-      // is ahead of them waits until they pause.
-      if (scrolling && el.classList.contains('code-block') && !inViewport(el)) { (later ||= []).push(el); continue; }
-      lazyWork(el);
+      if (el.isConnected) lazyWork(el);
     }
-    if (later) { queue.push(...later); setTimeout(pump, QUIET_SCROLL_MS); return; }
     pump();
   }, 0);
 }
-const QUIET_SCROLL_MS = 150;
-let scrolledAt = -Infinity;
-window.addEventListener('scroll', () => { scrolledAt = performance.now(); }, { passive: true });
 
 function lazyWork(el) {
-  // A long block a part at a time: the next part in the next turn.
-  if (el.classList.contains('code-block')) { if (highlightBlock(el, false) === 'more') queue.unshift(el); }
+  // A long block ahead of the screen a part at a time (the next part in the
+  // next turn); one on screen at once, so none of it shows plain.
+  if (el.classList.contains('code-block')) { if (highlightBlock(el, inViewport(el)) === 'more') queue.unshift(el); }
   else if (el.classList.contains('mermaid-block')) renderMermaid(el);
 }
 
