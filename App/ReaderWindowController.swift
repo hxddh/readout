@@ -1419,6 +1419,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     // MARK: Window
 
+    var diagWebView: WKWebView { webView }
+
     func show() {
         showWindow(nil)
         window?.makeFirstResponder(webView)

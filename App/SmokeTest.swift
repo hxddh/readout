@@ -96,6 +96,16 @@ enum SmokeTest {
     static func noteLaunchPhase(_ name: String) {
         guard outputDirectory != nil, launchPhases[name] == nil else { return }
         launchPhases[name] = Date().timeIntervalSince1970
+        // DIAG (temporary): a 500 ms block READOUT_SMOKE_INJECT_AT s after the
+        // paint, of the app's main thread in the first launch, of the page's in the second.
+        if name == "paint", let at = ProcessInfo.processInfo.environment["READOUT_SMOKE_INJECT_AT"].flatMap(Double.init),
+           let web = (NSApp.keyWindow?.windowController as? ReaderWindowController)?.diagWebView ?? NSApp.windows.compactMap({ ($0.windowController as? ReaderWindowController)?.diagWebView }).first {
+            let boot = ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "boot"
+            DispatchQueue.main.asyncAfter(deadline: .now() + at) {
+                if boot { usleep(500_000) } else { web.evaluateJavaScript("(() => { const t = performance.now(); while (performance.now() - t < 500) {} return 0; })()") }
+                NSLog("ABINJECT %@ at %.2f", boot ? "app" : "page", at)
+            }
+        }
     }
 
     /// When the kernel started this process (wall clock, seconds), from sysctl:
