@@ -37,35 +37,68 @@ const MERMAID_URL = new URL('vendor/mermaid/mermaid.esm.min.mjs', document.baseU
 // scoped to an attribute every drawing with the same rules shares (with the
 // id's weight: :is(#…, [data-mmd=…])), added once and never taken out; the
 // drawing has no sheet of its own. Mermaid's keyframes are in reader.css.
-const sheets = new Map();   // rules, scoped to "§" -> their name
+// What its rules refer to in the drawing (url(#<id>-gradient): the stroke
+// of the boxes) is copied once into the page's own definitions for them.
+const sheets = new Map();   // rules, scoped to "§", their references "¶" -> {name, refs}
 const KEYFRAMES = /@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g;
 function shareRules(css, id) {
-  const rules = css.replace(KEYFRAMES, '').split(`#${id}`).join('\u00a7');
-  let name = sheets.get(rules);
-  if (!name) {
-    name = `s${sheets.size + 1}`;
-    sheets.set(rules, name);
+  const own = id.replace(/[^\w-]/g, '\\$&');
+  const rules = css.replace(KEYFRAMES, '')
+    .replace(new RegExp(`#${own}(?![\\w-])`, 'g'), '\u00a7')
+    .replace(new RegExp(`#${own}([-_][\\w-]*)`, 'g'), '\u00b6$1');
+  let sheet = sheets.get(rules);
+  if (!sheet) {
+    sheet = { name: `s${sheets.size + 1}`, refs: new Set(rules.match(/\u00b6[\w-]*/g)?.map(r => r.slice(1))) };
+    sheets.set(rules, sheet);
     const st = document.createElement('style');
-    st.textContent = rules.split('\u00a7').join(`:is(#mmd-${name}, [data-mmd="${name}"])`);
+    st.textContent = rules.split('\u00a7').join(`:is(#mmd-${sheet.name}, [data-mmd="${sheet.name}"])`).split('\u00b6').join(`#mmd-${sheet.name}`);
     document.head.appendChild(st);
   }
-  return name;
+  return sheet;
+}
+/** The elements the sheet's rules refer to, from the first drawing that has them, into the page's definitions. */
+function shareDefs(sheet, svg, id) {
+  if (!sheet.refs.size) return;
+  const parsed = new DOMParser().parseFromString(svg, 'text/html');
+  let defs = document.getElementById('ro-mmd-defs');
+  if (!defs) {
+    defs = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    defs.id = 'ro-mmd-defs';
+    defs.setAttribute('aria-hidden', 'true');
+    defs.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
+    document.body.appendChild(defs);
+  }
+  for (const suffix of sheet.refs) {
+    const el = parsed.getElementById(id + suffix);
+    if (!el) continue;
+    const copy = document.importNode(el, true);
+    copy.id = `mmd-${sheet.name}${suffix}`;
+    defs.appendChild(copy);
+    sheet.refs.delete(suffix);
+  }
 }
 /** Mermaid's render, its style sheet shared (shareRules) rather than added to the page with the drawing. */
 async function draw(m, id, src) {
   const insertBefore = Node.prototype.insertBefore, appendChild = Node.prototype.appendChild;
+  let sheet = null;
   const take = (parent, node) => {
     if (node?.nodeName?.toLowerCase() !== 'style') return node;
     if (parent.id !== id && !parent.closest?.(`#${CSS.escape(id)}, #d${CSS.escape(id)}`)) return node;
     const svg = parent.closest('svg') || parent;
-    svg.dataset.mmd = shareRules(node.textContent, id);
+    sheet = shareRules(node.textContent, id);
+    svg.dataset.mmd = sheet.name;
     return document.createComment('');
   };
   Node.prototype.insertBefore = function (node, ref) { return insertBefore.call(this, take(this, node), ref); };
   Node.prototype.appendChild = function (node) { return appendChild.call(this, take(this, node)); };
   try {
     // A sheet it wrote into the markup rather than adding it: shared the same way.
-    return (await m.render(id, src)).svg.replace(/^(<svg\b[^>]*?)(\/?>)([\s\S]*?)<style[^>]*>([\s\S]*?)<\/style>/, (all, open, end, before, css) => `${open} data-mmd="${shareRules(css, id)}"${end}${before}`);
+    const svg = (await m.render(id, src)).svg.replace(/^(<svg\b[^>]*?)(\/?>)([\s\S]*?)<style[^>]*>([\s\S]*?)<\/style>/, (all, open, end, before, css) => {
+      sheet = shareRules(css, id);
+      return `${open} data-mmd="${sheet.name}"${end}${before}`;
+    });
+    if (sheet) shareDefs(sheet, svg, id);
+    return svg;
   } finally {
     Node.prototype.insertBefore = insertBefore;
     Node.prototype.appendChild = appendChild;
