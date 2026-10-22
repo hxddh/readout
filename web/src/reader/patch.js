@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, lastItem, prevItem } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
-import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, flushStarts } from './chunks.js';
+import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, flushStarts, roughRect } from './chunks.js';
 import { renderMarks, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, forgetTables } from './enhance.js';
@@ -148,7 +148,7 @@ export function apply(p) {
       // Inserted blocks have no element yet; locate via the predecessor.
       const ref = el || (op.after ? slots.get(op.after) : null);
       if (!ref) { changeNearViewport = true; break; }  // unknown position: stay safe, follow
-      const r = ref.getBoundingClientRect();
+      const r = roughRect(ref);
       if (r.top > window.innerHeight - 200) { changeNearViewport = true; break; }
       if (anchor && op.slot === anchor.slot) { changeNearViewport = true; break; }
     }
@@ -256,8 +256,11 @@ export function apply(p) {
   flushStarts();
   for (const c of touched) if (c.isConnected) heights.set(c, firstLarge ? estimateOf(c) : c.getBoundingClientRect().height);
   touched.clear();
-  for (const slot of changed) { const el = slots.get(slot); if (el) heights.set(el, el.getBoundingClientRect().height); }
-  for (const el of rerendered) if (el.isConnected) heights.set(el, el.getBoundingClientRect().height);
+  // Not a block in a chunk skipped (WebKit would lay the chunk out to answer):
+  // it reports its size once the chunk is laid out, the chunk's change made up for as a whole.
+  const laid = el => !doc.classList.contains('cv') || el.checkVisibility({ contentVisibilityAuto: true });
+  for (const slot of changed) { const el = slots.get(slot); if (el && laid(el)) heights.set(el, el.getBoundingClientRect().height); else if (el) heights.delete(el); }
+  for (const el of rerendered) if (el.isConnected && laid(el)) heights.set(el, el.getBoundingClientRect().height); else heights.delete(el);
   if (p.reset && !firstLarge) for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
 
   if (isFirst) { firstTimings.blocks = Math.round(t1 - t0); firstTimings.layout = Math.round(performance.now() - t1); }

@@ -332,7 +332,20 @@ const stream = await (async () => {
   await p5.evaluate(() => window.readout.findEnd());
   // Scrolling the 5 MB document, then its interactions; an agent inserting
   // in its middle; then streaming at its end with a patch every 100 ms.
+  // 200 unread changes spread through it (the reader's position, the
+  // rail, read tracking and N all run over them while scrolling).
+  await p5.evaluate(n => window.readout.apply({ version: 90, reset: false, rewrite: false, ops: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+    marks: Array.from({ length: 200 }, (_, k) => ({ slot: Math.floor((k + 0.5) * n / 200), kind: 'inserted' })) }), doc5.ops.length);
+  await p5.waitForTimeout(500);
   const scroll5 = summary(await scrollPasses(p5));
+  // N among them, from the middle: until the frame showing where it landed is painted.
+  await p5.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight / 2));
+  await p5.waitForTimeout(800);
+  const nJumps = [];
+  for (let k = 0; k < 5; k++) {
+    nJumps.push(await p5.evaluate(() => new Promise(resolve => { const t0 = performance.now(); window.readout.nextChange(); requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0)); })));
+    await p5.waitForTimeout(1300);
+  }
   const act5 = await interactions(p5);
   const insert = await insertMiddle(p5, doc5.ops, doc5.ops.length + 1000);
   const streamed = await streamFrames(p5, doc5.ops.length);
@@ -363,7 +376,7 @@ const stream = await (async () => {
   const left = await p5.evaluate(() => { const s = document.scrollingElement; return Math.round(s.scrollHeight - s.scrollTop - innerHeight); });
   await p5.close();
   return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps), letter: median(oneLetter.map(x => x.ms)), letterSamples: oneLetter.map(x => [x.call, x.first, x.ms].map(Math.round)),
-    scroll5, act5, insert, streamFrame };
+    scroll5, act5, insert, streamFrame, nJump: median(nJumps) };
 })();
 console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 1000)} s`);
 
@@ -517,6 +530,8 @@ const result = {
     [`web_scroll_${k}_frame_p95_ms`, v.p95], [`web_scroll_${k}_frame_max_ms`, v.max], [`web_scroll_${k}_long_frames`, v.long], [`web_scroll_${k}_frames`, v.frames]])),
   web_scroll_blank_px: [scroll500, scroll500m, scroll1].reduce((a, r) => a + r.scroll.blankPx, stream.scroll5.blankPx),
   web_scroll_blank_frames: [scroll500, scroll500m, scroll1].reduce((a, r) => a + r.scroll.blankFrames, stream.scroll5.blankFrames),
+  web_n_jump_5mb_ms: Math.round(stream.nJump),
+  web_scroll_5mb_own_per_frame_ms: stream.scroll5.ownPerFrame,
   web_scroll_own_longest_ms: Math.max(scroll500.scroll.ownMax, scroll500m.scroll.ownMax, scroll1.scroll.ownMax, stream.scroll5.ownMax),
   web_select_1mb_ms: Math.round(scroll1.act.select * 10) / 10,
   web_select_5mb_ms: Math.round(stream.act5.select * 10) / 10,

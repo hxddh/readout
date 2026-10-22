@@ -1415,6 +1415,78 @@ for (const n of [60, 400]) {
   await page.close();
 }
 
+// N in a large document with unread changes all through it: choosing the
+// next change asks nothing exactly of the blocks in chunks not laid out
+// (WebKit would lay each such chunk out to answer), and lands on it.
+{
+  const page = await newPage();
+  const big = doc(6000);
+  big.marks = Array.from({ length: 59 }, (_, k) => ({ slot: 100 * (k + 1), kind: 'inserted' }));
+  await page.evaluate(p => window.readout.apply(p), big);
+  await page.waitForTimeout(800);
+  await scrollToBlock(page, 2050);
+  const r = await page.evaluate(() => {
+    let far = 0;
+    const gbcr = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      const c = this.closest && this.closest('#ro-doc > .chunk');
+      if (c && this !== c && !c.classList.contains('near')) far++;
+      return gbcr.call(this);
+    };
+    try { window.readout.nextChange(); } finally { Element.prototype.getBoundingClientRect = gbcr; }
+    return far;
+  });
+  await page.waitForTimeout(1200);
+  const landed = await page.evaluate(() => { const e = document.querySelector('.blk[data-slot="2100"]').getBoundingClientRect(); return Math.round(e.top - innerHeight / 3); });
+  check('N in a large document asks nothing exactly of chunks not laid out, and lands on the next change', r === 0 && Math.abs(landed) <= 30, JSON.stringify({ far: r, landed }));
+  await page.close();
+}
+
+// Nothing the page does in a large document asks layout questions of blocks
+// in chunks not laid out (WebKit lays such a chunk out to answer, each one
+// a stall at 5 MB): N and D, the rail, the current heading and read
+// tracking while scrolling, find landing, Copy as Quote's slots, the place
+// taken and restored, an agent's edits far away. Layout reads (rectangles,
+// offsets, sizes) on blocks in chunks that are skipped are counted.
+{
+  const page = await newPage();
+  await page.addInitScript(() => {});
+  const big = doc(6000, i => i % 50 === 1 ? `<h2>Section ${i}</h2>` : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(3)}</p>`, i => i % 50 === 1 ? 'heading' : 'paragraph');
+  big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
+  big.marks = Array.from({ length: 200 }, (_, k) => ({ slot: 30 * (k + 1) - 7, kind: k % 3 ? 'inserted' : 'modified' }));
+  await page.evaluate(p => window.readout.apply(p), big);
+  await page.waitForTimeout(800);
+  await scrollToBlock(page, 3010);
+  await page.waitForTimeout(500);
+  await page.evaluate(() => {
+    window.__far = 0;
+    const far = el => { const c = el.closest?.('#ro-doc.cv > .chunk'); return !!c && el !== c && !c.classList.contains('near'); };
+    const wrap = (proto, name, getter) => {
+      const d = Object.getOwnPropertyDescriptor(proto, name);
+      if (getter) Object.defineProperty(proto, name, { ...d, get() { if (window.__counting && far(this)) window.__far++; return d.get.call(this); } });
+      else proto[name] = function (...a) { if (window.__counting && far(this)) window.__far++; return d.value.apply(this, a); };
+    };
+    wrap(Element.prototype, 'getBoundingClientRect'); wrap(Element.prototype, 'getClientRects');
+    for (const n of ['offsetParent', 'offsetTop', 'offsetHeight', 'offsetWidth']) wrap(HTMLElement.prototype, n, true);
+    for (const n of ['clientWidth', 'clientHeight', 'scrollWidth', 'scrollHeight']) wrap(Element.prototype, n, true);
+  });
+  const count = (fn, wait = 400) => page.evaluate(([fn, wait]) => new Promise(resolve => { window.__far = 0; window.__counting = true; new Function(fn)(); setTimeout(() => { window.__counting = false; resolve(window.__far); }, wait); }), [fn, wait]);
+  const reads = {};
+  reads.n = await count('window.readout.nextChange()', 1300);
+  reads.shiftN = await count('window.readout.previousChange()', 1300);
+  reads.d = await count("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }))");
+  reads.scroll = await count('let k = 0; const f = () => { window.scrollBy(0, 300); if (++k < 30) requestAnimationFrame(f); }; requestAnimationFrame(f);', 1500);
+  reads.anchor = await count('window.readout.captureAnchor()');
+  reads.restore = await count('window.readout.scrollToAnchor({ slot: 5555, offset: 0, ratio: 0 })', 1300);
+  reads.find = await count("window.readout.find('para 777 ')", 1300);
+  await page.evaluate(() => window.readout.findEnd());
+  reads.quote = await count("const t = document.elementFromPoint(450, 300).closest('.blk').querySelector('p').firstChild; getSelection().setBaseAndExtent(t, 0, t, 4); window.readout.quoteSelection();");
+  reads.edit = await count(`window.readout.apply(${JSON.stringify(patch(2, [{ op: 'replace', slot: 100, kind: 'paragraph', change: 'content', html: '<p>edited far above</p>' }, { op: 'insert', slot: 9000, after: 5900, kind: 'paragraph', html: '<p>inserted far below</p>' }], { marks: [{ slot: 100, kind: 'modified' }] }))})`);
+  check('in a large document nothing asks layout of blocks in chunks not laid out (N, D, the rail, scrolling, find, Copy as Quote, the place, far edits)',
+    Object.values(reads).every(n => n === 0), JSON.stringify(reads));
+  await page.close();
+}
+
 // A link to the 40th footnote of a long footnotes block at the end of a
 // large document (its chunk not laid out: WebKit places its content at the
 // chunk's top until it is): the note lands in the middle of the window, as

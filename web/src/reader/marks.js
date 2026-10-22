@@ -1,7 +1,7 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes.
 import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem } from './core.js';
-import { place, unplace } from './chunks.js';
+import { place, unplace, roughRect } from './chunks.js';
 import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding, baseline, aimAt } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
@@ -524,7 +524,9 @@ export function jump(dir, first = false) {
   const skip = new Set(left ? left.run.filter(m => m !== left.el && m.isConnected && seen(m)) : []);
   const line = window.innerHeight / 3;
   const from = land ? (land.el ? land.el.getBoundingClientRect().top : topInset()) : null;
-  const tops = list.map(e => e.getBoundingClientRect().top);
+  // (Roughly where those in chunks not laid out are: asked exactly, WebKit
+  // would lay each such chunk out. Only the target's chunk is, by the jump.)
+  const tops = list.map(e => roughRect(e).top);
   let i = -1;
   if (first) i = 0;
   else if (dir > 0) i = list.findIndex((e, k) => !skip.has(e) && (from !== null ? tops[k] >= from - 4 : tops[k] > line + 4));
@@ -539,7 +541,6 @@ export function jump(dir, first = false) {
   const target = list[i];
   const members = list.filter((e, k) => k >= i && run[k] === run[i]);
   showWhatChangedOn(target);
-  const top = target.getBoundingClientRect().top - line;
   // In a large document the blocks a smooth scroll passes are laid out on
   // the way and change height, and the compensation for them fights the
   // animation: jump at once, then aim again once the blocks around the
@@ -548,7 +549,7 @@ export function jump(dir, first = false) {
   // The change it lands on stays where it landed while the chunk around it
   // is laid out (not the first block on screen, the resize compensation's
   // usual choice), aimed at again as it is (aimAt).
-  if (smooth) window.scrollBy({ top, behavior: 'smooth' });
+  if (smooth) window.scrollBy({ top: target.getBoundingClientRect().top - line, behavior: 'smooth' });
   else aimAt(target, () => target.getBoundingClientRect().top - line, () => pinLanding(target));
   focusBlock(target);
   pulse(target);

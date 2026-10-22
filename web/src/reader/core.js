@@ -101,6 +101,9 @@ window.addEventListener('error', e => post({ type: 'error', message: `${e.messag
 window.addEventListener('unhandledrejection', e => post({ type: 'error', message: `unhandled: ${e.reason && (e.reason.stack || e.reason.message) || e.reason}` }));
 
 export function inViewport(el, margin = 0) {
-  const r = el.getBoundingClientRect();
+  // In a chunk content-visibility skips, the chunk's box: asked about the
+  // block itself, WebKit would lay the chunk out to answer.
+  const skipped = el.closest?.('#ro-doc.cv > .chunk:not(.near)');
+  const r = (skipped && el !== skipped && !el.checkVisibility({ contentVisibilityAuto: true }) ? skipped : el).getBoundingClientRect();
   return r.bottom > -margin && r.top < window.innerHeight + margin;
 }

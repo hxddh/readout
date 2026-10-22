@@ -190,8 +190,9 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
           const el = e.target;
           const marked = '.blk.m-inserted, .blk.m-modified, .blk.m-state, .del-mark';
           if (!(el instanceof Element) || !el.matches(marked) || el.classList.contains('m-read')) return;
-          const list = [...document.querySelectorAll('.blk.m-inserted:not(.m-read), .blk.m-modified:not(.m-read), .blk.m-state:not(.m-read), .del-mark:not(.m-read)')]
-            .filter(x => x.offsetParent !== null);
+          // (Nothing hides a block: no layout question per change, which would
+          // lay out every chunk content-visibility skips.)
+          const list = [...document.querySelectorAll('.blk.m-inserted:not(.m-read), .blk.m-modified:not(.m-read), .blk.m-state:not(.m-read), .del-mark:not(.m-read)')];
           const i = list.indexOf(el);
           if (i < 0) return;
           const c = el.classList;

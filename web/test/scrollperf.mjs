@@ -115,6 +115,7 @@ export function summary({ gaps, blank, own }) {
     blankPx: blank.reduce((a, b) => a + b, 0),
     blankFrames: blank.filter(b => b > 0).length,
     ownMax: Math.round(Math.max(0, ...own)),
+    ownPerFrame: Math.round(own.reduce((a, b) => a + b, 0) / Math.max(1, gaps.length) * 10) / 10,
   };
 }
 
