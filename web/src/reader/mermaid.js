@@ -8,7 +8,7 @@ import { lazyObserver } from './enhance.js';
 // after GRACE_MS (an undo, or a rewrite back to it, still finds it).
 const mermaidCache = new Map();   // look+source -> {svg, id} or {error}
 const CACHE_MAX = 64;
-const GRACE_MS = 5000;
+const GRACE_MS = globalThis.READOUT_DIAGRAM_GRACE_MS ?? 5000;   // (a test shortens it)
 const unusedSince = new Map();    // key -> when no diagram in the page had its source
 let sweepTimer = 0;
 function cacheGet(key) {
@@ -22,20 +22,25 @@ function cacheSet(key, out) {
   while (mermaidCache.size > CACHE_MAX) { const k = mermaidCache.keys().next().value; mermaidCache.delete(k); unusedSince.delete(k); }
   sweepLater();
 }
-function sweepLater() {
+// The sweep runs while some drawing kept has no diagram in the page, and
+// stops once each has one (or none is kept): a page's diagrams changing
+// (drawn, set up, gone) starts it again.
+export function sweepLater() {
   if (!sweepTimer && mermaidCache.size) sweepTimer = setTimeout(sweep, GRACE_MS);
 }
 function sweep() {
   sweepTimer = 0;
   const inPage = new Set([...doc.querySelectorAll('.mermaid-block > .mermaid-src')].map(e => e.textContent));
   const now = performance.now();
+  let unused = false;
   for (const key of [...mermaidCache.keys()]) {
     if (inPage.has(key.slice(key.indexOf('\u0000') + 1))) { unusedSince.delete(key); continue; }
     const since = unusedSince.get(key);
-    if (since === undefined) unusedSince.set(key, now);
+    if (since === undefined) { unusedSince.set(key, now); unused = true; }
     else if (now - since >= GRACE_MS) { mermaidCache.delete(key); unusedSince.delete(key); }
+    else unused = true;
   }
-  sweepLater();
+  if (unused) sweepLater();
 }
 let mermaidPromise = null;
 let mermaidLook = null;   // the look Mermaid is set up for: theme and type size
@@ -276,6 +281,7 @@ function diagramSlot(block) {
 
 /** Called for every diagram block set up (enhance.js). */
 export function setupMermaid(block) {
+  sweepLater();
   const src = block.querySelector('.mermaid-src')?.textContent || '';
   if (isFlowchart(src)) prefetchFlowcharts();
   const slot = diagramSlot(block);
@@ -310,7 +316,7 @@ function pruneQueue() {
 }
 /** Tests: diagrams drawn so far, and what the queue holds. */
 export function diagramWork() {
-  return { draws: mermaidDraws, cached: mermaidCache.size, queued: mermaidQueue.length, detached: mermaidQueue.filter(b => !b.isConnected).length };
+  return { draws: mermaidDraws, cached: mermaidCache.size, sweeping: !!sweepTimer, queued: mermaidQueue.length, detached: mermaidQueue.filter(b => !b.isConnected).length };
 }
 
 async function pumpMermaid() {

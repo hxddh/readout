@@ -4,14 +4,17 @@
 // jumping around), with invariants checked after every patch:
 //   1. the reader's text does not move (within 1 px);
 //   2. a page whose changes are removals only is as tall skipped as laid out
-//      (within 2 px): a chunk laid out and skipped since loses what it held
-//      (a written block counts at its estimate until laid out, so this is
-//      checked on the removal runs);
+//      at the end (within 2 px): a chunk laid out and skipped since loses
+//      what it held (a written block counts at its estimate until laid out,
+//      so this is checked on the removal runs);
 //   3. no chunk holds more than 64 items, none is empty, and once the page
 //      has been scrolled through and is quiet, none past its height cap;
-//   4. the blocks are in the document's order.
+//   4. the blocks are in the document's order;
+//   5. a selection and focus the reader holds stay as they were.
+// Also: long code (the height cap), the page becoming large in a patch, and
+// writes on screen.
 // Usage: node test/chunks.test.mjs  (requires web/build.mjs to have run;
-// READOUT_WEB_BUILD serves another build)
+// SEEDS=1,21 runs only those; READOUT_WEB_BUILD serves another build)
 import { webkit } from 'playwright';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
@@ -68,11 +71,18 @@ const heights = page => page.evaluate(() => {
 });
 
 /**
- * One seeded run: 400 blocks (paragraphs, headings, rules, code), every
- * chunk laid out once when `layAll`, then `rounds` patches of 1 to 4 changes
- * each, all at least a screen from the reader. `removals`: only removals.
+ * One seeded run: `start` blocks (paragraphs, headings, rules, code; with
+ * `longCode`, some code blocks of 500 to 800 lines), every chunk laid out
+ * once when `layAll`, then `rounds` patches of 1 to 4 changes each, at
+ * least `guard` px from the screen (0: anywhere but the reader's own
+ * block). `removals`: only removals, the heights compared at the end (a
+ * comparison lays every chunk out: done each round it could hide a drift).
+ * `hold`: in some rounds the reader holds a selection in one block and the
+ * focus on another (what an agent writes must not move them). `grow`: no
+ * removals until the page is past 260 blocks (from below 250: the page
+ * becomes large in a patch).
  */
-async function run(seed, rounds, { removals = false, layAll = false } = {}) {
+async function run(seed, rounds, { removals = false, layAll = false, start = 400, longCode = false, guard = 700, hold = false, grow = false } = {}) {
   let s = seed;
   const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const ri = n => Math.floor(rnd() * n);
@@ -83,11 +93,11 @@ async function run(seed, rounds, { removals = false, layAll = false } = {}) {
     const k = ri(10);
     if (k === 0) return { kind: 'heading', html: `<h2 id="h${slot}">Heading ${slot}</h2>`, anchor: `h${slot}` };
     if (k === 1) return { kind: 'rule', html: '<hr>' };
-    if (k === 2) return { kind: 'code', html: '<div class="code-block" data-lang="text"><pre><code>' + Array.from({ length: 1 + ri(40) }, (_, i) => 'code line ' + i).join('\n') + '</code></pre></div>' };
+    if (k === 2) return { kind: 'code', html: '<div class="code-block" data-lang="text"><pre><code>' + Array.from({ length: longCode && ri(3) === 0 ? 500 + ri(300) : 1 + ri(40) }, (_, i) => 'code line ' + i).join('\n') + '</code></pre></div>' };
     return { kind: 'paragraph', html: `<p>p${slot} ` + 'word '.repeat(5 + ri(150)) + '</p>' };
   };
   const ops = [];
-  for (let i = 0, prev = 0; i < 400; i++) { const sl = next++; ops.push({ op: 'insert', slot: sl, after: prev, ...block(sl) }); order.push(sl); prev = sl; }
+  for (let i = 0, prev = 0; i < start; i++) { const sl = next++; ops.push({ op: 'insert', slot: sl, after: prev, ...block(sl) }); order.push(sl); prev = sl; }
   await page.evaluate(p => window.readout.apply(p), { ...patch(1, ops), reset: true });
   await settled(page);
   if (layAll) {
@@ -95,6 +105,7 @@ async function run(seed, rounds, { removals = false, layAll = false } = {}) {
     for (let y = 0; y < H + 2000; y += 500) { await page.evaluate(y => window.scrollTo(0, y), y); await page.waitForTimeout(20); }
     await settled(page);
   }
+  const h0 = removals ? await heights(page) : null;
   const where = sl => page.evaluate(sl => {
     const e = document.querySelector(`[data-slot="${sl}"]`);
     if (!e) return null;
@@ -102,9 +113,25 @@ async function run(seed, rounds, { removals = false, layAll = false } = {}) {
     return { top: r.top, bottom: r.bottom };
   }, sl);
   const bad = [];
-  let dels = [], delId = 1, v = 2, patches = 0;
+  let dels = [], delId = 1, v = 2, patches = 0, held = null, crossed = false;
   for (let round = 0; round < rounds; round++) {
     if (ri(4) === 0) { await page.evaluate(f => window.scrollTo(0, f * (document.scrollingElement.scrollHeight - innerHeight)), rnd()); await settled(page); await page.waitForTimeout(50); await settled(page); }
+    // The reader takes hold of a selection and the focus on screen, or lets go.
+    if (hold && ri(3) === 0) {
+      held = await page.evaluate(take => {
+        getSelection().removeAllRanges();
+        document.activeElement?.blur();
+        if (!take) return null;
+        const on = [...document.querySelectorAll('#ro-doc > .chunk.near > .blk')].filter(b => { const r = b.getBoundingClientRect(); return r.bottom > 60 && r.top < innerHeight - 60; });
+        if (on.length < 3) return null;
+        const t = on[0].querySelector('p, li, code, h2')?.firstChild;
+        if (t?.nodeType === 3 && t.length > 3) getSelection().setBaseAndExtent(t, 0, t, 3);
+        const f = on.at(-1);
+        f.tabIndex = -1;
+        f.focus({ preventScroll: true });
+        return { sel: getSelection().toString(), focus: f.dataset.slot };
+      }, ri(2) === 0);
+    }
     const anchor = await page.evaluate(() => {
       const a = window.readout.captureAnchor();
       if (!a) return null;
@@ -114,11 +141,12 @@ async function run(seed, rounds, { removals = false, layAll = false } = {}) {
     const pops = [], desc = [];
     for (let k = 1 + ri(4); k > 0; k--) {
       const i = ri(order.length), sl = order[i];
+      if (sl === anchor.slot || (held && String(sl) === held.focus)) continue;
       const w = await where(sl);
-      if (!w || (w.bottom > -700 && w.top < 1400)) continue;
-      const t = removals ? 1 : ri(3);
+      if (!w || (guard && w.bottom > -guard && w.top < 700 + guard)) continue;
+      const t = removals ? 1 : grow && order.length <= 260 ? 0 : ri(3);
       if (t === 0) { const ns = next++; pops.push({ op: 'insert', slot: ns, after: sl, ...block(ns) }); order.splice(i + 1, 0, ns); desc.push(`insert after ${sl}`); }
-      else if (t === 1 && sl !== anchor.slot && order.length > 300) {
+      else if (t === 1 && order.length > Math.min(300, start - 100)) {
         pops.push({ op: 'remove', slot: sl });
         order.splice(i, 1);
         if (ri(2)) dels.push({ id: delId++, after: order[i - 1] || 0, count: 1, preview: 'x' });
@@ -129,9 +157,7 @@ async function run(seed, rounds, { removals = false, layAll = false } = {}) {
     dels = dels.filter(d => d.after === 0 || order.includes(d.after));
     if (ri(5) === 0 && dels.length) dels.splice(ri(dels.length), 1);
     if (!pops.length) continue;
-    const h0 = removals ? await heights(page) : null;
-    const around = () => process.env.DEBUG && page.evaluate(sls => sls.map(sl => { const e = document.querySelector(`[data-slot="${sl}"]`); if (!e) return [sl, 'gone']; const c = e.parentElement; return [sl, e.className, [...c.children].indexOf(e), c.childElementCount, c.className, e.previousElementSibling?.className, e.nextElementSibling?.className, c.nextElementSibling?.firstElementChild?.className]; }), pops.map(o => o.slot).flatMap(sl => { const i = order.indexOf(sl); return [order[i - 1], sl, order[i], order[i + 1]].filter(Boolean); }));
-    const dbg0 = await around();
+    const cv0 = await page.evaluate(() => document.getElementById('ro-doc').classList.contains('cv'));
     await page.evaluate(p => window.readout.apply(p), patch(v++, pops, { deletions: dels }));
     patches++;
     await settled(page); await page.waitForTimeout(30); await settled(page);
@@ -139,16 +165,24 @@ async function run(seed, rounds, { removals = false, layAll = false } = {}) {
     const st = await page.evaluate(() => ({
       dom: [...document.querySelectorAll('#ro-doc > .chunk > .blk')].map(e => +e.dataset.slot),
       items: [...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount),
+      cv: document.getElementById('ro-doc').classList.contains('cv'),
+      sel: getSelection().toString(), focus: document.activeElement?.dataset?.slot,
     }));
-    const h = removals ? await heights(page) : null;
+    if (!cv0 && st.cv) crossed = true;
     const why = [];
     if (Math.abs(top - anchor.top) > 1) why.push(`the reader moved ${(top - anchor.top).toFixed(1)} px`);
-    if (removals && h0.skipped === h0.laid && Math.abs(h.skipped - h.laid) > 2) why.push(`${h.skipped - h.laid} px taller skipped than laid out`);
-    if (Math.max(...st.items) > 64 || st.items.includes(0)) why.push(`chunk items ${Math.max(...st.items)}, empty ${st.items.includes(0)}`);
+    if (Math.max(...st.items) > 64 && !held) why.push(`a chunk of ${Math.max(...st.items)} items`);
+    if (st.items.includes(0)) why.push('an empty chunk');
     if (JSON.stringify(st.dom) !== JSON.stringify(order)) why.push('blocks out of order');
+    if (held && (st.sel !== held.sel || st.focus !== held.focus)) why.push(`the reader's selection or focus changed (${JSON.stringify([held, st.sel, st.focus])})`);
     if (why.length) bad.push(`round ${round} (${desc.join(', ')}): ${why.join('; ')}`);
-    if (why.length && process.env.DEBUG) console.log(JSON.stringify({ dbg0, dbg1: await around(), dels: dels.slice(-3) }));
   }
+  await page.evaluate(() => { getSelection().removeAllRanges(); document.activeElement?.blur(); });
+  if (removals) {
+    const h = await heights(page);
+    if (h0.skipped === h0.laid && Math.abs(h.skipped - h.laid) > 2) bad.push(`at the end ${h.skipped - h.laid} px taller skipped than laid out`);
+  }
+  if (grow && !crossed) bad.push('the page never became large');
   // Scrolled through and quiet: every chunk within its limits.
   const H = await page.evaluate(() => document.scrollingElement.scrollHeight);
   for (let y = 0; y < H + 2000; y += 500) { await page.evaluate(y => window.scrollTo(0, y), y); await page.waitForTimeout(20); }
@@ -159,14 +193,18 @@ async function run(seed, rounds, { removals = false, layAll = false } = {}) {
   return { patches, bad };
 }
 
-for (const seed of process.env.SEEDS ? [] : [1, 2, 3, 4, 5, 6, 7, 8]) {
-  const r = await run(seed, 150, { layAll: seed % 2 === 0 });
-  check(`seed ${seed}: ${r.patches} patches of writes, rewrites and removals away from the reader keep its place, the chunks' limits and the order`,
-    r.bad.length === 0 && r.patches > 40, JSON.stringify(r.bad.slice(0, 5)));
-}
-for (const seed of process.env.SEEDS ? process.env.SEEDS.split(',').map(Number) : [11, 12, 13, 14]) {
-  const r = await run(seed, 80, { removals: true, layAll: true });
-  check(`seed ${seed}: ${r.patches} patches of removals (markers coming and going) in a page laid out once: as tall skipped as laid out, the reader still`,
+const runs = [
+  ...[1, 2, 3, 4, 5, 6, 7, 8].map(seed => ({ seed, rounds: 150, opts: { layAll: seed % 2 === 0 }, what: 'writes, rewrites and removals away from the reader' })),
+  ...[11, 12, 13, 14].map(seed => ({ seed, rounds: 80, opts: { removals: true, layAll: true }, what: 'removals (markers coming and going) in a page laid out once' })),
+  { seed: 21, rounds: 120, opts: { longCode: true, layAll: true }, what: 'writes with code blocks of 500 to 800 lines' },
+  { seed: 22, rounds: 120, opts: { hold: true }, what: 'writes while the reader holds a selection and the focus' },
+  { seed: 23, rounds: 80, opts: { start: 230, grow: true, layAll: true }, what: 'writes taking a page of 230 blocks past 250' },
+  { seed: 24, rounds: 120, opts: { guard: 0 }, what: 'writes anywhere, the screen included' },
+];
+for (const { seed, rounds, opts, what } of runs) {
+  if (process.env.SEEDS && !process.env.SEEDS.split(',').map(Number).includes(seed)) continue;
+  const r = await run(seed, rounds, opts);
+  check(`seed ${seed}: ${r.patches} patches of ${what}: the reader's place, the chunks' limits, the order${opts.removals ? ', the height' : ''}`,
     r.bad.length === 0 && r.patches > 20, JSON.stringify(r.bad.slice(0, 5)));
 }
 

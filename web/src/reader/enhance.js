@@ -6,7 +6,7 @@ import { doc, root, strings, post, inViewport } from './core.js';
 import { captureAnchor, restoreAnchor } from './anchor.js';
 import { setupRemoteImage } from './remote.js';
 import { renderMath } from './math.js';
-import { renderMermaid, setupMermaid } from './mermaid.js';
+import { renderMermaid, setupMermaid, sweepLater } from './mermaid.js';
 
 export function enhance(el) {
   hl.stopWarmUp();   // a document is shown: its own blocks load what they need
@@ -199,8 +199,9 @@ export function forgetBlock(el) {
   for (const x of el.querySelectorAll('.code-block, .mermaid-block')) {
     lazyObserver.unobserve(x);
     waitingForChunk.delete(x);
-    diagrams.delete(x);
+    if (diagrams.delete(x)) sweepLater();   // a diagram gone: its drawing kept a while, then dropped
     parts.delete(x);
+    shownInPart.delete(x);
     const i = queue.indexOf(x);
     if (i >= 0) queue.splice(i, 1);
   }
@@ -208,7 +209,7 @@ export function forgetBlock(el) {
 
 /** What lazy work holds on to (a test checks it stays bounded). */
 export function lazyHeld() {
-  const held = [...waitingForChunk, ...queue, ...diagrams];
+  const held = [...waitingForChunk, ...queue, ...diagrams, ...shownInPart];
   return { waiting: waitingForChunk.size, queued: queue.length, diagrams: diagrams.size, detached: held.filter(x => !x.isConnected).length };
 }
 
@@ -397,9 +398,21 @@ const prepared = new WeakSet();   // code blocks whose grammars have been loaded
 // grammar's rule is met), so a block highlighted in one go was a task of
 // 40-70 ms, a frame that stalls while the reader scrolls.
 const PART_LINES = 4;
-const parts = new WeakMap();   // code block -> {at, state, head, inner}: the lines highlighted so far
-/** The block's code highlighted: all of it, or (`whole` false) the next part, 'more' while parts are left. */
-function highlightParts(cb, code, id, whole) {
+const parts = new WeakMap();   // code block -> {at, state, head, inner, cold, longest, view}: the lines highlighted so far
+// A block of more than SHOWN_MIN lines on screen is coloured at once only
+// as far as the screen shows, and a few lines more (a jump landing on a
+// page of 90-line blocks coloured each whole, in the task before its frame,
+// was slower than 3.8.0's); the rest a slice at a time, shown whole once
+// done. Not past SHOWN_MAX lines: showing it again lays the block out
+// again, which for a block of 28,000 lines takes a second; such a block is
+// coloured whole, at once, as 3.8 did.
+const SHOWN_MIN = 40;
+const SHOWN_MAX = 1000;
+/**
+ * The block's code highlighted: the next parts for a slice, and at least
+ * the lines up to `upto` (Infinity: all of it); 'more' while parts are left.
+ */
+function highlightParts(cb, code, id, upto) {
   const lines = code.split('\n');
   if (lines.length <= PART_LINES * 2) {
     const cold = !warmGrammars.has(id), t = performance.now();
@@ -414,25 +427,106 @@ function highlightParts(cb, code, id, whole) {
   // Shiki's guard (a cold grammar's first lines) makes its part that slow.
   // (Not the time all parts took: a long block adds up to more than the
   // limit with every line fast, and would be highlighted twice.)
-  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [], cold: !warmGrammars.has(id), longest: 0 };
+  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [], cold: !warmGrammars.has(id), longest: 0, view: null };
   const start = performance.now();
+  // All of it at once: in larger parts (fewer calls, the same lines; a line
+  // cut short still makes its part slow).
+  const step = upto === Infinity ? PART_LINES * 8 : PART_LINES;
   do {
     const t = performance.now();
-    const r = hl.highlightPart(lines.slice(p.at, p.at + PART_LINES).join('\n'), id, p.state);
+    const r = hl.highlightPart(lines.slice(p.at, p.at + step).join('\n'), id, p.state);
     p.longest = Math.max(p.longest, performance.now() - t);
     const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
     if (!m) { parts.delete(cb); return null; }
     p.head ??= m[1];
     p.inner.push(m[2]);
     p.state = r.state;
-    p.at += PART_LINES;
-  } while (p.at < lines.length && (whole || performance.now() - start < SLICE_MS));
+    p.at += step;
+  } while (p.at < lines.length && (p.at <= upto || performance.now() - start < SLICE_MS));
   if (p.at < lines.length) { parts.set(cb, p); return 'more'; }
   parts.delete(cb);
-  return { html: `${p.head}${p.inner.join('\n')}</code></pre>`, cold: p.cold, longest: p.longest };
+  return { html: `${p.head}${p.inner.join('\n')}</code></pre>`, cold: p.cold, longest: p.longest, p };
 }
 
-function highlightBlock(cb, whole = true) {
+/**
+ * The last line of a block on screen (by its line height) the screen shows,
+ * and 120 px more (taken again each turn of the lazy pump, before the
+ * reader can scroll past it); -1: none.
+ */
+function linesNeeded(cb, pre, n) {
+  if (n <= SHOWN_MIN || n > SHOWN_MAX) return Infinity;
+  const r = pre.getBoundingClientRect();
+  const below = innerHeight + 120;
+  if (r.top > below || r.bottom < 0) return -1;
+  const lh = parseFloat(getComputedStyle(pre.firstElementChild || pre).lineHeight) || 20;
+  return Math.ceil((below - r.top) / lh);
+}
+
+/**
+ * A block coloured as far as it is done, the rest still plain text: the
+ * done lines' HTML (what highlighting it whole gives, line by line) in
+ * place of their plain text, the rest after it. Shown first as a new <pre>;
+ * parts done since swapped in when the screen needs them.
+ */
+function showParts(cb, pre, p, lines, id) {
+  const done = Math.min(p.at, lines.length);
+  if (!p.view) {
+    const tpl = document.createElement('template');
+    tpl.innerHTML = `${p.head}${p.inner.join('\n')}</code></pre>`;
+    const view = tpl.content.firstElementChild;
+    const rest = document.createTextNode(done < lines.length ? '\n' + lines.slice(done).join('\n') : '');
+    view.firstElementChild.appendChild(rest);
+    markDiff(view, id);
+    pre.replaceWith(view);
+    p.view = { pre: view, rest, parts: p.inner.length, lines: done };
+    shownInPart.add(cb);
+    return;
+  }
+  const v = p.view;
+  if (v.parts === p.inner.length) return;
+  const tpl = document.createElement('template');
+  tpl.innerHTML = '<pre><code>\n' + p.inner.slice(v.parts).join('\n') + '</code></pre>';
+  const frag = tpl.content.firstElementChild.firstElementChild;
+  markDiff(frag, id);
+  // Their plain text out of the rest: a newline, then the lines.
+  let len = 0;
+  for (let i = v.lines; i < done; i++) len += lines[i].length + 1;
+  v.rest.deleteData(0, Math.min(len, v.rest.length));
+  v.rest.before(...frag.childNodes);
+  if (!v.rest.length) v.rest.remove();
+  v.parts = p.inner.length;
+  v.lines = done;
+}
+// A scroll, before its frame, colours the code it brings on screen that the
+// lazy pump has not done yet (its turn comes after the frame): the rest of
+// a block shown in part (a jump landed on it), and a block waiting in the
+// queue (Page Down twice at once, a screen a time). Only those few blocks
+// are asked about.
+const shownInPart = new Set();
+window.addEventListener('scroll', () => {
+  for (const cb of shownInPart) {
+    if (!cb.isConnected || !parts.get(cb)?.view) { shownInPart.delete(cb); continue; }
+    if (inViewport(cb)) highlightBlock(cb, 'screen');
+  }
+  // (All of it, as the pump would: shown in part and then whole, a block is laid out twice.)
+  for (const el of queue) if (el.isConnected && el.classList.contains('code-block') && el.dataset.hl === 'pending' && !parts.get(el)?.view && inViewport(el)) highlightBlock(el, 'all');
+}, { passive: true });
+function markDiff(root, id) {
+  if (id !== 'diff') return;
+  for (const line of root.querySelectorAll('.line')) {
+    const t = line.textContent;
+    if (t.startsWith('+') && !t.startsWith('+++')) line.classList.add('add');
+    else if (t.startsWith('-') && !t.startsWith('---')) line.classList.add('del');
+  }
+}
+
+/**
+ * Highlights code block `cb`: `need` 'screen' (a jump or an open landing on
+ * it: what the screen shows coloured now, the rest in later slices), 'none'
+ * (ahead of the screen: a slice), 'all' (all of it now: on screen while
+ * scrolling, printing). 'more' while parts are left.
+ */
+function highlightBlock(cb, need = 'screen') {
   const recheck = cb.dataset.hl === 'recheck';
   if (cb.dataset.hl !== 'pending' && !recheck) return;
   const id = hl.resolveLang(cb.dataset.lang);
@@ -440,8 +534,17 @@ function highlightBlock(cb, whole = true) {
   const pre = cb.querySelector('pre');
   if (!sourceOf.has(cb)) sourceOf.set(cb, pre.textContent);
   const code = sourceOf.get(cb);
-  const done = highlightParts(cb, code, id, whole);
-  if (done === 'more') return 'more';
+  const lines = code.split('\n');
+  const upto = need === 'all' ? Infinity : need === 'screen' ? linesNeeded(cb, pre, lines.length) : -1;
+  const done = highlightParts(cb, code, id, upto);
+  if (done === 'more') {
+    const p = parts.get(cb);
+    // On screen: what is done shown, the rest plain until it is all done
+    // (then shown whole, once). Lines done later are swapped in only when
+    // the screen comes to them first (a swap lays the block out again).
+    if (upto >= 0 && (!p.view || upto >= p.view.lines)) showParts(cb, pre, p, lines, id);
+    return 'more';
+  }
   const html = done?.html;
   const slow = !recheck && !!done && done.cold && done.longest > SLOW_HIGHLIGHT_MS;
   if (html) warmGrammars.add(id);
@@ -449,13 +552,7 @@ function highlightBlock(cb, whole = true) {
     const tpl = document.createElement('template');
     tpl.innerHTML = html;
     const newPre = tpl.content.firstElementChild;
-    if (id === 'diff') {
-      for (const line of newPre.querySelectorAll('.line')) {
-        const t = line.textContent;
-        if (t.startsWith('+') && !t.startsWith('+++')) line.classList.add('add');
-        else if (t.startsWith('-') && !t.startsWith('---')) line.classList.add('del');
-      }
-    }
+    markDiff(newPre, id);
     pre.replaceWith(newPre);
     cb.dataset.hl = slow ? 'recheck' : 'done';
     if (slow) setTimeout(() => { if (cb.isConnected) { queue.push(cb); pump(); } else cb.dataset.hl = 'done'; }, 50);
@@ -467,6 +564,10 @@ function highlightBlock(cb, whole = true) {
     // Then by the lazy pump (a part at a time, a long block in several turns).
     hl.prepare(id, code).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) { queue.push(cb); pump(); } });
   }
+}
+/** On screen now: what it shows coloured at once, the rest queued. */
+function highlightShown(cb) {
+  if (highlightBlock(cb, 'screen') === 'more' && !queue.includes(cb)) { queue.push(cb); pump(); }
 }
 
 // Lazy work is triggered for anything within one screen of the viewport.
@@ -536,18 +637,23 @@ function pump() {
 function lazyWork(el) {
   // A long block ahead of the screen a part at a time (the next part in the
   // next turn); one on screen at once, so none of it shows plain.
-  if (el.classList.contains('code-block')) { if (highlightBlock(el, inViewport(el)) === 'more') queue.unshift(el); }
+  // (On screen while scrolling: all of it at once, one layout of it; a page
+  // of code scrolled through with blocks shown in part and then whole was
+  // laid out twice as often, its p95 frame 4 ms longer.)
+  // A block a jump showed in part goes on a slice at a time (finished at
+  // once, it was a task of 100 ms and more before the jump's first frame).
+  if (el.classList.contains('code-block')) { if (highlightBlock(el, !inViewport(el) ? 'none' : parts.get(el)?.view ? 'screen' : 'all') === 'more') queue.unshift(el); }
   else if (el.classList.contains('mermaid-block')) renderMermaid(el);
 }
 
 /** Highlights now the code not highlighted yet in `blocks` (on screen after a jump, before it is painted). */
 export function highlightIn(blocks) {
-  for (const b of blocks) for (const cb of b.querySelectorAll('.code-block[data-hl="pending"]')) highlightBlock(cb);
+  for (const b of blocks) for (const cb of b.querySelectorAll('.code-block[data-hl="pending"]')) highlightShown(cb);
 }
 
 /** Highlights every code block not highlighted yet, wherever it is (printing). */
 export function highlightAll() {
-  for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) highlightBlock(cb);
+  for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) highlightBlock(cb, 'all');
 }
 
 /** `near`: whether a code block counts as on screen (a first open estimates it without layout). */
@@ -561,7 +667,7 @@ export function renderLazy(near = inViewport) {
     if (!cb.isConnected || cb.dataset.hl !== 'pending') continue;
     if (near(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
   }
-  for (const cb of onScreen) highlightBlock(cb);
+  for (const cb of onScreen) highlightShown(cb);
   // The page's diagrams, without a search of the whole page in every patch.
   for (const m of diagrams) {
     if (!m.isConnected) { diagrams.delete(m); continue; }

@@ -939,19 +939,33 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   const first = await p.evaluate(x => {
     window.readout.apply(x);
     // Before anything is painted: the lines on screen.
+    // (A block of more than 40 lines is coloured as far as the screen shows
+    // and 120 px more, its rest still plain text, the next lines a
+    // slice at a time: enhance.js, showParts.)
     const cb = document.querySelector('.blk[data-slot="2"] .code-block');
     const shown = [...cb.querySelectorAll('pre .line')].filter(l => l.getBoundingClientRect().top < innerHeight);
-    return { hl: cb.dataset.hl, shown: shown.length, plain: shown.filter(l => !l.querySelector('span[style]')).length };
+    const rest = cb.querySelector('pre code').lastChild;
+    const plainRest = !cb.querySelector('pre .line') || (rest.nodeType === 3 && rest.length > 1 && (() => { const r = new Range(); r.setStart(rest, 1); r.setEnd(rest, 2); return r.getBoundingClientRect().top < innerHeight; })());
+    return { hl: cb.dataset.hl, shown: shown.length, plain: shown.filter(l => !l.querySelector('span[style]')).length, plainRest };
   }, fixReset(300, i => i === 2 ? code(i, 120) : i % 4 === 0 ? code(i, 80) : `<p>para ${i} lorem ipsum dolor</p>`, i => i === 2 || i % 4 === 0 ? 'code' : 'paragraph'));
   // Scrolling 25 px a frame down to 4,500 px (by position, not time: a slow
   // machine scrolls as far): each frame, the code on screen.
   const scrolled = await p.evaluate(async () => {
+    // Plain code on screen: a block not coloured at all, or the plain rest of one coloured in part.
+    const plainShown = c => {
+      if (!c.querySelector('pre .line')) return true;
+      const rest = c.querySelector('pre code').lastChild;
+      if (rest.nodeType !== 3 || rest.length < 2) return false;
+      const r = new Range(); r.setStart(rest, 1); r.setEnd(rest, 2);
+      const b = r.getBoundingClientRect();
+      return b.top < innerHeight && b.bottom > 0;
+    };
     let frames = 0, plain = 0;
-    await new Promise(res => { const f = () => { window.scrollBy(0, 25); frames++; for (const c of document.querySelectorAll('.code-block')) { const r = c.getBoundingClientRect(); if (r.bottom > 0 && r.top < innerHeight && c.dataset.hl !== 'done') plain++; } if (scrollY < 4500 && frames < 2000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
+    await new Promise(res => { const f = () => { window.scrollBy(0, 25); frames++; for (const c of document.querySelectorAll('.code-block')) { const r = c.getBoundingClientRect(); if (r.bottom > 0 && r.top < innerHeight && c.dataset.hl !== 'done' && plainShown(c)) plain++; } if (scrollY < 4500 && frames < 2000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
     return { frames, plain, y: Math.round(scrollY) };
   });
   await p.close();
-  check('a long code block on the first screen is coloured in the first paint', first.hl === 'done' && first.shown > 5 && first.plain === 0, JSON.stringify(first));
+  check('a long code block on the first screen is coloured in the first paint', first.shown > 5 && first.plain === 0 && !first.plainRest, JSON.stringify(first));
   check('while scrolling, every code block that comes on screen is already coloured', scrolled.frames > 60 && scrolled.y > 4000 && scrolled.plain === 0, JSON.stringify(scrolled));
 }
 
@@ -1107,6 +1121,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await p.addInitScript(() => {
     window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
     globalThis.READOUT_DIAGRAM_QUIET_MS = 30;
+    globalThis.READOUT_DIAGRAM_GRACE_MS = 300;
   });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
@@ -1127,9 +1142,13 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   const back = await drawnAs(200);
   await p.waitForTimeout(500);
   const end = await p.evaluate(() => window.readout.diagramWork());
+  // Left alone (the grace shortened to 300 ms): the drawings no diagram has go, and the sweep stops.
+  await p.waitForTimeout(1500);
+  const quiet = await p.evaluate(() => window.readout.diagramWork());
   await p.close();
   check('a diagram streamed through 200 sources: at most 64 drawings kept, and the last shown again without drawing',
     missed === 0 && most <= 64 && back && end.draws === d0, JSON.stringify({ missed, most, back, draws: end.draws - d0, cached: end.cached }));
+  check('drawings no diagram in the page has are dropped after a while, and the sweep then stops', quiet.cached === 1 && !quiet.sweeping, JSON.stringify(quiet));
 }
 
 // ---- The audit of a001270: each case as it was found. ----
@@ -1258,6 +1277,54 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
     requestAnimationFrame(() => res(cbs.map(cb => [cb.dataset.hl, Math.round(cb.getBoundingClientRect().top)])));
   }));
   check('code a link jump lands on is coloured in its first frame', r.length === 2 && r.every(([hl, top]) => hl === 'done' && top < 700), JSON.stringify(r));
+}
+// 7b. An outline jump into a page of long code blocks, the window toolbar
+//     over its top: the frame that shows the landing has every line on
+//     screen coloured, under the toolbar too (blocks of more than 40 lines
+//     coloured only as far as the screen shows: enhance.js, showParts).
+{
+  const code = i => `<div class="code-block" data-lang="json"><pre><code>${Array.from({ length: 90 }, (_, l) => `{ "k${i}_${l}": [${l}, true, "v"] },`).join('\n')}</code></pre></div>`;
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i % 10 === 1 ? `<h2 id="j${i}">Part ${i}</h2>` : code(i), i => i % 10 === 1 ? 'heading' : 'code'));
+  await settled();
+  await page.waitForTimeout(800);
+  const out = [];
+  for (const slot of [121, 211, 301]) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await settled();
+    const plainNow = () => page.evaluate(() => new Promise(res => requestAnimationFrame(() => {
+      let plain = 0;
+      for (const cb of document.querySelectorAll('.code-block')) {
+        const r = cb.getBoundingClientRect();
+        if (r.bottom <= 0 || r.top >= innerHeight) continue;
+        if (!cb.querySelector('pre .line')) { plain++; continue; }
+        for (const l of cb.querySelectorAll('pre .line')) { const b = l.getBoundingClientRect(); if (b.bottom > 0 && b.top < innerHeight && l.textContent.trim() && !l.querySelector('span[style]')) plain++; }
+        const rest = cb.querySelector('pre code').lastChild;
+        if (rest.nodeType === 3 && rest.length > 1) { const g = new Range(); g.setStart(rest, 1); g.setEnd(rest, 2); const b = g.getBoundingClientRect(); if (b.top < innerHeight && b.bottom > 0) plain++; }
+      }
+      res(plain);
+    })));
+    out.push(await page.evaluate(slot => new Promise(res => {
+      window.readout.scrollToSlot(slot);
+      requestAnimationFrame(() => {
+        let plain = 0;
+        for (const cb of document.querySelectorAll('.code-block')) {
+          const r = cb.getBoundingClientRect();
+          if (r.bottom <= 0 || r.top >= innerHeight) continue;
+          if (!cb.querySelector('pre .line')) { plain++; continue; }
+          for (const l of cb.querySelectorAll('pre .line')) { const b = l.getBoundingClientRect(); if (b.bottom > 0 && b.top < innerHeight && l.textContent.trim() && !l.querySelector('span[style]')) plain++; }
+          const rest = cb.querySelector('pre code').lastChild;
+          if (rest.nodeType === 3 && rest.length > 1) { const g = new Range(); g.setStart(rest, 1); g.setEnd(rest, 2); const b = g.getBoundingClientRect(); if (b.top < innerHeight && b.bottom > 0) plain++; }
+        }
+        res({ slot, plain });
+      });
+    }), slot));
+    // Then at once a screen down (Page Down), and another: the frames that show them.
+    for (let k = 0; k < 2; k++) { await page.evaluate(() => window.scrollBy(0, innerHeight - 40)); out.at(-1)[`down${k}`] = await plainNow(); }
+    await page.waitForTimeout(300);
+  }
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('an outline jump into long code blocks: every line on screen coloured in its first frame, under the toolbar too, and a screen down at once after it', out.every(o => o.plain === 0 && o.down0 === 0 && o.down1 === 0), JSON.stringify(out));
 }
 // 8. Scrolls of more than a screen at once (the scrollbar dragged, End,
 //    Home, a page down): the frame that shows the landing has the chunks

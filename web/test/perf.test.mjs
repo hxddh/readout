@@ -215,7 +215,31 @@ await page.close();
 // up as a window is (the toolbar inset): a 500 KB agent document with few
 // code blocks, static and with every eighth block changed and unread, and the
 // 1 MB document, then its interactions.
-async function scrollDoc(docOps, { marks = false, act = false, jumps = false } = {}) {
+// A jump (N, a rail tick, a link) onto block `slot`, from the top: the
+// longest frame from the jump to 3 s after, and the lines on screen in the
+// frame that shows the landing not coloured.
+const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
+  window.scrollTo(0, 0);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))));
+  const t0 = performance.now();
+  window.readout.scrollToSlot(slot);
+  const gaps = [];
+  let last = t0, plain = null;
+  const frame = now => {
+    gaps.push(now - last);
+    last = now;
+    if (plain === null) {
+      const cb = document.querySelector(`.blk[data-slot="${slot}"] .code-block`);
+      const lines = [...cb.querySelectorAll('pre .line')].filter(l => { const r = l.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
+      const r = cb.getBoundingClientRect();
+      plain = cb.querySelector('pre .line') ? lines.filter(l => l.textContent.trim() && !l.querySelector('span[style]')).length : Math.max(0, Math.round((Math.min(innerHeight, r.bottom) - Math.max(0, r.top)) / 20));
+    }
+    if (now - t0 < 3000) requestAnimationFrame(frame); else resolve({ longest: Math.max(...gaps), plain });
+  };
+  requestAnimationFrame(frame);
+}), slot);
+
+async function scrollDoc(docOps, { marks = false, act = false, jumps = false, land = 0 } = {}) {
   const before = new Set(webProcesses());
   const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
   collectPageErrors(p, errors, `scroll ${docOps.length} blocks: `);
@@ -251,10 +275,11 @@ async function scrollDoc(docOps, { marks = false, act = false, jumps = false } =
     }), frac));
     await p.waitForTimeout(1200);
   }
+  const landed = land ? await landOn(p, land) : null;
   const scroll = summary(await scrollPasses(p, { inset: 52 }));
   // The page's private memory once it has been scrolled through.
   const mb = pid ? privateMemoryMB(pid) : null;
-  const r = { scroll, mb, act: act ? await interactions(p) : null, jump: jumped.length ? median(jumped) : null };
+  const r = { scroll, mb, act: act ? await interactions(p) : null, jump: jumped.length ? median(jumped) : null, landed };
   // The theme switch's cost is mostly WebKit restyling every element of the
   // page, whatever the reader does: gated on the switch over the same switch
   // done by the attribute alone (WebKit's restyle without Readout's code), in
@@ -599,7 +624,9 @@ const codeOp = (slot, n) => ({ op: 'insert', slot, after: slot - 1, kind: 'code'
 const paraOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'paragraph', html: `<p>Paragraph ${slot} of the plan, with enough words to wrap over a line or two in the narrow column.</p>` });
 const headOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'heading', anchor: `h${slot}`, html: `<h2 id="h${slot}">Section ${slot}</h2>` });
 const codeHeavy = await scrollDoc(Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)), { act: true, jumps: true });
-const oneHuge = await scrollDoc(Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1)), { act: true, jumps: true });
+// (A short JavaScript block at the top: its grammar is loaded at open, as
+// a window's spare page has it loaded, before the jump onto the long one.)
+const oneHuge = await scrollDoc(Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k === 2 ? codeOp(k + 1, 3) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1)), { act: true, jumps: true, land: 1501 });
 
 if (!stream.act5.findSelected) errors.push("find Next at 5 MB did not select its match");
 const result = {
@@ -662,6 +689,8 @@ const result = {
   web_one_huge_code_theme_raw_ms: Math.round(oneHuge.raw),
   web_one_huge_code_theme_over_raw: Math.round(oneHuge.overRaw * 100) / 100,
   web_one_huge_code_elements: oneHuge.elements,
+  web_one_huge_code_land_longest_ms: Math.round(oneHuge.landed.longest),
+  web_one_huge_code_land_plain_lines: oneHuge.landed.plain,
   web_one_huge_code_scroll_p95_ms: oneHuge.scroll.p95,
   web_one_huge_code_blank_px: oneHuge.scroll.blankPx,
   web_one_huge_code_private_mb: oneHuge.mb,

@@ -330,6 +330,10 @@
     "the median of the pairs' ratios (3.8.0 on the same runner, three runs: 1.00-1.02 on the code document, guard",
     "1.05 for that noise; 0.97-1.03 on the huge block, guard 1.18 = 1.03 x1.15), and the elements it restyles,",
     "which drive it (3.8.0 40,363 and 370,168 after the same sequence; guards 40,000 and 370,000).",
+    "web_one_huge_code_land_*: a jump from the top onto the 28,000-line block. Its longest frame is one frame, WebKit",
+    "laying out the 28,000 highlighted lines (3.8.0 on the experiment runner 84,456-85,906 ms, this branch 86,836-89,175):",
+    "extreme class, so 3.8.0's same-runner maximum x1.15 (the user's 3.9.1 bar), guard 98,800. The lines on screen",
+    "plain in the frame that shows the landing: 0, strict.",
     "web_n_jump_5mb_ms (N among 200 changes at 5 MB) and web_scroll_5mb_own_per_frame_ms measured 59-86 and 0.6-1.2 on CI."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
@@ -421,6 +425,8 @@
   "web_one_huge_code_theme_ms": { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
   "web_one_huge_code_theme_over_raw": { "where": "linux-webkit", "unit": "x", "target": 1.0, "guard": 1.18 },
   "web_one_huge_code_elements": { "where": "linux-webkit", "unit": "elements", "target": 300000, "guard": 370000 },
+  "web_one_huge_code_land_longest_ms": { "where": "linux-webkit", "unit": "ms", "target": 86000, "guard": 98800 },
+  "web_one_huge_code_land_plain_lines": { "where": "linux-webkit", "unit": "lines", "target": 0, "guard": 0 },
   "web_one_huge_code_scroll_p95_ms": { "where": "linux-webkit", "unit": "ms", "target": 17, "guard": 34 },
   "web_one_huge_code_blank_px": { "where": "linux-webkit", "unit": "px",     "target": 0,    "guard": 0 },
   "web_one_huge_code_private_mb": { "where": "linux-webkit", "unit": "MB",   "target": 1300, "guard": 1750 }

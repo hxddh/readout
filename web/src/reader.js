@@ -12,7 +12,7 @@
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
+import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, blocksShown, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld } from './reader/marks.js';
 import { chunksHeld } from './reader/chunks.js';
@@ -350,7 +350,8 @@ function setAppearance(o) {
 function scrollToSlot(slot) {
   const el = slots.get(slot);
   if (!el) return;
-  aimAt(el, () => el.getBoundingClientRect().top - 16 - topInset(), () => { pinActiveHeading(slot); noteLanding(el); pinLanding(el); });
+  // (What shows above it, under the window toolbar too: room for the chunk before to be laid out if it shows.)
+  aimAt(el, () => el.getBoundingClientRect().top - 16 - topInset(), () => { pinActiveHeading(slot); noteLanding(el); pinLanding(el); }, 16 + topInset());
   highlightOnScreen();
 }
 
@@ -360,7 +361,7 @@ function scrollToSlot(slot) {
  * was on screen at the top, and the rest waits for the lazy observer, which
  * hears of it only after a frame has shown it plain.
  */
-function highlightOnScreen() { highlightIn(blocksOnScreen()); }
+function highlightOnScreen() { highlightIn(blocksShown()); }
 
 function scrollToAnchor(a) {
   if (!a) return;

@@ -56,13 +56,18 @@ function show(c) {
 }
 
 // A scroll of more than a screen at once (the scrollbar dragged, Home, End,
-// a jump of the page's own) lands past what the lookahead laid out, and its
-// records arrive after the frame that shows the landing: that frame would
-// show the chunks there skipped (blank) or at a stale size. The scroll
-// event comes before the frame is laid out: the chunks on screen are laid
-// out from it (forceLayout), found by their boxes (a skipped chunk's box
-// needs no layout of its blocks) halving the list.
+// Page Down past the lookahead) lands past what the lookahead laid out, and
+// its records arrive after the frame that shows the landing: that frame
+// would show the chunks there skipped (blank) or at a stale size. The
+// scroll event comes before the frame is laid out: the chunks on screen are
+// laid out from it, and the ones beside them (forceLayout: so nothing above
+// moves after), found by their boxes (a skipped chunk's box needs no layout
+// of its blocks) halving the list. A smaller scroll costs a compare.
+// Not a jump of the page's own (aimAt): it laid out what it lands on, and
+// laying out more there made the jump's frame 270 ms slower (scrolledTo).
 let scrolledFrom = 0;
+/** A jump of the page's own laid out what it lands on (aimAt): its scroll is not one to do it for. */
+export function scrolledTo() { scrolledFrom = document.scrollingElement.scrollTop; }
 window.addEventListener('scroll', () => {
   const y = document.scrollingElement.scrollTop;
   const far = Math.abs(y - scrolledFrom) > window.innerHeight;
@@ -217,7 +222,17 @@ function split(c, after) {
   if (!holds(tail[0], tail.at(-1))) { moveOut(c, tail, false); return; }
   const head = [];
   for (let e = c.firstElementChild; e && e !== tail[0]; e = e.nextElementSibling) head.push(e);
-  if (!holds(head[0], head.at(-1))) moveOut(c, head, true);
+  if (!holds(head[0], head.at(-1))) { moveOut(c, head, true); return; }
+  // Both hold something (the focus on one side, a selection on the other):
+  // the larger of the free ends moves out, the items before the first that
+  // holds or after the last. What is written between them stays in the
+  // chunk until they let go (the rebalance splits it then).
+  const items = [...c.children];
+  const held = items.map(e => holds(e, e));
+  const first = held.indexOf(true), last = held.lastIndexOf(true);
+  const before = items.slice(0, first), after_ = items.slice(last + 1);
+  if (before.length >= after_.length && before.length) moveOut(c, before, true);
+  else if (after_.length) moveOut(c, after_, false);
 }
 /** `items` of chunk `c` into a new chunk before or after it, each counting what it counted in `c`. */
 function moveOut(c, items, before) {
