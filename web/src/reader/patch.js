@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, lastItem, prevItem } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
-import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, flushStarts, roughRect } from './chunks.js';
+import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, flushStarts, roughRect, unstale } from './chunks.js';
 import { renderMarks, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, forgetTables } from './enhance.js';
@@ -395,4 +395,4 @@ function countDownNotice() {
 }
 
 // Large documents let WebKit skip laying out the chunks away from the screen (content-visibility, chunks.js).
-function updateCv() { doc.classList.toggle('cv', slots.size > 250); }
+function updateCv() { if (!doc.classList.toggle('cv', slots.size > 250)) unstale(); }

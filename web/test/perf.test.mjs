@@ -215,7 +215,8 @@ await page.close();
 // up as a window is (the toolbar inset): a 500 KB agent document with few
 // code blocks, static and with every eighth block changed and unread, and the
 // 1 MB document, then its interactions.
-async function scrollDoc(docOps, { marks = false, act = false } = {}) {
+async function scrollDoc(docOps, { marks = false, act = false, jumps = false } = {}) {
+  const before = new Set(webProcesses());
   const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
   collectPageErrors(p, errors, `scroll ${docOps.length} blocks: `);
   await instrument(p);
@@ -235,7 +236,25 @@ async function scrollDoc(docOps, { marks = false, act = false } = {}) {
       marks: changed.map((o, i) => ({ slot: o.slot, kind: i % 2 ? 'modified' : 'inserted' })) });
     await p.waitForTimeout(1000);
   }
-  const r = { scroll: summary(await scrollPasses(p, { inset: 52 })), act: act ? await interactions(p) : null };
+  const pid = webProcesses().find(x => !before.has(x));
+  // Outline jumps from the top to headings 30%, 55% and 80% down, to the frame showing where each landed.
+  const jumped = [];
+  if (jumps) for (const frac of [0.3, 0.55, 0.8]) {
+    await p.evaluate(() => window.scrollTo(0, 0));
+    await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await p.waitForTimeout(300);
+    jumped.push(await p.evaluate(frac => new Promise(resolve => {
+      const hs = document.querySelectorAll('#ro-doc .blk.k-heading');
+      const t0 = performance.now();
+      window.readout.scrollToSlot(+hs[Math.floor(hs.length * frac)].dataset.slot);
+      requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0));
+    }), frac));
+    await p.waitForTimeout(1200);
+  }
+  const scroll = summary(await scrollPasses(p, { inset: 52 }));
+  // The page's private memory once it has been scrolled through.
+  const mb = pid ? privateMemoryMB(pid) : null;
+  const r = { scroll, mb, act: act ? await interactions(p) : null, jump: jumped.length ? median(jumped) : null };
   await p.close();
   return r;
 }
@@ -243,6 +262,18 @@ const few = chain(500_000, true).ops;
 const scroll500 = await scrollDoc(few);
 const scroll500m = await scrollDoc(few, { marks: true });
 const scroll1 = await scrollDoc(ops, { act: true });
+
+// Code-heavy documents (3.9.0 chunked by count alone: 32 long code blocks
+// laid out together for a theme change, a jump, find): 700 blocks of
+// 90-line code under a heading every ten, and one 28,000-line code block
+// (about 2 MB) in the middle of 3,000 paragraphs.
+const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const codeOp = (slot, n) => ({ op: 'insert', slot, after: slot - 1, kind: 'code',
+  html: `<div class="code-block" data-lang="js"><pre><code>${esc(Array.from({ length: n }, (_, i) => `  const value${slot}_${i} = compute(${i}, "${'x'.repeat(i % 30)}"); // step ${i}`).join('\n'))}</code></pre></div>` });
+const paraOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'paragraph', html: `<p>Paragraph ${slot} of the plan, with enough words to wrap over a line or two in the narrow column.</p>` });
+const headOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'heading', anchor: `h${slot}`, html: `<h2 id="h${slot}">Section ${slot}</h2>` });
+const codeHeavy = await scrollDoc(Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)), { act: true, jumps: true });
+const oneHuge = await scrollDoc(Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1)), { act: true, jumps: true });
 
 // An agent streaming at the end of a ~5 MB document, the reader following:
 // every fifth patch appends a paragraph, the others write on into it (the
@@ -545,6 +576,17 @@ const result = {
   web_theme_5mb_ms: Math.round(stream.act5.theme),
   web_find_next_5mb_ms: Math.round(stream.act5.findNext * 10) / 10,
   web_insert_middle_5mb_ms: Math.round(stream.insert * 10) / 10,
+  web_code_heavy_jump_ms: Math.round(codeHeavy.jump),
+  web_code_heavy_theme_ms: Math.round(codeHeavy.act.theme),
+  web_code_heavy_scroll_p95_ms: codeHeavy.scroll.p95,
+  web_code_heavy_scroll_max_ms: codeHeavy.scroll.max,
+  web_code_heavy_blank_px: codeHeavy.scroll.blankPx,
+  web_code_heavy_private_mb: codeHeavy.mb,
+  web_one_huge_code_jump_ms: Math.round(oneHuge.jump),
+  web_one_huge_code_theme_ms: Math.round(oneHuge.act.theme),
+  web_one_huge_code_scroll_p95_ms: oneHuge.scroll.p95,
+  web_one_huge_code_blank_px: oneHuge.scroll.blankPx,
+  web_one_huge_code_private_mb: oneHuge.mb,
   web_stream_frame_p95_5mb_ms: stream.streamFrame.p95,
   web_stream_long_frames_5mb: stream.streamFrame.long,
   errors,

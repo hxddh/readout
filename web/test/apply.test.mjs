@@ -651,29 +651,34 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('empty-file notice goes when content arrives', shown && !after, JSON.stringify({ shown, after }));
 }
 
-// Chunks (chunks.js): a document's blocks are grouped in chunks of 32. Order,
-// spacing and the reader's place are the same across a chunk's edge: a
-// heading right after a rule sits flush whether or not a chunk starts
-// between them, and an agent inserting in the middle of a full chunk, then
-// removing blocks until chunks empty, keeps the blocks in order, no chunk
-// empty or past 64, the reader where they were.
+// Chunks (chunks.js): a document's blocks are grouped in chunks of 32 (or
+// about four screens' estimate). Order, spacing and the reader's place are the
+// same across a chunk's edge: a heading right after a rule sits flush whether
+// or not a chunk starts between them, and an agent inserting in the middle of
+// a chunk, then removing blocks until chunks empty, keeps the blocks in
+// order, no chunk empty or past 64, the reader where they were.
 {
-  const kind = i => i === 10 || i === 32 ? 'rule' : i === 11 || i === 33 ? 'heading' : 'paragraph';
-  const html = i => kind(i) === 'rule' ? '<hr>' : kind(i) === 'heading' ? `<h2>Section ${i}</h2>` : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`;
+  // The rule and heading across the edge go where the first chunk ends (its
+  // items are estimated alike: a rule there does not move the edge).
+  let edge = -10;
+  const kind = i => i === 10 || i === edge ? 'rule' : i === 11 || i === edge + 1 ? 'heading' : 'paragraph';
+  const html = i => kind(i) === 'rule' ? '<hr>' : kind(i) === 'heading' ? `<h2>Section ${i}</h2>` : `<p>para ${i} lorem ipsum dolor</p>`;
   await page.evaluate(p => window.readout.apply(p), fixReset(300, html, kind));
-  const flush = await page.evaluate(() => {
+  edge = await page.evaluate(() => document.querySelector('#ro-doc > .chunk').childElementCount);
+  await page.evaluate(p => window.readout.apply(p), fixReset(300, html, kind));
+  const flush = await page.evaluate(edge => {
     const h = s => document.querySelector(`.blk[data-slot="${s}"]`);
-    return { sameChunk: h(10).parentElement === h(11).parentElement, acrossChunks: h(32).parentElement !== h(33).parentElement,
-      inner: getComputedStyle(h(11).firstElementChild).marginTop, edge: getComputedStyle(h(33).firstElementChild).marginTop };
-  });
-  check('a heading after a rule sits flush across a chunk\'s edge as within one', flush.sameChunk && flush.acrossChunks && flush.inner === flush.edge && flush.inner === '0px', JSON.stringify(flush));
+    return { edge, sameChunk: h(10).parentElement === h(11).parentElement, acrossChunks: h(edge).parentElement !== h(edge + 1).parentElement,
+      inner: getComputedStyle(h(11).firstElementChild).marginTop, edgeTop: getComputedStyle(h(edge + 1).firstElementChild).marginTop };
+  }, edge);
+  check('a heading after a rule sits flush across a chunk\'s edge as within one', flush.sameChunk && flush.acrossChunks && flush.inner === flush.edgeTop && flush.inner === '0px', JSON.stringify(flush));
   await toTop(150);
   await settled();
   const before = await topOf(150);
-  // 40 blocks into the middle of the chunk holding 100 (it grows past 64 and splits), then 120 blocks removed (chunks empty and merge).
+  // 40 blocks into the middle of the chunk holding 100 (it is split), then 120 blocks removed (chunks empty and merge).
   const ins = Array.from({ length: 40 }, (_, k) => ({ op: 'insert', slot: 1000 + k, after: k ? 1000 + k - 1 : 100, kind: 'paragraph', html: `<p>inserted ${k}</p>` }));
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: ins }));
-  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 120 }, (_, k) => ({ op: 'remove', slot: 20 + k })).filter(o => o.slot !== 33 && o.slot !== 32) }));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 120 }, (_, k) => ({ op: 'remove', slot: 20 + k })).filter(o => o.slot !== edge && o.slot !== edge + 1) }));
   // Chunks are split and joined once the page has been quiet a moment.
   await page.waitForTimeout(1200);
   await settled();
@@ -684,12 +689,81 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   });
   const expected = [];
   for (let i = 1; i <= 300; i++) {
-    if (!(i >= 20 && i < 140 && i !== 32 && i !== 33)) expected.push(i);
+    if (!(i >= 20 && i < 140 && i !== edge && i !== edge + 1)) expected.push(i);
     if (i === 100) for (let k = 0; k < 40; k++) expected.push(1000 + k);
   }
   check('blocks inserted into a full chunk and removed until chunks empty keep their order, chunks neither empty nor past 64, the reader in place',
     JSON.stringify(shape.order) === JSON.stringify(expected) && shape.sizes.every(n => n > 0 && n <= 64) && Math.abs(shape.top150 - before) <= 1,
     JSON.stringify({ sizes: shape.sizes, before, top150: shape.top150, n: shape.order.length }));
+}
+
+// An agent writes 40 blocks into a part of a large document the reader has
+// read and left (a chunk laid out, skipped since). The page grows by about
+// what was written (its estimate) at once (the rail and End count it), and the reader
+// scrolling back up through it, 300 px a step, sees the text move by the
+// step, not jump by the insert when that chunk is laid out again.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(3000, i => `<p style="min-height:${30 + (i * 13) % 90}px">para ${i}</p>`));
+  // Read from the top (the reset keeps the place the last test left).
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  await page.waitForTimeout(300);
+  await toTop(150, 200);
+  await settled();
+  await page.waitForTimeout(300);
+  const h0 = await page.evaluate(() => document.scrollingElement.scrollHeight);
+  const ins = Array.from({ length: 40 }, (_, k) => ({ op: 'insert', slot: 5000 + k, after: k ? 4999 + k : 20, kind: 'paragraph', html: `<p>new ${k} ${'grow '.repeat(30)}</p>` }));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: ins }));
+  await settled();
+  await page.waitForTimeout(1500);
+  const h1 = await page.evaluate(() => document.scrollingElement.scrollHeight);
+  const drift = await page.evaluate(async () => {
+    const out = [];
+    for (let k = 0; k < 100 && scrollY > 400; k++) {
+      const el = document.elementFromPoint(450, 350).closest('.blk');
+      const t = el.getBoundingClientRect().top;
+      window.scrollBy(0, -300);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      out.push(Math.round(el.getBoundingClientRect().top - t - 300));
+    }
+    return out;
+  });
+  // Written in full: their heights as laid out.
+  const written = await page.evaluate(() => { let h = 0; for (let k = 0; k < 40; k++) h += document.querySelector(`.blk[data-slot="${5000 + k}"]`).getBoundingClientRect().height; return Math.round(h); });
+  const worst = Math.max(...drift.map(Math.abs));
+  check('blocks written into a part read and left: the page grows by about them at once, scrolling back up through it keeps the text in step',
+    worst <= 3 && h1 - h0 >= written / 2 && h1 - h0 <= written * 2, JSON.stringify({ grew: h1 - h0, written, worst, drift: drift.filter(Boolean) }));
+}
+
+// An agent writing a long section into the middle of a large document, 50
+// blocks a patch, far from the reader: chunks stay within 64 blocks as it
+// writes (the chunk is split where the next block goes in), not one chunk
+// of all of them waiting to be split.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(2000));
+  let prev = 1000;
+  for (let k = 0; k < 400; k += 50) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 50 }, (_, j) => { const slot = 9000 + k + j; const o = { op: 'insert', slot, after: prev, kind: 'paragraph', html: `<p>section ${slot}</p>` }; prev = slot; return o; }) }));
+  }
+  const most = await page.evaluate(() => Math.max(...[...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount)));
+  const order = await page.evaluate(() => { const b = [...document.querySelectorAll('#ro-doc .blk')].map(e => +e.dataset.slot); const i = b.indexOf(1000); return b[i + 1] === 9000 && b[i + 400] === 9399 && b[i + 401] === 1001; });
+  check('a section written into the middle, 50 blocks a patch: no chunk past 64 blocks, in order', most <= 64 && order, JSON.stringify({ most, order }));
+}
+
+// Long code: a chunk holds about four screens' estimate, not 32 code blocks
+// (a theme change, a jump or find would lay all of them out), and one huge
+// block is a chunk of its own, the blocks around it in chunks of their own.
+{
+  const code = (i, n) => `<div class="code-block" data-lang="js"><pre><code>${Array.from({ length: n }, (_, l) => `const v${i}_${l} = f(${l});`).join('\n')}</code></pre></div>`;
+  const kinds = i => i === 150 ? 'code' : i > 300 ? 'code' : 'paragraph';
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 150 ? code(i, 3000) : i > 300 ? code(i, 90) : `<p>para ${i} lorem ipsum dolor</p>`, kinds));
+  const shape = await page.evaluate(() => {
+    const b = s => document.querySelector(`.blk[data-slot="${s}"]`);
+    const alone = b(150).parentElement.childElementCount === 1 && b(149).parentElement !== b(150).parentElement && b(151).parentElement !== b(150).parentElement;
+    const codeChunks = [...document.querySelectorAll('#ro-doc > .chunk')].filter(c => +c.firstElementChild.dataset.slot > 300).map(c => c.childElementCount);
+    return { alone, most: Math.max(...codeChunks) };
+  });
+  check('a huge code block is a chunk of its own; long code blocks are two or three a chunk', shape.alone && shape.most <= 3, JSON.stringify(shape));
 }
 
 // The block at the top of the viewport is removed: the block after it takes

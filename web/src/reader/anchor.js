@@ -117,11 +117,6 @@ export function topInset() {
   return parseFloat(root.style.getPropertyValue('--top-inset')) || 0;
 }
 
-/**
- * Re-baselines every block's height for the resize compensator, after a
- * change that reflows the whole page (font size, width, theme)
- * and whose effect on the position the caller restores itself.
- */
 /** `el`'s height (and its chunk's) taken as they are now, after a change whose place the caller kept. */
 export function baseline(el) {
   heights.set(el, el.getBoundingClientRect().height);
@@ -129,6 +124,12 @@ export function baseline(el) {
   if (isChunk(c)) heights.set(c, c.getBoundingClientRect().height);
 }
 
+/**
+ * Re-baselines the chunks' heights (and the blocks' in chunks laid out) for
+ * the resize compensator, after a change that reflows the whole page (font
+ * size, width, theme) and whose effect on the position the caller restores
+ * itself.
+ */
 export function rebaselineHeights() {
   // A chunk skipped is not asked about its blocks: WebKit would lay each
   // one out to answer. They report their sizes when it is laid out again,
@@ -283,9 +284,10 @@ const precedes = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSIT
  * The block whose place on screen the compensation keeps: the landing of a
  * jump still settling, else the first block on screen that was laid out
  * before (not one this round resized, not one in a chunk laid out for the
- * first time). null: none on screen.
+ * first time, nor in one that was entirely above the window). null: none on
+ * screen.
  */
-function keptBlock(resized, chunks, firstChunks) {
+function keptBlock(resized, chunks, firstChunks, above) {
   if (landed) {
     if (landed.el.isConnected && performance.now() < landed.until && Math.abs(document.scrollingElement.scrollTop - landed.y) <= 2) return landed.el;
     landed = null;
@@ -303,9 +305,10 @@ function keptBlock(resized, chunks, firstChunks) {
   for (const then of [true, false]) {
     let grown = then ? before : 0;
     for (let e = first; e;) {
-      // A chunk laid out for the first time (or not yet) had nothing on screen to keep.
+      // A chunk laid out for the first time (or not yet), or one above the
+      // window until it grew into it, had nothing on screen to keep.
       const c = e.parentElement;
-      if (firstChunks.has(c) || neverLaidOut(c)) {
+      if (firstChunks.has(c) || neverLaidOut(c) || above.has(c)) {
         if (then) grown += chunks.get(c) || 0;
         e = nextItem(c.lastElementChild);
         continue;
@@ -329,8 +332,9 @@ function keptBlock(resized, chunks, firstChunks) {
 // at its estimate until then. Any other change keeps the rule for a block
 // changing size later (a <details> opened, an image loaded): only what was
 // entirely above the viewport before it resized is made up for (a chunk as a
-// whole; in the kept block's own chunk, block by block), so what the reader
-// opened at the top of the window grows down from where it is.
+// whole, even one that grew into the window, blocks written into it while it
+// was skipped; in the kept block's own chunk, block by block), so what the
+// reader opened at the top of the window grows down from where it is.
 export const resizeObserver = new ResizeObserver(entries => {
   let delta = 0;
   const inset = topInset();
@@ -351,7 +355,15 @@ export const resizeObserver = new ResizeObserver(entries => {
     if (prev !== undefined && prev !== h) resized.set(el, h - prev);
   }
   if (resized.size || chunks.size) {
-    const kept = keptBlock(resized, chunks, firstChunks);
+    // The chunks entirely above the window before they resized: their bottom
+    // then is their bottom now less what they and the chunks before them grew by.
+    const above = new Set();
+    let grew = 0;
+    for (const c of [...chunks.keys()].sort((a, b) => precedes(a, b) ? -1 : 1)) {
+      grew += chunks.get(c);
+      if (c.getBoundingClientRect().bottom - grew <= inset + 1) above.add(c);
+    }
+    const kept = keptBlock(resized, chunks, firstChunks, above);
     if (kept && kept === landed?.el) {
       const d = kept.getBoundingClientRect().top - landed.top;
       if (Math.abs(d) >= 0.5) delta = d;
@@ -360,7 +372,7 @@ export const resizeObserver = new ResizeObserver(entries => {
       const own = kept?.parentElement;
       for (const [c, d] of chunks) {
         if (c === own) continue;
-        if (kept && firstChunks.has(c) ? precedes(c, kept) : c.getBoundingClientRect().bottom - d <= inset + 1) delta += d;
+        if (kept && firstChunks.has(c) ? precedes(c, kept) : above.has(c)) delta += d;
       }
       for (const [el, d] of resized) if (own && el.parentElement === own && el.getBoundingClientRect().bottom - d <= inset + 1) delta += d;
     }

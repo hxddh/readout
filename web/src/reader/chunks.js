@@ -9,7 +9,10 @@ import { doc, heights, isChunk } from './core.js';
 import { resizeObserver } from './anchor.js';
 
 const CHUNK = 32;   // items a chunk is filled to as blocks arrive in order
-const MAX = 64;     // a chunk with more is split where the next item goes in
+const SPAN = 4000;  // or estimated px (about four screens): long code is two or three blocks a chunk, a huge block one of its own
+const MAX = 64;     // a chunk with more items (or twice SPAN) is split where the next item goes in
+const full = c => c.childElementCount >= CHUNK || estimateOf(c) >= SPAN;
+const overfull = c => c.childElementCount > 1 && (c.childElementCount > MAX || estimateOf(c) > 2 * SPAN);
 
 /** Each item's estimated height, until a chunk is laid out (its size is their sum). */
 const estimates = new WeakMap();
@@ -31,12 +34,17 @@ const lookahead = new IntersectionObserver(entries => {
   for (const e of entries) {
     if (e.isIntersecting) near.add(e.target); else near.delete(e.target);
     show(e.target);
+    // Split or joined once laid out (rebalance).
+    if (e.isIntersecting && (overfull(e.target) || e.target.childElementCount < CHUNK / 4)) uneven(e.target);
   }
 }, { rootMargin: '200% 0px' });
 const forced = new Set();
 function show(c) {
   const on = near.has(c) || forced.has(c);
-  if (on !== c.classList.contains('near')) c.classList.toggle('near', on);
+  if (on === c.classList.contains('near')) return;
+  c.classList.toggle('near', on);
+  // Laid out from now on at its size, remembered when it is skipped again (account).
+  if (on && stale.delete(c)) { c.classList.remove('stale'); c.style.removeProperty('--stale'); }
 }
 
 /**
@@ -50,10 +58,11 @@ export function forceLayout(el) {
   const c = isChunk(el) ? el : el.closest('#ro-doc > .chunk');
   // Near the screen already: it is laid out, and so are its neighbours.
   if (!cv() || !isChunk(c) || c.classList.contains('near')) return;
-  // And the chunk after it, which the rest of the screen below it shows:
+  // The chunk after it, which the rest of the screen below it shows:
   // a chunk on screen is never contained (its paint would clip what blocks
   // draw past the gutters, wide code and tables).
-  for (const x of [c, c.nextElementSibling]) {
+  // And the one before, which a target centred, or near its chunk's top, shows above it.
+  for (const x of [c.previousElementSibling, c, c.nextElementSibling]) {
     if (!isChunk(x) || forced.has(x) || x.classList.contains('near')) continue;
     forced.add(x);
     show(x);
@@ -88,6 +97,7 @@ function makeChunk() {
 
 function dropChunk(c) {
   touched.delete(c);
+  stale.delete(c);
   resizeObserver.unobserve(c);
   lookahead.unobserve(c);
   near.delete(c);
@@ -97,35 +107,70 @@ function dropChunk(c) {
 
 // A chunk never laid out is as tall as its items' estimates; one laid out
 // keeps the size it was last laid out at (contain-intrinsic-size: auto).
+// One laid out and skipped since whose items change (an agent writing in a
+// part the reader has read) is that size and the change's estimate, until it
+// is laid out again: the page's height, the rail and End count them.
 // The chunks a patch changed (patch.js takes their sizes afterwards, so the
 // resize observer does not count what the patch itself keeps the place for).
 export const touched = new Set();
+const stale = new Map();   // chunk -> the size it is skipped at
 function account(c, d) {
   touched.add(c);
   if (!d) return;
   const est = estimateOf(c) + d;
   chunkEstimates.set(c, est);
   if (!laidOut.has(c)) c.style.containIntrinsicSize = `auto ${est}px`;
+  else if (cv() && !c.classList.contains('near')) {
+    // Its height set (reader.css: stale): WebKit does not lay a skipped
+    // element out again for a new contain-intrinsic-size.
+    const size = Math.max(0, (stale.get(c) ?? heights.get(c) ?? est) + d);
+    stale.set(c, size);
+    c.style.setProperty('--stale', `${size}px`);
+    c.classList.add('stale');
+  }
 }
 
-/** Puts `el` after item `after` (null: first in the document), estimated `est` px tall. */
+/**
+ * Puts `el` after item `after` (null: first in the document), estimated `est`
+ * px tall. A block estimated at SPAN or more is a chunk of its own.
+ */
 export function place(el, after, est = 0) {
   let c = after ? chunkOf(after) : doc.firstElementChild;
   if (!isChunk(c)) { c = makeChunk(); doc.prepend(c); }
+  const big = est >= SPAN;
+  // In the middle of a chunk at its limit (an agent writing a section in the
+  // middle), or a big block there: the chunk is split after `after`, unless
+  // what would move holds the selection, the focus or a find mark.
+  if (after?.nextElementSibling && (big || c.childElementCount >= MAX || estimateOf(c) + est > 2 * SPAN)) split(c, after);
   const n = c.childElementCount;
-  if (after && !after.nextElementSibling && n >= CHUNK) {
+  if (after && !after.nextElementSibling && n && (big || full(c))) {
     // After a full chunk's last item (an agent writing on): the next chunk, if it has room, else a new one.
     const next = c.nextElementSibling;
-    if (isChunk(next) && next.childElementCount < CHUNK) { c = next; after = null; }
+    if (!big && isChunk(next) && !full(next) && estimateOf(next) + est <= SPAN) { c = next; after = null; }
     else { const fresh = makeChunk(); c.after(fresh); c = fresh; after = null; }
-  } else if (!after && n >= MAX) {
+  } else if (!after && n && (big || n >= MAX || estimateOf(c) + est > 2 * SPAN || estimates.get(c.firstElementChild) >= SPAN)) {
+    // First in the document, before a chunk at its limit or a big block.
     const fresh = makeChunk(); c.before(fresh); c = fresh;
   }
-  // In the middle of a chunk: it grows (past MAX it is split when the page is quiet).
   if (after) after.after(el); else c.prepend(el);
   estimates.set(el, est);
   account(c, est);
-  if (c.childElementCount > MAX) uneven(c);
+  // Not split (in use): when the page is quiet.
+  if (overfull(c)) uneven(c);
+}
+
+/** The items after `after` in its chunk `c` into a new chunk after it, unless they are in use. */
+function split(c, after) {
+  const tail = [];
+  for (let e = after.nextElementSibling; e; e = e.nextElementSibling) tail.push(e);
+  if (!tail.length || holds(tail[0], tail.at(-1))) return;
+  const fresh = makeChunk();
+  fresh.classList.toggle('near', c.classList.contains('near'));
+  c.after(fresh);
+  fresh.append(...tail);
+  let d = 0;
+  for (const e of tail) d += estimates.get(e) || 0;
+  account(c, -d); account(fresh, d);
 }
 
 /** Puts `el` last in the document. */
@@ -170,32 +215,54 @@ function uneven(c) {
   rebalanceTimer = setTimeout(rebalance, 600);
 }
 function inUse(c) {
-  if (cv() && !c.classList.contains('near')) return true;
-  if (c.contains(document.activeElement)) return true;
+  return (cv() && !c.classList.contains('near')) || holds(c.firstElementChild, c.lastElementChild);
+}
+/** Whether the items `first` to `last` hold the focus, the selection or one of find's marks. */
+function holds(first, last) {
+  if (!first) return false;
+  const span = new Range();
+  span.setStartBefore(first);
+  span.setEndAfter(last);
+  const inside = n => !!n && span.comparePoint(n, 0) === 0 && n !== first.parentNode;
+  if (document.activeElement !== document.body && inside(document.activeElement)) return true;
   const sel = getSelection();
-  for (let i = 0; sel && i < sel.rangeCount; i++) if (sel.getRangeAt(i).intersectsNode(c)) return true;
-  // Find's marks (static ranges: moved, they would point at nothing) in it.
+  for (let i = 0; sel && i < sel.rangeCount; i++) {
+    const r = sel.getRangeAt(i);
+    if (span.comparePoint(r.endContainer, r.endOffset) >= 0 && span.comparePoint(r.startContainer, r.startOffset) <= 0) return true;
+  }
+  // Find's marks (static ranges: moved, they would point at nothing).
   if (typeof CSS !== 'undefined' && CSS.highlights) for (const name of ['ro-find', 'ro-find-cur']) {
-    for (const r of CSS.highlights.get(name) || []) if (c.contains(r.startContainer) || c.contains(r.endContainer)) return true;
+    for (const r of CSS.highlights.get(name) || []) if (inside(r.startContainer) || inside(r.endContainer)) return true;
   }
   return false;
 }
 function rebalance() {
   rebalanceTimer = null;
   const done = [];
+  // Its size as the resize observer last reported it: not one it has yet to
+  // report (a change it has not made up for, which taking it here would lose).
+  const reported = c => Math.abs(c.getBoundingClientRect().height - (heights.get(c) ?? -1)) < 0.5;
   for (const c of unevenChunks) {
     if (!c.isConnected) { unevenChunks.delete(c); continue; }
+    // Skipped: done once it is laid out again (lookahead).
+    if (cv() && !c.classList.contains('near')) { unevenChunks.delete(c); continue; }
     const n = c.childElementCount;
-    if (n > MAX) {
-      if (inUse(c)) continue;
-      // Into chunks of CHUNK, the first keeping its place.
+    if (overfull(c)) {
+      if (inUse(c) || !reported(c)) continue;
+      // Into chunks of CHUNK items or SPAN px, the first keeping its place.
+      const items = [...c.children], parts = [[]];
+      let px = 0;
+      for (const e of items) {
+        const est = estimates.get(e) || 0;
+        if (parts.at(-1).length && (parts.at(-1).length >= CHUNK || px >= SPAN || px + est > 2 * SPAN || est >= SPAN)) { parts.push([]); px = 0; }
+        parts.at(-1).push(e);
+        px += est;
+      }
       let at = c;
-      const items = [...c.children].slice(CHUNK);
-      for (let k = 0; k < items.length; k += CHUNK) {
+      for (const part of parts.slice(1)) {
         const fresh = makeChunk();
         fresh.classList.toggle('near', c.classList.contains('near'));
         at.after(fresh);
-        const part = items.slice(k, k + CHUNK);
         fresh.append(...part);
         let d = 0;
         for (const e of part) d += estimates.get(e) || 0;
@@ -205,9 +272,9 @@ function rebalance() {
       }
       done.push(c);
     } else if (n < CHUNK / 4) {
-      const other = [c.previousElementSibling, c.nextElementSibling].find(o => isChunk(o) && o.childElementCount + n <= CHUNK);
+      const other = [c.previousElementSibling, c.nextElementSibling].find(o => isChunk(o) && o.childElementCount + n <= CHUNK && estimateOf(o) + estimateOf(c) <= SPAN);
       if (other) {
-        if (inUse(c) || inUse(other)) continue;
+        if (inUse(c) || inUse(other) || !reported(c) || !reported(other)) continue;
         const items = [...c.children];
         let d = 0;
         for (const e of items) d += estimates.get(e) || 0;
@@ -238,6 +305,12 @@ export function flushStarts() {
     const p = x.previousElementSibling?.lastElementChild;
     h.classList.toggle('h-flush', !!p && (p.classList.contains('k-rule') || (p.classList.contains('k-frontMatter') && !!h.querySelector(':scope > :is(h1, h2)'))));
   }
+}
+
+/** The document no longer large (no chunk skipped): every chunk at its own height again. */
+export function unstale() {
+  for (const c of stale.keys()) { c.classList.remove('stale'); c.style.removeProperty('--stale'); }
+  stale.clear();
 }
 
 /** Every chunk out of the document (a reset). */
