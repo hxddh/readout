@@ -49,11 +49,27 @@ async function run(name, docOps) {
   const mb = mem(pid);
   let a = {};
   try { a = await interactions(p); } catch (e) { a = { err: String(e).slice(0, 80) }; }
-  const raw = await p.evaluate(async () => { const out = []; for (const dark of [true, false, true, false]) { const t0 = performance.now(); document.documentElement.dataset.theme = dark ? 'dark' : 'light'; void getComputedStyle(document.body).color; const t1 = performance.now(); void document.body.offsetHeight; const t2 = performance.now(); await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))); out.push([Math.round(t1 - t0), Math.round(t2 - t1), Math.round(performance.now() - t2)].join('/')); await new Promise(r => setTimeout(r, 300)); } return out.join(' '); });
-  const app = await p.evaluate(async () => { const out = []; for (const dark of [true, false, true, false]) { const t0 = performance.now(); window.readout.setAppearance({ dark }); const t1 = performance.now(); await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))); out.push([Math.round(t1 - t0), Math.round(performance.now() - t1)].join('/')); await new Promise(r => setTimeout(r, 300)); } return out.join(' '); });
+  // perf.test's theme ratio: raw (the attribute alone) and ours alternated, 5 pairs, settled 300 ms, median of the ratios.
+  const ab = await p.evaluate(async () => {
+    const root = document.documentElement;
+    const settle = () => new Promise(r => setTimeout(r, 300));
+    const painted = f => new Promise(res => { const t0 = performance.now(); f(); requestAnimationFrame(() => setTimeout(() => res(performance.now() - t0), 0)); });
+    const med = xs => { const a = xs.slice().sort((x, y) => x - y), n = a.length; return n % 2 ? a[n >> 1] : (a[n / 2 - 1] + a[n / 2]) / 2; };
+    window.readout.setAppearance({ dark: false });
+    await settle();
+    const raw = [], ours = [], ratio = [];
+    for (let k = 0; k < 5; k++) {
+      const a = await painted(() => { root.dataset.theme = 'dark'; });
+      await settle(); root.dataset.theme = 'light'; await settle();
+      const b = await painted(() => window.readout.setAppearance({ dark: true }));
+      await settle(); window.readout.setAppearance({ dark: false }); await settle();
+      raw.push(Math.round(a)); ours.push(Math.round(b)); ratio.push(b / a);
+    }
+    return { raw, ours, over: Math.round(med(ratio) * 100) / 100 };
+  });
   const els = await p.evaluate(() => ({ all: document.getElementsByTagName('*').length, lit: [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl && c.dataset.hl !== 'pending').map(c => +c.closest('.blk').dataset.slot).join(',') }));
   await p.close();
-  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, slow, err: a.err }));
+  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, slow, ab, err: a.err }));
 }
 for (let rep = 0; rep < 1; rep++) {
   await run('code_heavy', Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)));
