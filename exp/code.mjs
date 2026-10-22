@@ -48,10 +48,11 @@ async function run(name, docOps) {
   const mb = mem(pid);
   let a = {};
   try { a = await interactions(p); } catch (e) { a = { err: String(e).slice(0, 80) }; }
+  const els = await p.evaluate(() => ({ all: document.getElementsByTagName('*').length, lit: [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl && c.dataset.hl !== 'pending').length }));
   await p.close();
-  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, err: a.err }));
+  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, err: a.err }));
 }
-for (let rep = 0; rep < 2; rep++) {
+for (let rep = 0; rep < 1; rep++) {
   await run('code_heavy', Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)));
   try { await run('one_huge', Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1))); } catch (e) { console.log(JSON.stringify({ build: dir.split('/').pop(), name: 'one_huge', crash: String(e).slice(0, 100) })); }
 }
