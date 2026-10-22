@@ -618,6 +618,10 @@ details ul, details ol { padding-left: 1.5em; }
 /* A diagram keeps its own size, narrowed to the column at most to three
    quarters of it (mermaid.js sets that min-width); past that it scrolls. */
 .mermaid-block svg { max-width: 100%; height: auto; }
+/* Mermaid's keyframes (animated edges), here rather than with each
+   drawing's rules (mermaid.js): a sheet added with them restyles the page. */
+@keyframes edge-animation-frame { from { stroke-dashoffset: 0; } }
+@keyframes dash { to { stroke-dashoffset: 0; } }
 .mermaid-src {
   text-align: left; margin: 0; padding: 0.9em 1.05em; border-radius: 8px;
   background: var(--cb-bg); font-family: var(--mono); font-size: var(--fs-code); color: var(--text-2);

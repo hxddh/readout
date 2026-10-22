@@ -840,7 +840,9 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     const busy = b.classList.contains('busy');
     window.readout.setAppearance({ dark: true });
     for (let i = 0; i < 300 && !(b.classList.contains('done') && !b.classList.contains('busy')); i++) await new Promise(r => setTimeout(r, 20));
-    const svg = b.querySelector('.mermaid-svg')?.innerHTML.toLowerCase() || '';
+    // A drawing's colors are in its markup and the page's sheet of its rules (mermaid.js: data-mmd).
+    const d = b.querySelector('.mermaid-svg svg'), rules = d?.dataset.mmd ? [...document.querySelectorAll('head style')].filter(x => x.textContent.includes(`[data-mmd="${d.dataset.mmd}"]`)).map(x => x.textContent).join('') : '';
+    const svg = ((d?.outerHTML || '') + rules).toLowerCase();
     return { busy, done: b.classList.contains('done'), dark: svg.includes('#2a2a2c'), light: svg.includes('#f5f5f7') };
   }, { ...fixBase, version: ++fixVersion, reset: true,
     ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>` }] });
@@ -871,7 +873,8 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
       const m = a.value.match(/url\(['"]?#([^'")]+)/) || (/href$/.test(a.name) && a.value.match(/^#(.+)/));
       return !m || !!svg.querySelector(`[id="${CSS.escape(m[1])}"]`);
     })));
-    const styled = svgs.every(svg => svg.querySelector('style')?.textContent.includes(`#${svg.id}`));
+    // Its rules: in the page's sheet for them (mermaid.js), none in the drawing.
+    const styled = svgs.every(svg => !svg.querySelector('style') && !!svg.dataset.mmd && [...document.querySelectorAll('head style')].some(x => x.textContent.includes(`[data-mmd="${svg.dataset.mmd}"]`)));
     return { svgIds: svgs.map(s => s.id), labels: svgs.map(s => s.textContent.includes(label)), unique: new Set(ids).size === ids.length, refsOk, styled };
   }, next);
   check('a cached diagram copy keeps label text that looks like an id', r.svgIds.length === 2 && r.svgIds[0] !== r.svgIds[1]
@@ -921,7 +924,9 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   const fills = () => page.evaluate(async () => {
     const b = document.querySelector('.blk[data-slot="3"] .mermaid-block');
     for (let i = 0; i < 300 && !(b.classList.contains('done') && !b.dataset.stale && !b.classList.contains('busy')); i++) await new Promise(r => setTimeout(r, 20));
-    const svg = b.querySelector('.mermaid-svg')?.innerHTML.toLowerCase() || '';
+    // A drawing's colors are in its markup and the page's sheet of its rules (mermaid.js: data-mmd).
+    const d = b.querySelector('.mermaid-svg svg'), rules = d?.dataset.mmd ? [...document.querySelectorAll('head style')].filter(x => x.textContent.includes(`[data-mmd="${d.dataset.mmd}"]`)).map(x => x.textContent).join('') : '';
+    const svg = ((d?.outerHTML || '') + rules).toLowerCase();
     return svg.includes('#2a2a2c') ? 'dark' : svg.includes('#f5f5f7') ? 'light' : 'none';
   });
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -1252,7 +1257,9 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   const fills = () => sys.evaluate(async () => {
     const b = document.querySelector('.mermaid-block');
     for (let i = 0; i < 400 && !(b.classList.contains('done') && !b.dataset.stale && !b.classList.contains('busy')); i++) await new Promise(r => setTimeout(r, 20));
-    const svg = b.querySelector('.mermaid-svg')?.innerHTML.toLowerCase() || '';
+    // A drawing's colors are in its markup and the page's sheet of its rules (mermaid.js: data-mmd).
+    const d = b.querySelector('.mermaid-svg svg'), rules = d?.dataset.mmd ? [...document.querySelectorAll('head style')].filter(x => x.textContent.includes(`[data-mmd="${d.dataset.mmd}"]`)).map(x => x.textContent).join('') : '';
+    const svg = ((d?.outerHTML || '') + rules).toLowerCase();
     return { theme: svg.includes('#2a2a2c') ? 'dark' : svg.includes('#f5f5f7') ? 'light' : 'none',
       attr: document.documentElement.getAttribute('data-theme') };
   });
@@ -1417,6 +1424,58 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
 // not a page error (it decided whether a run failed by how frames fell).
 check('a ResizeObserver loop notice is not a page error, anything else is',
   benign('ResizeObserver loop completed with undelivered notifications.') && !benign('TypeError: undefined is not an object'));
+// Drawing diagrams adds no style sheet to the page and takes none out
+// (mermaid.js): either makes WebKit restyle the whole document, seconds in a
+// 5 MB one. Two flowcharts and a sequence diagram: their rules go into the
+// page's sheets for them, one per kind of drawing, added once.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(3));
+  await page.waitForTimeout(300);
+  const sheets = await page.evaluate(async p => {
+    const added = [], removed = [];
+    const isSheet = n => n.nodeName.toLowerCase() === 'style' || (n.querySelectorAll && n.querySelectorAll('style').length > 0);
+    const mo = new MutationObserver(rs => { for (const r of rs) { for (const n of r.addedNodes) if (isSheet(n)) added.push(r.target.nodeName); for (const n of r.removedNodes) if (isSheet(n)) removed.push(r.target.nodeName); } });
+    mo.observe(document, { subtree: true, childList: true });
+    window.readout.apply(p);
+    for (let i = 0; i < 500 && document.querySelectorAll('.mermaid-block.done').length < 3; i++) await new Promise(r => setTimeout(r, 20));
+    await new Promise(r => setTimeout(r, 50));
+    mo.disconnect();
+    return { done: document.querySelectorAll('.mermaid-block.done').length, inDrawings: document.querySelectorAll('.mermaid-svg style').length, added, removed };
+  }, fixPatch({ ops: [
+    ['flowchart LR\n  A[One] --> B[Two]', 'flowchart TD\n  C[Three] --> D[Four]', 'sequenceDiagram\n  Alice->>Bob: Hi'].map((src, k) => ({ op: 'insert', slot: 900 + k, after: k ? 899 + k : 3, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>` })) ].flat() }));
+  check('drawing diagrams adds no style sheet to the page beyond one per kind, and takes none out',
+    sheets.done === 3 && sheets.inDrawings === 0 && sheets.removed.length === 0 && sheets.added.every(t => t === 'HEAD') && sheets.added.length <= 2, JSON.stringify(sheets));
+}
+
+// Two diagrams defining the same class name (classDef) differently keep
+// their own colours, and a drawing's shared sheet is named by its rules, not
+// by the order drawings finished in (a page draws the same every time).
+{
+  const diagram = (slot, after, color) => ({ op: 'insert', slot, after, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">flowchart LR\n  A${slot}[Node ${slot}]:::hot --> B${slot}[Other]\n  classDef hot fill:${color}</pre></div>` });
+  // Each in a page of its own (a page keeps the sheets it made).
+  const drawn = async ops => {
+    const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+    collectPageErrors(p, errors);
+    await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+    await p.goto(`${base}/reader.html`);
+    await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+    await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+    await p.evaluate(x => window.readout.apply(x), { ...fixReset(1), ops: [...fixReset(1).ops, ...ops] });
+    for (let i = 0; i < 300 && await p.evaluate(() => document.querySelectorAll('.mermaid-block.done').length < 2); i++) await p.waitForTimeout(50);
+    const r = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.mermaid-block')].map(b => {
+      const svg = b.querySelector('svg'), shape = svg?.querySelector('.node.hot rect, .node.hot polygon, .node.hot path');
+      return [b.closest('.blk').dataset.slot, { fill: shape && getComputedStyle(shape).fill, sheet: svg?.dataset.mmd }];
+    })));
+    await p.close();
+    return r;
+  };
+  const one = await drawn([diagram(950, 1, '#ff0000'), diagram(951, 950, '#0000ff')]);
+  const two = await drawn([diagram(951, 1, '#0000ff'), diagram(950, 951, '#ff0000')]);
+  check('two diagrams with the same classDef name keep their own colours; their sheets are named the same whichever is drawn first',
+    one[950]?.fill === 'rgb(255, 0, 0)' && one[951]?.fill === 'rgb(0, 0, 255)' && two[950]?.fill === 'rgb(255, 0, 0)' && two[951]?.fill === 'rgb(0, 0, 255)'
+    && one[950].sheet !== one[951].sheet && one[950].sheet === two[950].sheet && one[951].sheet === two[951].sheet, JSON.stringify({ one, two }));
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
