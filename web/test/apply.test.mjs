@@ -805,6 +805,39 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     JSON.stringify({ ...r, skipped, laid, a0 }));
 }
 
+// A block replaced in a part read and left (its chunk laid out once,
+// skipped since) by one of a very different height: the chunk's skipped
+// size loses the old block's height as laid out, not its estimate
+// (chunks.js: counted), so it is about as tall as it lays out, and the
+// reader's text stays where it is.
+{
+  const tall = '<p style="min-height:600px">tall block</p>';
+  await page.evaluate(p => window.readout.apply(p), fixReset(2000, i => i === 1400 ? tall : `<p>para ${i} lorem ipsum</p>`));
+  for (const slot of [1390, 1420]) {
+    await page.evaluate(s => window.readout.scrollToSlot(s), slot);
+    await settled();
+    await page.waitForTimeout(300);
+  }
+  await toTop(200);
+  await settled();
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 1400, change: 'content', kind: 'paragraph', html: '<p>short now</p>' }] }));
+  await settled();
+  await page.waitForTimeout(300);
+  const chunk = () => page.evaluate(() => { const c = document.querySelector('.blk[data-slot="1400"]').parentElement; return { near: c.classList.contains('near'), height: Math.round(c.getBoundingClientRect().height) }; });
+  const skipped = await chunk();
+  const a1 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.readout.scrollToSlot(1400));
+  await settled();
+  await page.waitForTimeout(300);
+  const laid = await chunk();
+  // Within what the new block's estimate is off by (it is not laid out yet).
+  check('a block replaced in a skipped chunk by a much shorter one: the chunk about as tall skipped as laid out, the reader still',
+    !skipped.near && laid.near && Math.abs(skipped.height - laid.height) <= 40 && a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2,
+    JSON.stringify({ skipped, laid, a0, a1 }));
+}
+
 // A chunk emptied by a removal goes, and the chunks either side meet: a
 // heading first in the next one, now right after a rule, starts flush as in
 // a document opened that way (chunks.js: dropChunk marks both touched).

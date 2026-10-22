@@ -199,11 +199,17 @@ export function placeLast(el, est = 0) {
   place(el, c ? c.lastElementChild : null, est);
 }
 
+// What an item counts for in its chunk's skipped size: in a chunk laid out
+// and skipped since, its height as last laid out when known (that size holds
+// it), else its estimate.
+const counted = (c, el) => laidOut.has(c) && heights.has(el) ? heights.get(el) : (estimates.get(el) || 0);
+
 /** Its estimate changed (new content). */
 export function reestimate(el, est) {
-  const was = estimates.get(el) || 0;
+  const c = chunkOf(el);
+  const was = estimates.get(el) || 0, seen = counted(c, el);
   estimates.set(el, est);
-  account(chunkOf(el), est - was);
+  account(c, est - was, est - seen);
 }
 
 /**
@@ -214,10 +220,7 @@ export function unplace(el) {
   const c = chunkOf(el);
   el.remove();
   if (!isChunk(c)) return;
-  // Taken from a chunk laid out and skipped since: its height as last laid
-  // out, when known, is what the chunk's skipped size loses.
-  const est = estimates.get(el) || 0;
-  account(c, -est, laidOut.has(c) && heights.has(el) ? -heights.get(el) : -est);
+  account(c, -(estimates.get(el) || 0), -counted(c, el));
   const n = c.childElementCount;
   if (!n) return dropChunk(c);
   if (sparse(c)) uneven(c);
