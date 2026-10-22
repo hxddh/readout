@@ -1329,11 +1329,16 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   await toTop(30);
   await settled();
   const exact = k => { let h = 100; for (let i = 0; i < 3; i++) { const html = `<p style="height:${h}px;margin:0;overflow:hidden">written ${k} ${'x'.repeat(40)}</p>`; h = 30 + Math.ceil(html.length / 75) * 26; } return `<p style="height:${h}px;margin:0;overflow:hidden">written ${k} ${'x'.repeat(40)}</p>`; };
+  // The chunk written into was laid out by the visit (at a height other than its estimate) and is skipped now.
+  const was = await page.evaluate(() => { const c = document.querySelector('.blk[data-slot="205"]').parentElement; return { near: c.classList.contains('near'), laid: Math.round(c.getBoundingClientRect().height) !== parseInt(c.style.containIntrinsicSize.replace('auto ', '')) }; });
   let after = 205;
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 40 }, (_, k) => { const o = { op: 'insert', slot: 7000 + k, after, kind: 'paragraph', html: exact(k) }; after = 7000 + k; return o; }) }));
   await settled();
-  const r = await bothHeights([190, 240]);
-  check('a skipped chunk split by blocks written into it: each part as tall skipped as laid out', r.chunks >= 3 && Math.abs(r.spanSkipped - r.spanLaid) <= 2 && r.worstChunk <= 2, JSON.stringify(r));
+  // Only the parts of that chunk (from the one holding block 205 to the one
+  // holding 224, its last): a chunk beside it the visit did not lay out is
+  // at its estimate, as any such chunk is.
+  const r = { was, ...(await bothHeights([205, 224])) };
+  check('a skipped chunk split by blocks written into it: each part as tall skipped as laid out', !was.near && was.laid && r.chunks >= 2 && Math.abs(r.spanSkipped - r.spanLaid) <= 2 && r.worstChunk <= 2, JSON.stringify(r));
 }
 // P3. Markers in a document with no block: in the order sent.
 {
