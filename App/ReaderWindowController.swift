@@ -10,6 +10,8 @@ import os
 final class WebViewPool: NSObject, WKNavigationDelegate {
     static let shared = WebViewPool()
     private var spare: ReaderWebView?
+    /// The smoke test: whether the spare page runs in a process of its own.
+    var spareForSmokeTest: ReaderWebView? { spare }
 
     func prewarm() {
         guard spare == nil else { return }

@@ -425,6 +425,9 @@ const firstHighlight = await (async () => {
     const t = () => performance.getEntriesByName('readout-hl-warm').length ? r(true) : performance.now() > end ? r(false) : setTimeout(t, 50);
     t();
   }));
+  // The warm-up: its time (after its delay) and its longest slice, what a
+  // window taking the page mid-warm-up could wait for.
+  const warmStats = await p.evaluate(() => performance.getEntriesByName('readout-hl-warm')[0]?.detail ?? {});
   await p.waitForTimeout(200);
   const r = await p.evaluate(code => {
     const t0 = performance.now();
@@ -456,7 +459,7 @@ const firstHighlight = await (async () => {
   await p.waitForTimeout(3000);
   const privateMB = privateMemoryMB(pid);
   await p.close();
-  return { ...r, warmed, privateMB, pyYaml };
+  return { ...r, warmed, privateMB, pyYaml, warmStats };
 })();
 if (firstHighlight.pyYaml.plain.length) errors.push(`warmed page painted code plain first: ${firstHighlight.pyYaml.plain.join(', ')}`);
 if (!firstHighlight.warmed || firstHighlight.hl !== 'done') errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
@@ -516,6 +519,8 @@ const result = {
   web_first_highlight_cold_ts_ms: Math.round(coldHighlight),
   web_first_highlight_warm_py_yaml_ms: Math.round(firstHighlight.pyYaml.ms),
   web_warm_first_paint_plain_blocks: firstHighlight.pyYaml.plain.length,
+  web_hl_warm_ms: Math.round(firstHighlight.warmStats.ms ?? -1),
+  web_hl_warm_longest_slice_ms: Math.round(firstHighlight.warmStats.longestSlice ?? -1),
   web_tab_private_mb: firstHighlight.privateMB,
   web_stream_doc_bytes: stream.bytes,
   web_stream_doc_blocks: stream.blocks,
