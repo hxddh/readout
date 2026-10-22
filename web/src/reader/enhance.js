@@ -371,10 +371,12 @@ const sourceOf = new WeakMap();   // code block -> original code text
 const warmGrammars = new Set();   // grammar ids that have highlighted a block
 const prepared = new WeakSet();   // code blocks whose grammars have been loaded once
 
-// A long block is highlighted PART_LINES lines at a time, each part a task of
-// its own (the lazy pump's), and shown once whole: highlighted in one go, a
-// 90-line block took 40-70 ms, a frame that stalls while the reader scrolls.
-const PART_LINES = 30;
+// A block ahead of the screen is highlighted PART_LINES lines at a time,
+// each part a task of its own (the lazy pump's), and shown once whole:
+// tokenizing takes a millisecond or two a line (more the first time a
+// grammar's rule is met), so a block highlighted in one go was a task of
+// 40-70 ms, a frame that stalls while the reader scrolls.
+const PART_LINES = 8;
 const parts = new WeakMap();   // code block -> {at, state, head, inner}: the lines highlighted so far
 /** The block's code highlighted: all of it, or (`whole` false) the next part, 'more' while parts are left. */
 function highlightParts(cb, code, id, whole) {
