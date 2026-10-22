@@ -805,6 +805,36 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     JSON.stringify({ ...r, skipped, laid, a0 }));
 }
 
+// A chunk emptied by a removal goes, and the chunks either side meet: a
+// heading first in the next one, now right after a rule, starts flush as in
+// a document opened that way (chunks.js: dropChunk marks both touched).
+{
+  const html = i => i === 32 ? '<hr>' : i === 65 ? '<h2>After the rule</h2>' : `<p>para ${i}</p>`;
+  const kind = i => i === 32 ? 'rule' : i === 65 ? 'heading' : 'paragraph';
+  await page.evaluate(p => window.readout.apply(p), fixReset(120, html, kind));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 31 }, (_, k) => ({ op: 'remove', slot: 33 + k })) }));
+  const look = () => page.evaluate(() => {
+    const b = s => document.querySelector(`.blk[data-slot="${s}"]`);
+    const h = b(65);
+    return { alone: b(64)?.parentElement.childElementCount === 1, first: h.previousElementSibling === null, flush: h.classList.contains('h-flush'), mt: getComputedStyle(h.querySelector('h2')).marginTop, gap: Math.round(h.querySelector('h2').getBoundingClientRect().top - b(32).getBoundingClientRect().bottom) };
+  });
+  const before = await look();
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 64 }] }));
+  await settled();
+  const after = await look();
+  // Opened with the same blocks.
+  const keep = i => i <= 32 || i >= 65;
+  const fresh = fixReset(120, html, kind);
+  fresh.ops = fresh.ops.filter(o => keep(o.slot));
+  for (let i = 1; i < fresh.ops.length; i++) fresh.ops[i].after = fresh.ops[i - 1].slot;
+  await page.evaluate(p => window.readout.apply(p), fresh);
+  await settled();
+  const opened = await look();
+  check('a chunk emptied between a rule and a heading-led chunk: the heading starts as in a document opened that way',
+    before.alone && !before.flush && after.first && after.flush === opened.flush && after.mt === opened.mt && after.gap === opened.gap,
+    JSON.stringify({ before, after, opened }));
+}
+
 // A jump lays out the chunk it lands in, the one after when the screen
 // below reaches it, and the one before only when the screen shows some of
 // it above the target: a rail tick centring the first block of a chunk does;

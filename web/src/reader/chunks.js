@@ -112,6 +112,9 @@ function makeChunk() {
 }
 
 function dropChunk(c) {
+  // The chunks either side now meet: a heading first in the next one may
+  // gain or lose its flush start (flushStarts).
+  for (const x of [c.previousElementSibling, c.nextElementSibling]) if (isChunk(x)) touched.add(x);
   touched.delete(c);
   stale.delete(c);
   resizeObserver.unobserve(c);
