@@ -407,10 +407,14 @@ function highlightBlock(cb) {
   }
 }
 
-// Lazy work is triggered for anything within one screen of the viewport.
-// It runs in slices of a few milliseconds, so scrolling into a run of code
-// blocks never stalls a frame for long; the margin leaves time to finish
-// before they are on screen.
+// Lazy work is triggered for a diagram within one screen of the viewport,
+// code within a quarter of one. It runs in slices of a few milliseconds, so
+// scrolling into a run of code blocks never stalls a frame for long; the
+// margin leaves time to finish before they are on screen. Code is not
+// highlighted further ahead: its spans stay, and a theme switch restyles
+// every one (WebKit restyles skipped content too), so code highlighted a
+// screen ahead of every place the reader stopped made the switch slower
+// than 3.8.0's, which highlighted code as it came on screen.
 // In a chunk content-visibility skips, a block is placed at the chunk's top
 // until the chunk is laid out (chunks.js): one far down a chunk near the
 // screen would count as near too, and be highlighted (its spans kept, and
@@ -421,24 +425,30 @@ const skippedChunk = el => {
   const c = el.closest('#ro-doc > .chunk');
   return !!c && doc.classList.contains('cv') && !c.classList.contains('near');
 };
-export const lazyObserver = new IntersectionObserver(entries => {
-  for (const e of entries) {
-    if (!e.isIntersecting) { waitingForChunk.delete(e.target); continue; }
-    if (skippedChunk(e.target)) { waitingForChunk.add(e.target); continue; }
-    waitingForChunk.delete(e.target);
-    lazyObserver.unobserve(e.target);
-    queue.push(e.target);
-  }
-  pump();
-}, { rootMargin: '100% 0px 100% 0px' });
+const lazy = margin => {
+  const o = new IntersectionObserver(entries => {
+    for (const e of entries) {
+      if (!e.isIntersecting) { waitingForChunk.delete(e.target); continue; }
+      if (skippedChunk(e.target)) { waitingForChunk.add(e.target); continue; }
+      waitingForChunk.delete(e.target);
+      o.unobserve(e.target);
+      queue.push(e.target);
+    }
+    pump();
+  }, { rootMargin: `${margin} 0px ${margin} 0px` });
+  return o;
+};
+export const lazyObserver = lazy('100%');
+const codeObserver = lazy('25%');
 /** Chunk `c` is laid out from now on: what waited in it for that is asked about again, where it really is. */
 export function nearChunk(c) {
   for (const el of waitingForChunk) {
     if (!el.isConnected) { waitingForChunk.delete(el); continue; }
     if (!c.contains(el)) continue;
     waitingForChunk.delete(el);
-    lazyObserver.unobserve(el);
-    lazyObserver.observe(el);
+    const o = el.classList.contains('code-block') ? codeObserver : lazyObserver;
+    o.unobserve(el);
+    o.observe(el);
   }
 }
 
@@ -484,7 +494,7 @@ export function renderLazy(near = inViewport) {
   const onScreen = [];
   for (const cb of blocks) {
     if (!cb.isConnected || cb.dataset.hl !== 'pending') continue;
-    if (near(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
+    if (near(cb)) onScreen.push(cb); else codeObserver.observe(cb);
   }
   for (const cb of onScreen) highlightBlock(cb);
   // The page's diagrams, without a search of the whole page in every patch.
