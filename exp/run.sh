@@ -8,6 +8,6 @@ for c in $COMMITS; do ../exp/mk.sh $c || echo "build failed $c"; done
 git show $FIX:web/test/scrollperf.mjs > test/scrollperf.mjs
 mkdir -p ../exp/out
 ln -sfn ../web/node_modules ../exp/node_modules
-for rep in 1 2; do for c in $COMMITS; do
+for rep in 1 2 3; do for c in $COMMITS; do
   node ../exp/code.mjs ../exp/builds/$c >> ../exp/out/code.jsonl 2>>../exp/out/code-err.log || echo "run failed $c"
 done; done
