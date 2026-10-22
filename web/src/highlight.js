@@ -500,7 +500,7 @@ export async function prepare(id, code) {
  * A highlighted block keeps its spans, and a theme switch restyles every
  * one of them, wherever it is in the page.
  */
-function plainTokens(html) {
+export function plainTokens(html) {
   const m = /^<pre\b[^>]*\bstyle="([^"]*)"/.exec(html);
   const light = m && /--shiki-light:(#[0-9a-fA-F]+)/.exec(m[1])?.[1];
   const dark = m && /--shiki-dark:(#[0-9a-fA-F]+)/.exec(m[1])?.[1];

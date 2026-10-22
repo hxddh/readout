@@ -10,12 +10,32 @@ import { pathToFileURL } from 'node:url';
 import { createHighlighterCore } from 'shiki/core';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 import { shikiGrammars } from '../shiki-grammars.mjs';
-import { resolveLang } from '../src/highlight.js';
+import { resolveLang, plainTokens } from '../src/highlight.js';
 
 let failures = 0;
 function check(name, cond, extra = '') {
   if (cond) console.log(`ok: ${name}`);
   else { console.log(`FAIL: ${name} ${extra}`); failures++; }
+}
+
+// A token is left as bare text only when its span's whole style is the
+// block's own colour in both themes (highlight.js: plainTokens): a theme
+// switch does not highlight again, so a token in the block's colour in one
+// theme only, or with a font style, keeps its span.
+{
+  const pre = '<pre class="shiki" style="--shiki-light:#1f2328;--shiki-dark:#e6edf3;--shiki-light-bg:#fff;--shiki-dark-bg:#0d1117"><code><span class="line">';
+  const tail = '</span></code></pre>';
+  const run = spans => plainTokens(pre + spans + tail).slice(pre.length, -tail.length);
+  const own = '<span style="--shiki-light:#1F2328;--shiki-dark:#E6EDF3">own</span>';
+  const lightOnly = '<span style="--shiki-light:#1f2328;--shiki-dark:#FF7B72">light only</span>';
+  const darkOnly = '<span style="--shiki-light:#CF222E;--shiki-dark:#e6edf3">dark only</span>';
+  const italic = '<span style="--shiki-light:#1f2328;--shiki-dark:#e6edf3;--shiki-light-font-style:italic;--shiki-dark-font-style:italic">italic</span>';
+  const bold = '<span style="--shiki-light:#1f2328;--shiki-dark:#e6edf3;font-weight:bold">bold</span>';
+  check('a token in the block\'s own colours in both themes is its text alone', run(own) === 'own', run(own));
+  for (const [name, span] of [['the block\'s colour in light only', lightOnly], ['the block\'s colour in dark only', darkOnly], ['an italic token in the block\'s colours', italic], ['a bold one', bold]]) {
+    check(`${name} keeps its span`, run(span) === span, run(span));
+  }
+  check('a mix keeps each as it should be', run(own + lightOnly + own + italic) === 'own' + lightOnly + 'own' + italic, run(own + lightOnly + own + italic));
 }
 
 // Every grammar highlight.js can load.
