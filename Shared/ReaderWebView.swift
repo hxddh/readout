@@ -142,16 +142,6 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         // Tab reaches links (to other documents, the web, source files) as it
         // reaches the paths in code spans; WebKit leaves them to ⌥Tab by default.
         config.preferences.tabFocusesLinks = true
-        // The page's layers are drawn on the CPU. Drawn on the GPU (WebKit's
-        // accelerated drawing), each new page's first document waited for it
-        // 0.5-0.9 s on the macOS CI runner, inside WebKit (MetalContext::flush):
-        // the document came on screen that much later (3.9.0), or the page
-        // froze that long just after it did (3.8.0), and every warm open paid
-        // it again. Private (_acceleratedDrawingEnabled): set only where
-        // WebKit answers to it.
-        if config.preferences.responds(to: NSSelectorFromString("_setAcceleratedDrawingEnabled:")) {
-            config.preferences.setValue(false, forKey: "acceleratedDrawingEnabled")
-        }
         let ucc = WKUserContentController()
         config.userContentController = ucc
         super.init(frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: config)

@@ -417,10 +417,6 @@ edge = load("scroll-edge.json")
 print(f"scroll-edge: {edge}")
 check("scroll edge: the automatic content-inset fill is on",
       edge.get("fill_settable") is True and edge.get("automatic_fill") is True, edge)
-# The page's layers are drawn on the CPU: on the GPU, a new page's first
-# document waited 0.5-0.9 s for it inside WebKit (3.9.1 launch).
-check("page: WebKit's accelerated drawing is off (its layers drawn on the CPU)",
-      edge.get("accelerated_drawing") is False, edge)
 props = (edge.get("pocket") or {}).get("properties") or {}
 check("scroll edge: the top scroll pocket has the automatic style, no capture colour, no solid hard pocket",
       props.get("style") == "0" and props.get("captureColor") == "nil" and props.get("prefersSolidColorHardPocket") == "0", edge.get("pocket"))

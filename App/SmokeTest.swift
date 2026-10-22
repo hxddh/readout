@@ -472,11 +472,6 @@ enum SmokeTest {
             let fill = (webView.value(forKey: "_usesAutomaticContentInsetBackgroundFill") as? NSNumber)?.boolValue
             json["automatic_fill"] = fill.map { $0 as Any } ?? NSNull()
         }
-        // The page's layers drawn on the CPU (ReaderWebView): WebKit's accelerated drawing off.
-        let prefs = webView.configuration.preferences
-        if prefs.responds(to: NSSelectorFromString("_acceleratedDrawingEnabled")) {
-            json["accelerated_drawing"] = (prefs.value(forKey: "_acceleratedDrawingEnabled") as? NSNumber).map { $0.boolValue as Any } ?? NSNull()
-        }
         let rect = "(() => { const c = document.querySelector('.code-block'); if (!c) return null; window.scrollBy(0, c.getBoundingClientRect().top + 10); const r = c.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; })()"
         let r = (try? await webView.evaluateJavaScript(rect)) as? [NSNumber]
         try? await Task.sleep(for: .seconds(1.2))
