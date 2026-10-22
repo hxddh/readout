@@ -24,6 +24,27 @@ const codeOp = (slot, n) => ({ op: 'insert', slot, after: slot - 1, kind: 'code'
   html: `<div class="code-block" data-lang="js"><pre><code>${esc(Array.from({ length: n }, (_, i) => `  const value${slot}_${i} = compute(${i}, "${'x'.repeat(i % 30)}"); // step ${i}`).join('\n'))}</code></pre></div>` });
 const paraOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'paragraph', html: `<p>Paragraph ${slot} of the plan, with enough words to wrap over a line or two in the narrow column.</p>` });
 const headOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'heading', anchor: `h${slot}`, html: `<h2 id="h${slot}">Section ${slot}</h2>` });
+const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
+  window.scrollTo(0, 0);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))));
+  const t0 = performance.now();
+  window.readout.scrollToSlot(slot);
+  const gaps = [];
+  let last = t0, plain = null;
+  const frame = now => {
+    gaps.push(now - last);
+    last = now;
+    if (plain === null) {
+      const cb = document.querySelector(`.blk[data-slot="${slot}"] .code-block`);
+      const lines = [...cb.querySelectorAll('pre .line')].filter(l => { const r = l.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
+      const r = cb.getBoundingClientRect();
+      plain = cb.querySelector('pre .line') ? lines.filter(l => l.textContent.trim() && !l.querySelector('span[style]')).length : Math.max(0, Math.round((Math.min(innerHeight, r.bottom) - Math.max(0, r.top)) / 20));
+    }
+    if (now - t0 < 3000) requestAnimationFrame(frame); else resolve({ longest: Math.max(...gaps), plain });
+  };
+  requestAnimationFrame(frame);
+}), slot);
+
 const browser = await webkit.launch();
 async function run(name, docOps) {
   const before = new Set(webProcesses());
@@ -44,6 +65,7 @@ async function run(name, docOps) {
     jumped.push(await p.evaluate(frac => new Promise(resolve => { const hs = document.querySelectorAll('#ro-doc .blk.k-heading'); const t0 = performance.now(); window.readout.scrollToSlot(+hs[Math.floor(hs.length * frac)].dataset.slot); requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0)); }), frac));
     await p.waitForTimeout(1200);
   }
+  const landed = name === 'one_huge' ? await landOn(p, 1501) : null;
   const s = summary(await scrollPasses(p, { inset: 52 }));
   const slow = (await p.evaluate(() => window.__slow || [])).length;
   const mb = mem(pid);
@@ -69,7 +91,7 @@ async function run(name, docOps) {
   });
   const els = await p.evaluate(() => ({ all: document.getElementsByTagName('*').length, lit: [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl && c.dataset.hl !== 'pending').map(c => +c.closest('.blk').dataset.slot).join(',') }));
   await p.close();
-  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, slow, ab, err: a.err }));
+  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, slow, ab, landed, jumps: jumped.map(Math.round), err: a.err }));
 }
 for (let rep = 0; rep < 1; rep++) {
   await run('code_heavy', Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)));
