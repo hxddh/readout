@@ -182,7 +182,7 @@ export function scrollToElement(target, { center = false, gap } = {}) {
     // The top of the page lies under the window toolbar: aim below it.
     const inset = topInset();
     return center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset;
-  }, () => pinLanding(target));
+  }, () => pinLanding(target), center ? window.innerHeight / 2 : 0);
 }
 
 export function atBottom() {
@@ -232,6 +232,9 @@ let settleQueued = false;
  * the page growing shorter has moved the scroll position already.
  */
 let landed = null;   // {el, top, until, y}: its top on screen, and where the page was left
+// The page at its end: a scroll position moved since a jump left it may be
+// the page growing shorter (a chunk near the end laid out), not the reader.
+const atEnd = () => { const se = document.scrollingElement; return se.scrollTop >= se.scrollHeight - window.innerHeight - 1; };
 onKeptScroll(dy => { if (landed) landed.y += dy; });
 export function pinLanding(el) {
   landed = cv()
@@ -244,7 +247,8 @@ export const AIM_MS = 1000;
 /**
  * Every jump (a link, a footnote and its back-link, an outline click, a
  * match found, N, a rail tick, a place restored): `off()` is how far the
- * page is from where `el` should be, `landed()` runs after each aim. The
+ * page is from where `el` should be, `landed()` runs after each aim, `room`
+ * how much of the screen shows above `el` where it lands (forceLayout). The
  * chunk it lands in is laid out by the frames after the jump (WebKit places
  * a skipped chunk's blocks at its top until then), the landing stays put
  * while they do (pinLanding), and the page aims again at whatever still
@@ -259,8 +263,8 @@ onKeptScroll(dy => { if (aiming) aiming.y += dy; });
 for (const type of ['wheel', 'keydown', 'mousedown', 'touchstart']) {
   window.addEventListener(type, () => { aiming = null; landed = null; }, { capture: true, passive: true });
 }
-export function aimAt(el, off, landed) {
-  forceLayout(el);
+export function aimAt(el, off, landed, room = 0) {
+  forceLayout(el, room);
   window.scrollBy(0, off());
   landed();
   if (!cv()) return;
@@ -270,7 +274,7 @@ export function aimAt(el, off, landed) {
   const reaim = () => {
     // Another jump since, or the reader scrolled (the scroll event telling
     // the TOC may not have run yet): leave the page where it is.
-    if (aiming !== mine || !el.isConnected || Math.abs(se.scrollTop - mine.y) > 2) return;
+    if (aiming !== mine || !el.isConnected || (Math.abs(se.scrollTop - mine.y) > 2 && !atEnd())) return;
     const d = off();
     if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; landed(); }
     if (performance.now() < until) requestAnimationFrame(reaim);
@@ -289,7 +293,7 @@ const precedes = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSIT
  */
 function keptBlock(resized, chunks, firstChunks, above) {
   if (landed) {
-    if (landed.el.isConnected && performance.now() < landed.until && Math.abs(document.scrollingElement.scrollTop - landed.y) <= 2) return landed.el;
+    if (landed.el.isConnected && performance.now() < landed.until && (Math.abs(document.scrollingElement.scrollTop - landed.y) <= 2 || atEnd())) return landed.el;
     landed = null;
   }
   const first = topBlock();

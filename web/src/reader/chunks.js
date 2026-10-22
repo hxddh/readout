@@ -13,6 +13,7 @@ const SPAN = 4000;  // or estimated px (about four screens): long code is two or
 const MAX = 64;     // a chunk with more items (or twice SPAN) is split where the next item goes in
 const full = c => c.childElementCount >= CHUNK || estimateOf(c) >= SPAN;
 const overfull = c => c.childElementCount > 1 && (c.childElementCount > MAX || estimateOf(c) > 2 * SPAN);
+const sparse = c => c.childElementCount < CHUNK / 4 && estimateOf(c) < SPAN / 4;
 
 /** Each item's estimated height, until a chunk is laid out (its size is their sum). */
 const estimates = new WeakMap();
@@ -35,7 +36,7 @@ const lookahead = new IntersectionObserver(entries => {
     if (e.isIntersecting) near.add(e.target); else near.delete(e.target);
     show(e.target);
     // Split or joined once laid out (rebalance).
-    if (e.isIntersecting && (overfull(e.target) || e.target.childElementCount < CHUNK / 4)) uneven(e.target);
+    if (e.isIntersecting && (overfull(e.target) || sparse(e.target))) uneven(e.target);
   }
 }, { rootMargin: '200% 0px' });
 const forced = new Set();
@@ -53,16 +54,27 @@ function show(c) {
  * new blocks at the end a following reader goes to (WebKit lays a skipped
  * chunk out in the frame, not when asked: until then it places its blocks at
  * its top). Kept for two frames, then for as long as it is near the screen.
+ * `room`: how much of the screen will show above `el` (a jump centring it).
  */
-export function forceLayout(el) {
+export function forceLayout(el, room = 0) {
   const c = isChunk(el) ? el : el.closest('#ro-doc > .chunk');
   // Near the screen already: it is laid out, and so are its neighbours.
   if (!cv() || !isChunk(c) || c.classList.contains('near')) return;
-  // The chunk after it, which the rest of the screen below it shows:
-  // a chunk on screen is never contained (its paint would clip what blocks
-  // draw past the gutters, wide code and tables).
-  // And the one before, which a target centred, or near its chunk's top, shows above it.
-  for (const x of [c.previousElementSibling, c, c.nextElementSibling]) {
+  // The chunks before and after it, when what the screen shows above `el`
+  // (room) or two screens below it reach into them by its items' estimates:
+  // a target centred, or near its chunk's end. A chunk on screen is never
+  // contained (its paint would clip what blocks draw past the gutters, wide
+  // code and tables). Not otherwise: laying out long code there would make
+  // the jump slower (what the window toolbar covers above a target at the
+  // top is laid out in the next frame, as the chunk comes near).
+  const item = el === c ? null : el.closest('#ro-doc > .chunk > *');
+  let above = 0, below = 0;
+  if (item) {
+    for (let e = item.previousElementSibling; e && above < room; e = e.previousElementSibling) above += estimates.get(e) || 0;
+    for (let e = item; e && below < 2 * innerHeight; e = e.nextElementSibling) below += estimates.get(e) || 0;
+  }
+  const around = [!item || above < room ? c.previousElementSibling : null, c, !item || below < 2 * innerHeight ? c.nextElementSibling : null];
+  for (const x of around) {
     if (!isChunk(x) || forced.has(x) || x.classList.contains('near')) continue;
     forced.add(x);
     show(x);
@@ -198,7 +210,7 @@ export function unplace(el) {
   account(c, -(estimates.get(el) || 0));
   const n = c.childElementCount;
   if (!n) return dropChunk(c);
-  if (n < CHUNK / 4) uneven(c);
+  if (sparse(c)) uneven(c);
 }
 
 // Splitting a chunk grown past MAX and joining one left with few items move
@@ -271,7 +283,7 @@ function rebalance() {
         at = fresh;
       }
       done.push(c);
-    } else if (n < CHUNK / 4) {
+    } else if (sparse(c)) {
       const other = [c.previousElementSibling, c.nextElementSibling].find(o => isChunk(o) && o.childElementCount + n <= CHUNK && estimateOf(o) + estimateOf(c) <= SPAN);
       if (other) {
         if (inUse(c) || inUse(other) || !reported(c) || !reported(other)) continue;

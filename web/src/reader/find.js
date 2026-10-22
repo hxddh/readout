@@ -381,7 +381,7 @@ function land() {
     if (r.top >= inset + 8 && r.bottom <= innerHeight - 8) return 0;
     return r.top - inset - (innerHeight - inset) / 3;
   };
-  aimAt(el, off, () => { noteLanding(el); pinLanding(el); });
+  aimAt(el, off, () => { noteLanding(el); pinLanding(el); }, (innerHeight + 2 * topInset()) / 3);
 }
 
 // While finding, an edit (an agent writing) is found in too: the count

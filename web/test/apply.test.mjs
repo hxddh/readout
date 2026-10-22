@@ -761,6 +761,34 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('a section written into the middle, 50 blocks a patch: no chunk past 64 blocks, in order', most <= 64 && order, JSON.stringify({ most, order }));
 }
 
+// A jump lays out the chunk it lands in, the one after when the screen
+// below reaches it, and the one before only when the screen shows some of
+// it above the target: a rail tick centring the first block of a chunk does;
+// an outline jump to a block lower in its chunk does not (long code there
+// would make the jump slower).
+{
+  const r = fixReset(3000, i => `<p style="min-height:${30 + (i * 13) % 90}px">para ${i}</p>`);
+  r.marks = [{ slot: 2017, kind: 'inserted' }];
+  await page.evaluate(p => window.readout.apply(p), r);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  await page.waitForTimeout(300);
+  const laid = () => page.evaluate(() => [...document.querySelectorAll('#ro-doc > .chunk')].map((c, i) => c.classList.contains('near') ? i : -1).filter(i => i >= 0));
+  const at = s => page.evaluate(s => [...document.querySelectorAll('#ro-doc > .chunk')].indexOf(document.querySelector(`.blk[data-slot="${s}"]`).parentElement), s);
+  const first = await page.evaluate(() => document.querySelector('.blk[data-slot="2017"]').previousElementSibling === null);
+  const centred = await page.evaluate(() => { document.querySelector('#ro-rail button').click(); return [...document.querySelectorAll('#ro-doc > .chunk')].map((c, i) => c.classList.contains('near') ? i : -1).filter(i => i >= 0); });
+  const c2017 = await at(2017);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  await page.waitForTimeout(300);
+  const before = await laid();
+  const top = await page.evaluate(() => { window.readout.scrollToSlot(1220); return [...document.querySelectorAll('#ro-doc > .chunk')].map((c, i) => c.classList.contains('near') ? i : -1).filter(i => i >= 0); });
+  const c1220 = await at(1220);
+  check('a centred jump lays out the chunk before its target; a jump to the top of the window, to a block lower in its chunk, not',
+    first && centred.includes(c2017 - 1) && centred.includes(c2017) && !before.includes(c1220 - 1) && top.includes(c1220) && !top.includes(c1220 - 1),
+    JSON.stringify({ first, c2017, centred, c1220, top }));
+}
+
 // Long code: a chunk holds about four screens' estimate, not 32 code blocks
 // (a theme change, a jump or find would lay all of them out), and one huge
 // block is a chunk of its own, the blocks around it in chunks of their own.

@@ -550,7 +550,7 @@ export function jump(dir, first = false) {
   // is laid out (not the first block on screen, the resize compensation's
   // usual choice), aimed at again as it is (aimAt).
   if (smooth) window.scrollBy({ top: target.getBoundingClientRect().top - line, behavior: 'smooth' });
-  else aimAt(target, () => target.getBoundingClientRect().top - line, () => pinLanding(target));
+  else aimAt(target, () => target.getBoundingClientRect().top - line, () => pinLanding(target), line);
   focusBlock(target);
   pulse(target);
   visit(target, members);
