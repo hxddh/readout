@@ -2,7 +2,41 @@
 import { doc, root, strings, inViewport, pageTheme, quicklook } from './core.js';
 import { lazyObserver } from './enhance.js';
 
+// Drawings by look and source, most recently used last. An agent writing a
+// diagram makes a source of every few characters it adds: at most CACHE_MAX
+// are kept, and one whose source no diagram in the page has any more goes
+// after GRACE_MS (an undo, or a rewrite back to it, still finds it).
 const mermaidCache = new Map();   // look+source -> {svg, id} or {error}
+const CACHE_MAX = 64;
+const GRACE_MS = 5000;
+const unusedSince = new Map();    // key -> when no diagram in the page had its source
+let sweepTimer = 0;
+function cacheGet(key) {
+  const out = mermaidCache.get(key);
+  if (out) { mermaidCache.delete(key); mermaidCache.set(key, out); }
+  return out;
+}
+function cacheSet(key, out) {
+  mermaidCache.delete(key);
+  mermaidCache.set(key, out);
+  while (mermaidCache.size > CACHE_MAX) { const k = mermaidCache.keys().next().value; mermaidCache.delete(k); unusedSince.delete(k); }
+  sweepLater();
+}
+function sweepLater() {
+  if (!sweepTimer && mermaidCache.size) sweepTimer = setTimeout(sweep, GRACE_MS);
+}
+function sweep() {
+  sweepTimer = 0;
+  const inPage = new Set([...doc.querySelectorAll('.mermaid-block > .mermaid-src')].map(e => e.textContent));
+  const now = performance.now();
+  for (const key of [...mermaidCache.keys()]) {
+    if (inPage.has(key.slice(key.indexOf('\u0000') + 1))) { unusedSince.delete(key); continue; }
+    const since = unusedSince.get(key);
+    if (since === undefined) unusedSince.set(key, now);
+    else if (now - since >= GRACE_MS) { mermaidCache.delete(key); unusedSince.delete(key); }
+  }
+  sweepLater();
+}
 let mermaidPromise = null;
 let mermaidLook = null;   // the look Mermaid is set up for: theme and type size
 let mermaidSeq = 0;
@@ -228,7 +262,7 @@ async function warmUp() {
 // it adds. Drawn each time, the diagram flickers between drawings and parse
 // errors: a diagram whose source changes is drawn again only once it has
 // been still for a moment, and its last good drawing stays until then.
-const QUIET_MS = 400;
+const QUIET_MS = globalThis.READOUT_DIAGRAM_QUIET_MS ?? 400;   // (a test shortens it)
 const drawnIn = new WeakMap();   // .blk -> [{src, node, timer}], one per diagram in it
 
 function diagramSlot(block) {
@@ -276,7 +310,7 @@ function pruneQueue() {
 }
 /** Tests: diagrams drawn so far, and what the queue holds. */
 export function diagramWork() {
-  return { draws: mermaidDraws, queued: mermaidQueue.length, detached: mermaidQueue.filter(b => !b.isConnected).length };
+  return { draws: mermaidDraws, cached: mermaidCache.size, queued: mermaidQueue.length, detached: mermaidQueue.filter(b => !b.isConnected).length };
 }
 
 async function pumpMermaid() {
@@ -303,7 +337,7 @@ async function pumpMermaid() {
       if (gone()) continue;
       const theme = mermaidLook;
       const key = theme + '\u0000' + src;
-      let out = mermaidCache.get(key);
+      let out = cacheGet(key);
       if (!out) {
         const id = `mmd-${++mermaidSeq}`;
         try {
@@ -315,7 +349,7 @@ async function pumpMermaid() {
           out = { error: diagramError(err) };
           document.querySelectorAll(`#d${id}, #${id}`).forEach(e => e.remove());
         }
-        mermaidCache.set(key, out);
+        cacheSet(key, out);
       }
       if (!block.isConnected) continue;
       // The theme or type size changed while it was being drawn: draw it again.

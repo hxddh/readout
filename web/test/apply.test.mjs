@@ -1096,6 +1096,41 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     bad.length === 0, JSON.stringify({ bad, last: samples.at(-1) }));
 }
 
+// An agent streaming one diagram, 200 sources one after the other: the
+// drawings kept stay within the cache's 64 (mermaid.js: cacheSet), and the
+// last source shown again, after a rewrite and back, is not drawn again.
+// (A source is drawn once still for READOUT_DIAGRAM_QUIET_MS, 30 ms here.)
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => {
+    window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    globalThis.READOUT_DIAGRAM_QUIET_MS = 30;
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  const mm = v => `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Stream ${v}] --> B[End]</pre></div>`;
+  const drawnAs = v => p.evaluate(v => new Promise(res => { const t0 = performance.now(); const f = () => { const t = document.querySelector('.blk[data-slot="2"] .mermaid-svg')?.textContent || ''; if (t.includes(`Stream ${v}`)) res(true); else if (performance.now() - t0 > 5000) res(false); else setTimeout(f, 10); }; f(); }), v);
+  await p.evaluate(x => window.readout.apply(x), fixReset(5, i => i === 2 ? mm(0) : `<p>para ${i}</p>`, i => i === 2 ? 'mermaid' : 'paragraph'));
+  let missed = 0, most = 0;
+  for (let v = 1; v <= 200; v++) {
+    await p.evaluate(x => window.readout.apply(x), fixPatch({ ops: [{ op: 'replace', slot: 2, change: 'content', kind: 'mermaid', html: mm(v) }] }));
+    if (!await drawnAs(v)) missed++;
+    most = Math.max(most, await p.evaluate(() => window.readout.diagramWork().cached));
+  }
+  const d0 = await p.evaluate(() => window.readout.diagramWork().draws);
+  // A rewrite and straight back, as an undo: the last source from the cache.
+  await p.evaluate(x => window.readout.apply(x), fixPatch({ ops: [{ op: 'replace', slot: 2, change: 'content', kind: 'mermaid', html: mm('tmp') }] }));
+  await p.evaluate(x => window.readout.apply(x), fixPatch({ ops: [{ op: 'replace', slot: 2, change: 'content', kind: 'mermaid', html: mm(200) }] }));
+  const back = await drawnAs(200);
+  await p.waitForTimeout(500);
+  const end = await p.evaluate(() => window.readout.diagramWork());
+  await p.close();
+  check('a diagram streamed through 200 sources: at most 64 drawings kept, and the last shown again without drawing',
+    missed === 0 && most <= 64 && back && end.draws === d0, JSON.stringify({ missed, most, back, draws: end.draws - d0, cached: end.cached }));
+}
+
 // Long code: a chunk holds about four screens' estimate, not 32 code blocks
 // (a theme change, a jump or find would lay all of them out), and one huge
 // block is a chunk of its own, the blocks around it in chunks of their own.
