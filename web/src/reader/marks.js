@@ -1,7 +1,7 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes.
 import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem, prevItem } from './core.js';
-import { place, unplace, roughRect } from './chunks.js';
+import { place, unplace, roughRect, itemsChanged, noteNext } from './chunks.js';
 import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding, baseline, aimAt } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
@@ -69,7 +69,7 @@ export function renderMarks(marks, deletions, reset = false) {
   // Markers stay from patch to patch (a removed-text popup open in one
   // stays open; one read stays read); those no longer sent go.
   for (const [id, mark] of delMarks) if (!live.has(id)) dropDelMark(id, mark);
-  let firstBlock;
+  let firstBlock, lastLone = null;
   for (const d of deletions) {
     let mark = delMarks.get(d.id);
     if (!mark) {
@@ -85,13 +85,17 @@ export function renderMarks(marks, deletions, reset = false) {
     // Placed and moved as any item is (chunks.js: place, unplace), so its
     // chunk counts it, is split at its limit (markers of many removals after
     // the same block), and an emptied one goes. A marker is 0 px tall.
-    const move = () => { if (isChunk(mark.parentElement)) unplace(mark); else mark.remove(); };
-    if (after) { if (!mark.isConnected || !follows(mark, after)) { move(); place(mark, after, 0); } }
+    // (A heading right after where it leaves or goes may start flush, or no
+    // longer: noted, chunks.js: noteNext.)
+    const move = () => { if (mark.isConnected) noteNext(nextItem(mark)); if (isChunk(mark.parentElement)) unplace(mark); else mark.remove(); };
+    if (after) { if (!mark.isConnected || !follows(mark, after)) { move(); noteNext(nextItem(after)); place(mark, after, 0); } }
     else {
       if (firstBlock === undefined) firstBlock = doc.querySelector(':scope > .chunk > .blk');
-      if (!firstBlock) { if (!mark.isConnected) place(mark, null, 0); }
+      // No block: the markers one after the other, in the order sent.
+      if (!firstBlock) { if (!mark.isConnected) place(mark, lastLone, 0); lastLone = mark; }
       else if (!mark.isConnected || nextItem(mark) !== firstBlock) {
         move();
+        noteNext(firstBlock);
         // Just before the first block: after the item before it, if any.
         place(mark, prevItem(firstBlock), 0);
       }
@@ -128,6 +132,7 @@ function makeDelMark(id) {
 function dropDelMark(id, mark) {
   readObserver.unobserve(mark);
   disarmRead(mark);
+  if (mark.isConnected) noteNext(nextItem(mark));
   if (isChunk(mark.parentElement)) unplace(mark); else mark.remove();
   if (delMarks.get(id) === mark) delMarks.delete(id);
 }
@@ -378,7 +383,8 @@ const FADE_MS = 700;
 
 /** A read mark's fade is over: the block carries no mark, a removal marker goes. */
 function unmark(el) {
-  if (el.classList.contains('del-mark')) { dropDelMark(+el.dataset.del, el); return; }
+  // (Not in a patch: a heading the marker stood before may start flush again.)
+  if (el.classList.contains('del-mark')) { dropDelMark(+el.dataset.del, el); itemsChanged(); return; }
   el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
   const slot = +el.dataset.slot;
   if (slots.get(slot) === el) classed.delete(slot);

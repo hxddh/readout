@@ -1343,10 +1343,11 @@ for (const n of [60, 400]) {
 
 // An agent inserting into the middle of a full chunk while the reader has a
 // selection in it, a block with the keyboard focus, or a find match current:
-// chunks are split only once nothing of the reader's sits in them (moving a
-// block to another chunk would take the selection, the focus and find's
-// marks with it). Nothing the reader holds changes, Copy as Quote still
-// quotes the selected block, and the chunk is split once they let go.
+// what holds them never moves to another chunk (that would take the
+// selection, the focus and find's marks with it); the part of the chunk
+// before the insertion moves instead (chunks.js: split), so the chunk never
+// grows past 64. Nothing the reader holds changes, Copy as Quote still
+// quotes the selected block, and every chunk is within 64 once they let go.
 {
   const page = await newPage();
   await page.evaluate(p => window.readout.apply(p), doc(300));
@@ -1381,8 +1382,8 @@ for (const n of [60, 400]) {
   await page.evaluate(() => { window.readout.findEnd(); getSelection().removeAllRanges(); });
   await page.waitForTimeout(3000);
   const after = await sizes();
-  check('an agent inserting into a full chunk leaves the selection, the focus and the find match as they were, and the chunk is split once they let go',
-    a.sel === selBefore && selBefore.length === 10 && JSON.stringify(a.quote) === '[50]' && grown > 64 && b === '55'
+  check('an agent inserting into a full chunk leaves the selection, the focus and the find match as they were, and no chunk grows past 64',
+    a.sel === selBefore && selBefore.length === 10 && JSON.stringify(a.quote) === '[50]' && grown <= 64 && b === '55'
       && c.slot === '60' && c.sel === findBefore.sel && findBefore.slot === '60' && after.every(n => n <= 64),
     JSON.stringify({ selBefore, a, grown, b, findBefore, c, after: Math.max(...after) }));
   await page.close();

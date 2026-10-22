@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, firstItem, nextItem, lastItem, prevItem } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
-import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, roughRect, unstale } from './chunks.js';
+import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, roughRect, unstale, cvOn } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, forgetBlock } from './enhance.js';
@@ -177,7 +177,7 @@ export function apply(p) {
   for (const op of p.ops) {
     if (op.op === 'remove') {
       const el = slots.get(op.slot);
-      if (el) { headingsTouched ||= el.classList.contains('k-heading'); resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); unplace(el); slots.delete(op.slot); }
+      if (el) { headingsTouched ||= el.classList.contains('k-heading'); noteNext(nextItem(el)); resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); unplace(el); slots.delete(op.slot); }
     } else if (op.op === 'replace') {
       const el = slots.get(op.slot);
       if (!el) continue;
@@ -189,6 +189,7 @@ export function apply(p) {
         continue;
       }
       headingsTouched ||= op.kind === 'heading' || el.classList.contains('k-heading');
+      noteNext(nextItem(el));
       const wasMarked = el.className.match(/m-(inserted|modified|state)/)?.[0];
       const wasRead = el.classList.contains('m-read');
       fillBlock(el, op);
@@ -201,6 +202,7 @@ export function apply(p) {
       headingsTouched ||= op.kind === 'heading';
       const el = makeBlock(op);
       const after = op.after ? slots.get(op.after) : null;
+      if (!p.reset) noteNext(after ? nextItem(after) : op.after ? null : firstItem());
       if (after) placeItem(el, after, estimateOp(op));
       else if (op.after) placeLast(el, estimateOp(op));
       else placeItem(el, null, estimateOp(op));
@@ -211,7 +213,7 @@ export function apply(p) {
   }
 
   const t1 = performance.now();
-  updateCv();
+  updateCv(!!p.reset);
   // The first open of a large document reads no layout before its first
   // frame: in that frame WebKit lays out only the blocks on screen (the rest
   // are skipped, content-visibility), where a layout forced before it would
@@ -253,6 +255,8 @@ export function apply(p) {
   // compensator still needs a baseline: a chunk the first frame skips is its
   // estimate, so chunks above a resumed position that are laid out at another
   // height still keep the place.
+  // (A heading's margin from its neighbour in the chunk first, then its flush start: each change counted once.)
+  const nextOnes = settleNext();
   flushStarts();
   for (const c of touched) if (c.isConnected) heights.set(c, firstLarge ? estimateOf(c) : c.getBoundingClientRect().height);
   touched.clear();
@@ -261,6 +265,9 @@ export function apply(p) {
   const laid = el => !doc.classList.contains('cv') || el.checkVisibility({ contentVisibilityAuto: true });
   for (const slot of changed) { const el = slots.get(slot); if (el && laid(el)) heights.set(el, el.getBoundingClientRect().height); else if (el) heights.delete(el); }
   for (const el of rerendered) if (el.isConnected && laid(el)) heights.set(el, el.getBoundingClientRect().height); else heights.delete(el);
+  // Headings whose flush start changed (flushStarts): in a chunk skipped, their height was taken with it.
+  for (const el of [...flushed, ...nextOnes]) if (el.isConnected && laid(el)) heights.set(el, el.getBoundingClientRect().height);
+  flushed.clear();
   if (p.reset && !firstLarge) for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
 
   if (isFirst) { firstTimings.blocks = Math.round(t1 - t0); firstTimings.layout = Math.round(performance.now() - t1); }
@@ -336,11 +343,13 @@ export function apply(p) {
  * of the document through two screens.
  */
 function estimatedOnScreen() {
-  // The blocks the first screen shows by their estimates (not every block
-  // of the chunks there: a chunk of long code runs screens past it).
+  // The blocks the first two screens show by their estimates (not every
+  // block of the chunks there: a chunk of long code runs screens past it).
+  // Two: an estimate is from a block's HTML, and a paragraph of long links
+  // is estimated much taller than it is (code under it was left plain).
   const near = new Set();
   let y = 0;
-  for (let e = firstItem(); e && y < innerHeight; e = nextItem(e)) {
+  for (let e = firstItem(); e && y < 2 * innerHeight; e = nextItem(e)) {
     near.add(e);
     y += itemEstimate(e);
   }
@@ -396,5 +405,10 @@ function countDownNotice() {
   }, NOTICE_MS);
 }
 
-// Large documents let WebKit skip laying out the chunks away from the screen (content-visibility, chunks.js).
-function updateCv() { if (!doc.classList.toggle('cv', slots.size > 250)) unstale(); }
+// Large documents let WebKit skip laying out the chunks away from the screen
+// (content-visibility, chunks.js); decided after a patch's changes.
+function updateCv(reset) {
+  const on = slots.size > 250;
+  if (on === doc.classList.contains('cv')) return;
+  if (on) cvOn(reset); else { doc.classList.remove('cv'); unstale(); }
+}

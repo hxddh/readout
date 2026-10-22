@@ -3,6 +3,7 @@
 import { doc, root, slots, heights, trace, keptScroll, onKeptScroll, isChunk, nextItem, prevItem } from './core.js';
 import { scheduleRail } from './rail.js';
 import { forceLayout, laidOut, estimateOf, neverLaidOut, cv } from './chunks.js';
+import { highlightIn } from './enhance.js';
 
 /** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
 function topBlock() {
@@ -267,6 +268,9 @@ export function aimAt(el, off, landed, room = 0) {
   forceLayout(el, room);
   window.scrollBy(0, off());
   landed();
+  // Code the landing shows coloured in the frame that shows it (the lazy
+  // highlighting would colour it a frame or more later).
+  highlightIn(blocksOnScreen());
   if (!cv()) return;
   const se = document.scrollingElement;
   const mine = aiming = { y: se.scrollTop };
@@ -276,7 +280,7 @@ export function aimAt(el, off, landed, room = 0) {
     // the TOC may not have run yet): leave the page where it is.
     if (aiming !== mine || !el.isConnected || (Math.abs(se.scrollTop - mine.y) > 2 && !atEnd())) return;
     const d = off();
-    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; landed(); }
+    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; landed(); highlightIn(blocksOnScreen()); }
     if (performance.now() < until) requestAnimationFrame(reaim);
   };
   requestAnimationFrame(reaim);

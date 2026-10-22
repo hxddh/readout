@@ -170,8 +170,9 @@ export function measureTables(tables = doc.querySelectorAll('.table-wrap')) {
 }
 
 /**
- * Tables in chunks not laid out, measured when they come on screen, their
- * chunk laid out by then (not all at once, laid out for the moment: 1 MB,
+ * Tables in chunks not laid out, measured as they come within two screens
+ * (as their chunk is laid out ahead), so one is not drawn unmeasured and
+ * then reflowed on screen; their chunk laid out by then (not all at once, laid out for the moment: 1 MB,
  * 66 tables, ~1 s).
  */
 const skippedTables = new IntersectionObserver(entries => {
@@ -185,7 +186,7 @@ const skippedTables = new IntersectionObserver(entries => {
     else requestAnimationFrame(() => { if (e.target.isConnected) skippedTables.observe(e.target); });
   }
   if (shown.length) measureTables(shown);
-});
+}, { rootMargin: '200% 0px' });   // the lookahead's (chunks.js): measured before it is on screen
 
 /** Tables of `el` (a block leaving the page or getting new content) no longer watched. */
 /**

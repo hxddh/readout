@@ -55,6 +55,29 @@ function show(c) {
   if (on && stale.delete(c)) { c.classList.remove('stale'); c.style.removeProperty('--stale'); }
 }
 
+// A scroll of more than a screen at once (the scrollbar dragged, Home, End,
+// a jump of the page's own) lands past what the lookahead laid out, and its
+// records arrive after the frame that shows the landing: that frame would
+// show the chunks there skipped (blank) or at a stale size. The scroll
+// event comes before the frame is laid out: the chunks on screen are laid
+// out from it (forceLayout), found by their boxes (a skipped chunk's box
+// needs no layout of its blocks) halving the list.
+let scrolledFrom = 0;
+window.addEventListener('scroll', () => {
+  const y = document.scrollingElement.scrollTop;
+  const far = Math.abs(y - scrolledFrom) > window.innerHeight;
+  scrolledFrom = y;
+  if (!far || !cv()) return;
+  const cs = doc.children;
+  let lo = 0, hi = cs.length - 1;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (cs[mid].getBoundingClientRect().bottom > 0) hi = mid; else lo = mid + 1; }
+  for (let i = lo; i < cs.length; i++) {
+    const c = cs[i];
+    if (c.getBoundingClientRect().top >= window.innerHeight) break;
+    if (isChunk(c)) forceLayout(c);
+  }
+}, { passive: true });
+
 /**
  * The chunk of `el` (or chunk `el`) laid out now, whatever content-visibility
  * would skip, once a frame renders it: a jump's target, a place restored,
@@ -162,9 +185,8 @@ export function place(el, after, est = 0) {
   if (!isChunk(c)) { c = makeChunk(); doc.prepend(c); }
   const big = est >= SPAN;
   // In the middle of a chunk at its limit (an agent writing a section in the
-  // middle), or a big block there: the chunk is split after `after`, unless
-  // what would move holds the selection, the focus or a find mark.
-  if (after?.nextElementSibling && (big || c.childElementCount >= MAX || estimateOf(c) + est > 2 * SPAN)) split(c, after);
+  // middle), or a big block there: the chunk is split after `after` (split).
+  if (after?.nextElementSibling && (big || c.childElementCount >= MAX || estimateOf(c) + est > 2 * SPAN)) { split(c, after); c = chunkOf(after); }
   const n = c.childElementCount;
   if (after && !after.nextElementSibling && n && (big || full(c))) {
     // After a full chunk's last item (an agent writing on): the next chunk, if it has room, else a new one.
@@ -182,18 +204,35 @@ export function place(el, after, est = 0) {
   if (overfull(c)) uneven(c);
 }
 
-/** The items after `after` in its chunk `c` into a new chunk after it, unless they are in use. */
+/**
+ * Chunk `c` split after `after`: the items after it into a new chunk after
+ * `c`; when they hold the focus, the selection or a find mark (they must not
+ * move), the items up to `after` into a new chunk before it instead. Neither
+ * when both do.
+ */
 function split(c, after) {
   const tail = [];
   for (let e = after.nextElementSibling; e; e = e.nextElementSibling) tail.push(e);
-  if (!tail.length || holds(tail[0], tail.at(-1))) return;
+  if (!tail.length) return;
+  if (!holds(tail[0], tail.at(-1))) { moveOut(c, tail, false); return; }
+  const head = [];
+  for (let e = c.firstElementChild; e && e !== tail[0]; e = e.nextElementSibling) head.push(e);
+  if (!holds(head[0], head.at(-1))) moveOut(c, head, true);
+}
+/** `items` of chunk `c` into a new chunk before or after it, each counting what it counted in `c`. */
+function moveOut(c, items, before) {
   const fresh = makeChunk();
   fresh.classList.toggle('near', c.classList.contains('near'));
-  c.after(fresh);
-  fresh.append(...tail);
-  let d = 0;
-  for (const e of tail) d += estimates.get(e) || 0;
-  account(c, -d); account(fresh, d);
+  if (before) c.before(fresh); else c.after(fresh);
+  // Out of a chunk laid out and skipped since: the new one is skipped at
+  // what they count for there (their heights as laid out), as `c` was.
+  const skipped = laidOut.has(c) && cv() && !c.classList.contains('near');
+  let d = 0, seen = 0;
+  for (const e of items) { d += estimates.get(e) || 0; seen += counted(c, e); }
+  fresh.append(...items);
+  account(c, -d, -seen);
+  if (skipped) { laidOut.add(fresh); stale.set(fresh, 0); }
+  account(fresh, d, seen);
 }
 
 /** Puts `el` last in the document. */
@@ -214,6 +253,8 @@ export function reestimate(el, est) {
   const was = estimates.get(el) || 0, seen = counted(c, el);
   estimates.set(el, est);
   account(c, est - was, est - seen);
+  // A block grown past the chunk's limit (an agent streaming long code into it): split when the page is quiet.
+  if (overfull(c)) uneven(c);
 }
 
 /**
@@ -316,9 +357,12 @@ function rebalance() {
     unevenChunks.delete(c);
   }
   // The page lays out as before: the chunks' sizes taken as they are now.
-  flushStarts();
+  // Then a heading the moves put first after a rule (or no longer) starts
+  // flush (or not): a change of the page's, the resize observer's to keep
+  // the place for.
   for (const c of done) if (c.isConnected) heights.set(c, c.getBoundingClientRect().height);
   for (const c of done) touched.delete(c);
+  itemsChanged();
   if (unevenChunks.size) rebalanceTimer = setTimeout(rebalance, 2000);
 }
 
@@ -328,11 +372,89 @@ function rebalance() {
  * (reader.css: h-flush). For the chunks a patch changed and those after them.
  */
 export function flushStarts() {
-  for (const c of touched) for (const x of [c, c.nextElementSibling]) {
-    const h = isChunk(x) && x.isConnected ? x.firstElementChild : null;
+  const done = new Set();
+  for (const c of [...touched]) for (const x of [c, c.nextElementSibling]) {
+    if (!isChunk(x) || !x.isConnected || done.has(x)) continue;
+    done.add(x);
+    const h = x.firstElementChild;
     if (!h || !h.classList.contains('k-heading')) continue;
     const p = x.previousElementSibling?.lastElementChild;
-    h.classList.toggle('h-flush', !!p && (p.classList.contains('k-rule') || (p.classList.contains('k-frontMatter') && !!h.querySelector(':scope > :is(h1, h2)'))));
+    const on = !!p && (p.classList.contains('k-rule') || (p.classList.contains('k-frontMatter') && !!h.querySelector(':scope > :is(h1, h2)')));
+    if (on === h.classList.contains('h-flush')) continue;
+    // Its top margin changes, and so does its chunk: taken like any change
+    // (touched; flushed, the block's height taken again). In a chunk laid
+    // out and skipped, its skipped size and the block's height as laid out
+    // change by the margin (its style, no layout).
+    const skipped = laidOut.has(x) && cv() && !x.classList.contains('near');
+    const was = skipped ? topMargin(h) : 0;
+    h.classList.toggle('h-flush', on);
+    touched.add(x);
+    flushed.add(h);
+    if (skipped) {
+      const d = topMargin(h) - was;
+      if (d) { account(x, 0, d); if (heights.has(h)) heights.set(h, heights.get(h) + d); }
+    }
+  }
+}
+// A block written, replaced or removed changes the top margin of a heading
+// right after it too (reader.css: after a rule, after front matter, first in
+// the document). patch.js notes that heading before the change (noteNext);
+// afterwards its height is taken again, and in a chunk laid out and skipped
+// the chunk's skipped size changes by the margin's change (settleNext).
+const nextHeadings = new Map();   // heading block -> its top margin before (in a chunk laid out and skipped), else null
+export function noteNext(n) {
+  if (!n || nextHeadings.has(n) || !n.classList.contains('k-heading')) return;
+  const c = chunkOf(n);
+  nextHeadings.set(n, laidOut.has(c) && cv() && !c.classList.contains('near') ? topMargin(n) : null);
+}
+/** After a patch's changes: the noted headings not in a skipped chunk, their heights to take again. */
+export function settleNext() {
+  const out = [];
+  for (const [n, was] of nextHeadings) {
+    if (!n.isConnected) continue;
+    const c = chunkOf(n);
+    if (was !== null && laidOut.has(c) && cv() && !c.classList.contains('near')) {
+      const d = topMargin(n) - was;
+      if (d) { account(c, 0, d); if (heights.has(n)) heights.set(n, heights.get(n) + d); }
+    } else out.push(n);
+  }
+  nextHeadings.clear();
+  return out;
+}
+
+/** Heading blocks flushStarts changed, their heights to take again (patch.js, rebalance). */
+export const flushed = new Set();
+const topMargin = h => parseFloat(getComputedStyle(h.firstElementChild || h).marginTop) || 0;
+/**
+ * Items changed outside a patch (a removal marker read and gone): headings
+ * flush again, the change left to the resize observer (no patch keeps the
+ * place for it).
+ */
+export function itemsChanged() {
+  settleNext();
+  flushStarts();
+  touched.clear();
+  flushed.clear();
+}
+
+/**
+ * The document became large (a patch took it past 250 blocks): content-
+ * visibility from now on. The chunks were all laid out until now (the
+ * patch's new ones would be in the next frame), and none has a size
+ * remembered for it to be skipped at: each not near the screen is skipped
+ * at its height now (stale), measured first (one layout of a page of about
+ * 250 blocks). A reset's chunks are all new: their estimates.
+ */
+export function cvOn(reset) {
+  const sizes = new Map();
+  if (!reset) for (const c of doc.children) if (isChunk(c)) sizes.set(c, c.getBoundingClientRect().height);
+  doc.classList.add('cv');
+  for (const [c, h] of sizes) {
+    if (c.classList.contains('near')) continue;
+    laidOut.add(c);
+    stale.set(c, h);
+    c.style.setProperty('--stale', `${h}px`);
+    c.classList.add('stale');
   }
 }
 
@@ -343,11 +465,11 @@ export function unstale() {
 }
 
 /** Every chunk out of the document (a reset). */
-/** Tests: chunks the observers' sets hold that are no longer in the page. */
+/** Tests: chunks the observers' sets hold that are no longer in the page, and chunks past their limits. */
 export function chunksHeld() {
   const out = c => [...c].filter(x => !x.isConnected).length;
   const by = { near: out(near), forced: out(forced), touched: out(touched), stale: out(stale.keys()), uneven: out(unevenChunks) };
-  return { chunksDetached: Object.values(by).reduce((a, b) => a + b, 0), chunksBy: by };
+  return { chunksDetached: Object.values(by).reduce((a, b) => a + b, 0), chunksBy: by, overfull: [...doc.children].filter(c => isChunk(c) && overfull(c)).length };
 }
 
 export function clearChunks() {
