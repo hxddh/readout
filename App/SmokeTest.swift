@@ -129,6 +129,15 @@ enum SmokeTest {
         let deadline = Date().addingTimeInterval(30)
         while launchPhases["paint"] == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(5)) }
         guard launchPhases["paint"] != nil else { return }
+        // DIAG (temporary): a 500 ms block 100 ms after the paint, of the app's
+        // main thread in the first launch, of the page's in the second.
+        if ProcessInfo.processInfo.environment["READOUT_SMOKE_INJECT"] == "1" {
+            let boot = ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "boot"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if boot { usleep(500_000) } else { webView.evaluateJavaScript("(() => { const t = performance.now(); while (performance.now() - t < 500) {} return 0; })()") }
+                NSLog("ABINJECT %@", boot ? "app" : "page")
+            }
+        }
         let start = Date()
         var longest = 0.0
         var planned = start
