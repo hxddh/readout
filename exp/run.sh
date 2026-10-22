@@ -4,7 +4,7 @@
 set -x
 R=$(git rev-parse --show-toplevel); cd $R/web
 COMMITS="${COMMITS:-59acabc 59add16}"
-FIX="${FIX:-59add16}"
+FIX="${FIX:-f5d2240}"
 for c in $COMMITS; do if [ "$c" = wip ]; then ../exp/mkp.sh $FIX wip exp/wip.patch || echo "build failed wip"; else ../exp/mk.sh $c || echo "build failed $c"; fi; done
 git show $FIX:web/test/scrollperf.mjs > test/scrollperf.mjs
 mkdir -p ../exp/out
