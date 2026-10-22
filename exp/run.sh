@@ -2,8 +2,8 @@
 # exp/run.sh : code-heavy shapes, 3.8.0 against the fix, with the page's element count (CI experiment)
 set -x
 R=$(git rev-parse --show-toplevel); cd $R/web
-COMMITS="${COMMITS:-59acabc 3142bf6}"
-FIX="${FIX:-3142bf6}"
+COMMITS="${COMMITS:-59acabc e2dc919}"
+FIX="${FIX:-e2dc919}"
 for c in $COMMITS; do ../exp/mk.sh $c || echo "build failed $c"; done
 git show $FIX:web/test/scrollperf.mjs > test/scrollperf.mjs
 mkdir -p ../exp/out
