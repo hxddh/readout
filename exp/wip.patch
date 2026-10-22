@@ -1,7 +1,48 @@
+diff --git a/web/src/reader/chunks.js b/web/src/reader/chunks.js
+index 7effc21..d2941b9 100644
+--- a/web/src/reader/chunks.js
++++ b/web/src/reader/chunks.js
+@@ -217,7 +217,17 @@ function split(c, after) {
+   if (!holds(tail[0], tail.at(-1))) { moveOut(c, tail, false); return; }
+   const head = [];
+   for (let e = c.firstElementChild; e && e !== tail[0]; e = e.nextElementSibling) head.push(e);
+-  if (!holds(head[0], head.at(-1))) moveOut(c, head, true);
++  if (!holds(head[0], head.at(-1))) { moveOut(c, head, true); return; }
++  // Both hold something (the focus on one side, a selection on the other):
++  // the larger of the free ends moves out, the items before the first that
++  // holds or after the last. What is written between them stays in the
++  // chunk until they let go (the rebalance splits it then).
++  const items = [...c.children];
++  const held = items.map(e => holds(e, e));
++  const first = held.indexOf(true), last = held.lastIndexOf(true);
++  const before = items.slice(0, first), after_ = items.slice(last + 1);
++  if (before.length >= after_.length && before.length) moveOut(c, before, true);
++  else if (after_.length) moveOut(c, after_, false);
+ }
+ /** `items` of chunk `c` into a new chunk before or after it, each counting what it counted in `c`. */
+ function moveOut(c, items, before) {
 diff --git a/web/src/reader/enhance.js b/web/src/reader/enhance.js
-index a240937..328075c 100644
+index a240937..45181d7 100644
 --- a/web/src/reader/enhance.js
 +++ b/web/src/reader/enhance.js
+@@ -6,7 +6,7 @@ import { doc, root, strings, post, inViewport } from './core.js';
+ import { captureAnchor, restoreAnchor } from './anchor.js';
+ import { setupRemoteImage } from './remote.js';
+ import { renderMath } from './math.js';
+-import { renderMermaid, setupMermaid } from './mermaid.js';
++import { renderMermaid, setupMermaid, sweepLater } from './mermaid.js';
+ 
+ export function enhance(el) {
+   hl.stopWarmUp();   // a document is shown: its own blocks load what they need
+@@ -199,7 +199,7 @@ export function forgetBlock(el) {
+   for (const x of el.querySelectorAll('.code-block, .mermaid-block')) {
+     lazyObserver.unobserve(x);
+     waitingForChunk.delete(x);
+-    diagrams.delete(x);
++    if (diagrams.delete(x)) sweepLater();   // a diagram gone: its drawing kept a while, then dropped
+     parts.delete(x);
+     const i = queue.indexOf(x);
+     if (i >= 0) queue.splice(i, 1);
 @@ -397,9 +397,21 @@ const prepared = new WeakSet();   // code blocks whose grammars have been loaded
  // grammar's rule is met), so a block highlighted in one go was a task of
  // 40-70 ms, a frame that stalls while the reader scrolls.
@@ -11,11 +52,11 @@ index a240937..328075c 100644
 -function highlightParts(cb, code, id, whole) {
 +const parts = new WeakMap();   // code block -> {at, state, head, inner, cold, longest, view}: the lines highlighted so far
 +// A block of more than SHOWN_MIN lines on screen is coloured at once only
-+// as far as the screen shows, and half a screen more; the rest a slice at a
-+// time, its lines swapped in as they are done (a jump landing on a page of
-+// 90-line blocks coloured each whole, in the task before its frame: 140 ms
-+// more). Not past SHOWN_MAX lines: each swap lays the block out again,
-+// which for a block of 28,000 lines takes a second; such a block is
++// as far as the screen shows, and half a screen more (a jump landing on a
++// page of 90-line blocks coloured each whole, in the task before its frame,
++// was slower than 3.8.0's); the rest a slice at a time, shown whole once
++// done. Not past SHOWN_MAX lines: showing it again lays the block out
++// again, which for a block of 28,000 lines takes a second; such a block is
 +// coloured whole, at once, as 3.8 did.
 +const SHOWN_MIN = 40;
 +const SHOWN_MAX = 1000;
@@ -27,20 +68,29 @@ index a240937..328075c 100644
    const lines = code.split('\n');
    if (lines.length <= PART_LINES * 2) {
      const cold = !warmGrammars.has(id), t = performance.now();
-@@ -414,7 +426,7 @@ function highlightParts(cb, code, id, whole) {
+@@ -414,25 +426,86 @@ function highlightParts(cb, code, id, whole) {
    // Shiki's guard (a cold grammar's first lines) makes its part that slow.
    // (Not the time all parts took: a long block adds up to more than the
    // limit with every line fast, and would be highlighted twice.)
 -  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [], cold: !warmGrammars.has(id), longest: 0 };
 +  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [], cold: !warmGrammars.has(id), longest: 0, view: null };
    const start = performance.now();
++  // All of it at once: in larger parts (fewer calls, the same lines; a line
++  // cut short still makes its part slow).
++  const step = upto === Infinity ? PART_LINES * 8 : PART_LINES;
    do {
      const t = performance.now();
-@@ -426,13 +438,71 @@ function highlightParts(cb, code, id, whole) {
+-    const r = hl.highlightPart(lines.slice(p.at, p.at + PART_LINES).join('\n'), id, p.state);
++    const r = hl.highlightPart(lines.slice(p.at, p.at + step).join('\n'), id, p.state);
+     p.longest = Math.max(p.longest, performance.now() - t);
+     const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
+     if (!m) { parts.delete(cb); return null; }
+     p.head ??= m[1];
      p.inner.push(m[2]);
      p.state = r.state;
-     p.at += PART_LINES;
+-    p.at += PART_LINES;
 -  } while (p.at < lines.length && (whole || performance.now() - start < SLICE_MS));
++    p.at += step;
 +  } while (p.at < lines.length && (p.at <= upto || performance.now() - start < SLICE_MS));
    if (p.at < lines.length) { parts.set(cb, p); return 'more'; }
    parts.delete(cb);
@@ -60,10 +110,10 @@ index a240937..328075c 100644
 +}
 +
 +/**
-+ * A block coloured as far as it is done, the rest still plain text:
-+ * the done lines' HTML (exactly what highlighting it whole gives, line by
-+ * line) in place of their plain text, the rest after it. Shown first as a
-+ * new <pre>; later parts swapped in as they are done.
++ * A block coloured as far as it is done, the rest still plain text: the
++ * done lines' HTML (what highlighting it whole gives, line by line) in
++ * place of their plain text, the rest after it. Shown first as a new <pre>;
++ * parts done since swapped in when the screen needs them.
 + */
 +function showParts(cb, pre, p, lines, id) {
 +  const done = Math.min(p.at, lines.length);
@@ -111,7 +161,7 @@ index a240937..328075c 100644
    const recheck = cb.dataset.hl === 'recheck';
    if (cb.dataset.hl !== 'pending' && !recheck) return;
    const id = hl.resolveLang(cb.dataset.lang);
-@@ -440,23 +510,27 @@ function highlightBlock(cb, whole = true) {
+@@ -440,8 +513,17 @@ function highlightBlock(cb, whole = true) {
    const pre = cb.querySelector('pre');
    if (!sourceOf.has(cb)) sourceOf.set(cb, pre.textContent);
    const code = sourceOf.get(cb);
@@ -122,36 +172,31 @@ index a240937..328075c 100644
 +  const done = highlightParts(cb, code, id, upto);
 +  if (done === 'more') {
 +    const p = parts.get(cb);
-+    // On screen (or shown so already): what is done shown, the rest plain until done.
-+    if (upto >= 0 || p.view) showParts(cb, pre, p, lines, id);
++    // On screen: what is done shown, the rest plain until it is all done
++    // (then shown whole, once). Lines done later are swapped in only when
++    // the screen comes to them first (a swap lays the block out again).
++    if (upto >= 0 && (!p.view || upto >= p.view.lines)) showParts(cb, pre, p, lines, id);
 +    return 'more';
 +  }
    const html = done?.html;
    const slow = !recheck && !!done && done.cold && done.longest > SLOW_HIGHLIGHT_MS;
    if (html) warmGrammars.add(id);
-   if (html) {
--    const tpl = document.createElement('template');
--    tpl.innerHTML = html;
--    const newPre = tpl.content.firstElementChild;
+@@ -449,13 +531,7 @@ function highlightBlock(cb, whole = true) {
+     const tpl = document.createElement('template');
+     tpl.innerHTML = html;
+     const newPre = tpl.content.firstElementChild;
 -    if (id === 'diff') {
 -      for (const line of newPre.querySelectorAll('.line')) {
 -        const t = line.textContent;
 -        if (t.startsWith('+') && !t.startsWith('+++')) line.classList.add('add');
 -        else if (t.startsWith('-') && !t.startsWith('---')) line.classList.add('del');
 -      }
-+    if (done.p?.view) { showParts(cb, pre, done.p, lines, id); done.p.view.pre.firstElementChild.normalize(); }   // the last parts swapped in: it is whole, as one highlight gives it
-+    else {
-+      const tpl = document.createElement('template');
-+      tpl.innerHTML = html;
-+      const newPre = tpl.content.firstElementChild;
-+      markDiff(newPre, id);
-+      pre.replaceWith(newPre);
-     }
--    pre.replaceWith(newPre);
+-    }
++    markDiff(newPre, id);
+     pre.replaceWith(newPre);
      cb.dataset.hl = slow ? 'recheck' : 'done';
      if (slow) setTimeout(() => { if (cb.isConnected) { queue.push(cb); pump(); } else cb.dataset.hl = 'done'; }, 50);
-   } else if (prepared.has(cb)) {
-@@ -468,6 +542,10 @@ function highlightBlock(cb, whole = true) {
+@@ -468,6 +544,10 @@ function highlightBlock(cb, whole = true) {
      hl.prepare(id, code).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) { queue.push(cb); pump(); } });
    }
  }
@@ -162,7 +207,7 @@ index a240937..328075c 100644
  
  // Lazy work is triggered for anything within one screen of the viewport.
  // It runs in slices of a few milliseconds, so scrolling into a run of code
-@@ -536,18 +614,18 @@ function pump() {
+@@ -536,18 +616,18 @@ function pump() {
  function lazyWork(el) {
    // A long block ahead of the screen a part at a time (the next part in the
    // next turn); one on screen at once, so none of it shows plain.
@@ -184,7 +229,7 @@ index a240937..328075c 100644
  }
  
  /** `near`: whether a code block counts as on screen (a first open estimates it without layout). */
-@@ -561,7 +639,7 @@ export function renderLazy(near = inViewport) {
+@@ -561,7 +641,7 @@ export function renderLazy(near = inViewport) {
      if (!cb.isConnected || cb.dataset.hl !== 'pending') continue;
      if (near(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
    }
@@ -193,3 +238,62 @@ index a240937..328075c 100644
    // The page's diagrams, without a search of the whole page in every patch.
    for (const m of diagrams) {
      if (!m.isConnected) { diagrams.delete(m); continue; }
+diff --git a/web/src/reader/mermaid.js b/web/src/reader/mermaid.js
+index 1273409..286a3c4 100644
+--- a/web/src/reader/mermaid.js
++++ b/web/src/reader/mermaid.js
+@@ -8,7 +8,7 @@ import { lazyObserver } from './enhance.js';
+ // after GRACE_MS (an undo, or a rewrite back to it, still finds it).
+ const mermaidCache = new Map();   // look+source -> {svg, id} or {error}
+ const CACHE_MAX = 64;
+-const GRACE_MS = 5000;
++const GRACE_MS = globalThis.READOUT_DIAGRAM_GRACE_MS ?? 5000;   // (a test shortens it)
+ const unusedSince = new Map();    // key -> when no diagram in the page had its source
+ let sweepTimer = 0;
+ function cacheGet(key) {
+@@ -22,20 +22,25 @@ function cacheSet(key, out) {
+   while (mermaidCache.size > CACHE_MAX) { const k = mermaidCache.keys().next().value; mermaidCache.delete(k); unusedSince.delete(k); }
+   sweepLater();
+ }
+-function sweepLater() {
++// The sweep runs while some drawing kept has no diagram in the page, and
++// stops once each has one (or none is kept): a page's diagrams changing
++// (drawn, set up, gone) starts it again.
++export function sweepLater() {
+   if (!sweepTimer && mermaidCache.size) sweepTimer = setTimeout(sweep, GRACE_MS);
+ }
+ function sweep() {
+   sweepTimer = 0;
+   const inPage = new Set([...doc.querySelectorAll('.mermaid-block > .mermaid-src')].map(e => e.textContent));
+   const now = performance.now();
++  let unused = false;
+   for (const key of [...mermaidCache.keys()]) {
+     if (inPage.has(key.slice(key.indexOf('\u0000') + 1))) { unusedSince.delete(key); continue; }
+     const since = unusedSince.get(key);
+-    if (since === undefined) unusedSince.set(key, now);
++    if (since === undefined) { unusedSince.set(key, now); unused = true; }
+     else if (now - since >= GRACE_MS) { mermaidCache.delete(key); unusedSince.delete(key); }
++    else unused = true;
+   }
+-  sweepLater();
++  if (unused) sweepLater();
+ }
+ let mermaidPromise = null;
+ let mermaidLook = null;   // the look Mermaid is set up for: theme and type size
+@@ -276,6 +281,7 @@ function diagramSlot(block) {
+ 
+ /** Called for every diagram block set up (enhance.js). */
+ export function setupMermaid(block) {
++  sweepLater();
+   const src = block.querySelector('.mermaid-src')?.textContent || '';
+   if (isFlowchart(src)) prefetchFlowcharts();
+   const slot = diagramSlot(block);
+@@ -310,7 +316,7 @@ function pruneQueue() {
+ }
+ /** Tests: diagrams drawn so far, and what the queue holds. */
+ export function diagramWork() {
+-  return { draws: mermaidDraws, cached: mermaidCache.size, queued: mermaidQueue.length, detached: mermaidQueue.filter(b => !b.isConnected).length };
++  return { draws: mermaidDraws, cached: mermaidCache.size, sweeping: !!sweepTimer, queued: mermaidQueue.length, detached: mermaidQueue.filter(b => !b.isConnected).length };
+ }
+ 
+ async function pumpMermaid() {
