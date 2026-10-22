@@ -14,7 +14,8 @@ import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
-import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell } from './reader/marks.js';
+import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld } from './reader/marks.js';
+import { chunksHeld } from './reader/chunks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelButtons, setCodeWrap, highlightAll, measureTables, highlightIn, lazyHeld } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
@@ -385,7 +386,7 @@ window.readout = {
   scrollToFragment,
   captureAnchor,
   trace: traceEntries,
-  lazyHeld,
+  lazyHeld: () => ({ ...lazyHeld(), ...chunksHeld(), ...marksHeld() }),
   diagramWork,
   firstTimings: () => firstTimings,
   // The find field (⌘F, ⌘G, Return): the next or previous match, and the find bar closed.

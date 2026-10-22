@@ -198,6 +198,7 @@ export function forgetBlock(el) {
   for (const x of el.querySelectorAll('.code-block, .mermaid-block')) {
     lazyObserver.unobserve(x);
     waitingForChunk.delete(x);
+    diagrams.delete(x);
     parts.delete(x);
     const i = queue.indexOf(x);
     if (i >= 0) queue.splice(i, 1);
@@ -206,8 +207,8 @@ export function forgetBlock(el) {
 
 /** What lazy work holds on to (a test checks it stays bounded). */
 export function lazyHeld() {
-  const held = [...waitingForChunk, ...queue];
-  return { waiting: waitingForChunk.size, queued: queue.length, detached: held.filter(x => !x.isConnected).length };
+  const held = [...waitingForChunk, ...queue, ...diagrams];
+  return { waiting: waitingForChunk.size, queued: queue.length, diagrams: diagrams.size, detached: held.filter(x => !x.isConnected).length };
 }
 
 // New tables are measured together, in the next frame.
@@ -402,18 +403,22 @@ function highlightParts(cb, code, id, whole) {
   if (lines.length <= PART_LINES * 2) {
     const cold = !warmGrammars.has(id), t = performance.now();
     const html = hl.highlightSync(code, id);
-    return html && { html, cold, spent: performance.now() - t };
+    return html && { html, cold, longest: performance.now() - t };
   }
   // Every grammar the whole block needs (a part may be inside code embedded
   // from a fence in an earlier one) loaded first.
   if (!parts.has(cb) && !hl.canHighlight(code, id)) return null;
-  // Whether the grammar was cold when the block began, and the time all its
-  // parts took: a part cut short by Shiki's guard (a cold grammar's first
-  // lines) shows in either, whichever slice it was in.
-  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [], cold: !warmGrammars.has(id), spent: 0 };
+  // Whether the grammar was cold when the block began, and the longest any
+  // of its parts took, whichever slice it was in: a line cut short by
+  // Shiki's guard (a cold grammar's first lines) makes its part that slow.
+  // (Not the time all parts took: a long block adds up to more than the
+  // limit with every line fast, and would be highlighted twice.)
+  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [], cold: !warmGrammars.has(id), longest: 0 };
   const start = performance.now();
   do {
+    const t = performance.now();
     const r = hl.highlightPart(lines.slice(p.at, p.at + PART_LINES).join('\n'), id, p.state);
+    p.longest = Math.max(p.longest, performance.now() - t);
     const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
     if (!m) { parts.delete(cb); return null; }
     p.head ??= m[1];
@@ -421,10 +426,9 @@ function highlightParts(cb, code, id, whole) {
     p.state = r.state;
     p.at += PART_LINES;
   } while (p.at < lines.length && (whole || performance.now() - start < SLICE_MS));
-  p.spent += performance.now() - start;
   if (p.at < lines.length) { parts.set(cb, p); return 'more'; }
   parts.delete(cb);
-  return { html: `${p.head}${p.inner.join('\n')}</code></pre>`, cold: p.cold, spent: p.spent };
+  return { html: `${p.head}${p.inner.join('\n')}</code></pre>`, cold: p.cold, longest: p.longest };
 }
 
 function highlightBlock(cb, whole = true) {
@@ -438,7 +442,7 @@ function highlightBlock(cb, whole = true) {
   const done = highlightParts(cb, code, id, whole);
   if (done === 'more') return 'more';
   const html = done?.html;
-  const slow = !recheck && !!done && done.cold && done.spent > SLOW_HIGHLIGHT_MS;
+  const slow = !recheck && !!done && done.cold && done.longest > SLOW_HIGHLIGHT_MS;
   if (html) warmGrammars.add(id);
   if (html) {
     const tpl = document.createElement('template');

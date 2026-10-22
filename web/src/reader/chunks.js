@@ -36,6 +36,8 @@ export const neverLaidOut = c => cv() && !laidOut.has(c) && heights.get(c) === e
 const near = new Set();
 const lookahead = new IntersectionObserver(entries => {
   for (const e of entries) {
+    // A record queued for a chunk dropped since (dropChunk): not kept.
+    if (!e.target.isConnected) { near.delete(e.target); continue; }
     if (e.isIntersecting) near.add(e.target); else near.delete(e.target);
     show(e.target);
     // Split or joined once laid out (rebalance).
@@ -44,6 +46,7 @@ const lookahead = new IntersectionObserver(entries => {
 }, { rootMargin: '200% 0px' });
 const forced = new Set();
 function show(c) {
+  if (!c.isConnected) { near.delete(c); forced.delete(c); return; }
   const on = near.has(c) || forced.has(c);
   if (on === c.classList.contains('near')) return;
   c.classList.toggle('near', on);
@@ -117,6 +120,7 @@ function dropChunk(c) {
   for (const x of [c.previousElementSibling, c.nextElementSibling]) if (isChunk(x)) touched.add(x);
   touched.delete(c);
   stale.delete(c);
+  unevenChunks.delete(c);
   resizeObserver.unobserve(c);
   lookahead.unobserve(c);
   near.delete(c);
@@ -339,6 +343,13 @@ export function unstale() {
 }
 
 /** Every chunk out of the document (a reset). */
+/** Tests: chunks the observers' sets hold that are no longer in the page. */
+export function chunksHeld() {
+  const out = c => [...c].filter(x => !x.isConnected).length;
+  const by = { near: out(near), forced: out(forced), touched: out(touched), stale: out(stale.keys()), uneven: out(unevenChunks) };
+  return { chunksDetached: Object.values(by).reduce((a, b) => a + b, 0), chunksBy: by };
+}
+
 export function clearChunks() {
   for (const c of [...doc.children]) if (isChunk(c)) dropChunk(c);
 }

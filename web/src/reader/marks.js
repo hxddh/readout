@@ -340,7 +340,15 @@ window.addEventListener('focus', restartDwell);
 document.addEventListener('visibilitychange', restartDwell);
 window.addEventListener('scroll', () => { if (waiting.size && watching()) restartDwell(); }, { passive: true });
 
+/** A block leaving the page (removed, or the page reset): its dwell and arrival go with it. */
+export function forgetMarks(el) {
+  readObserver.unobserve(el);
+  disarmRead(el);
+  arrivals.delete(el);
+}
+
 function tryRead(el) {
+  if (!el.isConnected) { disarmRead(el); return; }
   readTimers.delete(el);
   readDue.delete(el);
   if (document.hidden) { waiting.add(el); return; }
@@ -609,6 +617,11 @@ export function pulse(el) {
 export function focusBlock(el) {
   if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
   el.focus({ preventScroll: true });
+}
+
+/** Tests: blocks the read dwell holds that are no longer in the page. */
+export function marksHeld() {
+  return { readDetached: [...readTimers.keys(), ...readSince.keys(), ...readDue.keys(), ...waiting, ...arrivals.keys()].filter(e => !e.isConnected).length };
 }
 
 export function markAllRead() {

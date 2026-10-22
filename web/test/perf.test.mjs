@@ -256,20 +256,32 @@ async function scrollDoc(docOps, { marks = false, act = false, jumps = false } =
   const mb = pid ? privateMemoryMB(pid) : null;
   const r = { scroll, mb, act: act ? await interactions(p) : null, jump: jumped.length ? median(jumped) : null };
   // The theme switch's cost is mostly WebKit restyling every element of the
-  // page, whatever the reader does: the same switch done by the attribute
-  // alone, in the same page (to the painted frame, median of four), and how
-  // many elements it restyles. Gated on these, not on the time: one build
-  // measured 277 and 479 ms on two runners.
+  // page, whatever the reader does: gated on the switch over the same switch
+  // done by the attribute alone (WebKit's restyle without Readout's code), in
+  // the same page, the two alternated (raw, ours, raw, ours, ...: 5 pairs,
+  // each to the painted frame, the page settled 300 ms between), the median
+  // of the pairs' ratios; and on how many elements it restyles. Not on the
+  // time: one build measured 277 and 479 ms on two runners.
   if (act) Object.assign(r, await p.evaluate(async () => {
-    const root = document.documentElement, was = root.dataset.theme;
-    const raw = [];
-    for (const t of ['dark', 'light', 'dark', 'light']) {
-      raw.push(await new Promise(res => { const t0 = performance.now(); root.dataset.theme = t; requestAnimationFrame(() => setTimeout(() => res(performance.now() - t0), 0)); }));
-      await new Promise(r => setTimeout(r, 300));
+    const root = document.documentElement;
+    const settle = () => new Promise(r => setTimeout(r, 300));
+    const painted = f => new Promise(res => { const t0 = performance.now(); f(); requestAnimationFrame(() => setTimeout(() => res(performance.now() - t0), 0)); });
+    const med = xs => { const a = xs.slice().sort((x, y) => x - y), n = a.length; return n % 2 ? a[n >> 1] : (a[n / 2 - 1] + a[n / 2]) / 2; };
+    window.readout.setAppearance({ dark: false });
+    await settle();
+    const raw = [], ours = [], ratio = [];
+    for (let k = 0; k < 5; k++) {
+      const a = await painted(() => { root.dataset.theme = 'dark'; });
+      await settle();
+      root.dataset.theme = 'light';
+      await settle();
+      const b = await painted(() => window.readout.setAppearance({ dark: true }));
+      await settle();
+      window.readout.setAppearance({ dark: false });
+      await settle();
+      raw.push(a); ours.push(b); ratio.push(b / a);
     }
-    if (was === undefined) delete root.dataset.theme; else root.dataset.theme = was;
-    raw.sort((a, b) => a - b);
-    return { raw: (raw[1] + raw[2]) / 2, elements: document.getElementsByTagName('*').length };
+    return { raw: med(raw), ours: med(ours), overRaw: med(ratio), elements: document.getElementsByTagName('*').length };
   }));
   await p.close();
   return r;
@@ -638,7 +650,7 @@ const result = {
   web_code_heavy_jump_ms: Math.round(codeHeavy.jump),
   web_code_heavy_theme_ms: Math.round(codeHeavy.act.theme),
   web_code_heavy_theme_raw_ms: Math.round(codeHeavy.raw),
-  web_code_heavy_theme_over_raw: Math.round(codeHeavy.act.theme / codeHeavy.raw * 100) / 100,
+  web_code_heavy_theme_over_raw: Math.round(codeHeavy.overRaw * 100) / 100,
   web_code_heavy_elements: codeHeavy.elements,
   web_code_heavy_scroll_p95_ms: codeHeavy.scroll.p95,
   web_code_heavy_scroll_max_ms: codeHeavy.scroll.max,
@@ -648,7 +660,7 @@ const result = {
   web_one_huge_code_jump_ms: Math.round(oneHuge.jump),
   web_one_huge_code_theme_ms: Math.round(oneHuge.act.theme),
   web_one_huge_code_theme_raw_ms: Math.round(oneHuge.raw),
-  web_one_huge_code_theme_over_raw: Math.round(oneHuge.act.theme / oneHuge.raw * 100) / 100,
+  web_one_huge_code_theme_over_raw: Math.round(oneHuge.overRaw * 100) / 100,
   web_one_huge_code_elements: oneHuge.elements,
   web_one_huge_code_scroll_p95_ms: oneHuge.scroll.p95,
   web_one_huge_code_blank_px: oneHuge.scroll.blankPx,

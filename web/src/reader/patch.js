@@ -2,7 +2,7 @@
 import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, firstItem, nextItem, lastItem, prevItem } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
 import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, roughRect, unstale } from './chunks.js';
-import { renderMarks, forgetDiff, watching } from './marks.js';
+import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, forgetBlock } from './enhance.js';
 import { sources, tight, setLinks } from './copy.js';
@@ -168,7 +168,7 @@ export function apply(p) {
   let headingsTouched = !!p.reset;
 
   if (p.reset) {
-    for (const el of slots.values()) { resizeObserver.unobserve(el); forgetBlock(el); }
+    for (const el of slots.values()) { resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); }
     slots.clear();
     clearChunks();
     document.getElementById('ro-empty')?.remove();
@@ -177,7 +177,7 @@ export function apply(p) {
   for (const op of p.ops) {
     if (op.op === 'remove') {
       const el = slots.get(op.slot);
-      if (el) { headingsTouched ||= el.classList.contains('k-heading'); resizeObserver.unobserve(el); forgetBlock(el); unplace(el); slots.delete(op.slot); }
+      if (el) { headingsTouched ||= el.classList.contains('k-heading'); resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); unplace(el); slots.delete(op.slot); }
     } else if (op.op === 'replace') {
       const el = slots.get(op.slot);
       if (!el) continue;

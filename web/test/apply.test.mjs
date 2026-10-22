@@ -993,6 +993,34 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     !r.onScreen && r.cut && r.states.includes('recheck') && r.final === 'done' && r.same && r.spans[0] > 100, JSON.stringify(r));
 }
 
+// A long block of a cold grammar, every part of it quick, adds up to more
+// than the slow limit: it is not highlighted twice (only a part that slow
+// is a line cut short). Each clock reading here moves on 5 ms: a part takes
+// about 5 ms, the block's 100 parts 500 ms.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(1));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const perl = `<div class="code-block" data-lang="perl"><pre><code>${Array.from({ length: 400 }, (_, l) => `my $x${l} = $y + ${l};`).join('\n')}</code></pre></div>`;
+  const r = await page.evaluate(async x => {
+    const real = performance.now.bind(performance);
+    let skew = 0;
+    window.readout.apply(x);
+    const cb = document.querySelector('.blk[data-slot="9"] .code-block');
+    const states = [];
+    new MutationObserver(() => {
+      states.push(cb.dataset.hl);
+      if (cb.dataset.hl === 'pending') performance.now = () => (skew += 5) + real();
+    }).observe(cb, { attributes: true, attributeFilter: ['data-hl'] });
+    const onScreen = cb.getBoundingClientRect().top < innerHeight;
+    for (let i = 0; i < 400 && cb.dataset.hl !== 'done'; i++) await new Promise(r => setTimeout(r, 25));
+    performance.now = real;
+    await new Promise(r => setTimeout(r, 300));
+    return { onScreen, states, final: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]') };
+  }, fixReset(20, i => i === 9 ? perl : '<p style="min-height:100px">para</p>', i => i === 9 ? 'code' : 'paragraph'));
+  check('a long cold-grammar block with every part quick is highlighted once, not redone',
+    !r.onScreen && r.final === 'done' && !r.states.includes('recheck') && r.colored, JSON.stringify(r));
+}
+
 // An agent rewriting a long code block again and again, near the reader and
 // far from them (in a chunk skipped, the reader still): lazy work keeps no
 // old copy of it (enhance.js: forgetBlock), what it holds stays bounded.
@@ -1039,6 +1067,33 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   const end = await page.evaluate(() => window.readout.diagramWork());
   check('a diagram rewritten 8 times while scrolling: only the last is drawn once the scroll pauses, and the queue stays bounded',
     drawn && end.draws - d0 === 1 && held.every(h => h.queued <= 1 && h.detached === 0) && end.queued === 0, JSON.stringify({ drawn, draws: end.draws - d0, held, end }));
+}
+
+// Pages replaced and emptied in quick succession (resets back to back,
+// a run of removals that empties chunks near the screen): nothing the
+// observers, the lazy work or the read dwell keep holds an element that
+// left the page (chunks.js: lookahead and show, marks.js: forgetMarks,
+// enhance.js: forgetBlock).
+{
+  const mk = n => { const r = fixReset(n, i => i % 7 === 0 ? `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[N${n}x${i}] --> B</pre></div>` : `<p>para ${i} lorem ipsum</p>`, i => i % 7 === 0 ? 'mermaid' : 'paragraph'); r.marks = Array.from({ length: 12 }, (_, k) => ({ slot: k + 1, kind: 'inserted' })); return r; };
+  const samples = [];
+  for (let round = 0; round < 12; round++) {
+    // Two resets in one task: the first's observer records arrive after its chunks are gone.
+    await page.evaluate(([a, b]) => { window.readout.apply(a); window.readout.apply(b); }, [mk(400 + round), mk(420 + round)]);
+    // The read dwell armed for the blocks on screen, then the page reset again.
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.waitForTimeout(60);
+    await page.evaluate(p => window.readout.apply(p), mk(440 + round));
+    await page.waitForTimeout(60);
+    // Removals emptying the chunks near the screen.
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 70 }, (_, k) => ({ op: 'remove', slot: k + 1 })) }));
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.waitForTimeout(100);
+    samples.push(await page.evaluate(() => window.readout.lazyHeld()));
+  }
+  const bad = samples.filter(h => h.detached || h.chunksDetached || h.readDetached);
+  check('pages reset back to back and emptied near the screen: no observer, lazy queue or read dwell holds an element out of the page',
+    bad.length === 0, JSON.stringify({ bad, last: samples.at(-1) }));
 }
 
 // Long code: a chunk holds about four screens' estimate, not 32 code blocks
