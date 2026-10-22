@@ -103,7 +103,7 @@ for (const f of readdirSync('test/corpus').filter(f => f.endsWith('.md'))) {
 }
 check(`corpus code blocks highlight as with Shiki's grammars (${blocks})`, blocks > 200 && differ.length === 0, differ.slice(0, 10).join(', '));
 
-// A long block highlighted 8 lines at a time (enhance.js: each part a
+// A long block highlighted 4 lines at a time (enhance.js: each part a
 // short task), each part going on from the state the last one left, comes
 // out exactly as highlighted in one go: comments, strings and templates that
 // run across a part's edge included.
@@ -121,8 +121,8 @@ check(`corpus code blocks highlight as with Shiki's grammars (${blocks})`, block
     const whole = highlightSync(code, id);
     const lines = code.split('\n'), inner = [];
     let state, head;
-    for (let at = 0; at < lines.length; at += 8) {
-      const r = highlightPart(lines.slice(at, at + 8).join('\n'), id, state);
+    for (let at = 0; at < lines.length; at += 4) {
+      const r = highlightPart(lines.slice(at, at + 4).join('\n'), id, state);
       const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
       if (!m) { bad.push(`${id}: part ${at}`); break; }
       head ??= m[1]; inner.push(m[2]); state = r.state;

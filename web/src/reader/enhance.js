@@ -372,20 +372,21 @@ const warmGrammars = new Set();   // grammar ids that have highlighted a block
 const prepared = new WeakSet();   // code blocks whose grammars have been loaded once
 
 // A block ahead of the screen is highlighted PART_LINES lines at a time,
-// each part a task of its own (the lazy pump's), and shown once whole:
+// a few parts a turn of the lazy pump, and shown once whole:
 // tokenizing takes a millisecond or two a line (more the first time a
 // grammar's rule is met), so a block highlighted in one go was a task of
 // 40-70 ms, a frame that stalls while the reader scrolls.
-const PART_LINES = 8;
+const PART_LINES = 4;
 const parts = new WeakMap();   // code block -> {at, state, head, inner}: the lines highlighted so far
 /** The block's code highlighted: all of it, or (`whole` false) the next part, 'more' while parts are left. */
 function highlightParts(cb, code, id, whole) {
   const lines = code.split('\n');
-  if (lines.length <= PART_LINES * 1.5) return hl.highlightSync(code, id);
+  if (lines.length <= PART_LINES * 2) return hl.highlightSync(code, id);
   // Every grammar the whole block needs (a part may be inside code embedded
   // from a fence in an earlier one) loaded first.
   if (!parts.has(cb) && !hl.canHighlight(code, id)) return null;
   const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [] };
+  const start = performance.now();
   do {
     const r = hl.highlightPart(lines.slice(p.at, p.at + PART_LINES).join('\n'), id, p.state);
     const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
@@ -394,7 +395,7 @@ function highlightParts(cb, code, id, whole) {
     p.inner.push(m[2]);
     p.state = r.state;
     p.at += PART_LINES;
-  } while (whole && p.at < lines.length);
+  } while (p.at < lines.length && (whole || performance.now() - start < SLICE_MS));
   if (p.at < lines.length) { parts.set(cb, p); return 'more'; }
   parts.delete(cb);
   return `${p.head}${p.inner.join('\n')}</code></pre>`;
@@ -477,10 +478,15 @@ const SLICE_MS = 6;
 const queue = [];
 let pumping = false;
 
+// A turn after each frame (not one task after another: the frames between
+// them would wait), or after 50 ms when no frame comes (a window not shown).
 function pump() {
   if (pumping || !queue.length) return;
   pumping = true;
-  setTimeout(() => {
+  let done = false;
+  const turn = () => {
+    if (done) return;
+    done = true;
     pumping = false;
     const start = performance.now();
     let n = 0;
@@ -490,7 +496,9 @@ function pump() {
       if (el.isConnected) lazyWork(el);
     }
     pump();
-  }, 0);
+  };
+  requestAnimationFrame(() => setTimeout(turn, 0));
+  setTimeout(turn, 50);
 }
 
 function lazyWork(el) {
