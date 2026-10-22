@@ -36,6 +36,10 @@ def load(name):
 
 # 3.7: the fixtures gained two paragraphs (Chinese emphasis and quotes, a
 # Japanese line) for the typesetting shots: 33/34 blocks became 35/36.
+# The spare page warms its grammars up in its own WebContent process, never the window's.
+procs = load("processes.json")
+check("the spare page runs in a web process of its own", procs.get("window_pid", -1) > 0 and procs.get("spare_pid", -1) > 0 and procs["window_pid"] != procs["spare_pid"], procs)
+
 initial = load("1-initial.json")
 print(f"1-initial: {initial}")
 check("1-initial blocks == 35", initial.get("blocks") == 35, initial)

@@ -157,6 +157,22 @@ enum SmokeTest {
         }
     }
 
+    /// The spare page (made after the first paint) warms its grammars up in
+    /// slices of up to tens of milliseconds: in a WebContent process of its
+    /// own, so the window being read never waits for them. Its pid and the
+    /// window's (WebKit's private _webProcessIdentifier, read only here).
+    private static func processes(webView: WKWebView, out: URL) {
+        func pid(_ w: WKWebView?) -> Int {
+            guard let w, w.responds(to: NSSelectorFromString("_webProcessIdentifier")) else { return -1 }
+            return (w.value(forKey: "_webProcessIdentifier") as? NSNumber)?.intValue ?? -1
+        }
+        let spare = WebViewPool.shared.spareForSmokeTest
+        let json: [String: Any] = ["window_pid": pid(webView), "spare_pid": spare == nil ? -1 : pid(spare)]
+        if let data = try? JSONSerialization.data(withJSONObject: json, options: [.sortedKeys]) {
+            try? data.write(to: out.appendingPathComponent("processes.json"))
+        }
+    }
+
     static func didOpen() {
         guard let out = outputDirectory else { return }
         try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
@@ -192,6 +208,7 @@ enum SmokeTest {
             await probeAfterFirstPaint(webView)
             try? await Task.sleep(for: .seconds(1))
             await readPageFirstApply(webView)
+            processes(webView: webView, out: out)
             await capture(webView, window: controller.window, to: out, name: "1-initial")
             await typesetting(webView: webView, out: out)
 

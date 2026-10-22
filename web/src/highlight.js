@@ -1,7 +1,7 @@
 // Syntax highlighting with Shiki (JavaScript regex engine, no WASM).
 // Grammars are loaded on demand; the three agent output uses most are
 // preloaded (not in Quick Look, which loads only what the preview shows), the
-// spare page loads four more, and the languages a document's fences name are
+// spare page loads nine more, and the languages a document's fences name are
 // loaded while it parses (prepareLangs). Shiki itself is loaded on first use.
 //
 // The grammars come mostly converted: the build (shiki-grammars.mjs) serves
@@ -75,15 +75,16 @@ const ALIASES = {
   conf: 'ini', env: 'shellscript', ndjson: 'jsonl', protobuf: 'proto',
 };
 
-// Each preloaded grammar costs every tab its memory (12 of them: ~36 MB of
-// a warmed page's private memory); the rest load on first use, which ES2018
+// Each preloaded grammar costs a tab its memory (12 of them: ~36 MB of a
+// warmed page's private memory); the rest load on first use, which ES2018
 // patterns keep to tens or hundreds of milliseconds, or while the document
 // naming them parses (prepareLangs). Every page loads the three agent output
-// uses most; the spare page (warm) also the four small common ones, ~4 MB in
-// all, so their blocks are coloured in a warm open's first paint too. (Go
-// and Swift would cost ~7 MB each.)
+// uses most. The spare page (warm), which a window opens on, also loads the
+// rest of 3.8.0's twelve, so their blocks are coloured in a warm
+// open's first paint as in 3.8 (its memory about 3.8's by design); pages
+// not warmed (the first window at launch, background tabs) keep 3.9's three.
 const PRELOAD = ['shellscript', 'json', 'typescript'];
-const SPARE_PRELOAD = ['python', 'rust', 'yaml', 'diff'];
+const SPARE_PRELOAD = ['javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'];
 
 let highlighter = null;
 let ready = null;
@@ -136,59 +137,72 @@ export function init() {
 // Loading a grammar does not compile its patterns: the first block it
 // highlights does, which cost the first code block of a warm open 170-220 ms
 // inside the page's first apply (TypeScript's patterns alone take WebKit
-// hundreds of milliseconds). So the app's spare page (warm), once the
-// preloaded grammars are in and it has then sat unused for a while (a spare
-// page usually waits minutes for its window), compiles each grammar's
-// patterns one at a time and runs a few lines of each language through it,
-// in slices of a few milliseconds, one per task: a window taking the page
-// meanwhile waits for one slice at most (one pattern: TypeScript's largest
-// is the longest step), and nothing more is done once it shows a document
-// (stopWarmUp, enhance.js). Only on the spare page: a page being read should
-// not spend its main thread on languages it may not show. Never in Quick
-// Look, which preloads nothing. Marks 'readout-hl-warm' when done (perf.test.mjs).
-// The grammars a document being opened names (prepareLangs) are loaded and
-// compiled the same way, ahead of the rest, until it is shown.
+// hundreds of milliseconds). So grammars are loaded and compiled ahead of
+// need through one queue of jobs, run in slices of a few milliseconds, one
+// per task (a window taking the page waits for one slice at most):
+// - spare jobs: the app's spare page (warm) loads its grammars one at a
+//   time, then, once it has sat unused for a while (a spare page usually
+//   waits minutes for its window), compiles each grammar's patterns and runs
+//   a few lines of its language through it. Marks 'readout-hl-warm' when
+//   all are done, with its time, longest slice and grammars (perf.test.mjs).
+// - requested jobs: the languages a document being opened names
+//   (prepareLangs), loaded and compiled at the front of the queue.
+// The page showing a document (stopWarmUp, enhance.js) drops the spare jobs
+// (a page being read should not spend its main thread on languages it may
+// not show) and keeps the requested ones. Never spare jobs in Quick Look,
+// which preloads nothing.
 let warming = false;
-let warmStopped = false;
-const work = [];             // warm-up steps, run a slice at a time
+let shown = false;           // the page shows a document
+const jobs = [];             // { id, requested, steps } in order; steps: an iterator, made when the job starts
 let working = false;
-const warmQueued = new Set();  // grammar ids whose warm-up is queued
+let longestSlice = 0;        // the longest a window taking the page could wait (perf.test.mjs)
+
 export function warm() {
   return init().then(() => {
-    if (!preload || warming || warmStopped) return;
+    if (!preload || warming || shown) return;
     warming = true;
-    for (const id of SPARE_PRELOAD) ensureLang(id);
-    setTimeout(() => {
-      for (const id of WARM_ORDER) if (highlighter.getLoadedLanguages().includes(id)) queueWarm(id);
-      // And the whole path once, as a block is highlighted (both themes, HTML).
-      work.push(() => highlightSync('x', 'json'), () => performance.mark('readout-hl-warm'));
-      runWork();
-    }, WARM_DELAY_MS);
+    let start;
+    // Each grammar loaded, one at a time; then the idle delay; then each compiled; then done.
+    for (const id of SPARE_PRELOAD) jobs.push({ id, steps: loadSteps(id, true) });
+    jobs.push({ steps: (function* () { yield new Promise(r => setTimeout(r, WARM_DELAY_MS)); start = performance.now(); })() });
+    for (const id of WARM_ORDER) jobs.push({ id, steps: null });
+    // The whole path once, as a block is highlighted (both themes, HTML);
+    // marked done after its slice is counted.
+    jobs.push({ steps: (function* () { highlightSync('x', 'json'); })(), after: () => {
+      const grammars = WARM_ORDER.filter(id => !failed.has(id));
+      performance.mark('readout-hl-warm', { detail: { ms: performance.now() - start, longestSlice, grammars } });
+    } });
+    runJobs();
   });
 }
 
-/** The page shows a document: no more warming up. */
-export function stopWarmUp() { warmStopped = true; }
+/** The page shows a document: its spare jobs are dropped, requested ones go on. */
+export function stopWarmUp() {
+  shown = true;
+  for (let i = jobs.length - 1; i >= 0; i--) if (!jobs[i].requested) jobs.splice(i, 1);
+}
 
 /**
  * The app has read a document and is parsing it: the grammars its code
- * fences name (info strings, as written) are loaded and compiled now, ahead
- * of the spare page's own warm-up, so its first paint finds them ready.
+ * fences name (info strings, as written) are loaded and compiled now, at the
+ * front of the queue (a job for one already queued moves there), so its
+ * first paint finds them ready.
  */
 export function prepareLangs(names) {
-  if (warmStopped || !Array.isArray(names)) return;
+  if (shown || !Array.isArray(names)) return;
   // A Markdown block may start with front matter, which is YAML (embedded):
   // what such a block needs is not known before its code is.
-  const ids = names.slice(0, 16).map(n => resolveLang(String(n)));
+  const ids = names.slice(0, 16).map(n => resolveLang(String(n))).filter(Boolean);
   if (ids.includes('markdown')) ids.push('yaml');
-  for (const id of ids) {
-    if (!id || warmQueued.has(id)) continue;
-    prepare(id, '').then(() => {
-      if (warmStopped || failed.has(id)) return;
-      queueWarm(id, true);
-      runWork();
-    });
+  const front = [];
+  for (const id of new Set(ids)) {
+    needed.add(id);
+    if (jobs.some(j => j.id === id && j.requested)) continue;
+    for (let i = jobs.length - 1; i >= 0; i--) if (jobs[i].id === id) jobs.splice(i, 1);
+    front.push({ id, requested: true, steps: null });
   }
+  jobs.unshift(...front);
+  init().then(runJobs);   // a page not set up yet: once the highlighter is
 }
 
 const TS_SAMPLE = [
@@ -285,63 +299,136 @@ const SAMPLES = {
     '        env: { CI: true, N: 1.5 }',
   ].join('\n'),
   diff: 'diff --git a/x.js b/x.js\nindex 1111111..2222222 100644\n--- a/x.js\n+++ b/x.js\n@@ -1,3 +1,3 @@ function f\n-const a = 1;\n+const a = 2;\n context',
-  // Not preloaded (prepareLangs): the same rules as TypeScript.
   javascript: TS_SAMPLE,
+  swift: [
+    'import Foundation',
+    '',
+    '/// A doc comment.',
+    '@MainActor final class Store<T: Codable>: ObservableObject {',
+    '    @Published private(set) var items: [String: T] = [:]',
+    '    init(path: URL, strict: Bool = false) throws { self.path = path }',
+    '    func load() async throws -> Int {',
+    '        guard let data = try? Data(contentsOf: path) else { return 0 }',
+    '        for (i, line) in String(decoding: data, as: UTF8.self).split(separator: "\\n").enumerated() where !line.isEmpty {',
+    '            items["\\(i)"] = try JSONDecoder().decode(T.self, from: Data(line.utf8))',
+    '        }',
+    '        return items.count  // comment',
+    '    }',
+    '}',
+    'enum Mode { case on, off }',
+    'let total = [1, 2].map { $0 * 2 }.reduce(0, +) * 1.5',
+  ].join('\n'),
+  go: [
+    'package main',
+    '',
+    'import (',
+    '\t"context"',
+    '\t"fmt"',
+    ')',
+    '',
+    '// Store is a store.',
+    'type Store[T any] struct {',
+    '\tItems map[string]T `json:"items"`',
+    '}',
+    '',
+    'func (s *Store[T]) Load(ctx context.Context, path string) (int, error) {',
+    '\tfor i, line := range strings.Split(path, "\\n") {',
+    '\t\tif line == "" {',
+    '\t\t\tcontinue',
+    '\t\t}',
+    '\t\ts.Items[fmt.Sprintf("%d", i)] = *new(T)',
+    '\t}',
+    '\tgo func() { defer close(ch); ch <- 1 }()',
+    '\treturn len(s.Items), nil',
+    '}',
+  ].join('\n'),
+  markdown: [
+    '# Title',
+    '',
+    'Some *text*, **bold** and `code`, a [link](https://example.com "t") and ![image](a.png).',
+    '',
+    '> A quote',
+    '',
+    '1. One',
+    '- [ ] Task',
+    '',
+    '| a | b |',
+    '| - | - |',
+    '| 1 | 2 |',
+  ].join('\n'),
+  sql: [
+    "WITH t AS (SELECT id, name FROM users WHERE created_at > NOW() - INTERVAL '7 days')",
+    'SELECT a.id, COUNT(*) AS n, SUM(b.x) / 1.5 FROM t a',
+    'LEFT JOIN orders b ON b.user_id = a.id',
+    "WHERE a.name LIKE '%x%' AND b.status IN ('open', 'done')",
+    'GROUP BY a.id HAVING COUNT(*) > 1 ORDER BY n DESC LIMIT 10; -- comment',
+    'CREATE TABLE IF NOT EXISTS x (id INTEGER PRIMARY KEY, v TEXT NOT NULL);',
+    "INSERT INTO x VALUES (1, 'a');",
+  ].join('\n'),
 };
 // Any other language a document names: a few lines most grammars have rules for.
 const GENERIC_SAMPLE = 'import x from "y"; // comment\n# comment\n/* comment */ if (a == 1.5) { return [true, null, \'s\', `t`]; }\nfunc(a, b) -> c:';
 const WARM_DELAY_MS = 5000;
-const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'rust', 'yaml', 'diff'];   // the slowest first
-// The regexes of a grammar, as the build precompiled them: WebKit compiles
-// each on its first use, which is what makes a grammar's first block slow.
-function regexesOf(id) {
-  const out = new Set(), seen = new Set();
-  const walk = v => {
-    if (v instanceof RegExp) { out.add(v); return; }
-    if (!v || typeof v !== 'object' || seen.has(v)) return;
-    seen.add(v);
-    for (const k in v) walk(v[k]);
-  };
-  walk(grammarsOf.get(id));
-  return [...out];
+const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript', 'go', 'swift', 'rust', 'yaml', 'markdown', 'sql', 'diff'];   // 3.8's order
+// A job's steps, one per next(): a promise yielded is waited for (the slice
+// ends there). Loading: the grammar's import and registration.
+function* loadSteps(id, spare) {
+  if (!loaded(id)) yield ensureLang(id, spare);
 }
-
-// A grammar's warm-up: its patterns compiled, then its sample (if it has
-// one) run a line per step (carrying the grammar's state), so the rules it
-// reaches are set up as they are for a block. `first`: ahead of the rest.
-function queueWarm(id, first = false) {
-  if (warmQueued.has(id)) return;
-  warmQueued.add(id);
-  const steps = [];
-  for (const r of regexesOf(id)) steps.push(() => { try { r.lastIndex = 0; r.exec(''); } catch { /* not ours to fix */ } });
+// Then compiling, sliced and measured like the rest (the walk too): each of
+// its regexes (as the build precompiled them; WebKit compiles each on its
+// first use, which is what makes a grammar's first block slow) run once,
+// then its sample (or a generic one) a line per step, carrying the
+// grammar's state, so the rules it reaches are set up as they are for a block.
+function* grammarSteps(id, spare) {
+  yield* loadSteps(id, spare);
+  if (failed.has(id) || !highlighter.getLoadedLanguages().includes(id)) return;
+  const seen = new Set(), stack = [grammarsOf.get(id)];
+  while (stack.length) {
+    const v = stack.pop();
+    if (v instanceof RegExp) {
+      try { v.lastIndex = 0; v.exec(''); } catch { /* not ours to fix */ }
+      yield;
+      continue;
+    }
+    if (!v || typeof v !== 'object' || seen.has(v)) continue;
+    seen.add(v);
+    for (const k in v) stack.push(v[k]);
+  }
   let state;
   for (const line of (SAMPLES[id] || GENERIC_SAMPLE).split('\n')) {
-    steps.push(() => {
-      try {
-        const tokens = highlighter.codeToTokensBase(line, { lang: id, theme: 'github-light-default', ...(state ? { grammarState: state } : {}) });
-        state = highlighter.getLastGrammarState(tokens);
-      } catch { state = undefined; }
-    });
+    try {
+      const tokens = highlighter.codeToTokensBase(line, { lang: id, theme: 'github-light-default', ...(state ? { grammarState: state } : {}) });
+      state = highlighter.getLastGrammarState(tokens);
+    } catch { state = undefined; }
+    yield;
   }
-  if (first) {
-    steps.push(() => performance.mark('readout-hl-prepared'));   // for the tests
-    work.unshift(...steps);
-  } else work.push(...steps);
 }
 
 const SLICE_MS = 8;
-function runWork() {
+function runJobs() {
   if (working) return;
   working = true;
   const next = () => {
-    if (warmStopped) { working = false; return; }
-    const t0 = performance.now();
-    do {
-      const step = work.shift();
-      if (!step) { working = false; return; }
-      step();
-    } while (performance.now() - t0 < SLICE_MS);
-    setTimeout(next, 0);
+    const t0 = performance.now(), after = [];
+    // The first job runs until it waits (a load, the idle delay): requested
+    // jobs, put in front of it, go meanwhile; the jobs behind it wait.
+    while (jobs.length && !jobs[0].waiting && performance.now() - t0 < SLICE_MS) {
+      const job = jobs[0];
+      job.steps ||= grammarSteps(job.id, !job.requested);
+      const r = job.steps.next();
+      if (r.done) {
+        jobs.splice(jobs.indexOf(job), 1);
+        if (job.after) after.push(job.after);
+        if (job.requested) performance.mark('readout-hl-prepared');   // for the tests
+      } else if (r.value instanceof Promise) {
+        job.waiting = r.value.then(() => { job.waiting = null; runJobs(); });
+      }
+    }
+    longestSlice = Math.max(longestSlice, performance.now() - t0);
+    for (const f of after) f();
+    if (jobs.length && !jobs[0].waiting) setTimeout(next, 0);
+    else working = false;
   };
   next();
 }
@@ -352,12 +439,18 @@ function runWork() {
 // resolved and the same block could highlight differently between loads.
 let registry = Promise.resolve();
 
-export function ensureLang(id) {
-  if (!highlighter) return init().then(() => ensureLang(id));
+const needed = new Set();   // grammars a page asked for, not only the spare's warm-up
+
+/** `spare`: for the spare page's warm-up only, which a window taking the page stops. */
+export function ensureLang(id, spare = false) {
+  if (!spare) needed.add(id);
+  if (!highlighter) return init().then(() => ensureLang(id, spare));
   if (highlighter.getLoadedLanguages().includes(id)) return Promise.resolve();
   if (!loading.has(id)) {
     const load = LANGS[id]();   // fetch in parallel, register in order
     const done = registry.then(() => load).then(m => {
+      // The page was taken meanwhile and nothing it shows asked for it: not registered.
+      if (shown && !needed.has(id)) { loading.delete(id); return; }
       const main = m.default.find(g => g.name === id) || m.default[m.default.length - 1];
       lazyOf.set(id, main?.embeddedLangsLazy || []);
       grammarsOf.set(id, m.default);
