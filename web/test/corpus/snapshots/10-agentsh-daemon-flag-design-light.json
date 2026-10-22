@@ -150,7 +150,7 @@
    "kind": "code",
    "top": 1110,
    "h": 102,
-   "style": "58a60ecd",
+   "style": "583fdddb",
    "content": "b38ecafa",
    "text": "cmd.Flags().Bool(\"daemon\", false, \"Deprecated: a"
   },
@@ -195,7 +195,7 @@
    "kind": "code",
    "top": 1604,
    "h": 102,
-   "style": "97d1b0c0",
+   "style": "d8416774",
    "content": "7d9b19e9",
    "text": "<string>server</string> - <string>--daemon</stri"
   },

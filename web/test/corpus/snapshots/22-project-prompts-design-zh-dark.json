@@ -294,7 +294,7 @@
    "kind": "code",
    "top": 1597,
    "h": 242,
-   "style": "8dfb0d89",
+   "style": "a5d6a908",
    "content": "93f5331e",
    "text": "// 抽象方法（子类实现） protected abstract Path getStorage"
   },
@@ -330,7 +330,7 @@
    "kind": "code",
    "top": 1966,
    "h": 222,
-   "style": "485ad83f",
+   "style": "95c27d0f",
    "content": "f30d1507",
    "text": "@Override protected Path getStoragePath() { retu"
   },
@@ -366,7 +366,7 @@
    "kind": "code",
    "top": 2315,
    "h": 382,
-   "style": "b5ac0e8b",
+   "style": "dbf04c43",
    "content": "5a58f088",
    "text": "private final Project project; @Override protect"
   },
@@ -384,7 +384,7 @@
    "kind": "code",
    "top": 2733,
    "h": 502,
-   "style": "a86680b7",
+   "style": "e848129e",
    "content": "754dd5be",
    "text": "public enum PromptScope { GLOBAL(\"global\"), PROJ"
   },
@@ -402,7 +402,7 @@
    "kind": "code",
    "top": 3271,
    "h": 442,
-   "style": "b6779762",
+   "style": "5c6572a1",
    "content": "a9605e70",
    "text": "public class PromptManagerFactory { public stati"
   },
@@ -501,7 +501,7 @@
    "kind": "code",
    "top": 4119,
    "h": 142,
-   "style": "608a84e3",
+   "style": "70f595f9",
    "content": "9d4b4d01",
    "text": "private final PromptManager promptManager; publi"
   },
@@ -519,7 +519,7 @@
    "kind": "code",
    "top": 4307,
    "h": 262,
-   "style": "79c3454d",
+   "style": "574825c1",
    "content": "a4d0ab4f",
    "text": "private final Gson gson; private final ConfigPat"
   },
@@ -609,7 +609,7 @@
    "kind": "code",
    "top": 5212,
    "h": 282,
-   "style": "9fd42e53",
+   "style": "f20c4d96",
    "content": "b00f7483",
    "text": "interface PromptSectionProps { globalPrompts: Pr"
   },
@@ -636,7 +636,7 @@
    "kind": "code",
    "top": 5575,
    "h": 302,
-   "style": "10b74fac",
+   "style": "22ac573f",
    "content": "8a49a820",
    "text": "interface PromptScopeSectionProps { title: strin"
   },
@@ -663,7 +663,7 @@
    "kind": "code",
    "top": 5955,
    "h": 202,
-   "style": "6d1de281",
+   "style": "0b58fda4",
    "content": "f474bf4a",
    "text": "interface PromptItem { id: string; name: string;"
   },
@@ -699,7 +699,7 @@
    "kind": "code",
    "top": 6310,
    "h": 342,
-   "style": "c8c27a84",
+   "style": "f3d50240",
    "content": "1ae731d2",
    "text": "class PromptProvider { async fetchPrompts(): Pro"
   },
@@ -762,7 +762,7 @@
    "kind": "code",
    "top": 7058,
    "h": 322,
-   "style": "39001eae",
+   "style": "9483fec0",
    "content": "0f165c46",
    "text": "{ \"type\": \"get_prompts\", \"scope\": \"global\" } { \""
   },
@@ -780,7 +780,7 @@
    "kind": "code",
    "top": 7416,
    "h": 242,
-   "style": "ee194fbd",
+   "style": "4cd51794",
    "content": "58c9544c",
    "text": "// 将项目提示词复制到全局 { \"type\": \"copy_prompt_to_global\""
   },
@@ -852,7 +852,7 @@
    "kind": "code",
    "top": 8370,
    "h": 222,
-   "style": "2a32a143",
+   "style": "fde9fce0",
    "content": "3338d8d4",
    "text": "{ \"settings.prompt.global\": \"全局提示词\", \"settings.p"
   },

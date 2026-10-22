@@ -474,7 +474,7 @@
    "kind": "code",
    "top": 5162,
    "h": 222,
-   "style": "723b0fc0",
+   "style": "82ec08ce",
    "content": "cfaa7db8",
    "text": "{ kind: 'shell' | 'mcp.tools_list' | 'mcp.tools_"
   },
@@ -492,7 +492,7 @@
    "kind": "code",
    "top": 5427,
    "h": 182,
-   "style": "14a77e21",
+   "style": "0e3e5d22",
    "content": "73912b4b",
    "text": "{ action: 'rewrite' | 'passthrough' | 'deny' | '"
   },
@@ -510,7 +510,7 @@
    "kind": "code",
    "top": 5653,
    "h": 602,
-   "style": "0892dce2",
+   "style": "ac69e2b0",
    "content": "fc5688b2",
    "text": "{ \"type\": \"aios.compact_packet\", \"version\": 1, \""
   },

@@ -573,7 +573,7 @@
    "kind": "code",
    "top": 3424,
    "h": 122,
-   "style": "cd67f6ef",
+   "style": "5d73f112",
    "content": "dec77a1e",
    "text": "type AcquireProxyBucketResult = { ip: string; bu"
   },
@@ -591,7 +591,7 @@
    "kind": "code",
    "top": 3592,
    "h": 142,
-   "style": "7e8c3c1c",
+   "style": "7223ba06",
    "content": "5bbc0806",
    "text": "type IRequestContext = { ip: string; bucketKey: "
   },
@@ -609,7 +609,7 @@
    "kind": "code",
    "top": 3779,
    "h": 102,
-   "style": "c37261c0",
+   "style": "2c430817",
    "content": "22b13f05",
    "text": "labels: { ip: proxyIp; }"
   },
@@ -798,7 +798,7 @@
    "kind": "code",
    "top": 4983,
    "h": 162,
-   "style": "e8f85b48",
+   "style": "8065834b",
    "content": "f3bcb083",
    "text": "type AcquireProxyBucketInput = { baseKey: string"
   },
@@ -852,7 +852,7 @@
    "kind": "code",
    "top": 5341,
    "h": 122,
-   "style": "cd67f6ef",
+   "style": "5d73f112",
    "content": "dec77a1e",
    "text": "type AcquireProxyBucketResult = { ip: string; bu"
   },

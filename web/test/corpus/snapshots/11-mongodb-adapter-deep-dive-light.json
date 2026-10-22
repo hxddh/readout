@@ -150,7 +150,7 @@
    "kind": "code",
    "top": 1273,
    "h": 382,
-   "style": "96cfb153",
+   "style": "362925b7",
    "content": "f2227918",
    "text": "db.chunks.aggregate([ { $vectorSearch: { index: "
   },
@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 3639,
    "h": 222,
-   "style": "148412b7",
+   "style": "7b73dc8e",
    "content": "ffdc00cb",
    "text": "{ fields: [ { type: \"vector\", path: \"embedding\","
   },
@@ -969,7 +969,7 @@
    "kind": "code",
    "top": 8898,
    "h": 222,
-   "style": "d9172c1c",
+   "style": "da7473a9",
    "content": "e6b67f73",
    "text": "services: mongodb-atlas: image: mongodb/mongodb-"
   },
@@ -1050,7 +1050,7 @@
    "kind": "code",
    "top": 9876,
    "h": 342,
-   "style": "cf507b65",
+   "style": "164dca2b",
    "content": "925ed66f",
    "text": "// pseudo-code outline const IMAGE = 'mongodb/mo"
   },
@@ -1104,7 +1104,7 @@
    "kind": "code",
    "top": 10480,
    "h": 502,
-   "style": "b9f0412e",
+   "style": "3df61813",
    "content": "356fad23",
    "text": "jobs: test-mongodb-adapter: runs-on: ubuntu-late"
   },

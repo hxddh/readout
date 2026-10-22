@@ -33,7 +33,7 @@
    "kind": "alert",
    "top": 231,
    "h": 175,
-   "style": "bf83c717",
+   "style": "2f3178b0",
    "content": "9b520699",
    "text": "NoteBuild the reader before running the tests:cd"
   },
@@ -60,7 +60,7 @@
    "kind": "code",
    "top": 565,
    "h": 122,
-   "style": "f5f9cb11",
+   "style": "1f0e451e",
    "content": "cefa7893",
    "text": "$ npm run corpus ok: 01-sdd-fix-loop-plan-light "
   },
@@ -195,7 +195,7 @@
    "kind": "code",
    "top": 1812,
    "h": 62,
-   "style": "70490304",
+   "style": "177d9860",
    "content": "826ac941",
    "text": "const result = await client.send(new GetObjectCo"
   },

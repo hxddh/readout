@@ -231,7 +231,7 @@
    "kind": "code",
    "top": 3599,
    "h": 2502,
-   "style": "5f4bed8e",
+   "style": "c115f832",
    "content": "aedc2da5",
    "text": "/** 支持的外部框架类型 */ export type A2AFrameworkType = "
   },
@@ -258,7 +258,7 @@
    "kind": "code",
    "top": 6188,
    "h": 162,
-   "style": "b851c5b0",
+   "style": "b6b3a3ff",
    "content": "43703d23",
    "text": "/** 外部框架 Agent 节点（继承 GuestAgentNode） */ export i"
   },
@@ -276,7 +276,7 @@
    "kind": "code",
    "top": 6391,
    "h": 582,
-   "style": "2a55d7c5",
+   "style": "5040c0ce",
    "content": "a3333721",
    "text": "export class A2AClient { constructor(options: A2"
   },
@@ -294,7 +294,7 @@
    "kind": "code",
    "top": 7015,
    "h": 742,
-   "style": "1c121cd6",
+   "style": "00fa877b",
    "content": "01eae163",
    "text": "export class A2AServer { constructor(options: A2"
   },
@@ -321,7 +321,7 @@
    "kind": "code",
    "top": 7844,
    "h": 322,
-   "style": "88bdc7fb",
+   "style": "00494561",
    "content": "f0ad2511",
    "text": "/** 框架适配器接口 */ export interface FrameworkAdapter"
   },
@@ -366,7 +366,7 @@
    "kind": "code",
    "top": 8320,
    "h": 442,
-   "style": "3ab9ad4c",
+   "style": "aff735d3",
    "content": "633ca184",
    "text": "// crewai.ts export class CrewAIAdapter implemen"
   },
@@ -393,7 +393,7 @@
    "kind": "code",
    "top": 8850,
    "h": 562,
-   "style": "af6235c9",
+   "style": "69843ca8",
    "content": "9e611563",
    "text": "class MessageBus { // 现有方法保持不变... /** 发送 A2A 消息（"
   },
@@ -438,7 +438,7 @@
    "kind": "code",
    "top": 9673,
    "h": 202,
-   "style": "71ecfa31",
+   "style": "1f2393bf",
    "content": "cfee0166",
    "text": "interface A2AState { activeSessions: A2ASession["
   },
@@ -456,7 +456,7 @@
    "kind": "code",
    "top": 9911,
    "h": 82,
-   "style": "c28baa12",
+   "style": "07660169",
    "content": "10cf021d",
    "text": "/** 渲染跨框架 A2A 调用粒子流动画 */ export function CrossFr"
   },
@@ -600,7 +600,7 @@
    "kind": "code",
    "top": 11660,
    "h": 162,
-   "style": "a9db3558",
+   "style": "f8f1c71a",
    "content": "f7ebf1fd",
    "text": "{ a2a: true, frameworkType: \"crewai\" | \"langgrap"
   },
@@ -627,7 +627,7 @@
    "kind": "code",
    "top": 11909,
    "h": 182,
-   "style": "16af4c70",
+   "style": "00f7401f",
    "content": "11601211",
    "text": "interface RateLimitEntry { apiKey: string; windo"
   },

@@ -132,7 +132,7 @@
    "kind": "code",
    "top": 1283,
    "h": 202,
-   "style": "6b91797c",
+   "style": "c131a3ba",
    "content": "9153e919",
    "text": "Copy-Item .env .env.backup Copy-Item .env.ci .en"
   },
@@ -159,7 +159,7 @@
    "kind": "code",
    "top": 1599,
    "h": 82,
-   "style": "82e2a005",
+   "style": "06ad0fbb",
    "content": "cc3723ab",
    "text": "Get-ChildItem -Recurse packages/app-core/dist, p"
   },
@@ -303,7 +303,7 @@
    "kind": "code",
    "top": 2757,
    "h": 302,
-   "style": "3c314ae2",
+   "style": "bd88a5e9",
    "content": "045dfdf0",
    "text": "const rawWorkerText = { name: 'raw-worker-text',"
   },
@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 3243,
    "h": 102,
-   "style": "eee9dcac",
+   "style": "5f41fb53",
    "content": "d628b67e",
    "text": "outputOptions: { entryFileNames: '[name].worker."
   },
@@ -366,7 +366,7 @@
    "kind": "code",
    "top": 3511,
    "h": 242,
-   "style": "6430089d",
+   "style": "d6bd664d",
    "content": "df4d47c3",
    "text": "const pngDataUrl = { name: 'png-dataurl', load(i"
   },
@@ -393,7 +393,7 @@
    "kind": "code",
    "top": 3893,
    "h": 62,
-   "style": "40c1f00d",
+   "style": "53a2ee1a",
    "content": "59d1d46d",
    "text": "npm run build -w @deneb-viz/app-core 2>&1 | grep"
   },
@@ -546,7 +546,7 @@
    "kind": "code",
    "top": 5256,
    "h": 62,
-   "style": "faef672e",
+   "style": "6aa90530",
    "content": "1e74bfed",
    "text": "Get-ChildItem -Recurse packages/app-core/dist, p"
   },
@@ -654,7 +654,7 @@
    "kind": "code",
    "top": 6229,
    "h": 82,
-   "style": "b520c5eb",
+   "style": "19f07907",
    "content": "934bdda7",
    "text": "npm run verify-package-parity -- dist/baseline-p"
   },
@@ -699,7 +699,7 @@
    "kind": "code",
    "top": 6565,
    "h": 82,
-   "style": "efdcf05b",
+   "style": "dba15889",
    "content": "66deb99c",
    "text": "git push -u origin chore/750-tsdown gh pr create"
   },

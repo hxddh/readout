@@ -249,7 +249,7 @@
    "kind": "code",
    "top": 3167,
    "h": 82,
-   "style": "cffbf382",
+   "style": "10faeaa7",
    "content": "fadb507f",
    "text": "@ExtendWith(MockitoExtension.class) @MockitoSett"
   },
@@ -267,7 +267,7 @@
    "kind": "code",
    "top": 3290,
    "h": 182,
-   "style": "0642042b",
+   "style": "669b41cf",
    "content": "1aef29fb",
    "text": "private OverAllState createTestState(String... k"
   },
@@ -303,7 +303,7 @@
    "kind": "code",
    "top": 3912,
    "h": 1342,
-   "style": "080f69f3",
+   "style": "71cb442d",
    "content": "7ceb681d",
    "text": "public final class TestFixtures { // Schema fixt"
   },
@@ -321,7 +321,7 @@
    "kind": "code",
    "top": 5296,
    "h": 442,
-   "style": "716752e9",
+   "style": "0e772b70",
    "content": "4f5cbde9",
    "text": "<dependency> <groupId>org.mockito</groupId> <art"
   },
@@ -537,7 +537,7 @@
    "kind": "code",
    "top": 8133,
    "h": 382,
-   "style": "97ad4135",
+   "style": "3ef5dff7",
    "content": "af6a325e",
    "text": "// List operations @Test void getListValue_withV"
   },
@@ -564,7 +564,7 @@
    "kind": "code",
    "top": 8600,
    "h": 422,
-   "style": "4346193a",
+   "style": "59d80f0a",
    "content": "e49b18fc",
    "text": "// Plan parsing @Test void getPlan_withValidJson"
   },
@@ -591,7 +591,7 @@
    "kind": "code",
    "top": 9107,
    "h": 382,
-   "style": "5d41c8ba",
+   "style": "92fd10b0",
    "content": "cbf2a1c8",
    "text": "// Successful parsing @Test void tryConvertToObj"
   },
@@ -618,7 +618,7 @@
    "kind": "code",
    "top": 9574,
    "h": 362,
-   "style": "44d05b67",
+   "style": "4d4d5abe",
    "content": "0950ae3b",
    "text": "// MySQL dialect @Test void buildSelectSql_mysql"
   },
@@ -654,7 +654,7 @@
    "kind": "code",
    "top": 10065,
    "h": 522,
-   "style": "75d7370e",
+   "style": "6595d6cf",
    "content": "fb6a8c00",
    "text": "// Chinese relative date expressions @Test void "
   },
@@ -681,7 +681,7 @@
    "kind": "code",
    "top": 10672,
    "h": 282,
-   "style": "f5637725",
+   "style": "c9fdaf2a",
    "content": "f5d93298",
    "text": "// Cascade flux @Test void cascadeFlux_withPreMi"
   },
@@ -717,7 +717,7 @@
    "kind": "code",
    "top": 11083,
    "h": 102,
-   "style": "89ca0509",
+   "style": "bf0d1c35",
    "content": "84de220f",
    "text": "@Test void generateTable_withData_returnsMarkdow"
   },
@@ -735,7 +735,7 @@
    "kind": "code",
    "top": 11229,
    "h": 122,
-   "style": "37306f9b",
+   "style": "3120390f",
    "content": "4af5b185",
    "text": "@Test void generateApiKey_returnsValidFormat() @"
   },
@@ -807,7 +807,7 @@
    "kind": "code",
    "top": 11679,
    "h": 122,
-   "style": "3b1e8db6",
+   "style": "40e5ecb5",
    "content": "caa3794b",
    "text": "@Test void apply_dataAnalysisOutput_routesToPlan"
   },
@@ -843,7 +843,7 @@
    "kind": "code",
    "top": 11953,
    "h": 122,
-   "style": "3cac64a0",
+   "style": "d06c9e1b",
    "content": "483f54a8",
    "text": "@Test void apply_waitForFeedback_routesToEnd() @"
   },
@@ -870,7 +870,7 @@
    "kind": "code",
    "top": 12160,
    "h": 122,
-   "style": "d3cd8d21",
+   "style": "7143fd94",
    "content": "873d72a0",
    "text": "@Test void apply_dataQueryIntent_routesToEvidenc"
   },
@@ -897,7 +897,7 @@
    "kind": "code",
    "top": 12367,
    "h": 142,
-   "style": "1dd13a34",
+   "style": "735b72db",
    "content": "37cc2386",
    "text": "@Test void apply_validationPassed_routesToPlanNe"
   },
@@ -924,7 +924,7 @@
    "kind": "code",
    "top": 12621,
    "h": 142,
-   "style": "141e2159",
+   "style": "6d5cb908",
    "content": "c5a98368",
    "text": "@Test void apply_successTrue_routesToPythonAnaly"
   },
@@ -951,7 +951,7 @@
    "kind": "code",
    "top": 12848,
    "h": 122,
-   "style": "73e36079",
+   "style": "05a321da",
    "content": "ad37fe1f",
    "text": "@Test void apply_validCanonicalQuery_routesToSch"
   },
@@ -978,7 +978,7 @@
    "kind": "code",
    "top": 13055,
    "h": 102,
-   "style": "2bd984dd",
+   "style": "3c6de9ca",
    "content": "b007974a",
    "text": "@Test void apply_retryReasonPresent_routesToSqlG"
   },
@@ -1005,7 +1005,7 @@
    "kind": "code",
    "top": 13242,
    "h": 102,
-   "style": "9b42a1db",
+   "style": "2de75561",
    "content": "5a43981c",
    "text": "@Test void apply_tablesExist_routesToTableRelati"
   },
@@ -1032,7 +1032,7 @@
    "kind": "code",
    "top": 13430,
    "h": 102,
-   "style": "4642aabc",
+   "style": "ede747af",
    "content": "ba26da55",
    "text": "@Test void apply_consistencyPassed_routesToSqlEx"
   },
@@ -1059,7 +1059,7 @@
    "kind": "code",
    "top": 13617,
    "h": 142,
-   "style": "c67c53fb",
+   "style": "eeef5d6f",
    "content": "3b1b81e9",
    "text": "@Test void apply_validSqlOutput_routesToSemantic"
   },
@@ -1095,7 +1095,7 @@
    "kind": "code",
    "top": 13911,
    "h": 242,
-   "style": "827039b8",
+   "style": "9c37461a",
    "content": "633ec772",
    "text": "@Test void apply_noError_routesToFeasibilityAsse"
   },
@@ -1176,7 +1176,7 @@
    "kind": "code",
    "top": 14491,
    "h": 262,
-   "style": "7f12c8a8",
+   "style": "d1bfaeb9",
    "content": "8bc02e91",
    "text": "// Happy paths @Test void apply_validQuery_retur"
   },
@@ -1203,7 +1203,7 @@
    "kind": "code",
    "top": 14858,
    "h": 282,
-   "style": "69b2d347",
+   "style": "4da5e2e5",
    "content": "93911ecd",
    "text": "// Happy paths @Test void apply_withDatasource_r"
   },
@@ -1230,7 +1230,7 @@
    "kind": "code",
    "top": 15272,
    "h": 302,
-   "style": "41a67e1d",
+   "style": "b5707cfe",
    "content": "11a1b694",
    "text": "// Happy paths @Test void apply_validSchema_buil"
   },
@@ -1257,7 +1257,7 @@
    "kind": "code",
    "top": 15653,
    "h": 242,
-   "style": "3020d98d",
+   "style": "461658e7",
    "content": "f2216b20",
    "text": "// Happy paths @Test void apply_feasibleQuery_re"
   },
@@ -1293,7 +1293,7 @@
    "kind": "code",
    "top": 16018,
    "h": 162,
-   "style": "edb03744",
+   "style": "b9ef9487",
    "content": "37026685",
    "text": "@Test void apply_approvedFeedback_setsApprovalSt"
   },
@@ -1320,7 +1320,7 @@
    "kind": "code",
    "top": 16259,
    "h": 282,
-   "style": "75bc4b11",
+   "style": "04432aa4",
    "content": "bdb224b6",
    "text": "// Happy paths @Test void apply_validSql_passesV"
   },
@@ -1347,7 +1347,7 @@
    "kind": "code",
    "top": 16647,
    "h": 302,
-   "style": "d0930416",
+   "style": "3599340e",
    "content": "dc98a681",
    "text": "// Happy paths @Test void apply_validData_genera"
   },
@@ -1392,7 +1392,7 @@
    "kind": "code",
    "top": 17114,
    "h": 282,
-   "style": "cc411350",
+   "style": "f208c16b",
    "content": "7547fb25",
    "text": "// Error paths @Test void apply_nl2SqlServiceFai"
   },
@@ -1428,7 +1428,7 @@
    "kind": "code",
    "top": 17518,
    "h": 302,
-   "style": "b3b3a1cf",
+   "style": "058a3f12",
    "content": "197966f1",
    "text": "// Error paths @Test void apply_sqlExecutionErro"
   },
@@ -1455,7 +1455,7 @@
    "kind": "code",
    "top": 17900,
    "h": 362,
-   "style": "276b7c5e",
+   "style": "2ec73d55",
    "content": "06bea5c1",
    "text": "// Happy paths @Test void apply_validQuery_gener"
   },
@@ -1482,7 +1482,7 @@
    "kind": "code",
    "top": 18367,
    "h": 322,
-   "style": "85917111",
+   "style": "8e24e49a",
    "content": "565556b8",
    "text": "// Happy paths @Test void apply_validQuery_retur"
   },
@@ -1509,7 +1509,7 @@
    "kind": "code",
    "top": 18769,
    "h": 322,
-   "style": "abaf1283",
+   "style": "4175125c",
    "content": "b541aba6",
    "text": "// Happy paths @Test void apply_validRequest_gen"
   },
@@ -1536,7 +1536,7 @@
    "kind": "code",
    "top": 19196,
    "h": 302,
-   "style": "deab7d0c",
+   "style": "785096f5",
    "content": "00a6950a",
    "text": "// Happy paths @Test void apply_validCode_execut"
   },
@@ -1563,7 +1563,7 @@
    "kind": "code",
    "top": 19577,
    "h": 282,
-   "style": "eecb5598",
+   "style": "8464a337",
    "content": "e0c8230c",
    "text": "// Happy paths @Test void apply_validOutput_retu"
   },
@@ -1680,7 +1680,7 @@
    "kind": "code",
    "top": 20369,
    "h": 362,
-   "style": "ef31677f",
+   "style": "0ca51c8b",
    "content": "6e1d6b8d",
    "text": "// SQL generation @Test void generateSql_validDt"
   },
@@ -1707,7 +1707,7 @@
    "kind": "code",
    "top": 20842,
    "h": 342,
-   "style": "4041557c",
+   "style": "419ddc17",
    "content": "a67f410c",
    "text": "// Search @Test void search_validRequest_returns"
   },
@@ -1734,7 +1734,7 @@
    "kind": "code",
    "top": 21269,
    "h": 322,
-   "style": "1e154235",
+   "style": "1c14234d",
    "content": "76805117",
    "text": "// Filter building @Test void buildDynamicFilter"
   },
@@ -1761,7 +1761,7 @@
    "kind": "code",
    "top": 21676,
    "h": 382,
-   "style": "0113dba6",
+   "style": "a92f9dc1",
    "content": "5e50a1c5",
    "text": "// Turn management @Test void beginTurn_newThrea"
   },
@@ -1788,7 +1788,7 @@
    "kind": "code",
    "top": 22170,
    "h": 322,
-   "style": "465db2b2",
+   "style": "a4438c43",
    "content": "b2b63a8c",
    "text": "// NL2SQL @Test void nl2sql_validQuery_returnsRe"
   },
@@ -1815,7 +1815,7 @@
    "kind": "code",
    "top": 22577,
    "h": 102,
-   "style": "a2b8564c",
+   "style": "a97c2923",
    "content": "edbfc8fc",
    "text": "@Test void callUser_validPrompt_returnsChatRespo"
   },
@@ -1833,7 +1833,7 @@
    "kind": "code",
    "top": 22722,
    "h": 102,
-   "style": "bb78b5c7",
+   "style": "41fe96eb",
    "content": "aa6b7a39",
    "text": "@Test void callUser_validPrompt_returnsStreamFlu"
   },
@@ -1950,7 +1950,7 @@
    "kind": "code",
    "top": 23298,
    "h": 142,
-   "style": "41da4d43",
+   "style": "22108d9a",
    "content": "04a820e4",
    "text": "@WebFluxTest(GraphController.class) // Uses @Moc"
   },
@@ -1968,7 +1968,7 @@
    "kind": "code",
    "top": 23484,
    "h": 162,
-   "style": "c0bc9f93",
+   "style": "915d7d04",
    "content": "e6a6d7d7",
    "text": "@WebFluxTest(AgentController.class) @Test void c"
   },
@@ -1986,7 +1986,7 @@
    "kind": "code",
    "top": 23689,
    "h": 142,
-   "style": "3aaf1c57",
+   "style": "bce2e943",
    "content": "702d99a6",
    "text": "@WebFluxTest(DatasourceController.class) @Test v"
   },
@@ -2004,7 +2004,7 @@
    "kind": "code",
    "top": 23874,
    "h": 142,
-   "style": "7133cba0",
+   "style": "847c6768",
    "content": "d525a12e",
    "text": "@WebFluxTest(ChatController.class) @Test void cr"
   },
@@ -2022,7 +2022,7 @@
    "kind": "code",
    "top": 24060,
    "h": 142,
-   "style": "58953690",
+   "style": "aaace43d",
    "content": "4ae5b3ef",
    "text": "@WebFluxTest(ModelConfigController.class) @Test "
   },
@@ -2067,7 +2067,7 @@
    "kind": "code",
    "top": 24392,
    "h": 102,
-   "style": "e271c42b",
+   "style": "c395efb1",
    "content": "9a999c59",
    "text": "@Test void executeSql_validSelect_returnsResults"
   },
@@ -2085,7 +2085,7 @@
    "kind": "code",
    "top": 24538,
    "h": 82,
-   "style": "c8f77714",
+   "style": "a334b4de",
    "content": "b0513eb3",
    "text": "@Test void executeSqlAndReturnObject_validQuery_"
   },
@@ -2193,7 +2193,7 @@
    "kind": "code",
    "top": 25050,
    "h": 242,
-   "style": "18ab7f6c",
+   "style": "e055ee30",
    "content": "2f12cc7e",
    "text": "@SpringBootTest @Testcontainers class TextToSqlW"
   },
@@ -2211,7 +2211,7 @@
    "kind": "code",
    "top": 25334,
    "h": 202,
-   "style": "2d43c016",
+   "style": "dc9f3f52",
    "content": "6549f4fd",
    "text": "@SpringBootTest @Testcontainers class PythonWork"
   },
@@ -2229,7 +2229,7 @@
    "kind": "code",
    "top": 25578,
    "h": 182,
-   "style": "a21bc5fe",
+   "style": "484fd50e",
    "content": "03a87f36",
    "text": "@SpringBootTest @Testcontainers class HumanFeedb"
   },
@@ -2373,7 +2373,7 @@
    "kind": "code",
    "top": 27056,
    "h": 202,
-   "style": "327fae3f",
+   "style": "f7e9c1f9",
    "content": "ce28a05e",
    "text": "- name: Format check run: ./mvnw spring-javaform"
   },
@@ -2391,7 +2391,7 @@
    "kind": "code",
    "top": 27301,
    "h": 82,
-   "style": "0ae489b0",
+   "style": "39435e97",
    "content": "da13cd0b",
    "text": "- name: Coverage check run: ./mvnw jacoco:check "
   },

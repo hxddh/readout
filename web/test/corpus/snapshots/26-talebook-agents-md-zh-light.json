@@ -438,7 +438,7 @@
    "kind": "code",
    "top": 3335,
    "h": 62,
-   "style": "fce49e1d",
+   "style": "3914d841",
    "content": "59e649d0",
    "text": "cp design/TEMPLATE.html design/<module>/yyyymmdd"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 5721,
    "h": 250,
-   "style": "937663be",
+   "style": "f3411d63",
    "content": "d71ce913",
    "text": "前端本地体验默认使用两个终端启动： # 终端 1：Docker 后端 make dev # 确认"
   },
@@ -717,7 +717,7 @@
    "kind": "code",
    "top": 6088,
    "h": 162,
-   "style": "4eaad68e",
+   "style": "7f671dd7",
    "content": "dda0adf9",
    "text": "make lint-py-fix # 后端：用 black + isort 自动修复格式，开发完"
   },

@@ -105,7 +105,7 @@
    "kind": "code",
    "top": 890,
    "h": 82,
-   "style": "35fc2b5f",
+   "style": "beae169e",
    "content": "aab28e1b",
    "text": "HEALTHCHECK --interval=10s --timeout=5s --retrie"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 2471,
    "h": 148,
-   "style": "735cd03b",
+   "style": "d5446e5a",
    "content": "c9cde1f7",
    "text": "Build the image locally:cd docker && just buildC"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2954,
    "h": 151,
-   "style": "0a1edb67",
+   "style": "dbe4bd1a",
    "content": "561428df",
    "text": "Run the devnet and verify validators become heal"
   }

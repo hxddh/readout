@@ -132,7 +132,7 @@
    "kind": "code",
    "top": 818,
    "h": 1182,
-   "style": "130d0d7d",
+   "style": "f15c8ad2",
    "content": "b92606c7",
    "text": "# 为什么模型会\"死记硬背\"？—— 正则化与 Dropout ## 这个问题从哪来 > 2012"
   },
@@ -393,7 +393,7 @@
    "kind": "code",
    "top": 4193,
    "h": 102,
-   "style": "8244f9ec",
+   "style": "b72674ac",
    "content": "d9363994",
    "text": "# 标准 Dropout vs SpatialDropout nn.Dropout(p) # 每"
   },
@@ -456,7 +456,7 @@
    "kind": "code",
    "top": 4704,
    "h": 102,
-   "style": "6056ef3b",
+   "style": "0d0858ef",
    "content": "8adb3c1a",
    "text": "# PyTorch 的 LSTM/GRU 内置了这个策略 nn.LSTM(input_size,"
   },
@@ -528,7 +528,7 @@
    "kind": "code",
    "top": 5258,
    "h": 342,
-   "style": "5ddb425b",
+   "style": "ec067486",
    "content": "dea170ee",
    "text": "# 实现 inverted dropout：训练时 mask+缩放，推理时直接通过 import"
   },
@@ -546,7 +546,7 @@
    "kind": "code",
    "top": 5645,
    "h": 402,
-   "style": "ddd9a3a7",
+   "style": "f21e9fac",
    "content": "026684cc",
    "text": "# 对比手动实现和 PyTorch 内置，验证 train/eval 模式切换行为 import"
   },
@@ -564,7 +564,7 @@
    "kind": "code",
    "top": 6093,
    "h": 362,
-   "style": "315db9c0",
+   "style": "7469fb96",
    "content": "5a889ca7",
    "text": "# SpatialDropout drop 整个 channel，适配 CNN 特征图的空间相关"
   },
@@ -582,7 +582,7 @@
    "kind": "code",
    "top": 6500,
    "h": 1202,
-   "style": "4a1ac16c",
+   "style": "a3502ee5",
    "content": "4333ce7a",
    "text": "# 验证 Dropout 率对过拟合的影响 # 同一 MLP，仅改变 dropout rate，"
   },
@@ -807,7 +807,7 @@
    "kind": "code",
    "top": 9221,
    "h": 162,
-   "style": "46c21a2c",
+   "style": "5b974c25",
    "content": "696fccb1",
    "text": "### [深度学习基础](deep-learning-basics/README.md) - 神"
   },
@@ -825,7 +825,7 @@
    "kind": "code",
    "top": 9429,
    "h": 262,
-   "style": "b4cd940c",
+   "style": "d28377da",
    "content": "fdf590c6",
    "text": "### [深度学习基础](deep-learning-basics/README.md) - 神"
   },
@@ -942,7 +942,7 @@
    "kind": "code",
    "top": 10269,
    "h": 62,
-   "style": "c108c4a4",
+   "style": "ea3f21fe",
    "content": "ba3f37d8",
    "text": "**上一章**：[前置准备概览](../README.md) | **下一章**：[CNN 架构"
   },
@@ -960,7 +960,7 @@
    "kind": "code",
    "top": 10376,
    "h": 62,
-   "style": "d0116619",
+   "style": "314c802d",
    "content": "c1e4dfbc",
    "text": "**上一章**：[前置准备概览](../README.md) | **下一章**：[正则化与 D"
   },
@@ -987,7 +987,7 @@
    "kind": "code",
    "top": 10530,
    "h": 62,
-   "style": "3f8e5f02",
+   "style": "83670b18",
    "content": "23d52e1a",
    "text": "→ 下一章：[CNN 架构 — 为什么全连接网络处理图像太浪费了？](../../01-Visu"
   },
@@ -1005,7 +1005,7 @@
    "kind": "code",
    "top": 10638,
    "h": 62,
-   "style": "4088cca1",
+   "style": "89eed5d4",
    "content": "08c365a9",
    "text": "→ 下一章：[正则化与 Dropout — 为什么模型会\"死记硬背\"？](../regulari"
   },
@@ -1032,7 +1032,7 @@
    "kind": "code",
    "top": 10792,
    "h": 122,
-   "style": "b77fe707",
+   "style": "ecf01022",
    "content": "67bf753b",
    "text": "**Step 3 · 工程完善（BatchNorm + Dropout + 权重初始化）** `"
   },
@@ -1050,7 +1050,7 @@
    "kind": "code",
    "top": 10959,
    "h": 162,
-   "style": "561ba2ee",
+   "style": "cdecfdc3",
    "content": "115da87e",
    "text": "**Step 3 · 工程完善（BatchNorm + Dropout + 权重初始化）** >"
   },
@@ -1203,7 +1203,7 @@
    "kind": "code",
    "top": 11975,
    "h": 222,
-   "style": "21b9335a",
+   "style": "06ebf96d",
    "content": "e5c1c0ed",
    "text": "### 2.2 Dropout 训练时以概率 $p$ 随机将神经元输出置零，推理时所有神经元都激"
   },
@@ -1221,7 +1221,7 @@
    "kind": "code",
    "top": 12242,
    "h": 142,
-   "style": "8129b59a",
+   "style": "b37bdcf4",
    "content": "6a3151a1",
    "text": "### 2.2 Dropout 训练时以概率 $p$ 随机将神经元置零，推理时关闭。关键：**训"
   },
@@ -1329,7 +1329,7 @@
    "kind": "code",
    "top": 12917,
    "h": 82,
-   "style": "c35e0a37",
+   "style": "b966531d",
    "content": "c16383c4",
    "text": "Dropout、Batch Norm、数据增强、GPU 训练技巧 - 正则化：Dropout、D"
   },
@@ -1347,7 +1347,7 @@
    "kind": "code",
    "top": 13044,
    "h": 82,
-   "style": "03d17613",
+   "style": "0e08e6d1",
    "content": "fc6f8d16",
    "text": "Dropout、Batch Norm、数据增强、GPU 训练技巧 - 正则化：Dropout、D"
   },
@@ -1464,7 +1464,7 @@
    "kind": "code",
    "top": 13714,
    "h": 62,
-   "style": "1e9233a7",
+   "style": "69256bb2",
    "content": "37d56a1d",
    "text": "| Dropout | Hinton 组（Toronto） | 随机失活防过拟合，深度学习标准正"
   },
@@ -1482,7 +1482,7 @@
    "kind": "code",
    "top": 13821,
    "h": 62,
-   "style": "246eb49d",
+   "style": "7c05d619",
    "content": "4ee2b12d",
    "text": "| Dropout | Hinton 组（Toronto） | 随机失活防过拟合，深度学习标准正"
   },
@@ -1509,7 +1509,7 @@
    "kind": "code",
    "top": 13975,
    "h": 62,
-   "style": "fba7cfaf",
+   "style": "d12e1b93",
    "content": "f7560fc5",
    "text": "| DropConnect | Wan et al.（NYU） | 在权重而非激活上随机置零，D"
   },
@@ -1527,7 +1527,7 @@
    "kind": "code",
    "top": 14083,
    "h": 62,
-   "style": "e6c6ec10",
+   "style": "e29d0c21",
    "content": "611629c5",
    "text": "| DropConnect | Wan et al.（NYU） | 在权重而非激活上随机置零，D"
   },
@@ -1554,7 +1554,7 @@
    "kind": "code",
    "top": 14237,
    "h": 62,
-   "style": "56fa234b",
+   "style": "9cb933a9",
    "content": "bfe367fb",
    "text": "| Dropout in RNNs | Zaremba et al.（NYU） | 解决 RNN"
   },
@@ -1572,7 +1572,7 @@
    "kind": "code",
    "top": 14344,
    "h": 62,
-   "style": "4b992f7b",
+   "style": "ea6286fb",
    "content": "bb32e6ff",
    "text": "| Dropout in RNNs | Zaremba et al.（NYU） | 解决 RNN"
   },
@@ -1743,7 +1743,7 @@
    "kind": "code",
    "top": 15485,
    "h": 102,
-   "style": "60de3d79",
+   "style": "594888de",
    "content": "682a4ea5",
    "text": "echo \"=== 这个问题从哪来 ===\" && grep -c \"这个问题从哪来\" 00-P"
   },

@@ -78,7 +78,7 @@
    "kind": "code",
    "top": 561,
    "h": 142,
-   "style": "80d1d551",
+   "style": "16a9b9f9",
    "content": "50ac58ee",
    "text": "async def _replay_active(self) -> None: for msg "
   },
@@ -105,7 +105,7 @@
    "kind": "code",
    "top": 894,
    "h": 62,
-   "style": "d12f1407",
+   "style": "09810d61",
    "content": "2ecb740c",
    "text": "for msg in list(self._active_notifications.value"
   },
@@ -141,7 +141,7 @@
    "kind": "code",
    "top": 1111,
    "h": 102,
-   "style": "c0cc8900",
+   "style": "71fa8cc7",
    "content": "205ed519",
    "text": "def _on_disconnect(self, client: BleakClient) ->"
   },
@@ -159,7 +159,7 @@
    "kind": "code",
    "top": 1308,
    "h": 82,
-   "style": "54d5d75a",
+   "style": "f77f53b7",
    "content": "302f60f7",
    "text": "loop = asyncio.get_event_loop() loop.call_soon_t"
   },
@@ -186,7 +186,7 @@
    "kind": "code",
    "top": 1501,
    "h": 142,
-   "style": "81af3b3d",
+   "style": "ca9064cc",
    "content": "50430e0e",
    "text": "async def _shutdown(self) -> None: self._shutdow"
   },
@@ -213,7 +213,7 @@
    "kind": "code",
    "top": 1781,
    "h": 62,
-   "style": "ec096315",
+   "style": "4a72e86b",
    "content": "aaa206b7",
    "text": "loop = asyncio.get_event_loop()"
   },
@@ -240,7 +240,7 @@
    "kind": "code",
    "top": 1980,
    "h": 62,
-   "style": "a1e95c4f",
+   "style": "c3d75285",
    "content": "31d9e7c3",
    "text": "\"id\": msg[\"session_id\"], # KeyError if key missi"
   },
@@ -267,7 +267,7 @@
    "kind": "code",
    "top": 2179,
    "h": 142,
-   "style": "27754804",
+   "style": "03e61cec",
    "content": "db9b9805",
    "text": "sock = socket.socket(socket.AF_UNIX, socket.SOCK"
   },
@@ -312,7 +312,7 @@
    "kind": "code",
    "top": 2519,
    "h": 62,
-   "style": "6ab5504c",
+   "style": "64d2960e",
    "content": "8b1d9680",
    "text": "data = await asyncio.wait_for(reader.read(4096),"
   },
@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 2770,
    "h": 122,
-   "style": "99e4ce94",
+   "style": "19105efa",
    "content": "9954748b",
    "text": "success = await self._ble.write_notification(pay"
   },
@@ -366,7 +366,7 @@
    "kind": "code",
    "top": 3056,
    "h": 62,
-   "style": "9d055f0e",
+   "style": "8c161624",
    "content": "fc483283",
    "text": "payload = daemon_message_to_ble_payload(msg) # r"
   },
@@ -411,7 +411,7 @@
    "kind": "code",
    "top": 3392,
    "h": 62,
-   "style": "a6070941",
+   "style": "b25d4478",
    "content": "03d767cc",
    "text": "DAEMON_MODULE = Path(__file__).parent / \"clawd_d"
   },
@@ -492,7 +492,7 @@
    "kind": "code",
    "top": 3976,
    "h": 102,
-   "style": "b2fa95b5",
+   "style": "3e95310d",
    "content": "7275ff3e",
    "text": "log_file = open(CLAWD_DIR / \"daemon.log\", \"a\") s"
   },

@@ -267,7 +267,7 @@
    "kind": "code",
    "top": 2786,
    "h": 102,
-   "style": "b892fb70",
+   "style": "4138e853",
    "content": "3d90b156",
    "text": "<webjars-bootstrap.version>5.3.7</webjars-bootst"
   },
@@ -303,7 +303,7 @@
    "kind": "code",
    "top": 3045,
    "h": 262,
-   "style": "dab7f860",
+   "style": "9fa65000",
    "content": "31dcb020",
    "text": "<dependency> <groupId>org.webjars</groupId> <art"
   },
@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 3491,
    "h": 302,
-   "style": "bbd88687",
+   "style": "fbca72bc",
    "content": "8d62a770",
    "text": "<dependency> <groupId>org.webjars</groupId> <art"
   },
@@ -375,7 +375,7 @@
    "kind": "code",
    "top": 3924,
    "h": 202,
-   "style": "c55b9a37",
+   "style": "2ef4e998",
    "content": "4658ec03",
    "text": "<dependency> <groupId>org.webjars</groupId> <art"
   },
@@ -609,7 +609,7 @@
    "kind": "code",
    "top": 5918,
    "h": 62,
-   "style": "b2d7d3cc",
+   "style": "325ec58c",
    "content": "212fe103",
    "text": "<constant name=\"struts.webjars.allowlist\" value="
   },
@@ -834,7 +834,7 @@
    "kind": "code",
    "top": 7543,
    "h": 122,
-   "style": "17f4caef",
+   "style": "49a42fe2",
    "content": "9ba14709",
    "text": "<div class=\"card\"> <div class=\"card-header\"><h3 "
   },
@@ -879,7 +879,7 @@
    "kind": "code",
    "top": 7919,
    "h": 102,
-   "style": "7b3eec65",
+   "style": "05dd5985",
    "content": "3620b8ca",
    "text": "<button class=\"navbar-toggler\" type=\"button\" dat"
   },
@@ -1086,7 +1086,7 @@
    "kind": "code",
    "top": 9412,
    "h": 62,
-   "style": "919cb767",
+   "style": "2e8022ca",
    "content": "500ff1d3",
    "text": "<constant name=\"struts.webjars.allowlist\" value="
   },

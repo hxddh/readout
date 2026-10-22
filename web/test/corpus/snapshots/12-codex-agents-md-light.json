@@ -807,7 +807,7 @@
    "kind": "listItem",
    "top": 6892,
    "h": 154,
-   "style": "e69662cc",
+   "style": "d4edc29f",
    "content": "25509158",
    "text": "Use an explicit #[path = \"..._tests.rs\"] attribu"
   },
@@ -1095,7 +1095,7 @@
    "kind": "listItem",
    "top": 9003,
    "h": 297,
-   "style": "20e2f598",
+   "style": "465a386d",
    "content": "73a5b531",
    "text": "Typical pattern:let mock = responses::mount_sse_"
   },

@@ -87,7 +87,7 @@
    "kind": "code",
    "top": 626,
    "h": 182,
-   "style": "d3eb2aac",
+   "style": "c485fe7e",
    "content": "e0d867b1",
    "text": "val sourcesExtraction = remember(effectiveConten"
   },
@@ -537,7 +537,7 @@
    "kind": "code",
    "top": 3953,
    "h": 582,
-   "style": "c631343d",
+   "style": "86a2d944",
    "content": "8f9b0c70",
    "text": "@Test fun `merge preserves web search results fr"
   },
@@ -564,7 +564,7 @@
    "kind": "code",
    "top": 4654,
    "h": 122,
-   "style": "526b5a68",
+   "style": "010e0f62",
    "content": "4aa54055",
    "text": "internal fun mergeWebSearchResults( existing: Li"
   },
@@ -582,7 +582,7 @@
    "kind": "code",
    "top": 4821,
    "h": 342,
-   "style": "0e43b0dc",
+   "style": "23c002c6",
    "content": "9db3d791",
    "text": "@Test fun `merge web search results appends dedu"
   },
@@ -609,7 +609,7 @@
    "kind": "code",
    "top": 5252,
    "h": 82,
-   "style": "e5fd690f",
+   "style": "8b7f6c1c",
    "content": "89b5a562",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
@@ -645,7 +645,7 @@
    "kind": "code",
    "top": 5499,
    "h": 282,
-   "style": "5640b6df",
+   "style": "1e38a9b2",
    "content": "63097898",
    "text": "internal fun mergeStreamingCompletionMessage(syn"
   },
@@ -663,7 +663,7 @@
    "kind": "code",
    "top": 5826,
    "h": 222,
-   "style": "c2f0371f",
+   "style": "59caf6e7",
    "content": "2304b2a5",
    "text": "internal fun mergeWebSearchResults( existing: Li"
   },
@@ -681,7 +681,7 @@
    "kind": "code",
    "top": 6094,
    "h": 202,
-   "style": "a6a3efd2",
+   "style": "aa32a013",
    "content": "d0e9a81c",
    "text": "is AppStreamEvent.WebSearchResults -> { updatedM"
   },
@@ -699,7 +699,7 @@
    "kind": "code",
    "top": 6341,
    "h": 62,
-   "style": "ea23a5b0",
+   "style": "46fa9541",
    "content": "88ecc9f3",
    "text": "val finalizedMessage = currentMessageProcessor.f"
   },
@@ -726,7 +726,7 @@
    "kind": "code",
    "top": 6492,
    "h": 82,
-   "style": "e5fd690f",
+   "style": "8b7f6c1c",
    "content": "89b5a562",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
@@ -798,7 +798,7 @@
    "kind": "code",
    "top": 6939,
    "h": 182,
-   "style": "a2dd4047",
+   "style": "ee80faec",
    "content": "44254295",
    "text": "chunks.mapIndexedNotNull { index, chunkElement -"
   },
@@ -843,7 +843,7 @@
    "kind": "code",
    "top": 7329,
    "h": 82,
-   "style": "ec2dbcf2",
+   "style": "4b4631f1",
    "content": "45fa5f49",
    "text": "cd app1 & \".\\gradlew.bat\" :app:compileDebugKotli"
   },
@@ -1032,7 +1032,7 @@
    "kind": "code",
    "top": 8269,
    "h": 82,
-   "style": "5897fb85",
+   "style": "c2933bd6",
    "content": "ae1f81e2",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
@@ -1068,7 +1068,7 @@
    "kind": "code",
    "top": 8488,
    "h": 102,
-   "style": "c75b124d",
+   "style": "decfb5de",
    "content": "4c05c0fd",
    "text": "internal object WebSearchToolResultExtractor { f"
   },
@@ -1185,7 +1185,7 @@
    "kind": "code",
    "top": 9041,
    "h": 82,
-   "style": "5897fb85",
+   "style": "c2933bd6",
    "content": "ae1f81e2",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
@@ -1275,7 +1275,7 @@
    "kind": "code",
    "top": 9676,
    "h": 122,
-   "style": "bbb6efdf",
+   "style": "4af47221",
    "content": "6ec6a298",
    "text": "val webResults = WebSearchToolResultExtractor.ex"
   },
@@ -1293,7 +1293,7 @@
    "kind": "code",
    "top": 9844,
    "h": 122,
-   "style": "85431240",
+   "style": "ac032598",
    "content": "8c1d2cb4",
    "text": "val webResults = WebSearchToolResultExtractor.ex"
   },
@@ -1419,7 +1419,7 @@
    "kind": "code",
    "top": 10653,
    "h": 82,
-   "style": "ec2dbcf2",
+   "style": "4b4631f1",
    "content": "45fa5f49",
    "text": "cd app1 & \".\\gradlew.bat\" :app:compileDebugKotli"
   },
@@ -1500,7 +1500,7 @@
    "kind": "code",
    "top": 11180,
    "h": 222,
-   "style": "4f262cf1",
+   "style": "1bf5cbea",
    "content": "eb3c7770",
    "text": "@Test fun `does not treat ordinary inline links "
   },
@@ -1518,7 +1518,7 @@
    "kind": "code",
    "top": 11448,
    "h": 342,
-   "style": "29c4df06",
+   "style": "137cba6b",
    "content": "250015f5",
    "text": "@Test fun `does not extract numbered citation ur"
   },
@@ -1536,7 +1536,7 @@
    "kind": "code",
    "top": 11835,
    "h": 362,
-   "style": "4fb32d57",
+   "style": "ac3232bb",
    "content": "6e84cdc9",
    "text": "@Test fun `extracts numbered citation urls witho"
   },
@@ -1554,7 +1554,7 @@
    "kind": "code",
    "top": 12243,
    "h": 322,
-   "style": "7b266647",
+   "style": "cc7b43c9",
    "content": "26afdc65",
    "text": "@Test fun `trims chinese punctuation from citati"
   },
@@ -1572,7 +1572,7 @@
    "kind": "code",
    "top": 12610,
    "h": 302,
-   "style": "b73bf61e",
+   "style": "f8a39100",
    "content": "602a56b4",
    "text": "@Test fun `extracts footnote urls as sources`() "
   },
@@ -1599,7 +1599,7 @@
    "kind": "code",
    "top": 13001,
    "h": 82,
-   "style": "5897fb85",
+   "style": "c2933bd6",
    "content": "f439a510",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
@@ -1698,7 +1698,7 @@
    "kind": "code",
    "top": 13507,
    "h": 82,
-   "style": "5897fb85",
+   "style": "c2933bd6",
    "content": "f439a510",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
@@ -1770,7 +1770,7 @@
    "kind": "code",
    "top": 13900,
    "h": 82,
-   "style": "0bd17655",
+   "style": "ca75d53b",
    "content": "ba6c3e84",
    "text": "cd app1 & \".\\gradlew.bat\" :app:testDebugUnitTest"
   },
@@ -1806,7 +1806,7 @@
    "kind": "code",
    "top": 14114,
    "h": 82,
-   "style": "ec2dbcf2",
+   "style": "4b4631f1",
    "content": "45fa5f49",
    "text": "cd app1 & \".\\gradlew.bat\" :app:compileDebugKotli"
   },
@@ -1842,7 +1842,7 @@
    "kind": "code",
    "top": 14331,
    "h": 62,
-   "style": "dbd7a4c5",
+   "style": "5df9ad83",
    "content": "d58c9257",
    "text": "rg -n \"WebSearchToolResultExtractor|mergeWebSear"
   },

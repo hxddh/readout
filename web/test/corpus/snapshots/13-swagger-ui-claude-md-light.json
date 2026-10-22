@@ -969,7 +969,7 @@
    "kind": "code",
    "top": 4610,
    "h": 142,
-   "style": "1fd8e4ed",
+   "style": "f5dada27",
    "content": "6d629adc",
    "text": "// Replace url: \"https://petstore.swagger.io/v2/"
   },
@@ -1059,7 +1059,7 @@
    "kind": "code",
    "top": 5140,
    "h": 122,
-   "style": "66f9b54c",
+   "style": "42656188",
    "content": "51262c47",
    "text": "{ root: \".\", core: \"./src/core\" }"
   },
@@ -1941,7 +1941,7 @@
    "kind": "code",
    "top": 9494,
    "h": 142,
-   "style": "a740814d",
+   "style": "6b136e7c",
    "content": "30a9895f",
    "text": "semi: false # No semicolons trailingComma: es5 #"
   },
@@ -2049,7 +2049,7 @@
    "kind": "code",
    "top": 10156,
    "h": 122,
-   "style": "7eef0a75",
+   "style": "f83c1bff",
    "content": "50a81b91",
    "text": "{ \"*.{js,jsx}\": [\"eslint --max-warnings 0\"], \"*."
   },
@@ -2751,7 +2751,7 @@
    "kind": "code",
    "top": 13464,
    "h": 342,
-   "style": "c8166938",
+   "style": "c5f03539",
    "content": "2b46ff7d",
    "text": "{ statePlugins: { [pluginName]: { actions: {}, /"
   },

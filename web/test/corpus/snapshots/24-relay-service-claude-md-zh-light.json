@@ -546,7 +546,7 @@
    "kind": "code",
    "top": 3367,
    "h": 302,
-   "style": "1af0ac35",
+   "style": "ef5d6076",
    "content": "df28c19c",
    "text": "npm install && npm run setup # 初始化 npm run dev #"
   },
@@ -564,7 +564,7 @@
    "kind": "code",
    "top": 3711,
    "h": 102,
-   "style": "4a33dcdf",
+   "style": "7e1cce24",
    "content": "4df8f668",
    "text": "npm run install:web # 安装前端依赖 npm run build:web #"
   },

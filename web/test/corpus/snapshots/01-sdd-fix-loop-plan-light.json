@@ -339,7 +339,7 @@
    "kind": "code",
    "top": 2718,
    "h": 2162,
-   "style": "6d0f233b",
+   "style": "80ade42c",
    "content": "22a12cb6",
    "text": "# Scoped Re-Review Prompt Template Use this temp"
   },
@@ -492,7 +492,7 @@
    "kind": "code",
    "top": 5821,
    "h": 142,
-   "style": "f3bb0977",
+   "style": "e9aeb2fb",
    "content": "e5746650",
    "text": "## After Review Findings If a reviewer finds iss"
   },
@@ -510,7 +510,7 @@
    "kind": "code",
    "top": 6007,
    "h": 202,
-   "style": "8004cc02",
+   "style": "2c9eb7c9",
    "content": "55cc0c75",
    "text": "## After Review Findings If the task review find"
   },
@@ -537,7 +537,7 @@
    "kind": "code",
    "top": 6323,
    "h": 82,
-   "style": "8a03ac31",
+   "style": "f230ce07",
    "content": "57a08d96",
    "text": "A fix dispatch can address spec gaps and quality"
   },
@@ -573,7 +573,7 @@
    "kind": "code",
    "top": 6588,
    "h": 82,
-   "style": "ee82b82f",
+   "style": "640c3b4c",
    "content": "da88307e",
    "text": "When using subagent-driven-development, you shou"
   },
@@ -591,7 +591,7 @@
    "kind": "code",
    "top": 6714,
    "h": 142,
-   "style": "d224f917",
+   "style": "d4c51367",
    "content": "9cf0837f",
    "text": "When using subagent-driven-development, close re"
   },
@@ -717,7 +717,7 @@
    "kind": "code",
    "top": 7671,
    "h": 9682,
-   "style": "1ea06fdc",
+   "style": "a6e09b42",
    "content": "181fe026",
    "text": "--- name: subagent-driven-development descriptio"
   },
@@ -942,7 +942,7 @@
    "kind": "code",
    "top": 22212,
    "h": 1002,
-   "style": "71059842",
+   "style": "7acc6454",
    "content": "be9894f2",
    "text": "test('scaffoldSddMidloopParked seeds a round-5 l"
   },
@@ -996,7 +996,7 @@
    "kind": "code",
    "top": 23485,
    "h": 4742,
-   "style": "b3878e8f",
+   "style": "0aa4bc3b",
    "content": "21ca3853",
    "text": "const MIDLOOP_PACKAGE_JSON = `{ \"name\": \"metrics"
   },
@@ -1032,7 +1032,7 @@
    "kind": "code",
    "top": 28411,
    "h": 222,
-   "style": "c185688c",
+   "style": "ef4b9800",
    "content": "d1625635",
    "text": "import { addSddAuthPlan, scaffoldSddBrokenPlan, "
   },
@@ -1050,7 +1050,7 @@
    "kind": "code",
    "top": 28676,
    "h": 82,
-   "style": "d7302faf",
+   "style": "78af3904",
    "content": "3f27037b",
    "text": "scaffold_sdd_midloop_parked: { fn: scaffoldSddMi"
   },
@@ -1095,7 +1095,7 @@
    "kind": "code",
    "top": 29064,
    "h": 82,
-   "style": "53609a83",
+   "style": "bbda0654",
    "content": "771fab2b",
    "text": "cd \"$(mktemp -d)\" && export QW=$PWD && cd - >/de"
   },
@@ -1221,7 +1221,7 @@
    "kind": "code",
    "top": 29798,
    "h": 1242,
-   "style": "95e1f59a",
+   "style": "253687aa",
    "content": "4e7df03e",
    "text": "--- id: sdd-fix-loop-resumes-implementer title: "
   },
@@ -1257,7 +1257,7 @@
    "kind": "code",
    "top": 31256,
    "h": 402,
-   "style": "84d332d6",
+   "style": "d141345a",
    "content": "e396a076",
    "text": "# coding-agents: claude pre() { git-repo git-bra"
   },
@@ -1392,7 +1392,7 @@
    "kind": "code",
    "top": 32454,
    "h": 1022,
-   "style": "6093cc33",
+   "style": "b242ae16",
    "content": "a9142794",
    "text": "--- id: sdd-breaker-adjudicates-at-cap title: SD"
   },
@@ -1428,7 +1428,7 @@
    "kind": "code",
    "top": 33667,
    "h": 422,
-   "style": "068fa909",
+   "style": "4b58b1db",
    "content": "8267a618",
    "text": "pre() { git-repo git-branch main requires-tool n"
   },
@@ -1554,7 +1554,7 @@
    "kind": "code",
    "top": 34711,
    "h": 1042,
-   "style": "43d86684",
+   "style": "8f811aa3",
    "content": "d8571af8",
    "text": "--- id: sdd-breaker-structural-blocks title: SDD"
   },
@@ -1590,7 +1590,7 @@
    "kind": "code",
    "top": 35943,
    "h": 342,
-   "style": "ac9b764f",
+   "style": "4f723e90",
    "content": "627278a1",
    "text": "pre() { git-repo git-branch main file-exists '.s"
   },
@@ -1716,7 +1716,7 @@
    "kind": "code",
    "top": 37172,
    "h": 102,
-   "style": "15f2b532",
+   "style": "be15a1dd",
    "content": "a8688688",
    "text": "git -C /Users/jesse/git/superpowers-workspace/su"
   },
@@ -1743,7 +1743,7 @@
    "kind": "code",
    "top": 37414,
    "h": 142,
-   "style": "3c51f0c4",
+   "style": "56669b30",
    "content": "2a827992",
    "text": "cd evals SUPERPOWERS_ROOT=\"$BASELINE_ROOT\" bun r"
   },
@@ -1770,7 +1770,7 @@
    "kind": "code",
    "top": 37800,
    "h": 142,
-   "style": "3c51f0c4",
+   "style": "56669b30",
    "content": "9c1e5ee2",
    "text": "cd evals SUPERPOWERS_ROOT=\"$REDESIGN_ROOT\" bun r"
   },
@@ -1797,7 +1797,7 @@
    "kind": "code",
    "top": 38134,
    "h": 142,
-   "style": "4db967f1",
+   "style": "78eb5f77",
    "content": "ec00200e",
    "text": "cd evals for s in sdd-quality-reviewer-catches-p"
   },

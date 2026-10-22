@@ -258,7 +258,7 @@
    "kind": "code",
    "top": 4140,
    "h": 162,
-   "style": "542f108c",
+   "style": "8641cc37",
    "content": "d6146a30",
    "text": "public static Element Text(string content, [Call"
   },
@@ -420,7 +420,7 @@
    "kind": "code",
    "top": 7848,
    "h": 102,
-   "style": "aac06215",
+   "style": "04590441",
    "content": "60a3a84b",
    "text": "var frame = new StackFrame(skipFrames: 1, fNeedF"
   },
@@ -546,7 +546,7 @@
    "kind": "code",
    "top": 10015,
    "h": 682,
-   "style": "39e2b416",
+   "style": "3379d36f",
    "content": "2dc8383e",
    "text": "// namespace Microsoft.UI.Reactor.Core /// <summ"
   },
@@ -699,7 +699,7 @@
    "kind": "code",
    "top": 12595,
    "h": 202,
-   "style": "af8c9812",
+   "style": "cfd286a5",
    "content": "1c62e201",
    "text": "{ \"type\": \"StackPanel\", \"source\": \"MainPage.cs:3"
   },
