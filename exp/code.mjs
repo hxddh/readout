@@ -68,7 +68,7 @@ async function run(name, docOps) {
     await p.evaluate(() => window.scrollTo(0, 0));
     await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     await p.waitForTimeout(300);
-    jumped.push(await p.evaluate(frac => new Promise(resolve => { const hs = document.querySelectorAll('#ro-doc .blk.k-heading'); const t0 = performance.now(); window.readout.scrollToSlot(+hs[Math.floor(hs.length * frac)].dataset.slot); requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0)); }), frac));
+    jumped.push(await p.evaluate(frac => new Promise(resolve => { const hs = document.querySelectorAll('#ro-doc .blk.k-heading'); const t0 = performance.now(); window.readout.scrollToSlot(+hs[Math.floor(hs.length * frac)].dataset.slot); const t1 = performance.now(); let raf = 0; requestAnimationFrame(() => { raf = performance.now(); setTimeout(() => { window.__split = (window.__split || []).concat([[Math.round(t1 - t0), Math.round(raf - t1), Math.round(performance.now() - raf), document.querySelectorAll('.code-block[data-hl="done"]').length]]); resolve(performance.now() - t0); }, 0); }); }), frac));
     await p.waitForTimeout(1200);
   }
   const landed = name === 'one_huge' ? await landOn(p, 1501) : null;
@@ -96,8 +96,9 @@ async function run(name, docOps) {
     return { raw, ours, over: Math.round(med(ratio) * 100) / 100 };
   });
   const els = await p.evaluate(() => ({ all: document.getElementsByTagName('*').length, lit: [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl && c.dataset.hl !== 'pending').map(c => +c.closest('.blk').dataset.slot).join(',') }));
+  const split = await p.evaluate(() => window.__split).catch(() => null);
   await p.close();
-  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, slow, ab, landed, jumps: jumped.map(Math.round), err: a.err }));
+  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, slow, ab, landed, jumps: jumped.map(Math.round), split, err: a.err }));
 }
 for (let rep = 0; rep < 1; rep++) {
   await run('code_heavy', Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)));
