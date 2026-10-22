@@ -761,6 +761,50 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('a section written into the middle, 50 blocks a patch: no chunk past 64 blocks, in order', most <= 64 && order, JSON.stringify({ most, order }));
 }
 
+// Blocks far from the reader removed one by one, in a part read and left
+// (its chunk laid out once, skipped since): each leaves a marker after the
+// same block. The markers are items of their chunk like any other
+// (marks.js: place), so it is split at its limit, not one chunk of a
+// hundred and more; the page is as tall as when laid out, and the reader's
+// text stays where it is.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(2000, i => `<p style="min-height:${30 + (i * 7) % 50}px">para ${i} lorem ipsum</p>`));
+  for (const slot of [1380, 1460, 1540]) {
+    await page.evaluate(s => window.readout.scrollToSlot(s), slot);
+    await settled();
+    await page.waitForTimeout(300);
+  }
+  await toTop(200);
+  await settled();
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  const dels = [];
+  for (let k = 0; k < 120; k++) {
+    dels.push({ id: 500 + k, after: 1399, count: 1, preview: `para ${1400 + k}` });
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 1400 + k }], deletions: dels }));
+    if (k % 10 === 9) await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+  }
+  await settled();
+  await page.waitForTimeout(800);   // longer than a quiet page's rebalance
+  // The chunks from the one before the markers to the one after them (all laid out once, on the visit).
+  const span = () => page.evaluate(() => {
+    const chunks = [...document.querySelectorAll('#ro-doc > .chunk')];
+    const from = chunks.indexOf(document.querySelector('.blk[data-slot="1399"]').parentElement), to = chunks.indexOf(document.querySelector('.blk[data-slot="1520"]').parentElement);
+    return { n: to - from + 1, skipped: chunks.slice(from, to + 1).every(c => !c.classList.contains('near')), height: Math.round(chunks.slice(from, to + 1).reduce((h, c) => h + c.getBoundingClientRect().height, 0)) };
+  });
+  const r = await page.evaluate(() => ({ most: Math.max(...[...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount)),
+    marks: document.querySelectorAll('.del-mark').length, anchor: window.readout.captureAnchor() }));
+  const skipped = await span();
+  // Laid out: scrolled to, the same chunks.
+  await page.evaluate(() => window.readout.scrollToSlot(1399));
+  await settled();
+  await page.waitForTimeout(300);
+  const laid = await span();
+  check('120 blocks removed one by one after the same block in a skipped chunk: chunks within 64 items, as tall skipped as laid out, the reader still',
+    skipped.skipped && r.marks === 120 && r.most <= 64 && Math.abs(skipped.height - laid.height) <= 20 && r.anchor.slot === a0.slot && Math.abs(r.anchor.offset - a0.offset) <= 2,
+    JSON.stringify({ ...r, skipped, laid, a0 }));
+}
+
 // A jump lays out the chunk it lands in, the one after when the screen
 // below reaches it, and the one before only when the screen shows some of
 // it above the target: a rail tick centring the first block of a chunk does;
@@ -776,6 +820,9 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   const laid = () => page.evaluate(() => [...document.querySelectorAll('#ro-doc > .chunk')].map((c, i) => c.classList.contains('near') ? i : -1).filter(i => i >= 0));
   const at = s => page.evaluate(s => [...document.querySelectorAll('#ro-doc > .chunk')].indexOf(document.querySelector(`.blk[data-slot="${s}"]`).parentElement), s);
   const first = await page.evaluate(() => document.querySelector('.blk[data-slot="2017"]').previousElementSibling === null);
+  // The rail is drawn at most every 250 ms, in a frame (rail.js): its tick, once there.
+  const ticked = await until(() => !!document.querySelector('#ro-rail button'), null);
+  check('a change far down a large document has its rail tick', ticked);
   const centred = await page.evaluate(() => { document.querySelector('#ro-rail button').click(); return [...document.querySelectorAll('#ro-doc > .chunk')].map((c, i) => c.classList.contains('near') ? i : -1).filter(i => i >= 0); });
   const c2017 = await at(2017);
   await page.evaluate(() => window.scrollTo(0, 0));

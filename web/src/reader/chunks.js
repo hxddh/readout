@@ -130,16 +130,16 @@ function dropChunk(c) {
 // resize observer does not count what the patch itself keeps the place for).
 export const touched = new Set();
 const stale = new Map();   // chunk -> the size it is skipped at
-function account(c, d) {
+function account(c, d, seen = d) {
   touched.add(c);
-  if (!d) return;
+  if (!d && !seen) return;
   const est = estimateOf(c) + d;
   chunkEstimates.set(c, est);
   if (!laidOut.has(c)) c.style.containIntrinsicSize = `auto ${est}px`;
   else if (cv() && !c.classList.contains('near')) {
     // Its height set (reader.css: stale): WebKit does not lay a skipped
     // element out again for a new contain-intrinsic-size.
-    const size = Math.max(0, (stale.get(c) ?? heights.get(c) ?? est) + d);
+    const size = Math.max(0, (stale.get(c) ?? heights.get(c) ?? est) + seen);
     stale.set(c, size);
     c.style.setProperty('--stale', `${size}px`);
     c.classList.add('stale');
@@ -211,7 +211,10 @@ export function unplace(el) {
   const c = chunkOf(el);
   el.remove();
   if (!isChunk(c)) return;
-  account(c, -(estimates.get(el) || 0));
+  // Taken from a chunk laid out and skipped since: its height as last laid
+  // out, when known, is what the chunk's skipped size loses.
+  const est = estimates.get(el) || 0;
+  account(c, -est, laidOut.has(c) && heights.has(el) ? -heights.get(el) : -est);
   const n = c.childElementCount;
   if (!n) return dropChunk(c);
   if (sparse(c)) uneven(c);

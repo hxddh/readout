@@ -1,6 +1,6 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes.
-import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem } from './core.js';
+import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem, prevItem } from './core.js';
 import { place, unplace, roughRect } from './chunks.js';
 import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding, baseline, aimAt } from './anchor.js';
 import { scheduleRail } from './rail.js';
@@ -82,16 +82,31 @@ export function renderMarks(marks, deletions, reset = false) {
     const btn = mark.firstChild;
     if (btn.title !== title) { btn.title = title; btn.setAttribute('aria-label', title); }
     const after = d.after ? slots.get(d.after) : null;
-    // Moved, it leaves its chunk as any item does (an emptied chunk goes).
-    const move = () => { if (isChunk(mark.parentElement)) unplace(mark); };
-    if (after) { if (after.nextElementSibling !== mark) { move(); after.after(mark); } }
+    // Placed and moved as any item is (chunks.js: place, unplace), so its
+    // chunk counts it, is split at its limit (markers of many removals after
+    // the same block), and an emptied one goes. A marker is 0 px tall.
+    const move = () => { if (isChunk(mark.parentElement)) unplace(mark); else mark.remove(); };
+    if (after) { if (!mark.isConnected || !follows(mark, after)) { move(); place(mark, after, 0); } }
     else {
       if (firstBlock === undefined) firstBlock = doc.querySelector(':scope > .chunk > .blk');
-      if (!firstBlock) { if (!mark.isConnected) place(mark, null); }
-      else if (mark.nextElementSibling !== firstBlock || !mark.isConnected) { move(); firstBlock.before(mark); }
+      if (!firstBlock) { if (!mark.isConnected) place(mark, null, 0); }
+      else if (!mark.isConnected || nextItem(mark) !== firstBlock) {
+        move();
+        // Just before the first block: after the item before it, if any.
+        place(mark, prevItem(firstBlock), 0);
+      }
     }
   }
   scheduleShow();
+}
+
+/** Whether only removal markers stand between `item` and `mark` before it (several removals after the same block stay as they are). */
+function follows(mark, item) {
+  for (let e = prevItem(mark); e; e = prevItem(e)) {
+    if (e === item) return true;
+    if (!e.classList.contains('del-mark')) return false;
+  }
+  return false;
 }
 
 function makeDelMark(id) {
