@@ -1,5 +1,3 @@
 v38=59acabc
 fx=06bf635
-fxw38=06bf635:web38
-fxnomath=06bf635:nomath
-fxnomm=06bf635:nomm
+fxcpu=06bf635:cpu

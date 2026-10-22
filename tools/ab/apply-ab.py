@@ -234,6 +234,10 @@ elif exp == "nomath":
     edit("web/src/reader/enhance.js", "  if (el.querySelector('.math, .math-block')) renderMath(el);\n", "")
 elif exp == "nomm":
     edit("web/src/reader/enhance.js", "  for (const m of el.querySelectorAll('.mermaid-block')) { setupMermaid(m); diagrams.add(m); }\n", "")
+elif exp == "cpu":
+    # WebKit draws the page's layers on the CPU (no accelerated drawing).
+    edit("Shared/ReaderWebView.swift", "        let config = WKWebViewConfiguration()\n",
+         "        let config = WKWebViewConfiguration()\n        if config.preferences.responds(to: NSSelectorFromString(\"_setAcceleratedDrawingEnabled:\")) { config.preferences.setValue(false, forKey: \"acceleratedDrawingEnabled\"); NSLog(\"ABCPU on\") } else { NSLog(\"ABCPU unavailable\") }\n")
 elif exp:
     sys.exit(f"apply-ab: unknown experiment {exp}")
 print(f"apply-ab: {tree} patched ({exp or 'as is'})")
