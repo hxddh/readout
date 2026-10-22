@@ -1447,6 +1447,35 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
     sheets.done === 3 && sheets.inDrawings === 0 && sheets.removed.length === 0 && sheets.added.every(t => t === 'HEAD') && sheets.added.length <= 2, JSON.stringify(sheets));
 }
 
+// Two diagrams defining the same class name (classDef) differently keep
+// their own colours, and a drawing's shared sheet is named by its rules, not
+// by the order drawings finished in (a page draws the same every time).
+{
+  const diagram = (slot, after, color) => ({ op: 'insert', slot, after, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">flowchart LR\n  A${slot}[Node ${slot}]:::hot --> B${slot}[Other]\n  classDef hot fill:${color}</pre></div>` });
+  // Each in a page of its own (a page keeps the sheets it made).
+  const drawn = async ops => {
+    const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+    collectPageErrors(p, errors);
+    await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+    await p.goto(`${base}/reader.html`);
+    await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+    await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+    await p.evaluate(x => window.readout.apply(x), { ...fixReset(1), ops: [...fixReset(1).ops, ...ops] });
+    for (let i = 0; i < 300 && await p.evaluate(() => document.querySelectorAll('.mermaid-block.done').length < 2); i++) await p.waitForTimeout(50);
+    const r = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.mermaid-block')].map(b => {
+      const svg = b.querySelector('svg'), shape = svg?.querySelector('.node.hot rect, .node.hot polygon, .node.hot path');
+      return [b.closest('.blk').dataset.slot, { fill: shape && getComputedStyle(shape).fill, sheet: svg?.dataset.mmd }];
+    })));
+    await p.close();
+    return r;
+  };
+  const one = await drawn([diagram(950, 1, '#ff0000'), diagram(951, 950, '#0000ff')]);
+  const two = await drawn([diagram(951, 1, '#0000ff'), diagram(950, 951, '#ff0000')]);
+  check('two diagrams with the same classDef name keep their own colours; their sheets are named the same whichever is drawn first',
+    one[950]?.fill === 'rgb(255, 0, 0)' && one[951]?.fill === 'rgb(0, 0, 255)' && two[950]?.fill === 'rgb(255, 0, 0)' && two[951]?.fill === 'rgb(0, 0, 255)'
+    && one[950].sheet !== one[951].sheet && one[950].sheet === two[950].sheet && one[951].sheet === two[951].sheet, JSON.stringify({ one, two }));
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();

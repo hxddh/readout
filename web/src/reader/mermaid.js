@@ -40,6 +40,7 @@ const MERMAID_URL = new URL('vendor/mermaid/mermaid.esm.min.mjs', document.baseU
 // What its rules refer to in the drawing (url(#<id>-gradient): the stroke
 // of the boxes) is copied once into the page's own definitions for them.
 const sheets = new Map();   // rules, scoped to "§", their references "¶" -> {name, refs}
+const names = new Set();
 const KEYFRAMES = /@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g;
 function shareRules(css, id) {
   const own = id.replace(/[^\w-]/g, '\\$&');
@@ -48,7 +49,14 @@ function shareRules(css, id) {
     .replace(new RegExp(`#${own}([-_][\\w-]*)`, 'g'), '\u00b6$1');
   let sheet = sheets.get(rules);
   if (!sheet) {
-    sheet = { name: `s${sheets.size + 1}`, refs: new Set(rules.match(/\u00b6[\w-]*/g)?.map(r => r.slice(1))) };
+    // Named after its rules, not the order drawings happened to finish in: a
+    // page draws the same whatever the timing.
+    let h = 0x811c9dc5;
+    for (let i = 0; i < rules.length; i++) h = Math.imul(h ^ rules.charCodeAt(i), 16777619);
+    let name = `s${(h >>> 0).toString(36)}`;
+    while (names.has(name)) name += 'x';
+    names.add(name);
+    sheet = { name, refs: new Set(rules.match(/\u00b6[\w-]*/g)?.map(r => r.slice(1))) };
     sheets.set(rules, sheet);
     const st = document.createElement('style');
     st.textContent = rules.split('\u00a7').join(`:is(#mmd-${sheet.name}, [data-mmd="${sheet.name}"])`).split('\u00b6').join(`#mmd-${sheet.name}`);
