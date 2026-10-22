@@ -56,6 +56,6 @@ async function run(name, docOps) {
 }
 for (let rep = 0; rep < 1; rep++) {
   await run('code_heavy', Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)));
-  try { await run('one_huge', Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1))); } catch (e) { console.log(JSON.stringify({ build: dir.split('/').pop(), name: 'one_huge', crash: String(e).slice(0, 100) })); }
+  if (process.env.HUGE) try { await run('one_huge', Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1))); } catch (e) { console.log(JSON.stringify({ build: dir.split('/').pop(), name: 'one_huge', crash: String(e).slice(0, 100) })); }
 }
 await browser.close(); server.close();
