@@ -1,8 +1,63 @@
+diff --git a/web/src/reader/anchor.js b/web/src/reader/anchor.js
+index 682444f..aa9d787 100644
+--- a/web/src/reader/anchor.js
++++ b/web/src/reader/anchor.js
+@@ -2,7 +2,7 @@
+ // compensate for blocks above it changing height, and resolve #fragments.
+ import { doc, root, slots, heights, trace, keptScroll, onKeptScroll, isChunk, nextItem, prevItem } from './core.js';
+ import { scheduleRail } from './rail.js';
+-import { forceLayout, laidOut, estimateOf, neverLaidOut, cv } from './chunks.js';
++import { forceLayout, laidOut, estimateOf, neverLaidOut, cv, scrolledTo } from './chunks.js';
+ import { highlightIn } from './enhance.js';
+ 
+ /** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
+@@ -267,6 +267,7 @@ for (const type of ['wheel', 'keydown', 'mousedown', 'touchstart']) {
+ export function aimAt(el, off, landed, room = 0) {
+   forceLayout(el, room);
+   window.scrollBy(0, off());
++  scrolledTo();
+   landed();
+   // Code the landing shows coloured in the frame that shows it (the lazy
+   // highlighting would colour it a frame or more later).
+@@ -280,7 +281,7 @@ export function aimAt(el, off, landed, room = 0) {
+     // the TOC may not have run yet): leave the page where it is.
+     if (aiming !== mine || !el.isConnected || (Math.abs(se.scrollTop - mine.y) > 2 && !atEnd())) return;
+     const d = off();
+-    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; landed(); highlightIn(blocksOnScreen()); }
++    if (Math.abs(d) > 1) { window.scrollBy(0, d); scrolledTo(); mine.y = se.scrollTop; landed(); highlightIn(blocksOnScreen()); }
+     if (performance.now() < until) requestAnimationFrame(reaim);
+   };
+   requestAnimationFrame(reaim);
 diff --git a/web/src/reader/chunks.js b/web/src/reader/chunks.js
-index 7effc21..d2941b9 100644
+index 7effc21..dda4d68 100644
 --- a/web/src/reader/chunks.js
 +++ b/web/src/reader/chunks.js
-@@ -217,7 +217,17 @@ function split(c, after) {
+@@ -56,13 +56,18 @@ function show(c) {
+ }
+ 
+ // A scroll of more than a screen at once (the scrollbar dragged, Home, End,
+-// a jump of the page's own) lands past what the lookahead laid out, and its
+-// records arrive after the frame that shows the landing: that frame would
+-// show the chunks there skipped (blank) or at a stale size. The scroll
+-// event comes before the frame is laid out: the chunks on screen are laid
+-// out from it (forceLayout), found by their boxes (a skipped chunk's box
+-// needs no layout of its blocks) halving the list.
++// Page Down past the lookahead) lands past what the lookahead laid out, and
++// its records arrive after the frame that shows the landing: that frame
++// would show the chunks there skipped (blank) or at a stale size. The
++// scroll event comes before the frame is laid out: the chunks on screen are
++// laid out from it, and the ones beside them (forceLayout: so nothing above
++// moves after), found by their boxes (a skipped chunk's box needs no layout
++// of its blocks) halving the list. A smaller scroll costs a compare.
++// Not a jump of the page's own (aimAt): it laid out what it lands on, and
++// laying out more there made the jump's frame 270 ms slower (scrolledTo).
+ let scrolledFrom = 0;
++/** A jump of the page's own laid out what it lands on (aimAt): its scroll is not one to do it for. */
++export function scrolledTo() { scrolledFrom = document.scrollingElement.scrollTop; }
+ window.addEventListener('scroll', () => {
+   const y = document.scrollingElement.scrollTop;
+   const far = Math.abs(y - scrolledFrom) > window.innerHeight;
+@@ -217,7 +222,17 @@ function split(c, after) {
    if (!holds(tail[0], tail.at(-1))) { moveOut(c, tail, false); return; }
    const head = [];
    for (let e = c.firstElementChild; e && e !== tail[0]; e = e.nextElementSibling) head.push(e);
@@ -22,7 +77,7 @@ index 7effc21..d2941b9 100644
  /** `items` of chunk `c` into a new chunk before or after it, each counting what it counted in `c`. */
  function moveOut(c, items, before) {
 diff --git a/web/src/reader/enhance.js b/web/src/reader/enhance.js
-index a240937..45181d7 100644
+index a240937..3863fe4 100644
 --- a/web/src/reader/enhance.js
 +++ b/web/src/reader/enhance.js
 @@ -6,7 +6,7 @@ import { doc, root, strings, post, inViewport } from './core.js';
@@ -68,7 +123,7 @@ index a240937..45181d7 100644
    const lines = code.split('\n');
    if (lines.length <= PART_LINES * 2) {
      const cold = !warmGrammars.has(id), t = performance.now();
-@@ -414,25 +426,86 @@ function highlightParts(cb, code, id, whole) {
+@@ -414,25 +426,87 @@ function highlightParts(cb, code, id, whole) {
    // Shiki's guard (a cold grammar's first lines) makes its part that slow.
    // (Not the time all parts took: a long block adds up to more than the
    // limit with every line fast, and would be highlighted twice.)
@@ -153,15 +208,16 @@ index a240937..45181d7 100644
 +}
 +
 +/**
-+ * Highlights code block `cb`: `need` 'screen' (on screen: what the screen
-+ * shows coloured now, a long block's rest in later slices), 'none' (ahead
-+ * of the screen: a slice), 'all' (printing). 'more' while parts are left.
++ * Highlights code block `cb`: `need` 'screen' (a jump or an open landing on
++ * it: what the screen shows coloured now, the rest in later slices), 'none'
++ * (ahead of the screen: a slice), 'all' (all of it now: on screen while
++ * scrolling, printing). 'more' while parts are left.
 + */
 +function highlightBlock(cb, need = 'screen') {
    const recheck = cb.dataset.hl === 'recheck';
    if (cb.dataset.hl !== 'pending' && !recheck) return;
    const id = hl.resolveLang(cb.dataset.lang);
-@@ -440,8 +513,17 @@ function highlightBlock(cb, whole = true) {
+@@ -440,8 +514,17 @@ function highlightBlock(cb, whole = true) {
    const pre = cb.querySelector('pre');
    if (!sourceOf.has(cb)) sourceOf.set(cb, pre.textContent);
    const code = sourceOf.get(cb);
@@ -181,7 +237,7 @@ index a240937..45181d7 100644
    const html = done?.html;
    const slow = !recheck && !!done && done.cold && done.longest > SLOW_HIGHLIGHT_MS;
    if (html) warmGrammars.add(id);
-@@ -449,13 +531,7 @@ function highlightBlock(cb, whole = true) {
+@@ -449,13 +532,7 @@ function highlightBlock(cb, whole = true) {
      const tpl = document.createElement('template');
      tpl.innerHTML = html;
      const newPre = tpl.content.firstElementChild;
@@ -196,7 +252,7 @@ index a240937..45181d7 100644
      pre.replaceWith(newPre);
      cb.dataset.hl = slow ? 'recheck' : 'done';
      if (slow) setTimeout(() => { if (cb.isConnected) { queue.push(cb); pump(); } else cb.dataset.hl = 'done'; }, 50);
-@@ -468,6 +544,10 @@ function highlightBlock(cb, whole = true) {
+@@ -468,6 +545,10 @@ function highlightBlock(cb, whole = true) {
      hl.prepare(id, code).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) { queue.push(cb); pump(); } });
    }
  }
@@ -207,12 +263,15 @@ index a240937..45181d7 100644
  
  // Lazy work is triggered for anything within one screen of the viewport.
  // It runs in slices of a few milliseconds, so scrolling into a run of code
-@@ -536,18 +616,18 @@ function pump() {
+@@ -536,18 +617,21 @@ function pump() {
  function lazyWork(el) {
    // A long block ahead of the screen a part at a time (the next part in the
    // next turn); one on screen at once, so none of it shows plain.
 -  if (el.classList.contains('code-block')) { if (highlightBlock(el, inViewport(el)) === 'more') queue.unshift(el); }
-+  if (el.classList.contains('code-block')) { if (highlightBlock(el, inViewport(el) ? 'screen' : 'none') === 'more') queue.unshift(el); }
++  // (On screen while scrolling: all of it at once, one layout of it; a page
++  // of code scrolled through with blocks shown in part and then whole was
++  // laid out twice as often, its p95 frame 4 ms longer.)
++  if (el.classList.contains('code-block')) { if (highlightBlock(el, inViewport(el) ? 'all' : 'none') === 'more') queue.unshift(el); }
    else if (el.classList.contains('mermaid-block')) renderMermaid(el);
  }
  
@@ -229,7 +288,7 @@ index a240937..45181d7 100644
  }
  
  /** `near`: whether a code block counts as on screen (a first open estimates it without layout). */
-@@ -561,7 +641,7 @@ export function renderLazy(near = inViewport) {
+@@ -561,7 +645,7 @@ export function renderLazy(near = inViewport) {
      if (!cb.isConnected || cb.dataset.hl !== 'pending') continue;
      if (near(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
    }

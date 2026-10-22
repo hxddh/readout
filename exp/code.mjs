@@ -27,10 +27,7 @@ const headOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'heading', 
 // A jump (N, a rail tick, a link) onto block `slot`, from the top: the
 // longest frame from the jump to 3 s after, and the lines on screen in the
 // frame that shows the landing not coloured.
-// (Its grammar loaded first, as the app has it loaded for a document it opens: readout.prepare.)
 const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
-  window.readout.prepare?.(['javascript']);
-  await new Promise(r => setTimeout(r, 1500));
   window.scrollTo(0, 0);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))));
   const t0 = performance.now();
@@ -102,6 +99,6 @@ async function run(name, docOps) {
 }
 for (let rep = 0; rep < 1; rep++) {
   await run('code_heavy', Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)));
-  if (process.env.HUGE) try { await run('one_huge', Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1))); } catch (e) { console.log(JSON.stringify({ build: dir.split('/').pop(), name: 'one_huge', crash: String(e).slice(0, 100) })); }
+  if (process.env.HUGE) try { await run('one_huge', Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k === 2 ? codeOp(k + 1, 3) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1))); } catch (e) { console.log(JSON.stringify({ build: dir.split('/').pop(), name: 'one_huge', crash: String(e).slice(0, 100) })); }
 }
 await browser.close(); server.close();
