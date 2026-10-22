@@ -263,18 +263,6 @@ const scroll500 = await scrollDoc(few);
 const scroll500m = await scrollDoc(few, { marks: true });
 const scroll1 = await scrollDoc(ops, { act: true });
 
-// Code-heavy documents (3.9.0 chunked by count alone: 32 long code blocks
-// laid out together for a theme change, a jump, find): 700 blocks of
-// 90-line code under a heading every ten, and one 28,000-line code block
-// (about 2 MB) in the middle of 3,000 paragraphs.
-const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-const codeOp = (slot, n) => ({ op: 'insert', slot, after: slot - 1, kind: 'code',
-  html: `<div class="code-block" data-lang="js"><pre><code>${esc(Array.from({ length: n }, (_, i) => `  const value${slot}_${i} = compute(${i}, "${'x'.repeat(i % 30)}"); // step ${i}`).join('\n'))}</code></pre></div>` });
-const paraOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'paragraph', html: `<p>Paragraph ${slot} of the plan, with enough words to wrap over a line or two in the narrow column.</p>` });
-const headOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'heading', anchor: `h${slot}`, html: `<h2 id="h${slot}">Section ${slot}</h2>` });
-const codeHeavy = await scrollDoc(Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)), { act: true, jumps: true });
-const oneHuge = await scrollDoc(Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1)), { act: true, jumps: true });
-
 // An agent streaming at the end of a ~5 MB document, the reader following:
 // every fifth patch appends a paragraph, the others write on into it (the
 // agent's last block growing), each with the unread marks of the last
@@ -529,6 +517,20 @@ const coldHighlight = await (async () => {
   return ms;
 })();
 if (coldHighlight < 0) errors.push('cold first highlight not measured');
+
+// Last (a 2 MB code block's page takes about 2 GB, which slowed the frames
+// of the pages measured after it): code-heavy documents (3.9.0 chunked by
+// count alone: 32 long code blocks laid out together for a theme change, a
+// jump, find): 700 blocks of
+// 90-line code under a heading every ten, and one 28,000-line code block
+// (about 2 MB) in the middle of 3,000 paragraphs.
+const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const codeOp = (slot, n) => ({ op: 'insert', slot, after: slot - 1, kind: 'code',
+  html: `<div class="code-block" data-lang="js"><pre><code>${esc(Array.from({ length: n }, (_, i) => `  const value${slot}_${i} = compute(${i}, "${'x'.repeat(i % 30)}"); // step ${i}`).join('\n'))}</code></pre></div>` });
+const paraOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'paragraph', html: `<p>Paragraph ${slot} of the plan, with enough words to wrap over a line or two in the narrow column.</p>` });
+const headOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'heading', anchor: `h${slot}`, html: `<h2 id="h${slot}">Section ${slot}</h2>` });
+const codeHeavy = await scrollDoc(Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)), { act: true, jumps: true });
+const oneHuge = await scrollDoc(Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1)), { act: true, jumps: true });
 
 if (!stream.act5.findSelected) errors.push("find Next at 5 MB did not select its match");
 const result = {

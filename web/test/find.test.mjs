@@ -501,6 +501,27 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await page.close();
 }
 
+// The current match in a huge code block, a chunk of its own (chunks.js),
+// removed with its chunk: Next goes to the match after where it was, not
+// to the first from the top of the window.
+{
+  const page = await open();
+  const ops = Array.from({ length: 20 }, (_, i) => i + 1 === 10
+    ? { op: 'insert', slot: 10, after: 9, kind: 'code', html: `<div class="code-block"><pre><code>${Array.from({ length: 300 }, (_, l) => l === 2 ? 'needle' : `line ${l}`).join('\n')}</code></pre></div>` }
+    : { op: 'insert', slot: i + 1, after: i, kind: 'paragraph', html: `<p>para ${i + 1}${[3, 15].includes(i + 1) ? ' needle' : ''}</p>` });
+  await page.evaluate(p => window.readout.apply(p), patch(ops));
+  const alone = await page.evaluate(() => document.querySelector('.blk[data-slot="10"]').parentElement.childElementCount === 1);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await find(page, 'needle'); await find(page, 'needle');   // the one in the code block
+  const before = await state(page);
+  await edit(page, [{ op: 'remove', slot: 10 }], 2);
+  await settle(page);
+  await find(page, 'needle');
+  check('the current match\'s block alone in its chunk removed: Next lands on the match after it',
+    alone && before.startsWith('2 of 3@10') && (await state(page)).startsWith('2 of 2@15 sel=needle'), JSON.stringify([alone, before, await state(page)]));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, JSON.stringify(errors));
 await browser.close();
 server.close();

@@ -853,7 +853,7 @@ details ul, details ol { padding-left: 1.5em; }
   /* Room on the left for list numbers past 99, which hang a little out of
      the column (on screen into the gutter, here past the paper's edge). */
   #ro-doc { padding: 0 0 0 1rem; max-width: none; }
-  #ro-doc.cv > .chunk, #ro-doc.cv > .chunk:not(.near) { content-visibility: visible; height: auto; }
+  #ro-doc.cv > .chunk, #ro-doc.cv > .chunk:not(.near), #ro-doc.cv > .chunk.stale:not(.near) { content-visibility: visible; height: auto; }
   #ro-doc > .chunk { margin-inline: 0; padding-inline: 0; }
   #ro-doc > .chunk > .blk { margin-inline: 0; padding-inline: 0; }
   #ro-doc > .chunk > .blk:is(.k-code, .k-table) { --bleed: 0px; }

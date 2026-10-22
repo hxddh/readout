@@ -733,6 +733,17 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   const worst = Math.max(...drift.map(Math.abs));
   check('blocks written into a part read and left: the page grows by about them at once, scrolling back up through it keeps the text in step',
     worst <= 3 && h1 - h0 >= written / 2 && h1 - h0 <= written * 2, JSON.stringify({ grew: h1 - h0, written, worst, drift: drift.filter(Boolean) }));
+  // Printed while such a chunk is skipped: it is as tall as its blocks (the height it has on screen until laid out is not printed).
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 20 }, (_, k) => ({ op: 'insert', slot: 6000 + k, after: k ? 5999 + k : 150, kind: 'paragraph', html: `<p>later ${k} ${'grow '.repeat(30)}</p>` })) }));
+  await settled();
+  const stale = await page.evaluate(() => document.querySelector('.blk[data-slot="6000"]').parentElement.classList.contains('stale'));
+  await page.emulateMedia({ media: 'print' });
+  const gap = await page.evaluate(() => {
+    const c = document.querySelector('.blk[data-slot="6000"]').parentElement;
+    return Math.round(c.getBoundingClientRect().height - (c.lastElementChild.getBoundingClientRect().bottom - c.firstElementChild.getBoundingClientRect().top));
+  });
+  await page.emulateMedia({ media: 'screen' });
+  check('a chunk written into while skipped prints as tall as its blocks', stale && Math.abs(gap) <= 40, JSON.stringify({ stale, gap }));
 }
 
 // An agent writing a long section into the middle of a large document, 50

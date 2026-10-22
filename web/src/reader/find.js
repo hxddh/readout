@@ -392,6 +392,7 @@ const observer = new MutationObserver(records => { changed(records); later(); })
 const stale = new Set();   // blocks changed since their text was read
 let moved = false;         // blocks added, removed, hidden or shown since
 function changed(records) {
+  let emptied = null;   // the chunk the current match's block was alone in (removed with it)
   for (const r of records) {
     const items = r.target === doc || isChunk(r.target);
     if (items || r.type === 'attributes') moved = true;
@@ -399,8 +400,13 @@ function changed(records) {
     if (pos && items) {
       for (const n of r.removedNodes) {
         const slot = n.dataset ? +n.dataset.slot : NaN;
-        if (slot !== (pos.next ?? pos.slot)) continue;
-        let after = r.nextSibling?.nodeType === Node.ELEMENT_NODE ? r.nextSibling : r.previousSibling?.nodeType === Node.ELEMENT_NODE ? nextItem(r.previousSibling) : null;
+        const gone = n === emptied;
+        if (!gone && slot !== (pos.next ?? pos.slot)) continue;
+        const el = x => x?.nodeType === Node.ELEMENT_NODE ? x : null;
+        // Alone in its chunk: the chunk goes too (a later record), and what followed the chunk is where it was.
+        if (!gone && isChunk(r.target) && !el(r.nextSibling) && !el(r.previousSibling)) { emptied = r.target; continue; }
+        const next = el(r.nextSibling), prev = el(r.previousSibling);
+        let after = next ? (isChunk(next) ? next.firstElementChild : next) : prev ? nextItem(isChunk(prev) ? prev.lastElementChild : prev) : null;
         while (after && !after.classList.contains('blk')) after = nextItem(after);
         pos.next = after ? +after.dataset.slot : 0;
       }
