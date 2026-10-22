@@ -255,6 +255,22 @@ async function scrollDoc(docOps, { marks = false, act = false, jumps = false } =
   // The page's private memory once it has been scrolled through.
   const mb = pid ? privateMemoryMB(pid) : null;
   const r = { scroll, mb, act: act ? await interactions(p) : null, jump: jumped.length ? median(jumped) : null };
+  // The theme switch's cost is mostly WebKit restyling every element of the
+  // page, whatever the reader does: the same switch done by the attribute
+  // alone, in the same page (to the painted frame, median of four), and how
+  // many elements it restyles. Gated on these, not on the time: one build
+  // measured 277 and 479 ms on two runners.
+  if (act) Object.assign(r, await p.evaluate(async () => {
+    const root = document.documentElement, was = root.dataset.theme;
+    const raw = [];
+    for (const t of ['dark', 'light', 'dark', 'light']) {
+      raw.push(await new Promise(res => { const t0 = performance.now(); root.dataset.theme = t; requestAnimationFrame(() => setTimeout(() => res(performance.now() - t0), 0)); }));
+      await new Promise(r => setTimeout(r, 300));
+    }
+    if (was === undefined) delete root.dataset.theme; else root.dataset.theme = was;
+    raw.sort((a, b) => a - b);
+    return { raw: (raw[1] + raw[2]) / 2, elements: document.getElementsByTagName('*').length };
+  }));
   await p.close();
   return r;
 }
@@ -621,6 +637,9 @@ const result = {
   web_insert_middle_5mb_ms: Math.round(stream.insert * 10) / 10,
   web_code_heavy_jump_ms: Math.round(codeHeavy.jump),
   web_code_heavy_theme_ms: Math.round(codeHeavy.act.theme),
+  web_code_heavy_theme_raw_ms: Math.round(codeHeavy.raw),
+  web_code_heavy_theme_over_raw: Math.round(codeHeavy.act.theme / codeHeavy.raw * 100) / 100,
+  web_code_heavy_elements: codeHeavy.elements,
   web_code_heavy_scroll_p95_ms: codeHeavy.scroll.p95,
   web_code_heavy_scroll_max_ms: codeHeavy.scroll.max,
   web_code_heavy_long_frames: codeHeavy.scroll.long,
@@ -628,6 +647,9 @@ const result = {
   web_code_heavy_private_mb: codeHeavy.mb,
   web_one_huge_code_jump_ms: Math.round(oneHuge.jump),
   web_one_huge_code_theme_ms: Math.round(oneHuge.act.theme),
+  web_one_huge_code_theme_raw_ms: Math.round(oneHuge.raw),
+  web_one_huge_code_theme_over_raw: Math.round(oneHuge.act.theme / oneHuge.raw * 100) / 100,
+  web_one_huge_code_elements: oneHuge.elements,
   web_one_huge_code_scroll_p95_ms: oneHuge.scroll.p95,
   web_one_huge_code_blank_px: oneHuge.scroll.blankPx,
   web_one_huge_code_private_mb: oneHuge.mb,

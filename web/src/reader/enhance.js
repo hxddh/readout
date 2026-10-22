@@ -188,8 +188,26 @@ const skippedTables = new IntersectionObserver(entries => {
 });
 
 /** Tables of `el` (a block leaving the page or getting new content) no longer watched. */
-export function forgetTables(el) {
+/**
+ * `el` (a block) is replaced, removed or reset away: nothing of its keeps
+ * watching or waiting (its tables, its code and diagrams for lazy work),
+ * so an agent rewriting a block keeps no old copy of it alive.
+ */
+export function forgetBlock(el) {
   for (const t of el.querySelectorAll('.table-wrap')) skippedTables.unobserve(t);
+  for (const x of el.querySelectorAll('.code-block, .mermaid-block')) {
+    lazyObserver.unobserve(x);
+    waitingForChunk.delete(x);
+    parts.delete(x);
+    const i = queue.indexOf(x);
+    if (i >= 0) queue.splice(i, 1);
+  }
+}
+
+/** What lazy work holds on to (a test checks it stays bounded). */
+export function lazyHeld() {
+  const held = [...waitingForChunk, ...queue];
+  return { waiting: waitingForChunk.size, queued: queue.length, detached: held.filter(x => !x.isConnected).length };
 }
 
 // New tables are measured together, in the next frame.
@@ -454,7 +472,9 @@ const skippedChunk = el => {
   return !!c && doc.classList.contains('cv') && !c.classList.contains('near');
 };
 export const lazyObserver = new IntersectionObserver(entries => {
+  for (const el of waitingForChunk) if (!el.isConnected) waitingForChunk.delete(el);
   for (const e of entries) {
+    if (!e.target.isConnected) { waitingForChunk.delete(e.target); lazyObserver.unobserve(e.target); continue; }
     if (!e.isIntersecting) { waitingForChunk.delete(e.target); continue; }
     if (skippedChunk(e.target)) { waitingForChunk.add(e.target); continue; }
     waitingForChunk.delete(e.target);

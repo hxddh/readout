@@ -844,6 +844,27 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('while scrolling, every code block that comes on screen is already coloured', scrolled.frames > 60 && scrolled.y > 4000 && scrolled.plain === 0, JSON.stringify(scrolled));
 }
 
+// An agent rewriting a long code block again and again, near the reader and
+// far from them (in a chunk skipped, the reader still): lazy work keeps no
+// old copy of it (enhance.js: forgetBlock), what it holds stays bounded.
+{
+  const code = (i, v) => `<div class="code-block" data-lang="ts"><pre><code>${Array.from({ length: 200 }, (_, l) => `export const v${i}_${l}_${v}: number = f(${l}); // ${'x'.repeat(40)}`).join('\n')}</code></pre></div>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(1));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 5 || i === 300 ? code(i, 0) : `<p>para ${i} lorem ipsum dolor</p>`, i => i === 5 || i === 300 ? 'code' : 'paragraph'));
+  await page.waitForTimeout(800);
+  const held = [];
+  for (let v = 1; v <= 40; v++) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [5, 300].map(slot => ({ op: 'replace', slot, change: 'content', kind: 'code', html: code(slot, v) })) }));
+    if (v % 5 === 0) { await page.waitForTimeout(60); held.push(await page.evaluate(() => window.readout.lazyHeld())); }
+    else await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+  }
+  await page.waitForTimeout(1000);
+  const end = await page.evaluate(() => window.readout.lazyHeld());
+  check('a code block rewritten 40 times, near and far: lazy work holds no old copy, and stays bounded',
+    held.every(h => h.detached === 0 && h.waiting + h.queued <= 4) && end.detached === 0 && end.waiting + end.queued <= 2, JSON.stringify({ held, end }));
+}
+
 // Long code: a chunk holds about four screens' estimate, not 32 code blocks
 // (a theme change, a jump or find would lay all of them out), and one huge
 // block is a chunk of its own, the blocks around it in chunks of their own.

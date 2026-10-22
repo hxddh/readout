@@ -4,7 +4,7 @@ import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resiz
 import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, roughRect, unstale } from './chunks.js';
 import { renderMarks, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
-import { enhance, renderLazy, forgetTables } from './enhance.js';
+import { enhance, renderLazy, forgetBlock } from './enhance.js';
 import { sources, tight, setLinks } from './copy.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
 
@@ -61,7 +61,7 @@ function fillBlock(el, op) {
   if (op.anchor) el.dataset.anchor = op.anchor; else delete el.dataset.anchor;
   // A block in the document: its chunk's estimate follows the new content.
   if (isChunk(el.parentElement)) reestimate(el, estimateOp(op));
-  forgetTables(el);
+  forgetBlock(el);
   el.innerHTML = op.html;
   if (op.src != null) sources.set(el, op.src); else sources.delete(el);
   if (op.tight) tight.add(el); else tight.delete(el);
@@ -168,7 +168,7 @@ export function apply(p) {
   let headingsTouched = !!p.reset;
 
   if (p.reset) {
-    for (const el of slots.values()) { resizeObserver.unobserve(el); forgetTables(el); }
+    for (const el of slots.values()) { resizeObserver.unobserve(el); forgetBlock(el); }
     slots.clear();
     clearChunks();
     document.getElementById('ro-empty')?.remove();
@@ -177,7 +177,7 @@ export function apply(p) {
   for (const op of p.ops) {
     if (op.op === 'remove') {
       const el = slots.get(op.slot);
-      if (el) { headingsTouched ||= el.classList.contains('k-heading'); resizeObserver.unobserve(el); forgetTables(el); unplace(el); slots.delete(op.slot); }
+      if (el) { headingsTouched ||= el.classList.contains('k-heading'); resizeObserver.unobserve(el); forgetBlock(el); unplace(el); slots.delete(op.slot); }
     } else if (op.op === 'replace') {
       const el = slots.get(op.slot);
       if (!el) continue;
