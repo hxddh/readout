@@ -809,6 +809,32 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('long code opened at the top: the code within a screen of it highlighted, not the rest of its chunks', lit.length > 0 && lit.every(s => s <= 3), JSON.stringify(lit));
 }
 
+// While the reader scrolls, code ahead of the screen waits to be highlighted
+// and a diagram ahead of it to be drawn (each a task of tens to hundreds of
+// milliseconds, a frame that would stall): done once they pause.
+{
+  const code = i => `<div class="code-block" data-lang="js"><pre><code>${Array.from({ length: 30 }, (_, l) => `const v${i}_${l} = f(${l});`).join('\n')}</code></pre></div>`;
+  const kind = i => i === 60 ? 'mermaid' : i % 3 === 0 ? 'code' : 'paragraph';
+  const html = i => i === 60 ? '<div class="mermaid-block"><pre class="mermaid-src">flowchart LR\n  A --> B</pre></div>' : i % 3 === 0 ? code(i) : `<p>para ${i} lorem ipsum dolor</p>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(1));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(p => window.readout.apply(p), fixReset(120, html, kind));
+  await page.waitForTimeout(1500);
+  const r = await page.evaluate(async () => {
+    const blk = s => document.querySelector(`.blk[data-slot="${s}"]`);
+    const ahead = () => [...document.querySelectorAll('.code-block')].filter(c => { const b = c.getBoundingClientRect(); return b.top > innerHeight && b.top < innerHeight * 1.8; });
+    const seen = { lit: 0, drawn: 0, checks: 0 };
+    // Code not highlighted when the scrolling starts (what is near the screen at rest is).
+    const waiting = new Set([...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl === 'pending'));
+    // Scroll 15 px a frame for 3 s, checking each frame.
+    await new Promise(res => { const t0 = performance.now(); const f = () => { window.scrollBy(0, 15); for (const c of ahead()) { if (!waiting.has(c)) continue; seen.checks++; if (c.dataset.hl !== 'pending') seen.lit++; } const m = blk(60).querySelector('.mermaid-block'); const mr = m.getBoundingClientRect(); if (mr.top > innerHeight && (m.classList.contains('busy') && m.querySelector('.mermaid-svg') || m.classList.contains('done'))) seen.drawn++; if (performance.now() - t0 < 3000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
+    const pending = ahead().filter(c => c.dataset.hl === 'pending').length;
+    await new Promise(r => setTimeout(r, 1500));
+    return { ...seen, pendingAtStop: pending, afterPause: ahead().filter(c => c.dataset.hl === 'pending').length, y: Math.round(scrollY) };
+  });
+  check('while scrolling, code ahead of the screen is not highlighted yet, and is once the reader pauses', r.checks > 20 && r.lit === 0 && r.pendingAtStop > 0 && r.afterPause === 0 && r.drawn === 0, JSON.stringify(r));
+}
+
 // Long code: a chunk holds about four screens' estimate, not 32 code blocks
 // (a theme change, a jump or find would lay all of them out), and one huge
 // block is a chunk of its own, the blocks around it in chunks of their own.

@@ -29,6 +29,21 @@ function diagramLook() {
 // the bundler.
 const MERMAID_URL = new URL('vendor/mermaid/mermaid.esm.min.mjs', document.baseURI).href;
 
+// Drawing a diagram holds the page for a few hundred milliseconds in one go
+// (Mermaid's layout): while the reader scrolls it would be a frame that
+// stalls. A diagram is drawn once the page has not scrolled for a moment;
+// coming within a screen of the viewport, it is usually drawn before it is
+// seen, the reader having paused on the way.
+const QUIET_SCROLL_MS = 250;
+let scrolledAt = -Infinity;
+window.addEventListener('scroll', () => { scrolledAt = performance.now(); }, { passive: true });
+function scrollQuiet() {
+  return new Promise(resolve => {
+    const wait = () => { const left = scrolledAt + QUIET_SCROLL_MS - performance.now(); if (left <= 0) resolve(); else setTimeout(wait, left + 1); };
+    wait();
+  });
+}
+
 // Mermaid gives each drawing a style sheet of its own (rules scoped to the
 // drawing's id), in the box it measures it in and in the drawing it returns.
 // A style sheet taken out of the page, or one added with @keyframes, makes
@@ -198,6 +213,7 @@ async function warmUp() {
   mermaidBusy = true;
   try {
     const m = await loadMermaid();
+    await scrollQuiet();
     await draw(m, 'mmd-warm', 'flowchart LR\n  a --> b');
   } catch {
     // Only a head start: the page's diagrams load what they need anyway.
@@ -262,6 +278,7 @@ async function pumpMermaid() {
       if (!block.isConnected) continue;
       const srcEl = block.querySelector('.mermaid-src');
       const src = srcEl.textContent;
+      await scrollQuiet();
       const m = await loadMermaid().catch(() => null);
       if (!m) break;
       const theme = mermaidLook;
@@ -270,6 +287,7 @@ async function pumpMermaid() {
       if (!out) {
         const id = `mmd-${++mermaidSeq}`;
         try {
+          await scrollQuiet();
           out = { svg: await draw(m, id, src), id };
         } catch (err) {
           out = { error: diagramError(err) };

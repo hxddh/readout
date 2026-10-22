@@ -452,13 +452,24 @@ function pump() {
   setTimeout(() => {
     pumping = false;
     const start = performance.now();
+    const scrolling = start - scrolledAt < QUIET_SCROLL_MS;
+    let later = null;
     while (queue.length && performance.now() - start < SLICE_MS) {
       const el = queue.shift();
-      if (el.isConnected) lazyWork(el);
+      if (!el.isConnected) continue;
+      // While the reader scrolls, only the code on screen is highlighted (a
+      // block takes up to tens of milliseconds, a frame that stalls); what
+      // is ahead of them waits until they pause.
+      if (scrolling && el.classList.contains('code-block') && !inViewport(el)) { (later ||= []).push(el); continue; }
+      lazyWork(el);
     }
+    if (later) { queue.push(...later); setTimeout(pump, QUIET_SCROLL_MS); return; }
     pump();
   }, 0);
 }
+const QUIET_SCROLL_MS = 150;
+let scrolledAt = -Infinity;
+window.addEventListener('scroll', () => { scrolledAt = performance.now(); }, { passive: true });
 
 function lazyWork(el) {
   if (el.classList.contains('code-block')) highlightBlock(el);
