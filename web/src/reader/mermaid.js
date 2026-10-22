@@ -262,11 +262,21 @@ export function setupMermaid(block) {
 }
 
 const mermaidQueue = [];
-let mermaidBusy = false;
+let mermaidBusy = false, mermaidDraws = 0;
 export function renderMermaid(block) {
   block.classList.add('busy');
-  mermaidQueue.push(block);
+  pruneQueue();
+  if (!mermaidQueue.includes(block)) mermaidQueue.push(block);
   pumpMermaid();
+}
+// The queue waits while the reader scrolls (scrollQuiet), and an agent may
+// replace a diagram meanwhile: what left the page is dropped then.
+function pruneQueue() {
+  for (let i = mermaidQueue.length - 1; i >= 0; i--) if (!mermaidQueue[i].isConnected) mermaidQueue.splice(i, 1);
+}
+/** Tests: diagrams drawn so far, and what the queue holds. */
+export function diagramWork() {
+  return { draws: mermaidDraws, queued: mermaidQueue.length, detached: mermaidQueue.filter(b => !b.isConnected).length };
 }
 
 async function pumpMermaid() {
@@ -278,9 +288,19 @@ async function pumpMermaid() {
       if (!block.isConnected) continue;
       const srcEl = block.querySelector('.mermaid-src');
       const src = srcEl.textContent;
+      // After each wait: a block that left the page is not drawn, and one
+      // whose source changed in place goes to the back of the queue.
+      const gone = () => {
+        pruneQueue();
+        if (block.isConnected && block.contains(srcEl) && srcEl.textContent === src) return false;
+        if (block.isConnected) mermaidQueue.push(block);
+        return true;
+      };
       await scrollQuiet();
+      if (gone()) continue;
       const m = await loadMermaid().catch(() => null);
       if (!m) break;
+      if (gone()) continue;
       const theme = mermaidLook;
       const key = theme + '\u0000' + src;
       let out = mermaidCache.get(key);
@@ -288,6 +308,8 @@ async function pumpMermaid() {
         const id = `mmd-${++mermaidSeq}`;
         try {
           await scrollQuiet();
+          if (gone()) continue;
+          mermaidDraws++;
           out = { svg: await draw(m, id, src), id };
         } catch (err) {
           out = { error: diagramError(err) };

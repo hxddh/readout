@@ -844,6 +844,45 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   check('while scrolling, every code block that comes on screen is already coloured', scrolled.frames > 60 && scrolled.y > 4000 && scrolled.plain === 0, JSON.stringify(scrolled));
 }
 
+// A cold grammar's first part of a long block ahead of the screen cut short
+// by Shiki's guard (here a limit of 1 ms after a 300 ms hold, for that one
+// part): the block is rechecked once assembled, and ends up right (its first
+// line as its fifth, the same text, in the next part).
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => {
+    window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    Object.defineProperty(globalThis, 'READOUT_TOKENIZE_LIMIT', { get() {
+      if (!window.__cut) return 500;
+      window.__cut = false; window.__wasCut = true;
+      for (const t = performance.now(); performance.now() - t < 300;);
+      return 1;
+    } });
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  const long = Array.from({ length: 300 }, (_, k) => `local a${k} = b${k} + ${k} * c`).join('; ');
+  const lua = `<div class="code-block" data-lang="lua"><pre><code>${[long, 'local p = 1', 'local q = 2', 'local r = 3', long, ...Array.from({ length: 55 }, (_, l) => `local x${l} = f(${l}) -- note`)].join('\n')}</code></pre></div>`;
+  const r = await p.evaluate(async x => {
+    window.readout.apply(x);
+    const cb = document.querySelector('.blk[data-slot="9"] .code-block');
+    const states = [];
+    // Armed once the grammar is in: the block's first part is the next highlight.
+    new MutationObserver(() => { states.push(cb.dataset.hl); if (cb.dataset.hl === 'pending' && !window.__wasCut) window.__cut = true; }).observe(cb, { attributes: true, attributeFilter: ['data-hl'] });
+    const onScreen = cb.getBoundingClientRect().top < innerHeight;
+    for (let i = 0; i < 400 && !(cb.dataset.hl === 'done' && states.includes('done')); i++) await new Promise(r => setTimeout(r, 25));
+    await new Promise(r => setTimeout(r, 300));
+    const lines = cb.querySelectorAll('pre .line');
+    return { onScreen, cut: !!window.__wasCut, states, final: cb.dataset.hl, same: lines.length > 4 && lines[0].innerHTML === lines[4].innerHTML,
+      spans: [lines[0]?.querySelectorAll('span').length, lines[4]?.querySelectorAll('span').length] };
+  }, fixReset(20, i => i === 9 ? lua : '<p style="min-height:100px">para</p>', i => i === 9 ? 'code' : 'paragraph'));
+  await p.close();
+  check('a cold block whose first part was cut short is rechecked once assembled, and ends up right',
+    !r.onScreen && r.cut && r.states.includes('recheck') && r.final === 'done' && r.same && r.spans[0] > 100, JSON.stringify(r));
+}
+
 // An agent rewriting a long code block again and again, near the reader and
 // far from them (in a chunk skipped, the reader still): lazy work keeps no
 // old copy of it (enhance.js: forgetBlock), what it holds stays bounded.
@@ -863,6 +902,33 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   const end = await page.evaluate(() => window.readout.lazyHeld());
   check('a code block rewritten 40 times, near and far: lazy work holds no old copy, and stays bounded',
     held.every(h => h.detached === 0 && h.waiting + h.queued <= 4) && end.detached === 0 && end.waiting + end.queued <= 2, JSON.stringify({ held, end }));
+}
+
+// An agent rewriting a diagram on screen while the reader scrolls: each
+// rewrite waits for the scroll to pause, and only the last is drawn then;
+// the queue holds none that left the page (mermaid.js: gone, pruneQueue).
+{
+  const mm = v => `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Rewrite ${v}] --> B[Step ${v}]</pre></div>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(1));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(p => window.readout.apply(p), fixReset(60, i => i === 3 ? mm(0) : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`, i => i === 3 ? 'mermaid' : 'paragraph'));
+  await until(() => !!document.querySelector('.blk[data-slot="3"] .mermaid-block.done'), null);
+  await page.waitForTimeout(500);
+  const d0 = await page.evaluate(() => window.readout.diagramWork().draws);
+  // Scrolling a few pixels every 50 ms, the diagram on screen all along.
+  await page.evaluate(() => { window.scrollTo(0, 100); let k = 0; window.__jiggle = setInterval(() => window.scrollTo(0, 100 + (k++ % 2) * 3), 50); });
+  const held = [];
+  for (let v = 1; v <= 8; v++) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 3, change: 'content', kind: 'mermaid', html: mm(v) }] }));
+    await page.waitForTimeout(550);   // longer than a source's quiet wait (QUIET_MS): each is queued
+    held.push(await page.evaluate(() => window.readout.diagramWork()));
+  }
+  await page.evaluate(() => clearInterval(window.__jiggle));
+  const drawn = await until(() => /Rewrite 8/.test(document.querySelector('.blk[data-slot="3"] .mermaid-svg')?.textContent || ''), null);
+  await page.waitForTimeout(1500);
+  const end = await page.evaluate(() => window.readout.diagramWork());
+  check('a diagram rewritten 8 times while scrolling: only the last is drawn once the scroll pauses, and the queue stays bounded',
+    drawn && end.draws - d0 === 1 && held.every(h => h.queued <= 1 && h.detached === 0) && end.queued === 0, JSON.stringify({ drawn, draws: end.draws - d0, held, end }));
 }
 
 // Long code: a chunk holds about four screens' estimate, not 32 code blocks

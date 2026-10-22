@@ -399,11 +399,18 @@ const parts = new WeakMap();   // code block -> {at, state, head, inner}: the li
 /** The block's code highlighted: all of it, or (`whole` false) the next part, 'more' while parts are left. */
 function highlightParts(cb, code, id, whole) {
   const lines = code.split('\n');
-  if (lines.length <= PART_LINES * 2) return hl.highlightSync(code, id);
+  if (lines.length <= PART_LINES * 2) {
+    const cold = !warmGrammars.has(id), t = performance.now();
+    const html = hl.highlightSync(code, id);
+    return html && { html, cold, spent: performance.now() - t };
+  }
   // Every grammar the whole block needs (a part may be inside code embedded
   // from a fence in an earlier one) loaded first.
   if (!parts.has(cb) && !hl.canHighlight(code, id)) return null;
-  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [] };
+  // Whether the grammar was cold when the block began, and the time all its
+  // parts took: a part cut short by Shiki's guard (a cold grammar's first
+  // lines) shows in either, whichever slice it was in.
+  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [], cold: !warmGrammars.has(id), spent: 0 };
   const start = performance.now();
   do {
     const r = hl.highlightPart(lines.slice(p.at, p.at + PART_LINES).join('\n'), id, p.state);
@@ -414,9 +421,10 @@ function highlightParts(cb, code, id, whole) {
     p.state = r.state;
     p.at += PART_LINES;
   } while (p.at < lines.length && (whole || performance.now() - start < SLICE_MS));
+  p.spent += performance.now() - start;
   if (p.at < lines.length) { parts.set(cb, p); return 'more'; }
   parts.delete(cb);
-  return `${p.head}${p.inner.join('\n')}</code></pre>`;
+  return { html: `${p.head}${p.inner.join('\n')}</code></pre>`, cold: p.cold, spent: p.spent };
 }
 
 function highlightBlock(cb, whole = true) {
@@ -427,11 +435,10 @@ function highlightBlock(cb, whole = true) {
   const pre = cb.querySelector('pre');
   if (!sourceOf.has(cb)) sourceOf.set(cb, pre.textContent);
   const code = sourceOf.get(cb);
-  const started = performance.now();
-  const html = highlightParts(cb, code, id, whole);
-  if (html === 'more') return 'more';
-  const cold = !warmGrammars.has(id);
-  const slow = !recheck && cold && performance.now() - started > SLOW_HIGHLIGHT_MS;
+  const done = highlightParts(cb, code, id, whole);
+  if (done === 'more') return 'more';
+  const html = done?.html;
+  const slow = !recheck && !!done && done.cold && done.spent > SLOW_HIGHLIGHT_MS;
   if (html) warmGrammars.add(id);
   if (html) {
     const tpl = document.createElement('template');

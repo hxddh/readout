@@ -17,7 +17,7 @@ import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtE
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell } from './reader/marks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelButtons, setCodeWrap, highlightAll, measureTables, highlightIn, lazyHeld } from './reader/enhance.js';
-import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
+import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
 import { markdownOf, htmlOf, inDocument, sources, definitionsUsed } from './reader/copy.js';
@@ -386,6 +386,7 @@ window.readout = {
   captureAnchor,
   trace: traceEntries,
   lazyHeld,
+  diagramWork,
   firstTimings: () => firstTimings,
   // The find field (⌘F, ⌘G, Return): the next or previous match, and the find bar closed.
   find,
