@@ -495,6 +495,20 @@ export async function prepare(id, code) {
 }
 
 /**
+ * A token in the block's own colours (both themes') is its text alone: it
+ * shows the same, inheriting them from the <pre>, and is an element fewer.
+ * A highlighted block keeps its spans, and a theme switch restyles every
+ * one of them, wherever it is in the page.
+ */
+function plainTokens(html) {
+  const m = /^<pre\b[^>]*\bstyle="([^"]*)"/.exec(html);
+  const light = m && /--shiki-light:(#[0-9a-fA-F]+)/.exec(m[1])?.[1];
+  const dark = m && /--shiki-dark:(#[0-9a-fA-F]+)/.exec(m[1])?.[1];
+  if (!light || !dark) return html;
+  return html.replace(new RegExp(`<span style="--shiki-light:${light};--shiki-dark:${dark}">([^<]*)</span>`, 'gi'), '$1');
+}
+
+/**
  * Returns highlighted inner HTML for a <pre>, or null until everything it
  * needs is loaded (then `prepare` and try again).
  */
@@ -515,7 +529,7 @@ export function highlightSync(code, id) {
       // short and make the same page render differently between runs.
       tokenizeTimeLimit: globalThis.READOUT_TOKENIZE_LIMIT ?? 500,
     });
-    return html;
+    return plainTokens(html);
   } catch {
     return null;
   }

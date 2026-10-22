@@ -997,10 +997,14 @@ const v36 = patch([
   check('code in a table cell is 0.9 of the cell\'s text', Math.abs(misc.tdCode - 0.9 * misc.td) < 0.05, JSON.stringify(misc));
 
   // T7. A console transcript highlights as a shell session: the command, not its output.
-  const sess = await page.evaluate(() => { const lines = [...document.querySelectorAll('#c-console .line')]; return lines.map(l => [...l.querySelectorAll('span')].map(s => [s.textContent, getComputedStyle(s).color])); });
+  // Each run of text and its colour (a token in the block's own colours is its text alone: highlight.js).
+  const sess = await page.evaluate(() => { const lines = [...document.querySelectorAll('#c-console .line')]; return lines.map(l => { const w = document.createTreeWalker(l, NodeFilter.SHOW_TEXT), out = []; for (let t; (t = w.nextNode());) out.push([t.data, getComputedStyle(t.parentElement).color]); return out; }); });
   const colours = sess.flat().filter(([t]) => t.trim());
   const npm = colours.find(([t]) => t.includes('npm')), out = colours.find(([t]) => t.includes('passed'));
   check('a console block highlights the command apart from its output', npm && out && npm[1] !== out[1], JSON.stringify(sess));
+  // A token in the block's own colours is its text alone, an element fewer (a theme switch restyles every span).
+  const own = await page.evaluate(() => { const pre = document.querySelector('#c-console pre'), st = pre.getAttribute('style') || ''; const fg = /--shiki-light:(#\w+)/.exec(st)?.[1]?.toLowerCase(), fgd = /--shiki-dark:(#\w+)/.exec(st)?.[1]?.toLowerCase(); const spans = [...document.querySelectorAll('.code-block .line span[style]')]; return { spans: spans.length, own: spans.filter(x => { const v = (x.getAttribute('style') || '').toLowerCase(); return v === `--shiki-light:${fg};--shiki-dark:${fgd}`; }).length }; });
+  check('a token in the code block\'s own colours is no span of its own', own.spans > 0 && own.own === 0, JSON.stringify(own));
 
   // T2. Short cells and identifiers stay on one line while the table fits; a
   //     long path may break after a slash; a cell with a <br> may wrap.
@@ -1446,7 +1450,8 @@ const v36 = patch([
   ]));
   await until(page, () => [...document.querySelectorAll('.code-block')].every(c => c.dataset.hl === 'done'));
   const colours = async () => page.evaluate(() => {
-    const span = (id, text) => [...document.querySelectorAll(`#${id} .line span`)].find(s => s.textContent.includes(text));
+    // The element whose colour the text shows (a token in the block's own colours is its text alone: highlight.js).
+    const span = (id, text) => { for (const l of document.querySelectorAll(`#${id} .line`)) { const w = document.createTreeWalker(l, NodeFilter.SHOW_TEXT); for (let t; (t = w.nextNode());) if (t.data.includes(text)) return t.parentElement; } return null; };
     const c = s => s && getComputedStyle(s).color;
     return { output: c(span('sh-out', 'passed')), command: c(span('sh-out', 'npm')) };
   });
