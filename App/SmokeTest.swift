@@ -118,13 +118,40 @@ enum SmokeTest {
            let data = text.data(using: .utf8), let d = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { pageFirstApply = d }
     }
 
+    /// How long a call into the first window's page waited at worst in the
+    /// 2 s after its first document was on screen, in ms: one is planned
+    /// every 50 ms from 50 ms after the paint, and each counts from the time it was planned for to the
+    /// page's answer, so a freeze of the app's main thread (which delays the
+    /// call being made) counts as much as one of the page's. What a click or
+    /// a key pressed then waits for.
+    private static var postPaintInputDelay: Double?
+    private static func probeAfterFirstPaint(_ webView: WKWebView) async {
+        let deadline = Date().addingTimeInterval(30)
+        while launchPhases["paint"] == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(5)) }
+        guard let paint = launchPhases["paint"] else { return }
+        // Planned from the paint itself, not from when this task woke to see it.
+        let start = Date(timeIntervalSince1970: paint)
+        var longest = 0.0
+        var planned = start.addingTimeInterval(0.05)
+        while planned.timeIntervalSince(start) < 2 {
+            let wait = planned.timeIntervalSinceNow
+            if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
+            _ = try? await webView.evaluateJavaScript("0")
+            longest = max(longest, Date().timeIntervalSince(planned))
+            // The next one 50 ms after this one was planned, or now if that has passed.
+            planned = max(planned.addingTimeInterval(0.05), Date())
+        }
+        postPaintInputDelay = (longest * 1000).rounded()
+    }
+
     /// Timings for tools/smoke-run.py, which adds its own clock readings.
     private static func writeTimings(_ dir: URL) {
         var phases = launchPhases
         if let start = processStart { phases["process_start"] = start }
         let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint,
                                    "first_paint_samples_s": firstPaintSamples, "first_apply_samples_s": firstApplySamples,
-                                   "launch_phases_s": phases, "page_first_apply_ms": pageFirstApply]
+                                   "launch_phases_s": phases, "page_first_apply_ms": pageFirstApply,
+                                   "post_paint_input_delay_ms": postPaintInputDelay.map { $0 as Any } ?? NSNull()]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: dir.appendingPathComponent("timings-app.json"))
         }
@@ -164,8 +191,9 @@ enum SmokeTest {
             if ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "boot" {
                 let deadline = Date().addingTimeInterval(30)
                 while launchPhases["paint"] == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+                await probeAfterFirstPaint(webView)
                 // Let the page finish what follows its first paint (the highlighter, diagrams).
-                try? await Task.sleep(for: .seconds(3))
+                try? await Task.sleep(for: .seconds(1))
                 await readPageFirstApply(webView)
                 writeTimings(out)
                 NSApp.terminate(nil)
@@ -177,7 +205,8 @@ enum SmokeTest {
                 NSApp.terminate(nil)
                 return
             }
-            try? await Task.sleep(for: .seconds(3))
+            await probeAfterFirstPaint(webView)
+            try? await Task.sleep(for: .seconds(1))
             await readPageFirstApply(webView)
             processes(webView: webView, out: out)
             await capture(webView, window: controller.window, to: out, name: "1-initial")

@@ -657,6 +657,8 @@ check("cold apply: measured on a second launch, after a first one that painted",
 boot_kept = load("boot/sentinel.json")
 check("first launch: a preference and a baseline that were there before it are still there after",
       boot_kept.get("preference") is True and boot_kept.get("baseline") is True, boot_kept)
+check("cold start: how long the page made a call wait after its first paint is measured, both launches",
+      all(isinstance(tm.get(k), (int, float)) for k in ("cold_post_paint_input_delay_ms", "cold_post_paint_input_delay_first_boot_ms")), tm)
 check("cold apply: the page's split reported (setAppearance, block work, layout)",
       all(isinstance(tm.get(f"cold_page_{k}_ms"), (int, float)) for k in ("setappearance", "blocks", "layout")), tm)
 
