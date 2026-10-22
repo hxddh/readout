@@ -110,6 +110,10 @@ def launch_timings(app: dict, spawn: float) -> dict:
     # file, parsing it, the reading state and the git baseline (no WebKit).
     if "window_init" in phases and "did_load" in phases:
         t["cold_window_to_load_ms"] = round((phases["did_load"] - phases["window_init"]) * 1000, 1)
+    # After the first document is on screen: the longest a call into its page
+    # waited (App/SmokeTest.swift), what a click or a key pressed then waits for.
+    if isinstance(app.get("post_paint_input_delay_ms"), (int, float)):
+        t["cold_post_paint_input_delay_ms"] = app["post_paint_input_delay_ms"]
     if all(k in phases for k in ("page_ready", "did_load", "apply")):
         t["cold_apply_ms"] = round((phases["apply"] - max(phases["page_ready"], phases["did_load"])) * 1000, 1)
     # The page's side of it (page time): its first setAppearance, then the
@@ -172,6 +176,8 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
     # WebKit's first start on the VM).
     timings["cold_window_visible_ms"] = measured.get("cold_window_visible_ms")
     timings["cold_window_visible_first_boot_ms"] = first_boot.get("cold_window_visible_ms")
+    timings["cold_post_paint_input_delay_ms"] = measured.get("cold_post_paint_input_delay_ms")
+    timings["cold_post_paint_input_delay_first_boot_ms"] = first_boot.get("cold_post_paint_input_delay_ms")
 
     def for_second(table):
         found = table.get(str(second.resolve()), table.get(str(second)))

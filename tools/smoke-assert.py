@@ -417,6 +417,10 @@ edge = load("scroll-edge.json")
 print(f"scroll-edge: {edge}")
 check("scroll edge: the automatic content-inset fill is on",
       edge.get("fill_settable") is True and edge.get("automatic_fill") is True, edge)
+# The page's layers are drawn on the CPU: on the GPU, a new page's first
+# document waited 0.5-0.9 s for it inside WebKit (3.9.1 launch).
+check("page: WebKit's accelerated drawing is off (its layers drawn on the CPU)",
+      edge.get("accelerated_drawing") is False, edge)
 props = (edge.get("pocket") or {}).get("properties") or {}
 check("scroll edge: the top scroll pocket has the automatic style, no capture colour, no solid hard pocket",
       props.get("style") == "0" and props.get("captureColor") == "nil" and props.get("prefersSolidColorHardPocket") == "0", edge.get("pocket"))
@@ -653,6 +657,8 @@ check("cold apply: measured on a second launch, after a first one that painted",
 boot_kept = load("boot/sentinel.json")
 check("first launch: a preference and a baseline that were there before it are still there after",
       boot_kept.get("preference") is True and boot_kept.get("baseline") is True, boot_kept)
+check("cold start: how long the page made a call wait after its first paint is measured, both launches",
+      all(isinstance(tm.get(k), (int, float)) for k in ("cold_post_paint_input_delay_ms", "cold_post_paint_input_delay_first_boot_ms")), tm)
 check("cold apply: the page's split reported (setAppearance, block work, layout)",
       all(isinstance(tm.get(f"cold_page_{k}_ms"), (int, float)) for k in ("setappearance", "blocks", "layout")), tm)
 
