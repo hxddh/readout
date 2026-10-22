@@ -45,6 +45,7 @@ async function run(name, docOps) {
     await p.waitForTimeout(1200);
   }
   const s = summary(await scrollPasses(p, { inset: 52 }));
+  const slow = await p.evaluate(() => window.__slow || []);
   const mb = mem(pid);
   let a = {};
   try { a = await interactions(p); } catch (e) { a = { err: String(e).slice(0, 80) }; }
@@ -52,7 +53,7 @@ async function run(name, docOps) {
   const app = await p.evaluate(async () => { const out = []; for (const dark of [true, false, true, false]) { const t0 = performance.now(); window.readout.setAppearance({ dark }); const t1 = performance.now(); await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0))); out.push([Math.round(t1 - t0), Math.round(performance.now() - t1)].join('/')); await new Promise(r => setTimeout(r, 300)); } return out.join(' '); });
   const els = await p.evaluate(() => ({ all: document.getElementsByTagName('*').length, lit: [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl && c.dataset.hl !== 'pending').map(c => +c.closest('.blk').dataset.slot).join(',') }));
   await p.close();
-  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, raw, app, err: a.err }));
+  console.log(JSON.stringify({ build: dir.split('/').pop(), name, jump: Math.round(median(jumped)), theme: Math.round(a.theme), p95: s.p95, max: s.max, long: s.long, blank: s.blankPx, mb, els, slow, err: a.err }));
 }
 for (let rep = 0; rep < 1; rep++) {
   await run('code_heavy', Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)));
