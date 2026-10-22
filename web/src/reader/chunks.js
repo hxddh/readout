@@ -174,7 +174,10 @@ function inUse(c) {
   if (c.contains(document.activeElement)) return true;
   const sel = getSelection();
   for (let i = 0; sel && i < sel.rangeCount; i++) if (sel.getRangeAt(i).intersectsNode(c)) return true;
-  if (typeof CSS !== 'undefined' && CSS.highlights) for (const name of ['ro-find', 'ro-find-cur']) if (CSS.highlights.get(name)?.size) return true;
+  // Find's marks (static ranges: moved, they would point at nothing) in it.
+  if (typeof CSS !== 'undefined' && CSS.highlights) for (const name of ['ro-find', 'ro-find-cur']) {
+    for (const r of CSS.highlights.get(name) || []) if (c.contains(r.startContainer) || c.contains(r.endContainer)) return true;
+  }
   return false;
 }
 function rebalance() {

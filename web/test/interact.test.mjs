@@ -1388,6 +1388,33 @@ for (const n of [60, 400]) {
   await page.close();
 }
 
+// Find open with its current match in one chunk while an agent streams 200
+// inserts into another a screen away: that chunk is split as the page goes
+// quiet (it does not grow without bound while finding), the match's chunk is
+// left as it was, and the match stays current and selected.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(300, i => i === 45 ? '<p>the needle here</p>' : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(2)}</p>`));
+  await scrollToBlock(page, 40);
+  await page.evaluate(() => window.readout.find('needle'));
+  await page.waitForTimeout(300);
+  const chunkOf = s => page.evaluate(s => { const c = document.querySelector(`.blk[data-slot="${s}"]`).parentElement; return { i: [...c.parentElement.children].indexOf(c), n: c.childElementCount }; }, s);
+  const a0 = await chunkOf(45);
+  let v = 1;
+  for (let k = 0; k < 200; k++) {
+    await page.evaluate(p => window.readout.apply(p), patch(++v, [{ op: 'insert', slot: 2000 + k, after: k ? 2000 + k - 1 : 70, kind: 'paragraph', html: `<p>streamed ${k}</p>` }]));
+    if (k % 20 === 0) await page.waitForTimeout(30);
+  }
+  await page.waitForTimeout(2500);
+  const r = await page.evaluate(() => ({ sizes: [...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount), sel: getSelection().toString(),
+    cur: [...(CSS.highlights.get('ro-find-cur') || [])].length }));
+  const a1 = await chunkOf(45);
+  check('with find open, a chunk an agent streams into is split, the current match\'s chunk left alone',
+    Math.max(...r.sizes) <= 64 && a1.i === a0.i && a1.n === a0.n && r.sel === 'needle' && r.cur === 1, JSON.stringify({ a0, a1, max: Math.max(...r.sizes), sel: r.sel, cur: r.cur }));
+  await page.evaluate(() => window.readout.findEnd());
+  await page.close();
+}
+
 // A link to the 40th footnote of a long footnotes block at the end of a
 // large document (its chunk not laid out: WebKit places its content at the
 // chunk's top until it is): the note lands in the middle of the window, as
