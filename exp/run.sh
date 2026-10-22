@@ -10,7 +10,11 @@ git show $FIX:web/test/scrollperf.mjs > test/scrollperf.mjs
 mkdir -p ../exp/out
 ln -sfn ../web/node_modules ../exp/node_modules
 for rep in 1 2 3 4 5; do for c in $COMMITS; do
-  if [ "$SPECS" = code ]; then
+  if [ "$SPECS" = huge ] && [ $rep -le 3 ]; then
+    HUGE=1 node ../exp/code.mjs ../exp/builds/$c >> ../exp/out/code.jsonl 2>>../exp/out/code-err.log || echo "run failed $c"
+  elif [ "$SPECS" = huge ]; then
+    true
+  elif [ "$SPECS" = code ]; then
     node ../exp/code.mjs ../exp/builds/$c >> ../exp/out/code.jsonl 2>>../exp/out/code-err.log || echo "run failed $c"
   else
     SCROLL_ONLY=1 node ../exp/baseline.mjs ../exp/builds/$c >> ../exp/out/scroll.jsonl 2>>../exp/out/scroll-err.log || echo "run failed $c"
