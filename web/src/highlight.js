@@ -529,7 +529,8 @@ export function highlightSync(code, id) {
       // short and make the same page render differently between runs.
       tokenizeTimeLimit: globalThis.READOUT_TOKENIZE_LIMIT ?? 500,
     });
-    return plainTokens(html);
+    // (The typography tests compare it with every token in its span: READOUT_TOKEN_SPANS.)
+    return globalThis.READOUT_TOKEN_SPANS ? html : plainTokens(html);
   } catch {
     return null;
   }

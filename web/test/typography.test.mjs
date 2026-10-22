@@ -1632,6 +1632,51 @@ const v36 = patch([
   await page.close();
 }
 
+// Code highlighted in one theme and shown after a switch to the other looks,
+// character by character, as code highlighted in that theme from the start
+// with every token in its span (READOUT_TOKEN_SPANS): a token left as bare
+// text (in the block's own colours, highlight.js) keeps every colour and
+// style it has in either theme (weight, italics, underline: Markdown
+// headings and emphasis, diff lines, comments).
+{
+  const sample = [
+    ['code', '<div class="code-block" data-lang="ts"><pre><code>// a comment\nexport async function f(a: number): Promise&lt;void&gt; { return g(a + 1, "s", /x+/g); }</code></pre></div>'],
+    ['code', '<div class="code-block" data-lang="markdown"><pre><code># Heading\nSome *emphasis*, **strong**, `code` and [a link](https://example.com).\n&gt; quoted</code></pre></div>'],
+    ['code', '<div class="code-block" data-lang="diff"><pre><code>--- a/x\n+++ b/x\n@@ -1 +1 @@\n-old line\n+new line</code></pre></div>'],
+    ['code', '<div class="code-block" data-lang="python"><pre><code>@decorator\ndef f(x: int) -&gt; str:\n    "doc"\n    return f"{x!r}"  # note</code></pre></div>'],
+  ];
+  const styled = async (startDark, showDark, spans = false) => {
+    const p = await browser.newPage({ viewport: { width: 900, height: 800 } });
+    collectPageErrors(p, errors);
+    await p.addInitScript(s => { window.READOUT_TOKEN_SPANS = s; window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; }, spans);
+    await p.goto(`${base}/reader.html`);
+    await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+    await p.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), startDark);
+    await p.evaluate(x => window.readout.apply(x), patch(sample));
+    await until(p, () => [...document.querySelectorAll('.code-block')].every(c => c.dataset.hl === 'done'));
+    if (showDark !== startDark) await p.evaluate(d => window.readout.setAppearance({ dark: d }), showDark);
+    const runs = await p.evaluate(() => [...document.querySelectorAll('.code-block pre')].map(pre => {
+      const out = [], w = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
+      for (let t; (t = w.nextNode());) {
+        const cs = getComputedStyle(t.parentElement);
+        for (const ch of t.data) out.push([ch, cs.color, cs.fontWeight, cs.fontStyle, cs.textDecorationLine].join('|'));
+      }
+      return out;
+    }));
+    await p.close();
+    return runs;
+  };
+  const diffs = [];
+  let chars = 0;
+  for (const dark of [true, false]) {
+    const fresh = await styled(dark, dark, true), switched = await styled(!dark, dark);
+    chars += fresh.flat().length;
+    fresh.forEach((block, b) => block.forEach((c, i) => { if (c !== switched[b][i] && diffs.length < 5) diffs.push({ dark, block: b, fresh: c, switched: switched[b][i] }); }));
+    if (fresh.flat().length !== switched.flat().length) diffs.push({ dark, length: [fresh.flat().length, switched.flat().length] });
+  }
+  check('code highlighted in one theme shows, after a switch, every character as code highlighted in the other with all its spans', chars > 300 && diffs.length === 0, JSON.stringify({ chars, diffs }));
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();
