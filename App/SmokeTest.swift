@@ -119,21 +119,26 @@ enum SmokeTest {
     }
 
     /// How long a call into the first window's page waited at worst in the
-    /// 2 s after its first document was on screen (one every 50 ms, from the
-    /// app's main thread to the page's answer), in ms: what a click or a key
-    /// pressed then waits for, the app's main thread and the page's.
+    /// 2 s after its first document was on screen, in ms: one is planned
+    /// every 50 ms, and each counts from the time it was planned for to the
+    /// page's answer, so a freeze of the app's main thread (which delays the
+    /// call being made) counts as much as one of the page's. What a click or
+    /// a key pressed then waits for.
     private static var postPaintInputDelay: Double?
     private static func probeAfterFirstPaint(_ webView: WKWebView) async {
         let deadline = Date().addingTimeInterval(30)
         while launchPhases["paint"] == nil && Date() < deadline { try? await Task.sleep(for: .milliseconds(5)) }
         guard launchPhases["paint"] != nil else { return }
+        let start = Date()
         var longest = 0.0
-        let end = Date().addingTimeInterval(2)
-        while Date() < end {
-            let t0 = Date()
+        var planned = start
+        while planned.timeIntervalSince(start) < 2 {
+            let wait = planned.timeIntervalSinceNow
+            if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
             _ = try? await webView.evaluateJavaScript("0")
-            longest = max(longest, Date().timeIntervalSince(t0))
-            try? await Task.sleep(for: .milliseconds(50))
+            longest = max(longest, Date().timeIntervalSince(planned))
+            // The next one 50 ms after this one was planned, or now if that has passed.
+            planned = max(planned.addingTimeInterval(0.05), Date())
         }
         postPaintInputDelay = (longest * 1000).rounded()
     }
