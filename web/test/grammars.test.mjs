@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { createHighlighterCore } from 'shiki/core';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 import { shikiGrammars } from '../shiki-grammars.mjs';
-import { resolveLang, plainTokens } from '../src/highlight.js';
+import { resolveLang, plainTokens, init, prepare, highlightSync, highlightPart } from '../src/highlight.js';
 
 let failures = 0;
 function check(name, cond, extra = '') {
@@ -102,6 +102,35 @@ for (const f of readdirSync('test/corpus').filter(f => f.endsWith('.md'))) {
   }
 }
 check(`corpus code blocks highlight as with Shiki's grammars (${blocks})`, blocks > 200 && differ.length === 0, differ.slice(0, 10).join(', '));
+
+// A long block highlighted 30 lines at a time (enhance.js: each part a
+// short task), each part going on from the state the last one left, comes
+// out exactly as highlighted in one go: comments, strings and templates that
+// run across a part's edge included.
+{
+  globalThis.requestIdleCallback ??= f => setTimeout(f, 0);
+  await init();
+  const samples = {
+    typescript: Array.from({ length: 100 }, (_, i) => i % 17 === 5 ? '/* a comment that\n spans lines */' : i % 13 === 3 ? 'const s = `template ${i}' : i % 13 === 4 ? `goes on ${i}\`;` : `export function f${i}(a: number): string { return "x" + a; } // ${i}`).join('\n'),
+    python: Array.from({ length: 100 }, (_, i) => i % 11 === 2 ? '"""a docstring' : i % 11 === 3 ? 'over lines"""' : `def f${i}(x: int) -> str:  # ${i}\n    return f"{x!r}"`).join('\n'),
+    markdown: Array.from({ length: 100 }, (_, i) => i % 23 === 1 ? '```js' : i % 23 === 6 ? '```' : i % 7 === 0 ? `## Heading ${i}` : `Some *text* with \`code\` ${i}`).join('\n'),
+  };
+  const bad = [];
+  for (const [id, code] of Object.entries(samples)) {
+    await prepare(id, code);
+    const whole = highlightSync(code, id);
+    const lines = code.split('\n'), inner = [];
+    let state, head;
+    for (let at = 0; at < lines.length; at += 30) {
+      const r = highlightPart(lines.slice(at, at + 30).join('\n'), id, state);
+      const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
+      if (!m) { bad.push(`${id}: part ${at}`); break; }
+      head ??= m[1]; inner.push(m[2]); state = r.state;
+    }
+    if (!whole || `${head}${inner.join('\n')}</code></pre>` !== whole) bad.push(id);
+  }
+  check('a long block highlighted a part at a time comes out as highlighted whole', bad.length === 0, bad.join(', '));
+}
 
 console.log(failures ? `${failures} failure(s)` : 'all grammar checks passed');
 process.exit(failures ? 1 : 0);

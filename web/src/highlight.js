@@ -87,6 +87,7 @@ const PRELOAD = ['shellscript', 'json', 'typescript'];
 const SPARE_PRELOAD = ['javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'];
 
 let highlighter = null;
+let hastToHtml = null;
 let ready = null;
 let preload = true;        // Quick Look turns it off: it loads only the grammars a preview needs
 let initialized = false;   // the preloaded grammars are all registered
@@ -116,8 +117,9 @@ async function quietOutput(theme, color) {
 export function init() {
   if (ready) return ready;
   ready = (async () => {
-    const [{ createHighlighterCore }, { createJavaScriptRegexEngine }] =
+    const [{ createHighlighterCore, hastToHtml: toHtml }, { createJavaScriptRegexEngine }] =
       await Promise.all([import('shiki/core'), import('shiki/engine/javascript')]);
+    hastToHtml = toHtml;
     highlighter = await createHighlighterCore({
       themes: [
         quietOutput(import('@shikijs/themes/github-light-default'), '#5f5f66'),
@@ -513,13 +515,24 @@ export function plainTokens(html) {
  * needs is loaded (then `prepare` and try again).
  */
 export function highlightSync(code, id) {
+  return highlightPart(code, id)?.html ?? null;
+}
+
+/**
+ * Like highlightSync, for code that goes on from `state` (what highlighting
+ * the lines before it left): its HTML and the state it leaves, so a long
+ * block can be highlighted a part at a time (enhance.js), each part a short
+ * task. null until everything it needs is loaded.
+ */
+export function highlightPart(code, id, state) {
   if (!initialized || !id || !loaded(id)) return null;
   for (const d of embedded(id, code)) {
     if (!loaded(d) || embedded(d, '').some(dd => !loaded(dd))) return null;
   }
   try {
-    const html = highlighter.codeToHtml(code, {
+    const hast = highlighter.codeToHast(code, {
       lang: id,
+      ...(state ? { grammarState: state } : {}),
       themes: { light: 'github-light-default', dark: 'github-dark-default' },
       defaultColor: false,
       // github-light's comment grey is 4.2:1 on the code block fill; this is 4.9:1 (WCAG AA).
@@ -529,8 +542,9 @@ export function highlightSync(code, id) {
       // short and make the same page render differently between runs.
       tokenizeTimeLimit: globalThis.READOUT_TOKENIZE_LIMIT ?? 500,
     });
+    const html = hastToHtml(hast);
     // (The typography tests compare it with every token in its span: READOUT_TOKEN_SPANS.)
-    return globalThis.READOUT_TOKEN_SPANS ? html : plainTokens(html);
+    return { html: globalThis.READOUT_TOKEN_SPANS ? html : plainTokens(html), state: highlighter.getLastGrammarState(hast) };
   } catch {
     return null;
   }

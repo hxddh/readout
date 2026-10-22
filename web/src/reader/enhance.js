@@ -371,7 +371,31 @@ const sourceOf = new WeakMap();   // code block -> original code text
 const warmGrammars = new Set();   // grammar ids that have highlighted a block
 const prepared = new WeakSet();   // code blocks whose grammars have been loaded once
 
-function highlightBlock(cb) {
+// A long block is highlighted PART_LINES lines at a time, each part a task of
+// its own (the lazy pump's), and shown once whole: highlighted in one go, a
+// 90-line block took 40-70 ms, a frame that stalls while the reader scrolls.
+const PART_LINES = 30;
+const parts = new WeakMap();   // code block -> {at, state, head, inner}: the lines highlighted so far
+/** The block's code highlighted: all of it, or (`whole` false) the next part, 'more' while parts are left. */
+function highlightParts(cb, code, id, whole) {
+  const lines = code.split('\n');
+  if (lines.length <= PART_LINES * 1.5) return hl.highlightSync(code, id);
+  const p = parts.get(cb) || { at: 0, state: undefined, head: null, inner: [] };
+  do {
+    const r = hl.highlightPart(lines.slice(p.at, p.at + PART_LINES).join('\n'), id, p.state);
+    const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
+    if (!m) { parts.delete(cb); return null; }
+    p.head ??= m[1];
+    p.inner.push(m[2]);
+    p.state = r.state;
+    p.at += PART_LINES;
+  } while (whole && p.at < lines.length);
+  if (p.at < lines.length) { parts.set(cb, p); return 'more'; }
+  parts.delete(cb);
+  return `${p.head}${p.inner.join('\n')}</code></pre>`;
+}
+
+function highlightBlock(cb, whole = true) {
   const recheck = cb.dataset.hl === 'recheck';
   if (cb.dataset.hl !== 'pending' && !recheck) return;
   const id = hl.resolveLang(cb.dataset.lang);
@@ -380,7 +404,8 @@ function highlightBlock(cb) {
   if (!sourceOf.has(cb)) sourceOf.set(cb, pre.textContent);
   const code = sourceOf.get(cb);
   const started = performance.now();
-  const html = hl.highlightSync(code, id);
+  const html = highlightParts(cb, code, id, whole);
+  if (html === 'more') return 'more';
   const cold = !warmGrammars.has(id);
   const slow = !recheck && cold && performance.now() - started > SLOW_HIGHLIGHT_MS;
   if (html) warmGrammars.add(id);
@@ -397,13 +422,14 @@ function highlightBlock(cb) {
     }
     pre.replaceWith(newPre);
     cb.dataset.hl = slow ? 'recheck' : 'done';
-    if (slow) setTimeout(() => { if (cb.isConnected) highlightBlock(cb); else cb.dataset.hl = 'done'; }, 50);
+    if (slow) setTimeout(() => { if (cb.isConnected) { queue.push(cb); pump(); } else cb.dataset.hl = 'done'; }, 50);
   } else if (prepared.has(cb)) {
     cb.dataset.hl = 'none';   // everything it needs was loaded and it still failed
   } else {
     cb.dataset.hl = 'loading';
     prepared.add(cb);
-    hl.prepare(id, code).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) highlightBlock(cb); });
+    // Then by the lazy pump (a part at a time, a long block in several turns).
+    hl.prepare(id, code).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) { queue.push(cb); pump(); } });
   }
 }
 
@@ -453,8 +479,9 @@ function pump() {
     pumping = false;
     const start = performance.now();
     const scrolling = start - scrolledAt < QUIET_SCROLL_MS;
-    let later = null;
-    while (queue.length && performance.now() - start < SLICE_MS) {
+    let later = null, n = 0;
+    // At least one a turn, however slow the clock says it is.
+    while (queue.length && (n++ === 0 || performance.now() - start < SLICE_MS)) {
       const el = queue.shift();
       if (!el.isConnected) continue;
       // While the reader scrolls, only the code on screen is highlighted (a
@@ -472,7 +499,8 @@ let scrolledAt = -Infinity;
 window.addEventListener('scroll', () => { scrolledAt = performance.now(); }, { passive: true });
 
 function lazyWork(el) {
-  if (el.classList.contains('code-block')) highlightBlock(el);
+  // A long block a part at a time: the next part in the next turn.
+  if (el.classList.contains('code-block')) { if (highlightBlock(el, false) === 'more') queue.unshift(el); }
   else if (el.classList.contains('mermaid-block')) renderMermaid(el);
 }
 
