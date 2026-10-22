@@ -29,6 +29,90 @@ function diagramLook() {
 // the bundler.
 const MERMAID_URL = new URL('vendor/mermaid/mermaid.esm.min.mjs', document.baseURI).href;
 
+// Mermaid gives each drawing a style sheet of its own (rules scoped to the
+// drawing's id), in the box it measures it in and in the drawing it returns.
+// A style sheet taken out of the page, or one added with @keyframes, makes
+// WebKit restyle the whole document: three times a diagram, seconds each in
+// a 5 MB document. Its rules go instead into a sheet of the page's own,
+// scoped to an attribute every drawing with the same rules shares (with the
+// id's weight: :is(#…, [data-mmd=…])), added once and never taken out; the
+// drawing has no sheet of its own. Mermaid's keyframes are in reader.css.
+// What its rules refer to in the drawing (url(#<id>-gradient): the stroke
+// of the boxes) is copied once into the page's own definitions for them.
+const sheets = new Map();   // rules, scoped to "§", their references "¶" -> {name, refs}
+const names = new Set();
+const KEYFRAMES = /@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g;
+function shareRules(css, id) {
+  const own = id.replace(/[^\w-]/g, '\\$&');
+  const rules = css.replace(KEYFRAMES, '')
+    .replace(new RegExp(`#${own}(?![\\w-])`, 'g'), '\u00a7')
+    .replace(new RegExp(`#${own}([-_][\\w-]*)`, 'g'), '\u00b6$1');
+  let sheet = sheets.get(rules);
+  if (!sheet) {
+    // Named after its rules, not the order drawings happened to finish in: a
+    // page draws the same whatever the timing.
+    let h = 0x811c9dc5;
+    for (let i = 0; i < rules.length; i++) h = Math.imul(h ^ rules.charCodeAt(i), 16777619);
+    let name = `s${(h >>> 0).toString(36)}`;
+    while (names.has(name)) name += 'x';
+    names.add(name);
+    sheet = { name, refs: new Set(rules.match(/\u00b6[\w-]*/g)?.map(r => r.slice(1))) };
+    sheets.set(rules, sheet);
+    const st = document.createElement('style');
+    st.textContent = rules.split('\u00a7').join(`:is(#mmd-${sheet.name}, [data-mmd="${sheet.name}"])`).split('\u00b6').join(`#mmd-${sheet.name}`);
+    document.head.appendChild(st);
+  }
+  return sheet;
+}
+/** The elements the sheet's rules refer to, from the first drawing that has them, into the page's definitions. */
+function shareDefs(sheet, svg, id) {
+  if (!sheet.refs.size) return;
+  const parsed = new DOMParser().parseFromString(svg, 'text/html');
+  let defs = document.getElementById('ro-mmd-defs');
+  if (!defs) {
+    defs = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    defs.id = 'ro-mmd-defs';
+    defs.setAttribute('aria-hidden', 'true');
+    defs.setAttribute('style', 'position:absolute;width:0;height:0;overflow:hidden');
+    document.body.appendChild(defs);
+  }
+  for (const suffix of sheet.refs) {
+    const el = parsed.getElementById(id + suffix);
+    if (!el) continue;
+    const copy = document.importNode(el, true);
+    copy.id = `mmd-${sheet.name}${suffix}`;
+    defs.appendChild(copy);
+    sheet.refs.delete(suffix);
+  }
+}
+/** Mermaid's render, its style sheet shared (shareRules) rather than added to the page with the drawing. */
+async function draw(m, id, src) {
+  const insertBefore = Node.prototype.insertBefore, appendChild = Node.prototype.appendChild;
+  let sheet = null;
+  const take = (parent, node) => {
+    if (node?.nodeName?.toLowerCase() !== 'style') return node;
+    if (parent.id !== id && !parent.closest?.(`#${CSS.escape(id)}, #d${CSS.escape(id)}`)) return node;
+    const svg = parent.closest('svg') || parent;
+    sheet = shareRules(node.textContent, id);
+    svg.dataset.mmd = sheet.name;
+    return document.createComment('');
+  };
+  Node.prototype.insertBefore = function (node, ref) { return insertBefore.call(this, take(this, node), ref); };
+  Node.prototype.appendChild = function (node) { return appendChild.call(this, take(this, node)); };
+  try {
+    // A sheet it wrote into the markup rather than adding it: shared the same way.
+    const svg = (await m.render(id, src)).svg.replace(/^(<svg\b[^>]*?)(\/?>)([\s\S]*?)<style[^>]*>([\s\S]*?)<\/style>/, (all, open, end, before, css) => {
+      sheet = shareRules(css, id);
+      return `${open} data-mmd="${sheet.name}"${end}${before}`;
+    });
+    if (sheet) shareDefs(sheet, svg, id);
+    return svg;
+  } finally {
+    Node.prototype.insertBefore = insertBefore;
+    Node.prototype.appendChild = appendChild;
+  }
+}
+
 function loadMermaid() {
   if (!mermaidPromise) {
     mermaidPromise = import(MERMAID_URL).then(mod => mod.default);
@@ -114,7 +198,7 @@ async function warmUp() {
   mermaidBusy = true;
   try {
     const m = await loadMermaid();
-    await m.render('mmd-warm', 'flowchart LR\n  a --> b');
+    await draw(m, 'mmd-warm', 'flowchart LR\n  a --> b');
   } catch {
     // Only a head start: the page's diagrams load what they need anyway.
   } finally {
@@ -186,8 +270,7 @@ async function pumpMermaid() {
       if (!out) {
         const id = `mmd-${++mermaidSeq}`;
         try {
-          const { svg } = await m.render(id, src);
-          out = { svg, id };
+          out = { svg: await draw(m, id, src), id };
         } catch (err) {
           out = { error: diagramError(err) };
           document.querySelectorAll(`#d${id}, #${id}`).forEach(e => e.remove());

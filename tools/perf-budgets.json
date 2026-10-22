@@ -315,7 +315,10 @@
     "click or key then waits for. Reported, not gated: on the CI VMs WebKit waits 0.5-0.9 s for the GPU",
     "(CA::OGL::MetalContext::flush) with a new page's first document, 3.8.0 mostly just after it showed",
     "(A/B median 564 ms), 3.9 mostly before; which side of the paint it lands on varies run to run, and",
-    "whether a real Mac's GPU waits at all is not measured yet."
+    "whether a real Mac's GPU waits at all is not measured yet.",
+    "Mermaid (#94): a flowchart appended at the end of a 1 MB page, until drawn, and its longest frame.",
+    "Linux runner: 3.8.0 1885-1886 ms / 703-704 ms, 3.9.1 main 1810-1814 / 648-649, with the fix 997-1042 / 256-257;",
+    "in an empty page Mermaid alone takes 715-762 ms / 230-265 ms. Guards 1500 and 400: below 3.8.0, above the fix."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -388,5 +391,7 @@
   "web_find_next_1mb_selected_ms": { "where": "linux-webkit", "unit": "ms",  "target": 25,   "guard": 50 },
   "web_insert_middle_5mb_ms":   { "where": "linux-webkit", "unit": "ms",     "target": 17,   "guard": 40 },
   "web_stream_frame_p95_5mb_ms": { "where": "linux-webkit", "unit": "ms",    "target": 31,   "guard": 34 },
-  "web_stream_long_frames_5mb": { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": 2 }
+  "web_stream_long_frames_5mb": { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": 2 },
+  "web_diagram_draw_1mb_ms":    { "where": "linux-webkit", "unit": "ms", "target": 1000, "guard": 1500 },
+  "web_diagram_draw_1mb_longest_frame_ms": { "where": "linux-webkit", "unit": "ms", "target": 260, "guard": 400 }
 }
