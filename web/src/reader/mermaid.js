@@ -29,6 +29,49 @@ function diagramLook() {
 // the bundler.
 const MERMAID_URL = new URL('vendor/mermaid/mermaid.esm.min.mjs', document.baseURI).href;
 
+// Mermaid gives each drawing a style sheet of its own (rules scoped to the
+// drawing's id), in the box it measures it in and in the drawing it returns.
+// A style sheet taken out of the page, or one added with @keyframes, makes
+// WebKit restyle the whole document: three times a diagram, seconds each in
+// a 5 MB document. Its rules go instead into a sheet of the page's own,
+// scoped to an attribute every drawing with the same rules shares (with the
+// id's weight: :is(#…, [data-mmd=…])), added once and never taken out; the
+// drawing has no sheet of its own. Mermaid's keyframes are in reader.css.
+const sheets = new Map();   // rules, scoped to "§" -> their name
+const KEYFRAMES = /@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g;
+function shareRules(css, id) {
+  const rules = css.replace(KEYFRAMES, '').split(`#${id}`).join('\u00a7');
+  let name = sheets.get(rules);
+  if (!name) {
+    name = `s${sheets.size + 1}`;
+    sheets.set(rules, name);
+    const st = document.createElement('style');
+    st.textContent = rules.split('\u00a7').join(`:is(#mmd-${name}, [data-mmd="${name}"])`);
+    document.head.appendChild(st);
+  }
+  return name;
+}
+/** Mermaid's render, its style sheet shared (shareRules) rather than added to the page with the drawing. */
+async function draw(m, id, src) {
+  const insertBefore = Node.prototype.insertBefore, appendChild = Node.prototype.appendChild;
+  const take = (parent, node) => {
+    if (node?.nodeName?.toLowerCase() !== 'style') return node;
+    if (parent.id !== id && !parent.closest?.(`#${CSS.escape(id)}, #d${CSS.escape(id)}`)) return node;
+    const svg = parent.closest('svg') || parent;
+    svg.dataset.mmd = shareRules(node.textContent, id);
+    return document.createComment('');
+  };
+  Node.prototype.insertBefore = function (node, ref) { return insertBefore.call(this, take(this, node), ref); };
+  Node.prototype.appendChild = function (node) { return appendChild.call(this, take(this, node)); };
+  try {
+    // A sheet it wrote into the markup rather than adding it: shared the same way.
+    return (await m.render(id, src)).svg.replace(/^(<svg\b[^>]*?)(\/?>)([\s\S]*?)<style[^>]*>([\s\S]*?)<\/style>/, (all, open, end, before, css) => `${open} data-mmd="${shareRules(css, id)}"${end}${before}`);
+  } finally {
+    Node.prototype.insertBefore = insertBefore;
+    Node.prototype.appendChild = appendChild;
+  }
+}
+
 function loadMermaid() {
   if (!mermaidPromise) {
     mermaidPromise = import(MERMAID_URL).then(mod => mod.default);
@@ -114,7 +157,7 @@ async function warmUp() {
   mermaidBusy = true;
   try {
     const m = await loadMermaid();
-    await m.render('mmd-warm', 'flowchart LR\n  a --> b');
+    await draw(m, 'mmd-warm', 'flowchart LR\n  a --> b');
   } catch {
     // Only a head start: the page's diagrams load what they need anyway.
   } finally {
@@ -186,8 +229,7 @@ async function pumpMermaid() {
       if (!out) {
         const id = `mmd-${++mermaidSeq}`;
         try {
-          const { svg } = await m.render(id, src);
-          out = { svg, id };
+          out = { svg: await draw(m, id, src), id };
         } catch (err) {
           out = { error: diagramError(err) };
           document.querySelectorAll(`#d${id}, #${id}`).forEach(e => e.remove());
