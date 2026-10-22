@@ -58,5 +58,5 @@ jobs:
       - uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: ab-l2f-${{ matrix.rep }}
+          name: ab-l2g-${{ matrix.rep }}
           path: ab-out

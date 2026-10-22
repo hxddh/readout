@@ -1,3 +1,5 @@
-v38=59acabc
 fx=06bf635
-fxcpu=06bf635:cpu
+w78=06bf635:web=fc48b78
+w79=06bf635:web=e6db579
+w81=06bf635:web=5c445ef
+pre12=06bf635:pre12

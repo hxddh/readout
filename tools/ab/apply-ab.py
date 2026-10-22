@@ -18,15 +18,18 @@ exp = sys.argv[2] if len(sys.argv) > 2 else ""
 
 
 import subprocess
-if exp == "web38":
-    # This tree's app with 3.8.0's page (web/), to tell the app's part from the page's.
-    subprocess.run(["git", "-C", str(tree), "checkout", "59acabc", "--", "web"], check=True)
+if exp == "web38" or exp.startswith("web="):
+    # This tree's app with another commit's page (web/), to tell the app's part from the page's.
+    subprocess.run(["git", "-C", str(tree), "checkout", "59acabc" if exp == "web38" else exp[4:], "--", "web"], check=True)
 
 
 def edit(rel, old, new, count=1):
     p = tree / rel
     s = p.read_text()
     if old not in s:
+        if exp.startswith("web=") and rel.startswith("web/"):
+            print(f"apply-ab: {rel}: probe not placed: {old[:60]!r}")
+            return
         sys.exit(f"apply-ab: {rel}: not found: {old[:80]!r}")
     p.write_text(s.replace(old, new, count))
 
@@ -228,8 +231,12 @@ elif exp == "win":
     edit(R, "        let sidebarVC = NSHostingController(rootView: TOCView(model: model))\n        sidebarVC.sizingOptions = []\n",
          "        let sidebarVC = NSViewController()\n        sidebarVC.view = NSView()\n        DispatchQueue.main.async { [weak self, weak sidebarVC] in\n            guard let self, let sidebarVC else { return }\n            let host = NSHostingController(rootView: TOCView(model: self.model))\n            host.sizingOptions = []\n            sidebarVC.addChild(host)\n            host.view.frame = sidebarVC.view.bounds\n            host.view.autoresizingMask = [.width, .height]\n            sidebarVC.view.addSubview(host.view)\n            SmokeTest.noteLaunchPhase(\"outline_installed\")\n        }\n")
     edit(R, "        window.representedURL = url\n", "        DispatchQueue.main.async { [weak self] in self?.window?.representedURL = self?.url }\n")
-elif exp == "web38":
+elif exp == "web38" or exp.startswith("web="):
     pass
+elif exp == "pre12":
+    # 3.8.0's twelve preloaded grammars.
+    edit("web/src/highlight.js", "const PRELOAD = ['shellscript', 'json', 'typescript'];",
+         "const PRELOAD = ['shellscript', 'json', 'typescript', 'javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'];")
 elif exp == "nomath":
     edit("web/src/reader/enhance.js", "  if (el.querySelector('.math, .math-block')) renderMath(el);\n", "")
 elif exp == "nomm":
