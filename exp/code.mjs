@@ -24,7 +24,13 @@ const codeOp = (slot, n) => ({ op: 'insert', slot, after: slot - 1, kind: 'code'
   html: `<div class="code-block" data-lang="js"><pre><code>${esc(Array.from({ length: n }, (_, i) => `  const value${slot}_${i} = compute(${i}, "${'x'.repeat(i % 30)}"); // step ${i}`).join('\n'))}</code></pre></div>` });
 const paraOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'paragraph', html: `<p>Paragraph ${slot} of the plan, with enough words to wrap over a line or two in the narrow column.</p>` });
 const headOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'heading', anchor: `h${slot}`, html: `<h2 id="h${slot}">Section ${slot}</h2>` });
+// A jump (N, a rail tick, a link) onto block `slot`, from the top: the
+// longest frame from the jump to 3 s after, and the lines on screen in the
+// frame that shows the landing not coloured.
+// (Its grammar loaded first, as the app has it loaded for a document it opens: readout.prepare.)
 const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
+  window.readout.prepare?.(['javascript']);
+  await new Promise(r => setTimeout(r, 1500));
   window.scrollTo(0, 0);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))));
   const t0 = performance.now();
