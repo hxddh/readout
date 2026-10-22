@@ -159,10 +159,11 @@ export function warm() {
   return init().then(() => {
     if (!preload || warming || warmStopped) return;
     warming = true;
-    // Every preloaded grammar registered first (however long that takes),
-    // then the idle delay, then the warm-up.
-    const loads = SPARE_PRELOAD.map(id => ensureLang(id));
-    Promise.all(loads).then(() => setTimeout(() => {
+    // Every preloaded grammar registered first, one at a time (however long
+    // that takes; a window taking the page stops the chain at its next
+    // step), then the idle delay, then the warm-up.
+    const loads = (async () => { for (const id of SPARE_PRELOAD) if (!warmStopped) await ensureLang(id, true); })();
+    loads.then(() => warmStopped || setTimeout(() => {
       if (warmStopped) return;
       const start = performance.now();
       const ids = WARM_ORDER.filter(id => !failed.has(id));
@@ -429,12 +430,18 @@ function runWork() {
 // resolved and the same block could highlight differently between loads.
 let registry = Promise.resolve();
 
-export function ensureLang(id) {
-  if (!highlighter) return init().then(() => ensureLang(id));
+const needed = new Set();   // grammars a page asked for, not only the spare's warm-up
+
+/** `spare`: for the spare page's warm-up only, which a window taking the page stops. */
+export function ensureLang(id, spare = false) {
+  if (!spare) needed.add(id);
+  if (!highlighter) return init().then(() => ensureLang(id, spare));
   if (highlighter.getLoadedLanguages().includes(id)) return Promise.resolve();
   if (!loading.has(id)) {
     const load = LANGS[id]();   // fetch in parallel, register in order
     const done = registry.then(() => load).then(m => {
+      // The page was taken meanwhile and nothing it shows asked for it: not registered.
+      if (warmStopped && !needed.has(id)) { loading.delete(id); return; }
       const main = m.default.find(g => g.name === id) || m.default[m.default.length - 1];
       lazyOf.set(id, main?.embeddedLangsLazy || []);
       grammarsOf.set(id, m.default);

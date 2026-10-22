@@ -1295,6 +1295,35 @@ const v36 = patch([
   const walk = await page.evaluate(() => ({ held: !!window.__walkHeld, longest: performance.getEntriesByName('readout-hl-warm')[0]?.detail?.longestSlice }));
   check("walking a grammar for its patterns is counted in the warm-up's longest slice", walk.held && walk.longest >= 150, JSON.stringify(walk));
   await page.close();
+  // A window taking the spare right after warm() (a rapid second open)
+  // stops its spare-only grammars at the next step: none is fetched after
+  // it, and the one in flight is not registered (its block is not coloured
+  // in its apply; it loads as the block's own, as on any page not warmed).
+  requests.length = 0;
+  page = await browser.newPage({ viewport: { width: 700, height: 800 } });
+  collectPageErrors(page, errors);
+  await page.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await page.goto(`${base}/reader.html`);
+  await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await page.evaluate(p => new Promise(r => {
+    window.readout.setAppearance({ dark: false });
+    // 10 ms after the warm-up's loading starts (warm() resolves once it has).
+    window.readout.warm().then(() => setTimeout(() => { window.readout.apply(p); r(); }, 10));
+  }), patch([['paragraph', '<p>A window took the spare page.</p>']]));
+  const spareOnly = () => requests.map(u => u.match(/\/chunks\/(javascript|python|swift|go|rust|yaml|diff|markdown|sql)-/)?.[1]).filter(Boolean);
+  await page.waitForTimeout(3000);
+  const later = spareOnly();
+  // The chain stopped (one at a time: the last fetched was the one in
+  // flight when the page was taken), and that one is not registered: its
+  // block is not coloured in its apply.
+  const inFlight = later[later.length - 1];
+  const hl = inFlight ? await page.evaluate(lang => {
+    window.readout.apply({ version: 2, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+      ops: [{ op: 'insert', slot: 1, after: 0, kind: 'code', cjk: false, html: `<div class="code-block" id="t-in" data-lang="${lang}"><pre><code>x = 1</code></pre></div>` }] });
+    return document.getElementById('t-in').dataset.hl;
+  }, inFlight) : null;
+  check('a window taking the spare right after warm() stops its spare-only grammars', later.length < 9 && hl !== 'done', JSON.stringify({ later, inFlight, hl }));
+  await page.close();
 }
 
 // 3.7 typesetting.
