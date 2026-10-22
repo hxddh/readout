@@ -150,8 +150,8 @@
    "kind": "mermaid",
    "top": 926,
    "h": 1223,
-   "style": "f068ebe5",
-   "content": "63b59b8d",
+   "style": "0e54eeaa",
+   "content": "65ef8c44",
    "text": "graph TB subgraph \"共享类型层 (shared/)\" Proto[\"share"
   },
   {
@@ -177,8 +177,8 @@
    "kind": "mermaid",
    "top": 2227,
    "h": 646,
-   "style": "9d376679",
-   "content": "aa95fdd4",
+   "style": "29275a63",
+   "content": "4f844f5a",
    "text": "sequenceDiagram participant WF as Workflow Engin"
   },
   {
@@ -195,8 +195,8 @@
    "kind": "mermaid",
    "top": 2908,
    "h": 538,
-   "style": "66b280b8",
-   "content": "1da94df1",
+   "style": "00f9dbb2",
+   "content": "a3fce570",
    "text": "sequenceDiagram participant EA as External Agent"
   },
   {
@@ -555,8 +555,8 @@
    "kind": "mermaid",
    "top": 10377,
    "h": 532,
-   "style": "8d83627f",
-   "content": "af1578f0",
+   "style": "4c38d441",
+   "content": "57b3d5b3",
    "text": "stateDiagram-v2 [*] --> pending: 创建请求 pending --"
   },
   {
@@ -573,8 +573,8 @@
    "kind": "mermaid",
    "top": 10950,
    "h": 623,
-   "style": "d51cd110",
-   "content": "5d205681",
+   "style": "1e19a395",
+   "content": "65aac7d0",
    "text": "classDiagram WorkflowOrganizationNode <|-- Guest"
   },
   {

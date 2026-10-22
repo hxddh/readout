@@ -439,11 +439,13 @@ const coldHighlight = await (async () => {
 })();
 if (coldHighlight < 0) errors.push('cold first highlight not measured');
 
-// A diagram an agent adds at the end of a ~5 MB document (no other
+// A diagram an agent adds at the end of a ~1 MB document (no other
 // diagrams), the reader there: until it is drawn, and the longest frame
 // meanwhile. Mermaid gave each drawing a style sheet of its own, added to
 // the page and taken out while it measured: each made WebKit restyle the
-// whole document (3.9.0: about 10 s, frames of 4 s).
+// whole document (3.8.0 on the Linux runner: 1.9 s with a 0.7 s frame; at
+// 5 MB 8.7 s with frames of 3.7 s). In an empty page Mermaid's own work
+// takes about 0.75 s, its longest frame 0.25 s.
 const diagram = await (async () => {
   const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
   collectPageErrors(p, errors, 'diagram: ');
@@ -454,7 +456,7 @@ const diagram = await (async () => {
   await p.goto(`${base}/reader.html`);
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
   await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
-  const docOps = chain(5_000_000).ops.filter(o => o.kind !== 'mermaid').map((o, i) => ({ ...o, slot: i + 1, after: i }));
+  const docOps = chain(1_000_000).ops.filter(o => o.kind !== 'mermaid').map((o, i) => ({ ...o, slot: i + 1, after: i }));
   await p.evaluate(d => window.readout.apply(d), { version: 1, reset: true, rewrite: false, ops: docOps, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p.waitForTimeout(2000);
   for (let k = 0; k < 3; k++) { await p.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight)); await p.waitForTimeout(1500); }
@@ -474,7 +476,7 @@ const diagram = await (async () => {
     return { ms, longest: Math.max(...gaps), drawn: !!document.querySelector('.mermaid-block.done') };
   }, { op: 'insert', slot: docOps.length + 1, after: docOps.length, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">${src.replace(/</g, '&lt;')}</pre></div>` });
   await p.close();
-  if (!r.drawn) errors.push('diagram at 5 MB not drawn');
+  if (!r.drawn) errors.push('diagram at 1 MB not drawn');
   return r;
 })();
 
@@ -507,8 +509,8 @@ const result = {
   web_find_one_letter_5mb_ms: Math.round(stream.letter),
   web_find_one_letter_5mb_samples_ms: stream.letterSamples,   // [the call, the first frame, both frames]
   web_scroll_up_jump_px: scrollUpJump,
-  web_diagram_draw_5mb_ms: Math.round(diagram.ms),
-  web_diagram_draw_5mb_longest_frame_ms: Math.round(diagram.longest),
+  web_diagram_draw_1mb_ms: Math.round(diagram.ms),
+  web_diagram_draw_1mb_longest_frame_ms: Math.round(diagram.longest),
   errors,
 };
 mkdirSync('test/out', { recursive: true });

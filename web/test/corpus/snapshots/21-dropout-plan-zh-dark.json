@@ -177,8 +177,8 @@
    "kind": "mermaid",
    "top": 2262,
    "h": 429,
-   "style": "5f3cfa81",
-   "content": "b5538e4b",
+   "style": "bb8d6a44",
+   "content": "7b9c0cd5",
    "text": "graph TD H[\"隐藏层输出 h\\n(batch, hidden)\"]:::input M"
   },
   {
