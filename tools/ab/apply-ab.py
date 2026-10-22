@@ -17,6 +17,12 @@ tree = Path(sys.argv[1])
 exp = sys.argv[2] if len(sys.argv) > 2 else ""
 
 
+import subprocess
+if exp == "web38":
+    # This tree's app with 3.8.0's page (web/), to tell the app's part from the page's.
+    subprocess.run(["git", "-C", str(tree), "checkout", "59acabc", "--", "web"], check=True)
+
+
 def edit(rel, old, new, count=1):
     p = tree / rel
     s = p.read_text()
@@ -222,6 +228,12 @@ elif exp == "win":
     edit(R, "        let sidebarVC = NSHostingController(rootView: TOCView(model: model))\n        sidebarVC.sizingOptions = []\n",
          "        let sidebarVC = NSViewController()\n        sidebarVC.view = NSView()\n        DispatchQueue.main.async { [weak self, weak sidebarVC] in\n            guard let self, let sidebarVC else { return }\n            let host = NSHostingController(rootView: TOCView(model: self.model))\n            host.sizingOptions = []\n            sidebarVC.addChild(host)\n            host.view.frame = sidebarVC.view.bounds\n            host.view.autoresizingMask = [.width, .height]\n            sidebarVC.view.addSubview(host.view)\n            SmokeTest.noteLaunchPhase(\"outline_installed\")\n        }\n")
     edit(R, "        window.representedURL = url\n", "        DispatchQueue.main.async { [weak self] in self?.window?.representedURL = self?.url }\n")
+elif exp == "web38":
+    pass
+elif exp == "nomath":
+    edit("web/src/reader/enhance.js", "  if (el.querySelector('.math, .math-block')) renderMath(el);\n", "")
+elif exp == "nomm":
+    edit("web/src/reader/enhance.js", "  for (const m of el.querySelectorAll('.mermaid-block')) { setupMermaid(m); diagrams.add(m); }\n", "")
 elif exp:
     sys.exit(f"apply-ab: unknown experiment {exp}")
 print(f"apply-ab: {tree} patched ({exp or 'as is'})")

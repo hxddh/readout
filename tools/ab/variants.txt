@@ -1,3 +1,5 @@
 v38=59acabc
 fx=06bf635
-fxwin=06bf635:win
+fxw38=06bf635:web38
+fxnomath=06bf635:nomath
+fxnomm=06bf635:nomm
