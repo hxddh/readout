@@ -1295,6 +1295,26 @@ const v36 = patch([
   const walk = await page.evaluate(() => ({ held: !!window.__walkHeld, longest: performance.getEntriesByName('readout-hl-warm')[0]?.detail?.longestSlice }));
   check("walking a grammar for its patterns is counted in the warm-up's longest slice", walk.held && walk.longest >= 150, JSON.stringify(walk));
   await page.close();
+  // A document arriving mid-warm-up names SQL, a grammar the spare page
+  // queued late: its job moves to the front and is compiled before the
+  // apply, which colours the block in its first paint; the apply (the window
+  // taking the page) drops the spare jobs left.
+  page = await openWarm();
+  await page.waitForTimeout(5500);   // the grammars in, the idle delay over: compiling
+  await page.evaluate(() => window.readout.prepare(['sql']));
+  const sqlIn = await until(page, () => performance.getEntriesByName('readout-hl-prepared').length > 0, 10000);
+  const mid = await page.evaluate(() => {
+    const warmDone = performance.getEntriesByName('readout-hl-warm').length > 0;
+    window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+      ops: [{ op: 'insert', slot: 1, after: 0, kind: 'code', cjk: false, html: '<div class="code-block" id="t-sql" data-lang="sql"><pre><code>SELECT 1 FROM t;</code></pre></div>' }] });
+    const cb = document.getElementById('t-sql');
+    return { warmDone, hl: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]') };
+  });
+  await page.waitForTimeout(8000);
+  const markedAfter = await page.evaluate(() => performance.getEntriesByName('readout-hl-warm').length > 0);
+  check('a grammar the document requests mid-warm-up is compiled before its apply, which colours it', sqlIn && mid.hl === 'done' && mid.colored, JSON.stringify({ sqlIn, ...mid }));
+  check('the apply drops the spare jobs left', mid.warmDone || !markedAfter, JSON.stringify({ ...mid, markedAfter }));
+  await page.close();
   // A window taking the spare right after warm() (a rapid second open)
   // stops its spare-only grammars at the next step: none is fetched after
   // it, and the one in flight is not registered (its block is not coloured
