@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
-import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, lastItem, prevItem } from './core.js';
+import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, firstItem, nextItem, lastItem, prevItem } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
-import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, flushStarts, roughRect, unstale } from './chunks.js';
+import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, roughRect, unstale } from './chunks.js';
 import { renderMarks, forgetDiff, watching } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, forgetTables } from './enhance.js';
@@ -336,13 +336,15 @@ export function apply(p) {
  * of the document through two screens.
  */
 function estimatedOnScreen() {
+  // The blocks the first screen shows by their estimates (not every block
+  // of the chunks there: a chunk of long code runs screens past it).
   const near = new Set();
   let y = 0;
-  for (let c = doc.firstElementChild; c && y < innerHeight * 2; c = c.nextElementSibling) {
-    near.add(c);
-    y += estimateOf(c);
+  for (let e = firstItem(); e && y < innerHeight; e = nextItem(e)) {
+    near.add(e);
+    y += itemEstimate(e);
   }
-  return cb => near.has(cb.closest('#ro-doc > .chunk'));
+  return cb => near.has(cb.closest('#ro-doc > .chunk > *'));
 }
 
 const NOTICE_MS = 6000;

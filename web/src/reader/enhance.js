@@ -411,10 +411,36 @@ function highlightBlock(cb) {
 // It runs in slices of a few milliseconds, so scrolling into a run of code
 // blocks never stalls a frame for long; the margin leaves time to finish
 // before they are on screen.
+// In a chunk content-visibility skips, a block is placed at the chunk's top
+// until the chunk is laid out (chunks.js): one far down a chunk near the
+// screen would count as near too, and be highlighted (its spans kept, and
+// restyled with every theme switch) long before it is read. It waits for
+// its chunk to be laid out (nearChunk), and is asked about again then.
+const waitingForChunk = new Set();
+const skippedChunk = el => {
+  const c = el.closest('#ro-doc > .chunk');
+  return !!c && doc.classList.contains('cv') && !c.classList.contains('near');
+};
 export const lazyObserver = new IntersectionObserver(entries => {
-  for (const e of entries) if (e.isIntersecting) { lazyObserver.unobserve(e.target); queue.push(e.target); }
+  for (const e of entries) {
+    if (!e.isIntersecting) { waitingForChunk.delete(e.target); continue; }
+    if (skippedChunk(e.target)) { waitingForChunk.add(e.target); continue; }
+    waitingForChunk.delete(e.target);
+    lazyObserver.unobserve(e.target);
+    queue.push(e.target);
+  }
   pump();
 }, { rootMargin: '100% 0px 100% 0px' });
+/** Chunk `c` is laid out from now on: what waited in it for that is asked about again, where it really is. */
+export function nearChunk(c) {
+  for (const el of waitingForChunk) {
+    if (!el.isConnected) { waitingForChunk.delete(el); continue; }
+    if (!c.contains(el)) continue;
+    waitingForChunk.delete(el);
+    lazyObserver.unobserve(el);
+    lazyObserver.observe(el);
+  }
+}
 
 const SLICE_MS = 6;
 const queue = [];

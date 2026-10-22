@@ -789,6 +789,26 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     JSON.stringify({ first, c2017, centred, c1220, top }));
 }
 
+// Long code opened at the top: only the code the first screen shows is
+// highlighted (its spans are kept, and restyled with every theme switch),
+// not every block of the chunks near it, and a block far down a chunk near
+// the screen waits until that chunk is laid out.
+{
+  const code = i => `<div class="code-block" data-lang="js"><pre><code>${Array.from({ length: 90 }, (_, l) => `const v${i}_${l} = f(${l});`).join('\n')}</code></pre></div>`;
+  // The first document a page opens (as a window does).
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(x => window.readout.apply(x), fixReset(300, i => i % 10 === 1 ? `<h2>Section ${i}</h2>` : code(i), i => i % 10 === 1 ? 'heading' : 'code'));
+  await p.waitForTimeout(1500);
+  const lit = await p.evaluate(() => [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl !== 'pending').map(c => +c.closest('.blk').dataset.slot));
+  await p.close();
+  check('long code opened at the top: the code within a screen of it highlighted, not the rest of its chunks', lit.length > 0 && lit.every(s => s <= 3), JSON.stringify(lit));
+}
+
 // Long code: a chunk holds about four screens' estimate, not 32 code blocks
 // (a theme change, a jump or find would lay all of them out), and one huge
 // block is a chunk of its own, the blocks around it in chunks of their own.

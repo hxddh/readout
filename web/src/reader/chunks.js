@@ -7,6 +7,7 @@
 // of the viewport are laid out ahead (`near`), so what scrolls in is drawn.
 import { doc, heights, isChunk } from './core.js';
 import { resizeObserver } from './anchor.js';
+import { nearChunk } from './enhance.js';
 
 const CHUNK = 32;   // items a chunk is filled to as blocks arrive in order
 const SPAN = 4000;  // or estimated px (about four screens): long code is two or three blocks a chunk, a huge block one of its own
@@ -24,6 +25,8 @@ export const laidOut = new WeakSet();
 export const cv = () => doc.classList.contains('cv');
 export const chunkOf = el => el.parentElement;
 export const estimateOf = c => chunkEstimates.get(c) || 0;
+/** An item's estimated height (what its chunk's estimate sums). */
+export const itemEstimate = el => estimates.get(el) || 0;
 /** Whether WebKit has laid `c` out yet, in a large document (it is at its estimated height). */
 export const neverLaidOut = c => cv() && !laidOut.has(c) && heights.get(c) === estimateOf(c);
 
@@ -44,6 +47,7 @@ function show(c) {
   const on = near.has(c) || forced.has(c);
   if (on === c.classList.contains('near')) return;
   c.classList.toggle('near', on);
+  if (on) nearChunk(c);
   // Laid out from now on at its size, remembered when it is skipped again (account).
   if (on && stale.delete(c)) { c.classList.remove('stale'); c.style.removeProperty('--stale'); }
 }
