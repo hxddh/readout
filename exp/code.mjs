@@ -45,7 +45,7 @@ async function run(name, docOps) {
     await p.waitForTimeout(1200);
   }
   const s = summary(await scrollPasses(p, { inset: 52 }));
-  const slow = await p.evaluate(() => window.__slow || []);
+  const slow = (await p.evaluate(() => window.__slow || [])).length;
   const mb = mem(pid);
   let a = {};
   try { a = await interactions(p); } catch (e) { a = { err: String(e).slice(0, 80) }; }
