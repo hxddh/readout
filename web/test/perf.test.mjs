@@ -623,6 +623,7 @@ const result = {
   web_code_heavy_theme_ms: Math.round(codeHeavy.act.theme),
   web_code_heavy_scroll_p95_ms: codeHeavy.scroll.p95,
   web_code_heavy_scroll_max_ms: codeHeavy.scroll.max,
+  web_code_heavy_long_frames: codeHeavy.scroll.long,
   web_code_heavy_blank_px: codeHeavy.scroll.blankPx,
   web_code_heavy_private_mb: codeHeavy.mb,
   web_one_huge_code_jump_ms: Math.round(oneHuge.jump),

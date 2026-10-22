@@ -318,7 +318,13 @@
     "whether a real Mac's GPU waits at all is not measured yet.",
     "Mermaid (#94): a flowchart appended at the end of a 1 MB page, until drawn, and its longest frame.",
     "Linux runner: 3.8.0 1885-1886 ms / 703-704 ms, 3.9.1 main 1810-1814 / 648-649, with the fix 997-1042 / 256-257;",
-    "in an empty page Mermaid alone takes 715-762 ms / 230-265 ms. Guards 1500 and 400: below 3.8.0, above the fix."
+    "in an empty page Mermaid alone takes 715-762 ms / 230-265 ms. Guards 1500 and 400: below 3.8.0, above the fix.",
+    "#89 (chunks): every guard at or below 3.8.0 as measured on the same Linux runner, interleaved (exp runs on",
+    "m16/scroll-exp). Common sizes (the 700-block code document): 3.8.0 jump 387-394 ms, theme 364-369 (300-491",
+    "across runners), scroll max 228-239, long frames 20, private memory 485-512 MB; #89 245, 331, 156-160, 4, 446-460.",
+    "Extreme sizes (the user's 3.9.1 bar, 2026-10-22: not clearly worse, at most 3.8.0 x 1.15 on the same runner):",
+    "one 28,000-line block, 3.8.0 theme 3,122-3,685 ms, memory 1,455-1,525 MB; guards 3600 and 1750.",
+    "web_n_jump_5mb_ms (N among 200 changes at 5 MB) and web_scroll_5mb_own_per_frame_ms measured 59-86 and 0.6-1.2 on CI."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -393,5 +399,19 @@
   "web_stream_frame_p95_5mb_ms": { "where": "linux-webkit", "unit": "ms",    "target": 31,   "guard": 34 },
   "web_stream_long_frames_5mb": { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": 2 },
   "web_diagram_draw_1mb_ms":    { "where": "linux-webkit", "unit": "ms", "target": 1000, "guard": 1500 },
-  "web_diagram_draw_1mb_longest_frame_ms": { "where": "linux-webkit", "unit": "ms", "target": 260, "guard": 400 }
+  "web_diagram_draw_1mb_longest_frame_ms": { "where": "linux-webkit", "unit": "ms", "target": 260, "guard": 400 },
+  "web_n_jump_5mb_ms":          { "where": "linux-webkit", "unit": "ms",     "target": 70,   "guard": 150 },
+  "web_scroll_5mb_own_per_frame_ms": { "where": "linux-webkit", "unit": "ms", "target": 1,  "guard": 3 },
+  "web_code_heavy_jump_ms":     { "where": "linux-webkit", "unit": "ms",     "target": 250,  "guard": 380 },
+  "web_code_heavy_theme_ms":    { "where": "linux-webkit", "unit": "ms",     "target": 330,  "guard": 420 },
+  "web_code_heavy_scroll_p95_ms": { "where": "linux-webkit", "unit": "ms",   "target": 17,   "guard": 34 },
+  "web_code_heavy_scroll_max_ms": { "where": "linux-webkit", "unit": "ms",   "target": 170,  "guard": 230 },
+  "web_code_heavy_long_frames": { "where": "linux-webkit", "unit": "frames", "target": 4,    "guard": 19 },
+  "web_code_heavy_blank_px":    { "where": "linux-webkit", "unit": "px",     "target": 0,    "guard": 0 },
+  "web_code_heavy_private_mb":  { "where": "linux-webkit", "unit": "MB",     "target": 450,  "guard": 510 },
+  "web_one_huge_code_jump_ms":  { "where": "linux-webkit", "unit": "ms",     "target": 20,   "guard": 60 },
+  "web_one_huge_code_theme_ms": { "where": "linux-webkit", "unit": "ms",     "target": 2500, "guard": 3600 },
+  "web_one_huge_code_scroll_p95_ms": { "where": "linux-webkit", "unit": "ms", "target": 17, "guard": 34 },
+  "web_one_huge_code_blank_px": { "where": "linux-webkit", "unit": "px",     "target": 0,    "guard": 0 },
+  "web_one_huge_code_private_mb": { "where": "linux-webkit", "unit": "MB",   "target": 1300, "guard": 1750 }
 }
