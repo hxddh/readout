@@ -128,7 +128,7 @@ index 7effc21..dda4d68 100644
  /** `items` of chunk `c` into a new chunk before or after it, each counting what it counted in `c`. */
  function moveOut(c, items, before) {
 diff --git a/web/src/reader/enhance.js b/web/src/reader/enhance.js
-index a240937..df7fad4 100644
+index a240937..afe5c64 100644
 --- a/web/src/reader/enhance.js
 +++ b/web/src/reader/enhance.js
 @@ -6,7 +6,7 @@ import { doc, root, strings, post, inViewport } from './core.js';
@@ -158,7 +158,7 @@ index a240937..df7fad4 100644
 -function highlightParts(cb, code, id, whole) {
 +const parts = new WeakMap();   // code block -> {at, state, head, inner, cold, longest, view}: the lines highlighted so far
 +// A block of more than SHOWN_MIN lines on screen is coloured at once only
-+// as far as the screen shows, and half a screen more (a jump landing on a
++// as far as the screen shows, and a few lines more (a jump landing on a
 +// page of 90-line blocks coloured each whole, in the task before its frame,
 +// was slower than 3.8.0's); the rest a slice at a time, shown whole once
 +// done. Not past SHOWN_MAX lines: showing it again lays the block out
@@ -174,7 +174,7 @@ index a240937..df7fad4 100644
    const lines = code.split('\n');
    if (lines.length <= PART_LINES * 2) {
      const cold = !warmGrammars.has(id), t = performance.now();
-@@ -414,25 +426,87 @@ function highlightParts(cb, code, id, whole) {
+@@ -414,25 +426,91 @@ function highlightParts(cb, code, id, whole) {
    // Shiki's guard (a cold grammar's first lines) makes its part that slow.
    // (Not the time all parts took: a long block adds up to more than the
    // limit with every line fast, and would be highlighted twice.)
@@ -202,19 +202,23 @@ index a240937..df7fad4 100644
    parts.delete(cb);
 -  return { html: `${p.head}${p.inner.join('\n')}</code></pre>`, cold: p.cold, longest: p.longest };
 +  return { html: `${p.head}${p.inner.join('\n')}</code></pre>`, cold: p.cold, longest: p.longest, p };
- }
- 
--function highlightBlock(cb, whole = true) {
-+/** The last line of a block on screen (by its line height) the screen and half a screen more show; -1: none. */
++}
++
++/**
++ * The last line of a block on screen (by its line height) the screen shows,
++ * and 120 px more (taken again each turn of the lazy pump, before the
++ * reader can scroll past it); -1: none.
++ */
 +function linesNeeded(cb, pre, n) {
 +  if (n <= SHOWN_MIN || n > SHOWN_MAX) return Infinity;
 +  const r = pre.getBoundingClientRect();
-+  const below = 1.5 * innerHeight;
++  const below = innerHeight + 120;
 +  if (r.top > below || r.bottom < 0) return -1;
 +  const lh = parseFloat(getComputedStyle(pre.firstElementChild || pre).lineHeight) || 20;
 +  return Math.ceil((below - r.top) / lh);
-+}
-+
+ }
+ 
+-function highlightBlock(cb, whole = true) {
 +/**
 + * A block coloured as far as it is done, the rest still plain text: the
 + * done lines' HTML (what highlighting it whole gives, line by line) in
@@ -268,7 +272,7 @@ index a240937..df7fad4 100644
    const recheck = cb.dataset.hl === 'recheck';
    if (cb.dataset.hl !== 'pending' && !recheck) return;
    const id = hl.resolveLang(cb.dataset.lang);
-@@ -440,8 +514,17 @@ function highlightBlock(cb, whole = true) {
+@@ -440,8 +518,17 @@ function highlightBlock(cb, whole = true) {
    const pre = cb.querySelector('pre');
    if (!sourceOf.has(cb)) sourceOf.set(cb, pre.textContent);
    const code = sourceOf.get(cb);
@@ -288,7 +292,7 @@ index a240937..df7fad4 100644
    const html = done?.html;
    const slow = !recheck && !!done && done.cold && done.longest > SLOW_HIGHLIGHT_MS;
    if (html) warmGrammars.add(id);
-@@ -449,13 +532,7 @@ function highlightBlock(cb, whole = true) {
+@@ -449,13 +536,7 @@ function highlightBlock(cb, whole = true) {
      const tpl = document.createElement('template');
      tpl.innerHTML = html;
      const newPre = tpl.content.firstElementChild;
@@ -303,7 +307,7 @@ index a240937..df7fad4 100644
      pre.replaceWith(newPre);
      cb.dataset.hl = slow ? 'recheck' : 'done';
      if (slow) setTimeout(() => { if (cb.isConnected) { queue.push(cb); pump(); } else cb.dataset.hl = 'done'; }, 50);
-@@ -468,6 +545,10 @@ function highlightBlock(cb, whole = true) {
+@@ -468,6 +549,10 @@ function highlightBlock(cb, whole = true) {
      hl.prepare(id, code).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) { queue.push(cb); pump(); } });
    }
  }
@@ -314,7 +318,7 @@ index a240937..df7fad4 100644
  
  // Lazy work is triggered for anything within one screen of the viewport.
  // It runs in slices of a few milliseconds, so scrolling into a run of code
-@@ -536,18 +617,23 @@ function pump() {
+@@ -536,18 +621,23 @@ function pump() {
  function lazyWork(el) {
    // A long block ahead of the screen a part at a time (the next part in the
    // next turn); one on screen at once, so none of it shows plain.
@@ -341,7 +345,7 @@ index a240937..df7fad4 100644
  }
  
  /** `near`: whether a code block counts as on screen (a first open estimates it without layout). */
-@@ -561,7 +647,7 @@ export function renderLazy(near = inViewport) {
+@@ -561,7 +651,7 @@ export function renderLazy(near = inViewport) {
      if (!cb.isConnected || cb.dataset.hl !== 'pending') continue;
      if (near(cb)) onScreen.push(cb); else lazyObserver.observe(cb);
    }
