@@ -217,7 +217,7 @@ check('a heading under a rule keeps the rule\'s 2em, not 2em plus its own margin
 check('footnotes keep their space above', spacing.fnAbove > 0, JSON.stringify(spacing));
 
 // 13. Han characters get Japanese forms next to kana, Chinese forms otherwise.
-const langs = await page.evaluate(() => [...document.querySelectorAll('#ro-doc > .blk')].map(b => b.lang || ''));
+const langs = await page.evaluate(() => [...document.querySelectorAll('#ro-doc > .chunk > .blk')].map(b => b.lang || ''));
 const ja = slotOf('日本語'), zh = slotOf('中文段落'), en = slotOf('Body under');
 check('a block with kana is lang=ja', langs[ja - 1] === 'ja', JSON.stringify(langs));
 check('a Chinese block is lang=zh', langs[zh - 1] === 'zh', JSON.stringify(langs));
@@ -997,10 +997,14 @@ const v36 = patch([
   check('code in a table cell is 0.9 of the cell\'s text', Math.abs(misc.tdCode - 0.9 * misc.td) < 0.05, JSON.stringify(misc));
 
   // T7. A console transcript highlights as a shell session: the command, not its output.
-  const sess = await page.evaluate(() => { const lines = [...document.querySelectorAll('#c-console .line')]; return lines.map(l => [...l.querySelectorAll('span')].map(s => [s.textContent, getComputedStyle(s).color])); });
+  // Each run of text and its colour (a token in the block's own colours is its text alone: highlight.js).
+  const sess = await page.evaluate(() => { const lines = [...document.querySelectorAll('#c-console .line')]; return lines.map(l => { const w = document.createTreeWalker(l, NodeFilter.SHOW_TEXT), out = []; for (let t; (t = w.nextNode());) out.push([t.data, getComputedStyle(t.parentElement).color]); return out; }); });
   const colours = sess.flat().filter(([t]) => t.trim());
   const npm = colours.find(([t]) => t.includes('npm')), out = colours.find(([t]) => t.includes('passed'));
   check('a console block highlights the command apart from its output', npm && out && npm[1] !== out[1], JSON.stringify(sess));
+  // A token in the block's own colours is its text alone, an element fewer (a theme switch restyles every span).
+  const own = await page.evaluate(() => { const pre = document.querySelector('#c-console pre'), st = pre.getAttribute('style') || ''; const fg = /--shiki-light:(#\w+)/.exec(st)?.[1]?.toLowerCase(), fgd = /--shiki-dark:(#\w+)/.exec(st)?.[1]?.toLowerCase(); const spans = [...document.querySelectorAll('.code-block .line span[style]')]; return { spans: spans.length, own: spans.filter(x => { const v = (x.getAttribute('style') || '').toLowerCase(); return v === `--shiki-light:${fg};--shiki-dark:${fgd}`; }).length }; });
+  check('a token in the code block\'s own colours is no span of its own', own.spans > 0 && own.own === 0, JSON.stringify(own));
 
   // T2. Short cells and identifiers stay on one line while the table fits; a
   //     long path may break after a slash; a cell with a <br> may wrap.
@@ -1358,11 +1362,15 @@ const v36 = patch([
     await pg.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync(`test/corpus/patches/${name}.json`, 'utf8')));
     await pg.waitForTimeout(200);
     // Each on screen first: in a large document a table far down is measured
-    // when it comes on screen (its block laid out by then).
+    // when it comes on screen (its block laid out by then). Scrolled to again
+    // once its chunk is laid out: until then WebKit places a skipped chunk's
+    // content at its top.
     const r = [];
     for (const i of which) {
-      await pg.evaluate(i => window.scrollBy(0, document.querySelectorAll('.table-wrap')[i].getBoundingClientRect().top - 100), i);
-      await pg.waitForTimeout(300);
+      for (let k = 0; k < 2; k++) {
+        await pg.evaluate(i => window.scrollBy(0, document.querySelectorAll('.table-wrap')[i].getBoundingClientRect().top - 100), i);
+        await pg.waitForTimeout(300);
+      }
       r.push(await pg.evaluate(i => { const t = document.querySelectorAll('.table-wrap')[i]; return { i, scrolls: t.classList.contains('scrolls'), over: t.scrollWidth - t.clientWidth }; }, i));
     }
     await pg.close();
@@ -1442,7 +1450,8 @@ const v36 = patch([
   ]));
   await until(page, () => [...document.querySelectorAll('.code-block')].every(c => c.dataset.hl === 'done'));
   const colours = async () => page.evaluate(() => {
-    const span = (id, text) => [...document.querySelectorAll(`#${id} .line span`)].find(s => s.textContent.includes(text));
+    // The element whose colour the text shows (a token in the block's own colours is its text alone: highlight.js).
+    const span = (id, text) => { for (const l of document.querySelectorAll(`#${id} .line`)) { const w = document.createTreeWalker(l, NodeFilter.SHOW_TEXT); for (let t; (t = w.nextNode());) if (t.data.includes(text)) return t.parentElement; } return null; };
     const c = s => s && getComputedStyle(s).color;
     return { output: c(span('sh-out', 'passed')), command: c(span('sh-out', 'npm')) };
   });
@@ -1621,6 +1630,51 @@ const v36 = patch([
       && v[3].length === 3 && v[3].every(l => Math.abs(l.left - v[0][0].left) < 0.5) && v[3][2].top - v[3][1].top > 1.5 * (v[3][1].top - v[3][0].top),
     JSON.stringify(v));
   await page.close();
+}
+
+// Code highlighted in one theme and shown after a switch to the other looks,
+// character by character, as code highlighted in that theme from the start
+// with every token in its span (READOUT_TOKEN_SPANS): a token left as bare
+// text (in the block's own colours, highlight.js) keeps every colour and
+// style it has in either theme (weight, italics, underline: Markdown
+// headings and emphasis, diff lines, comments).
+{
+  const sample = [
+    ['code', '<div class="code-block" data-lang="ts"><pre><code>// a comment\nexport async function f(a: number): Promise&lt;void&gt; { return g(a + 1, "s", /x+/g); }</code></pre></div>'],
+    ['code', '<div class="code-block" data-lang="markdown"><pre><code># Heading\nSome *emphasis*, **strong**, `code` and [a link](https://example.com).\n&gt; quoted</code></pre></div>'],
+    ['code', '<div class="code-block" data-lang="diff"><pre><code>--- a/x\n+++ b/x\n@@ -1 +1 @@\n-old line\n+new line</code></pre></div>'],
+    ['code', '<div class="code-block" data-lang="python"><pre><code>@decorator\ndef f(x: int) -&gt; str:\n    "doc"\n    return f"{x!r}"  # note</code></pre></div>'],
+  ];
+  const styled = async (startDark, showDark, spans = false) => {
+    const p = await browser.newPage({ viewport: { width: 900, height: 800 } });
+    collectPageErrors(p, errors);
+    await p.addInitScript(s => { window.READOUT_TOKEN_SPANS = s; window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; }, spans);
+    await p.goto(`${base}/reader.html`);
+    await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+    await p.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), startDark);
+    await p.evaluate(x => window.readout.apply(x), patch(sample));
+    await until(p, () => [...document.querySelectorAll('.code-block')].every(c => c.dataset.hl === 'done'));
+    if (showDark !== startDark) await p.evaluate(d => window.readout.setAppearance({ dark: d }), showDark);
+    const runs = await p.evaluate(() => [...document.querySelectorAll('.code-block pre')].map(pre => {
+      const out = [], w = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
+      for (let t; (t = w.nextNode());) {
+        const cs = getComputedStyle(t.parentElement);
+        for (const ch of t.data) out.push([ch, cs.color, cs.fontWeight, cs.fontStyle, cs.textDecorationLine].join('|'));
+      }
+      return out;
+    }));
+    await p.close();
+    return runs;
+  };
+  const diffs = [];
+  let chars = 0;
+  for (const dark of [true, false]) {
+    const fresh = await styled(dark, dark, true), switched = await styled(!dark, dark);
+    chars += fresh.flat().length;
+    fresh.forEach((block, b) => block.forEach((c, i) => { if (c !== switched[b][i] && diffs.length < 5) diffs.push({ dark, block: b, fresh: c, switched: switched[b][i] }); }));
+    if (fresh.flat().length !== switched.flat().length) diffs.push({ dark, length: [fresh.flat().length, switched.flat().length] });
+  }
+  check('code highlighted in one theme shows, after a switch, every character as code highlighted in the other with all its spans', chars > 300 && diffs.length === 0, JSON.stringify({ chars, diffs }));
 }
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));

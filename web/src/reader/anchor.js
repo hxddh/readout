@@ -1,24 +1,32 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
-import { doc, root, slots, heights, trace, keptScroll, onKeptScroll } from './core.js';
+import { doc, root, slots, heights, trace, keptScroll, onKeptScroll, isChunk, nextItem, prevItem } from './core.js';
 import { scheduleRail } from './rail.js';
+import { forceLayout, laidOut, estimateOf, neverLaidOut, cv, scrolledTo } from './chunks.js';
+import { highlightIn } from './enhance.js';
 
 /** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
 function topBlock() {
   const line = topInset() + 8;
-  // A binary search over the page's children themselves, with no list of
-  // every block and no offsetParent read for each (a layout question per
-  // block, in every patch).
-  const kids = doc.children;
-  const blkFrom = i => { for (let j = i; j < kids.length; j++) if (kids[j].classList.contains('blk')) return kids[j]; return null; };
-  let lo = 0, hi = kids.length - 1, found = null;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const el = blkFrom(mid);
-    if (!el) { hi = mid - 1; continue; }
-    if (el.getBoundingClientRect().bottom > line) { found = el; hi = mid - 1; } else { lo = mid + 1; }
-  }
-  return found;
+  // Binary searches, over the chunks and then over the chunk's items, with
+  // no list of every block and no offsetParent read for each (a layout
+  // question per block, in every patch).
+  const first = (kids, ok) => {
+    let lo = 0, hi = kids.length - 1, found = null;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      let j = mid;
+      while (j <= hi && !ok(kids[j])) j++;
+      if (j > hi) { hi = mid - 1; continue; }
+      if (kids[j].getBoundingClientRect().bottom > line) { found = kids[j]; hi = mid - 1; } else { lo = j + 1; }
+    }
+    return found;
+  };
+  const chunk = first(doc.children, isChunk);
+  if (!chunk) return null;
+  let el = first(chunk.children, e => e.classList.contains('blk'));
+  if (!el) for (el = chunk.lastElementChild && nextItem(chunk.lastElementChild); el && !el.classList.contains('blk'); el = nextItem(el));
+  return el;
 }
 
 export function captureAnchor() {
@@ -29,18 +37,18 @@ export function captureAnchor() {
   // The share of the block above the toolbar's edge, kept when its height changes.
   const ratio = r.height > 0 ? (topInset() - r.top) / r.height : 0;
   let heading = null;
-  for (let e = el; e; e = e.previousElementSibling) {
+  for (let e = el; e; e = prevItem(e)) {
     if (e.classList.contains('k-heading')) { heading = e.dataset.anchor || null; break; }
   }
   // The neighbours stand in for the anchor block if a patch removes it.
-  const prev = shownSibling(el, 'previousElementSibling');
-  const next = shownSibling(el, 'nextElementSibling');
+  const prev = shownSibling(el, prevItem);
+  const next = shownSibling(el, nextItem);
   return { slot: +el.dataset.slot, offset, ratio, heading,
     prev: prev ? +prev.dataset.slot : null, next: next ? +next.dataset.slot : null };
 }
 
-function shownSibling(el, dir) {
-  for (let e = el[dir]; e; e = e[dir]) if (e.classList.contains('blk')) return e;
+function shownSibling(el, step) {
+  for (let e = step(el); e; e = step(e)) if (e.classList.contains('blk')) return e;
   return null;
 }
 
@@ -82,6 +90,7 @@ function restoreAnchorTo(a, changedSlots) {
   if (!a) return false;
   const el = slots.get(a.slot);
   if (el) {
+    forceLayout(el);
     const r = el.getBoundingClientRect();
     const want = changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset;
     keepBy(r.top + want);
@@ -94,11 +103,12 @@ function restoreAnchorTo(a, changedSlots) {
   const inset = topInset();
   for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
     const n = slot != null ? slots.get(slot) : null;
+    if (n) forceLayout(n);
     if (n) { keepBy(n.getBoundingClientRect()[edge] - inset); return false; }
   }
   if (a.heading) {
     const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
-    if (h) keepBy(h.getBoundingClientRect().top - inset);
+    if (h) { forceLayout(h); keepBy(h.getBoundingClientRect().top - inset); }
   }
   return false;
 }
@@ -108,13 +118,29 @@ export function topInset() {
   return parseFloat(root.style.getPropertyValue('--top-inset')) || 0;
 }
 
+/** `el`'s height (and its chunk's) taken as they are now, after a change whose place the caller kept. */
+export function baseline(el) {
+  heights.set(el, el.getBoundingClientRect().height);
+  const c = el.parentElement;
+  if (isChunk(c)) heights.set(c, c.getBoundingClientRect().height);
+}
+
 /**
- * Re-baselines every block's height for the resize compensator, after a
- * change that reflows the whole page (font size, width, theme)
- * and whose effect on the position the caller restores itself.
+ * Re-baselines the chunks' heights (and the blocks' in chunks laid out) for
+ * the resize compensator, after a change that reflows the whole page (font
+ * size, width, theme) and whose effect on the position the caller restores
+ * itself.
  */
 export function rebaselineHeights() {
-  for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
+  // A chunk skipped is not asked about its blocks: WebKit would lay each
+  // one out to answer. They report their sizes when it is laid out again,
+  // the chunk's change made up for as a whole.
+  const all = !cv();
+  for (const c of doc.children) {
+    if (!isChunk(c)) continue;
+    heights.set(c, c.getBoundingClientRect().height);
+    if (all || c.classList.contains('near')) for (const el of c.children) if (el.dataset.slot) heights.set(el, el.getBoundingClientRect().height);
+  }
 }
 
 /**
@@ -142,50 +168,22 @@ export function holdPlace(anchor, bottom, ratio = false) {
 
 /**
  * Scrolls so `target` sits at the top of the viewport (`gap` above it, else its
- * scroll-margin) or, with `center`, in the middle.
+ * scroll-margin) or, with `center`, in the middle: a jump (aimAt), so a target
+ * in a chunk not laid out yet (a footnote deep in a long list) lands where it
+ * should once the chunk is.
  *
- * Not scrollIntoView: in a large document an off-screen block is laid out with
- * content-visibility, its content skipped; right after a scroll WebKit's
- * scrollIntoView on an element inside such a block scrolls nowhere. The block
- * is made visible for the measurement, so the position is the real one.
+ * Not scrollIntoView: in a large document an off-screen chunk is skipped
+ * (content-visibility); right after a scroll WebKit's scrollIntoView on an
+ * element inside one scrolls nowhere.
  */
 export function scrollToElement(target, { center = false, gap } = {}) {
-  const blk = target.closest('#ro-doc > .blk');
-  if (blk) forceLayout(blk);
-  const r = target.getBoundingClientRect();
   const margin = gap ?? (parseFloat(getComputedStyle(target).scrollMarginTop) || 0);
-  // The top of the page lies under the window toolbar: aim below it.
-  const inset = topInset();
-  window.scrollBy(0, center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset);
-}
-
-/**
- * Blocks laid out at once whatever content-visibility would skip (a link's
- * target measured, new blocks at the end a following reader goes to). Once a
- * frame has rendered one, content-visibility could have it back and keep the
- * size it recorded; but handing a block back is itself a change WebKit answers
- * by laying out every skipped block of a large document again (5 MB: 0.1-3 s),
- * which a frame after each append of a streaming agent paid. They are handed
- * back together, at the start of a frame, once there are more than
- * FORCED_KEPT of them: one such layout per that many appends.
- */
-const FORCED_KEPT = 32;
-const forced = new Map();   // block -> whether a frame has rendered it since it was forced
-export function forceLayout(el) {
-  if (!doc.classList.contains('cv') || el.style.contentVisibility) return;
-  el.style.contentVisibility = 'visible';
-  forced.set(el, false);
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if (forced.has(el)) forced.set(el, true);
-    if (forced.size > FORCED_KEPT) releaseForced();
-  }));
-}
-function releaseForced() {
-  for (const [el, rendered] of forced) {
-    if (el.isConnected && !rendered) continue;
-    forced.delete(el);
-    if (el.isConnected) el.style.contentVisibility = '';
-  }
+  aimAt(target, () => {
+    const r = target.getBoundingClientRect();
+    // The top of the page lies under the window toolbar: aim below it.
+    const inset = topInset();
+    return center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset;
+  }, () => pinLanding(target), center ? window.innerHeight / 2 : 0);
 }
 
 export function atBottom() {
@@ -201,11 +199,18 @@ export function fitsOnScreen() {
 /** The blocks on screen, top to bottom (at most a screenful's worth of layout questions). */
 export function blocksOnScreen() {
   const out = [];
-  for (let e = topBlock(); e; e = e.nextElementSibling) {
+  for (let e = topBlock(); e; e = nextItem(e)) {
     if (!e.classList.contains('blk')) continue;
     if (e.getBoundingClientRect().top >= window.innerHeight) break;
     out.push(e);
   }
+  return out;
+}
+
+/** The blocks anything of shows, those under the window toolbar too (what is coloured before a frame shows it). */
+export function blocksShown() {
+  const out = blocksOnScreen();
+  for (let e = out[0] && prevItem(out[0]); e && e.getBoundingClientRect().bottom > 0; e = prevItem(e)) if (e.classList.contains('blk')) out.unshift(e);
   return out;
 }
 
@@ -227,17 +232,6 @@ export function resolveFragment(raw) {
 
 let settleQueued = false;
 
-/** Blocks seen at a size other than their estimate: laid out at least once. */
-const laidOut = new WeakSet();
-const estimate = el => parseFloat(el.style.containIntrinsicSize.replace('auto ', '')) || 0;
-/**
- * Whether WebKit has laid `el` out yet, in a large document: content-visibility
- * shows a block it has not at its estimated height (contain-intrinsic-size).
- */
-export function neverLaidOut(el) {
-  return doc.classList.contains('cv') && !laidOut.has(el) && heights.get(el) === estimate(el);
-}
-
 /**
  * Where a jump landed (N, an outline click) stays put while the blocks
  * around it are laid out, for as long as the jump aims (or until the reader
@@ -246,9 +240,12 @@ export function neverLaidOut(el) {
  * the page growing shorter has moved the scroll position already.
  */
 let landed = null;   // {el, top, until, y}: its top on screen, and where the page was left
+// The page at its end: a scroll position moved since a jump left it may be
+// the page growing shorter (a chunk near the end laid out), not the reader.
+const atEnd = () => { const se = document.scrollingElement; return se.scrollTop >= se.scrollHeight - window.innerHeight - 1; };
 onKeptScroll(dy => { if (landed) landed.y += dy; });
 export function pinLanding(el) {
-  landed = doc.classList.contains('cv')
+  landed = cv()
     ? { el, top: el.getBoundingClientRect().top, until: performance.now() + 1000, y: document.scrollingElement.scrollTop } : null;
 }
 
@@ -256,105 +253,144 @@ export function pinLanding(el) {
 export const AIM_MS = 1000;
 
 /**
- * A jump to `el` (an outline click, a match found): `off()` is how far the
- * page is from where it should be, `landed()` runs after each aim. The blocks
- * it lands on are not laid out at once (content-visibility set on them, and
- * taken off again, made WebKit lay out the whole document twice per jump:
- * 5 MB, 1-5 s): the frames after the jump lay them out, the landing stays
- * put while they do (pinLanding), and the page aims again at whatever still
+ * Every jump (a link, a footnote and its back-link, an outline click, a
+ * match found, N, a rail tick, a place restored): `off()` is how far the
+ * page is from where `el` should be, `landed()` runs after each aim, `room`
+ * how much of the screen shows above `el` where it lands (forceLayout). The
+ * chunk it lands in is laid out by the frames after the jump (WebKit places
+ * a skipped chunk's blocks at its top until then), the landing stays put
+ * while they do (pinLanding), and the page aims again at whatever still
  * moves it, until another jump, or until the reader scrolls.
  */
 let aiming = null;   // the jump being aimed: {y}, where its last aim left the page
 onKeptScroll(dy => { if (aiming) aiming.y += dy; });
-export function aimAt(el, off, landed) {
+// The reader taking over (the wheel and a trackpad's momentum, keys, the
+// mouse, a touch) ends the jump at once, before the scroll it makes: the
+// page never aims against them. (A key or click that jumps again starts a
+// new one after this.)
+for (const type of ['wheel', 'keydown', 'mousedown', 'touchstart']) {
+  window.addEventListener(type, () => { aiming = null; landed = null; }, { capture: true, passive: true });
+}
+export function aimAt(el, off, landed, room = 0) {
+  forceLayout(el, room);
   window.scrollBy(0, off());
+  scrolledTo();
   landed();
-  if (!doc.classList.contains('cv')) return;
+  // Code the landing shows coloured in the frame that shows it (the lazy
+  // highlighting would colour it a frame or more later).
+  highlightIn(blocksShown());
+  if (!cv()) return;
   const se = document.scrollingElement;
   const mine = aiming = { y: se.scrollTop };
   const until = performance.now() + AIM_MS;
   const reaim = () => {
     // Another jump since, or the reader scrolled (the scroll event telling
     // the TOC may not have run yet): leave the page where it is.
-    if (aiming !== mine || !el.isConnected || Math.abs(se.scrollTop - mine.y) > 2) return;
+    if (aiming !== mine || !el.isConnected || (Math.abs(se.scrollTop - mine.y) > 2 && !atEnd())) return;
     const d = off();
-    if (Math.abs(d) > 1) { window.scrollBy(0, d); mine.y = se.scrollTop; landed(); }
+    if (Math.abs(d) > 1) { window.scrollBy(0, d); scrolledTo(); mine.y = se.scrollTop; landed(); highlightIn(blocksShown()); }
     if (performance.now() < until) requestAnimationFrame(reaim);
   };
   requestAnimationFrame(reaim);
 }
 
+const precedes = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
 /**
  * The block whose place on screen the compensation keeps: the landing of a
  * jump still settling, else the first block on screen that was laid out
- * before (not one this round resized, not one still at its estimate).
- * null: none on screen.
+ * before (not one this round resized, not one in a chunk laid out for the
+ * first time, nor in one that was entirely above the window). null: none on
+ * screen.
  */
-function keptBlock(resized) {
+function keptBlock(resized, chunks, firstChunks, above) {
   if (landed) {
-    if (landed.el.isConnected && performance.now() < landed.until && Math.abs(document.scrollingElement.scrollTop - landed.y) <= 2) return landed.el;
+    if (landed.el.isConnected && performance.now() < landed.until && (Math.abs(document.scrollingElement.scrollTop - landed.y) <= 2 || atEnd())) return landed.el;
     landed = null;
   }
-  const cv = doc.classList.contains('cv');
   const first = topBlock();
   if (!first) return null;
+  const own = first.parentElement;
   // On screen as the page was before these changes (a block's top then was
-  // its top now less what the blocks before it grew by: blocks laid out at
-  // once can push the kept one out of the window); failing that, as it is
-  // now (blocks that shrank can bring it in: the screen showed only them).
+  // its top now less what the chunks and blocks before it grew by: chunks
+  // laid out at once can push the kept one out of the window); failing that,
+  // as it is now (what shrank can bring it in: the screen showed only that).
   let before = 0;
-  for (const [el, d] of resized) if (el !== first && (el.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING)) before += d;
+  for (const [c, d] of chunks) if (c !== own && precedes(c, first)) before += d;
+  for (const [el, d] of resized) if (el !== first && el.parentElement === own && precedes(el, first)) before += d;
   for (const then of [true, false]) {
     let grown = then ? before : 0;
-    for (let e = first; e; e = e.nextElementSibling) {
-      if (!e.classList.contains('blk')) continue;
-      if (e.getBoundingClientRect().top - grown >= window.innerHeight) break;
-      const d = resized.get(e);
-      if (d !== undefined) { if (then) grown += d; continue; }
-      if (cv && !laidOut.has(e) && heights.get(e) === estimate(e)) continue;
-      return e;
+    for (let e = first; e;) {
+      // A chunk laid out for the first time (or not yet), or one above the
+      // window until it grew into it, had nothing on screen to keep.
+      const c = e.parentElement;
+      if (firstChunks.has(c) || neverLaidOut(c) || above.has(c)) {
+        if (then) grown += chunks.get(c) || 0;
+        e = nextItem(c.lastElementChild);
+        continue;
+      }
+      if (e.classList.contains('blk')) {
+        if (e.getBoundingClientRect().top - grown >= window.innerHeight) break;
+        const d = resized.get(e);
+        if (d === undefined) return e;
+        if (then) grown += d;
+      }
+      e = nextItem(e);
     }
   }
   return null;
 }
 
-// Keeps the text the reader sees from moving when blocks change height later
-// (diagrams, math, images, content-visibility estimates becoming real). In a
-// large document WebKit lays a block out a frame after it came into view (it
-// shows at its estimated height until then): scrolling up, those blocks
-// change size on screen, above the text that was there. So every such block
-// (laid out for the first time: until now at its estimate) before the kept
-// one (keptBlock) grows or shrinks upward. Any other block keeps the rule for
-// a block changing size later (a <details> opened, an image loaded): only
-// one entirely above the viewport before it resized is made up for, so what
-// the reader opened at the top of the window grows down from where it is.
+// Keeps the text the reader sees from moving when what is above it changes
+// height later (diagrams, math, images, a chunk content-visibility skipped
+// laid out). A chunk laid out for the first time before the kept block
+// (keptBlock) grows or shrinks upward as a whole, wherever it is: it showed
+// at its estimate until then. Any other change keeps the rule for a block
+// changing size later (a <details> opened, an image loaded): only what was
+// entirely above the viewport before it resized is made up for (a chunk as a
+// whole, even one that grew into the window, blocks written into it while it
+// was skipped; in the kept block's own chunk, block by block), so what the
+// reader opened at the top of the window grows down from where it is.
 export const resizeObserver = new ResizeObserver(entries => {
   let delta = 0;
   const inset = topInset();
-  const resized = new Map();   // block -> change in height
-  const first = new Set();     // of those, the blocks laid out for the first time
-  const cv = doc.classList.contains('cv');
+  const resized = new Map();      // block -> change in height
+  const chunks = new Map();       // chunk -> change in height
+  const firstChunks = new Set();  // of those, the chunks laid out for the first time
   for (const entry of entries) {
     const el = entry.target;
     const h = el.getBoundingClientRect().height;
     const prev = heights.get(el);
-    if (prev !== undefined && prev !== h && cv && !laidOut.has(el) && prev === estimate(el)) first.add(el);
     heights.set(el, h);
-    if (prev === undefined || prev === h) continue;
-    resized.set(el, h - prev);
-    laidOut.add(el);
+    if (isChunk(el)) {
+      if (prev !== undefined && prev !== h && cv() && !laidOut.has(el) && prev === estimateOf(el)) firstChunks.add(el);
+      if (h !== estimateOf(el)) laidOut.add(el);
+      if (prev !== undefined && prev !== h) chunks.set(el, h - prev);
+      continue;
+    }
+    if (prev !== undefined && prev !== h) resized.set(el, h - prev);
   }
-  if (resized.size) {
-    const kept = keptBlock(resized);
+  if (resized.size || chunks.size) {
+    // The chunks entirely above the window before they resized: their bottom
+    // then is their bottom now less what they and the chunks before them grew by.
+    const above = new Set();
+    let grew = 0;
+    for (const c of [...chunks.keys()].sort((a, b) => precedes(a, b) ? -1 : 1)) {
+      grew += chunks.get(c);
+      if (c.getBoundingClientRect().bottom - grew <= inset + 1) above.add(c);
+    }
+    const kept = keptBlock(resized, chunks, firstChunks, above);
     if (kept && kept === landed?.el) {
       const d = kept.getBoundingClientRect().top - landed.top;
       if (Math.abs(d) >= 0.5) delta = d;
     }
-    else for (const [el, d] of resized) {
-      // Laid out for the first time before the kept block; or entirely above
-      // the viewport (or under the toolbar) before it resized.
-      if (kept && first.has(el) ? el !== kept && (el.compareDocumentPosition(kept) & Node.DOCUMENT_POSITION_FOLLOWING)
-        : el.getBoundingClientRect().bottom - d <= inset + 1) delta += d;
+    else {
+      const own = kept?.parentElement;
+      for (const [c, d] of chunks) {
+        if (c === own) continue;
+        if (kept && firstChunks.has(c) ? precedes(c, kept) : above.has(c)) delta += d;
+      }
+      for (const [el, d] of resized) if (own && el.parentElement === own && el.getBoundingClientRect().bottom - d <= inset + 1) delta += d;
     }
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) {
@@ -363,9 +399,8 @@ export const resizeObserver = new ResizeObserver(entries => {
     keptScroll(document.scrollingElement.scrollTop - y);
     trace('compensate', { delta: Math.round(delta) });
   }
-  // Blocks that content-visibility lays out once they come into view change
-  // size again; measured at the start of the next frame, they settle before
-  // its observations. Left to the frame's own layout, WebKit reports a
+  // Chunks laid out as they come near change size again; measured at the
+  // start of the next frame, they settle before its observations. Left to the frame's own layout, WebKit reports a
   // ResizeObserver loop. (3.3 got this measurement from redrawing the rail
   // on every callback; the rail is now redrawn at most every 250 ms.)
   if (!settleQueued) {

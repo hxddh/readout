@@ -8,7 +8,10 @@
 // document whose code block is on screen, then of one with a Python and a YAML
 // block (both coloured in that apply), then a small plan's private memory;
 // on a fresh page not warmed, how long its first TypeScript block takes to
-// highlight. Writes the numbers to
+// highlight; scrolling 500 KB (with and without change marks), 1 MB and
+// 5 MB documents (frame gaps, the page's own longest callback, blank area),
+// a selection change, a mouse drag, the dark/light switch and find Next, an
+// agent streaming at 5 MB (frame gaps) and inserting in its middle. Writes the numbers to
 // test/out/perf-web.json; tools/perf-assert.py checks them against
 // tools/perf-budgets.json.
 //
@@ -19,6 +22,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 
 import { extname, join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { collectPageErrors } from './pageerrors.mjs';
+import { instrument, scrollPasses, summary, interactions, streamFrames, insertMiddle } from './scrollperf.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const server = http.createServer((req, res) => {
@@ -31,14 +35,16 @@ const base = `http://127.0.0.1:${server.address().port}`;
 
 // Chain corpus patches into one document of at least `target` bytes of HTML.
 const files = readdirSync('test/corpus/patches').filter(f => f.endsWith('.json')).sort();
-function chain(target) {
+// `few`: an agent's plan or report with few code blocks (one in 15 kept, no diagrams).
+function chain(target, few = false) {
   const ops = [];
-  let slot = 0, bytes = 0;
+  let slot = 0, bytes = 0, codes = 0;
   for (let round = 0; bytes < target; round++) {
     for (const f of files) {
       const p = JSON.parse(readFileSync(`test/corpus/patches/${f}`, 'utf8'));
       for (const op of p.ops) {
         if (op.op !== 'insert') continue;
+        if (few && (op.kind === 'mermaid' || (op.kind === 'code' && codes++ % 15))) continue;
         ++slot;
         ops.push({ ...op, slot, after: slot - 1, anchor: op.anchor ? `${op.anchor}-${round}-${slot}` : undefined });
         bytes += op.html.length;
@@ -205,6 +211,111 @@ const scrollUpJump = await page.evaluate(() => new Promise(async resolve => {
 
 await page.close();
 
+// Scrolling down through parts not seen yet (scrollperf.mjs), on a page set
+// up as a window is (the toolbar inset): a 500 KB agent document with few
+// code blocks, static and with every eighth block changed and unread, and the
+// 1 MB document, then its interactions.
+// A jump (N, a rail tick, a link) onto block `slot`, from the top: the
+// longest frame from the jump to 3 s after, and the lines on screen in the
+// frame that shows the landing not coloured.
+const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
+  window.scrollTo(0, 0);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))));
+  const t0 = performance.now();
+  window.readout.scrollToSlot(slot);
+  const gaps = [];
+  let last = t0, plain = null;
+  const frame = now => {
+    gaps.push(now - last);
+    last = now;
+    if (plain === null) {
+      const cb = document.querySelector(`.blk[data-slot="${slot}"] .code-block`);
+      const lines = [...cb.querySelectorAll('pre .line')].filter(l => { const r = l.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
+      const r = cb.getBoundingClientRect();
+      plain = cb.querySelector('pre .line') ? lines.filter(l => l.textContent.trim() && !l.querySelector('span[style]')).length : Math.max(0, Math.round((Math.min(innerHeight, r.bottom) - Math.max(0, r.top)) / 20));
+    }
+    if (now - t0 < 3000) requestAnimationFrame(frame); else resolve({ longest: Math.max(...gaps), plain });
+  };
+  requestAnimationFrame(frame);
+}), slot);
+
+async function scrollDoc(docOps, { marks = false, act = false, jumps = false, land = 0 } = {}) {
+  const before = new Set(webProcesses());
+  const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
+  collectPageErrors(p, errors, `scroll ${docOps.length} blocks: `);
+  await instrument(p);
+  await p.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16, topInset: 52 }));
+  await p.evaluate(p => window.readout.apply(p), { version: 1, reset: true, rewrite: false, ops: docOps, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p.waitForTimeout(1500);
+  if (marks) {
+    const changed = docOps.filter((_, i) => i % 8 === 3);
+    await p.evaluate(p => window.readout.apply(p), { version: 2, reset: false, rewrite: false, deletions: [], toc: [], tasks: { done: 0, total: 0 },
+      ops: changed.map(o => ({ ...o, op: 'replace', change: 'modified', html: o.html.replace(/<\/(p|li|td|h\d)>/, ' (revised)</$1>') })),
+      marks: changed.map((o, i) => ({ slot: o.slot, kind: i % 2 ? 'modified' : 'inserted' })) });
+    await p.waitForTimeout(1000);
+  }
+  const pid = webProcesses().find(x => !before.has(x));
+  // Outline jumps from the top to headings 30%, 55% and 80% down, to the frame showing where each landed.
+  const jumped = [];
+  if (jumps) for (const frac of [0.3, 0.55, 0.8]) {
+    await p.evaluate(() => window.scrollTo(0, 0));
+    await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await p.waitForTimeout(300);
+    jumped.push(await p.evaluate(frac => new Promise(resolve => {
+      const hs = document.querySelectorAll('#ro-doc .blk.k-heading');
+      const t0 = performance.now();
+      window.readout.scrollToSlot(+hs[Math.floor(hs.length * frac)].dataset.slot);
+      requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0));
+    }), frac));
+    await p.waitForTimeout(1200);
+  }
+  const landed = land ? await landOn(p, land) : null;
+  const scroll = summary(await scrollPasses(p, { inset: 52 }));
+  // The page's private memory once it has been scrolled through.
+  const mb = pid ? privateMemoryMB(pid) : null;
+  const r = { scroll, mb, act: act ? await interactions(p) : null, jump: jumped.length ? median(jumped) : null, landed };
+  // The theme switch's cost is mostly WebKit restyling every element of the
+  // page, whatever the reader does: gated on the switch over the same switch
+  // done by the attribute alone (WebKit's restyle without Readout's code), in
+  // the same page, the two alternated (raw, ours, raw, ours, ...: 5 pairs,
+  // each to the painted frame, the page settled 300 ms between), the median
+  // of the pairs' ratios; and on how many elements it restyles. Not on the
+  // time: one build measured 277 and 479 ms on two runners.
+  if (act) Object.assign(r, await p.evaluate(async () => {
+    const root = document.documentElement;
+    const settle = () => new Promise(r => setTimeout(r, 300));
+    const painted = f => new Promise(res => { const t0 = performance.now(); f(); requestAnimationFrame(() => setTimeout(() => res(performance.now() - t0), 0)); });
+    const med = xs => { const a = xs.slice().sort((x, y) => x - y), n = a.length; return n % 2 ? a[n >> 1] : (a[n / 2 - 1] + a[n / 2]) / 2; };
+    window.readout.setAppearance({ dark: false });
+    await settle();
+    const raw = [], ours = [], ratio = [];
+    for (let k = 0; k < 5; k++) {
+      const a = await painted(() => { root.dataset.theme = 'dark'; });
+      await settle();
+      root.dataset.theme = 'light';
+      await settle();
+      const b = await painted(() => window.readout.setAppearance({ dark: true }));
+      await settle();
+      window.readout.setAppearance({ dark: false });
+      await settle();
+      raw.push(a); ours.push(b); ratio.push(b / a);
+    }
+    return { raw: med(raw), ours: med(ours), overRaw: med(ratio), elements: document.getElementsByTagName('*').length };
+  }));
+  await p.close();
+  return r;
+}
+const few = chain(500_000, true).ops;
+const scroll500 = await scrollDoc(few);
+const scroll500m = await scrollDoc(few, { marks: true });
+const scroll1 = await scrollDoc(ops, { act: true });
+
 // An agent streaming at the end of a ~5 MB document, the reader following:
 // every fifth patch appends a paragraph, the others write on into it (the
 // agent's last block growing), each with the unread marks of the last
@@ -217,6 +328,7 @@ const streamStart = Date.now();
 const stream = await (async () => {
   const p5 = await browser.newPage({ viewport: { width: 900, height: 900 } });
   collectPageErrors(p5, errors, '5 MB: ');
+  await instrument(p5);
   await p5.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -236,9 +348,8 @@ const stream = await (async () => {
   await frames();
   await p5.waitForTimeout(500);
   const above = await p5.evaluate(() => {
-    let e = document.elementFromPoint(450, 300).closest('.blk');
-    for (let i = 0; i < 50; i++) e = e.previousElementSibling;
-    return +e.dataset.slot;
+    const blocks = [...document.querySelectorAll('#ro-doc .blk')];
+    return +blocks[blocks.indexOf(document.elementFromPoint(450, 300).closest('.blk')) - 50].dataset.slot;
   });
   const aboveOp = doc5.ops.find(o => o.slot === above);
   const edits = [];
@@ -258,7 +369,7 @@ const stream = await (async () => {
     await frames();
     await p5.waitForTimeout(300);
     jumps.push(await p5.evaluate(frac => new Promise(resolve => {
-      const hs = document.querySelectorAll('#ro-doc > .blk.k-heading');
+      const hs = document.querySelectorAll('#ro-doc > .chunk > .blk.k-heading');
       const h = hs[Math.floor(hs.length * frac)];
       const t0 = performance.now();
       window.readout.scrollToSlot(+h.dataset.slot);
@@ -291,6 +402,26 @@ const stream = await (async () => {
     await p5.waitForTimeout(500);
   }
   await p5.evaluate(() => window.readout.findEnd());
+  // Scrolling the 5 MB document, then its interactions; an agent inserting
+  // in its middle; then streaming at its end with a patch every 100 ms.
+  // 200 unread changes spread through it (the reader's position, the
+  // rail, read tracking and N all run over them while scrolling).
+  await p5.evaluate(n => window.readout.apply({ version: 90, reset: false, rewrite: false, ops: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+    marks: Array.from({ length: 200 }, (_, k) => ({ slot: Math.floor((k + 0.5) * n / 200), kind: 'inserted' })) }), doc5.ops.length);
+  await p5.waitForTimeout(500);
+  const scroll5 = summary(await scrollPasses(p5));
+  // N among them, from the middle: until the frame showing where it landed is painted.
+  await p5.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight / 2));
+  await p5.waitForTimeout(800);
+  const nJumps = [];
+  for (let k = 0; k < 5; k++) {
+    nJumps.push(await p5.evaluate(() => new Promise(resolve => { const t0 = performance.now(); window.readout.nextChange(); requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0)); })));
+    await p5.waitForTimeout(1300);
+  }
+  const act5 = await interactions(p5);
+  const insert = await insertMiddle(p5, doc5.ops, doc5.ops.length + 1000);
+  const streamed = await streamFrames(p5, doc5.ops.length);
+  const streamFrame = summary({ gaps: streamed.gaps, blank: [], own: [] });
   // To the end, again once the blocks there are laid out at their real
   // heights (the first scroll lands where their estimates put it).
   for (let k = 0; k < 3; k++) {
@@ -298,7 +429,7 @@ const stream = await (async () => {
     await frames();
     await p5.waitForTimeout(300);
   }
-  let slot5 = doc5.ops.length, last = slot5;
+  let slot5 = streamed.slot, last = slot5;
   const marks = [];
   const times = [];
   for (let i = 0; i < 40; i++) {
@@ -316,7 +447,8 @@ const stream = await (async () => {
   }
   const left = await p5.evaluate(() => { const s = document.scrollingElement; return Math.round(s.scrollHeight - s.scrollTop - innerHeight); });
   await p5.close();
-  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps), letter: median(oneLetter.map(x => x.ms)), letterSamples: oneLetter.map(x => [x.call, x.first, x.ms].map(Math.round)) };
+  return { bytes: doc5.bytes, blocks: doc5.ops.length, ms: median(times), left, edit: median(edits), jump: median(jumps), letter: median(oneLetter.map(x => x.ms)), letterSamples: oneLetter.map(x => [x.call, x.first, x.ms].map(Math.round)),
+    scroll5, act5, insert, streamFrame, nJump: median(nJumps) };
 })();
 console.log(`5 MB streaming phase: ${Math.round((Date.now() - streamStart) / 1000)} s`);
 
@@ -480,6 +612,23 @@ const diagram = await (async () => {
   return r;
 })();
 
+// Last (a 2 MB code block's page takes about 2 GB, which slowed the frames
+// of the pages measured after it): code-heavy documents (3.9.0 chunked by
+// count alone: 32 long code blocks laid out together for a theme change, a
+// jump, find): 700 blocks of
+// 90-line code under a heading every ten, and one 28,000-line code block
+// (about 2 MB) in the middle of 3,000 paragraphs.
+const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const codeOp = (slot, n) => ({ op: 'insert', slot, after: slot - 1, kind: 'code',
+  html: `<div class="code-block" data-lang="js"><pre><code>${esc(Array.from({ length: n }, (_, i) => `  const value${slot}_${i} = compute(${i}, "${'x'.repeat(i % 30)}"); // step ${i}`).join('\n'))}</code></pre></div>` });
+const paraOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'paragraph', html: `<p>Paragraph ${slot} of the plan, with enough words to wrap over a line or two in the narrow column.</p>` });
+const headOp = slot => ({ op: 'insert', slot, after: slot - 1, kind: 'heading', anchor: `h${slot}`, html: `<h2 id="h${slot}">Section ${slot}</h2>` });
+const codeHeavy = await scrollDoc(Array.from({ length: 700 }, (_, k) => k % 10 === 0 ? headOp(k + 1) : codeOp(k + 1, 90)), { act: true, jumps: true });
+// (A short JavaScript block at the top: its grammar is loaded at open, as
+// a window's spare page has it loaded, before the jump onto the long one.)
+const oneHuge = await scrollDoc(Array.from({ length: 3000 }, (_, k) => k === 1500 ? codeOp(k + 1, 28000) : k === 2 ? codeOp(k + 1, 3) : k % 20 === 0 ? headOp(k + 1) : paraOp(k + 1)), { act: true, jumps: true, land: 1501 });
+
+if (!stream.act5.findSelected) errors.push("find Next at 5 MB did not select its match");
 const result = {
   web_doc_bytes: bytes,
   web_doc_blocks: ops.length,
@@ -492,6 +641,8 @@ const result = {
   web_find_refresh_1mb_frame_ms: Math.round(median(findRefreshFrame)),
   web_find_refresh_1mb_frame_samples_ms: findRefreshFrame.map(Math.round),
   web_find_next_1mb_frame_ms: median(findNext.map(x => x[1])),
+  // Return to the frame showing the match selected (3.8.0, WebKit's own find: ~30 ms and ~20 ms more for the selection).
+  web_find_next_1mb_selected_ms: median(findNext.map(x => x[1] + x[2])),
   web_find_next_1mb_frame_samples_ms: findNext,   // [the call, to the frame showing the match, the next frame (the match selected)]
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
   web_first_highlight_cold_ts_ms: Math.round(coldHighlight),
@@ -509,6 +660,42 @@ const result = {
   web_find_one_letter_5mb_ms: Math.round(stream.letter),
   web_find_one_letter_5mb_samples_ms: stream.letterSamples,   // [the call, the first frame, both frames]
   web_scroll_up_jump_px: scrollUpJump,
+  ...Object.fromEntries([['500kb', scroll500.scroll], ['500kb_marks', scroll500m.scroll], ['1mb', scroll1.scroll], ['5mb', stream.scroll5]].flatMap(([k, v]) => [
+    [`web_scroll_${k}_frame_p95_ms`, v.p95], [`web_scroll_${k}_frame_max_ms`, v.max], [`web_scroll_${k}_long_frames`, v.long], [`web_scroll_${k}_frames`, v.frames]])),
+  web_scroll_blank_px: [scroll500, scroll500m, scroll1].reduce((a, r) => a + r.scroll.blankPx, stream.scroll5.blankPx),
+  web_scroll_blank_frames: [scroll500, scroll500m, scroll1].reduce((a, r) => a + r.scroll.blankFrames, stream.scroll5.blankFrames),
+  web_n_jump_5mb_ms: Math.round(stream.nJump),
+  web_scroll_5mb_own_per_frame_ms: stream.scroll5.ownPerFrame,
+  web_scroll_own_longest_ms: Math.max(scroll500.scroll.ownMax, scroll500m.scroll.ownMax, scroll1.scroll.ownMax, stream.scroll5.ownMax),
+  web_select_1mb_ms: Math.round(scroll1.act.select * 10) / 10,
+  web_select_5mb_ms: Math.round(stream.act5.select * 10) / 10,
+  web_drag_5mb_ms: Math.round(stream.act5.drag),
+  web_theme_1mb_ms: Math.round(scroll1.act.theme),
+  web_theme_5mb_ms: Math.round(stream.act5.theme),
+  web_find_next_5mb_ms: Math.round(stream.act5.findNext * 10) / 10,
+  web_insert_middle_5mb_ms: Math.round(stream.insert * 10) / 10,
+  web_code_heavy_jump_ms: Math.round(codeHeavy.jump),
+  web_code_heavy_theme_ms: Math.round(codeHeavy.act.theme),
+  web_code_heavy_theme_raw_ms: Math.round(codeHeavy.raw),
+  web_code_heavy_theme_over_raw: Math.round(codeHeavy.overRaw * 100) / 100,
+  web_code_heavy_elements: codeHeavy.elements,
+  web_code_heavy_scroll_p95_ms: codeHeavy.scroll.p95,
+  web_code_heavy_scroll_max_ms: codeHeavy.scroll.max,
+  web_code_heavy_long_frames: codeHeavy.scroll.long,
+  web_code_heavy_blank_px: codeHeavy.scroll.blankPx,
+  web_code_heavy_private_mb: codeHeavy.mb,
+  web_one_huge_code_jump_ms: Math.round(oneHuge.jump),
+  web_one_huge_code_theme_ms: Math.round(oneHuge.act.theme),
+  web_one_huge_code_theme_raw_ms: Math.round(oneHuge.raw),
+  web_one_huge_code_theme_over_raw: Math.round(oneHuge.overRaw * 100) / 100,
+  web_one_huge_code_elements: oneHuge.elements,
+  web_one_huge_code_land_longest_ms: Math.round(oneHuge.landed.longest),
+  web_one_huge_code_land_plain_lines: oneHuge.landed.plain,
+  web_one_huge_code_scroll_p95_ms: oneHuge.scroll.p95,
+  web_one_huge_code_blank_px: oneHuge.scroll.blankPx,
+  web_one_huge_code_private_mb: oneHuge.mb,
+  web_stream_frame_p95_5mb_ms: stream.streamFrame.p95,
+  web_stream_long_frames_5mb: stream.streamFrame.long,
   web_diagram_draw_1mb_ms: Math.round(diagram.ms),
   web_diagram_draw_1mb_longest_frame_ms: Math.round(diagram.longest),
   errors,

@@ -10,12 +10,32 @@ import { pathToFileURL } from 'node:url';
 import { createHighlighterCore } from 'shiki/core';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 import { shikiGrammars } from '../shiki-grammars.mjs';
-import { resolveLang } from '../src/highlight.js';
+import { resolveLang, plainTokens, init, prepare, highlightSync, highlightPart } from '../src/highlight.js';
 
 let failures = 0;
 function check(name, cond, extra = '') {
   if (cond) console.log(`ok: ${name}`);
   else { console.log(`FAIL: ${name} ${extra}`); failures++; }
+}
+
+// A token is left as bare text only when its span's whole style is the
+// block's own colour in both themes (highlight.js: plainTokens): a theme
+// switch does not highlight again, so a token in the block's colour in one
+// theme only, or with a font style, keeps its span.
+{
+  const pre = '<pre class="shiki" style="--shiki-light:#1f2328;--shiki-dark:#e6edf3;--shiki-light-bg:#fff;--shiki-dark-bg:#0d1117"><code><span class="line">';
+  const tail = '</span></code></pre>';
+  const run = spans => plainTokens(pre + spans + tail).slice(pre.length, -tail.length);
+  const own = '<span style="--shiki-light:#1F2328;--shiki-dark:#E6EDF3">own</span>';
+  const lightOnly = '<span style="--shiki-light:#1f2328;--shiki-dark:#FF7B72">light only</span>';
+  const darkOnly = '<span style="--shiki-light:#CF222E;--shiki-dark:#e6edf3">dark only</span>';
+  const italic = '<span style="--shiki-light:#1f2328;--shiki-dark:#e6edf3;--shiki-light-font-style:italic;--shiki-dark-font-style:italic">italic</span>';
+  const bold = '<span style="--shiki-light:#1f2328;--shiki-dark:#e6edf3;font-weight:bold">bold</span>';
+  check('a token in the block\'s own colours in both themes is its text alone', run(own) === 'own', run(own));
+  for (const [name, span] of [['the block\'s colour in light only', lightOnly], ['the block\'s colour in dark only', darkOnly], ['an italic token in the block\'s colours', italic], ['a bold one', bold]]) {
+    check(`${name} keeps its span`, run(span) === span, run(span));
+  }
+  check('a mix keeps each as it should be', run(own + lightOnly + own + italic) === 'own' + lightOnly + 'own' + italic, run(own + lightOnly + own + italic));
 }
 
 // Every grammar highlight.js can load.
@@ -82,6 +102,41 @@ for (const f of readdirSync('test/corpus').filter(f => f.endsWith('.md'))) {
   }
 }
 check(`corpus code blocks highlight as with Shiki's grammars (${blocks})`, blocks > 200 && differ.length === 0, differ.slice(0, 10).join(', '));
+
+// A long block highlighted 4 lines at a time (enhance.js: each part a
+// short task; 32 at a time when all of it is wanted at once), each part going on from the state the last one left, comes
+// out exactly as highlighted in one go: comments, strings and templates that
+// run across a part's edge included.
+{
+  globalThis.requestIdleCallback ??= f => setTimeout(f, 0);
+  await init();
+  const samples = {
+    typescript: Array.from({ length: 100 }, (_, i) => i % 17 === 5 ? '/* a comment that\n spans lines */' : i % 13 === 3 ? 'const s = `template ${i}' : i % 13 === 4 ? `goes on ${i}\`;` : `export function f${i}(a: number): string { return "x" + a; } // ${i}`).join('\n'),
+    python: Array.from({ length: 100 }, (_, i) => i % 11 === 2 ? '"""a docstring' : i % 11 === 3 ? 'over lines"""' : `def f${i}(x: int) -> str:  # ${i}\n    return f"{x!r}"`).join('\n'),
+    markdown: Array.from({ length: 100 }, (_, i) => i % 23 === 1 ? '```js' : i % 23 === 6 ? '```' : i % 7 === 0 ? `## Heading ${i}` : `Some *text* with \`code\` ${i}`).join('\n'),
+  };
+  const bad = [];
+  for (const [id, code] of Object.entries(samples)) {
+    await prepare(id, code);
+    const whole = highlightSync(code, id);
+    const lines = code.split('\n');
+    // 4 lines a part (ahead of the screen), 32 (all at once), and a mix (a block begun ahead of the screen, then on it).
+    for (const steps of [[4], [32], [4, 4, 32]]) {
+      const inner = [];
+      let state, head, k = 0;
+      for (let at = 0; at < lines.length;) {
+        const n = steps[Math.min(k++, steps.length - 1)];
+        const r = highlightPart(lines.slice(at, at + n).join('\n'), id, state);
+        const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
+        if (!m) { bad.push(`${id}: part ${at}`); break; }
+        head ??= m[1]; inner.push(m[2]); state = r.state;
+        at += n;
+      }
+      if (!whole || `${head}${inner.join('\n')}</code></pre>` !== whole) bad.push(`${id} (${steps})`);
+    }
+  }
+  check('a long block highlighted a part at a time comes out as highlighted whole', bad.length === 0, bad.join(', '));
+}
 
 console.log(failures ? `${failures} failure(s)` : 'all grammar checks passed');
 process.exit(failures ? 1 : 0);

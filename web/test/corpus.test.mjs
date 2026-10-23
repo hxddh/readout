@@ -95,12 +95,12 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'), 30000);
   await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), dark);
   await page.evaluate(p => window.readout.apply(p), patch);
-  // Large documents use content-visibility, so blocks never scrolled into
-  // view keep estimated heights. Lay every block out, with the containment
-  // the app gives each one on screen (margins stay inside a block), for a
-  // page that is the same on every run. (Removing the class instead left
-  // some blocks contained and others not, depending on timing.)
-  await page.addStyleTag({ content: '#ro-doc.cv > .blk { content-visibility: visible !important; contain: layout style paint; }' });
+  // Large documents use content-visibility, so chunks never scrolled near
+  // keep estimated heights. Lay every chunk out as one near the screen is
+  // (not contained, its table headers sticky), for a page that is the same
+  // on every run. (Removing the class instead left some chunks laid out and
+  // others not, depending on timing.)
+  await page.addStyleTag({ content: '#ro-doc.cv > .chunk:not(.near) { content-visibility: visible !important; } #ro-doc.cv > .chunk:not(.near) .table-wrap:not(.scrolls) thead th, #ro-doc.cv > .chunk:not(.near) .table-wrap.scrolls :is(td, th):first-child { position: sticky !important; }' });
   // Walk the page so every lazy renderer fires, then wait until none is pending.
   const walk = async () => {
     const height = await page.evaluate(() => document.scrollingElement.scrollHeight);
@@ -185,7 +185,7 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
       return out;
     };
     const top0 = document.getElementById('ro-doc').getBoundingClientRect().top + window.scrollY;
-    const blocks = [...document.querySelectorAll('#ro-doc > .blk, #ro-doc > .del-mark')].map(b => {
+    const blocks = [...document.querySelectorAll('#ro-doc > .chunk > .blk, #ro-doc > .chunk > .del-mark')].map(b => {
       origin = null;
       const parts = [describe(b)];
       origin = b.getBoundingClientRect();

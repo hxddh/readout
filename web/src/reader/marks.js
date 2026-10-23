@@ -1,7 +1,8 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes.
-import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused } from './core.js';
-import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding } from './anchor.js';
+import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem, prevItem } from './core.js';
+import { place, unplace, roughRect, itemsChanged, noteNext } from './chunks.js';
+import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding, baseline, aimAt } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -68,7 +69,7 @@ export function renderMarks(marks, deletions, reset = false) {
   // Markers stay from patch to patch (a removed-text popup open in one
   // stays open; one read stays read); those no longer sent go.
   for (const [id, mark] of delMarks) if (!live.has(id)) dropDelMark(id, mark);
-  let firstBlock;
+  let firstBlock, lastLone = null;
   for (const d of deletions) {
     let mark = delMarks.get(d.id);
     if (!mark) {
@@ -81,13 +82,35 @@ export function renderMarks(marks, deletions, reset = false) {
     const btn = mark.firstChild;
     if (btn.title !== title) { btn.title = title; btn.setAttribute('aria-label', title); }
     const after = d.after ? slots.get(d.after) : null;
-    if (after) { if (after.nextElementSibling !== mark) after.after(mark); }
+    // Placed and moved as any item is (chunks.js: place, unplace), so its
+    // chunk counts it, is split at its limit (markers of many removals after
+    // the same block), and an emptied one goes. A marker is 0 px tall.
+    // (A heading right after where it leaves or goes may start flush, or no
+    // longer: noted, chunks.js: noteNext.)
+    const move = () => { if (mark.isConnected) noteNext(nextItem(mark)); if (isChunk(mark.parentElement)) unplace(mark); else mark.remove(); };
+    if (after) { if (!mark.isConnected || !follows(mark, after)) { move(); noteNext(nextItem(after)); place(mark, after, 0); } }
     else {
-      if (firstBlock === undefined) firstBlock = doc.querySelector(':scope > .blk');
-      if (mark.nextElementSibling !== firstBlock || !mark.isConnected) doc.insertBefore(mark, firstBlock);
+      if (firstBlock === undefined) firstBlock = doc.querySelector(':scope > .chunk > .blk');
+      // No block: the markers one after the other, in the order sent.
+      if (!firstBlock) { if (!mark.isConnected) place(mark, lastLone, 0); lastLone = mark; }
+      else if (!mark.isConnected || nextItem(mark) !== firstBlock) {
+        move();
+        noteNext(firstBlock);
+        // Just before the first block: after the item before it, if any.
+        place(mark, prevItem(firstBlock), 0);
+      }
     }
   }
   scheduleShow();
+}
+
+/** Whether only removal markers stand between `item` and `mark` before it (several removals after the same block stay as they are). */
+function follows(mark, item) {
+  for (let e = prevItem(mark); e; e = prevItem(e)) {
+    if (e === item) return true;
+    if (!e.classList.contains('del-mark')) return false;
+  }
+  return false;
 }
 
 function makeDelMark(id) {
@@ -109,7 +132,8 @@ function makeDelMark(id) {
 function dropDelMark(id, mark) {
   readObserver.unobserve(mark);
   disarmRead(mark);
-  mark.remove();
+  if (mark.isConnected) noteNext(nextItem(mark));
+  if (isChunk(mark.parentElement)) unplace(mark); else mark.remove();
   if (delMarks.get(id) === mark) delMarks.delete(id);
 }
 
@@ -135,7 +159,7 @@ export function closePopups() {
   for (const slot of [...openDiffs]) {
     closeDiff(slot);
     const el = slots.get(slot);
-    if (el) heights.set(el, el.getBoundingClientRect().height);
+    if (el) baseline(el);
   }
   walk = [];
   autoDiff = null;
@@ -205,7 +229,7 @@ export function toggleDiffInView() {
   walk = [];
   if (all.some(el => +el.dataset.slot === autoDiff)) autoDiff = null;
   const anchor = captureAnchor();
-  for (const el of all) { closeDiff(+el.dataset.slot); heights.set(el, el.getBoundingClientRect().height); }
+  for (const el of all) { closeDiff(+el.dataset.slot); baseline(el); }
   restoreAnchor(anchor, new Set());
   scheduleRail();
   return false;
@@ -226,7 +250,7 @@ function flipDiff(slot) {
   const anchor = captureAnchor();
   if (openDiffs.has(slot)) closeDiff(slot); else showDiff(el, diffOf.get(slot));
   // The panel is part of the block, not new content: keep the height baseline.
-  heights.set(el, el.getBoundingClientRect().height);
+  baseline(el);
   restoreAnchor(anchor, new Set());
   scheduleRail();
   return openDiffs.has(slot);
@@ -235,7 +259,7 @@ function flipDiff(slot) {
 // The edit mark in the gutter opens the comparison: a click on an edited
 // block left of its text.
 doc.addEventListener('click', ev => {
-  const el = ev.target.closest('#ro-doc > .blk.wd-has');
+  const el = ev.target.closest('#ro-doc > .chunk > .blk.wd-has');
   if (!el || ev.target.closest('a, button, .wd-panel')) return;
   const text = el.firstElementChild;
   if (!text || ev.clientX >= text.getBoundingClientRect().left) return;
@@ -321,7 +345,15 @@ window.addEventListener('focus', restartDwell);
 document.addEventListener('visibilitychange', restartDwell);
 window.addEventListener('scroll', () => { if (waiting.size && watching()) restartDwell(); }, { passive: true });
 
+/** A block leaving the page (removed, or the page reset): its dwell and arrival go with it. */
+export function forgetMarks(el) {
+  readObserver.unobserve(el);
+  disarmRead(el);
+  arrivals.delete(el);
+}
+
 function tryRead(el) {
+  if (!el.isConnected) { disarmRead(el); return; }
   readTimers.delete(el);
   readDue.delete(el);
   if (document.hidden) { waiting.add(el); return; }
@@ -351,7 +383,8 @@ const FADE_MS = 700;
 
 /** A read mark's fade is over: the block carries no mark, a removal marker goes. */
 function unmark(el) {
-  if (el.classList.contains('del-mark')) { dropDelMark(+el.dataset.del, el); return; }
+  // (Not in a patch: a heading the marker stood before may start flush again.)
+  if (el.classList.contains('del-mark')) { dropDelMark(+el.dataset.del, el); itemsChanged(); return; }
   el.classList.remove('m-inserted', 'm-modified', 'm-state', 'm-read');
   const slot = +el.dataset.slot;
   if (slots.get(slot) === el) classed.delete(slot);
@@ -475,10 +508,10 @@ export function unreadElements() {
 function inDocumentOrder(els) {
   if (els.length < 2) return els;
   // Many of them: one walk over the page costs less than sorting them.
-  if (els.length * 16 > doc.children.length) {
+  if (els.length * 16 > slots.size) {
     const want = new Set(els);
     const out = [];
-    for (let e = doc.firstElementChild; e; e = e.nextElementSibling) if (want.has(e)) out.push(e);
+    for (let e = firstItem(); e; e = nextItem(e)) if (want.has(e)) out.push(e);
     return out;
   }
   return els.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
@@ -486,7 +519,7 @@ function inDocumentOrder(els) {
 
 /** The block or removal marker shown right after `el` (null: none). */
 function nextShown(el) {
-  for (let e = el.nextElementSibling; e; e = e.nextElementSibling) {
+  for (let e = nextItem(el); e; e = nextItem(e)) {
     if (!e.classList.contains('blk') && !e.classList.contains('del-mark')) continue;
     return e;
   }
@@ -520,7 +553,9 @@ export function jump(dir, first = false) {
   const skip = new Set(left ? left.run.filter(m => m !== left.el && m.isConnected && seen(m)) : []);
   const line = window.innerHeight / 3;
   const from = land ? (land.el ? land.el.getBoundingClientRect().top : topInset()) : null;
-  const tops = list.map(e => e.getBoundingClientRect().top);
+  // (Roughly where those in chunks not laid out are: asked exactly, WebKit
+  // would lay each such chunk out. Only the target's chunk is, by the jump.)
+  const tops = list.map(e => roughRect(e).top);
   let i = -1;
   if (first) i = 0;
   else if (dir > 0) i = list.findIndex((e, k) => !skip.has(e) && (from !== null ? tops[k] >= from - 4 : tops[k] > line + 4));
@@ -535,27 +570,19 @@ export function jump(dir, first = false) {
   const target = list[i];
   const members = list.filter((e, k) => k >= i && run[k] === run[i]);
   showWhatChangedOn(target);
-  const top = target.getBoundingClientRect().top - line;
   // In a large document the blocks a smooth scroll passes are laid out on
   // the way and change height, and the compensation for them fights the
   // animation: jump at once, then aim again once the blocks around the
   // target have their real heights.
   const smooth = !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollBy({ top, behavior: smooth ? 'smooth' : 'auto' });
-  // The change it lands on stays where it landed while the blocks around it
-  // are laid out (not the first block on screen, the resize compensation's
-  // usual choice).
-  if (!smooth) pinLanding(target);
+  // The change it lands on stays where it landed while the chunk around it
+  // is laid out (not the first block on screen, the resize compensation's
+  // usual choice), aimed at again as it is (aimAt).
+  if (smooth) window.scrollBy({ top: target.getBoundingClientRect().top - line, behavior: 'smooth' });
+  else aimAt(target, () => target.getBoundingClientRect().top - line, () => pinLanding(target), line);
   focusBlock(target);
   pulse(target);
   visit(target, members);
-  if (!smooth) {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!target.isConnected) return;
-      const off = target.getBoundingClientRect().top - line;
-      if (Math.abs(off) > 2) { window.scrollBy(0, off); pinLanding(target); }
-    }));
-  }
 }
 
 /**
@@ -596,6 +623,11 @@ export function pulse(el) {
 export function focusBlock(el) {
   if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
   el.focus({ preventScroll: true });
+}
+
+/** Tests: blocks the read dwell holds that are no longer in the page. */
+export function marksHeld() {
+  return { readDetached: [...readTimers.keys(), ...readSince.keys(), ...readDue.keys(), ...waiting, ...arrivals.keys()].filter(e => !e.isConnected).length };
 }
 
 export function markAllRead() {

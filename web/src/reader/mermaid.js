@@ -2,7 +2,46 @@
 import { doc, root, strings, inViewport, pageTheme, quicklook } from './core.js';
 import { lazyObserver } from './enhance.js';
 
+// Drawings by look and source, most recently used last. An agent writing a
+// diagram makes a source of every few characters it adds: at most CACHE_MAX
+// are kept, and one whose source no diagram in the page has any more goes
+// after GRACE_MS (an undo, or a rewrite back to it, still finds it).
 const mermaidCache = new Map();   // look+source -> {svg, id} or {error}
+const CACHE_MAX = 64;
+const GRACE_MS = globalThis.READOUT_DIAGRAM_GRACE_MS ?? 5000;   // (a test shortens it)
+const unusedSince = new Map();    // key -> when no diagram in the page had its source
+let sweepTimer = 0;
+function cacheGet(key) {
+  const out = mermaidCache.get(key);
+  if (out) { mermaidCache.delete(key); mermaidCache.set(key, out); }
+  return out;
+}
+function cacheSet(key, out) {
+  mermaidCache.delete(key);
+  mermaidCache.set(key, out);
+  while (mermaidCache.size > CACHE_MAX) { const k = mermaidCache.keys().next().value; mermaidCache.delete(k); unusedSince.delete(k); }
+  sweepLater();
+}
+// The sweep runs while some drawing kept has no diagram in the page, and
+// stops once each has one (or none is kept): a page's diagrams changing
+// (drawn, set up, gone) starts it again.
+export function sweepLater() {
+  if (!sweepTimer && mermaidCache.size) sweepTimer = setTimeout(sweep, GRACE_MS);
+}
+function sweep() {
+  sweepTimer = 0;
+  const inPage = new Set([...doc.querySelectorAll('.mermaid-block > .mermaid-src')].map(e => e.textContent));
+  const now = performance.now();
+  let unused = false;
+  for (const key of [...mermaidCache.keys()]) {
+    if (inPage.has(key.slice(key.indexOf('\u0000') + 1))) { unusedSince.delete(key); continue; }
+    const since = unusedSince.get(key);
+    if (since === undefined) { unusedSince.set(key, now); unused = true; }
+    else if (now - since >= GRACE_MS) { mermaidCache.delete(key); unusedSince.delete(key); }
+    else unused = true;
+  }
+  if (unused) sweepLater();
+}
 let mermaidPromise = null;
 let mermaidLook = null;   // the look Mermaid is set up for: theme and type size
 let mermaidSeq = 0;
@@ -28,6 +67,21 @@ function diagramLook() {
 // own chunk the first time one is drawn. Resolved against the page, outside
 // the bundler.
 const MERMAID_URL = new URL('vendor/mermaid/mermaid.esm.min.mjs', document.baseURI).href;
+
+// Drawing a diagram holds the page for a few hundred milliseconds in one go
+// (Mermaid's layout): while the reader scrolls it would be a frame that
+// stalls. A diagram is drawn once the page has not scrolled for a moment;
+// coming within a screen of the viewport, it is usually drawn before it is
+// seen, the reader having paused on the way.
+const QUIET_SCROLL_MS = 250;
+let scrolledAt = -Infinity;
+window.addEventListener('scroll', () => { scrolledAt = performance.now(); }, { passive: true });
+function scrollQuiet() {
+  return new Promise(resolve => {
+    const wait = () => { const left = scrolledAt + QUIET_SCROLL_MS - performance.now(); if (left <= 0) resolve(); else setTimeout(wait, left + 1); };
+    wait();
+  });
+}
 
 // Mermaid gives each drawing a style sheet of its own (rules scoped to the
 // drawing's id), in the box it measures it in and in the drawing it returns.
@@ -198,6 +252,7 @@ async function warmUp() {
   mermaidBusy = true;
   try {
     const m = await loadMermaid();
+    await scrollQuiet();
     await draw(m, 'mmd-warm', 'flowchart LR\n  a --> b');
   } catch {
     // Only a head start: the page's diagrams load what they need anyway.
@@ -212,7 +267,7 @@ async function warmUp() {
 // it adds. Drawn each time, the diagram flickers between drawings and parse
 // errors: a diagram whose source changes is drawn again only once it has
 // been still for a moment, and its last good drawing stays until then.
-const QUIET_MS = 400;
+const QUIET_MS = globalThis.READOUT_DIAGRAM_QUIET_MS ?? 400;   // (a test shortens it)
 const drawnIn = new WeakMap();   // .blk -> [{src, node, timer}], one per diagram in it
 
 function diagramSlot(block) {
@@ -226,6 +281,7 @@ function diagramSlot(block) {
 
 /** Called for every diagram block set up (enhance.js). */
 export function setupMermaid(block) {
+  sweepLater();
   const src = block.querySelector('.mermaid-src')?.textContent || '';
   if (isFlowchart(src)) prefetchFlowcharts();
   const slot = diagramSlot(block);
@@ -246,11 +302,21 @@ export function setupMermaid(block) {
 }
 
 const mermaidQueue = [];
-let mermaidBusy = false;
+let mermaidBusy = false, mermaidDraws = 0;
 export function renderMermaid(block) {
   block.classList.add('busy');
-  mermaidQueue.push(block);
+  pruneQueue();
+  if (!mermaidQueue.includes(block)) mermaidQueue.push(block);
   pumpMermaid();
+}
+// The queue waits while the reader scrolls (scrollQuiet), and an agent may
+// replace a diagram meanwhile: what left the page is dropped then.
+function pruneQueue() {
+  for (let i = mermaidQueue.length - 1; i >= 0; i--) if (!mermaidQueue[i].isConnected) mermaidQueue.splice(i, 1);
+}
+/** Tests: diagrams drawn so far, and what the queue holds. */
+export function diagramWork() {
+  return { draws: mermaidDraws, cached: mermaidCache.size, sweeping: !!sweepTimer, queued: mermaidQueue.length, detached: mermaidQueue.filter(b => !b.isConnected).length };
 }
 
 async function pumpMermaid() {
@@ -262,20 +328,34 @@ async function pumpMermaid() {
       if (!block.isConnected) continue;
       const srcEl = block.querySelector('.mermaid-src');
       const src = srcEl.textContent;
+      // After each wait: a block that left the page is not drawn, and one
+      // whose source changed in place goes to the back of the queue.
+      const gone = () => {
+        pruneQueue();
+        if (block.isConnected && block.contains(srcEl) && srcEl.textContent === src) return false;
+        if (block.isConnected) mermaidQueue.push(block);
+        return true;
+      };
+      await scrollQuiet();
+      if (gone()) continue;
       const m = await loadMermaid().catch(() => null);
       if (!m) break;
+      if (gone()) continue;
       const theme = mermaidLook;
       const key = theme + '\u0000' + src;
-      let out = mermaidCache.get(key);
+      let out = cacheGet(key);
       if (!out) {
         const id = `mmd-${++mermaidSeq}`;
         try {
+          await scrollQuiet();
+          if (gone()) continue;
+          mermaidDraws++;
           out = { svg: await draw(m, id, src), id };
         } catch (err) {
           out = { error: diagramError(err) };
           document.querySelectorAll(`#d${id}, #${id}`).forEach(e => e.remove());
         }
-        mermaidCache.set(key, out);
+        cacheSet(key, out);
       }
       if (!block.isConnected) continue;
       // The theme or type size changed while it was being drawn: draw it again.

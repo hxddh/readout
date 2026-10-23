@@ -7,6 +7,35 @@ export const root = document.documentElement;
 export const slots = new Map();          // slot -> element
 export const heights = new WeakMap();    // element -> last observed height
 
+// The page's items (blocks and removal markers) live in chunks of about 32,
+// the chunks in the document: #ro-doc > .chunk > .blk. A large document
+// skips laying out the chunks away from the screen (content-visibility):
+// WebKit checks every element that can be skipped in every frame that
+// scrolls, so a few hundred chunks cost what tens of thousands of blocks did not.
+export const isChunk = e => !!e?.classList?.contains('chunk');
+/** The item after `e`, across chunks (null: none). */
+export function nextItem(e) {
+  if (e.nextElementSibling) return e.nextElementSibling;
+  for (let c = e.parentElement.nextElementSibling; isChunk(c); c = c.nextElementSibling) if (c.firstElementChild) return c.firstElementChild;
+  return null;
+}
+/** The item before `e`, across chunks (null: none). */
+export function prevItem(e) {
+  if (e.previousElementSibling) return e.previousElementSibling;
+  for (let c = e.parentElement.previousElementSibling; isChunk(c); c = c.previousElementSibling) if (c.lastElementChild) return c.lastElementChild;
+  return null;
+}
+export function firstItem() {
+  for (let c = doc.firstElementChild; c; c = c.nextElementSibling) if (isChunk(c) && c.firstElementChild) return c.firstElementChild;
+  return null;
+}
+export function lastItem() {
+  for (let c = doc.lastElementChild; c; c = c.previousElementSibling) if (isChunk(c) && c.lastElementChild) return c.lastElementChild;
+  return null;
+}
+/** The item (a block or a removal marker) node `n` is in, or null. */
+export const itemOf = n => (n && n.nodeType !== Node.ELEMENT_NODE ? n.parentElement : n)?.closest('#ro-doc > .chunk > *') ?? null;
+
 /**
  * Whether the reader's window is the key window (the app says so, see
  * setWindowKey): null until it has. Keyboard focus in the window's outline
@@ -72,6 +101,15 @@ window.addEventListener('error', e => post({ type: 'error', message: `${e.messag
 window.addEventListener('unhandledrejection', e => post({ type: 'error', message: `unhandled: ${e.reason && (e.reason.stack || e.reason.message) || e.reason}` }));
 
 export function inViewport(el, margin = 0) {
-  const r = el.getBoundingClientRect();
+  // In a chunk content-visibility skips, its block's share of the chunk's
+  // box (chunks.js: roughRect): asked about the block itself, WebKit would
+  // lay the chunk out to answer.
+  const skipped = el.closest?.('#ro-doc.cv > .chunk:not(.near)');
+  let r;
+  if (skipped && el !== skipped && !el.checkVisibility({ contentVisibilityAuto: true })) {
+    const item = el.closest('#ro-doc > .chunk > *'), c = skipped.getBoundingClientRect(), n = skipped.childElementCount;
+    const i = Array.prototype.indexOf.call(skipped.children, item);
+    r = { top: c.top + c.height * i / n, bottom: c.top + c.height * (i + 1) / n };
+  } else r = el.getBoundingClientRect();
   return r.bottom > -margin && r.top < window.innerHeight + margin;
 }

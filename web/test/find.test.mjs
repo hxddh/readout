@@ -77,11 +77,11 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(500);
   // Blocks whose content WebKit has laid out (content-visibility skips the rest).
-  const laidOut = () => page.evaluate(() => [...document.querySelectorAll('#ro-doc > .blk')]
+  const laidOut = () => page.evaluate(() => [...document.querySelectorAll('#ro-doc > .chunk > .blk')]
     .filter(b => b.firstElementChild && b.firstElementChild.checkVisibility({ contentVisibilityAuto: true })).length);
   const before = await laidOut();
   // A word whose first match is on screen: nothing to jump to.
-  const word = await page.evaluate(() => document.querySelector('#ro-doc > .blk p').textContent.match(/[A-Za-z]{5,}/)[0]);
+  const word = await page.evaluate(() => document.querySelector('#ro-doc > .chunk > .blk p').textContent.match(/[A-Za-z]{5,}/)[0]);
   const n = await find(page, word);
   const after = await laidOut();
   const r = await page.evaluate(() => ({ cv: document.getElementById('ro-doc').classList.contains('cv'), y: document.scrollingElement.scrollTop }));
@@ -279,19 +279,31 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await page.close();
 }
 
-// A document of more blocks than WebKit selects in quickly: the match is
-// marked, not selected, and the reader's own caret does not stop Next.
+// A 5 MB document: the match is selected at every size, as in a small one
+// (3.9.0 only marked it past 5,000 blocks, where WebKit took seconds to
+// answer a change of the selection with a content-visibility element per
+// block), so ⌘C, Copy as Quote and Speak work after find, and Next goes on.
 {
   const page = await open();
-  const paras = Array.from({ length: 5200 }, (_, i) => `<p>p${i + 1}${[3, 20, 40].includes(i + 1) ? ' needle' : ''}</p>`);
+  const filler = ' agent output that keeps going with plain words'.repeat(4);
+  const paras = Array.from({ length: 25000 }, (_, i) => `<p>p${i + 1}${[3, 20, 24000].includes(i + 1) ? ' needle' : ''}${filler}</p>`);
   await page.evaluate(p => window.readout.apply(p), patch(blocks(paras)));
   await page.evaluate(() => { window.scrollTo(0, 0); getSelection().collapse(document.querySelector('.blk[data-slot="1"] p').firstChild, 1); });
   await find(page, 'needle'); await page.waitForTimeout(100);
   const first = await state(page);
   await find(page, 'needle'); await page.waitForTimeout(100);
-  const cur = await page.evaluate(() => { const r = [...(CSS.highlights.get('ro-find-cur') || [])][0]; return r ? +r.startContainer.parentElement.closest('.blk').dataset.slot : null; });
-  check('a very large document: the match is marked, not selected, and Next goes on',
-    first === '1 of 3@1 sel= y=0' && await count(page) === '2 of 3' && cur === 20 && await selectedSlot(page) === 1, JSON.stringify([first, await state(page), cur]));
+  const second = { count: await count(page), slot: await selectedSlot(page) };
+  const copied = await page.evaluate(() => {
+    let text = null;
+    const grab = e => { text = e.clipboardData.getData('text/plain'); };
+    addEventListener('copy', grab); document.execCommand('copy'); removeEventListener('copy', grab);
+    return text;
+  });
+  await find(page, 'needle'); await page.waitForTimeout(1200);
+  const far = { count: await count(page), slot: await selectedSlot(page) };
+  check('a 5 MB document: the match is selected, Next goes on, and ⌘C copies it',
+    first === '1 of 3@3 sel=needle y=0' && second.count === '2 of 3' && second.slot === 20 && copied === 'needle' && far.count === '3 of 3' && far.slot === 24000,
+    JSON.stringify({ first, second, copied, far }));
   await page.close();
 }
 
@@ -486,6 +498,27 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await settle(page);
   await find(page, 'needle');
   check('the last block removed with the current match: Next goes around to the first match', (await state(page)).startsWith('1 of 2@3 sel=needle'), await state(page));
+  await page.close();
+}
+
+// The current match in a huge code block, a chunk of its own (chunks.js),
+// removed with its chunk: Next goes to the match after where it was, not
+// to the first from the top of the window.
+{
+  const page = await open();
+  const ops = Array.from({ length: 20 }, (_, i) => i + 1 === 10
+    ? { op: 'insert', slot: 10, after: 9, kind: 'code', html: `<div class="code-block"><pre><code>${Array.from({ length: 300 }, (_, l) => l === 2 ? 'needle' : `line ${l}`).join('\n')}</code></pre></div>` }
+    : { op: 'insert', slot: i + 1, after: i, kind: 'paragraph', html: `<p>para ${i + 1}${[3, 15].includes(i + 1) ? ' needle' : ''}</p>` });
+  await page.evaluate(p => window.readout.apply(p), patch(ops));
+  const alone = await page.evaluate(() => document.querySelector('.blk[data-slot="10"]').parentElement.childElementCount === 1);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await find(page, 'needle'); await find(page, 'needle');   // the one in the code block
+  const before = await state(page);
+  await edit(page, [{ op: 'remove', slot: 10 }], 2);
+  await settle(page);
+  await find(page, 'needle');
+  check('the current match\'s block alone in its chunk removed: Next lands on the match after it',
+    alone && before.startsWith('2 of 3@10') && (await state(page)).startsWith('2 of 2@15 sel=needle'), JSON.stringify([alone, before, await state(page)]));
   await page.close();
 }
 

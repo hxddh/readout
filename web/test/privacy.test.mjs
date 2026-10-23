@@ -149,7 +149,10 @@ check('still no direct requests after click', escaped === 0, `escaped=${escaped}
       ops: sources.map((html, i) => ({ op: 'insert', slot: i + 1, after: i, kind: 'mermaid', html })) });
     const blocks = () => [...document.querySelectorAll('.mermaid-block')];
     for (let i = 0; i < 1500 && !blocks().every(b => b.classList.contains('done') || b.querySelector('.mermaid-error')); i++) {
-      for (const b of blocks()) if (!b.classList.contains('done')) b.scrollIntoView();
+      // To the first not drawn yet, and left there (a diagram is drawn once the page stops scrolling: mermaid.js).
+      const b = blocks().find(b => !b.classList.contains('done') && !b.querySelector('.mermaid-error'));
+      const r = b?.getBoundingClientRect();
+      if (r && (r.bottom < 0 || r.top > innerHeight)) b.scrollIntoView();
       await new Promise(r => setTimeout(r, 20));
     }
     return blocks().map(b => b.classList.contains('done') ? 'done' : (b.querySelector('.mermaid-error')?.textContent || 'pending'));

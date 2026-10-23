@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node test/grammars.test.mjs && node test/apply.test.mjs && node test/interact.test.mjs && node test/privacy.test.mjs && node test/typography.test.mjs && node test/flow.test.mjs && node test/copy.test.mjs && node test/find.test.mjs",
+    "test": "node test/grammars.test.mjs && node test/apply.test.mjs && node test/chunks.test.mjs && node test/interact.test.mjs && node test/privacy.test.mjs && node test/typography.test.mjs && node test/flow.test.mjs && node test/copy.test.mjs && node test/find.test.mjs",
     "corpus": "node test/corpus.test.mjs"
   },
   "dependencies": {

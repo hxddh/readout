@@ -11,13 +11,14 @@
 //   enhance  per-block code/table/heading/remote setup, lazy highlighting
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings } from './reader/core.js';
-import { captureAnchor, restoreAnchor, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
+import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
+import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, blocksShown, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
-import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell } from './reader/marks.js';
+import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld } from './reader/marks.js';
+import { chunksHeld } from './reader/chunks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelButtons, setCodeWrap, highlightAll, measureTables, highlightIn } from './reader/enhance.js';
-import { rerenderMermaid, renderAllMermaid, setPrintDiagrams } from './reader/mermaid.js';
+import { relabelButtons, setCodeWrap, highlightAll, measureTables, highlightIn, lazyHeld } from './reader/enhance.js';
+import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
 import { markdownOf, htmlOf, inDocument, sources, definitionsUsed } from './reader/copy.js';
@@ -98,7 +99,7 @@ const textSelected = () => {
 };
 const focusedBlock = () => {
   const a = document.activeElement;
-  return a && doc.contains(a) ? a.closest('#ro-doc > .blk[data-slot]') : null;
+  return a && doc.contains(a) ? a.closest('#ro-doc > .chunk > .blk[data-slot]') : null;
 };
 // `has`: text is selected (the context menu's Copy as Quote); `focused`: a
 // block has the keyboard's focus (Edit ▸ Copy as Quote quotes it when no text
@@ -128,7 +129,7 @@ function selectedSlots() {
     const r = sel.getRangeAt(i);
     const touched = [];
     let seen = false;
-    for (let e = doc.firstElementChild; e; e = e.nextElementSibling) {
+    for (let e = firstItem(); e; e = nextItem(e)) {
       if (!e.classList.contains('blk')) continue;
       if (!r.intersectsNode(e)) { if (seen) break; continue; }
       seen = true;
@@ -349,7 +350,8 @@ function setAppearance(o) {
 function scrollToSlot(slot) {
   const el = slots.get(slot);
   if (!el) return;
-  aimAt(el, () => el.getBoundingClientRect().top - 16 - topInset(), () => { pinActiveHeading(slot); noteLanding(el); pinLanding(el); });
+  // (What shows above it, under the window toolbar too: room for the chunk before to be laid out if it shows.)
+  aimAt(el, () => el.getBoundingClientRect().top - 16 - topInset(), () => { pinActiveHeading(slot); noteLanding(el); pinLanding(el); }, 16 + topInset());
   highlightOnScreen();
 }
 
@@ -359,12 +361,16 @@ function scrollToSlot(slot) {
  * was on screen at the top, and the rest waits for the lazy observer, which
  * hears of it only after a frame has shown it plain.
  */
-function highlightOnScreen() { highlightIn(blocksOnScreen()); }
+function highlightOnScreen() { highlightIn(blocksShown()); }
 
 function scrollToAnchor(a) {
   if (!a) return;
   trace('scrollToAnchor', { slot: a.slot, offset: Math.round(a.offset) });
-  restoreAnchor(a, new Set());
+  // A jump to the block's place (aimAt: in a chunk not laid out yet, it is
+  // aimed at again once the chunk is); a block gone, its neighbours'.
+  const el = slots.get(a.slot);
+  if (el) aimAt(el, () => anchorMiss(a, new Set()), () => pinLanding(el));
+  else restoreAnchor(a, new Set());
   highlightOnScreen();
 }
 
@@ -381,6 +387,8 @@ window.readout = {
   scrollToFragment,
   captureAnchor,
   trace: traceEntries,
+  lazyHeld: () => ({ ...lazyHeld(), ...chunksHeld(), ...marksHeld() }),
+  diagramWork,
   firstTimings: () => firstTimings,
   // The find field (⌘F, ⌘G, Return): the next or previous match, and the find bar closed.
   find,

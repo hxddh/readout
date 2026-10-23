@@ -71,12 +71,23 @@ async function settledTop(page, sel) {
   }), sel);
 }
 
+// Scrolls block `slot`'s top to `at` px, and again once the frames after
+// have laid out its chunk (until then WebKit places a skipped chunk's blocks
+// at its top).
+async function scrollToBlock(page, slot, at = 0) {
+  for (let k = 0; k < 2; k++) {
+    await page.evaluate(([slot, at]) => window.scrollBy(0, document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top - at), [slot, at]);
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 50)))));
+  }
+}
+
 // Counts writes that set or clear content-visibility on the document's blocks,
-// from watchCv until cvWrites.
+// from watchCv until cvWrites. (The chunks holding them are laid out ahead
+// of the screen by their own content-visibility: not a block's.)
 const watchCv = page => page.evaluate(() => {
   window.__cv = 0;
   window.__cvObserver = new MutationObserver(ms => {
-    for (const m of ms) if (/content-visibility/.test(m.oldValue || '') !== /content-visibility/.test(m.target.getAttribute('style') || '')) window.__cv++;
+    for (const m of ms) if (m.target.classList.contains('blk') && /content-visibility/.test(m.oldValue || '') !== /content-visibility/.test(m.target.getAttribute('style') || '')) window.__cv++;
   });
   window.__cvObserver.observe(document.getElementById('ro-doc'), { subtree: true, attributes: true, attributeFilter: ['style'], attributeOldValue: true });
 });
@@ -615,7 +626,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   check('the first open of a large document reads no layout before its first frame',
     Object.keys(first.reads).length === 0 && first.code7 !== 'pending' && first.active >= 1, JSON.stringify(first));
   // Heights from the resize observer: a block above the reader that grows does not push them down.
-  await page.evaluate(() => window.scrollBy(0, document.querySelector('.blk[data-slot="300"]').getBoundingClientRect().top));
+  await scrollToBlock(page, 300);
   // Measured once the page has settled (the blocks the scroll brought on
   // screen laid out, their compensation made), not after a fixed time a
   // loaded machine can overrun (it measured -38 then, once in four runs).
@@ -663,7 +674,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.evaluate(p => window.readout.apply(p), big);
   await page.waitForTimeout(500);
   const near = await page.evaluate(() => document.querySelector('.blk[data-slot="3"] .table-wrap').classList.contains('scrolls'));
-  await page.evaluate(() => window.scrollBy(0, document.querySelector('.blk[data-slot="350"]').getBoundingClientRect().top - 100));
+  await scrollToBlock(page, 350, 100);
   await settledTop(page, '.blk[data-slot="350"]');
   const far = await page.evaluate(() => document.querySelector('.blk[data-slot="350"] .table-wrap').classList.contains('scrolls'));
   const r = { near, far, writes: await cvWrites(page) };
@@ -975,18 +986,19 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.evaluate(p => window.readout.apply(p), doc(600));
   // Block 300 on screen (laid out), then the reader 30 blocks further on.
   for (const s of [300, 330]) {
-    await page.evaluate(s => window.scrollBy(0, document.querySelector(`.blk[data-slot="${s}"]`).getBoundingClientRect().top), s);
+    await scrollToBlock(page, s);
     await settledTop(page, `.blk[data-slot="${s}"]`);
   }
   const r = await page.evaluate(p => {
     const el = document.querySelector('.blk[data-slot="300"]');
-    const before = el.style.containIntrinsicSize;
+    // The chunk's: content-visibility is decided per chunk.
+    const before = el.parentElement.style.containIntrinsicSize;
     const reader = document.querySelector('.blk[data-slot="330"]').getBoundingClientRect().top;
     let reads = 0;
     const d = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetParent');
     Object.defineProperty(HTMLElement.prototype, 'offsetParent', { ...d, get() { reads++; return d.get.call(this); } });
     try { window.readout.apply(p); } finally { Object.defineProperty(HTMLElement.prototype, 'offsetParent', d); }
-    return { before, after: el.style.containIntrinsicSize, reads, edited: el.textContent.startsWith('edited'),
+    return { before, after: el.parentElement.style.containIntrinsicSize, reads, edited: el.textContent.startsWith('edited'),
       moved: Math.round(document.querySelector('.blk[data-slot="330"]').getBoundingClientRect().top - reader) };
   }, patch(2, [{ op: 'replace', slot: 300, kind: 'paragraph', change: 'content', html: `<p>edited ${'and much longer now '.repeat(40)}</p>` }],
     { marks: [{ slot: 300, kind: 'modified' }] }));
@@ -1099,7 +1111,9 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 // 34. P10: blocks a following reader's patches lay out at once at the end
 //     go back to content-visibility many at a time, not each in a frame of
 //     its own two frames later (each such frame laid out the whole document
-//     again: 5 MB, ~0.1 s per append).
+//     again: 5 MB, ~0.1 s per append). Content-visibility is a chunk's, and
+//     appended blocks join the last chunk: no block's is set, and a chunk's
+//     at most once for each new chunk the appends start.
 {
   const page = await newPage();
   await page.evaluate(p => window.readout.apply(p), doc(400));
@@ -1113,10 +1127,11 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
     const tick = () => { frame++; requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
     const clears = new Set();
-    let sets = 0;
+    let sets = 0, blockWrites = 0;
     const mo = new MutationObserver(ms => {
       for (const m of ms) {
         const was = /content-visibility/.test(m.oldValue || ''), is = /content-visibility/.test(m.target.getAttribute('style') || '');
+        if (m.target.classList.contains('blk') && was !== is) blockWrites++;
         if (was && !is) clears.add(frame); else if (!was && is) sets++;
       }
     });
@@ -1129,12 +1144,12 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
       const se = document.scrollingElement;
       left.push(Math.round(se.scrollHeight - se.scrollTop - innerHeight));
       if (s < 440) requestAnimationFrame(() => requestAnimationFrame(add));
-      else setTimeout(() => { mo.disconnect(); resolve({ sets, clearFrames: clears.size, maxLeft: Math.max(...left) }); }, 300);
+      else setTimeout(() => { mo.disconnect(); resolve({ sets, blockWrites, clearFrames: clears.size, maxLeft: Math.max(...left) }); }, 300);
     };
     add();
   }));
   check('a following reader\'s forced blocks go back many at a time, not one frame each',
-    r.sets === 40 && r.clearFrames >= 1 && r.clearFrames <= 2 && r.maxLeft <= 1, JSON.stringify(r));
+    r.blockWrites === 0 && r.sets <= 3 && r.clearFrames <= 2 && r.maxLeft <= 1, JSON.stringify(r));
   await page.close();
 }
 
@@ -1173,9 +1188,9 @@ for (const n of [60, 400]) {
   const big = `<div class="code-block" data-lang="text"><pre><code>${Array.from({ length: 2000 }, (_, i) => `line ${i}`).join('\n')}</code></pre></div>`;
   const r = await page.evaluate(p => {
     const el = document.querySelector('.blk[data-slot="500"]');
-    const h0 = document.scrollingElement.scrollHeight, before = el.style.containIntrinsicSize;
+    const h0 = document.scrollingElement.scrollHeight, before = el.parentElement.style.containIntrinsicSize;
     window.readout.apply(p);
-    return { before, after: el.style.containIntrinsicSize, grew: document.scrollingElement.scrollHeight - h0 };
+    return { before, after: el.parentElement.style.containIntrinsicSize, grew: document.scrollingElement.scrollHeight - h0 };
   }, patch(2, [{ op: 'replace', slot: 500, kind: 'code', change: 'content', html: big }]));
   check('an edit to a block never laid out gives it the new estimate', r.before !== r.after && r.grew > 30000, JSON.stringify(r));
   await page.close();
@@ -1259,6 +1274,249 @@ for (const n of [60, 400]) {
   await key(page, 'Escape'); await key(page, 'd');                             // Escape closes all, D opens 30 again
   await key(page, 'n'); await page.waitForTimeout(700); kept.push(await open());   // on 45: 30 stays
   check('a comparison the reader reopened stays when N moves on', JSON.stringify(kept) === JSON.stringify([[10, 30], [30, 45]]), JSON.stringify(kept));
+  await page.close();
+}
+
+// Tables in chunks not laid out are watched until they come on screen: a
+// table that leaves the page first (its block removed, rewritten, or the
+// document reset) is no longer watched (an agent session rewriting tables
+// would otherwise keep every old one alive).
+{
+  const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(page, errors, 'tables watched: ');
+  await page.addInitScript(() => {
+    window.__msgs = [];
+    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    const watched = window.__watchedTables = new Set();
+    const { observe, unobserve } = IntersectionObserver.prototype;
+    IntersectionObserver.prototype.observe = function (t) { if (t.classList?.contains('table-wrap')) watched.add(t); return observe.call(this, t); };
+    IntersectionObserver.prototype.unobserve = function (t) { watched.delete(t); return unobserve.call(this, t); };
+  });
+  await page.goto(`${base}/reader.html`);
+  await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  const words = ['Implementation', 'Responsibility', 'Configuration', 'Documentation', 'Compatibility', 'Infrastructure', 'Observability'];
+  const table = `<div class="table-wrap"><table><thead><tr>${words.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody><tr>${words.map(w => `<td>${w}</td>`).join('')}</tr></tbody></table></div>`;
+  const isTable = i => i % 40 === 0;
+  await page.evaluate(p => window.readout.apply(p), doc(600, i => isTable(i) ? table : `<p>para ${i}</p>`, i => isTable(i) ? 'table' : 'paragraph'));
+  await page.waitForTimeout(500);
+  const watched = () => page.evaluate(() => { const all = [...window.__watchedTables]; return { all: all.length, detached: all.filter(t => !t.isConnected).length }; });
+  const first = await watched();
+  await page.evaluate(p => window.readout.apply(p), patch(2, [{ op: 'remove', slot: 400 }, { op: 'replace', slot: 480, kind: 'paragraph', change: 'content', html: '<p>no table now</p>' }]));
+  await page.waitForTimeout(300);
+  const edited = await watched();
+  await page.evaluate(p => window.readout.apply(p), { ...doc(50), version: 3 });
+  await page.waitForTimeout(300);
+  const reset = await watched();
+  check('tables that leave the page before coming on screen are no longer watched',
+    first.all > 5 && first.detached === 0 && edited.detached === 0 && edited.all === first.all - 2 && reset.all === 0, JSON.stringify({ first, edited, reset }));
+  await page.close();
+}
+
+// A reader scrolling while a jump is still aiming (the second after it):
+// the wheel ends the jump, and the page stays where the reader scrolled it,
+// the text they scrolled to not pulled back to the jump's target.
+{
+  const page = await newPage();
+  const big = doc(3000, i => i % 50 === 1 ? `<h2>Section ${i}</h2>` : `<p style="min-height: ${40 + (i * 37) % 200}px">para ${i}</p>`, i => i % 50 === 1 ? 'heading' : 'paragraph');
+  big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
+  await page.evaluate(p => window.readout.apply(p), big);
+  await page.waitForTimeout(500);
+  await page.mouse.move(450, 350);
+  await page.evaluate(() => window.readout.scrollToSlot(2001));
+  await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  for (let k = 0; k < 6; k++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(16); }
+  await page.waitForTimeout(100);
+  // (The wheel's own scrolling may still be gliding: where the text is in
+  // the document, and the page never scrolled back up towards the target.)
+  const where = s => page.evaluate(s => { const b = s ? document.querySelector(`.blk[data-slot="${s}"]`) : document.elementFromPoint(450, 350).closest('.blk');
+    return { slot: b.dataset.slot, at: Math.round(b.getBoundingClientRect().top + scrollY), y: Math.round(scrollY) }; }, s);
+  const held = await where();
+  const ys = [];
+  for (let k = 0; k < 12; k++) { await page.waitForTimeout(100); ys.push(await page.evaluate(() => Math.round(scrollY))); }
+  const later = await where(held.slot);
+  const heading = await page.evaluate(() => Math.round(document.querySelector('.blk[data-slot="2001"]').getBoundingClientRect().top));
+  check('a reader scrolling during a jump\'s aim keeps the place they scrolled to', Math.abs(later.at - held.at) <= 2 && ys.every((y, k) => y >= (k ? ys[k - 1] : held.y) - 2) && heading < 0,
+    JSON.stringify({ held, later, ys, heading }));
+  await page.close();
+}
+
+// An agent inserting into the middle of a full chunk while the reader has a
+// selection in it, a block with the keyboard focus, or a find match current:
+// what holds them never moves to another chunk (that would take the
+// selection, the focus and find's marks with it); the part of the chunk
+// before the insertion moves instead (chunks.js: split), so the chunk never
+// grows past 64. Nothing the reader holds changes, Copy as Quote still
+// quotes the selected block, and every chunk is within 64 once they let go.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(300));
+  await scrollToBlock(page, 38);
+  let v = 1, s = 1000;
+  const stream = async () => {
+    for (let k = 0; k < 40; k++) {
+      await page.evaluate(p => window.readout.apply(p), patch(++v, [{ op: 'insert', slot: ++s, after: s === 1001 ? 40 : s - 1, kind: 'paragraph', html: `<p>streamed ${s}</p>` }]));
+      if (k % 10 === 0) await page.waitForTimeout(50);
+    }
+    await page.waitForTimeout(1500);
+  };
+  const sizes = () => page.evaluate(() => [...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount));
+  // (a) A selection in block 50.
+  await page.evaluate(() => { const t = document.querySelector('.blk[data-slot="50"] p').firstChild; getSelection().setBaseAndExtent(t, 2, t, 12); });
+  const selBefore = await page.evaluate(() => getSelection().toString());
+  await stream();
+  const a = await page.evaluate(() => ({ sel: getSelection().toString(), quote: window.readout.quoteSelection().slots }));
+  const grown = Math.max(...await sizes());
+  // (b) The keyboard focus on block 55.
+  await page.evaluate(() => { getSelection().removeAllRanges(); const b = document.querySelector('.blk[data-slot="55"]'); b.tabIndex = -1; b.focus(); });
+  await stream();
+  const b = await page.evaluate(() => document.activeElement?.dataset?.slot);
+  // (c) A find match current in block 60.
+  await page.evaluate(() => { document.activeElement?.blur(); window.readout.find('para 60'); });
+  await page.waitForTimeout(300);
+  const findBefore = await page.evaluate(() => ({ sel: getSelection().toString(), slot: getSelection().anchorNode?.parentElement?.closest('.blk')?.dataset.slot }));
+  await stream();
+  const c = await page.evaluate(() => ({ sel: getSelection().toString(), slot: getSelection().anchorNode?.parentElement?.closest('.blk')?.dataset.slot,
+    marked: [...(CSS.highlights.get('ro-find-cur') || [])].map(r => r.toString()) }));
+  // Let go: the chunks are split.
+  await page.evaluate(() => { window.readout.findEnd(); getSelection().removeAllRanges(); });
+  await page.waitForTimeout(3000);
+  const after = await sizes();
+  check('an agent inserting into a full chunk leaves the selection, the focus and the find match as they were, and no chunk grows past 64',
+    a.sel === selBefore && selBefore.length === 10 && JSON.stringify(a.quote) === '[50]' && grown <= 64 && b === '55'
+      && c.slot === '60' && c.sel === findBefore.sel && findBefore.slot === '60' && after.every(n => n <= 64),
+    JSON.stringify({ selBefore, a, grown, b, findBefore, c, after: Math.max(...after) }));
+  await page.close();
+}
+
+// Find open with its current match in one chunk while an agent streams 200
+// inserts into another a screen away: that chunk is split as the page goes
+// quiet (it does not grow without bound while finding), the match's chunk is
+// left as it was, and the match stays current and selected.
+{
+  const page = await newPage();
+  await page.evaluate(p => window.readout.apply(p), doc(300, i => i === 45 ? '<p>the needle here</p>' : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(2)}</p>`));
+  await scrollToBlock(page, 40);
+  await page.evaluate(() => window.readout.find('needle'));
+  await page.waitForTimeout(300);
+  const chunkOf = s => page.evaluate(s => { const c = document.querySelector(`.blk[data-slot="${s}"]`).parentElement; return { i: [...c.parentElement.children].indexOf(c), n: c.childElementCount }; }, s);
+  const a0 = await chunkOf(45);
+  let v = 1;
+  for (let k = 0; k < 200; k++) {
+    await page.evaluate(p => window.readout.apply(p), patch(++v, [{ op: 'insert', slot: 2000 + k, after: k ? 2000 + k - 1 : 70, kind: 'paragraph', html: `<p>streamed ${k}</p>` }]));
+    if (k % 20 === 0) await page.waitForTimeout(30);
+  }
+  await page.waitForTimeout(2500);
+  const r = await page.evaluate(() => ({ sizes: [...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount), sel: getSelection().toString(),
+    cur: [...(CSS.highlights.get('ro-find-cur') || [])].length }));
+  const a1 = await chunkOf(45);
+  check('with find open, a chunk an agent streams into is split, the current match\'s chunk left alone',
+    Math.max(...r.sizes) <= 64 && a1.i === a0.i && a1.n === a0.n && r.sel === 'needle' && r.cur === 1, JSON.stringify({ a0, a1, max: Math.max(...r.sizes), sel: r.sel, cur: r.cur }));
+  await page.evaluate(() => window.readout.findEnd());
+  await page.close();
+}
+
+// N in a large document with unread changes all through it: choosing the
+// next change asks nothing exactly of the blocks in chunks not laid out
+// (WebKit would lay each such chunk out to answer), and lands on it.
+{
+  const page = await newPage();
+  const big = doc(6000);
+  big.marks = Array.from({ length: 59 }, (_, k) => ({ slot: 100 * (k + 1), kind: 'inserted' }));
+  await page.evaluate(p => window.readout.apply(p), big);
+  await page.waitForTimeout(800);
+  await scrollToBlock(page, 2050);
+  const r = await page.evaluate(() => {
+    let far = 0;
+    const gbcr = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () {
+      const c = this.closest && this.closest('#ro-doc > .chunk');
+      if (c && this !== c && !c.classList.contains('near')) far++;
+      return gbcr.call(this);
+    };
+    try { window.readout.nextChange(); } finally { Element.prototype.getBoundingClientRect = gbcr; }
+    return far;
+  });
+  await page.waitForTimeout(1200);
+  const landed = await page.evaluate(() => { const e = document.querySelector('.blk[data-slot="2100"]').getBoundingClientRect(); return Math.round(e.top - innerHeight / 3); });
+  check('N in a large document asks nothing exactly of chunks not laid out, and lands on the next change', r === 0 && Math.abs(landed) <= 30, JSON.stringify({ far: r, landed }));
+  await page.close();
+}
+
+// Nothing the page does in a large document asks layout questions of blocks
+// in chunks not laid out (WebKit lays such a chunk out to answer, each one
+// a stall at 5 MB): N and D, the rail, the current heading and read
+// tracking while scrolling, find landing, Copy as Quote's slots, the place
+// taken and restored, an agent's edits far away. Layout reads (rectangles,
+// offsets, sizes) on blocks in chunks that are skipped are counted.
+{
+  const page = await newPage();
+  await page.addInitScript(() => {});
+  const big = doc(6000, i => i % 50 === 1 ? `<h2>Section ${i}</h2>` : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(3)}</p>`, i => i % 50 === 1 ? 'heading' : 'paragraph');
+  big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
+  big.marks = Array.from({ length: 200 }, (_, k) => ({ slot: 30 * (k + 1) - 7, kind: k % 3 ? 'inserted' : 'modified' }));
+  await page.evaluate(p => window.readout.apply(p), big);
+  await page.waitForTimeout(800);
+  await scrollToBlock(page, 3010);
+  await page.waitForTimeout(500);
+  await page.evaluate(() => {
+    window.__far = 0;
+    const far = el => { const c = el.closest?.('#ro-doc.cv > .chunk'); return !!c && el !== c && !c.classList.contains('near'); };
+    const wrap = (proto, name, getter) => {
+      const d = Object.getOwnPropertyDescriptor(proto, name);
+      if (getter) Object.defineProperty(proto, name, { ...d, get() { if (window.__counting && far(this)) window.__far++; return d.get.call(this); } });
+      else proto[name] = function (...a) { if (window.__counting && far(this)) window.__far++; return d.value.apply(this, a); };
+    };
+    wrap(Element.prototype, 'getBoundingClientRect'); wrap(Element.prototype, 'getClientRects');
+    for (const n of ['offsetParent', 'offsetTop', 'offsetHeight', 'offsetWidth']) wrap(HTMLElement.prototype, n, true);
+    for (const n of ['clientWidth', 'clientHeight', 'scrollWidth', 'scrollHeight']) wrap(Element.prototype, n, true);
+  });
+  const count = (fn, wait = 400) => page.evaluate(([fn, wait]) => new Promise(resolve => { window.__far = 0; window.__counting = true; new Function(fn)(); setTimeout(() => { window.__counting = false; resolve(window.__far); }, wait); }), [fn, wait]);
+  const reads = {};
+  reads.n = await count('window.readout.nextChange()', 1300);
+  reads.shiftN = await count('window.readout.previousChange()', 1300);
+  reads.d = await count("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd', bubbles: true }))");
+  reads.scroll = await count('let k = 0; const f = () => { window.scrollBy(0, 300); if (++k < 30) requestAnimationFrame(f); }; requestAnimationFrame(f);', 1500);
+  reads.anchor = await count('window.readout.captureAnchor()');
+  reads.restore = await count('window.readout.scrollToAnchor({ slot: 5555, offset: 0, ratio: 0 })', 1300);
+  reads.find = await count("window.readout.find('para 777 ')", 1300);
+  await page.evaluate(() => window.readout.findEnd());
+  reads.quote = await count("const t = document.elementFromPoint(450, 300).closest('.blk').querySelector('p').firstChild; getSelection().setBaseAndExtent(t, 0, t, 4); window.readout.quoteSelection();");
+  reads.edit = await count(`window.readout.apply(${JSON.stringify(patch(2, [{ op: 'replace', slot: 100, kind: 'paragraph', change: 'content', html: '<p>edited far above</p>' }, { op: 'insert', slot: 9000, after: 5900, kind: 'paragraph', html: '<p>inserted far below</p>' }], { marks: [{ slot: 100, kind: 'modified' }] }))})`);
+  check('in a large document nothing asks layout of blocks in chunks not laid out (N, D, the rail, scrolling, find, Copy as Quote, the place, far edits)',
+    Object.values(reads).every(n => n === 0), JSON.stringify(reads));
+  await page.close();
+}
+
+// A link to the 40th footnote of a long footnotes block at the end of a
+// large document (its chunk not laid out: WebKit places its content at the
+// chunk's top until it is): the note lands in the middle of the window, as
+// footnotes do, once its chunk is laid out; its back-link lands the
+// reference there too.
+{
+  const page = await newPage();
+  const notes = Array.from({ length: 60 }, (_, i) => `<li id="fn-${i + 1}"><p>Note ${i + 1}: ${'a longer footnote with reasoning that wraps over lines '.repeat(3)}<a href="#fnref-${i + 1}" data-footnote-backref>↩</a></p></li>`).join('');
+  const n = 8016;
+  await page.evaluate(p => window.readout.apply(p), doc(n + 1, i => i === 4000 ? '<p>See the note<sup><a id="fnref-40" href="#fn-40" data-footnote-ref>40</a></sup>.</p>'
+    : i === n + 1 ? `<section class="footnotes"><ol>${notes}</ol></section>` : i > n - 10 ? `<p style="min-height: 400px">para ${i}</p>` : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(3)}</p>`,
+    i => i === n + 1 ? 'footnotes' : 'paragraph'));
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => window.readout.scrollToSlot(4000));
+  await page.waitForTimeout(1200);
+  const centered = sel => page.evaluate(sel => { const r = document.querySelector(sel).getBoundingClientRect(); return Math.round(r.top + r.height / 2 - innerHeight / 2); }, sel);
+  // The notes before it grow a frame after the jump (as a formula or an
+  // image in them is drawn): the note itself is kept in place, not just
+  // the top of its block.
+  await page.evaluate(() => {
+    document.querySelector('a[href="#fn-40"]').click();
+    requestAnimationFrame(() => { for (const n of [37, 38, 39]) document.getElementById(`fn-${n}`).style.minHeight = '300px'; });
+  });
+  await page.waitForTimeout(1500);
+  const note = await centered('#fn-40');
+  await page.evaluate(() => document.querySelector('#fn-40 a[data-footnote-backref]').click());
+  await page.waitForTimeout(1500);
+  const back = await centered('#fnref-40');
+  check('a link to the 40th footnote of a large document lands it mid-window, its back-link the reference', Math.abs(note) <= 2 && Math.abs(back) <= 2, JSON.stringify({ note, back }));
   await page.close();
 }
 

@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "48a1806e",
+   "style": "db7a6c92",
    "content": "b2cc9ca1",
    "text": "AIOS Interception Runtime Architecture Plan"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 109,
    "h": 122,
-   "style": "968b6fc1",
+   "style": "c069a529",
    "content": "565966a0",
    "text": "Date: 2026-05-23Status: replacement plan after p"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 230,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "667e43e9",
    "text": "Why this replaces the old plan"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 295,
    "h": 70,
-   "style": "a7a8d31c",
+   "style": "4229d0a0",
    "content": "28e30ab0",
    "text": "The current refactor improved AIOS architecture,"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 365,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "f1bfaef9",
    "text": "What exists now:"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 409,
    "h": 28,
-   "style": "326105e0",
+   "style": "c5da1200",
    "content": "d41de95a",
    "text": "Client capability registry is centralized under "
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 437,
    "h": 54,
-   "style": "a9019c79",
+   "style": "38bed05d",
    "content": "f0a979e9",
    "text": "Native surfaces are generated from client-source"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 491,
    "h": 54,
-   "style": "45197cb1",
+   "style": "8a5bf743",
    "content": "2b0350b6",
    "text": "Skill sources are canonical under skill-sources/"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 546,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "fc405154",
    "text": "ContextDB can compact historical context with to"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 574,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "7579cb87",
    "text": "Offload can store large tool output after the to"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 628,
    "h": 45,
-   "style": "232a4133",
+   "style": "02e67177",
    "content": "16ad3cb9",
    "text": "Compression skills describe prompt-level input/o"
   },
@@ -105,7 +105,7 @@
    "kind": "paragraph",
    "top": 673,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "194d204d",
    "text": "What is missing:"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 717,
    "h": 54,
-   "style": "7fe3476a",
+   "style": "0780f03e",
    "content": "0e007184",
    "text": "No deterministic boundary that intercepts curren"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 771,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "4f0409a3",
    "text": "No shared interception engine used by shell, MCP"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 799,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "2cae182c",
    "text": "No compact packet contract that every adapter re"
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 854,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "514f5a85",
    "text": "No raw-ref store with hash, metadata, recall, re"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 908,
    "h": 71,
-   "style": "6eaaaba2",
+   "style": "b89b0982",
    "content": "f401d7b9",
    "text": "No client capability matrix that honestly distin"
   },
@@ -159,7 +159,7 @@
    "kind": "paragraph",
    "top": 979,
    "h": 70,
-   "style": "32c14de0",
+   "style": "4229d0a0",
    "content": "8efec984",
    "text": "Therefore the old skill/context/offload-only pla"
   },
@@ -168,7 +168,7 @@
    "kind": "heading",
    "top": 1048,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "79c84e03",
    "text": "Definition of 1:1 mechanism parity"
   },
@@ -177,7 +177,7 @@
    "kind": "paragraph",
    "top": 1114,
    "h": 70,
-   "style": "a7a8d31c",
+   "style": "4229d0a0",
    "content": "5be226a3",
    "text": "1:1 means replicating the mechanism contract, no"
   },
@@ -186,7 +186,7 @@
    "kind": "paragraph",
    "top": 1183,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "eeefdab8",
    "text": "Required contract:"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 1227,
    "h": 54,
-   "style": "7fe3476a",
+   "style": "0780f03e",
    "content": "e366e601",
    "text": "Default interception: when a supported surface i"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1281,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "2e4f7c90",
    "text": "Pre-context filtering: large shell/MCP/browser o"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 1335,
    "h": 54,
-   "style": "ea1505e8",
+   "style": "c2e31c7a",
    "content": "ba2cb540",
    "text": "Output brevity: assistant-facing packets and har"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 1390,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "904a2409",
    "text": "Raw recall: full raw output is still available b"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 1418,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "7c2c99cb",
    "text": "Metrics: every shrink/offload decision records r"
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 1472,
    "h": 71,
-   "style": "6eaaaba2",
+   "style": "b89b0982",
    "content": "563343f5",
    "text": "Capability honesty: unsupported clients must rep"
   },
@@ -249,7 +249,7 @@
    "kind": "paragraph",
    "top": 1543,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "eaf2e975",
    "text": "Non-goals:"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 1587,
    "h": 28,
-   "style": "8032ff18",
+   "style": "2b29cd38",
    "content": "84dd2330",
    "text": "Do not install RTK, Caveman, shell hooks, or com"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 1615,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "49a02ae7",
    "text": "Do not claim raw Codex shell interception if Cod"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 1669,
    "h": 71,
-   "style": "6eaaaba2",
+   "style": "b89b0982",
    "content": "a2e73c44",
    "text": "Do not hide errors, destructive-command risks, s"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 1740,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "99c4cc8f",
    "text": "Control plane vs data plane"
   },
@@ -294,7 +294,7 @@
    "kind": "paragraph",
    "top": 1805,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "bab12f02",
    "text": "Control plane:"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 1849,
    "h": 54,
-   "style": "7fe3476a",
+   "style": "0780f03e",
    "content": "402291ff",
    "text": "Skills, native thin shells, workflow routing, Se"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 1903,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "01a82b8e",
    "text": "These tell the agent what should happen."
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 1932,
    "h": 45,
-   "style": "232a4133",
+   "style": "02e67177",
    "content": "9865c738",
    "text": "They cannot prove current-turn token savings by "
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 1977,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "ad993507",
    "text": "Data plane:"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 2020,
    "h": 54,
-   "style": "7fe3476a",
+   "style": "0780f03e",
    "content": "eba4b271",
    "text": "Interception engine, shell gateway, MCP proxy, r"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 2074,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "ded5e5c8",
    "text": "These decide what actually enters the model-visi"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 2103,
    "h": 45,
-   "style": "232a4133",
+   "style": "02e67177",
    "content": "35a3425f",
    "text": "Only this layer can prove RTK-style pre-context "
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 2148,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "f793bad3",
    "text": "Target architecture"
   },
@@ -375,7 +375,7 @@
    "kind": "mermaid",
    "top": 2213,
    "h": 1438,
-   "style": "ed85a247",
+   "style": "92159deb",
    "content": "63f3ef9b",
    "text": "flowchart TD U[\"User / Agent request\"] --> H[\"Ho"
   },
@@ -384,7 +384,7 @@
    "kind": "heading",
    "top": 3650,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "31ca47ed",
    "text": "New module tree"
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 3716,
    "h": 70,
-   "style": "a7a8d31c",
+   "style": "4229d0a0",
    "content": "563539d6",
    "text": "Create a focused runtime tree instead of scatter"
   },
@@ -402,7 +402,7 @@
    "kind": "code",
    "top": 3785,
    "h": 822,
-   "style": "755e494b",
+   "style": "bdf172c5",
    "content": "709bdc19",
    "text": "scripts/lib/interception/ index.mjs core/ engine"
   },
@@ -411,7 +411,7 @@
    "kind": "paragraph",
    "top": 4607,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "3b23d62f",
    "text": "Entry scripts:"
   },
@@ -420,7 +420,7 @@
    "kind": "code",
    "top": 4651,
    "h": 142,
-   "style": "75eb8ca0",
+   "style": "add5d8c8",
    "content": "e3b97b8d",
    "text": "scripts/aios-intercept.mjs scripts/aios-mcp-prox"
   },
@@ -429,7 +429,7 @@
    "kind": "paragraph",
    "top": 4792,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "ad8a6b65",
    "text": "Config/state:"
   },
@@ -438,7 +438,7 @@
    "kind": "code",
    "top": 4836,
    "h": 122,
-   "style": "0cd3a355",
+   "style": "dd3929c9",
    "content": "2917caa1",
    "text": "config/aios-interception.json config/host-capabi"
   },
@@ -447,7 +447,7 @@
    "kind": "paragraph",
    "top": 4958,
    "h": 96,
-   "style": "1e97271d",
+   "style": "2afcf6fb",
    "content": "77141b38",
    "text": "Existing scripts/lib/offload/ remains as history"
   },
@@ -456,7 +456,7 @@
    "kind": "heading",
    "top": 5053,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "5d28e221",
    "text": "Core contracts"
   },
@@ -465,7 +465,7 @@
    "kind": "paragraph",
    "top": 5118,
    "h": 44,
-   "style": "040ea118",
+   "style": "53d08e8e",
    "content": "acd49e20",
    "text": "InterceptionRequest:"
   },
@@ -474,7 +474,7 @@
    "kind": "code",
    "top": 5162,
    "h": 222,
-   "style": "ffda5e72",
+   "style": "82ec08ce",
    "content": "cfaa7db8",
    "text": "{ kind: 'shell' | 'mcp.tools_list' | 'mcp.tools_"
   },
@@ -483,7 +483,7 @@
    "kind": "paragraph",
    "top": 5384,
    "h": 44,
-   "style": "aafc785f",
+   "style": "ccaa7a71",
    "content": "91a42093",
    "text": "InterceptionDecision:"
   },
@@ -492,7 +492,7 @@
    "kind": "code",
    "top": 5427,
    "h": 182,
-   "style": "f5674f01",
+   "style": "0e3e5d22",
    "content": "73912b4b",
    "text": "{ action: 'rewrite' | 'passthrough' | 'deny' | '"
   },
@@ -501,7 +501,7 @@
    "kind": "paragraph",
    "top": 5609,
    "h": 44,
-   "style": "0e8932c5",
+   "style": "85ace77b",
    "content": "70cbd9dc",
    "text": "CompactPacket:"
   },
@@ -510,7 +510,7 @@
    "kind": "code",
    "top": 5653,
    "h": 602,
-   "style": "7e2168fc",
+   "style": "ac69e2b0",
    "content": "fc5688b2",
    "text": "{ \"type\": \"aios.compact_packet\", \"version\": 1, \""
   },
@@ -519,7 +519,7 @@
    "kind": "heading",
    "top": 6255,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "0fa1bbe7",
    "text": "Shell interception"
   },
@@ -528,7 +528,7 @@
    "kind": "paragraph",
    "top": 6320,
    "h": 70,
-   "style": "a7a8d31c",
+   "style": "4229d0a0",
    "content": "9d14f9e0",
    "text": "Goal: shell commands and outputs enter the model"
   },
@@ -537,7 +537,7 @@
    "kind": "paragraph",
    "top": 6389,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "e049b887",
    "text": "Implementation:"
   },
@@ -546,7 +546,7 @@
    "kind": "listItem",
    "top": 6433,
    "h": 54,
-   "style": "4bb1d5be",
+   "style": "4a84fc68",
    "content": "795b2758",
    "text": "Host hook/adapter wraps shell calls as an envelo"
   },
@@ -555,7 +555,7 @@
    "kind": "listItem",
    "top": 6487,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "95e80658",
    "text": "Envelope prevents shell quoting/injection bugs."
   },
@@ -564,7 +564,7 @@
    "kind": "listItem",
    "top": 6516,
    "h": 28,
-   "style": "8f925ce0",
+   "style": "e0e8d980",
    "content": "a7f5f2d3",
    "text": "command-lexer parses command structure; avoid na"
   },
@@ -573,7 +573,7 @@
    "kind": "listItem",
    "top": 6544,
    "h": 28,
-   "style": "f58e2012",
+   "style": "b1dfe132",
    "content": "fbc7c48c",
    "text": "command-registry classifies known commands and d"
   },
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 6572,
    "h": 28,
-   "style": "8f925ce0",
+   "style": "e0e8d980",
    "content": "81b89922",
    "text": "shell-planner decides rewrite/pass/ask/deny."
   },
@@ -591,7 +591,7 @@
    "kind": "listItem",
    "top": 6600,
    "h": 28,
-   "style": "f46a226a",
+   "style": "e2fa040a",
    "content": "d919d70f",
    "text": "filtered-runner executes rewritten command when "
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 6629,
    "h": 54,
-   "style": "e4982d90",
+   "style": "e0c8695c",
    "content": "046e3005",
    "text": "output-shrinker preserves exit code, stderr, err"
   },
@@ -609,7 +609,7 @@
    "kind": "listItem",
    "top": 6683,
    "h": 71,
-   "style": "7cad1976",
+   "style": "c06100d6",
    "content": "9068ec07",
    "text": "raw-ref-store stores full raw output if output c"
   },
@@ -618,7 +618,7 @@
    "kind": "paragraph",
    "top": 6754,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "43e453a0",
    "text": "Decision examples:"
   },
@@ -627,7 +627,7 @@
    "kind": "listItem",
    "top": 6798,
    "h": 54,
-   "style": "508ce05b",
+   "style": "58ce017f",
    "content": "cd86d963",
    "text": "Large cat or Get-Content: rewrite to targeted he"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 6852,
    "h": 28,
-   "style": "9a41d298",
+   "style": "e514d6b8",
    "content": "d2b773d0",
    "text": "Large git diff: rewrite to git diff --stat plus "
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 6880,
    "h": 28,
-   "style": "cb700c23",
+   "style": "9c216bc3",
    "content": "af27b03b",
    "text": "rg: usually pass through, but shrink if result c"
   },
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 6908,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "b60eaecb",
    "text": "Destructive commands: ask/deny before execution,"
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 6963,
    "h": 71,
-   "style": "6eaaaba2",
+   "style": "b89b0982",
    "content": "89f9f9e8",
    "text": "Unknown command: pass through but still shrink/r"
   },
@@ -672,7 +672,7 @@
    "kind": "paragraph",
    "top": 7034,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "d3684e2a",
    "text": "Codex limitation:"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 7077,
    "h": 54,
-   "style": "7fe3476a",
+   "style": "0780f03e",
    "content": "f2039d7b",
    "text": "If raw Codex host shell offers no pre-tool mutat"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 7132,
    "h": 71,
-   "style": "6eaaaba2",
+   "style": "b89b0982",
    "content": "c5e0ca2f",
    "text": "Codex can still get L2/L3-like behavior through "
   },
@@ -699,7 +699,7 @@
    "kind": "heading",
    "top": 7203,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "28b8e7c9",
    "text": "MCP interception"
   },
@@ -708,7 +708,7 @@
    "kind": "paragraph",
    "top": 7268,
    "h": 70,
-   "style": "a7a8d31c",
+   "style": "4229d0a0",
    "content": "18d43dab",
    "text": "Goal: every MCP client can route through AIOS pr"
   },
@@ -717,7 +717,7 @@
    "kind": "paragraph",
    "top": 7337,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "e049b887",
    "text": "Implementation:"
   },
@@ -726,7 +726,7 @@
    "kind": "listItem",
    "top": 7381,
    "h": 28,
-   "style": "4287d521",
+   "style": "9223f7c1",
    "content": "a09e4532",
    "text": "scripts/aios-mcp-proxy.mjs is a stdio JSON-RPC p"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 7409,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "3b7282cd",
    "text": "Client talks to AIOS proxy; proxy talks to the r"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 7437,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "fe0fd409",
    "text": "Preserve JSON-RPC ids, order, errors, notificati"
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 7466,
    "h": 115,
-   "style": "a5db92a6",
+   "style": "56e95fa8",
    "content": "b847057b",
    "text": "Shrink tools/list by default: keep name, require"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 7581,
    "h": 187,
-   "style": "7a88df84",
+   "style": "30aeec50",
    "content": "d53b9d13",
    "text": "Shrink tools/call results by classifier: large t"
   },
@@ -771,7 +771,7 @@
    "kind": "paragraph",
    "top": 7768,
    "h": 70,
-   "style": "a7a8d31c",
+   "style": "4229d0a0",
    "content": "2ed333b4",
    "text": "This should be the first deterministic cross-cli"
   },
@@ -780,7 +780,7 @@
    "kind": "heading",
    "top": 7837,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "2571c5a7",
    "text": "RawRefStore"
   },
@@ -789,7 +789,7 @@
    "kind": "paragraph",
    "top": 7903,
    "h": 44,
-   "style": "eb7ad327",
+   "style": "5e98efcb",
    "content": "4bfdce81",
    "text": "Store current-turn raw payloads separately from "
   },
@@ -798,7 +798,7 @@
    "kind": "code",
    "top": 7946,
    "h": 82,
-   "style": "b65f23b0",
+   "style": "976971cc",
    "content": "7eb9b8b6",
    "text": ".aios/interception/refs/<session>/<ref_id>.raw ."
   },
@@ -807,7 +807,7 @@
    "kind": "paragraph",
    "top": 8028,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "2e7b6eb5",
    "text": "Metadata fields:"
   },
@@ -816,7 +816,7 @@
    "kind": "listItem",
    "top": 8071,
    "h": 28,
-   "style": "1f948ff1",
+   "style": "b8b710ff",
    "content": "08a2349a",
    "text": "ref_id, session_id, host, kind, source, tool, co"
   },
@@ -825,7 +825,7 @@
    "kind": "listItem",
    "top": 8100,
    "h": 28,
-   "style": "6c65cfc5",
+   "style": "85c462e5",
    "content": "445e300e",
    "text": "created_at, ttl_days, raw_bytes, sha256."
   },
@@ -834,7 +834,7 @@
    "kind": "listItem",
    "top": 8128,
    "h": 28,
-   "style": "84ccbfbb",
+   "style": "893435db",
    "content": "9a51790b",
    "text": "redaction_status, contains_secret_signal, privac"
   },
@@ -843,7 +843,7 @@
    "kind": "listItem",
    "top": 8156,
    "h": 45,
-   "style": "2473e771",
+   "style": "58872e35",
    "content": "e230414f",
    "text": "compact_packet_id, strategy, fallback_reason."
   },
@@ -852,7 +852,7 @@
    "kind": "paragraph",
    "top": 8201,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "12ccdc1c",
    "text": "Recall commands should be surfaced by CLI:"
   },
@@ -861,7 +861,7 @@
    "kind": "listItem",
    "top": 8245,
    "h": 28,
-   "style": "673bb21a",
+   "style": "8e4b14ba",
    "content": "868bb78d",
    "text": "node scripts/aios.mjs refs read <ref_id>"
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 8273,
    "h": 28,
-   "style": "70d66826",
+   "style": "6c0d6dc6",
    "content": "6c66a1de",
    "text": "node scripts/aios.mjs refs grep \"pattern\" --ref "
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 8301,
    "h": 28,
-   "style": "3bd7b089",
+   "style": "48898629",
    "content": "c3b6168a",
    "text": "node scripts/aios.mjs refs list --session <sessi"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 8330,
    "h": 45,
-   "style": "61123906",
+   "style": "5f6bf20a",
    "content": "55f7a50b",
    "text": "node scripts/aios.mjs refs prune --older-than 30"
   },
@@ -897,7 +897,7 @@
    "kind": "paragraph",
    "top": 8375,
    "h": 70,
-   "style": "9915a54d",
+   "style": "019ae369",
    "content": "10903e62",
    "text": "Existing .aios/offload/refs can be bridged later"
   },
@@ -906,7 +906,7 @@
    "kind": "heading",
    "top": 8444,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "03f73129",
    "text": "Client capability matrix"
   },
@@ -915,7 +915,7 @@
    "kind": "paragraph",
    "top": 8509,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "98969a50",
    "text": "Capability levels:"
   },
@@ -924,7 +924,7 @@
    "kind": "listItem",
    "top": 8553,
    "h": 54,
-   "style": "f302c97c",
+   "style": "0780f03e",
    "content": "bdef2e91",
    "text": "L3 Full Transparent: host supports session/start"
   },
@@ -933,7 +933,7 @@
    "kind": "listItem",
    "top": 8607,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "e505cf9f",
    "text": "L2 Controlled Runtime: AIOS owns a runner/proxy "
   },
@@ -942,7 +942,7 @@
    "kind": "listItem",
    "top": 8662,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "a886629f",
    "text": "L1 Advisory: skills/thin-shell/scoped-command gu"
   },
@@ -951,7 +951,7 @@
    "kind": "listItem",
    "top": 8690,
    "h": 45,
-   "style": "232a4133",
+   "style": "02e67177",
    "content": "09d23e04",
    "text": "L0 Unsupported: no reliable AIOS surface."
   },
@@ -960,7 +960,7 @@
    "kind": "paragraph",
    "top": 8735,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "4ace6802",
    "text": "Matrix:"
   },
@@ -969,7 +969,7 @@
    "kind": "table",
    "top": 8778,
    "h": 503,
-   "style": "0d751c60",
+   "style": "ce2adfa2",
    "content": "0142962a",
    "text": "ClientShellMCPSkills/nativeHonest targetClaude C"
   },
@@ -978,7 +978,7 @@
    "kind": "paragraph",
    "top": 9282,
    "h": 96,
-   "style": "eb226d29",
+   "style": "e84b7901",
    "content": "b20b5bf3",
    "text": "Update scripts/lib/clients/core/definitions.mjs "
   },
@@ -987,7 +987,7 @@
    "kind": "paragraph",
    "top": 9377,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "f4899966",
    "text": "Suggested new capabilities:"
   },
@@ -996,7 +996,7 @@
    "kind": "listItem",
    "top": 9421,
    "h": 28,
-   "style": "1f3c905a",
+   "style": "eb8a587a",
    "content": "881b91e1",
    "text": "interception.mcpProxy"
   },
@@ -1005,7 +1005,7 @@
    "kind": "listItem",
    "top": 9449,
    "h": 28,
-   "style": "cb787e5a",
+   "style": "666dd9fa",
    "content": "b014cfb0",
    "text": "interception.shellPreToolRewrite"
   },
@@ -1014,7 +1014,7 @@
    "kind": "listItem",
    "top": 9478,
    "h": 28,
-   "style": "61631424",
+   "style": "1959a1c4",
    "content": "a79451e5",
    "text": "interception.controlledShellRunner"
   },
@@ -1023,7 +1023,7 @@
    "kind": "listItem",
    "top": 9506,
    "h": 28,
-   "style": "61631424",
+   "style": "1959a1c4",
    "content": "60efc8c6",
    "text": "interception.sessionStartInjection"
   },
@@ -1032,7 +1032,7 @@
    "kind": "listItem",
    "top": 9534,
    "h": 28,
-   "style": "61631424",
+   "style": "1959a1c4",
    "content": "a9cb2296",
    "text": "interception.userPromptCompression"
   },
@@ -1041,7 +1041,7 @@
    "kind": "listItem",
    "top": 9563,
    "h": 45,
-   "style": "9f9366d9",
+   "style": "7a1a77fd",
    "content": "e5e5d5b8",
    "text": "interception.outputPacket"
   },
@@ -1050,7 +1050,7 @@
    "kind": "heading",
    "top": 9607,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "321797a0",
    "text": "Skill and native thin-shell updates"
   },
@@ -1059,7 +1059,7 @@
    "kind": "paragraph",
    "top": 9673,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "b2b5a735",
    "text": "Use the user's Skill article as the control-plan"
   },
@@ -1068,7 +1068,7 @@
    "kind": "listItem",
    "top": 9716,
    "h": 28,
-   "style": "e35f9b74",
+   "style": "b7b5d094",
    "content": "b2b60829",
    "text": "SKILL.md is a router, not an implementation dump"
   },
@@ -1077,7 +1077,7 @@
    "kind": "listItem",
    "top": 9744,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "fb90d4ce",
    "text": "Use Always Read, Session Discipline, Task Routin"
   },
@@ -1086,7 +1086,7 @@
    "kind": "listItem",
    "top": 9773,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "db97f35c",
    "text": "Add smoke tests for references and sync drift."
   },
@@ -1095,7 +1095,7 @@
    "kind": "listItem",
    "top": 9801,
    "h": 45,
-   "style": "e26551d2",
+   "style": "59b31c76",
    "content": "a2cb87ca",
    "text": "Do not hand-edit generated roots; edit skill-sou"
   },
@@ -1104,7 +1104,7 @@
    "kind": "paragraph",
    "top": 9846,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "711e5e76",
    "text": "Required skill-source changes:"
   },
@@ -1113,7 +1113,7 @@
    "kind": "listItem",
    "top": 9890,
    "h": 54,
-   "style": "abd2b8f7",
+   "style": "0d4a990d",
    "content": "f6055e30",
    "text": "skill-sources/aios-compress/SKILL.md: clarify Ca"
   },
@@ -1122,7 +1122,7 @@
    "kind": "listItem",
    "top": 9944,
    "h": 80,
-   "style": "3b3e68e9",
+   "style": "47924543",
    "content": "c2b2371f",
    "text": "skill-sources/aios-browser-compress/SKILL.md: re"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 10024,
    "h": 80,
-   "style": "cccbc377",
+   "style": "8d0d9d35",
    "content": "3702c0ef",
    "text": "skill-sources/aios-offload-recall/SKILL.md: dist"
   },
@@ -1140,7 +1140,7 @@
    "kind": "listItem",
    "top": 10105,
    "h": 54,
-   "style": "38c321a3",
+   "style": "6b1da90f",
    "content": "cac9c876",
    "text": "skill-sources/aios-long-running-harness/SKILL.md"
   },
@@ -1149,7 +1149,7 @@
    "kind": "listItem",
    "top": 10159,
    "h": 54,
-   "style": "1dcaa922",
+   "style": "bce905c8",
    "content": "0372c828",
    "text": "skill-sources/aios-project-system/SKILL.md: stat"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 10213,
    "h": 54,
-   "style": "843ffca7",
+   "style": "916034f5",
    "content": "e1580ca5",
    "text": "skill-sources/contextdb-autopilot/SKILL.md: add "
   },
@@ -1167,7 +1167,7 @@
    "kind": "listItem",
    "top": 10267,
    "h": 45,
-   "style": "9b953273",
+   "style": "b4ea9017",
    "content": "360f98a7",
    "text": "skill-sources/verification-loop/SKILL.md: add in"
   },
@@ -1176,7 +1176,7 @@
    "kind": "paragraph",
    "top": 10312,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "3dc4483b",
    "text": "Native thin-shell changes:"
   },
@@ -1185,7 +1185,7 @@
    "kind": "listItem",
    "top": 10356,
    "h": 54,
-   "style": "8da4ae38",
+   "style": "0d058dc2",
    "content": "6425cec1",
    "text": "client-sources/native-base/shared/partials/core-"
   },
@@ -1194,7 +1194,7 @@
    "kind": "listItem",
    "top": 10410,
    "h": 54,
-   "style": "72f84c84",
+   "style": "dc68c9a6",
    "content": "3a415e9b",
    "text": "client-sources/native-base/codex/project/AGENTS."
   },
@@ -1203,7 +1203,7 @@
    "kind": "listItem",
    "top": 10465,
    "h": 54,
-   "style": "c8680adb",
+   "style": "175518df",
    "content": "f3e611be",
    "text": "client-sources/native-base/claude/project/CLAUDE"
   },
@@ -1212,7 +1212,7 @@
    "kind": "listItem",
    "top": 10519,
    "h": 54,
-   "style": "a3ef55c5",
+   "style": "75763da1",
    "content": "25e5d45c",
    "text": "client-sources/native-base/gemini/project/AIOS.m"
   },
@@ -1221,7 +1221,7 @@
    "kind": "listItem",
    "top": 10573,
    "h": 54,
-   "style": "c8680adb",
+   "style": "175518df",
    "content": "8297a812",
    "text": "client-sources/native-base/opencode/project/AIOS"
   },
@@ -1230,7 +1230,7 @@
    "kind": "listItem",
    "top": 10627,
    "h": 71,
-   "style": "6eaaaba2",
+   "style": "b89b0982",
    "content": "4af0575f",
    "text": "Add Cursor native source only after choosing a r"
   },
@@ -1239,7 +1239,7 @@
    "kind": "heading",
    "top": 10698,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "16f06a37",
    "text": "Implementation order"
   },
@@ -1248,7 +1248,7 @@
    "kind": "paragraph",
    "top": 10764,
    "h": 44,
-   "style": "eb7ad327",
+   "style": "5e98efcb",
    "content": "e62b7b40",
    "text": "This is not an MVP scope reduction; it is depend"
   },
@@ -1257,7 +1257,7 @@
    "kind": "listItem",
    "top": 10807,
    "h": 113,
-   "style": "15f31be6",
+   "style": "f8afca80",
    "content": "d6a88327",
    "text": "Contracts and tests Add core types, compact pack"
   },
@@ -1266,7 +1266,7 @@
    "kind": "listItem",
    "top": 10920,
    "h": 85,
-   "style": "ef04e512",
+   "style": "ad011af0",
    "content": "11b08f17",
    "text": "RawRefStore Write raw/meta files, hash them, rec"
   },
@@ -1275,7 +1275,7 @@
    "kind": "listItem",
    "top": 11004,
    "h": 87,
-   "style": "00430374",
+   "style": "2ae60a6e",
    "content": "573e39f7",
    "text": "MCP proxy Implement JSON-RPC stdio proxy, tools/"
   },
@@ -1284,7 +1284,7 @@
    "kind": "listItem",
    "top": 11091,
    "h": 87,
-   "style": "3782b3a8",
+   "style": "61184d92",
    "content": "9cb1380a",
    "text": "Shell gateway Implement envelope, lexer, registr"
   },
@@ -1293,7 +1293,7 @@
    "kind": "listItem",
    "top": 11178,
    "h": 115,
-   "style": "d0f26ce5",
+   "style": "ca67b631",
    "content": "2f30f074",
    "text": "Client adapters/capability registry Extend regis"
   },
@@ -1302,7 +1302,7 @@
    "kind": "listItem",
    "top": 11293,
    "h": 87,
-   "style": "33c910a7",
+   "style": "18ac6235",
    "content": "67ba081e",
    "text": "Skills/native alignment Update skill-sources and"
   },
@@ -1311,7 +1311,7 @@
    "kind": "listItem",
    "top": 11380,
    "h": 102,
-   "style": "20a3fb20",
+   "style": "6b511e62",
    "content": "a2e69eee",
    "text": "Quality gates Add aios doctor interception or eq"
   },
@@ -1320,7 +1320,7 @@
    "kind": "heading",
    "top": 11482,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "5821b1a7",
    "text": "Acceptance tests"
   },
@@ -1329,7 +1329,7 @@
    "kind": "paragraph",
    "top": 11547,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "68207488",
    "text": "Unit tests:"
   },
@@ -1338,7 +1338,7 @@
    "kind": "listItem",
    "top": 11591,
    "h": 28,
-   "style": "39fe6980",
+   "style": "ecab085e",
    "content": "464a77c4",
    "text": "command-lexer: quotes, PowerShell syntax, pipes,"
   },
@@ -1347,7 +1347,7 @@
    "kind": "listItem",
    "top": 11619,
    "h": 28,
-   "style": "8f925ce0",
+   "style": "e0e8d980",
    "content": "14c53967",
    "text": "shell-planner: large read, git diff, destructive"
   },
@@ -1356,7 +1356,7 @@
    "kind": "listItem",
    "top": 11647,
    "h": 28,
-   "style": "f46a226a",
+   "style": "e2fa040a",
    "content": "98793394",
    "text": "output-shrinker: preserves exit code, stderr, er"
   },
@@ -1365,7 +1365,7 @@
    "kind": "listItem",
    "top": 11676,
    "h": 28,
-   "style": "8f925ce0",
+   "style": "e0e8d980",
    "content": "f1d43fa8",
    "text": "raw-ref-store: raw/meta writes, sha256, grep/rea"
   },
@@ -1374,7 +1374,7 @@
    "kind": "listItem",
    "top": 11704,
    "h": 28,
-   "style": "7bb87db9",
+   "style": "33671959",
    "content": "8a33efcb",
    "text": "compact-packet: metrics and recall command rende"
   },
@@ -1383,7 +1383,7 @@
    "kind": "listItem",
    "top": 11732,
    "h": 28,
-   "style": "7bb87db9",
+   "style": "33671959",
    "content": "4bf87e0c",
    "text": "json-rpc-proxy: id/order/error/capability preser"
   },
@@ -1392,7 +1392,7 @@
    "kind": "listItem",
    "top": 11761,
    "h": 28,
-   "style": "2446618f",
+   "style": "162ec2af",
    "content": "b344758e",
    "text": "tools-list-shrink: compact schema remains usable"
   },
@@ -1401,7 +1401,7 @@
    "kind": "listItem",
    "top": 11789,
    "h": 45,
-   "style": "810ed886",
+   "style": "8b4dbbba",
    "content": "e87b5fc5",
    "text": "tools-call-shrink: large text/HTML/JSON/base64/e"
   },
@@ -1410,7 +1410,7 @@
    "kind": "paragraph",
    "top": 11834,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "ccccfe0f",
    "text": "Sentinel proof:"
   },
@@ -1419,7 +1419,7 @@
    "kind": "listItem",
    "top": 11877,
    "h": 28,
-   "style": "c6befcf7",
+   "style": "bf15e817",
    "content": "6e04e329",
    "text": "Generate large payload containing UNIQUE_RAW_PAY"
   },
@@ -1428,7 +1428,7 @@
    "kind": "listItem",
    "top": 11906,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "c76d651c",
    "text": "Run through shell or MCP interception."
   },
@@ -1437,7 +1437,7 @@
    "kind": "listItem",
    "top": 11934,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "d052ee7c",
    "text": "Assert model-visible compact packet does not inc"
   },
@@ -1446,7 +1446,7 @@
    "kind": "listItem",
    "top": 11962,
    "h": 28,
-   "style": "c44b4b72",
+   "style": "0a1f7812",
    "content": "6c5d51b3",
    "text": "Assert refs read can recover the sentinel from r"
   },
@@ -1455,7 +1455,7 @@
    "kind": "listItem",
    "top": 11991,
    "h": 45,
-   "style": "232a4133",
+   "style": "02e67177",
    "content": "3d4858ca",
    "text": "This proves pre-context filtering, not PostToolU"
   },
@@ -1464,7 +1464,7 @@
    "kind": "paragraph",
    "top": 12035,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "75cab0cc",
    "text": "Integration checks:"
   },
@@ -1473,7 +1473,7 @@
    "kind": "listItem",
    "top": 12079,
    "h": 28,
-   "style": "39c0cd8b",
+   "style": "f3205a2b",
    "content": "a7587269",
    "text": "node --test scripts/tests/interception-*.test.mj"
   },
@@ -1482,7 +1482,7 @@
    "kind": "listItem",
    "top": 12107,
    "h": 28,
-   "style": "61631424",
+   "style": "1959a1c4",
    "content": "40440443",
    "text": "node scripts/check-skills-sync.mjs"
   },
@@ -1491,7 +1491,7 @@
    "kind": "listItem",
    "top": 12136,
    "h": 28,
-   "style": "61631424",
+   "style": "1959a1c4",
    "content": "f8c7ef50",
    "text": "node scripts/check-native-sync.mjs"
   },
@@ -1500,7 +1500,7 @@
    "kind": "listItem",
    "top": 12164,
    "h": 28,
-   "style": "d8c07fa6",
+   "style": "d3f78546",
    "content": "474915e3",
    "text": "npm run test:scripts"
   },
@@ -1509,7 +1509,7 @@
    "kind": "listItem",
    "top": 12192,
    "h": 71,
-   "style": "f9b6d579",
+   "style": "08eb0a2b",
    "content": "edfe42f0",
    "text": "cd mcp-server && npm run typecheck && npm run te"
   },
@@ -1518,7 +1518,7 @@
    "kind": "paragraph",
    "top": 12263,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "c97e8137",
    "text": "Negative checks:"
   },
@@ -1527,7 +1527,7 @@
    "kind": "listItem",
    "top": 12307,
    "h": 28,
-   "style": "8032ff18",
+   "style": "2b29cd38",
    "content": "aa9bcd7c",
    "text": "No instructions to install RTK/Caveman/competito"
   },
@@ -1536,7 +1536,7 @@
    "kind": "listItem",
    "top": 12335,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "a10ac55f",
    "text": "No claims that prompt-only skills provide curren"
   },
@@ -1545,7 +1545,7 @@
    "kind": "listItem",
    "top": 12363,
    "h": 45,
-   "style": "232a4133",
+   "style": "02e67177",
    "content": "3f414b9f",
    "text": "No generated skill/native drift."
   },
@@ -1554,7 +1554,7 @@
    "kind": "heading",
    "top": 12408,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "edaee787",
    "text": "Product acceptance"
   },
@@ -1563,7 +1563,7 @@
    "kind": "paragraph",
    "top": 12473,
    "h": 44,
-   "style": "8b2954e9",
+   "style": "5e98efcb",
    "content": "b7b71a9f",
    "text": "The user should see these outcomes:"
   },
@@ -1572,7 +1572,7 @@
    "kind": "listItem",
    "top": 12517,
    "h": 54,
-   "style": "7fe3476a",
+   "style": "0780f03e",
    "content": "6a752fd5",
    "text": "In supported paths, large outputs come back as c"
   },
@@ -1581,7 +1581,7 @@
    "kind": "listItem",
    "top": 12571,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "b687827d",
    "text": "The agent can recall full output by ref only whe"
   },
@@ -1590,7 +1590,7 @@
    "kind": "listItem",
    "top": 12600,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "0ce48b1e",
    "text": "Metrics show how much was saved."
   },
@@ -1599,7 +1599,7 @@
    "kind": "listItem",
    "top": 12628,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "d7a72e07",
    "text": "Doctor reports which clients are L3/L2/L1 and wh"
   },
@@ -1608,7 +1608,7 @@
    "kind": "listItem",
    "top": 12656,
    "h": 28,
-   "style": "4f58f144",
+   "style": "10359ae4",
    "content": "69067a37",
    "text": "Skills explain the behavior without pretending t"
   },
@@ -1617,7 +1617,7 @@
    "kind": "listItem",
    "top": 12685,
    "h": 45,
-   "style": "232a4133",
+   "style": "02e67177",
    "content": "16581e23",
    "text": "Unsupported clients degrade honestly instead of "
   },
@@ -1626,7 +1626,7 @@
    "kind": "heading",
    "top": 12729,
    "h": 65,
-   "style": "995d752c",
+   "style": "460916d0",
    "content": "06ded53d",
    "text": "Open risks"
   },
@@ -1635,7 +1635,7 @@
    "kind": "listItem",
    "top": 12795,
    "h": 28,
-   "style": "8032ff18",
+   "style": "2b29cd38",
    "content": "12851e93",
    "text": "Host hook APIs may not expose pre-tool mutation "
   },
@@ -1644,7 +1644,7 @@
    "kind": "listItem",
    "top": 12823,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "3beb70aa",
    "text": "JSON-RPC proxy must be strict; breaking MCP prot"
   },
@@ -1653,7 +1653,7 @@
    "kind": "listItem",
    "top": 12877,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "cea6cb2d",
    "text": "PowerShell parsing is hard; initial lexer should"
   },
@@ -1662,7 +1662,7 @@
    "kind": "listItem",
    "top": 12932,
    "h": 54,
-   "style": "05388e1e",
+   "style": "c2e31c7a",
    "content": "7e64df6c",
    "text": "Raw refs may store sensitive data; redaction met"
   },
@@ -1671,7 +1671,7 @@
    "kind": "listItem",
    "top": 12986,
    "h": 71,
-   "style": "6eaaaba2",
+   "style": "b89b0982",
    "content": "357ae396",
    "text": "Over-aggressive shrinking can hide the only usef"
   }

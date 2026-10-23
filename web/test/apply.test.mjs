@@ -10,7 +10,7 @@ import { collectPageErrors, benign } from './pageerrors.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css' };
 const server = http.createServer((req, res) => {
-  const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
+  const p = join(process.env.READOUT_WEB_BUILD || 'build/Web', decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream' });
   res.end(readFileSync(p));
@@ -334,7 +334,7 @@ const captured = await page.evaluate(() => window.readout.captureAnchor());
 // Failed once in 58 CI runs (null), never locally: say where the page was if it happens again.
 const captureState = await page.evaluate(() => ({ scrollY, scrollHeight: document.scrollingElement.scrollHeight,
   cv: document.getElementById('ro-doc').classList.contains('cv'),
-  shown: [...document.querySelectorAll('#ro-doc > .blk')].filter(e => !e.hidden && e.offsetParent).length,
+  shown: [...document.querySelectorAll('#ro-doc > .chunk > .blk')].filter(e => !e.hidden && e.offsetParent).length,
   top65: document.querySelector('.blk[data-slot="65"]').getBoundingClientRect().top }));
 check('capture sees slot 65', captured && captured.slot === 65, JSON.stringify({ captured, ...captureState }));
 // Insert a long unread paragraph after slot 20: slot 65 must not move.
@@ -493,7 +493,7 @@ check('an edited rail tick is as strong as an added one', tickOpacity.length ===
     window.scrollTo(0, el.offsetTop - 300);
     await new Promise(r => requestAnimationFrame(r));
     // The block at the top of the view: what the reader is looking at.
-    const ref = [...document.querySelectorAll('#ro-doc > .blk')].find(b => b.getBoundingClientRect().top >= 0);
+    const ref = [...document.querySelectorAll('#ro-doc > .chunk > .blk')].find(b => b.getBoundingClientRect().top >= 0);
     const top0 = ref.getBoundingClientRect().top;
     const textLeft = el.firstElementChild.getBoundingClientRect().left;
     const y = el.getBoundingClientRect().top + 8;
@@ -649,6 +649,786 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
     ops: [{ op: 'insert', slot: 1, after: 0, html: '<p>hello</p>', kind: 'paragraph' }], marks: [{ slot: 1, kind: 'inserted' }] }));
   const after = await page.evaluate(() => !!document.getElementById('ro-empty'));
   check('empty-file notice goes when content arrives', shown && !after, JSON.stringify({ shown, after }));
+}
+
+// Chunks (chunks.js): a document's blocks are grouped in chunks of 32 (or
+// about four screens' estimate). Order, spacing and the reader's place are the
+// same across a chunk's edge: a heading right after a rule sits flush whether
+// or not a chunk starts between them, and an agent inserting in the middle of
+// a chunk, then removing blocks until chunks empty, keeps the blocks in
+// order, no chunk empty or past 64, the reader where they were.
+{
+  // The rule and heading across the edge go where the first chunk ends (its
+  // items are estimated alike: a rule there does not move the edge).
+  let edge = -10;
+  const kind = i => i === 10 || i === edge ? 'rule' : i === 11 || i === edge + 1 ? 'heading' : 'paragraph';
+  const html = i => kind(i) === 'rule' ? '<hr>' : kind(i) === 'heading' ? `<h2>Section ${i}</h2>` : `<p>para ${i} lorem ipsum dolor</p>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(300, html, kind));
+  edge = await page.evaluate(() => document.querySelector('#ro-doc > .chunk').childElementCount);
+  await page.evaluate(p => window.readout.apply(p), fixReset(300, html, kind));
+  const flush = await page.evaluate(edge => {
+    const h = s => document.querySelector(`.blk[data-slot="${s}"]`);
+    return { edge, sameChunk: h(10).parentElement === h(11).parentElement, acrossChunks: h(edge).parentElement !== h(edge + 1).parentElement,
+      inner: getComputedStyle(h(11).firstElementChild).marginTop, edgeTop: getComputedStyle(h(edge + 1).firstElementChild).marginTop };
+  }, edge);
+  check('a heading after a rule sits flush across a chunk\'s edge as within one', flush.sameChunk && flush.acrossChunks && flush.inner === flush.edgeTop && flush.inner === '0px', JSON.stringify(flush));
+  await toTop(150);
+  await settled();
+  const before = await topOf(150);
+  // 40 blocks into the middle of the chunk holding 100 (it is split), then 120 blocks removed (chunks empty and merge).
+  const ins = Array.from({ length: 40 }, (_, k) => ({ op: 'insert', slot: 1000 + k, after: k ? 1000 + k - 1 : 100, kind: 'paragraph', html: `<p>inserted ${k}</p>` }));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: ins }));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 120 }, (_, k) => ({ op: 'remove', slot: 20 + k })).filter(o => o.slot !== edge && o.slot !== edge + 1) }));
+  // Chunks are split and joined once the page has been quiet a moment.
+  await page.waitForTimeout(1200);
+  await settled();
+  const shape = await page.evaluate(() => {
+    const chunks = [...document.querySelectorAll('#ro-doc > .chunk')];
+    const order = [...document.querySelectorAll('#ro-doc .blk')].map(b => +b.dataset.slot);
+    return { sizes: chunks.map(c => c.childElementCount), order, top150: Math.round(document.querySelector('.blk[data-slot="150"]').getBoundingClientRect().top) };
+  });
+  const expected = [];
+  for (let i = 1; i <= 300; i++) {
+    if (!(i >= 20 && i < 140 && i !== edge && i !== edge + 1)) expected.push(i);
+    if (i === 100) for (let k = 0; k < 40; k++) expected.push(1000 + k);
+  }
+  check('blocks inserted into a full chunk and removed until chunks empty keep their order, chunks neither empty nor past 64, the reader in place',
+    JSON.stringify(shape.order) === JSON.stringify(expected) && shape.sizes.every(n => n > 0 && n <= 64) && Math.abs(shape.top150 - before) <= 1,
+    JSON.stringify({ sizes: shape.sizes, before, top150: shape.top150, n: shape.order.length }));
+}
+
+// An agent writes 40 blocks into a part of a large document the reader has
+// read and left (a chunk laid out, skipped since). The page grows by about
+// what was written (its estimate) at once (the rail and End count it), and the reader
+// scrolling back up through it, 300 px a step, sees the text move by the
+// step, not jump by the insert when that chunk is laid out again.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(3000, i => `<p style="min-height:${30 + (i * 13) % 90}px">para ${i}</p>`));
+  // Read from the top (the reset keeps the place the last test left).
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  await page.waitForTimeout(300);
+  await toTop(150, 200);
+  await settled();
+  await page.waitForTimeout(300);
+  const h0 = await page.evaluate(() => document.scrollingElement.scrollHeight);
+  const ins = Array.from({ length: 40 }, (_, k) => ({ op: 'insert', slot: 5000 + k, after: k ? 4999 + k : 20, kind: 'paragraph', html: `<p>new ${k} ${'grow '.repeat(30)}</p>` }));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: ins }));
+  await settled();
+  await page.waitForTimeout(1500);
+  const h1 = await page.evaluate(() => document.scrollingElement.scrollHeight);
+  const drift = await page.evaluate(async () => {
+    const out = [];
+    for (let k = 0; k < 100 && scrollY > 400; k++) {
+      const el = document.elementFromPoint(450, 350).closest('.blk');
+      const t = el.getBoundingClientRect().top;
+      window.scrollBy(0, -300);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      out.push(Math.round(el.getBoundingClientRect().top - t - 300));
+    }
+    return out;
+  });
+  // Written in full: their heights as laid out.
+  const written = await page.evaluate(() => { let h = 0; for (let k = 0; k < 40; k++) h += document.querySelector(`.blk[data-slot="${5000 + k}"]`).getBoundingClientRect().height; return Math.round(h); });
+  const worst = Math.max(...drift.map(Math.abs));
+  check('blocks written into a part read and left: the page grows by about them at once, scrolling back up through it keeps the text in step',
+    worst <= 3 && h1 - h0 >= written / 2 && h1 - h0 <= written * 2, JSON.stringify({ grew: h1 - h0, written, worst, drift: drift.filter(Boolean) }));
+  // Printed while such a chunk is skipped: it is as tall as its blocks (the height it has on screen until laid out is not printed).
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 20 }, (_, k) => ({ op: 'insert', slot: 6000 + k, after: k ? 5999 + k : 150, kind: 'paragraph', html: `<p>later ${k} ${'grow '.repeat(30)}</p>` })) }));
+  await settled();
+  const stale = await page.evaluate(() => document.querySelector('.blk[data-slot="6000"]').parentElement.classList.contains('stale'));
+  await page.emulateMedia({ media: 'print' });
+  const gap = await page.evaluate(() => {
+    const c = document.querySelector('.blk[data-slot="6000"]').parentElement;
+    return Math.round(c.getBoundingClientRect().height - (c.lastElementChild.getBoundingClientRect().bottom - c.firstElementChild.getBoundingClientRect().top));
+  });
+  await page.emulateMedia({ media: 'screen' });
+  check('a chunk written into while skipped prints as tall as its blocks', stale && Math.abs(gap) <= 40, JSON.stringify({ stale, gap }));
+}
+
+// An agent writing a long section into the middle of a large document, 50
+// blocks a patch, far from the reader: chunks stay within 64 blocks as it
+// writes (the chunk is split where the next block goes in), not one chunk
+// of all of them waiting to be split.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(2000));
+  let prev = 1000;
+  for (let k = 0; k < 400; k += 50) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 50 }, (_, j) => { const slot = 9000 + k + j; const o = { op: 'insert', slot, after: prev, kind: 'paragraph', html: `<p>section ${slot}</p>` }; prev = slot; return o; }) }));
+  }
+  const most = await page.evaluate(() => Math.max(...[...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount)));
+  const order = await page.evaluate(() => { const b = [...document.querySelectorAll('#ro-doc .blk')].map(e => +e.dataset.slot); const i = b.indexOf(1000); return b[i + 1] === 9000 && b[i + 400] === 9399 && b[i + 401] === 1001; });
+  check('a section written into the middle, 50 blocks a patch: no chunk past 64 blocks, in order', most <= 64 && order, JSON.stringify({ most, order }));
+}
+
+// Blocks far from the reader removed one by one, in a part read and left
+// (its chunk laid out once, skipped since): each leaves a marker after the
+// same block. The markers are items of their chunk like any other
+// (marks.js: place), so it is split at its limit, not one chunk of a
+// hundred and more; the page is as tall as when laid out, and the reader's
+// text stays where it is.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(2000, i => `<p style="min-height:${30 + (i * 7) % 50}px">para ${i} lorem ipsum</p>`));
+  for (const slot of [1380, 1460, 1540]) {
+    await page.evaluate(s => window.readout.scrollToSlot(s), slot);
+    await settled();
+    await page.waitForTimeout(300);
+  }
+  await toTop(200);
+  await settled();
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  const dels = [];
+  for (let k = 0; k < 120; k++) {
+    dels.push({ id: 500 + k, after: 1399, count: 1, preview: `para ${1400 + k}` });
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 1400 + k }], deletions: dels }));
+    if (k % 10 === 9) await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+  }
+  await settled();
+  await page.waitForTimeout(800);   // longer than a quiet page's rebalance
+  // The chunks from the one before the markers to the one after them (all laid out once, on the visit).
+  const span = () => page.evaluate(() => {
+    const chunks = [...document.querySelectorAll('#ro-doc > .chunk')];
+    const from = chunks.indexOf(document.querySelector('.blk[data-slot="1399"]').parentElement), to = chunks.indexOf(document.querySelector('.blk[data-slot="1520"]').parentElement);
+    return { n: to - from + 1, skipped: chunks.slice(from, to + 1).every(c => !c.classList.contains('near')), height: Math.round(chunks.slice(from, to + 1).reduce((h, c) => h + c.getBoundingClientRect().height, 0)) };
+  });
+  const r = await page.evaluate(() => ({ most: Math.max(...[...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount)),
+    marks: document.querySelectorAll('.del-mark').length, anchor: window.readout.captureAnchor() }));
+  const skipped = await span();
+  // Laid out: scrolled to, the same chunks.
+  await page.evaluate(() => window.readout.scrollToSlot(1399));
+  await settled();
+  await page.waitForTimeout(300);
+  const laid = await span();
+  check('120 blocks removed one by one after the same block in a skipped chunk: chunks within 64 items, as tall skipped as laid out, the reader still',
+    skipped.skipped && r.marks === 120 && r.most <= 64 && Math.abs(skipped.height - laid.height) <= 20 && r.anchor.slot === a0.slot && Math.abs(r.anchor.offset - a0.offset) <= 2,
+    JSON.stringify({ ...r, skipped, laid, a0 }));
+}
+
+// A block replaced in a part read and left (its chunk laid out once,
+// skipped since) by one of a very different height: the chunk's skipped
+// size loses the old block's height as laid out, not its estimate
+// (chunks.js: counted), so it is about as tall as it lays out, and the
+// reader's text stays where it is.
+{
+  const tall = '<p style="min-height:600px">tall block</p>';
+  await page.evaluate(p => window.readout.apply(p), fixReset(2000, i => i === 1400 ? tall : `<p>para ${i} lorem ipsum</p>`));
+  for (const slot of [1390, 1420]) {
+    await page.evaluate(s => window.readout.scrollToSlot(s), slot);
+    await settled();
+    await page.waitForTimeout(300);
+  }
+  await toTop(200);
+  await settled();
+  await page.waitForTimeout(300);
+  const a0 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 1400, change: 'content', kind: 'paragraph', html: '<p>short now</p>' }] }));
+  await settled();
+  await page.waitForTimeout(300);
+  const chunk = () => page.evaluate(() => { const c = document.querySelector('.blk[data-slot="1400"]').parentElement; return { near: c.classList.contains('near'), height: Math.round(c.getBoundingClientRect().height) }; });
+  const skipped = await chunk();
+  const a1 = await page.evaluate(() => window.readout.captureAnchor());
+  await page.evaluate(() => window.readout.scrollToSlot(1400));
+  await settled();
+  await page.waitForTimeout(300);
+  const laid = await chunk();
+  // Within what the new block's estimate is off by (it is not laid out yet).
+  check('a block replaced in a skipped chunk by a much shorter one: the chunk about as tall skipped as laid out, the reader still',
+    !skipped.near && laid.near && Math.abs(skipped.height - laid.height) <= 40 && a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2,
+    JSON.stringify({ skipped, laid, a0, a1 }));
+}
+
+// A chunk emptied by a removal goes, and the chunks either side meet: a
+// heading first in the next one, now right after a rule, starts flush as in
+// a document opened that way (chunks.js: dropChunk marks both touched).
+{
+  const html = i => i === 32 ? '<hr>' : i === 65 ? '<h2>After the rule</h2>' : `<p>para ${i}</p>`;
+  const kind = i => i === 32 ? 'rule' : i === 65 ? 'heading' : 'paragraph';
+  await page.evaluate(p => window.readout.apply(p), fixReset(120, html, kind));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 31 }, (_, k) => ({ op: 'remove', slot: 33 + k })) }));
+  const look = () => page.evaluate(() => {
+    const b = s => document.querySelector(`.blk[data-slot="${s}"]`);
+    const h = b(65);
+    return { alone: b(64)?.parentElement.childElementCount === 1, first: h.previousElementSibling === null, flush: h.classList.contains('h-flush'), mt: getComputedStyle(h.querySelector('h2')).marginTop, gap: Math.round(h.querySelector('h2').getBoundingClientRect().top - b(32).getBoundingClientRect().bottom) };
+  });
+  const before = await look();
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 64 }] }));
+  await settled();
+  const after = await look();
+  // Opened with the same blocks.
+  const keep = i => i <= 32 || i >= 65;
+  const fresh = fixReset(120, html, kind);
+  fresh.ops = fresh.ops.filter(o => keep(o.slot));
+  for (let i = 1; i < fresh.ops.length; i++) fresh.ops[i].after = fresh.ops[i - 1].slot;
+  await page.evaluate(p => window.readout.apply(p), fresh);
+  await settled();
+  const opened = await look();
+  check('a chunk emptied between a rule and a heading-led chunk: the heading starts as in a document opened that way',
+    before.alone && !before.flush && after.first && after.flush === opened.flush && after.mt === opened.mt && after.gap === opened.gap,
+    JSON.stringify({ before, after, opened }));
+}
+
+// A jump lays out the chunk it lands in, the one after when the screen
+// below reaches it, and the one before only when the screen shows some of
+// it above the target: a rail tick centring the first block of a chunk does;
+// an outline jump to a block lower in its chunk does not (long code there
+// would make the jump slower).
+{
+  const r = fixReset(3000, i => `<p style="min-height:${30 + (i * 13) % 90}px">para ${i}</p>`);
+  r.marks = [{ slot: 2017, kind: 'inserted' }];
+  await page.evaluate(p => window.readout.apply(p), r);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  await page.waitForTimeout(300);
+  const laid = () => page.evaluate(() => [...document.querySelectorAll('#ro-doc > .chunk')].map((c, i) => c.classList.contains('near') ? i : -1).filter(i => i >= 0));
+  const at = s => page.evaluate(s => [...document.querySelectorAll('#ro-doc > .chunk')].indexOf(document.querySelector(`.blk[data-slot="${s}"]`).parentElement), s);
+  const first = await page.evaluate(() => document.querySelector('.blk[data-slot="2017"]').previousElementSibling === null);
+  // The rail is drawn at most every 250 ms, in a frame (rail.js): its tick, once there.
+  const ticked = await until(() => !!document.querySelector('#ro-rail button'), null);
+  check('a change far down a large document has its rail tick', ticked);
+  const centred = await page.evaluate(() => { document.querySelector('#ro-rail button').click(); return [...document.querySelectorAll('#ro-doc > .chunk')].map((c, i) => c.classList.contains('near') ? i : -1).filter(i => i >= 0); });
+  const c2017 = await at(2017);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  await page.waitForTimeout(300);
+  const before = await laid();
+  const top = await page.evaluate(() => { window.readout.scrollToSlot(1220); return [...document.querySelectorAll('#ro-doc > .chunk')].map((c, i) => c.classList.contains('near') ? i : -1).filter(i => i >= 0); });
+  const c1220 = await at(1220);
+  check('a centred jump lays out the chunk before its target; a jump to the top of the window, to a block lower in its chunk, not',
+    first && centred.includes(c2017 - 1) && centred.includes(c2017) && !before.includes(c1220 - 1) && top.includes(c1220) && !top.includes(c1220 - 1),
+    JSON.stringify({ first, c2017, centred, c1220, top }));
+}
+
+// Long code opened at the top: only the code the first screen shows is
+// highlighted (its spans are kept, and restyled with every theme switch),
+// not every block of the chunks near it, and a block far down a chunk near
+// the screen waits until that chunk is laid out.
+{
+  const code = i => `<div class="code-block" data-lang="js"><pre><code>${Array.from({ length: 90 }, (_, l) => `const v${i}_${l} = f(${l});`).join('\n')}</code></pre></div>`;
+  // The first document a page opens (as a window does).
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(x => window.readout.apply(x), fixReset(300, i => i % 10 === 1 ? `<h2>Section ${i}</h2>` : code(i), i => i % 10 === 1 ? 'heading' : 'code'));
+  await p.waitForTimeout(1500);
+  const lit = await p.evaluate(() => [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl !== 'pending').map(c => +c.closest('.blk').dataset.slot));
+  await p.close();
+  check('long code opened at the top: the code within a screen of it highlighted, not the rest of its chunks', lit.length > 0 && lit.every(s => s <= 3), JSON.stringify(lit));
+}
+
+// Code is coloured whenever it shows: a long block on the first screen of a
+// document opened is highlighted before its first paint (all of it at once:
+// only a block ahead of the screen is highlighted a part at a time), and
+// while the reader scrolls, every block that comes on screen is already
+// highlighted.
+{
+  const code = (i, n) => `<div class="code-block" data-lang="ts"><pre><code>${Array.from({ length: n }, (_, l) => `export const v${i}_${l}: number = f(${l}); // line ${l}`).join('\n')}</code></pre></div>`;
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  // Let the grammar load first (a page's first TypeScript), as a window's spare page has it.
+  await p.evaluate(x => window.readout.apply(x), fixReset(1, () => code(0, 3), () => 'code'));
+  await p.waitForTimeout(1500);
+  // Opened: a paragraph, then a 120-line block filling the rest of the screen and beyond, then more.
+  const first = await p.evaluate(x => {
+    window.readout.apply(x);
+    // Before anything is painted: the lines on screen.
+    // (A block of more than 40 lines is coloured as far as the screen shows
+    // and 120 px more, its rest still plain text, the next lines a
+    // slice at a time: enhance.js, showParts.)
+    const cb = document.querySelector('.blk[data-slot="2"] .code-block');
+    const shown = [...cb.querySelectorAll('pre .line')].filter(l => l.getBoundingClientRect().top < innerHeight);
+    const rest = cb.querySelector('pre code').lastChild;
+    const plainRest = !cb.querySelector('pre .line') || (rest.nodeType === 3 && rest.length > 1 && (() => { const r = new Range(); r.setStart(rest, 1); r.setEnd(rest, 2); return r.getBoundingClientRect().top < innerHeight; })());
+    return { hl: cb.dataset.hl, shown: shown.length, plain: shown.filter(l => !l.querySelector('span[style]')).length, plainRest };
+  }, fixReset(300, i => i === 2 ? code(i, 120) : i % 4 === 0 ? code(i, 80) : `<p>para ${i} lorem ipsum dolor</p>`, i => i === 2 || i % 4 === 0 ? 'code' : 'paragraph'));
+  // Scrolling 25 px a frame down to 4,500 px (by position, not time: a slow
+  // machine scrolls as far): each frame, the code on screen.
+  const scrolled = await p.evaluate(async () => {
+    // Plain code on screen: a block not coloured at all, or the plain rest of one coloured in part.
+    const plainShown = c => {
+      if (!c.querySelector('pre .line')) return true;
+      const rest = c.querySelector('pre code').lastChild;
+      if (rest.nodeType !== 3 || rest.length < 2) return false;
+      const r = new Range(); r.setStart(rest, 1); r.setEnd(rest, 2);
+      const b = r.getBoundingClientRect();
+      return b.top < innerHeight && b.bottom > 0;
+    };
+    let frames = 0, plain = 0;
+    await new Promise(res => { const f = () => { window.scrollBy(0, 25); frames++; for (const c of document.querySelectorAll('.code-block')) { const r = c.getBoundingClientRect(); if (r.bottom > 0 && r.top < innerHeight && c.dataset.hl !== 'done' && plainShown(c)) plain++; } if (scrollY < 4500 && frames < 2000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
+    return { frames, plain, y: Math.round(scrollY) };
+  });
+  await p.close();
+  check('a long code block on the first screen is coloured in the first paint', first.shown > 5 && first.plain === 0 && !first.plainRest, JSON.stringify(first));
+  check('while scrolling, every code block that comes on screen is already coloured', scrolled.frames > 60 && scrolled.y > 4000 && scrolled.plain === 0, JSON.stringify(scrolled));
+}
+
+// A cold grammar's first part of a long block ahead of the screen cut short
+// by Shiki's guard (here a limit of 1 ms after a 300 ms hold, for that one
+// part): the block is rechecked once assembled, and ends up right (its first
+// line as its fifth, the same text, in the next part).
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => {
+    window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    Object.defineProperty(globalThis, 'READOUT_TOKENIZE_LIMIT', { get() {
+      if (!window.__cut) return 500;
+      window.__cut = false; window.__wasCut = true;
+      for (const t = performance.now(); performance.now() - t < 300;);
+      return 1;
+    } });
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  const long = Array.from({ length: 300 }, (_, k) => `local a${k} = b${k} + ${k} * c`).join('; ');
+  const lua = `<div class="code-block" data-lang="lua"><pre><code>${[long, 'local p = 1', 'local q = 2', 'local r = 3', long, ...Array.from({ length: 55 }, (_, l) => `local x${l} = f(${l}) -- note`)].join('\n')}</code></pre></div>`;
+  const r = await p.evaluate(async x => {
+    window.readout.apply(x);
+    const cb = document.querySelector('.blk[data-slot="9"] .code-block');
+    const states = [];
+    // Armed once the grammar is in: the block's first part is the next highlight.
+    new MutationObserver(() => { states.push(cb.dataset.hl); if (cb.dataset.hl === 'pending' && !window.__wasCut) window.__cut = true; }).observe(cb, { attributes: true, attributeFilter: ['data-hl'] });
+    const onScreen = cb.getBoundingClientRect().top < innerHeight;
+    for (let i = 0; i < 400 && !(cb.dataset.hl === 'done' && states.includes('done')); i++) await new Promise(r => setTimeout(r, 25));
+    await new Promise(r => setTimeout(r, 300));
+    const lines = cb.querySelectorAll('pre .line');
+    return { onScreen, cut: !!window.__wasCut, states, final: cb.dataset.hl, same: lines.length > 4 && lines[0].innerHTML === lines[4].innerHTML,
+      spans: [lines[0]?.querySelectorAll('span').length, lines[4]?.querySelectorAll('span').length] };
+  }, fixReset(20, i => i === 9 ? lua : '<p style="min-height:100px">para</p>', i => i === 9 ? 'code' : 'paragraph'));
+  await p.close();
+  check('a cold block whose first part was cut short is rechecked once assembled, and ends up right',
+    !r.onScreen && r.cut && r.states.includes('recheck') && r.final === 'done' && r.same && r.spans[0] > 100, JSON.stringify(r));
+}
+
+// A long block of a cold grammar, every part of it quick, adds up to more
+// than the slow limit: it is not highlighted twice (only a part that slow
+// is a line cut short). Each clock reading here moves on 5 ms: a part takes
+// about 5 ms, the block's 100 parts 500 ms.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(1));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const perl = `<div class="code-block" data-lang="perl"><pre><code>${Array.from({ length: 400 }, (_, l) => `my $x${l} = $y + ${l};`).join('\n')}</code></pre></div>`;
+  const r = await page.evaluate(async x => {
+    const real = performance.now.bind(performance);
+    let skew = 0;
+    window.readout.apply(x);
+    const cb = document.querySelector('.blk[data-slot="9"] .code-block');
+    const states = [];
+    new MutationObserver(() => {
+      states.push(cb.dataset.hl);
+      if (cb.dataset.hl === 'pending') performance.now = () => (skew += 5) + real();
+    }).observe(cb, { attributes: true, attributeFilter: ['data-hl'] });
+    const onScreen = cb.getBoundingClientRect().top < innerHeight;
+    for (let i = 0; i < 400 && cb.dataset.hl !== 'done'; i++) await new Promise(r => setTimeout(r, 25));
+    performance.now = real;
+    await new Promise(r => setTimeout(r, 300));
+    return { onScreen, states, final: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]') };
+  }, fixReset(20, i => i === 9 ? perl : '<p style="min-height:100px">para</p>', i => i === 9 ? 'code' : 'paragraph'));
+  check('a long cold-grammar block with every part quick is highlighted once, not redone',
+    !r.onScreen && r.final === 'done' && !r.states.includes('recheck') && r.colored, JSON.stringify(r));
+}
+
+// An agent rewriting a long code block again and again, near the reader and
+// far from them (in a chunk skipped, the reader still): lazy work keeps no
+// old copy of it (enhance.js: forgetBlock), what it holds stays bounded.
+{
+  const code = (i, v) => `<div class="code-block" data-lang="ts"><pre><code>${Array.from({ length: 200 }, (_, l) => `export const v${i}_${l}_${v}: number = f(${l}); // ${'x'.repeat(40)}`).join('\n')}</code></pre></div>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(1));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 5 || i === 300 ? code(i, 0) : `<p>para ${i} lorem ipsum dolor</p>`, i => i === 5 || i === 300 ? 'code' : 'paragraph'));
+  await page.waitForTimeout(800);
+  const held = [];
+  for (let v = 1; v <= 40; v++) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [5, 300].map(slot => ({ op: 'replace', slot, change: 'content', kind: 'code', html: code(slot, v) })) }));
+    if (v % 5 === 0) { await page.waitForTimeout(60); held.push(await page.evaluate(() => window.readout.lazyHeld())); }
+    else await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+  }
+  await page.waitForTimeout(1000);
+  const end = await page.evaluate(() => window.readout.lazyHeld());
+  check('a code block rewritten 40 times, near and far: lazy work holds no old copy, and stays bounded',
+    held.every(h => h.detached === 0 && h.waiting + h.queued <= 4) && end.detached === 0 && end.waiting + end.queued <= 2, JSON.stringify({ held, end }));
+}
+
+// An agent rewriting a diagram on screen while the reader scrolls: each
+// rewrite waits for the scroll to pause, and only the last is drawn then;
+// the queue holds none that left the page (mermaid.js: gone, pruneQueue).
+{
+  const mm = v => `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Rewrite ${v}] --> B[Step ${v}]</pre></div>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(1));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(p => window.readout.apply(p), fixReset(60, i => i === 3 ? mm(0) : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`, i => i === 3 ? 'mermaid' : 'paragraph'));
+  await until(() => !!document.querySelector('.blk[data-slot="3"] .mermaid-block.done'), null);
+  await page.waitForTimeout(500);
+  const d0 = await page.evaluate(() => window.readout.diagramWork().draws);
+  // Scrolling a few pixels every 50 ms, the diagram on screen all along.
+  await page.evaluate(() => { window.scrollTo(0, 100); let k = 0; window.__jiggle = setInterval(() => window.scrollTo(0, 100 + (k++ % 2) * 3), 50); });
+  const held = [];
+  for (let v = 1; v <= 8; v++) {
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 3, change: 'content', kind: 'mermaid', html: mm(v) }] }));
+    await page.waitForTimeout(550);   // longer than a source's quiet wait (QUIET_MS): each is queued
+    held.push(await page.evaluate(() => window.readout.diagramWork()));
+  }
+  await page.evaluate(() => clearInterval(window.__jiggle));
+  const drawn = await until(() => /Rewrite 8/.test(document.querySelector('.blk[data-slot="3"] .mermaid-svg')?.textContent || ''), null);
+  await page.waitForTimeout(1500);
+  const end = await page.evaluate(() => window.readout.diagramWork());
+  check('a diagram rewritten 8 times while scrolling: only the last is drawn once the scroll pauses, and the queue stays bounded',
+    drawn && end.draws - d0 === 1 && held.every(h => h.queued <= 1 && h.detached === 0) && end.queued === 0, JSON.stringify({ drawn, draws: end.draws - d0, held, end }));
+}
+
+// Pages replaced and emptied in quick succession (resets back to back,
+// a run of removals that empties chunks near the screen): nothing the
+// observers, the lazy work or the read dwell keep holds an element that
+// left the page (chunks.js: lookahead and show, marks.js: forgetMarks,
+// enhance.js: forgetBlock).
+{
+  const mk = n => { const r = fixReset(n, i => i % 7 === 0 ? `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[N${n}x${i}] --> B</pre></div>` : `<p>para ${i} lorem ipsum</p>`, i => i % 7 === 0 ? 'mermaid' : 'paragraph'); r.marks = Array.from({ length: 12 }, (_, k) => ({ slot: k + 1, kind: 'inserted' })); return r; };
+  const samples = [];
+  for (let round = 0; round < 12; round++) {
+    // Two resets in one task: the first's observer records arrive after its chunks are gone.
+    await page.evaluate(([a, b]) => { window.readout.apply(a); window.readout.apply(b); }, [mk(400 + round), mk(420 + round)]);
+    // The read dwell armed for the blocks on screen, then the page reset again.
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.waitForTimeout(60);
+    await page.evaluate(p => window.readout.apply(p), mk(440 + round));
+    await page.waitForTimeout(60);
+    // Removals emptying the chunks near the screen.
+    await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 70 }, (_, k) => ({ op: 'remove', slot: k + 1 })) }));
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.waitForTimeout(100);
+    samples.push(await page.evaluate(() => window.readout.lazyHeld()));
+  }
+  const bad = samples.filter(h => h.detached || h.chunksDetached || h.readDetached);
+  check('pages reset back to back and emptied near the screen: no observer, lazy queue or read dwell holds an element out of the page',
+    bad.length === 0, JSON.stringify({ bad, last: samples.at(-1) }));
+}
+
+// An agent streaming one diagram, 200 sources one after the other: the
+// drawings kept stay within the cache's 64 (mermaid.js: cacheSet), and the
+// last source shown again, after a rewrite and back, is not drawn again.
+// (A source is drawn once still for READOUT_DIAGRAM_QUIET_MS, 30 ms here.)
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => {
+    window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    globalThis.READOUT_DIAGRAM_QUIET_MS = 30;
+    globalThis.READOUT_DIAGRAM_GRACE_MS = 300;
+  });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  const mm = v => `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Stream ${v}] --> B[End]</pre></div>`;
+  const drawnAs = v => p.evaluate(v => new Promise(res => { const t0 = performance.now(); const f = () => { const t = document.querySelector('.blk[data-slot="2"] .mermaid-svg')?.textContent || ''; if (t.includes(`Stream ${v}`)) res(true); else if (performance.now() - t0 > 5000) res(false); else setTimeout(f, 10); }; f(); }), v);
+  await p.evaluate(x => window.readout.apply(x), fixReset(5, i => i === 2 ? mm(0) : `<p>para ${i}</p>`, i => i === 2 ? 'mermaid' : 'paragraph'));
+  let missed = 0, most = 0;
+  for (let v = 1; v <= 200; v++) {
+    await p.evaluate(x => window.readout.apply(x), fixPatch({ ops: [{ op: 'replace', slot: 2, change: 'content', kind: 'mermaid', html: mm(v) }] }));
+    if (!await drawnAs(v)) missed++;
+    most = Math.max(most, await p.evaluate(() => window.readout.diagramWork().cached));
+  }
+  const d0 = await p.evaluate(() => window.readout.diagramWork().draws);
+  // A rewrite and straight back, as an undo: the last source from the cache.
+  await p.evaluate(x => window.readout.apply(x), fixPatch({ ops: [{ op: 'replace', slot: 2, change: 'content', kind: 'mermaid', html: mm('tmp') }] }));
+  await p.evaluate(x => window.readout.apply(x), fixPatch({ ops: [{ op: 'replace', slot: 2, change: 'content', kind: 'mermaid', html: mm(200) }] }));
+  const back = await drawnAs(200);
+  await p.waitForTimeout(500);
+  const end = await p.evaluate(() => window.readout.diagramWork());
+  // Left alone (the grace shortened to 300 ms): the drawings no diagram has go, and the sweep stops.
+  await p.waitForTimeout(1500);
+  const quiet = await p.evaluate(() => window.readout.diagramWork());
+  await p.close();
+  check('a diagram streamed through 200 sources: at most 64 drawings kept, and the last shown again without drawing',
+    missed === 0 && most <= 64 && back && end.draws === d0, JSON.stringify({ missed, most, back, draws: end.draws - d0, cached: end.cached }));
+  check('drawings no diagram in the page has are dropped after a while, and the sweep then stops', quiet.cached === 1 && !quiet.sweeping, JSON.stringify(quiet));
+}
+
+// ---- The audit of a001270: each case as it was found. ----
+// The page's height as it is and with every chunk laid out (none skipped, no stale size).
+// (`range`: only the chunks from the one holding the first slot to the one holding the second.)
+const bothHeights = (range = null) => page.evaluate(range => {
+  const st = document.createElement('style');
+  st.textContent = '#ro-doc.cv > .chunk, #ro-doc.cv > .chunk:not(.near), #ro-doc.cv > .chunk.stale:not(.near) { content-visibility: visible !important; height: auto !important; }';
+  let list = [...document.querySelectorAll('#ro-doc > .chunk')];
+  if (range) { const at = sl => list.indexOf(document.querySelector(`.blk[data-slot="${sl}"]`).parentElement); list = list.slice(at(range[0]), at(range[1]) + 1); }
+  const per = () => list.map(c => Math.round(c.getBoundingClientRect().height));
+  const skipped = document.scrollingElement.scrollHeight, chunksSkipped = per();
+  document.head.appendChild(st);
+  const laid = document.scrollingElement.scrollHeight, chunksLaid = per();
+  st.remove();
+  void document.scrollingElement.scrollHeight;
+  const sum = xs => xs.reduce((a, b) => a + b, 0);
+  return { skipped, laid, chunks: list.length, spanSkipped: sum(chunksSkipped), spanLaid: sum(chunksLaid), worstChunk: Math.max(0, ...chunksSkipped.map((h, i) => Math.abs(h - chunksLaid[i]))) };
+}, range);
+const layAllOut = async () => {
+  const H = await page.evaluate(() => document.scrollingElement.scrollHeight);
+  for (let y = 0; y < H + 2000; y += 500) { await page.evaluate(y => window.scrollTo(0, y), y); await page.waitForTimeout(20); }
+  await settled();
+};
+const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
+// 1. A heading first in the next chunk starts flush once the block before
+//    it becomes a rule: the patch keeps the reader's place for it once, not
+//    once more by the resize observer (+23 px).
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(300, i => i === 33 ? heading(i) : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(4)}</p>`, i => i === 33 ? 'heading' : 'paragraph'));
+  await settled();
+  for (let k = 0; k < 3; k++) { await toTop(70, 50); await settled(); }
+  const t0 = await topOf(70);
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 32, change: 'content', kind: 'rule', html: '<hr>' }] }));
+  await settled();
+  await page.waitForTimeout(100);
+  const r = { flush: await page.evaluate(() => document.querySelector('.blk[data-slot="33"]').classList.contains('h-flush')), moved: (await topOf(70)) - t0 };
+  check('a rule written before a heading first in the next chunk: the reader stays put', r.flush && Math.abs(r.moved) <= 1, JSON.stringify(r));
+}
+// 3. The reader's focus in a chunk an agent writes into, a block at a time:
+//    the part with the focus stays, the part before it moves to a chunk of
+//    its own (132 items in one chunk before).
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(300));
+  await settled();
+  await page.evaluate(() => { const b = document.querySelector('.blk[data-slot="60"]'); b.tabIndex = -1; b.focus({ preventScroll: true }); window.scrollBy(0, b.getBoundingClientRect().top - 100); });
+  await settled();
+  let after = 40;
+  for (let k = 0; k < 100; k++) { await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'insert', slot: 2000 + k, after, kind: 'paragraph', html: `<p>new ${k}</p>` }] })); after = 2000 + k; }
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(() => ({ focus: document.activeElement?.dataset.slot, most: Math.max(...[...document.querySelectorAll('#ro-doc > .chunk')].map(c => c.childElementCount)),
+    order: [...document.querySelectorAll('#ro-doc .blk')].map(e => +e.dataset.slot).slice(39, 42).join() }));
+  await page.evaluate(() => document.activeElement?.blur());
+  check('100 blocks written one by one into the chunk holding the focus: the focus stays, no chunk past 64', r.focus === '60' && r.most <= 64 && r.order === '40,2000,2001', JSON.stringify(r));
+}
+// 4a. A removal marker between a rule and the heading after it, read and
+//     gone (markAllRead): the heading starts flush again.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(300, i => i === 32 ? '<hr>' : i === 33 ? heading(i) : `<p>para ${i}</p>`, i => i === 32 ? 'rule' : i === 33 ? 'heading' : 'paragraph'));
+  await settled();
+  const flush = () => page.evaluate(() => { const h = document.querySelector('.blk[data-slot="33"]'); return { flush: h.classList.contains('h-flush'), mt: getComputedStyle(h.querySelector('h2')).marginTop }; });
+  const initial = await flush();
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 5 }], deletions: [{ id: 1, after: 32, count: 1, preview: 'gone' }] }));
+  await settled();
+  const marked = await flush();
+  await page.evaluate(() => window.readout.markAllRead());
+  await page.waitForTimeout(1200);
+  const gone = { ...(await flush()), marks: await page.evaluate(() => document.querySelectorAll('.del-mark').length) };
+  check('a marker between a rule and a heading, read and gone: the heading starts flush again', initial.flush && !marked.flush && gone.marks === 0 && gone.flush && gone.mt === '0px', JSON.stringify({ initial, marked, gone }));
+}
+// 4b. A heading's flush start changing in a chunk laid out and skipped: the
+//     chunk's skipped size changes with it (23 px off before).
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(300, i => i === 31 ? '<hr>' : i === 33 ? heading(i) : `<p>para ${i} ${'lorem ipsum '.repeat(8)}</p>`, i => i === 31 ? 'rule' : i === 33 ? 'heading' : 'paragraph'));
+  await settled();
+  await layAllOut();
+  const before = await bothHeights();
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 32 }] }));
+  await settled();
+  const r = { before, after: await bothHeights(), flush: await page.evaluate(() => document.querySelector('.blk[data-slot="33"]').classList.contains('h-flush')),
+    skipped: await page.evaluate(() => !document.querySelector('.blk[data-slot="33"]').parentElement.classList.contains('near')) };
+  check('a heading starting flush in a chunk laid out and skipped: as tall skipped as laid out', r.flush && r.skipped && before.skipped === before.laid && Math.abs(r.after.skipped - r.after.laid) <= 2, JSON.stringify(r));
+}
+// 5. A patch taking a page laid out without content-visibility past 250
+//    blocks: its chunks are skipped at the sizes they were laid out at, not
+//    their estimates (-1,509 px before).
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(240));
+  await settled();
+  await layAllOut();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  const cv0 = await page.evaluate(() => document.getElementById('ro-doc').classList.contains('cv'));
+  let after = 170;
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 20 }, (_, k) => { const o = { op: 'insert', slot: 1000 + k, after, kind: 'paragraph', html: `<p>${'inserted text that is fairly long '.repeat(30)}</p>` }; after = 1000 + k; return o; }) }));
+  await settled();
+  const r = { cv0, cv: await page.evaluate(() => document.getElementById('ro-doc').classList.contains('cv')), ...(await bothHeights()) };
+  check('a patch taking the page past 250 blocks: as tall skipped as laid out', !cv0 && r.cv && Math.abs(r.skipped - r.laid) <= 2, JSON.stringify(r));
+}
+// 6. A wide table in a skipped chunk is measured as it comes within two
+//    screens (with its chunk), not once it is on screen (drawn unmeasured, then reflowed).
+{
+  const words = ['Implementation', 'Responsibility', 'Configuration', 'Documentation', 'Compatibility', 'Infrastructure', 'Observability', 'Accountability'];
+  const table = `<div class="table-wrap"><table><thead><tr>${words.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody><tr>${words.map(w => `<td>${w}</td>`).join('')}</tr></tbody></table></div>`;
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 200 ? table : `<p>para ${i}</p>`, i => i === 200 ? 'table' : 'paragraph'));
+  await settled();
+  // The table a screen and a half below the window.
+  await page.evaluate(() => { const b = document.querySelector('.blk[data-slot="200"]').parentElement; window.scrollTo(0, b.getBoundingClientRect().top + scrollY - 2.5 * innerHeight); });
+  await settled();
+  await page.waitForTimeout(300);
+  await settled();
+  const r = await page.evaluate(() => { const t = document.querySelector('.blk[data-slot="200"] .table-wrap'); const r = t.getBoundingClientRect(); return { below: Math.round(r.top - innerHeight), measured: t.classList.contains('scrolls') || !!t.parentElement.style.getPropertyValue('--tb-w') }; });
+  check('a wide table two screens ahead is measured before it comes on screen', r.below > 0 && r.measured, JSON.stringify(r));
+}
+// 7. A link jump lands on code: it is coloured in the first frame that shows it.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 1 ? '<p><a href="#far">to far</a></p>' : i === 300 ? '<h2 id="far">Far</h2>' : i > 300 && i < 306 ? `<div class="code-block" data-lang="json"><pre><code>{\n  "k": ${i}\n}</code></pre></div>` : `<p>para ${i}</p>`,
+    i => i === 300 ? 'heading' : i > 300 && i < 306 ? 'code' : 'paragraph'));
+  await settled();
+  await page.waitForTimeout(800);   // JSON's grammar in
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  const r = await page.evaluate(() => new Promise(res => {
+    document.querySelector('a[href="#far"]').click();
+    const cbs = [...document.querySelectorAll('.blk[data-slot="301"] .code-block, .blk[data-slot="302"] .code-block')];
+    requestAnimationFrame(() => res(cbs.map(cb => [cb.dataset.hl, Math.round(cb.getBoundingClientRect().top)])));
+  }));
+  check('code a link jump lands on is coloured in its first frame', r.length === 2 && r.every(([hl, top]) => hl === 'done' && top < 700), JSON.stringify(r));
+}
+// 7b. An outline jump into a page of long code blocks, the window toolbar
+//     over its top: the frame that shows the landing has every line on
+//     screen coloured, under the toolbar too (blocks of more than 40 lines
+//     coloured only as far as the screen shows: enhance.js, showParts).
+{
+  const code = i => `<div class="code-block" data-lang="json"><pre><code>${Array.from({ length: 90 }, (_, l) => `{ "k${i}_${l}": [${l}, true, "v"] },`).join('\n')}</code></pre></div>`;
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i % 10 === 1 ? `<h2 id="j${i}">Part ${i}</h2>` : code(i), i => i % 10 === 1 ? 'heading' : 'code'));
+  await settled();
+  await page.waitForTimeout(800);
+  const out = [];
+  for (const slot of [121, 211, 301]) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await settled();
+    const plainNow = () => page.evaluate(() => new Promise(res => requestAnimationFrame(() => {
+      let plain = 0;
+      for (const cb of document.querySelectorAll('.code-block')) {
+        const r = cb.getBoundingClientRect();
+        if (r.bottom <= 0 || r.top >= innerHeight) continue;
+        if (!cb.querySelector('pre .line')) { plain++; continue; }
+        for (const l of cb.querySelectorAll('pre .line')) { const b = l.getBoundingClientRect(); if (b.bottom > 0 && b.top < innerHeight && l.textContent.trim() && !l.querySelector('span[style]')) plain++; }
+        const rest = cb.querySelector('pre code').lastChild;
+        if (rest.nodeType === 3 && rest.length > 1) { const g = new Range(); g.setStart(rest, 1); g.setEnd(rest, 2); const b = g.getBoundingClientRect(); if (b.top < innerHeight && b.bottom > 0) plain++; }
+      }
+      res(plain);
+    })));
+    out.push(await page.evaluate(slot => new Promise(res => {
+      window.readout.scrollToSlot(slot);
+      requestAnimationFrame(() => {
+        let plain = 0;
+        for (const cb of document.querySelectorAll('.code-block')) {
+          const r = cb.getBoundingClientRect();
+          if (r.bottom <= 0 || r.top >= innerHeight) continue;
+          if (!cb.querySelector('pre .line')) { plain++; continue; }
+          for (const l of cb.querySelectorAll('pre .line')) { const b = l.getBoundingClientRect(); if (b.bottom > 0 && b.top < innerHeight && l.textContent.trim() && !l.querySelector('span[style]')) plain++; }
+          const rest = cb.querySelector('pre code').lastChild;
+          if (rest.nodeType === 3 && rest.length > 1) { const g = new Range(); g.setStart(rest, 1); g.setEnd(rest, 2); const b = g.getBoundingClientRect(); if (b.top < innerHeight && b.bottom > 0) plain++; }
+        }
+        res({ slot, plain });
+      });
+    }), slot));
+    // Then at once a screen down (Page Down), and another: the frames that show them.
+    for (let k = 0; k < 2; k++) { await page.evaluate(() => window.scrollBy(0, innerHeight - 40)); out.at(-1)[`down${k}`] = await plainNow(); }
+    await page.waitForTimeout(300);
+  }
+  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
+  check('an outline jump into long code blocks: every line on screen coloured in its first frame, under the toolbar too, and a screen down at once after it', out.every(o => o.plain === 0 && o.down0 === 0 && o.down1 === 0), JSON.stringify(out));
+}
+// 8. Scrolls of more than a screen at once (the scrollbar dragged, End,
+//    Home, a page down): the frame that shows the landing has the chunks
+//    on screen laid out, none skipped (blank) or at a stale size, and
+//    nothing moves after it.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(3000, i => `<p>para ${i} ${'lorem ipsum dolor '.repeat(1 + i % 7)}</p>`));
+  await settled();
+  // A part read and left, then written into (its chunk stale).
+  await page.evaluate(() => window.readout.scrollToSlot(1500));
+  await settled();
+  await page.waitForTimeout(300);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settled();
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [1, 2, 3].map(k => ({ op: 'insert', slot: 9000 + k, after: 1505 + k, kind: 'paragraph', html: `<p>written ${k}</p>` })) }));
+  await settled();
+  const stale = await page.evaluate(() => document.querySelector('.blk[data-slot="1506"]').parentElement.classList.contains('stale'));
+  const land = how => page.evaluate(how => new Promise(res => {
+    const H = document.scrollingElement.scrollHeight;
+    if (how === 'stale') { const c = document.querySelector('.blk[data-slot="1506"]').parentElement; window.scrollTo(0, c.getBoundingClientRect().top + scrollY - 100); }
+    else if (how === 'end') window.scrollTo(0, H);
+    else if (how === 'home') window.scrollTo(0, 0);
+    else if (how === 'pagedown') window.scrollBy(0, innerHeight * 0.9);
+    else window.scrollTo(0, H * how);
+    // In the frame (before it is laid out): the chunks on screen are laid
+    // out (near). After it is painted: where the text there is.
+    requestAnimationFrame(() => {
+      const on = [...document.querySelectorAll('#ro-doc > .chunk')].filter(c => { const r = c.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
+      const skipped = on.filter(c => !c.classList.contains('near')).length;
+      setTimeout(() => {
+        const el = document.elementFromPoint(450, 350)?.closest('.blk');
+        res({ how, skipped, slot: el?.dataset.slot, top: el?.getBoundingClientRect().top });
+      }, 0);
+    });
+  }), how);
+  const out = [];
+  for (const how of [0.2, 0.4, 0.6, 0.8, 'stale', 'end', 'home', 'pagedown', 0.5]) {
+    const r = await land(how);
+    await settled();
+    await page.waitForTimeout(100);
+    r.moved = r.slot ? Math.round(await page.evaluate(sl => document.querySelector(`.blk[data-slot="${sl}"]`).getBoundingClientRect().top, r.slot) - r.top) : null;
+    out.push(r);
+  }
+  check('scrolls of more than a screen at once: the landing frame shows its chunks laid out, and nothing moves after',
+    stale && out.every(r => r.skipped === 0 && r.slot && (r.how === 'end' || Math.abs(r.moved) <= 1)), JSON.stringify({ stale, out }));
+}
+// 9. A code block an agent streams into, on screen, growing past the
+//    chunk's height: the chunk is split once the page is quiet (one chunk of 22,199 px before).
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(300));
+  await settled();
+  await toTop(40, 50);
+  await settled();
+  const code = n => `<div class="code-block" data-lang="text"><pre><code>${Array.from({ length: n }, (_, i) => 'line ' + i).join('\n')}</code></pre></div>`;
+  for (const n of [50, 200, 500, 1000]) await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 45, change: 'content', kind: 'code', html: code(n) }] }));
+  await page.waitForTimeout(3000);
+  const r = await page.evaluate(() => { const c = document.querySelector('.blk[data-slot="45"]').parentElement; return { items: c.childElementCount, overfull: window.readout.lazyHeld().overfull }; });
+  check('a code block streamed past its chunk\'s height: the chunk is split', r.items === 1 && r.overfull === 0, JSON.stringify(r));
+}
+// P3. A chunk laid out and skipped, split by blocks written into it: each
+//     part skipped at what its blocks were laid out at (the written blocks
+//     made exactly as tall as they are estimated).
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(400));
+  await settled();
+  await page.evaluate(() => window.readout.scrollToSlot(210));
+  await settled();
+  await page.waitForTimeout(300);
+  await toTop(30);
+  await settled();
+  const exact = k => { let h = 100; for (let i = 0; i < 3; i++) { const html = `<p style="height:${h}px;margin:0;overflow:hidden">written ${k} ${'x'.repeat(40)}</p>`; h = 30 + Math.ceil(html.length / 75) * 26; } return `<p style="height:${h}px;margin:0;overflow:hidden">written ${k} ${'x'.repeat(40)}</p>`; };
+  // The chunk written into was laid out by the visit (at a height other than its estimate) and is skipped now.
+  const was = await page.evaluate(() => { const c = document.querySelector('.blk[data-slot="205"]').parentElement; return { near: c.classList.contains('near'), laid: Math.round(c.getBoundingClientRect().height) !== parseInt(c.style.containIntrinsicSize.replace('auto ', '')) }; });
+  let after = 205;
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: Array.from({ length: 40 }, (_, k) => { const o = { op: 'insert', slot: 7000 + k, after, kind: 'paragraph', html: exact(k) }; after = 7000 + k; return o; }) }));
+  await settled();
+  // Only the parts of that chunk (from the one holding block 205 to the one
+  // holding 224, its last): a chunk beside it the visit did not lay out is
+  // at its estimate, as any such chunk is.
+  const r = { was, ...(await bothHeights([205, 224])) };
+  check('a skipped chunk split by blocks written into it: each part as tall skipped as laid out', !was.near && was.laid && r.chunks >= 2 && Math.abs(r.spanSkipped - r.spanLaid) <= 2 && r.worstChunk <= 2, JSON.stringify(r));
+}
+// P3. Markers in a document with no block: in the order sent.
+{
+  await page.evaluate(p => window.readout.apply(p), fixReset(0));
+  await page.evaluate(p => window.readout.apply(p), fixPatch({ deletions: [1, 2, 3].map(id => ({ id, after: 0, count: 1, preview: `gone ${id}` })) }));
+  const order = await page.evaluate(() => [...document.querySelectorAll('.del-mark')].map(m => m.dataset.del).join());
+  check('removal markers in an empty document keep the order sent', order === '1,2,3', order);
+}
+
+// Long code: a chunk holds about four screens' estimate, not 32 code blocks
+// (a theme change, a jump or find would lay all of them out), and one huge
+// block is a chunk of its own, the blocks around it in chunks of their own.
+{
+  const code = (i, n) => `<div class="code-block" data-lang="js"><pre><code>${Array.from({ length: n }, (_, l) => `const v${i}_${l} = f(${l});`).join('\n')}</code></pre></div>`;
+  const kinds = i => i === 150 ? 'code' : i > 300 ? 'code' : 'paragraph';
+  await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 150 ? code(i, 3000) : i > 300 ? code(i, 90) : `<p>para ${i} lorem ipsum dolor</p>`, kinds));
+  const shape = await page.evaluate(() => {
+    const b = s => document.querySelector(`.blk[data-slot="${s}"]`);
+    const alone = b(150).parentElement.childElementCount === 1 && b(149).parentElement !== b(150).parentElement && b(151).parentElement !== b(150).parentElement;
+    const codeChunks = [...document.querySelectorAll('#ro-doc > .chunk')].filter(c => +c.firstElementChild.dataset.slot > 300).map(c => c.childElementCount);
+    return { alone, most: Math.max(...codeChunks) };
+  });
+  check('a huge code block is a chunk of its own; long code blocks are two or three a chunk', shape.alone && shape.most <= 3, JSON.stringify(shape));
 }
 
 // The block at the top of the viewport is removed: the block after it takes
@@ -1018,7 +1798,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await toTop(30, 30);   // block 29 ends under the toolbar, block 30 shows below it
   await page.waitForTimeout(300);
   const under = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('#ro-doc > .blk')].find(e => e.getBoundingClientRect().bottom > 8);
+    const b = [...document.querySelectorAll('#ro-doc > .chunk > .blk')].find(e => e.getBoundingClientRect().bottom > 8);
     return { slot: +b.dataset.slot, bottom: Math.round(b.getBoundingClientRect().bottom) };
   });
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: under.slot }], deletions: [{ id: 1, after: under.slot - 1, count: 1, preview: 'x' }] }));
@@ -1151,9 +1931,11 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   check('a 25-op update lays out the page once while applying', layouts <= 2, `layouts=${layouts}`);
 }
 
-// While the reader scrolls through a large document, blocks resize as they
-// are laid out: the rail is redrawn a few times a second, not every frame,
-// and its last state is drawn.
+// While the reader scrolls through a large document, blocks resize (laid
+// out as they come near, images and diagrams arriving): the rail is redrawn a
+// few times a second, not every frame, and its last state is drawn. Chunks
+// lay their blocks out a few at a time, so a block on screen also grows by a
+// pixel every frame: a resize in every frame, as per-block layout gave.
 {
   const r = fixReset(400, i => `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(1 + (i * 7) % 13)}</p>`);
   r.marks = Array.from({ length: 40 }, (_, i) => ({ slot: 5 + i * 10, kind: 'inserted' }));
@@ -1162,20 +1944,24 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.waitForTimeout(400);
   const r2 = await page.evaluate(() => new Promise(resolve => {
     const rail = document.getElementById('ro-rail');
-    let rebuilds = 0, resizes = 0;
+    let rebuilds = 0, resizes = 0, frames = 0, grown = 0;
     const mo = new MutationObserver(recs => { for (const rec of recs) if (rec.removedNodes.length) rebuilds++; });
     mo.observe(rail, { childList: true });
     const ro = new ResizeObserver(() => { resizes++; });
-    for (const b of document.querySelectorAll('#ro-doc > .blk')) ro.observe(b);
+    for (const b of document.querySelectorAll('#ro-doc > .chunk > .blk')) ro.observe(b);
     const start = performance.now();
     const step = () => {
       window.scrollBy(0, 120);
+      frames++;
+      const grow = document.elementFromPoint(400, 400)?.closest('.blk');
+      if (grow) grown++;
+      if (grow) grow.style.minHeight = `${grow.getBoundingClientRect().height + 1}px`;
       if (performance.now() - start < 1500) requestAnimationFrame(step);
-      else setTimeout(() => { mo.disconnect(); ro.disconnect(); resolve({ rebuilds, resizes, ticks: rail.children.length }); }, 500);
+      else setTimeout(() => { mo.disconnect(); ro.disconnect(); resolve({ rebuilds, resizes, frames, grown, ticks: rail.children.length }); }, 500);
     };
     requestAnimationFrame(step);
   }));
-  const unread = await page.evaluate(() => document.querySelectorAll('#ro-doc > .blk.m-inserted:not(.m-read)').length);
+  const unread = await page.evaluate(() => document.querySelectorAll('#ro-doc > .chunk > .blk.m-inserted:not(.m-read)').length);
   // 1.5 s of scrolling plus the half second after: at most one redraw per 250 ms.
   check('the rail is redrawn at most every 250 ms while blocks resize', r2.resizes > 20 && r2.rebuilds <= 9 && r2.ticks === unread,
     JSON.stringify({ ...r2, unread }));
