@@ -72,6 +72,15 @@ print(f"refill: {refill}")
 # Emptied and written back a second later: the empty version and the refill both shown...
 check("refill: the emptied file and its refill were both applied", (refill.get("applies") or 0) >= 2, refill)
 # ...and the reader is back where they were.
+# Emptied and written back at once, byte for byte: the empty read is read
+# again and, the same bytes as shown, changes nothing (DocumentLoader); the
+# page ends showing all of it, at the reader's place, without the empty notice.
+fast = load("refill-fast.json")
+print(f"refill-fast: {fast}")
+check("refill-fast: the whole document is shown after an immediate identical rewrite",
+      fast.get("blocks") is not None and fast.get("blocks") == fast.get("blocksBefore") and fast.get("emptyNotice") is False, fast)
+fshift = fast.get("shift")
+check("refill-fast: the reading position is kept (|shift| <= 4)", isinstance(fshift, (int, float)) and abs(fshift) <= 4, fast)
 rshift = refill.get("shift")
 check("refill: the reading position is restored (|shift| <= 4)",
       isinstance(rshift, (int, float)) and abs(rshift) <= 4, refill)

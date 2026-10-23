@@ -16,8 +16,12 @@ import ReadoutCore
 ///                 a file under /tmp, and one reached through a symlink, are
 ///                 shown; the harness rewrites the first and points the link
 ///                 at another file (`ln -sf`)
-///   `await-refill` the harness empties the smoke file and writes it back a
-///                 second later; the reader must return to its place
+///   `await-refill` the harness empties the smoke file and, once the app has
+///                 shown it empty (`refill-emptied`), writes it back; both are
+///                 applied and the reader must return to its place
+///   `await-refill-fast` the harness empties the smoke file and writes the
+///                 same bytes back at once: the page ends showing all of it,
+///                 at the reader's place
 ///   `await-dangle` the harness points a symlink at a file not written yet,
 ///                 then writes that file
 ///   `await-cli`   the harness runs `readout -b` and `readout --hook` (one
@@ -331,6 +335,7 @@ enum SmokeTest {
                 NSApp.activate()
             }
             await refill(controller: controller, webView: webView, out: out)
+            await refillFast(controller: controller, webView: webView, out: out)
             await liveUpdates(app: app, out: out)
             await backgroundOpens(out: out)
             await commitBaseline(out: out)
@@ -995,8 +1000,16 @@ enum SmokeTest {
         // half written and a second one completes it).
         let blockBack = "(() => { const r = window.__refill; return !!(r && document.querySelector('.blk[data-slot=\"' + r.slot + '\"]')); })()"
         var settled = (count: -1, at: Date())
+        // Once the emptied file is shown, the harness writes it back (refill-emptied):
+        // its bytes then differ from the last shown, so the refill is applied too.
+        let pageEmpty = "!document.querySelector('#ro-doc .blk')"
+        var emptiedMarked = false
         while Date() < deadline {
             if appliedCount != settled.count { settled = (appliedCount, Date()) }
+            if !emptiedMarked, appliedCount >= before + 1, (try? await webView.evaluateJavaScript(pageEmpty)) as? Bool == true {
+                emptiedMarked = true
+                mark(out, "refill-emptied")
+            }
             if appliedCount >= before + 2, Date().timeIntervalSince(settled.at) > 0.6,
                (try? await webView.evaluateJavaScript(blockBack)) as? Bool == true { break }
             try? await Task.sleep(for: .milliseconds(50))
@@ -1037,6 +1050,41 @@ enum SmokeTest {
         json["link_prefix"] = controller.url.path + "#"
         json["hover_link_buttons"] = (try? await webView.evaluateJavaScript("document.querySelectorAll('.h-link').length")) as? Int ?? -1
         write(json, to: out, "refill.json")
+    }
+
+    /// The file emptied and written back at once, byte for byte (an agent
+    /// truncating and rewriting it): an empty read is taken for a write not
+    /// finished and read again (DocumentLoader), and finding the same bytes
+    /// as shown it changes nothing. The page ends showing the whole document,
+    /// at the reader's place, without the empty notice; whether the empty
+    /// state was shown in between depends on when the reads fall.
+    private static func refillFast(controller: ReaderWindowController, webView: WKWebView, out: URL) async {
+        controller.show()
+        _ = try? await webView.evaluateJavaScript("(() => { const b = [...document.querySelectorAll('.blk')]; const t = b[Math.floor(b.length/2)]; window.scrollBy(0, t.getBoundingClientRect().top - 40); window.__refillFast = {slot: +t.dataset.slot, top: t.getBoundingClientRect().top, blocks: b.length}; return 1; })()")
+        try? await Task.sleep(for: .seconds(1.2))
+        let before = appliedCount
+        let started = Date()
+        mark(out, "await-refill-fast")
+        // Whatever arrives (nothing, or the empty version and the refill): a
+        // quiet second at least 3 s after the write, with the block back.
+        let blockBack = "(() => { const r = window.__refillFast; return !!(r && document.querySelector('.blk[data-slot=\"' + r.slot + '\"]')); })()"
+        var settled = (count: appliedCount, at: Date())
+        let deadline = Date().addingTimeInterval(15)
+        while Date() < deadline {
+            if appliedCount != settled.count { settled = (appliedCount, Date()) }
+            if Date().timeIntervalSince(started) > 3, Date().timeIntervalSince(settled.at) > 1,
+               (try? await webView.evaluateJavaScript(blockBack)) as? Bool == true { break }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        _ = try? await webView.callAsyncJavaScript("await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); return 1", contentWorld: .page)
+        try? await Task.sleep(for: .seconds(1))
+        let state = "(() => { const r = window.__refillFast; const e = r && document.querySelector('.blk[data-slot=\"' + r.slot + '\"]'); return JSON.stringify({ shift: e ? e.getBoundingClientRect().top - r.top : null, blocks: document.querySelectorAll('.blk').length, blocksBefore: r ? r.blocks : null, emptyNotice: !!document.getElementById('ro-empty') }); })()"
+        var json: [String: Any] = ["applies": appliedCount - before, "seconds_waited": Date().timeIntervalSince(started)]
+        if let text = try? await webView.evaluateJavaScript(state) as? String, let data = text.data(using: .utf8),
+           let page = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            json.merge(page) { $1 }
+        }
+        write(json, to: out, "refill-fast.json")
     }
 
     /// The window around a document: title, tab title and tooltip, subtitle,
