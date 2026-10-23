@@ -21,8 +21,10 @@ usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
   4b. when the app reports `await-agent-write` (Readout in the background,
      watching WORK_DIR/agent), writes WORK_DIR/agent/notes.md the agent way;
      the app records whether it opened on its own without activating
-  4b'. when the app reports `await-refill`, empties plan.md in place and writes
-     the same bytes back a second later (an agent truncating, then writing)
+  4b'. when the app reports `await-refill`, empties plan.md in place and, once
+     the app reports it showed it empty (`refill-emptied`, up to 10 s), writes
+     the same bytes back (an agent truncating, then writing); at
+     `await-refill-fast`, empties it and writes the same bytes back at once
   4c. when the app reports `await-tmp-edit`, rewrites a document under /tmp
      (FSEvents reports it as /private/tmp/...); at `await-retarget`, points a
      symlink the app shows at another file, the way `ln -sf` does; at
@@ -479,12 +481,26 @@ def run(app, target, out, env, clock, second, cli_file, hook_plan, project, tmp,
                 data = target.read_bytes()
                 with open(target, "wb"):
                     pass  # emptied in place, the way `>` truncates
-                time.sleep(1.0)
+                # Written back once the app has shown it empty (an empty read is
+                # read again a moment later, and the same bytes as shown would
+                # change nothing: DocumentLoader), so both versions are applied.
+                if not wait_for(out / "refill-emptied", proc, 10, poll=0.05):
+                    print("harness: the app never showed the emptied plan.md within 10 s (no `refill-emptied`); writing it back anyway")
                 with open(target, "wb") as f:
                     f.write(data)
                 print("harness: emptied plan.md and wrote it back")
             else:
                 print("harness: the app never reported `await-refill`")
+
+            if wait_for(out / "await-refill-fast", proc, 60, poll=0.05):
+                data = target.read_bytes()
+                with open(target, "wb"):
+                    pass
+                with open(target, "wb") as f:
+                    f.write(data)  # the same bytes, at once
+                print("harness: emptied plan.md and wrote the same bytes back at once")
+            else:
+                print("harness: the app never reported `await-refill-fast`")
 
             if wait_for(out / "await-tmp-edit", proc, 60, poll=0.05):
                 src = tmp / ".live.src"
