@@ -9,7 +9,7 @@ for c in $COMMITS; do if [ "$c" = wip ]; then ../exp/mkp.sh $FIX wip exp/wip.pat
 git show $FIX:web/test/scrollperf.mjs > test/scrollperf.mjs
 mkdir -p ../exp/out
 ln -sfn ../web/node_modules ../exp/node_modules
-for rep in 1 2 3 4 5 6 7 8; do for c in $COMMITS; do
+for rep in 1 2 3 4 5; do for c in $COMMITS; do
   if [ "$SPECS" = huge ] && [ $rep -le 3 ]; then
     HUGE=1 node ../exp/code.mjs ../exp/builds/$c >> ../exp/out/code.jsonl 2>>../exp/out/code-err.log || echo "run failed $c"
   elif [ "$SPECS" = huge ]; then

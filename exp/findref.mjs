@@ -180,9 +180,10 @@ for (let i = 0; i < 5; i++) {
   const gaps = await page.evaluate(p => window.painted(() => window.readout.apply(p), 500), { version: 50 + i, reset: false, rewrite: false,
     ops: [{ ...o, op: 'replace', change: 'content', html: o.html.replace('</p>', ` the edit ${i}</p>`) }], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   findRefreshFrame.push(Math.max(gaps[0] + gaps[1], ...gaps.slice(2)));
+  (globalThis.__gaps ||= []).push(gaps.slice(0, 10).map(Math.round));
   findRefresh.push(await page.evaluate(() => performance.getEntriesByName('readout-find-refresh').pop()?.detail ?? -1));
   await page.waitForTimeout(200);
 }
 
-console.log(JSON.stringify({ build: process.argv[2].split('/').pop(), frame: findRefreshFrame.map(Math.round), refresh: findRefresh.map(Math.round), errors: errors.length }));
+console.log(JSON.stringify({ build: process.argv[2].split('/').pop(), gaps: globalThis.__gaps, frame: findRefreshFrame.map(Math.round), refresh: findRefresh.map(Math.round), errors: errors.length }));
 await browser.close(); server.close(); process.exit(0);
