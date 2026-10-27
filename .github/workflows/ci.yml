@@ -3,7 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
+  # Draft PRs run nothing (the Changed paths job is skipped, so every job
+  # after it is too); marking one ready runs it. Policy: docs/TESTING.md.
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       notarize:
@@ -16,8 +19,76 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decides what a pull request needs (docs/TESTING.md, "What CI runs").
+  # A push to main and a dispatch always get everything: release.yml's
+  # preflight requires that push run's Core, WebKit, Rendering baselines and
+  # Verify jobs to have succeeded, so nothing here may skip them there.
+  # Anything unexpected (no merge commit, a failed diff, an empty diff)
+  # runs everything.
+  changes:
+    name: Changed paths
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      linux: ${{ steps.classify.outputs.linux }}
+      verify: ${{ steps.classify.outputs.verify }}
+    steps:
+      # The PR's merge commit and both its parents: the base tip is ^1.
+      - uses: actions/checkout@v5
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 2
+      - name: Classify
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PR: ${{ github.event.pull_request.number }}
+          PAYLOAD_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'verify') }}
+        run: |
+          set -euo pipefail
+          out() { echo "linux=$1" >> "$GITHUB_OUTPUT"; echo "verify=$2" >> "$GITHUB_OUTPUT"; echo "linux=$1 verify=$2 ($3)" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          if [ "$EVENT" != "pull_request" ]; then out true true "$EVENT: everything runs"; exit 0; fi
+          # The label is read live, so re-running all jobs after adding it works.
+          LABELS=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '.[].name' 2>/dev/null) || LABELS=""
+          if [ "$PAYLOAD_LABEL" = "true" ] || grep -qx verify <<< "$LABELS"; then
+            out true true "label verify"; exit 0
+          fi
+          # --no-renames: a file moved into docs/ also lists the path it left.
+          if ! git rev-parse --verify --quiet 'HEAD^2' > /dev/null || ! FILES=$(git diff --no-renames --name-only 'HEAD^1' HEAD) || [ -z "$FILES" ]; then
+            out true true "could not list the changed files"; exit 0
+          fi
+          printf '%s\n' "$FILES" | sed 's/^/    /' >> "$GITHUB_STEP_SUMMARY"
+          linux=false; verify=false
+          while IFS= read -r f; do
+            # Linux jobs skip only docs (but not docs/releases/, which Core
+            # tests and release preflight read) and top-level Markdown.
+            case "$f" in
+              docs/releases/*) linux=true ;;
+              docs/*) ;;
+              */*) linux=true ;;
+              *.md) ;;
+              *) linux=true ;;
+            esac
+            # Verify skips docs, top-level Markdown, web tests and the speed
+            # budgets, except the web/test files the smoke test itself opens.
+            case "$f" in
+              web/test/fixtures/plan*|web/test/fixtures/missing-diagram.png|web/test/corpus/01-sdd-fix-loop-plan.md) verify=true ;;
+              docs/*|web/test/*|tools/perf-budgets.json) ;;
+              */*) verify=true ;;
+              *.md) ;;
+              *) verify=true ;;
+            esac
+          done <<< "$FILES"
+          out "$linux" "$verify" "changed paths"
+
   core:
     name: Core tests (Linux)
+    needs: changes
+    if: needs.changes.outputs.linux == 'true'
     runs-on: ubuntu-latest
     container: swift:6.1-noble
     steps:
@@ -41,6 +112,8 @@ jobs:
 
   webkit:
     name: Web tests (WebKit)
+    needs: changes
+    if: needs.changes.outputs.linux == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -75,6 +148,8 @@ jobs:
 
   corpus:
     name: Rendering baselines (WebKit)
+    needs: changes
+    if: needs.changes.outputs.linux == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -102,8 +177,10 @@ jobs:
 
   verify:
     name: Verify signed product
-    needs: [core, webkit]
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.notarize) }}
+    # Always on push to main and dispatch; on a PR only when Changed paths
+    # says so (macOS minutes cost about 10x Linux ones).
+    needs: [changes, core, webkit]
+    if: ${{ needs.changes.outputs.verify == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.notarize) }}
     uses: ./.github/workflows/verify.yml
     with:
       version: 0.0.0-ci
