@@ -202,6 +202,7 @@ export function forgetBlock(el) {
     if (diagrams.delete(x)) sweepLater();   // a diagram gone: its drawing kept a while, then dropped
     parts.delete(x);
     shownInPart.delete(x);
+    vcodes.delete(x);
     const i = queue.indexOf(x);
     if (i >= 0) queue.splice(i, 1);
   }
@@ -290,7 +291,7 @@ function setupCode(cb) {
   setLabel(btn, strings.copy || 'Copy');
   btn.addEventListener('click', ev => {
     ev.stopPropagation();
-    const code = cb.querySelector('pre').innerText.replace(/\n$/, '');
+    const code = vcodes.get(cb)?.lines.join('\n') ?? cb.querySelector('pre').innerText.replace(/\n$/, '');
     post({ type: 'copy', text: code });
     setLabel(btn, strings.copied || 'Copied');
     setTimeout(() => setLabel(btn, strings.copy || 'Copy'), 1400);
@@ -310,6 +311,7 @@ function setupCode(cb) {
   // whose lines run past the column into the margins, when the window has room.
   if (cb.parentElement.classList.contains('k-code')) cb.parentElement.style.setProperty('--cb-cols', prose ? 0 : codeColumns(text));
   cb.dataset.hl = 'pending';
+  if (!prose && root.dataset.codeWrap !== 'on') virtualize(cb, text);
   fresh.push(cb);
 }
 
@@ -509,7 +511,7 @@ window.addEventListener('scroll', () => {
     if (inViewport(cb)) highlightBlock(cb, 'screen');
   }
   // (All of it, as the pump would: shown in part and then whole, a block is laid out twice.)
-  for (const el of queue) if (el.isConnected && el.classList.contains('code-block') && el.dataset.hl === 'pending' && !parts.get(el)?.view && inViewport(el)) highlightBlock(el, 'all');
+  for (const el of queue) if (el.isConnected && el.classList.contains('code-block') && el.dataset.hl === 'pending' && !parts.get(el)?.view && !vcodes.has(el) && inViewport(el)) highlightBlock(el, 'all');
 }, { passive: true });
 function markDiff(root, id) {
   if (id !== 'diff') return;
@@ -531,6 +533,7 @@ function highlightBlock(cb, need = 'screen') {
   if (cb.dataset.hl !== 'pending' && !recheck) return;
   const id = hl.resolveLang(cb.dataset.lang);
   if (!id) { cb.dataset.hl = 'none'; return; }
+  if (vcodes.has(cb)) return vHighlight(cb, id, need);
   const pre = cb.querySelector('pre');
   if (!sourceOf.has(cb)) sourceOf.set(cb, pre.textContent);
   const code = sourceOf.get(cb);
@@ -642,7 +645,7 @@ function lazyWork(el) {
   // laid out twice as often, its p95 frame 4 ms longer.)
   // A block a jump showed in part goes on a slice at a time (finished at
   // once, it was a task of 100 ms and more before the jump's first frame).
-  if (el.classList.contains('code-block')) { if (highlightBlock(el, !inViewport(el) ? 'none' : parts.get(el)?.view ? 'screen' : 'all') === 'more') queue.unshift(el); }
+  if (el.classList.contains('code-block')) { if (highlightBlock(el, !inViewport(el) ? 'none' : parts.get(el)?.view || vcodes.has(el) ? 'screen' : 'all') === 'more') queue.unshift(el); }
   else if (el.classList.contains('mermaid-block')) renderMermaid(el);
 }
 
@@ -675,3 +678,115 @@ export function renderLazy(near = inViewport) {
   }
 }
 const diagrams = new Set();   // every diagram block set up (enhance), until it leaves the page
+
+// ---------------------------------------------------------------- Lines virtualization (spike: m16/proto-window)
+//
+// A code block of more than VLINES lines (not wrapped, not prose) keeps in
+// the page only the lines within about two screens of the viewport: a spacer
+// above and below at the height of the lines they stand for (each line one
+// line box: the line height set to whole pixels), the window between. Its
+// lines are highlighted from the top in slices (the grammar's state carried
+// on), each line's HTML kept; the window shows a line coloured once it is done.
+const VLINES = 2000;
+const VMARGIN = 250;    // lines kept either side of the screen
+const VSLACK = 80;      // the window is drawn again once the screen comes this close to its edge
+const vcodes = new Map();   // code block -> {lines, html[], lh, a, b, at, state, pre, top, win, bot}
+const escLine = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+function virtualize(cb, text) {
+  const lines = text.split('\n');
+  if (lines.length <= VLINES) return;
+  const pre = cb.querySelector('pre');
+  const lh = Math.round(parseFloat(getComputedStyle(pre).lineHeight)) || 20;
+  pre.style.lineHeight = `${lh}px`;
+  pre.style.setProperty('--lh', `${lh}px`);
+  const code = document.createElement('code');
+  const top = document.createElement('div'), win = document.createElement('div'), bot = document.createElement('div');
+  top.className = 'vtop'; win.className = 'vwin'; bot.className = 'vbot';
+  code.append(top, win, bot);
+  pre.replaceChildren(code);
+  cb.classList.add('vcode');
+  const v = { lines, html: new Array(lines.length), lh, a: 0, b: 0, at: 0, state: undefined, pre, top, win, bot, cls: null };
+  vcodes.set(cb, v);
+  drawWindow(v, 0, Math.min(lines.length, 2 * VMARGIN));
+}
+const vstats = window.__vstats = { draws: 0, drawMs: 0, hlMs: 0, hlCalls: 0, scrollMs: 0 };
+function drawWindow(v, a, b) {
+  const t0 = performance.now();
+  try { return drawWindow_(v, a, b); } finally { vstats.draws++; vstats.drawMs += performance.now() - t0; }
+}
+function drawWindow_(v, a, b) {
+  const n = v.lines.length;
+  a = Math.max(0, a); b = Math.min(n, b);
+  const parts = new Array(b - a);
+  for (let i = a; i < b; i++) parts[i - a] = v.html[i] ?? `<span class="line">${escLine(v.lines[i])}</span>`;
+  v.win.innerHTML = parts.join('');
+  v.top.style.height = `${a * v.lh}px`;
+  v.bot.style.height = `${(n - b) * v.lh}px`;
+  v.a = a; v.b = b; v.drawnAt = v.at;
+}
+/** The lines of `v` the screen shows (and the window toolbar above it): [first, last). */
+function vVisible(v) {
+  const r = v.win.parentElement.getBoundingClientRect();   // the <code>: line 0 at its top
+  const first = Math.floor(-r.top / v.lh), last = Math.ceil((innerHeight - r.top) / v.lh);
+  return [Math.max(0, first), Math.min(v.lines.length, last)];
+}
+function vUpdate(v, force = false) {
+  const [first, last] = vVisible(v);
+  if (last <= 0 || first >= v.lines.length) return;
+  const n = v.lines.length;
+  const near = (first - v.a < VSLACK && v.a > 0) || (v.b - last < VSLACK && v.b < n);
+  if (near || force) drawWindow(v, first - VMARGIN, last + VMARGIN);
+}
+window.addEventListener('scroll', () => {
+  for (const [cb, v] of vcodes) {
+    if (!cb.isConnected) continue;
+    const r = cb.getBoundingClientRect();
+    if (r.bottom < -innerHeight || r.top > 2 * innerHeight) continue;
+    vUpdate(v);
+  }
+}, { passive: true });
+/** Highlights `cb` (virtualized) on from where it got: `need` 'screen' colours the lines on screen now. */
+function vHighlight(cb, id, need) {
+  const t0 = performance.now();
+  try { return vHighlight_(cb, id, need); } finally { vstats.hlCalls++; vstats.hlMs += performance.now() - t0; }
+}
+function vHighlight_(cb, id, need) {
+  const v = vcodes.get(cb);
+  if (cb.dataset.hl !== 'pending' && cb.dataset.hl !== 'recheck') return;
+  if (v.at === 0 && !hl.canHighlight(v.lines.slice(0, 200).join('\n'), id)) {
+    if (prepared.has(cb)) { cb.dataset.hl = 'none'; return; }
+    cb.dataset.hl = 'loading';
+    prepared.add(cb);
+    hl.prepare(id, v.lines.slice(0, 200).join('\n')).then(() => { cb.dataset.hl = 'pending'; if (cb.isConnected) { queue.push(cb); pump(); } });
+    return;
+  }
+  // The lines on screen at once only when the highlighting has nearly reached
+  // them (a landing at the block's top); deeper in, they are plain until the
+  // slices get there (each line's colour needs every line before it).
+  let upto = need === 'none' || !cb.isConnected ? -1 : vVisible(v)[1] + 40;
+  if (upto - v.at > 300) upto = -1;
+  const start = performance.now();
+  const step = 2;
+  const from = v.at;
+  do {
+    const r = hl.highlightPart(v.lines.slice(v.at, v.at + step).join('\n'), id, v.state);
+    const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
+    if (!m) { cb.dataset.hl = 'none'; return; }
+    if (!v.cls) { v.cls = /class="([^"]*)"/.exec(m[1])?.[1] || 'shiki'; v.pre.classList.add(...v.cls.split(/\s+/).filter(Boolean)); }
+    const ls = m[2].split('\n');
+    for (let k = 0; k < ls.length; k++) v.html[v.at + k] = ls[k];
+    v.state = r.state;
+    v.at += step;
+  } while (v.at < v.lines.length && (v.at < upto || performance.now() - start < SLICE_MS));
+  // The lines coloured now that the window shows, swapped in where they are (each one line box: no height changes).
+  if (cb.isConnected) {
+    const kids = v.win.children;
+    for (let k = Math.max(from, v.a); k < Math.min(v.at, v.b); k++) {
+      const line = kids[k - v.a];
+      if (line && v.html[k]) line.outerHTML = v.html[k];
+    }
+  }
+  if (v.at < v.lines.length) return 'more';
+  cb.dataset.hl = 'done';
+  warmGrammars.add(id);
+}

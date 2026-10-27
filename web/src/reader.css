@@ -882,3 +882,12 @@ details ul, details ol { padding-left: 1.5em; }
   th { white-space: normal; }
   th, td { overflow-wrap: anywhere; padding-right: 0.6em; }
 }
+
+/* Spike (m16/proto-window): a parked chunk (chunks.js) is an empty box at the
+   height it is skipped at; a lines-virtualized code block (enhance.js). */
+#ro-doc > .chunk.parked { content-visibility: visible; }
+.code-block.vcode pre > code { display: block; }
+.code-block.vcode .vtop, .code-block.vcode .vbot { display: block; }
+.code-block.vcode .vwin { display: block; }
+/* Each line a box of its own, one line high: a line coloured is laid out alone. */
+.code-block.vcode .vwin > .line { display: block; height: var(--lh); }

@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, firstItem, nextItem, lastItem, prevItem } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
-import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, roughRect, unstale, cvOn } from './chunks.js';
+import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, roughRect, unstale, cvOn, setFiller, parkedIn, mount, queuePark, parkFresh, setPatching, parkedWithMarkers, isParked } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, forgetBlock } from './enhance.js';
@@ -53,6 +53,27 @@ function makeBlock(op) {
 /** What a chunk not laid out yet counts for the block: its height estimated from its HTML. */
 const estimateOp = op => estimateHeight(op.kind, op.html);
 
+// The document model (spike): each block's HTML, whether or not its DOM is
+// in the page. A block whose chunk is parked is an empty shell (chunks.js).
+export const model = new WeakMap();   // block -> its HTML
+const filled = new WeakSet();          // blocks whose HTML is in their element
+let deferFill = false;                 // a large reset: blocks filled only as their chunk comes near
+/** `el`'s HTML from the model into its element, set up (once). */
+export function fillDom(el) {
+  if (filled.has(el)) return;
+  forgetBlock(el);
+  el.innerHTML = model.get(el) ?? '';
+  enhance(el);
+  titleLinks(el);
+  pathLinks(el);
+  filled.add(el);
+}
+setFiller({
+  fill: el => { fillDom(el); resizeObserver.observe(el); },
+  // (Its last height kept: what it counts for in its chunk's skipped size, chunks.js: counted.)
+  empty: el => { resizeObserver.unobserve(el); if (filled.delete(el)) { forgetBlock(el); el.textContent = ''; } },
+});
+
 function fillBlock(el, op) {
   // A flash running stays (apply restarts it under its other name).
   const flash = ['flash', 'flash-alt'].filter(c => el.classList.contains(c));
@@ -61,13 +82,11 @@ function fillBlock(el, op) {
   if (op.anchor) el.dataset.anchor = op.anchor; else delete el.dataset.anchor;
   // A block in the document: its chunk's estimate follows the new content.
   if (isChunk(el.parentElement)) reestimate(el, estimateOp(op));
-  forgetBlock(el);
-  el.innerHTML = op.html;
+  model.set(el, op.html);
   if (op.src != null) sources.set(el, op.src); else sources.delete(el);
   if (op.tight) tight.add(el); else tight.delete(el);
-  enhance(el);
-  titleLinks(el);
-  pathLinks(el);
+  if (filled.delete(el)) { forgetBlock(el); el.textContent = ''; }
+  if (!deferFill) fillDom(el);
 }
 
 /**
@@ -113,6 +132,27 @@ export function apply(p) {
   const isFirst = first;
   first = false;
   const t0 = performance.now();
+  // Windowing: the parked chunks this patch touches are back in the page
+  // first (skipped where they are, so nothing moves), parked again after.
+  const mounted = [];
+  setPatching(true);
+  if (!p.reset) {
+    const back = el => { const c = el && parkedIn.get(el); if (c && mount(c)) mounted.push(c); };
+    const fresh = new Set(p.ops.filter(o => o.op === 'insert').map(o => o.slot));
+    for (const op of p.ops) {
+      back(slots.get(op.slot));
+      if (op.op === 'insert') {
+        if (op.after) back(slots.get(op.after));
+        else if (isParked(doc.firstElementChild)) { mount(doc.firstElementChild); mounted.push(doc.firstElementChild); }
+        if (op.after && !slots.get(op.after) && !fresh.has(op.after) && isParked(doc.lastElementChild)) { mount(doc.lastElementChild); mounted.push(doc.lastElementChild); }
+      }
+    }
+    if (p.deletions?.length) {
+      for (const d of p.deletions) if (d.after) back(slots.get(d.after)); else if (isParked(doc.firstElementChild)) { mount(doc.firstElementChild); mounted.push(doc.firstElementChild); }
+      for (const c of parkedWithMarkers()) if (mount(c)) mounted.push(c);
+    }
+  }
+  deferFill = !!p.reset && p.ops.length > 250;
   // The document was emptied (truncated): the place it had before counts.
   if (held && slots.size > 0 && Math.abs(document.scrollingElement.scrollTop - held.top) > 2) held = null;   // the reader moved
   if (tail && Math.abs(document.scrollingElement.scrollTop - tail.y) > 2) tail = null;   // the reader scrolled away
@@ -214,6 +254,7 @@ export function apply(p) {
 
   const t1 = performance.now();
   updateCv(!!p.reset);
+  if (deferFill) { deferFill = false; if (doc.classList.contains('cv')) parkFresh(); else for (const el of slots.values()) fillDom(el); }
   // The first open of a large document reads no layout before its first
   // frame: in that frame WebKit lays out only the blocks on screen (the rest
   // are skipped, content-visibility), where a layout forced before it would
@@ -323,6 +364,8 @@ export function apply(p) {
 
   scheduleRail();
   if (headingsTouched) headingsChanged();
+  setPatching(false);
+  for (const c of mounted) queuePark(c);
   post({ type: 'applied', version: p.version });
   // After the frame that shows it: rAF runs before the paint, the task it
   // queues runs after. The current section is found then too: the page is

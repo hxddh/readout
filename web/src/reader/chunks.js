@@ -7,7 +7,7 @@
 // of the viewport are laid out ahead (`near`), so what scrolls in is drawn.
 import { doc, heights, isChunk } from './core.js';
 import { resizeObserver } from './anchor.js';
-import { nearChunk } from './enhance.js';
+import { nearChunk, renderLazy } from './enhance.js';
 
 const CHUNK = 32;   // items a chunk is filled to as blocks arrive in order
 const SPAN = 4000;  // or estimated px (about four screens): long code is two or three blocks a chunk, a huge block one of its own
@@ -48,9 +48,10 @@ const forced = new Set();
 function show(c) {
   if (!c.isConnected) { near.delete(c); forced.delete(c); return; }
   const on = near.has(c) || forced.has(c);
+  if (on) mount(c);
   if (on === c.classList.contains('near')) return;
   c.classList.toggle('near', on);
-  if (on) nearChunk(c);
+  if (on) nearChunk(c); else queuePark(c);
   // Laid out from now on at its size, remembered when it is skipped again (account).
   if (on && stale.delete(c)) { c.classList.remove('stale'); c.style.removeProperty('--stale'); }
 }
@@ -92,6 +93,8 @@ window.addEventListener('scroll', () => {
  * `room`: how much of the screen will show above `el` (a jump centring it).
  */
 export function forceLayout(el, room = 0) {
+  const pc = parkedIn.get(el);
+  if (pc) mount(pc);
   const c = isChunk(el) ? el : el.closest('#ro-doc > .chunk');
   // Near the screen already: it is laid out, and so are its neighbours.
   if (!cv() || !isChunk(c) || c.classList.contains('near')) return;
@@ -124,6 +127,13 @@ export function forceLayout(el, room = 0) {
  * among the chunk's items.
  */
 export function roughRect(el) {
+  const pc = parkedIn.get(el);
+  if (pc) {
+    const r = pc.getBoundingClientRect(), items = parkedItems.get(pc), n = items.length;
+    const i = items.indexOf(el);
+    const top = r.top + r.height * i / n, height = r.height / n;
+    return { top, bottom: top + height, height, left: r.left, right: r.right, width: r.width };
+  }
   const c = el.parentElement;
   if (!cv() || !isChunk(c) || el.checkVisibility({ contentVisibilityAuto: true })) return el.getBoundingClientRect();
   const r = c.getBoundingClientRect(), n = c.childElementCount;
@@ -149,6 +159,7 @@ function dropChunk(c) {
   touched.delete(c);
   stale.delete(c);
   unevenChunks.delete(c);
+  forgetParked(c);
   resizeObserver.unobserve(c);
   lookahead.unobserve(c);
   near.delete(c);
@@ -196,7 +207,7 @@ export function place(el, after, est = 0) {
   if (after && !after.nextElementSibling && n && (big || full(c))) {
     // After a full chunk's last item (an agent writing on): the next chunk, if it has room, else a new one.
     const next = c.nextElementSibling;
-    if (!big && isChunk(next) && !full(next) && estimateOf(next) + est <= SPAN) { c = next; after = null; }
+    if (!big && isChunk(next) && !parkedItems.has(next) && !full(next) && estimateOf(next) + est <= SPAN) { c = next; after = null; }
     else { const fresh = makeChunk(); c.after(fresh); c = fresh; after = null; }
   } else if (!after && n && (big || n >= MAX || estimateOf(c) + est > 2 * SPAN || estimates.get(c.firstElementChild) >= SPAN)) {
     // First in the document, before a chunk at its limit or a big block.
@@ -393,7 +404,7 @@ export function flushStarts() {
     done.add(x);
     const h = x.firstElementChild;
     if (!h || !h.classList.contains('k-heading')) continue;
-    const p = x.previousElementSibling?.lastElementChild;
+    const p = lastOf(x.previousElementSibling);
     const on = !!p && (p.classList.contains('k-rule') || (p.classList.contains('k-frontMatter') && !!h.querySelector(':scope > :is(h1, h2)')));
     if (on === h.classList.contains('h-flush')) continue;
     // Its top margin changes, and so does its chunk: taken like any change
@@ -464,6 +475,7 @@ export function cvOn(reset) {
   const sizes = new Map();
   if (!reset) for (const c of doc.children) if (isChunk(c)) sizes.set(c, c.getBoundingClientRect().height);
   doc.classList.add('cv');
+  if (!reset) for (const c of doc.children) if (isChunk(c)) queuePark(c);
   for (const [c, h] of sizes) {
     if (c.classList.contains('near')) continue;
     laidOut.add(c);
@@ -475,6 +487,7 @@ export function cvOn(reset) {
 
 /** The document no longer large (no chunk skipped): every chunk at its own height again. */
 export function unstale() {
+  for (const c of [...parkedItems.keys()]) mount(c);
   for (const c of stale.keys()) { c.classList.remove('stale'); c.style.removeProperty('--stale'); }
   stale.clear();
 }
@@ -490,3 +503,115 @@ export function chunksHeld() {
 export function clearChunks() {
   for (const c of [...doc.children]) if (isChunk(c)) dropChunk(c);
 }
+
+// ---------------------------------------------------------------- Windowing (spike: m16/proto-window)
+//
+// A large document keeps in the page only the chunks near the screen (the
+// lookahead's two screens, and those forced). Every other chunk is parked: an
+// empty element at the height it is skipped at, its items detached (blocks
+// as empty shells: the slot, the kind, the marks' classes) and each block's
+// HTML kept in a model (patch.js: model). It comes back (mount) when it comes
+// near, when a jump forces it, or before a patch touches it; it is parked
+// again once it has left (queuePark, a few at a time while the page is quiet).
+// Parking changes no height (the chunk keeps the size it was skipped at), so
+// nothing moves.
+const parkedItems = new Map();     // chunk -> its items, in order
+export const parkedIn = new WeakMap();   // item -> its parked chunk
+const parkedMarkers = new Set();   // parked chunks holding a removal marker
+export const isParked = c => parkedItems.has(c);
+/** The parked chunks (patch.js, before a patch that changes removal markers). */
+export const parkedWithMarkers = () => [...parkedMarkers];
+/** The last item of chunk `c`, parked or not. */
+export const lastOf = c => !isChunk(c) ? null : parkedItems.has(c) ? parkedItems.get(c).at(-1) : c.lastElementChild;
+
+let filler = null;   // {fill(el), empty(el)}: patch.js puts a block's HTML in or takes it out
+export function setFiller(f) { filler = f; }
+let patching = false;
+/** A patch is applying (its own renderLazy takes the code its mounts set up). */
+export function setPatching(on) { patching = on; }
+export const windowStats = { mounts: 0, parks: 0 };
+
+function forgetParked(c) {
+  const items = parkedItems.get(c);
+  if (!items) return;
+  for (const e of items) parkedIn.delete(e);
+  parkedItems.delete(c);
+  parkedMarkers.delete(c);
+  parkQueue.delete(c);
+}
+
+/** Chunk `c` back in the page, its blocks filled from the model. Whether it was parked. */
+export function mount(c) {
+  const items = parkedItems.get(c);
+  if (!items) return false;
+  parkedItems.delete(c);
+  parkedMarkers.delete(c);
+  for (const e of items) parkedIn.delete(e);
+  c.append(...items);
+  for (const e of items) if (e.classList.contains('blk')) filler.fill(e);
+  c.classList.remove('parked');
+  c.style.removeProperty('height');
+  windowStats.mounts++;
+  if (!patching) renderLazy(() => false);
+  return true;
+}
+
+/** Chunk `c` parked at `h` px (its height now). */
+function park(c, h) {
+  if (parkedItems.has(c) || !c.isConnected) return;
+  const items = [...c.children];
+  if (!items.length) return;
+  c.style.height = `${h}px`;
+  c.classList.add('parked');
+  for (const e of items) if (e.classList.contains('blk')) filler.empty(e);
+  c.replaceChildren();
+  parkedItems.set(c, items);
+  for (const e of items) { parkedIn.set(e, c); if (e.classList.contains('del-mark')) parkedMarkers.add(c); }
+  windowStats.parks++;
+}
+
+/** A reset of a large document: every chunk not laid out ahead parked at once, at its estimate (none is laid out yet). */
+export function parkFresh() {
+  for (const c of doc.children) if (isChunk(c) && !c.classList.contains('near') && !forced.has(c)) park(c, estimateOf(c));
+}
+
+const parkQueue = new Set();
+let parkTimer = null;
+const PARK_MS = 4;
+export function queuePark(c) {
+  if (!cv() || parkedItems.has(c)) return;
+  parkQueue.add(c);
+  if (!parkTimer) parkTimer = setTimeout(parkTurn, 100);
+}
+function parkTurn() {
+  parkTimer = null;
+  const t0 = performance.now();
+  const ready = [];
+  for (const c of parkQueue) {
+    if (ready.length >= 8) break;
+    parkQueue.delete(c);
+    if (!c.isConnected || !cv() || near.has(c) || forced.has(c) || c.classList.contains('near') || parkedItems.has(c)) continue;
+    if (holds(c.firstElementChild, c.lastElementChild) || unevenChunks.has(c)) { setTimeout(() => queuePark(c), 2000); continue; }
+    ready.push(c);
+  }
+  // All reads, then all writes: one layout.
+  const hs = ready.map(c => c.getBoundingClientRect().height);
+  for (let i = 0; i < ready.length; i++) {
+    park(ready[i], hs[i]);
+    if (performance.now() - t0 > PARK_MS) { for (const c of ready.slice(i + 1)) parkQueue.add(c); break; }
+  }
+  if (parkQueue.size) parkTimer = setTimeout(parkTurn, 50);
+}
+
+/** Tests (spike): the items' slots in order, parked or not; each chunk's item count; every chunk back in the page. */
+export function windowProbe() {
+  const order = [], counts = [];
+  for (const c of doc.children) {
+    if (!isChunk(c)) continue;
+    const items = parkedItems.get(c) ?? [...c.children];
+    counts.push(items.length);
+    for (const e of items) if (e.classList.contains('blk')) order.push(+e.dataset.slot);
+  }
+  return { order, counts, parked: parkedItems.size, ...windowStats };
+}
+export function mountAll() { for (const c of [...parkedItems.keys()]) mount(c); }

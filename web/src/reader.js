@@ -15,7 +15,7 @@ import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace
 import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, blocksShown, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld } from './reader/marks.js';
-import { chunksHeld } from './reader/chunks.js';
+import { chunksHeld, windowProbe, mountAll } from './reader/chunks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelButtons, setCodeWrap, highlightAll, measureTables, highlightIn, lazyHeld } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
@@ -414,6 +414,9 @@ window.readout = {
   remoteFailed,
   remoteKnown,
   warm: () => hl.warm(),
+  // Spike tests: the document's order and chunks parked or not, every chunk mounted.
+  windowProbe,
+  mountAll,
   // The fence languages of the document being parsed (before its apply).
   prepare: langs => hl.prepareLangs(langs),
 };
