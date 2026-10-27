@@ -92,7 +92,6 @@ enum MainMenu {
         // View
         let view = NSMenu(title: NSLocalizedString("View", comment: "Menu"))
         view.addItem(item(NSLocalizedString("Show Sidebar", comment: "Menu"), #selector(NSSplitViewController.toggleSidebar(_:)), "s", [.command, .control]))
-        view.addItem(item(NSLocalizedString("Wide Text", comment: "Menu"), #selector(ReaderWindowController.toggleWidth(_:)), "\\", [.command, .option]))
         view.addItem(.separator())
         view.addItem(item(NSLocalizedString("Next Change", comment: "Menu"), #selector(ReaderWindowController.nextChange(_:)), "]"))
         view.addItem(item(NSLocalizedString("Previous Change", comment: "Menu"), #selector(ReaderWindowController.previousChange(_:)), "["))

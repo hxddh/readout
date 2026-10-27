@@ -376,8 +376,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // The area under the toolbar shows the web view's under-page colour; keep it in step with the page.
         webView.underPageBackgroundColor = dark ? NSColor(srgbRed: 0x1e / 255, green: 0x1e / 255, blue: 0x1f / 255, alpha: 1) : .white
         webView.whenReady { [weak self] in
-            self?.webView.setAppearance(dark: dark, accent: .controlAccentColor, width: settings.wide ? "wide" : "narrow",
-                                        fontSize: settings.fontSize, strings: ReaderStrings.all, codeWrap: settings.codeWrap)
+            self?.webView.setAppearance(dark: dark, accent: .controlAccentColor, fontSize: settings.fontSize,
+                                        strings: ReaderStrings.all, codeWrap: settings.codeWrap)
         }
         lastTopInset = -1
         DispatchQueue.main.async { [weak self] in self?.updateTopInset() }
@@ -386,7 +386,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func observeSettings() {
         let s = AppSettings.shared
         s.$fontSize.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
-        s.$wide.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         // A wrap toggled in one window applies to every open window.
         s.$codeWrap.dropFirst().removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         model.$unread.sink { [weak self] n in self?.updateChangeItem(n) }.store(in: &cancellables)
@@ -1245,8 +1244,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
     }
 
-    @objc func toggleWidth(_ sender: Any?) { AppSettings.shared.wide.toggle() }
-
     @objc func revealInFinder(_ sender: Any?) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
 
     /// ⌘E: the editor at the source line of the selection's block, or else
@@ -1411,9 +1408,6 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case #selector(showWhatChanged(_:)):
             // As the page's D key: with nothing to compare, the page beeps.
             return loaded
-        case #selector(toggleWidth(_:)):
-            item.state = AppSettings.shared.wide ? .on : .off
-            return true
         default:
             return true
         }
