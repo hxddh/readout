@@ -51,13 +51,20 @@ a user can see, feel or rely on, in their words:
 
 ## What CI and preflight block
 
-- `ci.yml` (every PR and `main` push): Core tests (Linux),
+- `ci.yml` (every `main` push, in full): Core tests (Linux),
   Web tests (WebKit — the production engine), Rendering baselines (WebKit:
   the real-agent corpus against its snapshots and screenshots), and the full
   Verify-signed-product run (Release build + ad-hoc sign + boot the signed
   app from /Applications + `tools/smoke-assert.py` + Quick Look check).
   A red Core tests run blocks every release — this is what let v1.0.1 ship
   broken, and it can no longer happen.
+  Pull requests run less to save macOS minutes (docs/TESTING.md, "What CI
+  runs"): drafts run nothing, docs-only PRs skip the Linux jobs, and Verify
+  runs only when the PR changes something outside docs, top-level Markdown,
+  web tests and the speed budgets, or carries the `verify` label. The push to
+  `main` never skips anything, and it is the run preflight requires, so the
+  release gate is unchanged. A release PR (`project.yml` changes) runs
+  everything.
 - `release.yml` preflight fails with a clear message when:
   - the tag is not plain `vX.Y.Z`;
   - `X.Y.Z` is not strictly newer (semver) than the latest published Release
@@ -173,7 +180,9 @@ If Apple rejects a submission, verify fails before anything is published.
 
 ## Branch and tag protection (owner: set once on GitHub)
 
-- `main`: require PRs, require the Core tests (Linux), Web tests (WebKit),
-  Rendering baselines (WebKit) and Verify signed product checks, no force
-  pushes.
+- `main`: require PRs, require the Core tests (Linux), Web tests (WebKit)
+  and Rendering baselines (WebKit) checks, no force pushes. (Skipped checks
+  pass. Do not require "Verify signed product / Build, sign and smoke test":
+  a PR that skips Verify never reports that name and would wait forever.
+  Verify's gate is the push to `main` run that preflight requires.)
 - Tags `v*`: restrict creation to the repository owner (Rulesets).
