@@ -1,5 +1,5 @@
 // Scrolling a large document, measured in the page (perf.test.mjs): frame
-// gaps, the page's own longest callback, and blank area, while the reader
+// gaps, the page's own longest callback and those over 50 ms, and blank area, while the reader
 // scrolls down through parts not seen yet three ways: a steady 2400 px/s,
 // flings (9000 px/s decaying), and the browser's own wheel events (120 px
 // notches every 50 ms, the platform's scrolling path).
@@ -31,6 +31,11 @@ export async function instrument(page) {
     }
     const ael = EventTarget.prototype.addEventListener;
     EventTarget.prototype.addEventListener = function (t, f, o) { return ael.call(this, t, /^(scroll|wheel)$/.test(t) ? wrap(f) : f, o); };
+    // The highlighting worker's answers (enhance.js: the HTML put in place).
+    if (window.Worker) {
+      const set = Object.getOwnPropertyDescriptor(Worker.prototype, 'onmessage')?.set;
+      if (set) Object.defineProperty(Worker.prototype, 'onmessage', { set(f) { set.call(this, wrap(f)); }, configurable: true });
+    }
   });
 }
 
@@ -115,6 +120,7 @@ export function summary({ gaps, blank, own }) {
     blankPx: blank.reduce((a, b) => a + b, 0),
     blankFrames: blank.filter(b => b > 0).length,
     ownMax: Math.round(Math.max(0, ...own)),
+    ownLong: own.filter(t => t > 50).length,
     ownPerFrame: Math.round(own.reduce((a, b) => a + b, 0) / Math.max(1, gaps.length) * 10) / 10,
   };
 }

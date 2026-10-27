@@ -126,6 +126,9 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
   /* A long URL or word breaks rather than scrolling the page sideways. */
   overflow-wrap: break-word;
 }
+/* A document's first paint waits a moment for the code it shows to be
+   highlighted (enhance.js: hold); laid out meanwhile, only not painted. */
+#ro-doc.hold { visibility: hidden; }
 
 /* The document's blocks come in chunks (chunks.js). Large documents let
    WebKit skip laying out the chunks away from the screen; those near it

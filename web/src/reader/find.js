@@ -11,7 +11,7 @@
 import { doc, slots, post, firstItem, nextItem, isChunk } from './core.js';
 import { aimAt, pinLanding, topInset, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
-import { highlightIn } from './enhance.js';
+import { whenColoured } from './enhance.js';
 
 // Not the document's text: controls, the MathML copy of a formula (its
 // rendering is searched), a drawn diagram's source, a comparison panel.
@@ -355,15 +355,24 @@ function place() {
 }
 
 /** To the current match (a search): selected, and on screen (it stays where it is if it is already). */
-function land() {
+let colouring = null;   // cancels a landing waiting for its code to be coloured
+function land(waited = false) {
   const m = matches[cur];
   const el = m.el;
   // Its code highlighted before the match is selected in it (highlighting
-  // replaces the text nodes), and a folded <details> it is in opened.
-  if (el.querySelector('.code-block[data-hl="pending"]')) {
-    highlightIn([el]);
-    changed(observer.takeRecords());
-    reread();
+  // replaces the text nodes): it waits for that (enhance.js), a moment. And
+  // a folded <details> it is in opened.
+  colouring?.();
+  colouring = null;
+  if (!waited && el.querySelector('.code-block[data-hl="pending"]')) {
+    colouring = whenColoured([el], () => {
+      colouring = null;
+      if (!observing || matches[cur] !== m) return;
+      changed(observer.takeRecords());
+      reread();
+      land(true);
+    });
+    return;
   }
   let range = rangeOf(m);
   for (let d = range.startContainer.parentElement.closest('details'); d && el.contains(d); d = d.parentElement.closest('details')) {
@@ -495,6 +504,8 @@ export function find(text, backwards = false) {
  * is still open (its text edited), the blocks' text is kept for the next search.
  */
 export function findEnd(keep = false) {
+  colouring?.();
+  colouring = null;
   if (selecting) selectNow();
   query = null;
   clearTimeout(refreshTimer);

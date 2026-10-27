@@ -12,12 +12,12 @@
 //   math / mermaid / remote / heading
 import * as hl from './highlight.js';
 import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, blocksShown, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
+import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld } from './reader/marks.js';
 import { chunksHeld } from './reader/chunks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelButtons, setCodeWrap, highlightAll, measureTables, highlightIn, lazyHeld } from './reader/enhance.js';
+import { relabelButtons, setCodeWrap, highlightAll, measureTables, lazyHeld } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
@@ -284,8 +284,7 @@ function setAppearance(o) {
   const t0 = performance.now();
   // The highlighter starts with the first appearance (or the app's warm-up),
   // which tells Quick Look apart: a preview loads only the grammars it shows.
-  if (o.mode === 'quicklook') hl.noPreload();
-  hl.init();
+  hl.init(o.mode === 'quicklook');
   if (o.dark !== undefined) {
     const t = o.dark ? 'dark' : 'light';
     if (root.dataset.theme !== t) {
@@ -352,16 +351,7 @@ function scrollToSlot(slot) {
   if (!el) return;
   // (What shows above it, under the window toolbar too: room for the chunk before to be laid out if it shows.)
   aimAt(el, () => el.getBoundingClientRect().top - 16 - topInset(), () => { pinActiveHeading(slot); noteLanding(el); pinLanding(el); }, 16 + topInset());
-  highlightOnScreen();
 }
-
-/**
- * Code on screen where the app put the reader (a resumed place, a section)
- * is highlighted before that is painted: the first open highlighted what
- * was on screen at the top, and the rest waits for the lazy observer, which
- * hears of it only after a frame has shown it plain.
- */
-function highlightOnScreen() { highlightIn(blocksShown()); }
 
 function scrollToAnchor(a) {
   if (!a) return;
@@ -371,12 +361,11 @@ function scrollToAnchor(a) {
   const el = slots.get(a.slot);
   if (el) aimAt(el, () => anchorMiss(a, new Set()), () => pinLanding(el));
   else restoreAnchor(a, new Set());
-  highlightOnScreen();
 }
 
 function scrollToFragment(o) {
   const target = resolveFragment(o && o.fragment);
-  if (target) { scrollToElement(target, { gap: 16 }); noteLanding(target); reportActiveHeading(); highlightOnScreen(); }
+  if (target) { scrollToElement(target, { gap: 16 }); noteLanding(target); reportActiveHeading(); }
 }
 
 window.readout = {
@@ -389,7 +378,11 @@ window.readout = {
   trace: traceEntries,
   lazyHeld: () => ({ ...lazyHeld(), ...chunksHeld(), ...marksHeld() }),
   diagramWork,
-  firstTimings: () => firstTimings,
+  firstTimings: () => ({ ...firstTimings, highlighter: hl.engineName() }),
+  // Where code is highlighted: 'worker', 'page' where a worker cannot run, 'starting' (Quick Look's log).
+  highlighter: () => hl.engineName(),
+  // Tests: the grammars the highlighter has registered (a 'readout-hl-langs' mark).
+  loadedLangs: () => hl.loadedLangs(),
   // The find field (⌘F, ⌘G, Return): the next or previous match, and the find bar closed.
   find,
   findEnd,
@@ -435,11 +428,7 @@ async function preparePrint() {
   highlightAll();
   await Promise.race([renderAllMermaid(), wait(8000)]);
   // Code whose grammar is still loading is highlighted when it arrives.
-  while (doc.querySelector('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"]')
-         && performance.now() < deadline) {
-    await wait(50);
-    highlightAll();
-  }
+  while (doc.querySelector('.code-block[data-hl="pending"]') && performance.now() < deadline) await wait(50);
   // The app prints right away; should printing not begin, the diagrams go
   // back to the page's theme.
   clearTimeout(printFallback);

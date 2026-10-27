@@ -3,7 +3,7 @@
 import { doc, root, slots, heights, trace, keptScroll, onKeptScroll, isChunk, nextItem, prevItem } from './core.js';
 import { scheduleRail } from './rail.js';
 import { forceLayout, laidOut, estimateOf, neverLaidOut, cv, scrolledTo } from './chunks.js';
-import { highlightIn } from './enhance.js';
+import { holdJump } from './enhance.js';
 
 /** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
 function topBlock() {
@@ -207,13 +207,6 @@ export function blocksOnScreen() {
   return out;
 }
 
-/** The blocks anything of shows, those under the window toolbar too (what is coloured before a frame shows it). */
-export function blocksShown() {
-  const out = blocksOnScreen();
-  for (let e = out[0] && prevItem(out[0]); e && e.getBoundingClientRect().bottom > 0; e = prevItem(e)) if (e.classList.contains('blk')) out.unshift(e);
-  return out;
-}
-
 /**
  * The one place a `#fragment` (in-document link or `file.md#section` open)
  * becomes an element. Scoped to the document container: chrome ids live under
@@ -271,14 +264,14 @@ onKeptScroll(dy => { if (aiming) aiming.y += dy; });
 for (const type of ['wheel', 'keydown', 'mousedown', 'touchstart']) {
   window.addEventListener(type, () => { aiming = null; landed = null; }, { capture: true, passive: true });
 }
-export function aimAt(el, off, landed, room = 0) {
+export function aimAt(el, off, landed, room = 0, waited = false) {
   forceLayout(el, room);
+  // Code the landing shows is coloured in the frame that shows it: the jump
+  // waits for it (holdJump, a moment), unless it has arrived.
+  if (!waited && holdJump(el, off, () => { if (el.isConnected) aimAt(el, off, landed, room, true); })) return;
   window.scrollBy(0, off());
   scrolledTo();
   landed();
-  // Code the landing shows coloured in the frame that shows it (the lazy
-  // highlighting would colour it a frame or more later).
-  highlightIn(blocksShown());
   if (!cv()) return;
   const se = document.scrollingElement;
   const mine = aiming = { y: se.scrollTop };
@@ -288,7 +281,7 @@ export function aimAt(el, off, landed, room = 0) {
     // the TOC may not have run yet): leave the page where it is.
     if (aiming !== mine || !el.isConnected || (Math.abs(se.scrollTop - mine.y) > 2 && !atEnd())) return;
     const d = off();
-    if (Math.abs(d) > 1) { window.scrollBy(0, d); scrolledTo(); mine.y = se.scrollTop; landed(); highlightIn(blocksShown()); }
+    if (Math.abs(d) > 1) { window.scrollBy(0, d); scrolledTo(); mine.y = se.scrollTop; landed(); }
     if (performance.now() < until) requestAnimationFrame(reaim);
   };
   requestAnimationFrame(reaim);

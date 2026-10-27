@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { createHighlighterCore } from 'shiki/core';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 import { shikiGrammars } from '../shiki-grammars.mjs';
-import { resolveLang, plainTokens, init, prepare, highlightSync, highlightPart } from '../src/highlight.js';
+import { resolveLang, plainTokens, init, prepare, highlightSync, blockSteps, redone } from '../src/highlighter.js';
 
 let failures = 0;
 function check(name, cond, extra = '') {
@@ -19,7 +19,7 @@ function check(name, cond, extra = '') {
 }
 
 // A token is left as bare text only when its span's whole style is the
-// block's own colour in both themes (highlight.js: plainTokens): a theme
+// block's own colour in both themes (highlighter.js: plainTokens): a theme
 // switch does not highlight again, so a token in the block's colour in one
 // theme only, or with a font style, keeps its span.
 {
@@ -38,8 +38,8 @@ function check(name, cond, extra = '') {
   check('a mix keeps each as it should be', run(own + lightOnly + own + italic) === 'own' + lightOnly + 'own' + italic, run(own + lightOnly + own + italic));
 }
 
-// Every grammar highlight.js can load.
-const ids = [...readFileSync('src/highlight.js', 'utf8').matchAll(/import\('@shikijs\/langs\/([\w-]+)'\)/g)].map(m => m[1]);
+// Every grammar highlighter.js can load.
+const ids = [...readFileSync('src/highlighter.js', 'utf8').matchAll(/import\('@shikijs\/langs\/([\w-]+)'\)/g)].map(m => m[1]);
 const entry = ids.map((id, i) => `import g${i} from '@shikijs/langs/${id}';`).join('\n')
   + `\nexport default {${ids.map((id, i) => `${JSON.stringify(id)}: g${i}`).join(',')}};`;
 const out = await esbuild.build({
@@ -103,39 +103,68 @@ for (const f of readdirSync('test/corpus').filter(f => f.endsWith('.md'))) {
 }
 check(`corpus code blocks highlight as with Shiki's grammars (${blocks})`, blocks > 200 && differ.length === 0, differ.slice(0, 10).join(', '));
 
-// A long block highlighted 4 lines at a time (enhance.js: each part a
-// short task; 32 at a time when all of it is wanted at once), each part going on from the state the last one left, comes
-// out exactly as highlighted in one go: comments, strings and templates that
-// run across a part's edge included.
+// A long block highlighted a part at a time (highlighter.js: blockSteps, in
+// the worker, so a block more urgent waits for one part at most), each part
+// going on from the state the last one left, comes out exactly as
+// highlighted in one go: comments, strings and templates that run across a
+// part's edge included. And the lines on screen sent first (upto), and the
+// parts sent after them, are those lines of it.
 {
-  globalThis.requestIdleCallback ??= f => setTimeout(f, 0);
   await init();
   const samples = {
     typescript: Array.from({ length: 100 }, (_, i) => i % 17 === 5 ? '/* a comment that\n spans lines */' : i % 13 === 3 ? 'const s = `template ${i}' : i % 13 === 4 ? `goes on ${i}\`;` : `export function f${i}(a: number): string { return "x" + a; } // ${i}`).join('\n'),
     python: Array.from({ length: 100 }, (_, i) => i % 11 === 2 ? '"""a docstring' : i % 11 === 3 ? 'over lines"""' : `def f${i}(x: int) -> str:  # ${i}\n    return f"{x!r}"`).join('\n'),
     markdown: Array.from({ length: 100 }, (_, i) => i % 23 === 1 ? '```js' : i % 23 === 6 ? '```' : i % 7 === 0 ? `## Heading ${i}` : `Some *text* with \`code\` ${i}`).join('\n'),
   };
+  const run = (code, id, size, upto) => {
+    const r = { code, lang: id, upto }, parts = [];
+    const steps = blockSteps(r, (html, lines, first) => parts.push([html, lines, first]), size);
+    let x;
+    do x = steps.next(); while (!x.done);
+    return { html: x.value, parts };
+  };
   const bad = [];
   for (const [id, code] of Object.entries(samples)) {
     await prepare(id, code);
     const whole = highlightSync(code, id);
     const lines = code.split('\n');
-    // 4 lines a part (ahead of the screen), 32 (all at once), and a mix (a block begun ahead of the screen, then on it).
-    for (const steps of [[4], [32], [4, 4, 32]]) {
-      const inner = [];
-      let state, head, k = 0;
-      for (let at = 0; at < lines.length;) {
-        const n = steps[Math.min(k++, steps.length - 1)];
-        const r = highlightPart(lines.slice(at, at + n).join('\n'), id, state);
-        const m = r && /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(r.html);
-        if (!m) { bad.push(`${id}: part ${at}`); break; }
-        head ??= m[1]; inner.push(m[2]); state = r.state;
-        at += n;
-      }
-      if (!whole || `${head}${inner.join('\n')}</code></pre>` !== whole) bad.push(`${id} (${steps})`);
+    // 4 lines a part, 32, and parts as long as they take (the worker's), with the screen's lines first or not.
+    for (const [size, upto] of [[4, 0], [32, 0], [0, 0], [4, 37], [0, 9]]) {
+      const { html, parts } = run(code, id, size, upto);
+      if (!whole || html !== whole) bad.push(`${id} (${size}, ${upto})`);
+      // The first: the lines up to the screen's last, as a <pre>; the parts after, put after it, the whole but for its last part.
+      const sent = parts.length && `${parts[0][0].slice(0, -'</code></pre>'.length)}${parts.slice(1).map(p => '\n' + p[0]).join('')}`;
+      const last = parts.at(-1)?.[1];
+      if (upto && (!parts.length || !parts[0][2] || parts.slice(1).some(p => p[2]) || parts[0][1] < upto
+          || parts[0][0] !== highlightSync(lines.slice(0, parts[0][1]).join('\n'), id) || sent !== highlightSync(lines.slice(0, last).join('\n'), id).slice(0, -'</code></pre>'.length))) bad.push(`${id} first ${upto} lines (${size}): ${parts.map(p => p[1])}`);
     }
   }
-  check('a long block highlighted a part at a time comes out as highlighted whole', bad.length === 0, bad.join(', '));
+  check('a long block highlighted a part at a time comes out as highlighted whole, its lines on screen first as they are in it', bad.length === 0, bad.join(', '));
+}
+
+// A part highlighted with a grammar not used before that took Shiki's
+// per-line limit or longer may have had a line cut short: it is highlighted
+// again, once. With a grammar used before never, however long it takes; nor
+// a block of a cold grammar whose parts are each quick, however long they
+// add up to. (Every clock reading moves on `step` ms: each part takes that.)
+{
+  const real = performance.now.bind(performance);
+  const timed = (step, f) => { let skew = 0; performance.now = () => (skew += step) + real(); try { return f(); } finally { performance.now = real; } };
+  const go = (code, id) => { const steps = blockSteps({ code, lang: id }, () => {}, 4); let x; do x = steps.next(); while (!x.done); return x.value; };
+  const lua = Array.from({ length: 40 }, (_, l) => `local x${l} = f(${l}) -- note`).join('\n');
+  const perl = Array.from({ length: 40 }, (_, l) => `my $x${l} = $y + ${l};`).join('\n');
+  await prepare('lua', lua);
+  await prepare('perl', perl);
+  const before = redone.parts;
+  const cold = timed(600, () => go(lua, 'lua'));
+  const coldOnce = redone.parts - before;
+  const warm = timed(600, () => go(lua, 'lua'));
+  const warmAgain = redone.parts - before - coldOnce;
+  const quick = timed(5, () => go(perl, 'perl'));
+  const quickAgain = redone.parts - before - coldOnce - warmAgain;
+  check('a slow part with a cold grammar is highlighted again once; with a warm one, or quick parts adding up, never',
+    coldOnce === 1 && warmAgain === 0 && quickAgain === 0 && cold === warm && cold === highlightSync(lua, 'lua') && quick === highlightSync(perl, 'perl'),
+    JSON.stringify({ coldOnce, warmAgain, quickAgain }));
 }
 
 console.log(failures ? `${failures} failure(s)` : 'all grammar checks passed');

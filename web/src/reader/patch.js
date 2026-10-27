@@ -4,7 +4,7 @@ import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resiz
 import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, roughRect, unstale, cvOn } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
-import { enhance, renderLazy, forgetBlock } from './enhance.js';
+import { enhance, renderLazy, forgetBlock, afterShown } from './enhance.js';
 import { sources, tight, setLinks } from './copy.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
 
@@ -308,7 +308,8 @@ export function apply(p) {
 
   // (Code coming on screen is highlighted before the flash's class changes
   // make the page's style stale again: it measures first.)
-  renderLazy(firstLarge ? estimatedOnScreen() : undefined);
+  // (A document shown anew: its first paint waits for the code on screen.)
+  renderLazy(firstLarge ? estimatedOnScreen() : undefined, !!p.reset && slots.size > 0);
 
   // A flash still running restarts under the other animation name
   // (reader.css), without a forced style and layout to restart it. A block
@@ -324,16 +325,17 @@ export function apply(p) {
   scheduleRail();
   if (headingsTouched) headingsChanged();
   post({ type: 'applied', version: p.version });
-  // After the frame that shows it: rAF runs before the paint, the task it
-  // queues runs after. The current section is found then too: the page is
-  // laid out by that frame, so asking costs no layout of its own.
-  requestAnimationFrame(() => setTimeout(() => {
+  // After the frame that shows it (afterShown: rAF runs before the paint,
+  // the task it queues runs after; a first paint waiting for its code, once
+  // it shows). The current section is found then too: the page is laid out
+  // by that frame, so asking costs no layout of its own.
+  afterShown(() => {
     const se = document.scrollingElement;
     entry.y = Math.round(se.scrollTop);
     entry.height = se.scrollHeight;
     reportActiveHeading();
     post({ type: 'painted', version: p.version });
-  }, 0));
+  });
 }
 
 

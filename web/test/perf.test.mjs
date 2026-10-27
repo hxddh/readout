@@ -15,7 +15,7 @@
 // test/out/perf-web.json; tools/perf-assert.py checks them against
 // tools/perf-budgets.json.
 //
-// Usage: node test/perf.test.mjs
+// Usage: node test/perf.test.mjs   (READOUT_WEB_BUILD: another build's Web, for an A/B)
 import { webkit } from 'playwright';
 import http from 'node:http';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
@@ -25,8 +25,9 @@ import { collectPageErrors } from './pageerrors.mjs';
 import { instrument, scrollPasses, summary, interactions, streamFrames, insertMiddle } from './scrollperf.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
+const BUILD = process.env.READOUT_WEB_BUILD || 'build/Web';
 const server = http.createServer((req, res) => {
-  const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
+  const p = join(BUILD, decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream' });
   res.end(readFileSync(p));
@@ -79,6 +80,21 @@ await page.evaluate(() => new Promise(r => { const t = () => window.readout && w
 await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
 
 const median = xs => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+
+// A jump (an outline click, N), until the frame that shows where it landed
+// is painted (a task queued from a frame's animation callbacks runs after
+// its paint): the first frame whose scroll position has moved. (A jump
+// waits for the code it lands on to be coloured, enhance.js: holdJump.)
+const jumpPainted = () => { window.jumpPainted = fn => new Promise(resolve => {
+  const se = document.scrollingElement, y0 = se.scrollTop, t0 = performance.now();
+  fn();
+  const frame = () => requestAnimationFrame(() => setTimeout(() => {
+    if (Math.abs(se.scrollTop - y0) > 1) resolve(performance.now() - t0);
+    else if (performance.now() - t0 > 5000) resolve(-1);
+    else frame();
+  }, 0));
+  frame();
+}); };
 
 // First apply of the whole document, timed in the page: the apply itself
 // (which reads no layout: the first frame lays out only what is on screen),
@@ -217,7 +233,8 @@ await page.close();
 // 1 MB document, then its interactions.
 // A jump (N, a rail tick, a link) onto block `slot`, from the top: the
 // longest frame from the jump to 3 s after, and the lines on screen in the
-// frame that shows the landing not coloured.
+// frame that shows the landing (the first with the block on screen) not
+// coloured.
 const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
   window.scrollTo(0, 0);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))));
@@ -228,7 +245,8 @@ const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
   const frame = now => {
     gaps.push(now - last);
     last = now;
-    if (plain === null) {
+    const top = document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top;
+    if (plain === null && top >= -1 && top < innerHeight) {
       const cb = document.querySelector(`.blk[data-slot="${slot}"] .code-block`);
       const lines = [...cb.querySelectorAll('pre .line')].filter(l => { const r = l.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
       const r = cb.getBoundingClientRect();
@@ -244,6 +262,7 @@ async function scrollDoc(docOps, { marks = false, act = false, jumps = false, la
   const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
   collectPageErrors(p, errors, `scroll ${docOps.length} blocks: `);
   await instrument(p);
+  await p.addInitScript(jumpPainted);
   await p.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -267,12 +286,10 @@ async function scrollDoc(docOps, { marks = false, act = false, jumps = false, la
     await p.evaluate(() => window.scrollTo(0, 0));
     await p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     await p.waitForTimeout(300);
-    jumped.push(await p.evaluate(frac => new Promise(resolve => {
+    jumped.push(await p.evaluate(frac => {
       const hs = document.querySelectorAll('#ro-doc .blk.k-heading');
-      const t0 = performance.now();
-      window.readout.scrollToSlot(+hs[Math.floor(hs.length * frac)].dataset.slot);
-      requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0));
-    }), frac));
+      return window.jumpPainted(() => window.readout.scrollToSlot(+hs[Math.floor(hs.length * frac)].dataset.slot));
+    }, frac));
     await p.waitForTimeout(1200);
   }
   const landed = land ? await landOn(p, land) : null;
@@ -329,6 +346,7 @@ const stream = await (async () => {
   const p5 = await browser.newPage({ viewport: { width: 900, height: 900 } });
   collectPageErrors(p5, errors, '5 MB: ');
   await instrument(p5);
+  await p5.addInitScript(jumpPainted);
   await p5.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
@@ -368,13 +386,10 @@ const stream = await (async () => {
     await p5.evaluate(() => window.scrollTo(0, 0));
     await frames();
     await p5.waitForTimeout(300);
-    jumps.push(await p5.evaluate(frac => new Promise(resolve => {
+    jumps.push(await p5.evaluate(frac => {
       const hs = document.querySelectorAll('#ro-doc > .chunk > .blk.k-heading');
-      const h = hs[Math.floor(hs.length * frac)];
-      const t0 = performance.now();
-      window.readout.scrollToSlot(+h.dataset.slot);
-      requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0));
-    }), frac));
+      return window.jumpPainted(() => window.readout.scrollToSlot(+hs[Math.floor(hs.length * frac)].dataset.slot));
+    }, frac));
     await p5.waitForTimeout(1200);
   }
   // Return in a find for one letter ("e": about 300,000 matches) at the top
@@ -415,7 +430,7 @@ const stream = await (async () => {
   await p5.waitForTimeout(800);
   const nJumps = [];
   for (let k = 0; k < 5; k++) {
-    nJumps.push(await p5.evaluate(() => new Promise(resolve => { const t0 = performance.now(); window.readout.nextChange(); requestAnimationFrame(() => setTimeout(() => resolve(performance.now() - t0), 0)); })));
+    nJumps.push(await p5.evaluate(() => window.jumpPainted(() => window.readout.nextChange())));
     await p5.waitForTimeout(1300);
   }
   const act5 = await interactions(p5);
@@ -478,8 +493,10 @@ function privateMemoryMB(pid) {
 
 // The first code block of a warm open: a fresh page warmed as the app's
 // spare page is (its grammars preloaded and compiled in idle time), then a
-// small document with a TypeScript block on screen, highlighted inside the
-// synchronous first apply.
+// small document with a TypeScript block on screen: the apply, until the
+// first frame that shows the document is painted, its code coloured there
+// (firstPainted: the document's first paint waits for its code on screen,
+// enhance.js: hold; 3.9 highlighted it inside the synchronous apply).
 const firstHighlight = await (async () => {
   const before = new Set(webProcesses());
   const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
@@ -501,29 +518,32 @@ const firstHighlight = await (async () => {
   // window taking the page mid-warm-up could wait for.
   const warmStats = await p.evaluate(() => performance.getEntriesByName('readout-hl-warm')[0]?.detail ?? {});
   await p.waitForTimeout(200);
-  const r = await p.evaluate(code => {
+  // The apply of `patch`, until the first frame showing the document is painted: its time, and the code blocks not coloured in it.
+  await p.evaluate(() => { window.firstPainted = patch => new Promise(resolve => {
     const t0 = performance.now();
-    window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
-      { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'plan', html: '<h1 id="plan">Plan</h1>' },
-      { op: 'insert', slot: 2, after: 1, kind: 'paragraph', html: '<p>Count the open tasks:</p>' },
-      { op: 'insert', slot: 3, after: 2, kind: 'code', html: `<div class="code-block" data-lang="ts"><pre><code>${code.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre></div>` },
-    ] });
-    return { ms: performance.now() - t0, hl: document.querySelector('.code-block').dataset.hl };
-  }, TS_CODE);
+    window.readout.apply(patch);
+    const frame = () => requestAnimationFrame(() => setTimeout(() => {
+      if (getComputedStyle(document.getElementById('ro-doc')).visibility === 'hidden') return frame();
+      resolve({ ms: performance.now() - t0, plain: [...document.querySelectorAll('.code-block')].filter(cb => cb.dataset.hl !== 'done' || !cb.querySelector('pre.shiki span[style]')).map(cb => cb.dataset.lang) });
+    }, 0));
+    frame();
+  }); });
+  const r = await p.evaluate(code => window.firstPainted({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
+    { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'plan', html: '<h1 id="plan">Plan</h1>' },
+    { op: 'insert', slot: 2, after: 1, kind: 'paragraph', html: '<p>Count the open tasks:</p>' },
+    { op: 'insert', slot: 3, after: 2, kind: 'code', html: `<div class="code-block" data-lang="ts"><pre><code>${code.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre></div>` },
+  ] }), TS_CODE);
   // Then, in the same warmed tab, a document with a Python and a YAML block
   // on screen (grammars the spare page loads and compiles besides the three
-  // every page preloads): both coloured inside the synchronous apply, so in
-  // its first paint (3.9.0 painted them plain and coloured them 50-180 ms later).
+  // every page preloads): both coloured in its first paint (3.9.0 painted
+  // them plain and coloured them 50-180 ms later).
   const pyYaml = await p.evaluate(([py, yaml]) => {
     const esc = c => c.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    const t0 = performance.now();
-    window.readout.apply({ version: 2, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
+    return window.firstPainted({ version: 2, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
       { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'setup', html: '<h1 id="setup">Setup</h1>' },
       { op: 'insert', slot: 2, after: 1, kind: 'code', html: `<div class="code-block" data-lang="python"><pre><code>${esc(py)}</code></pre></div>` },
       { op: 'insert', slot: 3, after: 2, kind: 'code', html: `<div class="code-block" data-lang="yaml"><pre><code>${esc(yaml)}</code></pre></div>` },
     ] });
-    const ms = performance.now() - t0;
-    return { ms, plain: [...document.querySelectorAll('.code-block')].filter(cb => cb.dataset.hl !== 'done' || !cb.querySelector('pre.shiki span[style]')).map(cb => cb.dataset.lang) };
   }, [PY_CODE, YAML_CODE]);
   // Then a small plan in the same tab, as a window opened from the spare
   // page shows it: the WebContent process's private memory (Linux smaps).
@@ -534,7 +554,7 @@ const firstHighlight = await (async () => {
   return { ...r, warmed, privateMB, pyYaml, warmStats };
 })();
 if (firstHighlight.pyYaml.plain.length) errors.push(`warmed page painted code plain first: ${firstHighlight.pyYaml.plain.join(', ')}`);
-if (!firstHighlight.warmed || firstHighlight.hl !== 'done') errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
+if (!firstHighlight.warmed || firstHighlight.plain.length) errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
 if (firstHighlight.privateMB == null) errors.push('tab private memory not measured');
 
 // The first TypeScript block on a page not warmed up (the first window at
@@ -682,6 +702,8 @@ const result = {
   web_code_heavy_scroll_p95_ms: codeHeavy.scroll.p95,
   web_code_heavy_scroll_max_ms: codeHeavy.scroll.max,
   web_code_heavy_long_frames: codeHeavy.scroll.long,
+  // The page's own tasks over 50 ms while scrolling the code (3.9: highlighting on screen in the scroll event; now in a worker).
+  web_code_heavy_own_long_tasks: codeHeavy.scroll.ownLong,
   web_code_heavy_blank_px: codeHeavy.scroll.blankPx,
   web_code_heavy_private_mb: codeHeavy.mb,
   web_one_huge_code_jump_ms: Math.round(oneHuge.jump),
@@ -692,6 +714,7 @@ const result = {
   web_one_huge_code_land_longest_ms: Math.round(oneHuge.landed.longest),
   web_one_huge_code_land_plain_lines: oneHuge.landed.plain,
   web_one_huge_code_scroll_p95_ms: oneHuge.scroll.p95,
+  web_one_huge_code_own_long_tasks: oneHuge.scroll.ownLong,
   web_one_huge_code_blank_px: oneHuge.scroll.blankPx,
   web_one_huge_code_private_mb: oneHuge.mb,
   web_stream_frame_p95_5mb_ms: stream.streamFrame.p95,
