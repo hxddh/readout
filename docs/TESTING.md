@@ -126,6 +126,31 @@ Local numbers are not comparable with CI's machines; the guards apply to CI.
 Lower a guard when a metric improves; never raise one to make CI pass, and
 explain any change in `_comment` and the PR.
 
+## What CI runs (ci.yml)
+
+macOS minutes cost about ten times Linux ones, so pull requests run only
+what their changes need. The first job, **Changed paths**, decides from the
+files the PR changes against its base (renames count both paths):
+
+| Event | Linux jobs (Core, Web, Rendering baselines) | Verify signed product (macOS) |
+| --- | --- | --- |
+| Push to `main`, `workflow_dispatch` | always | always (Notarization check instead when dispatched with notarize) |
+| Draft PR (opened or pushed to) | no | no |
+| PR marked ready, or pushed to while ready | unless only `docs/**` (not `docs/releases/`) and top-level `*.md` changed | unless only `docs/**`, top-level `*.md`, `web/test/**` and `tools/perf-budgets.json` changed |
+| PR with the `verify` label | always | always |
+
+- `web/src` and everything else the app bundles always run Verify. So do the
+  web/test files the smoke test opens (`web/test/fixtures/plan*`,
+  `missing-diagram.png`, `web/test/corpus/01-sdd-fix-loop-plan.md`).
+- Anything unexpected while listing the changes runs everything.
+- The `verify` label is read when the run starts: add it, then push or
+  re-run all jobs. Use it when a change skips Verify but could still move the
+  macOS speed budgets (the corpus, `tools/perf-budgets.json`).
+- Skipped jobs report as skipped, which branch protection treats as passing.
+- The push to `main` always runs everything, and release preflight requires
+  that run (docs/RELEASING.md), so a skipped PR check can delay a failure to
+  `main` but never let it ship.
+
 ## The one rule
 
 **Never edit, delete or relax a test assertion to make CI green.** If you
