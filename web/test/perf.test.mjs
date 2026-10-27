@@ -76,7 +76,7 @@ await page.addInitScript(() => {
 });
 await page.goto(`${base}/reader.html`);
 await page.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
-await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
 
 const median = xs => xs.slice().sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
@@ -250,7 +250,7 @@ async function scrollDoc(docOps, { marks = false, act = false, jumps = false, la
   });
   await p.goto(`${base}/reader.html`);
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16, topInset: 52 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
   await p.evaluate(p => window.readout.apply(p), { version: 1, reset: true, rewrite: false, ops: docOps, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p.waitForTimeout(1500);
   if (marks) {
@@ -335,7 +335,7 @@ const stream = await (async () => {
   });
   await p5.goto(`${base}/reader.html`);
   await p5.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
-  await p5.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p5.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const doc5 = chain(5_000_000);
   await p5.evaluate(p => new Promise(r => { window.readout.apply(p); requestAnimationFrame(() => setTimeout(r, 0)); }),
     { version: 1, reset: true, rewrite: false, ops: doc5.ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
@@ -491,7 +491,7 @@ const firstHighlight = await (async () => {
   await p.goto(`${base}/reader.html`);
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
   const pid = webProcesses().find(x => !before.has(x));
-  await p.evaluate(() => { window.readout.warm(); window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }); });
+  await p.evaluate(() => { window.readout.warm(); window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }); });
   const warmed = await p.evaluate(() => new Promise(r => {
     const end = performance.now() + 40000;
     const t = () => performance.getEntriesByName('readout-hl-warm').length ? r(true) : performance.now() > end ? r(false) : setTimeout(t, 50);
@@ -552,7 +552,7 @@ const coldHighlight = await (async () => {
   await p.goto(`${base}/reader.html`);
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
   const ms = await p.evaluate(code => new Promise(resolve => {
-    window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 });
+    window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 });
     const t0 = performance.now();
     window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
       { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'plan', html: '<h1 id="plan">Plan</h1>' },
@@ -587,7 +587,7 @@ const diagram = await (async () => {
   });
   await p.goto(`${base}/reader.html`);
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const docOps = chain(1_000_000).ops.filter(o => o.kind !== 'mermaid').map((o, i) => ({ ...o, slot: i + 1, after: i }));
   await p.evaluate(d => window.readout.apply(d), { version: 1, reset: true, rewrite: false, ops: docOps, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p.waitForTimeout(2000);

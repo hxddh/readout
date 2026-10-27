@@ -36,7 +36,7 @@ await page.addInitScript(() => {
 });
 await page.goto(`${base}/reader.html`);
 await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
 
 let failures = 0;
 function check(name, cond, extra = '') {
@@ -911,7 +911,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   await p.evaluate(x => window.readout.apply(x), fixReset(300, i => i % 10 === 1 ? `<h2>Section ${i}</h2>` : code(i), i => i % 10 === 1 ? 'heading' : 'code'));
   await p.waitForTimeout(1500);
   const lit = await p.evaluate(() => [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl !== 'pending').map(c => +c.closest('.blk').dataset.slot));
@@ -931,7 +931,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   // Let the grammar load first (a page's first TypeScript), as a window's spare page has it.
   await p.evaluate(x => window.readout.apply(x), fixReset(1, () => code(0, 3), () => 'code'));
   await p.waitForTimeout(1500);
@@ -987,7 +987,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const long = Array.from({ length: 300 }, (_, k) => `local a${k} = b${k} + ${k} * c`).join('; ');
   const lua = `<div class="code-block" data-lang="lua"><pre><code>${[long, 'local p = 1', 'local q = 2', 'local r = 3', long, ...Array.from({ length: 55 }, (_, l) => `local x${l} = f(${l}) -- note`)].join('\n')}</code></pre></div>`;
   const r = await p.evaluate(async x => {
@@ -1125,7 +1125,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const mm = v => `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Stream ${v}] --> B[End]</pre></div>`;
   const drawnAs = v => p.evaluate(v => new Promise(res => { const t0 = performance.now(); const f = () => { const t = document.querySelector('.blk[data-slot="2"] .mermaid-svg')?.textContent || ''; if (t.includes(`Stream ${v}`)) res(true); else if (performance.now() - t0 > 5000) res(false); else setTimeout(f, 10); }; f(); }), v);
   await p.evaluate(x => window.readout.apply(x), fixReset(5, i => i === 2 ? mm(0) : `<p>para ${i}</p>`, i => i === 2 ? 'mermaid' : 'paragraph'));
@@ -1443,7 +1443,7 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   check('removing the top block keeps the reader at the next one', a.slot === 41 && Math.abs(a.offset) <= 2, JSON.stringify(a));
 }
 
-// Font size, column width and window size reflow every block: the reader keeps their place.
+// Font size and window size (which sizes the column) reflow every block: the reader keeps their place.
 {
   await page.evaluate(p => window.readout.apply(p), fixReset(100));
   await toTop(80);
@@ -1453,19 +1453,16 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   const sync = await page.evaluate(() => window.readout.captureAnchor());
   await page.waitForTimeout(500);
   const font = await page.evaluate(() => window.readout.captureAnchor());
-  await page.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
-  await page.waitForTimeout(500);
-  const wide = await page.evaluate(() => window.readout.captureAnchor());
   await page.setViewportSize({ width: 560, height: 700 });
   await page.waitForTimeout(600);
   const narrow = await page.evaluate(() => window.readout.captureAnchor());
   await page.setViewportSize({ width: 900, height: 700 });
   await page.waitForTimeout(600);
   const back = await page.evaluate(() => window.readout.captureAnchor());
-  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16, width: 'narrow' }));
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16 }));
   const restored = await page.evaluate(() => window.readout.captureAnchor());
-  const steps = [sync, font, wide, narrow, back, restored].map(a => a.slot);
-  check('font size, width and window resize keep the reading position',
+  const steps = [sync, font, narrow, back, restored].map(a => a.slot);
+  check('font size and window resize keep the reading position',
     a0.slot === 80 && steps.every(s => s === 80) && Math.abs(restored.offset) <= 3, JSON.stringify({ steps, offset: restored.offset }));
 }
 
@@ -1761,7 +1758,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   check('writing on into the last block keeps a following reader at the end', gaps.every(g => g <= 1), JSON.stringify(gaps));
 }
 
-// Font size, column width, find mode and window size reflow the page: a
+// Font size, find mode and window size reflow the page: a
 // reader following the end stays at the end, and goes on following.
 {
   await page.evaluate(p => window.readout.apply(p), fixReset(40));
@@ -1771,9 +1768,6 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.evaluate(() => window.readout.setAppearance({ fontSize: 19 }));
   await page.waitForTimeout(300);
   gaps.font = await gapToEnd();
-  await page.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
-  await page.waitForTimeout(300);
-  gaps.width = await gapToEnd();
   await page.setViewportSize({ width: 640, height: 700 });
   await page.waitForTimeout(600);
   gaps.resize = await gapToEnd();
@@ -1782,10 +1776,10 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.setViewportSize({ width: 900, height: 700 });
   await page.waitForTimeout(600);
   gaps.back = await gapToEnd();
-  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16, width: 'narrow' }));
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16 }));
   await page.waitForTimeout(300);
   gaps.restored = await gapToEnd();
-  check('font size, width and window resize keep a following reader at the end',
+  check('font size and window resize keep a following reader at the end',
     Object.values(gaps).every(g => g <= 1), JSON.stringify(gaps));
 }
 
@@ -2073,7 +2067,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   });
   await short.goto(`${base}/reader.html`);
   await short.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16, topInset: 80 }));
+  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 80 }));
   await short.evaluate(p => window.readout.apply(p), { ...fixBase, version: 1, reset: true, ops: [] });
   const emptyTop = await short.evaluate(() => { window.scrollTo(0, 10000); return document.scrollingElement.scrollTop; });
   await short.waitForTimeout(200);
@@ -2245,7 +2239,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
     await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
     await p.goto(`${base}/reader.html`);
     await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-    await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+    await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
     await p.evaluate(x => window.readout.apply(x), { ...fixReset(1), ops: [...fixReset(1).ops, ...ops] });
     for (let i = 0; i < 300 && await p.evaluate(() => document.querySelectorAll('.mermaid-block.done').length < 2); i++) await p.waitForTimeout(50);
     const r = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.mermaid-block')].map(b => {

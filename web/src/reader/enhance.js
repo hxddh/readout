@@ -95,9 +95,10 @@ function markCjkEmphasis(el) {
 // Table cells. A short cell (16 columns or fewer, a CJK character counting
 // two) and a short identifier in code (32 characters or fewer) stay on one
 // line while the column has room: "S1 / GREEN" or `actions/configure-pages`
-// broken in two read badly. A longer identifier may break after a slash.
-// Only while the table fits that way: one they would push past the column
-// wraps them again, and scrolls only if it is still too wide (measureTables).
+// broken in two read badly. A longer identifier may break after a separator
+// (ReadoutCore's <wbr>, as in any inline code). Only while the table fits
+// that way: one they would push past the column wraps them again, and
+// scrolls only if it is still too wide (measureTables).
 const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦\u{1f000}-\u{1faff}\u{20000}-\u{3fffd}]/u;
 function columns(s) {
   let n = 0;
@@ -106,28 +107,10 @@ function columns(s) {
 }
 
 function setupTable(t) {
-  for (const c of t.querySelectorAll('td code, th code')) {
-    const s = c.textContent;
-    if (s.length <= 32) c.dataset.nw = '';
-    else if (s.includes('/')) breakAfterSlashes(c);
-  }
+  for (const c of t.querySelectorAll('td code, th code')) if (c.textContent.length <= 32) c.dataset.nw = '';
   for (const cell of t.querySelectorAll('td, th')) {
     const n = columns(cell.textContent.trim());
     if (n && n <= 16 && !cell.querySelector('br')) cell.dataset.nw = '';
-  }
-}
-
-function breakAfterSlashes(el) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.includes('/')) nodes.push(n);
-  for (const n of nodes) {
-    const frag = document.createDocumentFragment();
-    n.data.split('/').forEach((part, i, all) => {
-      if (part) frag.append(part);
-      if (i < all.length - 1) frag.append('/', document.createElement('wbr'));
-    });
-    n.replaceWith(frag);
   }
 }
 

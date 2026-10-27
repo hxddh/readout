@@ -23,9 +23,16 @@
   --pop-bg: #ffffff;          /* a popover over the page */
   --pop-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.12);
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
+  --code-tint: 3%;            /* inline code's fill: this much of the text colour */
 
-  /* In rem, so ⌘+ and ⌘− keep the characters per line (680 px at 16 px). */
-  --measure: 42.5rem;
+  /* The text column sizes itself, with no setting: 39 rem at most, in rem so
+     ⌘+ and ⌘− keep the characters per line (about 78 of Latin text in the
+     system font, 39 of Chinese or Japanese: inside 60–80 and 35–45; 3.9's
+     42.5 rem held some 85 Latin ones, its wide 57.5 rem 115); in a narrower
+     window (or at a larger text size), the window less the gutters. It is
+     the column's width in every window, so code and tables widen from it
+     into the margins (--bleed) by the room there really is. */
+  --measure: min(39rem, 100vw - 2 * var(--gutter));
   --size: 16px;
   --lh: 1.65;
   --lh-cjk: 1.8;
@@ -67,6 +74,7 @@
   --pop-bg: #333336;
   --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
   --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
+  --code-tint: 5%;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -88,11 +96,10 @@
     --pop-bg: #333336;
     --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
     --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
+    --code-tint: 5%;
     color-scheme: dark;
   }
 }
-
-:root[data-width="wide"] { --measure: 57.5rem; }
 
 * { box-sizing: border-box; }
 
@@ -308,23 +315,33 @@ sup, sub { line-height: 0; }
 /* Struck-through text stays readable (AA). */
 del { color: var(--text-2); }
 
-/* Inline code, keys and samples: the code size, relative to the text they sit
-   in (a heading's, a table's), so 0.84em of body text is --fs-code. */
+/* Inline code reads with the sentence around it (agent documents are dense
+   with it): relative to the text it sits in (a heading's, a table's), its
+   x-height 0.9 of the text's whatever the monospace font (SF Mono, Menlo:
+   0.53 of the size, as SF Pro and the Latin letters of a Chinese line), on a
+   faint tint of the text colour, so it shows on any surface (page, alert,
+   table header) in both themes, with little padding. An inline's padding
+   never changes the line's height. A long path or identifier breaks after a
+   separator (ReadoutCore puts <wbr> there), and anywhere only when a part is
+   wider than the whole column. */
 code {
   font-family: var(--mono);
-  font-size: 0.84em;
-  /* A long path or identifier breaks rather than running past the column. */
+  font-size: 0.9em;
+  font-size-adjust: ex-height 0.53;
   overflow-wrap: break-word;
-  background: var(--fill);
-  border-radius: 5px;
-  padding: 0.12em 0.36em;
+  background: color-mix(in srgb, var(--text) var(--code-tint), transparent);
+  border-radius: 4px;
+  padding: 0.08em 0.24em;
   /* Broken across lines, each piece keeps its padding and rounded ends. */
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
+/* A part of a path WebKit would break inside, after a - or ? (ReadoutCore),
+   or a short code span that is such a part: on one line. */
+code.nb, code .nb { white-space: nowrap; }
 /* Before full-width punctuation, which brings its own space (enhance.js);
    a path link keeps its outline even. */
-code.before-punct:not(.path-link) { padding-right: 0.12em; }
+code.before-punct:not(.path-link) { padding-right: 0.08em; }
 code.path-link {
   cursor: pointer;
   color: var(--link);
@@ -377,6 +394,14 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: var(--flow); }
 }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):first-child { margin-top: 0; }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):last-child { margin-bottom: 0; }
+/* A paragraph ending with a colon (p.lead, ReadoutCore) leads into the list
+   right under it: they read as one unit, the list close under it rather than
+   a paragraph's gap away. At the top level (the list items are blocks of
+   their own: the paragraph's block ends with the shorter gap, and its change
+   bar and flash with it) and in an item, a quote, an alert or a disclosure. */
+#ro-doc > .chunk > .k-paragraph:has(> p.lead):has(+ .k-listItem) { --flow: 0.4rem; }
+p.lead:has(+ ul, + ol), .li-block li > p.lead:has(+ ul, + ol) { margin-bottom: 0.4rem; }
+p.lead + ul, p.lead + ol, .li-block li > p.lead + ul, .li-block li > p.lead + ol { margin-top: 0; }
 li { margin: 0.12em 0; }
 /* Each item is a block of its own: half the gap on each side of it. */
 #ro-doc > .chunk > .blk > .li-block > li { margin-top: 0.06em; }
@@ -446,7 +471,6 @@ blockquote > :last-child { margin-bottom: 0; }
   --surface: var(--fill);
 }
 .alert > :last-child { margin-bottom: 0; }
-.alert code { background: var(--fill-2); }
 .alert { --cb-bg: var(--fill-2); }
 .alert-title { font-weight: 650; color: var(--alert-c); margin: 0 0 0.25em; font-size: var(--fs-sm); }
 .alert-note { --alert-c: var(--note); }
@@ -475,13 +499,11 @@ th, td { padding: 0.45em 0.9em 0.45em 0; text-align: left; vertical-align: top; 
 th:last-child, td:last-child { padding-right: 0; }
 th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; }
 td { font-variant-numeric: tabular-nums; }
-/* Code in a cell: a little larger than in body text (the cell's text is smaller). */
-td code, th code { font-size: 0.9em; }
 /* Short cells, identifiers and headers stay on one line while the table
    fits that way; when they would push it past the column, they wrap again
    (.nw-off, enhance.js) and it scrolls only if it is still too wide. */
 :is(td, th)[data-nw], :is(td, th) code[data-nw] { white-space: nowrap; }
-.table-wrap.nw-off :is(td, th, td code, th code) { white-space: normal; }
+.table-wrap.nw-off :is(td, th, td code, th code, td .nb, th .nb) { white-space: normal; }
 tbody tr:last-child td { border-bottom: 0; }
 /* A header row with no text (a table written only for its body) is not shown. */
 thead:not(:has(th:not(:empty))) { display: none; }
@@ -534,7 +556,7 @@ td.num, th.num { text-align: right; }
     linear-gradient(to left, var(--cb-bg) 18px, transparent) local right / 28px 100% no-repeat,
     linear-gradient(to left, color-mix(in srgb, var(--text) 9%, transparent), transparent) scroll right / 18px 100% no-repeat !important;
 }
-.code-block pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
+.code-block pre code { background: none; padding: 0; font-size: inherit; font-size-adjust: none; border-radius: 0; }
 .code-block .cb-tools {
   position: absolute; top: 0; right: 0;
   display: flex; gap: 2px; align-items: center;
@@ -849,6 +871,7 @@ details ul, details ol { padding-left: 1.5em; }
     --caution: #c9342b;
     --pop-bg: #ffffff;
     --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
+    --code-tint: 3%;
     color-scheme: light;
   }
   :root[data-theme="dark"] .shiki span, :root:not([data-theme="light"]) .shiki span { color: var(--shiki-light); }

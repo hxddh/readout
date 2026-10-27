@@ -93,7 +93,7 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   }, debug);
   await page.goto(`${base}/reader.html`);
   await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'), 30000);
-  await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), dark);
+  await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', fontSize: 16 }), dark);
   await page.evaluate(p => window.readout.apply(p), patch);
   // Large documents use content-visibility, so chunks never scrolled near
   // keep estimated heights. Lay every chunk out as one near the screen is
