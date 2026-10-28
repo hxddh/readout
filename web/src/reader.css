@@ -23,7 +23,7 @@
   --pop-bg: #ffffff;          /* a popover over the page */
   --pop-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.12);
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
-  --code-tint: 3%;            /* inline code's fill: this much of the text colour */
+  --code-fill: rgb(29 29 31 / 3%);   /* inline code's fill: 3% of the text colour (a colour, not a color-mix: #99) */
 
   /* The text column: 35 em of the text, so every text size keeps the
      characters per line (measured in WebKit on macOS: about 78 of Latin
@@ -76,7 +76,7 @@
   --pop-bg: #333336;
   --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
   --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
-  --code-tint: 5%;
+  --code-fill: rgb(232 232 234 / 5%);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -98,7 +98,7 @@
     --pop-bg: #333336;
     --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
     --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
-    --code-tint: 5%;
+    --code-fill: rgb(232 232 234 / 5%);
     color-scheme: dark;
   }
 }
@@ -331,19 +331,20 @@ del { color: var(--text-2); }
 
 /* Inline code reads with the sentence around it (agent documents are dense
    with it): relative to the text it sits in (a heading's, a table's), its
-   x-height 0.9 of the text's whatever the monospace font (SF Mono, Menlo:
-   0.53 of the size, as SF Pro and the Latin letters of a Chinese line), on a
-   faint tint of the text colour, so it shows on any surface (page, alert,
+   x-height about 0.9 of the text's (0.89 em: SF Mono's x-height is about
+   1.01 of SF Pro's at a size; not font-size-adjust, which made WebKit lay
+   out and restyle inline code measurably slower, #99), on a faint tint of
+   the text colour (a colour per theme, not a color-mix: restyling a theme
+   change resolved one per code span), so it shows on any surface (page, alert,
    table header) in both themes, with little padding. An inline's padding
    never changes the line's height. A long path or identifier breaks after a
-   separator (ReadoutCore puts <wbr> there), and anywhere only when a part is
+   separator (ReadoutCore puts a zero-width space there), and anywhere only when a part is
    wider than the whole column. */
 code {
   font-family: var(--mono);
-  font-size: 0.9em;
-  font-size-adjust: ex-height 0.53;
+  font-size: 0.89em;
   overflow-wrap: break-word;
-  background: color-mix(in srgb, var(--text) var(--code-tint), transparent);
+  background: var(--code-fill);
   border-radius: 4px;
   padding: 0.08em 0.24em;
   /* Broken across lines, each piece keeps its padding and rounded ends. */
@@ -585,7 +586,7 @@ td.num, th.num { text-align: right; }
     linear-gradient(to left, var(--cb-bg) 18px, transparent) local right / 28px 100% no-repeat,
     linear-gradient(to left, color-mix(in srgb, var(--text) 9%, transparent), transparent) scroll right / 18px 100% no-repeat !important;
 }
-.code-block pre code { background: none; padding: 0; font-size: inherit; font-size-adjust: none; border-radius: 0; }
+.code-block pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
 .code-block .cb-tools {
   position: absolute; top: 0; right: 0;
   display: flex; gap: 2px; align-items: center;
@@ -900,7 +901,7 @@ details ul, details ol { padding-left: 1.5em; }
     --caution: #c9342b;
     --pop-bg: #ffffff;
     --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
-    --code-tint: 3%;
+    --code-fill: rgb(29 29 31 / 3%);
     color-scheme: light;
   }
   :root[data-theme="dark"] .shiki span, :root:not([data-theme="light"]) .shiki span { color: var(--shiki-light); }
