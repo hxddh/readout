@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 122,
-   "style": "4c5516c4",
+   "style": "7b41de60",
    "content": "e83f75ef",
    "text": "Component-based Java web framework. master is th"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 769,
    "h": 106,
-   "style": "e28968bf",
+   "style": "9a2f5ac4",
    "content": "3cbcada8",
    "text": "The subject says what the change does, in plain "
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1063,
    "h": 87,
-   "style": "6423dcc7",
+   "style": "889b3a35",
    "content": "d2c9f06e",
    "text": "A full mvn clean verify has to be green before a"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1908,
    "h": 184,
-   "style": "5bfb2ad5",
+   "style": "99d6a63f",
    "content": "20f0b06e",
    "text": "Tests live in the module's -tests companion wher"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 2092,
    "h": 123,
-   "style": "9304c957",
+   "style": "14777466",
    "content": "ccff4837",
    "text": "WicketTester, WicketTestCase, FormTester and Tag"
   },

@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "7a1fd1cc",
+   "style": "0a1162bd",
    "content": "4c6dfb02",
    "text": "Daemon install: generated units invoke a nonexis"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 109,
    "h": 96,
-   "style": "36fcc895",
+   "style": "5abf296c",
    "content": "50cdb277",
    "text": "Issue: #437Also tracked as: audit finding H20 (A"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 269,
    "h": 58,
-   "style": "b0b58bce",
+   "style": "83350e45",
    "content": "7e0f82cc",
    "text": "agentsh daemon install writes a service unit tha"
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 328,
    "h": 28,
-   "style": "0b7aaf38",
+   "style": "406b7e23",
    "content": "376bc97f",
    "text": "internal/cli/daemon.go:208 — ExecStart=%s server"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 356,
    "h": 45,
-   "style": "6e99aa60",
+   "style": "96f5b9c4",
    "content": "6cc63e6e",
    "text": "internal/cli/daemon.go:362 — <string>--daemon</s"
   },
@@ -60,7 +60,7 @@
    "kind": "paragraph",
    "top": 401,
    "h": 70,
-   "style": "92d6847d",
+   "style": "18fd560a",
    "content": "928b9bfd",
    "text": "internal/cli/server.go registers only --config, "
   },
@@ -78,7 +78,7 @@
    "kind": "paragraph",
    "top": 552,
    "h": 122,
-   "style": "882014af",
+   "style": "c32819cf",
    "content": "1654d2a8",
    "text": "Both service managers then restart it forever — "
   },
@@ -105,7 +105,7 @@
    "kind": "paragraph",
    "top": 809,
    "h": 148,
-   "style": "9a956eea",
+   "style": "532cd2f9",
    "content": "82bf89d8",
    "text": "Correcting the templates does not repair an exis"
   },
@@ -132,7 +132,7 @@
    "kind": "heading",
    "top": 1091,
    "h": 42,
-   "style": "8bb50fc9",
+   "style": "7906feb4",
    "content": "10a39ef2",
    "text": "1. Register --daemon as a hidden, deprecated no-"
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 1452,
    "h": 122,
-   "style": "f3f09232",
+   "style": "ee6411a1",
    "content": "986a45f9",
    "text": "pflag.MarkDeprecated also sets Hidden, keeping t"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1574,
    "h": 42,
-   "style": "e92a01e1",
+   "style": "5145fddc",
    "content": "ea2aceb0",
    "text": "2. Drop --daemon from both templates"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 2238,
    "h": 174,
-   "style": "bbcd0d03",
+   "style": "f550dc1b",
    "content": "297afb56",
    "text": "This covers the whole failure class rather than "
   },
@@ -267,7 +267,7 @@
    "kind": "paragraph",
    "top": 2411,
    "h": 96,
-   "style": "b21dbd74",
+   "style": "3cf87d55",
    "content": "d902a347",
    "text": "A second, smaller test asserts server --daemon s"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 2629,
    "h": 71,
-   "style": "971fc89f",
+   "style": "761fcb98",
    "content": "a2384546",
    "text": "go run ./cmd/agentsh server --daemon reaches con"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 2958,
    "h": 71,
-   "style": "67f8d94d",
+   "style": "c789ea6a",
    "content": "c22ea20e",
    "text": "AUDIT-FINDINGS.md is a point-in-time report with"
   }

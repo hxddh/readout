@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2302,
    "h": 31,
-   "style": "fe124c7e",
+   "style": "1ce329a8",
    "content": "e6532eb6",
    "text": "强制 const（no-var、prefer-const），严格相等（eqeqeq）"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 2364,
    "h": 31,
-   "style": "f49eb162",
+   "style": "865948f9",
    "content": "ec9d3361",
    "text": "必须使用 Prettier: npx prettier --write <file>"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 2545,
    "h": 31,
-   "style": "2ae5ebd6",
+   "style": "9b19eb1f",
    "content": "ace9ce60",
    "text": "格式化 → npx prettier --write <修改的文件>"
   },
@@ -492,7 +492,7 @@
    "kind": "table",
    "top": 3144,
    "h": 190,
-   "style": "63993cad",
+   "style": "b081ef35",
    "content": "e4893b50",
    "text": "元素明亮模式暗黑模式文本text-gray-700dark:text-gray-200背景bg-"
   },
@@ -627,7 +627,7 @@
    "kind": "table",
    "top": 4280,
    "h": 502,
-   "style": "7b1bf3a6",
+   "style": "8d3326d5",
    "content": "a63f8135",
    "text": "问题排查方向Redis 连接失败检查 REDIS_HOST/PORT/PASSWORD管理员登录"
   },
@@ -636,7 +636,7 @@
    "kind": "paragraph",
    "top": 4782,
    "h": 46,
-   "style": "9ab2eae3",
+   "style": "f583f61c",
    "content": "cd4a04be",
    "text": "日志：logs/ 目录。Web 界面 /admin-next/ 可实时查看。"
   },

@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 230,
    "h": 96,
-   "style": "9056a397",
+   "style": "b8b26080",
    "content": "760f20f5",
    "text": "Goal: Migrate apps/showcase and apps/rest-showca"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 326,
    "h": 148,
-   "style": "5769a7aa",
+   "style": "077bfb49",
    "content": "9c46b0f3",
    "text": "Architecture: Bootstrap CSS/JS, Bootstrap Icons,"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 1071,
    "h": 80,
-   "style": "ea8c01ac",
+   "style": "9ab1fb81",
    "content": "b6f91b83",
    "text": "Commit convention: prefix every commit WW-5653 <"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1151,
    "h": 54,
-   "style": "836416b5",
+   "style": "30f65e97",
    "content": "f1c7d4f4",
    "text": "Work on branch WW-5653-bootstrap5-sample-apps. F"
   },
@@ -132,7 +132,7 @@
    "kind": "table",
    "top": 1396,
    "h": 397,
-   "style": "0591e052",
+   "style": "601a1371",
    "content": "a42f6cd1",
    "text": "Bootstrap 3Bootstrap 5 (bi bi-*)glyphicon-homebi"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 1793,
    "h": 70,
-   "style": "9267ba0b",
+   "style": "285ac14a",
    "content": "e6b0748e",
    "text": "Markup form: <span class=\"glyphicon glyphicon-ho"
   },
@@ -159,7 +159,7 @@
    "kind": "table",
    "top": 1905,
    "h": 591,
-   "style": "aeef1c6a",
+   "style": "26be1661",
    "content": "9b758178",
    "text": "Bootstrap 3Bootstrap 5panel panel-defaultcardpan"
   },
@@ -312,7 +312,7 @@
    "kind": "paragraph",
    "top": 3493,
    "h": 122,
-   "style": "301c916c",
+   "style": "018e12d5",
    "content": "8f35b92d",
    "text": "Note: bootstrap-icons is under group org.webjars"
   },
@@ -456,7 +456,7 @@
    "kind": "listItem",
    "top": 4955,
    "h": 54,
-   "style": "455752a8",
+   "style": "467eba4f",
    "content": "c91402ac",
    "text": "Modify: apps/showcase/src/main/webapp/WEB-INF/de"
   },
@@ -474,7 +474,7 @@
    "kind": "listItem",
    "top": 5064,
    "h": 80,
-   "style": "79a123a2",
+   "style": "0ecd5ebe",
    "content": "b8a0c447",
    "text": "Delete: apps/showcase/src/main/webapp/styles/boo"
   },
@@ -483,7 +483,7 @@
    "kind": "listItem",
    "top": 5144,
    "h": 71,
-   "style": "b5bf715e",
+   "style": "92d9f743",
    "content": "27691b7c",
    "text": "Delete: apps/showcase/src/main/webapp/js/bootstr"
   },
@@ -645,7 +645,7 @@
    "kind": "paragraph",
    "top": 6642,
    "h": 96,
-   "style": "5a39b5b8",
+   "style": "47b09e06",
    "content": "78ebd8bf",
    "text": "Run: grep -rn \"bootstrap.css\\|bootstrap.min.js\\|"
   },
@@ -798,7 +798,7 @@
    "kind": "paragraph",
    "top": 7594,
    "h": 96,
-   "style": "345bf53b",
+   "style": "bec620f0",
    "content": "a511f453",
    "text": "For every <span class=\"glyphicon glyphicon-X\">.."
   },
@@ -825,7 +825,7 @@
    "kind": "paragraph",
    "top": 7796,
    "h": 96,
-   "style": "5bb1aaf7",
+   "style": "33a59b58",
    "content": "3262afe1",
    "text": "For each panel block, apply: panel panel-default"
   },
@@ -852,7 +852,7 @@
    "kind": "paragraph",
    "top": 8058,
    "h": 122,
-   "style": "86b94dcf",
+   "style": "c7e27d08",
    "content": "b2949dac",
    "text": "Apply the class/attribute mapping table: btn-def"
   },
@@ -870,7 +870,7 @@
    "kind": "paragraph",
    "top": 8224,
    "h": 96,
-   "style": "44627344",
+   "style": "53d02e14",
    "content": "af24e31b",
    "text": "Update the BS3 navbar to BS5 structure. Replace "
   },
@@ -888,7 +888,7 @@
    "kind": "paragraph",
    "top": 8422,
    "h": 122,
-   "style": "262e8577",
+   "style": "af6a3cfe",
    "content": "53579716",
    "text": "Convert dropdown triggers to class=\"nav-link dro"
   },
@@ -906,7 +906,7 @@
    "kind": "paragraph",
    "top": 8588,
    "h": 174,
-   "style": "2089ce9b",
+   "style": "e1bb047b",
    "content": "4d92608f",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
   },
@@ -978,7 +978,7 @@
    "kind": "listItem",
    "top": 9180,
    "h": 106,
-   "style": "be4d5751",
+   "style": "ea6f71b6",
    "content": "456623f1",
    "text": "Modify: the 5 order JSPs under apps/rest-showcas"
   },
@@ -996,7 +996,7 @@
    "kind": "listItem",
    "top": 9314,
    "h": 97,
-   "style": "01dfa147",
+   "style": "d79fea11",
    "content": "c26850b5",
    "text": "Delete: apps/rest-showcase/src/main/webapp/css/b"
   },
@@ -1221,7 +1221,7 @@
    "kind": "paragraph",
    "top": 10851,
    "h": 148,
-   "style": "bab920ca",
+   "style": "9f63f945",
    "content": "b0c88f33",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
   },
@@ -1239,7 +1239,7 @@
    "kind": "paragraph",
    "top": 11043,
    "h": 70,
-   "style": "a46aae56",
+   "style": "d0163cc6",
    "content": "eab5368e",
    "text": "Apply the icon and class mapping tables. Example"
   },
@@ -1257,7 +1257,7 @@
    "kind": "paragraph",
    "top": 11215,
    "h": 70,
-   "style": "df1ef4aa",
+   "style": "380d632b",
    "content": "a35b87f0",
    "text": "And the \"Back to Orders\" links: <i class=\"bi bi-"
   },
@@ -1275,7 +1275,7 @@
    "kind": "paragraph",
    "top": 11329,
    "h": 96,
-   "style": "c15b8086",
+   "style": "394b825b",
    "content": "50e14528",
    "text": "In orders-editNew.jsp:79, change </apan> to </sp"
   },
@@ -1302,7 +1302,7 @@
    "kind": "paragraph",
    "top": 11531,
    "h": 122,
-   "style": "1a1f5cf4",
+   "style": "455fe706",
    "content": "a54e2664",
    "text": "Run: grep -rInE \"glyphicon|panel-(default|headin"
   },
@@ -1320,7 +1320,7 @@
    "kind": "paragraph",
    "top": 11697,
    "h": 96,
-   "style": "f8801cbf",
+   "style": "372a5e05",
    "content": "e9c519b5",
    "text": "Run: mvn -q -pl apps/rest-showcase -am package -"
   },
@@ -1491,7 +1491,7 @@
    "kind": "paragraph",
    "top": 12753,
    "h": 96,
-   "style": "f0c0921d",
+   "style": "5e39f00b",
    "content": "56ce6e81",
    "text": "Run: mvn -pl apps/rest-showcase jetty:run -Dskip"
   },

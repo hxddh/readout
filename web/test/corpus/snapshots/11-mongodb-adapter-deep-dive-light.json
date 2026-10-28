@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1857,
    "h": 80,
-   "style": "51b99dcc",
+   "style": "88e48f98",
    "content": "a7404d23",
    "text": "exact: true — opt-in exact nearest-neighbor (ful"
   },
@@ -240,7 +240,7 @@
    "kind": "paragraph",
    "top": 2455,
    "h": 70,
-   "style": "8c7ada4f",
+   "style": "3a4c5bfa",
    "content": "5cc85206",
    "text": "Mapped against Payload's Where (per Payload's ow"
   },
@@ -249,7 +249,7 @@
    "kind": "table",
    "top": 2525,
    "h": 801,
-   "style": "1f41ba47",
+   "style": "889c6ca5",
    "content": "011ff9b8",
    "text": "Payload operatorPayload's db-mongodb mappingIn $"
   },
@@ -411,7 +411,7 @@
    "kind": "listItem",
    "top": 5284,
    "h": 106,
-   "style": "2e80c80b",
+   "style": "2ce01566",
    "content": "33f5e810",
    "text": "Dev/CI: point at the M0 free tier or atlas deplo"
   },
@@ -618,7 +618,7 @@
    "kind": "listItem",
    "top": 7011,
    "h": 80,
-   "style": "59a2b8cf",
+   "style": "2ab0b8e1",
    "content": "d7c112bf",
    "text": "+ Payload-parity touches: escapeRegExp, $options"
   },
@@ -960,7 +960,7 @@
    "kind": "paragraph",
    "top": 9603,
    "h": 70,
-   "style": "c00b55c7",
+   "style": "6be5d966",
    "content": "df528581",
    "text": "For local dev, a docker-compose.yml at adapters/"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 12005,
    "h": 54,
-   "style": "e1d5659c",
+   "style": "490f61f1",
    "content": "0266c7a4",
    "text": "macOS / Windows runners: Docker isn't always rel"
   },

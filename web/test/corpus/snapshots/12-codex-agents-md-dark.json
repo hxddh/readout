@@ -24,7 +24,7 @@
    "kind": "listItem",
    "top": 103,
    "h": 54,
-   "style": "865ee8b8",
+   "style": "f2bf1f9b",
    "content": "35b7543d",
    "text": "Crate names are prefixed with codex-. For exampl"
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 212,
    "h": 80,
-   "style": "08b0dda5",
+   "style": "331113f9",
    "content": "551c726a",
    "text": "Install any commands the repo relies on (for exa"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 292,
    "h": 373,
-   "style": "e7451d91",
+   "style": "57cc83fb",
    "content": "389c5b65",
    "text": "Never add or modify any code related to CODEX_SA"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 986,
    "h": 588,
-   "style": "b64ce9b6",
+   "style": "e3a7c741",
    "content": "81c75009",
    "text": "When you cannot make that API change and still n"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 2201,
    "h": 54,
-   "style": "9a86dd77",
+   "style": "4f655a2e",
    "content": "e2cd415e",
    "text": "If you change ConfigToml or nested config types,"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 2468,
    "h": 106,
-   "style": "4316bc12",
+   "style": "03129744",
    "content": "67244dfd",
    "text": "If you change Rust dependencies (Cargo.toml or C"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 3554,
    "h": 84,
-   "style": "8c8f0a02",
+   "style": "8f9a2203",
    "content": "2f4067bd",
    "text": "Run just fmt (in the codex-rs directory) automat"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 3693,
    "h": 80,
-   "style": "4d69dd97",
+   "style": "22de064c",
    "content": "ab708984",
    "text": "Run the test for the specific project that was c"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 3773,
    "h": 201,
-   "style": "cac79852",
+   "style": "a89040f7",
    "content": "f04022a6",
    "text": "Once those pass, if any changes were made in com"
   },
@@ -294,7 +294,7 @@
    "kind": "paragraph",
    "top": 3974,
    "h": 148,
-   "style": "a4a545db",
+   "style": "62cad1a3",
    "content": "95452de7",
    "text": "Before finalizing a large change to codex-rs, ru"
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 4122,
    "h": 65,
-   "style": "da81a53b",
+   "style": "ecb7e96f",
    "content": "1aef8056",
    "text": "The codex-core crate"
   },
@@ -312,7 +312,7 @@
    "kind": "paragraph",
    "top": 4187,
    "h": 148,
-   "style": "2e9696ee",
+   "style": "0b58c710",
    "content": "b8cb6aee",
    "text": "Over time, the codex-core crate (defined in code"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 4378,
    "h": 58,
-   "style": "a411e0c6",
+   "style": "7bacf17b",
    "content": "67121000",
    "text": "Particularly when introducing a new concept/feat"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 4436,
    "h": 54,
-   "style": "db2b7fb3",
+   "style": "187d250e",
    "content": "0531b94e",
    "text": "There is an existing crate other than codex-core"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 4588,
    "h": 70,
-   "style": "82f89287",
+   "style": "853d4162",
    "content": "3c4262ff",
    "text": "Likewise, when reviewing code, do not hesitate t"
   },
@@ -834,7 +834,7 @@
    "kind": "paragraph",
    "top": 8142,
    "h": 70,
-   "style": "ba0c7937",
+   "style": "31cbc7b0",
    "content": "2265f2cf",
    "text": "This repo uses snapshot tests (via insta), espec"
   },
@@ -861,7 +861,7 @@
    "kind": "listItem",
    "top": 8418,
    "h": 59,
-   "style": "2a345d21",
+   "style": "3c879153",
    "content": "e270ea74",
    "text": "Run tests to generate any updated snapshots: jus"
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 8476,
    "h": 59,
-   "style": "81402f9b",
+   "style": "06aa3350",
    "content": "a1126f4d",
    "text": "Check what’s pending: cargo insta pending-snapsh"
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 8535,
    "h": 85,
-   "style": "a49b2e80",
+   "style": "fe60b809",
    "content": "052a66db",
    "text": "Review changes by reading the generated *.snap.n"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 8619,
    "h": 74,
-   "style": "ce4f46d1",
+   "style": "6632d53f",
    "content": "a6a778dd",
    "text": "Only if you intend to accept all new snapshots i"
   },
@@ -906,7 +906,7 @@
    "kind": "listItem",
    "top": 8725,
    "h": 45,
-   "style": "a122f682",
+   "style": "91ed8a1f",
    "content": "c2059772",
    "text": "cargo install --locked cargo-insta"
   },
@@ -933,7 +933,7 @@
    "kind": "paragraph",
    "top": 8882,
    "h": 70,
-   "style": "fb694c6d",
+   "style": "df630d09",
    "content": "76ae0f09",
    "text": "Use just bench-smoke to dry-run the benchmark fo"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 10559,
    "h": 123,
-   "style": "95be4c7e",
+   "style": "7dfcd9f1",
    "content": "2c1c1647",
    "text": "Use TestAppServer::builder().build() and TestApp"
   },
@@ -1149,7 +1149,7 @@
    "kind": "paragraph",
    "top": 10747,
    "h": 70,
-   "style": "055af487",
+   "style": "35f5196e",
    "content": "eab3c999",
    "text": "These guidelines apply to app-server protocol wo"
   },
@@ -1356,7 +1356,7 @@
    "kind": "listItem",
    "top": 12414,
    "h": 80,
-   "style": "280dcf19",
+   "style": "359f9a0b",
    "content": "188593ac",
    "text": "Regenerate schema fixtures when API shapes chang"
   },
@@ -1410,7 +1410,7 @@
    "kind": "paragraph",
    "top": 12796,
    "h": 122,
-   "style": "491022dd",
+   "style": "a8e8e3fa",
    "content": "b0a6d06f",
    "text": "If you need to worry about feature compatibility"
   },
@@ -1437,7 +1437,7 @@
    "kind": "paragraph",
    "top": 13053,
    "h": 96,
-   "style": "45bf0430",
+   "style": "ae761605",
    "content": "388d17d5",
    "text": "Codex supports running connected app-server and "
   }

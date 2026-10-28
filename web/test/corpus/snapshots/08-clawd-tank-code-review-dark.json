@@ -258,7 +258,7 @@
    "kind": "heading",
    "top": 2273,
    "h": 42,
-   "style": "7cda24a3",
+   "style": "537067c6",
    "content": "a4bfdf3c",
    "text": "6. Socket not closed on send failure — clawd-not"
   },
@@ -321,7 +321,7 @@
    "kind": "paragraph",
    "top": 2743,
    "h": 174,
-   "style": "25ee86d1",
+   "style": "4fb62862",
    "content": "0272c3a9",
    "text": "reader.read(4096) reads up to 4096 bytes. A JSON"
   },
@@ -402,7 +402,7 @@
    "kind": "heading",
    "top": 3614,
    "h": 42,
-   "style": "e080cbb5",
+   "style": "5daf53f6",
    "content": "b75c2a38",
    "text": "11. Dead code: DAEMON_MODULE — clawd-notify:24"
   },
@@ -465,7 +465,7 @@
    "kind": "heading",
    "top": 4063,
    "h": 65,
-   "style": "b56f627d",
+   "style": "089080f8",
    "content": "249423f0",
    "text": "13. sys.exit(1) in hook may be too loud — clawd-"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 4250,
    "h": 65,
-   "style": "9cec1bcb",
+   "style": "2534e9b6",
    "content": "c1b6531d",
    "text": "14. start_daemon() opens log file without try/fi"
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 5091,
    "h": 65,
-   "style": "c35cccbe",
+   "style": "fe2fc94e",
    "content": "80d23198",
    "text": "18. install-hooks.sh missing set -u and executab"
   },
@@ -627,7 +627,7 @@
    "kind": "paragraph",
    "top": 5238,
    "h": 70,
-   "style": "181ffb5e",
+   "style": "db2f3d41",
    "content": "25a3eac1",
    "text": "Also: no check that clawd-notify is executable ("
   },
@@ -717,7 +717,7 @@
    "kind": "listItem",
    "top": 5881,
    "h": 80,
-   "style": "5580170a",
+   "style": "cf82adb3",
    "content": "a1f83dcf",
    "text": "clawd-notify lazy-start pattern is clean. Check "
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 6042,
    "h": 97,
-   "style": "5ee95b54",
+   "style": "c812c66e",
    "content": "f109c954",
    "text": "install-hooks.sh is correctly conservative — out"
   },
@@ -807,7 +807,7 @@
    "kind": "listItem",
    "top": 6448,
    "h": 54,
-   "style": "6dcfe1c3",
+   "style": "7ebe7ffa",
    "content": "53c23967",
    "text": "Fix socket leak in clawd-notify (issue #6) — try"
   },

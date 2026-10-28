@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 74,
-   "style": "a7f8db5d",
+   "style": "7115c494",
    "content": "3b7e5cd3",
    "text": "此文档定义了项目开发的通用标准，并规定了所有指令文档的执行等级，适用于 GitHub Copil"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 297,
    "h": 178,
-   "style": "66742d3f",
+   "style": "3f3800ca",
    "content": "d7d2e21c",
    "text": "核心规范 (Core Requirements / MUST): coding-agent: 应"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 475,
    "h": 122,
-   "style": "1e435289",
+   "style": "7840080e",
    "content": "299cb7fc",
    "text": "优化建议 (Optimization Suggestions / SHOULD): coding"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 793,
    "h": 42,
-   "style": "6961e84a",
+   "style": "18066a82",
    "content": "9bedc045",
    "text": "coding-agent (编码助手)"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 1632,
    "h": 42,
-   "style": "b6d98712",
+   "style": "c2c1eb29",
    "content": "10f0b778",
    "text": "code-review (审查助手)"
   },

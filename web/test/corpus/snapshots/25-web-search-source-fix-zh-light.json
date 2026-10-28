@@ -78,7 +78,7 @@
    "kind": "paragraph",
    "top": 583,
    "h": 70,
-   "style": "272b9954",
+   "style": "58f7d1e1",
    "content": "172c7d85",
    "text": "app1/app/src/main/java/com/android/everytalk/ui/"
   },
@@ -483,7 +483,7 @@
    "kind": "listItem",
    "top": 3652,
    "h": 54,
-   "style": "5c551a0c",
+   "style": "5d3ff35d",
    "content": "0e13428c",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
@@ -492,7 +492,7 @@
    "kind": "listItem",
    "top": 3706,
    "h": 54,
-   "style": "934039fd",
+   "style": "6d2d4df9",
    "content": "7f586e43",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
@@ -501,7 +501,7 @@
    "kind": "listItem",
    "top": 3760,
    "h": 54,
-   "style": "3fcf924d",
+   "style": "cf672ac9",
    "content": "710ebb52",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
@@ -771,7 +771,7 @@
    "kind": "listItem",
    "top": 6791,
    "h": 71,
-   "style": "f31a164e",
+   "style": "367ccdc3",
    "content": "f34b8335",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
@@ -1140,7 +1140,7 @@
    "kind": "listItem",
    "top": 8832,
    "h": 31,
-   "style": "12b45bd9",
+   "style": "02df3ffd",
    "content": "e2cf6c2f",
    "text": "纯文本 fallback 使用 Regex(\"\"\"https?://[^\\s)>]+\"\"\")。"
   },
@@ -1230,7 +1230,7 @@
    "kind": "listItem",
    "top": 9301,
    "h": 54,
-   "style": "24a02d7a",
+   "style": "53e248b7",
    "content": "9761ef18",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },
@@ -1248,7 +1248,7 @@
    "kind": "listItem",
    "top": 9410,
    "h": 71,
-   "style": "4812f5ce",
+   "style": "14687543",
    "content": "ac95f109",
    "text": "Modify: app1/app/src/main/java/com/android/every"
   },

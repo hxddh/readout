@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 1077,
    "h": 106,
-   "style": "4724ac90",
+   "style": "42d63099",
    "content": "0f41daa3",
    "text": "The timing parameters (interval, timeout, retrie"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1183,
    "h": 80,
-   "style": "3f0c29f8",
+   "style": "525f573d",
    "content": "38214950",
    "text": "The default healthcheck mode is p2p (set inside "
   },

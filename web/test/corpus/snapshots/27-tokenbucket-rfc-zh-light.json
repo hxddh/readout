@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1162,
    "h": 59,
-   "style": "a47689e1",
+   "style": "ad93ab16",
    "content": "92cce579",
    "text": "apps/http-proxy 服务注册 MUST 删除 labels.terminal_id；"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 1489,
    "h": 75,
-   "style": "160982cc",
+   "style": "9a7a388b",
    "content": "d5f6d49f",
    "text": "不扩大到所有 vendor 的立即实现；本次落地范围仍以 http-services、http-"
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 1688,
    "h": 59,
-   "style": "8ccf1d84",
+   "style": "31bd6918",
    "content": "5f2e29aa",
    "text": "HTTPProxy 候选: 同 host 网络内声明了 HTTPProxy 服务，且 tags."
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 2530,
    "h": 140,
-   "style": "f319743d",
+   "style": "095ec5dd",
    "content": "188f4e68",
    "text": "HTTPProxy 候选的最小准入条件收敛为： 提供 HTTPProxy 服务；tags.ip "
   },
@@ -636,7 +636,7 @@
    "kind": "heading",
    "top": 4515,
    "h": 42,
-   "style": "fbc73f41",
+   "style": "f0eddc44",
    "content": "59b6ec84",
    "text": "5. apps/http-proxy 标签契约"
   },
@@ -897,7 +897,7 @@
    "kind": "heading",
    "top": 6037,
    "h": 42,
-   "style": "dfdfdf30",
+   "style": "7988e9e5",
    "content": "37cd0af6",
    "text": "apps/http-proxy 服务标签"
   },
@@ -1023,7 +1023,7 @@
    "kind": "listItem",
    "top": 6968,
    "h": 87,
-   "style": "165fb9ce",
+   "style": "6637f5f7",
    "content": "dfca3996",
    "text": "但实际 trust boundary 已由用户明确上移到 host 网络，本次只是让实现与该模型"
   },
@@ -1059,7 +1059,7 @@
    "kind": "listItem",
    "top": 7195,
    "h": 59,
-   "style": "0319a26b",
+   "style": "51a55087",
    "content": "09ef5e13",
    "text": "MUST 校验 tags.ip_source === 'http-services'，避免把未注"
   },
@@ -1149,7 +1149,7 @@
    "kind": "listItem",
    "top": 7732,
    "h": 59,
-   "style": "c3dbf35a",
+   "style": "ed8372a0",
    "content": "55b474fd",
    "text": "先修改 http-services：删除 allowlist 与 terminalId 返回值，"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 7791,
    "h": 31,
-   "style": "f44b3c22",
+   "style": "b9058e5e",
    "content": "d0e4d0fe",
    "text": "再修改 apps/http-proxy：移除服务标签中的 terminal_id。"
   },
@@ -1167,7 +1167,7 @@
    "kind": "listItem",
    "top": 7821,
    "h": 75,
-   "style": "03060384",
+   "style": "1c6c2dd0",
    "content": "675ffe91",
    "text": "最后修改 apps/vendor-binance：请求上下文与 fetch.labels 只保留"
   },
@@ -1284,7 +1284,7 @@
    "kind": "listItem",
    "top": 8499,
    "h": 103,
-   "style": "091a87ab",
+   "style": "f30ec62c",
    "content": "179ea8a5",
    "text": "V8 apps/http-proxy 不再注册 labels.terminal_id；若仅按 l"
   },
@@ -1302,7 +1302,7 @@
    "kind": "listItem",
    "top": 8637,
    "h": 155,
-   "style": "10fb8d42",
+   "style": "6264643a",
    "content": "3d7bcdcf",
    "text": "proxy-ip.test.ts 删除“allowlist 为空 fail-closed”断言。"
   },
@@ -1311,7 +1311,7 @@
    "kind": "listItem",
    "top": 8792,
    "h": 211,
-   "style": "4142c9ad",
+   "style": "2ca87839",
    "content": "30c90c88",
    "text": "client/vendor 测试 断言代理请求只传 labels.ip。断言 IRequestC"
   },
@@ -1320,7 +1320,7 @@
    "kind": "listItem",
    "top": 9004,
    "h": 109,
-   "style": "ea7f750c",
+   "style": "d800876a",
    "content": "e6c42914",
    "text": "构建验收 libraries/http-services 单测通过。apps/vendor-bi"
   },
@@ -1338,7 +1338,7 @@
    "kind": "listItem",
    "top": 9178,
    "h": 59,
-   "style": "1974150f",
+   "style": "ef457707",
    "content": "54100ffe",
    "text": "当前保留 ip_source === 'http-services' 作为最小标签可信信号；若未"
   },
@@ -1473,7 +1473,7 @@
    "kind": "listItem",
    "top": 10368,
    "h": 59,
-   "style": "b7f1985a",
+   "style": "c6f8a524",
    "content": "56e9de5f",
    "text": "跑 apps/vendor-binance 构建，确认类型收敛没有残留 terminalId 依"
   },

@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 379,
    "h": 382,
-   "style": "6d3eab1f",
+   "style": "9d5a07d3",
    "content": "4014c83a",
    "text": "S1 — stale ledger from a different plan. The fix"
   },
@@ -60,7 +60,7 @@
    "kind": "paragraph",
    "top": 761,
    "h": 278,
-   "style": "e9c8edd3",
+   "style": "e56efb65",
    "content": "980ab899",
    "text": "S2 — same-plan resume. Same project, but plan B'"
   },
@@ -114,7 +114,7 @@
    "kind": "paragraph",
    "top": 1824,
    "h": 304,
-   "style": "8b499c16",
+   "style": "f230d8fe",
    "content": "822a62c9",
    "text": "(b) The structural record documented in the spec"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 2451,
    "h": 147,
-   "style": "0fac9ea1",
+   "style": "39da39a6",
    "content": "9115ced1",
    "text": "s1-rep2: None of the aaa000N/bbb000N hashes the "
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 2883,
    "h": 147,
-   "style": "be4abb2a",
+   "style": "0ee97399",
    "content": "3a9f6027",
    "text": "s1-rep1: Cross-checked the commit hashes it cite"
   },
@@ -231,7 +231,7 @@
    "kind": "paragraph",
    "top": 3550,
    "h": 200,
-   "style": "1df42f98",
+   "style": "73c73332",
    "content": "9ddd7672",
    "text": "v1 and v2 each independently triggered the eval'"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 6252,
    "h": 148,
-   "style": "d95f9ce7",
+   "style": "6b50da3b",
    "content": "3a190ecb",
    "text": "Every GREEN rep (10/10) began by resolving the p"
   },
@@ -456,7 +456,7 @@
    "kind": "paragraph",
    "top": 12657,
    "h": 148,
-   "style": "2793113a",
+   "style": "0836630f",
    "content": "42d42fe4",
    "text": "One fresh subagent per rep (model sonnet, subage"
   },
@@ -483,7 +483,7 @@
    "kind": "paragraph",
    "top": 13471,
    "h": 304,
-   "style": "e026081d",
+   "style": "764aaa09",
    "content": "58ddb80a",
    "text": "Five reps per cell is a smoke-strength signal, n"
   }

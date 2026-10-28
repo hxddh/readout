@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 140,
    "h": 226,
-   "style": "5eebd95c",
+   "style": "0fe3f202",
    "content": "1361ebda",
    "text": "This is Phase 0 work item 7 (docs/superpowers/pl"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 2406,
    "h": 305,
-   "style": "2838654f",
+   "style": "6bb47061",
    "content": "4b5b3112",
    "text": "Why a header, not the body, carries the chained "
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 3356,
    "h": 304,
-   "style": "a94af767",
+   "style": "77160703",
    "content": "dab9c16a",
    "text": "This table is from the final run against the lin"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 7099,
    "h": 288,
-   "style": "13e25c30",
+   "style": "42d122e6",
    "content": "44a20038",
    "text": "Tells you: the engine's own per-request overhead"
   },

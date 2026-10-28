@@ -1113,7 +1113,7 @@
    "kind": "paragraph",
    "top": 16436,
    "h": 46,
-   "style": "b07db6f8",
+   "style": "7ac812db",
    "content": "6142df10",
    "text": "使用 fast-check 库进行属性测试，每个属性至少运行 100 次迭代。"
   },
@@ -1464,7 +1464,7 @@
    "kind": "listItem",
    "top": 17983,
    "h": 59,
-   "style": "3c592b59",
+   "style": "919da972",
    "content": "45051ff9",
    "text": "属性测试库：fast-check（项目已使用 vitest，fast-check 与 vites"
   },
@@ -1491,7 +1491,7 @@
    "kind": "listItem",
    "top": 18103,
    "h": 31,
-   "style": "c032ccaf",
+   "style": "6b08463a",
    "content": "8d4990d6",
    "text": "标注格式：// Feature: a2a-protocol, Property N: {prop"
   },

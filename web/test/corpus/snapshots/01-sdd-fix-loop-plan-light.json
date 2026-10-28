@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 352,
    "h": 200,
-   "style": "863b5341",
+   "style": "a2621b42",
    "content": "57fa6407",
    "text": "Architecture: Two repos. The superpowers repo (b"
   },
@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 647,
    "h": 70,
-   "style": "f6e51c0a",
+   "style": "53bb8a50",
    "content": "20052c98",
    "text": "Design spec: docs/superpowers/specs/2026-07-15-s"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 1020,
    "h": 332,
-   "style": "3c08e4a4",
+   "style": "09b297b8",
    "content": "f501248e",
    "text": "Ledger line formats (exact — scenarios grep for "
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 2567,
    "h": 71,
-   "style": "84ccdb63",
+   "style": "7fd32608",
    "content": "9d606904",
    "text": "Create: docs/experiments/2026-07-sdd-fix-loop-re"
   },
@@ -456,7 +456,7 @@
    "kind": "listItem",
    "top": 5904,
    "h": 35,
-   "style": "2ad5873e",
+   "style": "e40bdba2",
    "content": "e810ddf9",
    "text": "Consumes: re-review-prompt.md exists (Task 1)."
   },
@@ -546,7 +546,7 @@
    "kind": "paragraph",
    "top": 6724,
    "h": 96,
-   "style": "e3c0790f",
+   "style": "f18e82c5",
    "content": "6613fd08",
    "text": "Nothing replaces it — the scoped re-review contr"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 7991,
    "h": 61,
-   "style": "27cacef2",
+   "style": "1462392f",
    "content": "e914c665",
    "text": "Consumes: all three templates (Tasks 1–2); scrip"
   },
@@ -789,7 +789,7 @@
    "kind": "paragraph",
    "top": 21845,
    "h": 174,
-   "style": "fac6f18b",
+   "style": "ada5ebec",
    "content": "5b382c3c",
    "text": "Run: awk '/```dot/,/```/' skills/subagent-driven"
   },
@@ -1194,7 +1194,7 @@
    "kind": "listItem",
    "top": 30621,
    "h": 87,
-   "style": "a45a3c06",
+   "style": "fb742e59",
    "content": "bc285fd0",
    "text": "Consumes: existing helper scaffold_sdd_quality_d"
   },
@@ -1266,7 +1266,7 @@
    "kind": "paragraph",
    "top": 33294,
    "h": 148,
-   "style": "167a1aca",
+   "style": "3f2ebd74",
    "content": "d5156482",
    "text": "The deterministic core is tool-called SendMessag"
   },
@@ -1374,7 +1374,7 @@
    "kind": "listItem",
    "top": 34014,
    "h": 35,
-   "style": "886db7e1",
+   "style": "079c9f4f",
    "content": "a7630f50",
    "text": "Produces: scenario name sdd-breaker-adjudicates-"
   },
@@ -1653,7 +1653,7 @@
    "kind": "paragraph",
    "top": 39169,
    "h": 200,
-   "style": "6516b784",
+   "style": "ea5a035a",
    "content": "42d45278",
    "text": "TRUSTED-MAINTAINER TASK. Live runs launch Claude"
   },
@@ -1671,7 +1671,7 @@
    "kind": "listItem",
    "top": 39401,
    "h": 45,
-   "style": "c0597ed9",
+   "style": "089f9baa",
    "content": "c3509d68",
    "text": "Create: evals/docs/experiments/2026-07-sdd-fix-l"
   },
@@ -1725,7 +1725,7 @@
    "kind": "paragraph",
    "top": 39721,
    "h": 96,
-   "style": "58900657",
+   "style": "685bfe5e",
    "content": "3e59df98",
    "text": "Confirm: git -C \"$REDESIGN_ROOT\" branch --show-c"
   },
@@ -1779,7 +1779,7 @@
    "kind": "paragraph",
    "top": 40441,
    "h": 122,
-   "style": "0029fa67",
+   "style": "57ddf728",
    "content": "053c5bcb",
    "text": "Expected: all three PASS. Triage any non-pass wi"
   },
@@ -1824,7 +1824,7 @@
    "kind": "paragraph",
    "top": 40915,
    "h": 226,
-   "style": "0b461cb8",
+   "style": "6d70a965",
    "content": "1ea960bf",
    "text": "Create evals/docs/experiments/2026-07-sdd-fix-lo"
   },

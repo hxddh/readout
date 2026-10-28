@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 506,
    "h": 54,
-   "style": "f0ab8da9",
+   "style": "3595dc40",
    "content": "2b0350b6",
    "text": "Skill sources are canonical under skill-sources/"
   },
@@ -546,7 +546,7 @@
    "kind": "listItem",
    "top": 6347,
    "h": 54,
-   "style": "37685407",
+   "style": "923dbace",
    "content": "795b2758",
    "text": "Host hook/adapter wraps shell calls as an envelo"
   },
@@ -564,7 +564,7 @@
    "kind": "listItem",
    "top": 6429,
    "h": 28,
-   "style": "5a4e505b",
+   "style": "b375fc98",
    "content": "a7f5f2d3",
    "text": "command-lexer parses command structure; avoid na"
   },
@@ -573,7 +573,7 @@
    "kind": "listItem",
    "top": 6457,
    "h": 28,
-   "style": "fe03e42e",
+   "style": "d8bb8dfa",
    "content": "fbc7c48c",
    "text": "command-registry classifies known commands and d"
   },
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 6486,
    "h": 28,
-   "style": "81734077",
+   "style": "07ca6ee8",
    "content": "81b89922",
    "text": "shell-planner decides rewrite/pass/ask/deny."
   },
@@ -591,7 +591,7 @@
    "kind": "listItem",
    "top": 6514,
    "h": 54,
-   "style": "77289374",
+   "style": "cf8f961b",
    "content": "d919d70f",
    "text": "filtered-runner executes rewritten command when "
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 6568,
    "h": 54,
-   "style": "77289374",
+   "style": "cf8f961b",
    "content": "046e3005",
    "text": "output-shrinker preserves exit code, stderr, err"
   },
@@ -609,7 +609,7 @@
    "kind": "listItem",
    "top": 6623,
    "h": 71,
-   "style": "4a83936b",
+   "style": "fa08fa48",
    "content": "9068ec07",
    "text": "raw-ref-store stores full raw output if output c"
   },
@@ -627,7 +627,7 @@
    "kind": "listItem",
    "top": 6726,
    "h": 54,
-   "style": "2c3cc3ab",
+   "style": "584691eb",
    "content": "cd86d963",
    "text": "Large cat or Get-Content: rewrite to targeted he"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 6780,
    "h": 54,
-   "style": "0871b77b",
+   "style": "7e46ea2f",
    "content": "d2b773d0",
    "text": "Large git diff: rewrite to git diff --stat plus "
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 8261,
    "h": 28,
-   "style": "6c6816cd",
+   "style": "e9db0d2c",
    "content": "6c66a1de",
    "text": "node scripts/aios.mjs refs grep \"pattern\" --ref "
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 8289,
    "h": 28,
-   "style": "30e36086",
+   "style": "39e009e6",
    "content": "c3b6168a",
    "text": "node scripts/aios.mjs refs list --session <sessi"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 8317,
    "h": 45,
-   "style": "1a8bb1c4",
+   "style": "2c7582c0",
    "content": "55f7a50b",
    "text": "node scripts/aios.mjs refs prune --older-than 30"
   },
@@ -1095,7 +1095,7 @@
    "kind": "listItem",
    "top": 9912,
    "h": 71,
-   "style": "e4cdbb89",
+   "style": "13ee9c14",
    "content": "a2cb87ca",
    "text": "Do not hand-edit generated roots; edit skill-sou"
   },
@@ -1149,7 +1149,7 @@
    "kind": "listItem",
    "top": 10311,
    "h": 80,
-   "style": "d21dd694",
+   "style": "98b7c5d3",
    "content": "0372c828",
    "text": "skill-sources/aios-project-system/SKILL.md: stat"
   },
@@ -1302,7 +1302,7 @@
    "kind": "listItem",
    "top": 11720,
    "h": 87,
-   "style": "8304767c",
+   "style": "1193b911",
    "content": "67ba081e",
    "text": "Skills/native alignment Update skill-sources and"
   },
@@ -1338,7 +1338,7 @@
    "kind": "listItem",
    "top": 12032,
    "h": 54,
-   "style": "b043a04b",
+   "style": "27d94864",
    "content": "464a77c4",
    "text": "command-lexer: quotes, PowerShell syntax, pipes,"
   },
@@ -1347,7 +1347,7 @@
    "kind": "listItem",
    "top": 12086,
    "h": 54,
-   "style": "984efa75",
+   "style": "a388bb42",
    "content": "14c53967",
    "text": "shell-planner: large read, git diff, destructive"
   },
@@ -1356,7 +1356,7 @@
    "kind": "listItem",
    "top": 12141,
    "h": 54,
-   "style": "77289374",
+   "style": "cf8f961b",
    "content": "98793394",
    "text": "output-shrinker: preserves exit code, stderr, er"
   },
@@ -1365,7 +1365,7 @@
    "kind": "listItem",
    "top": 12195,
    "h": 28,
-   "style": "5a4e505b",
+   "style": "b375fc98",
    "content": "f1d43fa8",
    "text": "raw-ref-store: raw/meta writes, sha256, grep/rea"
   },
@@ -1374,7 +1374,7 @@
    "kind": "listItem",
    "top": 12223,
    "h": 28,
-   "style": "a31e2025",
+   "style": "95b0d8ca",
    "content": "8a33efcb",
    "text": "compact-packet: metrics and recall command rende"
   },
@@ -1383,7 +1383,7 @@
    "kind": "listItem",
    "top": 12252,
    "h": 28,
-   "style": "3d2ef4eb",
+   "style": "73c01bae",
    "content": "4bf87e0c",
    "text": "json-rpc-proxy: id/order/error/capability preser"
   },
@@ -1392,7 +1392,7 @@
    "kind": "listItem",
    "top": 12280,
    "h": 28,
-   "style": "a35b8b3b",
+   "style": "3df9fe54",
    "content": "b344758e",
    "text": "tools-list-shrink: compact schema remains usable"
   },
@@ -1401,7 +1401,7 @@
    "kind": "listItem",
    "top": 12308,
    "h": 71,
-   "style": "0dad09d3",
+   "style": "3ea08204",
    "content": "e87b5fc5",
    "text": "tools-call-shrink: large text/HTML/JSON/base64/e"
   },
@@ -1473,7 +1473,7 @@
    "kind": "listItem",
    "top": 12628,
    "h": 28,
-   "style": "2c2c2736",
+   "style": "c65c82c3",
    "content": "a7587269",
    "text": "node --test scripts/tests/interception-*.test.mj"
   },
@@ -1509,7 +1509,7 @@
    "kind": "listItem",
    "top": 12741,
    "h": 71,
-   "style": "fd8bc9dd",
+   "style": "bc0816b1",
    "content": "edfe42f0",
    "text": "cd mcp-server && npm run typecheck && npm run te"
   },

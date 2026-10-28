@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 976,
    "h": 155,
-   "style": "1c53d022",
+   "style": "f0fbfba1",
    "content": "dda39c8a",
    "text": "swagger-ui (main package)Traditional npm module "
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 3043,
    "h": 28,
-   "style": "d32829b6",
+   "style": "8989b4cf",
    "content": "a95241c8",
    "text": "deep-linking - URL-based navigation"
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 3071,
    "h": 28,
-   "style": "d32829b6",
+   "style": "8989b4cf",
    "content": "e2dee45d",
    "text": "download-url - Spec downloading"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 3185,
    "h": 28,
-   "style": "d530e9a6",
+   "style": "68fd00b4",
    "content": "6011ce31",
    "text": "json-schema-2020-12 - JSON Schema 2020-12 suppor"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 3213,
    "h": 28,
-   "style": "db0dad6f",
+   "style": "14ad7350",
    "content": "da1edf11",
    "text": "json-schema-2020-12-samples - Sample generation"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 3241,
    "h": 28,
-   "style": "eff74ae5",
+   "style": "602d5fb0",
    "content": "33f7c2aa",
    "text": "json-schema-5 - JSON Schema Draft 5 support"
   },
@@ -708,7 +708,7 @@
    "kind": "listItem",
    "top": 3269,
    "h": 28,
-   "style": "0f3d94d5",
+   "style": "44e82ecb",
    "content": "db6473fd",
    "text": "json-schema-5-samples - Sample generation for Dr"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 3439,
    "h": 28,
-   "style": "63d7c81c",
+   "style": "26e7fafc",
    "content": "02d5944b",
    "text": "on-complete - Completion callbacks"
   },
@@ -771,7 +771,7 @@
    "kind": "listItem",
    "top": 3468,
    "h": 28,
-   "style": "5a36c30c",
+   "style": "dbf4f810",
    "content": "a105460a",
    "text": "request-snippets - Code snippet generation"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 3496,
    "h": 28,
-   "style": "63d7c81c",
+   "style": "26e7fafc",
    "content": "ab9c9eb2",
    "text": "safe-render - Safe component rendering"
   },
@@ -798,7 +798,7 @@
    "kind": "listItem",
    "top": 3552,
    "h": 28,
-   "style": "757acf27",
+   "style": "d15bba10",
    "content": "1524f7eb",
    "text": "swagger-client - API client integration"
   },
@@ -807,7 +807,7 @@
    "kind": "listItem",
    "top": 3581,
    "h": 28,
-   "style": "d530e9a6",
+   "style": "68fd00b4",
    "content": "6b26c64d",
    "text": "syntax-highlighting - Code highlighting"
   },
@@ -843,7 +843,7 @@
    "kind": "listItem",
    "top": 3694,
    "h": 45,
-   "style": "8a4a71dd",
+   "style": "4fe10e9b",
    "content": "592622a4",
    "text": "view-legacy - Legacy view support"
   },
@@ -978,7 +978,7 @@
    "kind": "paragraph",
    "top": 4729,
    "h": 70,
-   "style": "89a4dcdf",
+   "style": "7dd92960",
    "content": "0d519da3",
    "text": "Important: Local files must be in the dev-helper"
   },
@@ -1113,7 +1113,7 @@
    "kind": "listItem",
    "top": 5439,
    "h": 28,
-   "style": "e9545369",
+   "style": "d1963982",
    "content": "8523023f",
    "text": "[node-production] - Maintained Node versions"
   },
@@ -1122,7 +1122,7 @@
    "kind": "listItem",
    "top": 5467,
    "h": 45,
-   "style": "174cf064",
+   "style": "c05a0cf9",
    "content": "0697a778",
    "text": "[node-development] - Node 24"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 5897,
    "h": 28,
-   "style": "cc91cd71",
+   "style": "234a6d64",
    "content": "7c429508",
    "text": "swagger-ui.js - Core bundle (CommonJS)"
   },
@@ -1167,7 +1167,7 @@
    "kind": "listItem",
    "top": 5926,
    "h": 28,
-   "style": "757acf27",
+   "style": "d15bba10",
    "content": "0157abcd",
    "text": "swagger-ui.css - Compiled styles"
   },
@@ -1239,7 +1239,7 @@
    "kind": "listItem",
    "top": 6186,
    "h": 28,
-   "style": "0b15c2cf",
+   "style": "b9a4a6fc",
    "content": "affc376f",
    "text": "_config-builder.js - Base configuration"
   },
@@ -1275,7 +1275,7 @@
    "kind": "listItem",
    "top": 6300,
    "h": 28,
-   "style": "d32829b6",
+   "style": "8989b4cf",
    "content": "9335ad66",
    "text": "es-bundle.js - ES bundle"
   },
@@ -1284,7 +1284,7 @@
    "kind": "listItem",
    "top": 6328,
    "h": 28,
-   "style": "e9545369",
+   "style": "d1963982",
    "content": "823f3987",
    "text": "es-bundle-core.js - ES core bundle"
   },
@@ -1311,7 +1311,7 @@
    "kind": "listItem",
    "top": 6413,
    "h": 45,
-   "style": "b2cd9045",
+   "style": "9cca9f10",
    "content": "f7fc6870",
    "text": "dev-e2e.js - E2E testing server"
   },
@@ -1500,7 +1500,7 @@
    "kind": "paragraph",
    "top": 7235,
    "h": 44,
-   "style": "fa1efec1",
+   "style": "7f3801da",
    "content": "cd4068c4",
    "text": "Location: test/e2e-cypress/"
   },
@@ -1824,7 +1824,7 @@
    "kind": "listItem",
    "top": 8910,
    "h": 28,
-   "style": "a32c8a7d",
+   "style": "2dd6ecc6",
    "content": "3db336f9",
    "text": "no-unused-vars: 2 - Error on unused variables"
   },
@@ -1842,7 +1842,7 @@
    "kind": "listItem",
    "top": 8993,
    "h": 54,
-   "style": "198f9851",
+   "style": "cca85829",
    "content": "e0c50691",
    "text": "no-console: [2, {allow: [\"warn\", \"error\"]}] - On"
   },
@@ -1851,7 +1851,7 @@
    "kind": "listItem",
    "top": 9047,
    "h": 28,
-   "style": "d7c68aa0",
+   "style": "42c1d19c",
    "content": "9851b7a5",
    "text": "react/jsx-no-bind: 1 - Warning for JSX bind"
   },
@@ -1986,7 +1986,7 @@
    "kind": "paragraph",
    "top": 9836,
    "h": 44,
-   "style": "463450b3",
+   "style": "3cdd4266",
    "content": "92eeba67",
    "text": "Custom Syntax: postcss-scss"
   },
@@ -2004,7 +2004,7 @@
    "kind": "listItem",
    "top": 9912,
    "h": 28,
-   "style": "d99451bb",
+   "style": "4d8daa6a",
    "content": "7174198a",
    "text": "Uses stylelint-prettier plugin"
   },
@@ -2031,7 +2031,7 @@
    "kind": "paragraph",
    "top": 10027,
    "h": 44,
-   "style": "2c4ac893",
+   "style": "f5d0b69a",
    "content": "1d865d81",
    "text": "Husky: .husky/pre-commit runs npx lint-staged"
   },
@@ -2184,7 +2184,7 @@
    "kind": "listItem",
    "top": 10759,
    "h": 45,
-   "style": "6c8fad81",
+   "style": "0a9a6f4a",
    "content": "0a1b999d",
    "text": "Dark mode: _dark-mode.scss"
   },
@@ -2823,7 +2823,7 @@
    "kind": "listItem",
    "top": 13897,
    "h": 28,
-   "style": "ac5d9664",
+   "style": "b5917ddb",
    "content": "c1404141",
    "text": "wrap-actions.js - Action middleware"
   },
@@ -2832,7 +2832,7 @@
    "kind": "listItem",
    "top": 13926,
    "h": 28,
-   "style": "e9545369",
+   "style": "d1963982",
    "content": "2c56cd53",
    "text": "wrap-selectors.js - Selector middleware"
   },
@@ -3399,7 +3399,7 @@
    "kind": "listItem",
    "top": 18380,
    "h": 96,
-   "style": "eee7177f",
+   "style": "f73b1b5a",
    "content": "17c92609",
    "text": "Reproduce the bug:Add a failing test in test/uni"
   },
@@ -3831,7 +3831,7 @@
    "kind": "listItem",
    "top": 21084,
    "h": 28,
-   "style": "4755ff44",
+   "style": "05a89d07",
    "content": "fc9b1702",
    "text": "Don't commit files in dev-helpers/ (except core "
   },
@@ -3885,7 +3885,7 @@
    "kind": "listItem",
    "top": 21254,
    "h": 28,
-   "style": "2661a47b",
+   "style": "8ef28534",
    "content": "7219a37e",
    "text": "Don't modify package-lock.json manually"
   },
@@ -4173,7 +4173,7 @@
    "kind": "listItem",
    "top": 22602,
    "h": 134,
-   "style": "746fb94a",
+   "style": "677c1876",
    "content": "6c437983",
    "text": "Bundle Size:Check bundle size with npm run deps-"
   },

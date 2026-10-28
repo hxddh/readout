@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 192,
    "h": 174,
-   "style": "073d5790",
+   "style": "f6805f58",
    "content": "5292fb4b",
    "text": "Layout: src/operations/ (add, find, find-all, re"
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1255,
    "h": 158,
-   "style": "8e07243e",
+   "style": "c9ebb014",
    "content": "058bf019",
    "text": "routeToRegExp(p) matches exactly the paths findR"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 2103,
    "h": 132,
-   "style": "0fcf6a34",
+   "style": "6850a7b4",
    "content": "208ff368",
    "text": "A :name never captures \"\", and no segment a :nam"
   },

@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 469,
    "h": 70,
-   "style": "8ca2932c",
+   "style": "7967f402",
    "content": "8057b7aa",
    "text": "Design Spec: docs/superpowers/specs/2026-04-02-d"
   },
@@ -303,7 +303,7 @@
    "kind": "paragraph",
    "top": 3709,
    "h": 131,
-   "style": "14face21",
+   "style": "bdd57e10",
    "content": "b6194741",
    "text": "PyTorch 中 optimizer = torch.optim.AdamW(model.pa"
   },

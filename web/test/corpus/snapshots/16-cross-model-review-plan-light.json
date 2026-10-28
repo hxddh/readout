@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 230,
    "h": 174,
-   "style": "c104c93f",
+   "style": "e500c90b",
    "content": "e3920f3f",
    "text": "Goal: Add an opt-in wiki-audit strong mode whose"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 404,
    "h": 226,
-   "style": "f9e8c1eb",
+   "style": "fca68c42",
    "content": "ff7b613f",
    "text": "Architecture: Prose SKILL.md edits, no applicati"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 630,
    "h": 122,
-   "style": "97947cde",
+   "style": "5736681e",
    "content": "c38273e8",
    "text": "Tech Stack: Markdown SKILL.md files. No build, n"
   },
@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 751,
    "h": 96,
-   "style": "495b16e0",
+   "style": "465984e5",
    "content": "ad674801",
    "text": "Source of truth: the approved design spec at doc"
   },
@@ -96,7 +96,7 @@
    "kind": "paragraph",
    "top": 1111,
    "h": 70,
-   "style": "3e7b3a8a",
+   "style": "0fba3e3c",
    "content": "2aa882c6",
    "text": "The claude-sonnet/anthropic fallback is same-pro"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1703,
    "h": 106,
-   "style": "19923117",
+   "style": "dd62947b",
    "content": "4cc8cb16",
    "text": "Modify: skills/wiki-init/SKILL.md — (a) director"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 2049,
    "h": 55,
-   "style": "2b2effe3",
+   "style": "e27ea17b",
    "content": "d27f0c93",
    "text": "Task 1: wiki-init — generate .gitignore and docu"
   },
@@ -240,7 +240,7 @@
    "kind": "paragraph",
    "top": 2268,
    "h": 148,
-   "style": "fa29604b",
+   "style": "596a9efa",
    "content": "211fecc2",
    "text": "Run: sed -n '29,41p' skills/wiki-init/SKILL.md &"
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 4581,
    "h": 174,
-   "style": "7e7503c7",
+   "style": "7fce9df0",
    "content": "bedbedbc",
    "text": "Run: rg -n 'wiki/pages/audit-\\*\\.md|\\.gitignore|"
   },
@@ -429,7 +429,7 @@
    "kind": "heading",
    "top": 4969,
    "h": 32,
-   "style": "aad876ec",
+   "style": "8163ca98",
    "content": "38894a04",
    "text": "Task 2: wiki-audit — strong-mode entry and intro"
   },
@@ -465,7 +465,7 @@
    "kind": "paragraph",
    "top": 5139,
    "h": 148,
-   "style": "67a10393",
+   "style": "bce79ea2",
    "content": "b6c75d64",
    "text": "Run: sed -n '8,8p' skills/wiki-audit/SKILL.md &&"
   },
@@ -573,7 +573,7 @@
    "kind": "paragraph",
    "top": 6254,
    "h": 122,
-   "style": "5a26bd1a",
+   "style": "fedde5e9",
    "content": "b61cd213",
    "text": "Run: rg -n 'strong mode|wiki-audit strong|Phase "
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 6589,
    "h": 55,
-   "style": "e65a05f1",
+   "style": "57b7cb63",
    "content": "390fffb8",
    "text": "Task 3: wiki-audit — Phase C (cross-model advers"
   },
@@ -807,7 +807,7 @@
    "kind": "heading",
    "top": 9442,
    "h": 55,
-   "style": "e65a05f1",
+   "style": "57b7cb63",
    "content": "a1fb3113",
    "text": "Task 4: wiki-audit — report section, gitignore s"
   },
@@ -843,7 +843,7 @@
    "kind": "paragraph",
    "top": 9687,
    "h": 148,
-   "style": "029a6aff",
+   "style": "9f778b64",
    "content": "3d8fc842",
    "text": "Run: sed -n '124,151p' skills/wiki-audit/SKILL.m"
   },
@@ -1041,7 +1041,7 @@
    "kind": "paragraph",
    "top": 12053,
    "h": 174,
-   "style": "c0121534",
+   "style": "73b4ea8a",
    "content": "f89a5d59",
    "text": "Run: rg -n '🧪 Cross-model disagreements|## 🧪 C"
   },
@@ -1113,7 +1113,7 @@
    "kind": "paragraph",
    "top": 12708,
    "h": 148,
-   "style": "1c64342a",
+   "style": "ee12f7c4",
    "content": "afba9054",
    "text": "Run: rg -n 'wiki/pages/audit-\\*\\.md' skills/wiki"
   },
@@ -1239,7 +1239,7 @@
    "kind": "paragraph",
    "top": 14366,
    "h": 148,
-   "style": "9cb9c291",
+   "style": "c506bfb3",
    "content": "051d032d",
    "text": "Placeholder scan: No TBD/TODO. Every edit step s"
   },
@@ -1248,7 +1248,7 @@
    "kind": "paragraph",
    "top": 14513,
    "h": 200,
-   "style": "de3c4db9",
+   "style": "4ac7ea17",
    "content": "5e1e9510",
    "text": "Type consistency (here: token + label spelling):"
   }

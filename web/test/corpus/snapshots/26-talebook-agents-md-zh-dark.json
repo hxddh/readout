@@ -240,7 +240,7 @@
    "kind": "paragraph",
    "top": 1884,
    "h": 186,
-   "style": "8eaa8971",
+   "style": "2050830c",
    "content": "fba897c2",
    "text": "运行 make check-spec 校验：章节结构与顺序、一级标题与文件名一致、定义一节含「不"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 2538,
    "h": 158,
-   "style": "a168afdf",
+   "style": "17e82713",
    "content": "8ae4ff07",
    "text": "本节所称大型功能，仅包括新功能、用户可感知行为变化和跨模块功能。大型功能只要影响页面、交互、文案"
   },
@@ -339,7 +339,7 @@
    "kind": "paragraph",
    "top": 2696,
    "h": 130,
-   "style": "676e7131",
+   "style": "c3b57e29",
    "content": "36705e70",
    "text": "审查出现 HIGH 或 MEDIUM 问题时不得转为 ACTIVE；修复后必须重新执行 inte"
   },
@@ -366,7 +366,7 @@
    "kind": "listItem",
    "top": 2986,
    "h": 31,
-   "style": "18158ffd",
+   "style": "955f1583",
    "content": "0d908c99",
    "text": "<feature> 使用小写英文 kebab-case；日期使用方案首次创建日期。"
   },
@@ -465,7 +465,7 @@
    "kind": "paragraph",
    "top": 4032,
    "h": 130,
-   "style": "2c9ba655",
+   "style": "217b59f2",
    "content": "aad073bb",
    "text": "运行 make check-design 校验方案路径、状态、HTML 基本结构、单文件资源约束"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 7207,
    "h": 243,
-   "style": "0771d12a",
+   "style": "a2b3e68c",
    "content": "36bf29fb",
    "text": "前端 i18n 文案（app/i18n/locales/*.json ）中禁止出现字面量 @ 和"
   },

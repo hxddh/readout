@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 230,
    "h": 96,
-   "style": "6196a37f",
+   "style": "cb489149",
    "content": "a6816161",
    "text": "Goal: Migrate @deneb-viz/app-core and @deneb-viz"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 326,
    "h": 304,
-   "style": "aadd4a99",
+   "style": "9ef26eb2",
    "content": "472e4e29",
    "text": "Architecture: Two-stage migration per upstream g"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 859,
    "h": 54,
-   "style": "c7e21b9d",
+   "style": "7ffebc1d",
    "content": "bd435eb6",
    "text": "Branch chore/750-tsdown off main at 5838d2f2 (po"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 993,
    "h": 158,
-   "style": "116a83c3",
+   "style": "c9153bd2",
    "content": "29822372",
    "text": "Current state, verified 2026-09-14: both package"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2294,
    "h": 61,
-   "style": "4d9871d3",
+   "style": "7ce27370",
    "content": "cc0b289a",
    "text": "Modify: package.json (root — remove tsup devDepe"
   },
@@ -276,7 +276,7 @@
    "kind": "paragraph",
    "top": 2689,
    "h": 278,
-   "style": "0b092e4a",
+   "style": "e1d26092",
    "content": "6383dffe",
    "text": "Then, in BOTH packages/app-core/package.json and"
   },
@@ -591,7 +591,7 @@
    "kind": "paragraph",
    "top": 6260,
    "h": 174,
-   "style": "93176d84",
+   "style": "012049ff",
    "content": "5aa58812",
    "text": "Expected: the import statements for @deneb-viz/p"
   },

@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 109,
    "h": 96,
-   "style": "44b27a4c",
+   "style": "86a52d0e",
    "content": "6fd3e7ff",
    "text": "Map every running UI element back to the C# sour"
   },
@@ -132,7 +132,7 @@
    "kind": "paragraph",
    "top": 3020,
    "h": 200,
-   "style": "733f0142",
+   "style": "ef2a78b8",
    "content": "fda20615",
    "text": "When inspecting a live Microsoft.UI.Reactor (Rea"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 3472,
    "h": 54,
-   "style": "a10d306b",
+   "style": "c6f43b49",
    "content": "544bae2f",
    "text": "IDE integration — the --preview server can open "
   },
@@ -294,7 +294,7 @@
    "kind": "quote",
    "top": 5238,
    "h": 529,
-   "style": "8be139ef",
+   "style": "8e1e6ff5",
    "content": "e6316818",
    "text": "Blocker found by spike (2026-08-26): params fact"
   },
@@ -321,7 +321,7 @@
    "kind": "html",
    "top": 6281,
    "h": 89,
-   "style": "9f69e506",
+   "style": "84701d5f",
    "content": "e6cb7e73",
    "text": "Original proposal (historical — superseded by th"
   },
@@ -465,7 +465,7 @@
    "kind": "paragraph",
    "top": 9240,
    "h": 148,
-   "style": "6edfd84c",
+   "style": "e519ffd6",
    "content": "7699dbf8",
    "text": "Verdict: Promising as a future enhancement for t"
   },
@@ -672,7 +672,7 @@
    "kind": "paragraph",
    "top": 13875,
    "h": 70,
-   "style": "04aa4d0e",
+   "style": "c4b1bd84",
    "content": "51f9055c",
    "text": "The --preview mode already runs a PreviewCapture"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 14428,
    "h": 28,
-   "style": "760df94a",
+   "style": "bd4d63aa",
    "content": "b02574d3",
    "text": "VS Code: code --goto {file}:{line}"
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 14485,
    "h": 71,
-   "style": "5d6c2d07",
+   "style": "bd9b2230",
    "content": "b93154b2",
    "text": "Generic: Use the REACTOR_EDITOR environment vari"
   },
@@ -771,7 +771,7 @@
    "kind": "paragraph",
    "top": 14592,
    "h": 58,
-   "style": "39fbfefd",
+   "style": "d5b84b47",
    "content": "2b08e226",
    "text": "When --preview is running with dev tools enabled"
   },
@@ -798,7 +798,7 @@
    "kind": "listItem",
    "top": 14759,
    "h": 71,
-   "style": "12552511",
+   "style": "eaf253c5",
    "content": "d1e6d19c",
    "text": "Clicking opens the source in the IDE via the /ap"
   },
@@ -987,7 +987,7 @@
    "kind": "quote",
    "top": 18618,
    "h": 834,
-   "style": "7019d55b",
+   "style": "97ffed72",
    "content": "80f1aa08",
    "text": "Amended (2026-08-26). The original text below is"
   },
@@ -1023,7 +1023,7 @@
    "kind": "quote",
    "top": 19705,
    "h": 790,
-   "style": "64531fa0",
+   "style": "0d695a03",
    "content": "4d04f553",
    "text": "Amended (2026-08-26): the sketched schema does n"
   },

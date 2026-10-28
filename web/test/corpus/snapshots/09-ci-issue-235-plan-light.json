@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 792,
    "h": 106,
-   "style": "2d4f559f",
+   "style": "9e5ca5e4",
    "content": "612e105a",
    "text": "yarn test:ci = vitest --run --coverage; there's "
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 898,
    "h": 227,
-   "style": "1235eb98",
+   "style": "53111941",
    "content": "6370fe18",
    "text": "Verified via JS-DevTools/npm-publish's own READM"
   },
@@ -96,7 +96,7 @@
    "kind": "table",
    "top": 1195,
    "h": 831,
-   "style": "fcec700a",
+   "style": "7ca89fd7",
    "content": "8894866e",
    "text": "ActionCurrently pinnedLatestBump?actions/checkou"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 3478,
    "h": 80,
-   "style": "11ae6581",
+   "style": "0fa9b5de",
    "content": "922263ae",
    "text": "Push to a branch / open a PR first: confirm the "
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 3558,
    "h": 158,
-   "style": "cbc2dadc",
+   "style": "74966c89",
    "content": "18e74e3d",
    "text": "Merge to master (or use workflow_dispatch) and w"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 3717,
    "h": 71,
-   "style": "61fd3e3d",
+   "style": "d1ea9ca5",
    "content": "d8ee382c",
    "text": "Separately trigger npm-test.yml (workflow_dispat"
   },
@@ -285,7 +285,7 @@
    "kind": "paragraph",
    "top": 4033,
    "h": 226,
-   "style": "e90da3d7",
+   "style": "c0d31a28",
    "content": "0bf71e0f",
    "text": "Root cause: actions/setup-node's registry-url in"
   },
@@ -294,7 +294,7 @@
    "kind": "paragraph",
    "top": 4259,
    "h": 32,
-   "style": "d0223705",
+   "style": "38fdd42a",
    "content": "3ccb452c",
    "text": "Fix 1 — drop the unneeded registry-url:"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 4291,
    "h": 80,
-   "style": "bb03f4c2",
+   "style": "9e5eec3e",
    "content": "06873a9c",
    "text": "ci.yml's test job: removed registry-url: 'https:"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 4371,
    "h": 97,
-   "style": "45e00265",
+   "style": "1ccd3ba1",
    "content": "d9ff6610",
    "text": "npm-test.yml: removed the same registry-url line"
   },
@@ -321,7 +321,7 @@
    "kind": "paragraph",
    "top": 4468,
    "h": 330,
-   "style": "71309973",
+   "style": "ac93ec3d",
    "content": "f0695dad",
    "text": "Fix 2 — deploy job still needs some pinned Node/"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 4798,
    "h": 122,
-   "style": "8fddbd7f",
+   "style": "5e85426e",
    "content": "3819e121",
    "text": "The test job's failed run log incidentally prove"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 5121,
    "h": 148,
-   "style": "a20f26e4",
+   "style": "ea116c51",
    "content": "e5498838",
    "text": "Deliberately no registry-url (the action manages"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 5269,
    "h": 226,
-   "style": "166b85e1",
+   "style": "1ece2b98",
    "content": "c62b5ec4",
    "text": "Fix 3 — Coveralls had \"nothing to report\": confi"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 5620,
    "h": 148,
-   "style": "3c2cfe89",
+   "style": "21d5d703",
    "content": "d91417b9",
    "text": "(Vitest CLI array options must be repeated per-v"
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 5767,
    "h": 148,
-   "style": "7defb4ad",
+   "style": "d97c92b1",
    "content": "781dcb20",
    "text": "Also made the coverage provider explicit (--cove"
   },
@@ -402,7 +402,7 @@
    "kind": "paragraph",
    "top": 5915,
    "h": 200,
-   "style": "8ea0ed2f",
+   "style": "df55c70e",
    "content": "b9b91cb3",
    "text": "Note: per Vitest's own CLI docs, the bare --cove"
   },
@@ -420,7 +420,7 @@
    "kind": "paragraph",
    "top": 6238,
    "h": 162,
-   "style": "562d0ec9",
+   "style": "26e15ac2",
    "content": "ded5cd23",
    "text": "Fix 3 turned out to be treating a symptom, not t"
   },
@@ -429,7 +429,7 @@
    "kind": "listItem",
    "top": 6400,
    "h": 80,
-   "style": "4be0d2b2",
+   "style": "6f250987",
    "content": "411d1cf6",
    "text": "Reproduced locally: yarn vitest -r ./src run src"
   },
@@ -447,7 +447,7 @@
    "kind": "paragraph",
    "top": 6551,
    "h": 356,
-   "style": "3600c135",
+   "style": "56171482",
    "content": "66da2a47",
    "text": "This means Vitest's default reporters (clover in"
   },
@@ -474,7 +474,7 @@
    "kind": "paragraph",
    "top": 7098,
    "h": 174,
-   "style": "1ca0313a",
+   "style": "58fa37dd",
    "content": "a6473327",
    "text": "download-artifact preserves the relative structu"
   },
@@ -483,7 +483,7 @@
    "kind": "paragraph",
    "top": 7272,
    "h": 122,
-   "style": "d2f6e6a8",
+   "style": "b63a6328",
    "content": "11dda0f0",
    "text": "Fix 3's package.json change was reverted (per ex"
   }

@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 136,
    "h": 226,
-   "style": "b384b180",
+   "style": "8879ddd5",
    "content": "65ac0be3",
    "text": "Vaadin-on-Kotlin is a web-application framework "
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 481,
    "h": 80,
-   "style": "36fa44a5",
+   "style": "375d03e2",
    "content": "b01549fe",
    "text": "Upstream stays reachable. VoK is glue, never a f"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1421,
    "h": 132,
-   "style": "f91b0cdd",
+   "style": "0898f4f5",
    "content": "4c12c6b7",
    "text": "Module dependencies point one way. vok-framework"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1876,
    "h": 54,
-   "style": "d48f7213",
+   "style": "42509d8e",
    "content": "6b12326d",
    "text": "vok-framework — the core: bootstrap, Session, Co"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1930,
    "h": 54,
-   "style": "4038a40b",
+   "style": "ff09d8f5",
    "content": "3c841e81",
    "text": "vok-framework-vokdb — Vaadin + SQL: VaadinOnKotl"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1984,
    "h": 54,
-   "style": "96ad1368",
+   "style": "cddd5b97",
    "content": "9320ef8c",
    "text": "vok-rest — REST server: Javalin + Gson, Table<E>"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 2038,
    "h": 54,
-   "style": "52314ae8",
+   "style": "062c9425",
    "content": "53f24998",
    "text": "vok-rest-client — REST client over the JDK HttpC"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 2093,
    "h": 71,
-   "style": "6deae60e",
+   "style": "50f2b7d6",
    "content": "efdef3d9",
    "text": "vok-example-crud — the runnable demo, and the fr"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2283,
    "h": 80,
-   "style": "ae3d63aa",
+   "style": "0896169a",
    "content": "099d7d79",
    "text": "Published modules declare explicitApi(). Every n"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 2685,
    "h": 80,
-   "style": "3d528902",
+   "style": "7967b7b0",
    "content": "bb27c2d4",
    "text": "Check Maven Central before bumping a version, th"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2981,
    "h": 80,
-   "style": "03217285",
+   "style": "87d4d2bd",
    "content": "d7a2733f",
    "text": "./gradlew test / ./gradlew :vok-framework:test /"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 3387,
    "h": 54,
-   "style": "8f86f433",
+   "style": "8c8a6c58",
    "content": "72c66c93",
    "text": "KDoc: document the contract, cut what the code a"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 3441,
    "h": 71,
-   "style": "a6d88b33",
+   "style": "4f9f82f8",
    "content": "32428994",
    "text": "Karibu-Testing: browserless Vaadin tests through"
   },
