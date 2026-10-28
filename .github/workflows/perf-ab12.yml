@@ -1,0 +1,71 @@
+name: Perf isolation 9 (temporary, #99)
+on:
+  push:
+    branches: [exp/p4-ab12]
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [zwsp, shy, wbr]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build main and the variant
+        env:
+          V: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git worktree add "$RUNNER_TEMP/M" origin/main
+          git worktree add "$RUNNER_TEMP/X" HEAD^
+          css="$RUNNER_TEMP/X/web/src/reader.css"
+          python3 - "$V" "$RUNNER_TEMP/X/web/test/corpus/patches" <<'PY'
+          import json, glob, re, sys
+          v, d = sys.argv[1], sys.argv[2]
+          Z = '\u200b'
+          n = 0
+          for f in glob.glob(d + '/*.json'):
+              p = json.load(open(f))
+              for o in p['ops']:
+                  h = o.get('html')
+                  if not h: continue
+                  if v == 'wbr': h2 = h.replace(Z, '<wbr>')
+                  elif v == 'shy':
+                      h2 = re.sub(r'<code[^>]*>.*?</code>', lambda m: m.group(0).replace(Z, '\u00ad'), h).replace(Z, '<wbr>')
+                  else: h2 = h
+                  n += h2 != h
+                  o['html'] = h2
+              json.dump(p, open(f, 'w'))
+          print(v, 'ops changed', n)
+          PY
+          if [ "$V" = shy ]; then printf 'code { -webkit-hyphenate-character: ""; hyphenate-character: ""; }\n' >> "$css"; tail -1 "$css"; fi
+          if [ "$V" = zwsp_tint ] || [ "$V" = zwsp_both ]; then grep -q 'background: color-mix(in srgb, var(--text) var(--code-tint), transparent);' "$css"; sed -i 's|background: color-mix(in srgb, var(--text) var(--code-tint), transparent);|background: var(--code-fill);|' "$css"; printf ':root { --code-fill: rgb(29 29 31 / 3%%); } :root[data-theme="dark"] { --code-fill: rgb(232 232 234 / 5%%); } @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --code-fill: rgb(232 232 234 / 5%%); } }\n' >> "$css"; tail -2 "$css"; fi
+          if [ "$V" = zwsp_noadjust ] || [ "$V" = zwsp_both ]; then grep -q 'font-size-adjust: ex-height 0.53;' "$css"; sed -i '/^  font-size-adjust: ex-height 0.53;$/d' "$css"; fi
+          if [ "$V" = noclone ]; then grep -q 'box-decoration-break: clone;' "$css"; sed -i '/box-decoration-break: clone;/d' "$css"; fi
+          if [ "$V" = noleadcss ]; then grep -q 'p.lead + :is(ul, ol)' "$css"; sed -i '/p.lead + :is(ul, ol)/d; /lead-list { --flow/d' "$css"; fi
+          (cd "$RUNNER_TEMP/X" && git diff --stat | cat)
+          (cd "$RUNNER_TEMP/X" && git diff --stat | cat)
+          for s in M X; do (cd "$RUNNER_TEMP/$s/web" && npm ci && npm run build); done
+          (cd "$RUNNER_TEMP/X/web" && npx playwright install --with-deps webkit)
+      - name: "Interleaved runs (M X X M M X)"
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          n=0
+          for s in M X X M M X; do
+            n=$((n+1))
+            (cd "$RUNNER_TEMP/$s/web" && node test/perf.test.mjs > "$GITHUB_WORKSPACE/out/$n-$s.log" 2>&1); echo "run $n $s exit $?"
+            cp "$RUNNER_TEMP/$s/web/test/out/perf-web.json" "out/$n-$s.json" || true
+          done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: perf-iso-${{ matrix.variant }}
+          path: out/
