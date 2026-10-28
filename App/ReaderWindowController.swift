@@ -20,8 +20,14 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     let loader: DocumentLoader
     let webView: ReaderWebView
     var watcher: FileWatcher?
-    private let splitController = NSSplitViewController()
+    private let splitController = ReaderSplitController()
     var sidebarItem: NSSplitViewItem!
+    /// The outline shows by itself in a window wide enough for it and the
+    /// page's column with comfortable margins (ReaderLayout), unless the
+    /// reader chose otherwise in this window.
+    var sidebarFit = SidebarFit()
+    /// The outline's width when shown (as the reader left it; the split view keeps it).
+    var sidebarWidth: CGFloat = 220
     var searchItem: NSSearchToolbarItem?
     var changeItem: NSToolbarItem?
     var cancellables: Set<AnyCancellable> = []
@@ -187,6 +193,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // closed, and a new one starts from it. (As the frame autosave name,
         // only the first window could have it: the others never saved theirs.)
         window.setFrameUsingName(Self.frameName)
+        // Before the window shows: the page lays out once, at its width.
+        fitSidebar()
 
         model.onSelectHeading = { [weak self] slot in self?.jumpToHeading(slot) }
         watcher = FileWatcher(url: self.url, onChange: { [weak self] change in self?.fileChanged(change) },
@@ -206,7 +214,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         sidebarItem.minimumThickness = 180
         sidebarItem.maximumThickness = 360
         sidebarItem.canCollapse = true
-        sidebarItem.isCollapsed = !AppSettings.shared.showSidebar
+        sidebarItem.isCollapsed = true   // fitSidebar, once the window has its frame
 
         let contentVC = NSViewController()
         let container = NSView()
@@ -223,6 +231,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         contentItem.minimumThickness = 360
 
         splitController.splitViewItems = [sidebarItem, contentItem]
+        splitController.willToggleSidebar = { [weak self] show in self?.sidebarToggled(show: show) }
         splitController.splitView.autosaveName = "ReaderSplit"
         window?.contentViewController = splitController
         window?.setContentSize(NSSize(width: 1060, height: 820))
@@ -329,7 +338,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
 
     private func observeSettings() {
         let s = AppSettings.shared
-        s.$fontSize.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
+        s.$fontSize.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance(); self?.fitSidebar() } }.store(in: &cancellables)
         // A wrap toggled in one window applies to every open window.
         s.$codeWrap.dropFirst().removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         model.$unread.sink { [weak self] n in self?.updateChangeItem(n) }.store(in: &cancellables)

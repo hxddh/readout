@@ -2326,7 +2326,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   const s0 = await share();
   const f = s0.above / s0.h;
   const drift = [];
-  for (const vw of [1100, 1400, 1700, 2100, 2400, 1280, 1000, 800]) {
+  for (const vw of [1100, 1400, 1700, 2100, 2400, 2180, 1280, 1060, 1000, 840, 800]) {   // 2400/2180, 1280/1060, 1060/840: the outline shown or hidden (220 px)
     await p.setViewportSize({ width: vw, height: 700 });
     await p.waitForTimeout(450);
     const s = await share();
