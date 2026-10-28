@@ -176,14 +176,14 @@ export function holdPlace(anchor, bottom, ratio = false) {
  * (content-visibility); right after a scroll WebKit's scrollIntoView on an
  * element inside one scrolls nowhere.
  */
-export function scrollToElement(target, { center = false, gap } = {}) {
+export function scrollToElement(target, { center = false, gap, landed = () => {} } = {}) {
   const margin = gap ?? (parseFloat(getComputedStyle(target).scrollMarginTop) || 0);
   aimAt(target, () => {
     const r = target.getBoundingClientRect();
     // The top of the page lies under the window toolbar: aim below it.
     const inset = topInset();
     return center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset;
-  }, () => pinLanding(target), center ? window.innerHeight / 2 : 0);
+  }, () => { pinLanding(target); landed(); }, center ? window.innerHeight / 2 : 0);
 }
 
 export function atBottom() {

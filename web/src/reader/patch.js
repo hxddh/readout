@@ -4,7 +4,7 @@ import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resiz
 import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, roughRect, unstale, cvOn } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
-import { enhance, renderLazy, forgetBlock, afterShown } from './enhance.js';
+import { enhance, renderLazy, forgetBlock, afterShown, askEarly } from './enhance.js';
 import { sources, tight, setLinks } from './copy.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
 
@@ -174,6 +174,11 @@ export function apply(p) {
     document.getElementById('ro-empty')?.remove();
   }
 
+  // A document shown anew from its top: the code its first screen may show
+  // is asked for as its block is made (askEarly), by the heights estimated
+  // above it (lines of at least 18 px).
+  const reach = window.innerHeight + 120;
+  let above = p.reset && !anchor ? 0 : Infinity;
   for (const op of p.ops) {
     if (op.op === 'remove') {
       const el = slots.get(op.slot);
@@ -201,6 +206,10 @@ export function apply(p) {
     } else if (op.op === 'insert') {
       headingsTouched ||= op.kind === 'heading';
       const el = makeBlock(op);
+      if (above < reach) {
+        for (const cb of el.querySelectorAll('.code-block')) askEarly(cb, Math.ceil((reach - above) / 18));
+        above += estimateOp(op);
+      }
       const after = op.after ? slots.get(op.after) : null;
       if (!p.reset) noteNext(after ? nextItem(after) : op.after ? null : firstItem());
       if (after) placeItem(el, after, estimateOp(op));

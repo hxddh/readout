@@ -578,11 +578,20 @@ export function jump(dir, first = false) {
   // The change it lands on stays where it landed while the chunk around it
   // is laid out (not the first block on screen, the resize compensation's
   // usual choice), aimed at again as it is (aimAt).
-  if (smooth) window.scrollBy({ top: target.getBoundingClientRect().top - line, behavior: 'smooth' });
-  else aimAt(target, () => target.getBoundingClientRect().top - line, () => pinLanding(target), line);
+  // The visit begins once the jump lands (a jump onto code not coloured yet
+  // waits for it, enhance.js): one cancelled before it lands (another N
+  // meanwhile) marks nothing read.
+  const go = once(() => visit(target, members));
+  if (smooth) { window.scrollBy({ top: target.getBoundingClientRect().top - line, behavior: 'smooth' }); go(); }
+  else aimAt(target, () => target.getBoundingClientRect().top - line, () => { pinLanding(target); go(); }, line);
   focusBlock(target);
   pulse(target);
-  visit(target, members);
+}
+
+/** `f`, the first time the function it returns is called (a landing is called again as it is aimed again). */
+export function once(f) {
+  let done = false;
+  return () => { if (!done) { done = true; f(); } };
 }
 
 /**

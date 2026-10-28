@@ -30,9 +30,10 @@ function check(name, cond, extra = '') {
   if (cond) console.log(`ok: ${name}`);
   else { console.log(`FAIL: ${name} ${extra}`); failures++; }
 }
-async function open(viewport = { width: 900, height: 900 }) {
+async function open(viewport = { width: 900, height: 900 }, init) {
   const page = await browser.newPage({ viewport });
   collectPageErrors(page, errors);
+  if (init) await page.addInitScript(init);
   await page.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await page.goto(`${base}/reader.html`);
   await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
@@ -209,6 +210,42 @@ const doc = items => ({ version: 1, reset: true, rewrite: false, marks: [], dele
   check('a worker that never answers: the page highlights instead', ok && engine === 'page', JSON.stringify({ ok, engine }));
   await page.close();
   hangWorker = false;
+}
+
+// 6. N onto code not coloured yet (the worker's answers held up 2 s here):
+//    the jump waits; N again meanwhile (or a rail tick, then N) drops it,
+//    and the change it never landed on stays unread.
+{
+  const delayed = () => {
+    const pm = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function (m) { if (m && m.op === 'hl') setTimeout(() => pm.call(this, m), 2000); else pm.call(this, m); };
+  };
+  const ts = Array.from({ length: 30 }, (_, i) => `export const v${i}: number = ${i}; // ${i}`).join('\n');
+  const items = [...Array.from({ length: 60 }, (_, i) => ['paragraph', `<p>Before ${i} ${'lorem ipsum '.repeat(8)}</p>`]), ['code', code('ts', ts)],
+    ...Array.from({ length: 60 }, (_, i) => ['paragraph', `<p>Between ${i} ${'lorem ipsum '.repeat(8)}</p>`]), ['code', code('ts', ts + '\n// two')],
+    ...Array.from({ length: 20 }, (_, i) => ['paragraph', `<p>After ${i}</p>`])];
+  const first = 61, second = 122;
+  const key = (page, k) => page.evaluate(k => document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })), k);
+  const read = (page, slot) => page.evaluate(s => document.querySelector(`.blk[data-slot="${s}"]`).classList.contains('m-read'), slot);
+  for (const how of ['N, then N', 'a rail tick, then N']) {
+    const page = await open({ width: 900, height: 700 }, delayed);
+    await page.emulateMedia({ reducedMotion: 'reduce' });   // (N jumps, not a smooth scroll: marks.js)
+    await page.evaluate(() => window.readout.prepare(['ts']));
+    await until(page, () => performance.getEntriesByName('readout-hl-prepared').length > 0);
+    await page.evaluate(p => window.readout.apply(p), { ...doc(items), marks: [{ slot: first, kind: 'inserted' }, { slot: second, kind: 'inserted' }] });
+    await page.waitForTimeout(500);
+    const y0 = await page.evaluate(() => scrollY);
+    if (how === 'N, then N') await key(page, 'n');
+    else await page.evaluate(() => document.querySelector('#ro-rail button').click());
+    await page.waitForTimeout(400);   // past the 250 ms after which leaving a visited change reads it
+    const held = await page.evaluate(y0 => Math.abs(scrollY - y0) < 2, y0);
+    await key(page, 'n');
+    const r = { held, firstRead: await read(page, first) };
+    await page.waitForTimeout(100);
+    r.firstReadLater = await read(page, first);
+    check(`${how} while the first jump waits for its code: the change it never landed on stays unread`, r.held && !r.firstRead && !r.firstReadLater, JSON.stringify(r));
+    await page.close();
+  }
 }
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));

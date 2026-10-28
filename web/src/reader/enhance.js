@@ -798,6 +798,14 @@ function pump() {
 }
 
 /** Highlights every code block not highlighted yet, wherever it is (printing). */
+/**
+ * A document shown anew: a code block its first screen may show, by the
+ * estimated heights of the blocks above it (`upto`: its lines that screen
+ * could show), asked for as it is made, so that the worker highlights it
+ * while the page lays the document out (renderLazy then waits for it).
+ */
+export function askEarly(cb, upto) { ask(cb, SCREEN, 0, upto); }
+
 export function highlightAll() {
   everything = true;
   for (const cb of [...ready.keys()]) put(cb);

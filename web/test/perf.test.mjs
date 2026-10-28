@@ -568,12 +568,21 @@ const coldHighlight = await (async () => {
   await p.addInitScript(() => {
     window.__msgs = [];
     window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    // When its highlighter has started, from the page's load (4.0: the worker's start-up).
+    const poll = () => { const e = window.readout?.highlighter?.(); if (e && e !== 'starting') window.__hlStarted = performance.now(); else if (performance.now() < 30000) setTimeout(poll, 5); };
+    poll();
   });
   await p.goto(`${base}/reader.html`);
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
   const ms = await p.evaluate(code => new Promise(resolve => {
     window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 });
     const t0 = performance.now();
+    // The first frame showing the document: when, and its code coloured there or not.
+    const frame = () => requestAnimationFrame(() => setTimeout(() => {
+      if (getComputedStyle(document.getElementById('ro-doc')).visibility === 'hidden') return frame();
+      window.__coldPaint = { ms: performance.now() - t0, coloured: !!document.querySelector('.code-block pre.shiki span[style]') };
+    }, 0));
+    frame();
     window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
       { op: 'insert', slot: 1, after: 0, kind: 'heading', anchor: 'plan', html: '<h1 id="plan">Plan</h1>' },
       { op: 'insert', slot: 2, after: 1, kind: 'code', html: `<div class="code-block" data-lang="ts"><pre><code>${code.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre></div>` },
@@ -586,10 +595,14 @@ const coldHighlight = await (async () => {
     };
     wait();
   }), TS_CODE);
+  await p.waitForTimeout(100);
+  const paint = await p.evaluate(() => window.__coldPaint ?? null);
+  await p.waitForTimeout(2000);
+  const started = await p.evaluate(() => window.__hlStarted ?? null);
   await p.close();
-  return ms;
+  return { ms, paint, started };
 })();
-if (coldHighlight < 0) errors.push('cold first highlight not measured');
+if (coldHighlight.ms < 0) errors.push('cold first highlight not measured');
 
 // A diagram an agent adds at the end of a ~1 MB document (no other
 // diagrams), the reader there: until it is drawn, and the longest frame
@@ -665,7 +678,12 @@ const result = {
   web_find_next_1mb_selected_ms: median(findNext.map(x => x[1] + x[2])),
   web_find_next_1mb_frame_samples_ms: findNext,   // [the call, to the frame showing the match, the next frame (the match selected)]
   web_first_highlight_warm_ms: Math.round(firstHighlight.ms),
-  web_first_highlight_cold_ts_ms: Math.round(coldHighlight),
+  web_first_highlight_cold_ts_ms: Math.round(coldHighlight.ms),
+  // The same page's first frame showing the document (4.0 waits for its code on screen once the worker has started), and its code coloured there (1) or plain (0).
+  web_first_paint_cold_ms: coldHighlight.paint ? Math.round(coldHighlight.paint.ms) : null,
+  web_first_paint_cold_coloured: coldHighlight.paint ? +coldHighlight.paint.coloured : null,
+  // When the page's highlighter had started, from the page's load (4.0: the worker's start-up).
+  web_hl_started_ms: coldHighlight.started == null ? null : Math.round(coldHighlight.started),
   web_first_highlight_warm_py_yaml_ms: Math.round(firstHighlight.pyYaml.ms),
   web_warm_first_paint_plain_blocks: firstHighlight.pyYaml.plain.length,
   web_hl_warm_ms: Math.round(firstHighlight.warmStats.ms ?? -1),
