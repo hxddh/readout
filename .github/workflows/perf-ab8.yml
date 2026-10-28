@@ -1,0 +1,70 @@
+name: Perf isolation 6 (temporary, #99)
+on:
+  push:
+    branches: [exp/p4-ab8]
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [pr, nowbrcode, zwspcode, zwsp]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build main and the variant
+        env:
+          V: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git worktree add "$RUNNER_TEMP/M" origin/main
+          git worktree add "$RUNNER_TEMP/X" HEAD^
+          css="$RUNNER_TEMP/X/web/src/reader.css"
+          python3 - "$V" "$RUNNER_TEMP/X/web/test/corpus/patches" <<'PY'
+          import json, glob, re, sys
+          v, d = sys.argv[1], sys.argv[2]
+          n = 0
+          for f in glob.glob(d + '/*.json'):
+              p = json.load(open(f))
+              for o in p['ops']:
+                  h = o.get('html')
+                  if not h: continue
+                  if v == 'nowbr': h2 = h.replace('<wbr>', '')
+                  elif v == 'nonb': h2 = re.sub(r'<span class="nb">(.*?)</span>', r'\1', h).replace('<code class="nb">', '<code>')
+                  elif v == 'nolead': h2 = h.replace('<p class="lead">', '<p>')
+                  elif v == 'zwspcode': h2 = re.sub(r'<code[^>]*>.*?</code>', lambda m: m.group(0).replace('<wbr>', '\u200b'), h)
+                  elif v == 'zwsp': h2 = h.replace('<wbr>', '\u200b')
+                  elif v == 'nowbrcode': h2 = re.sub(r'<code[^>]*>.*?</code>', lambda m: m.group(0).replace('<wbr>', ''), h)
+                  else: h2 = h
+                  n += h2 != h
+                  o['html'] = h2
+              json.dump(p, open(f, 'w'))
+          print(v, 'ops changed', n)
+          PY
+          if [ "$V" = noclone ]; then grep -q 'box-decoration-break: clone;' "$css"; sed -i '/box-decoration-break: clone;/d' "$css"; fi
+          if [ "$V" = noleadcss ]; then grep -q 'p.lead + :is(ul, ol)' "$css"; sed -i '/p.lead + :is(ul, ol)/d; /lead-list { --flow/d' "$css"; fi
+          (cd "$RUNNER_TEMP/X" && git diff --stat | cat)
+          (cd "$RUNNER_TEMP/X" && git diff --stat | cat)
+          for s in M X; do (cd "$RUNNER_TEMP/$s/web" && npm ci && npm run build); done
+          (cd "$RUNNER_TEMP/X/web" && npx playwright install --with-deps webkit)
+      - name: "Interleaved runs (M X X M M X)"
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          n=0
+          for s in M X X M M X; do
+            n=$((n+1))
+            (cd "$RUNNER_TEMP/$s/web" && node test/perf.test.mjs > "$GITHUB_WORKSPACE/out/$n-$s.log" 2>&1); echo "run $n $s exit $?"
+            cp "$RUNNER_TEMP/$s/web/test/out/perf-web.json" "out/$n-$s.json" || true
+          done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: perf-iso-${{ matrix.variant }}
+          path: out/
