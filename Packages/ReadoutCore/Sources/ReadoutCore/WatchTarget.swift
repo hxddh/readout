@@ -110,12 +110,6 @@ public enum BaselineKey {
     public static func key(forPath path: String) -> String {
         String(XXHash64.hash(RealPath.of(path)), radix: 16)
     }
-
-    /// The key before 3.3, from the path as spelled. Read once, as a fallback,
-    /// when nothing is stored under `key(forPath:)`.
-    public static func legacyKey(forPath path: String) -> String {
-        String(XXHash64.hash(URL(fileURLWithPath: path).standardizedFileURL.path), radix: 16)
-    }
 }
 
 /// `readout-open://open?path=<percent-encoded absolute path>&background=1[&anchor=<section>][&root=<folder>]`:

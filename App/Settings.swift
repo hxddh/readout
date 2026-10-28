@@ -67,23 +67,7 @@ final class AppSettings: ObservableObject {
 /// changes; the reading position, which changes on every settled scroll, is
 /// written to a small file of its own. Writes run in order on one queue.
 enum BaselineStore {
-    struct Record: Codable {
-        var baseline: [BlockKey]
-        var topBlockIndex: Int?
-        var topOffset: Double?
-        /// First 120 characters of the top block's normalized text. Block
-        /// indices shift as agents edit; the excerpt survives that.
-        var topExcerpt: String?
-        var savedAt: Date
-    }
-
-    /// The reading position alone.
-    private struct Position: Codable {
-        var topBlockIndex: Int?
-        var topOffset: Double?
-        var topExcerpt: String?
-        var savedAt: Date
-    }
+    typealias Record = ReadingRecord
 
     fileprivate static let queue = DispatchQueue(label: "Readout.BaselineStore", qos: .utility)
 
@@ -104,24 +88,11 @@ enum BaselineStore {
     private static func positionFile(for url: URL) -> URL { positionFile(forKey: key(for: url)) }
 
     /// `realPath`: the file the caller's content was read from, when known —
-    /// a link may already point elsewhere. The spelling in `url` serves only
-    /// the pre-3.3 fallback.
+    /// a link may already point elsewhere.
     static func load(_ url: URL, realPath: String? = nil) -> Record? {
-        let primary = realPath.map { BaselineKey.key(forPath: $0) } ?? key(for: url)
-        if let record = load(key: primary) { return record }
-        // Before 3.3 the key was the path as spelled. Read that record once:
-        // move it under the real-path key, which is the one used from now on,
-        // so a symlink retargeted later does not fall back to it again.
-        let legacy = BaselineKey.legacyKey(forPath: url.path)
-        guard legacy != primary, let record = load(key: legacy) else { return nil }
-        // One unit: the record already merged with its position goes to the
-        // new key, and the old files go only once that write succeeded.
-        let old = [file(forKey: legacy), positionFile(forKey: legacy)], target = file(forKey: primary)
-        queue.async {
-            guard let data = try? JSONEncoder().encode(record), (try? data.write(to: target, options: .atomic)) != nil else { return }
-            for f in old { try? FileManager.default.removeItem(at: f) }
-        }
-        return record
+        let stem = realPath.map { BaselineKey.key(forPath: $0) } ?? key(for: url)
+        return Record.decode(record: try? Data(contentsOf: file(forKey: stem)),
+                             position: try? Data(contentsOf: positionFile(forKey: stem)))
     }
 
     /// The record of `url`, read and decoded off the main thread (behind any
@@ -174,19 +145,6 @@ enum BaselineStore {
     /// otherwise exit before the last reading position is written.
     static func flush() { queue.sync {} }
 
-    private static func load(key: String) -> Record? {
-        guard let data = try? Data(contentsOf: file(forKey: key)),
-              var record = try? JSONDecoder().decode(Record.self, from: data) else { return nil }
-        if let data = try? Data(contentsOf: positionFile(forKey: key)),
-           let position = try? JSONDecoder().decode(Position.self, from: data), position.savedAt >= record.savedAt {
-            record.topBlockIndex = position.topBlockIndex
-            record.topOffset = position.topOffset
-            record.topExcerpt = position.topExcerpt
-            record.savedAt = position.savedAt
-        }
-        return record
-    }
-
     /// The project folder an agent named for the file (`readout --hook`
     /// passes its working folder), beside the file's record, while it exists.
     private static func rootFile(for url: URL) -> URL { dir.appendingPathComponent("\(key(for: url)).root") }
@@ -201,19 +159,15 @@ enum BaselineStore {
         queue.async { try? Data(root.utf8).write(to: target, options: .atomic) }
     }
 
-    /// Where the records for `url` live under the current and the pre-3.3 key (smoke test).
-    static func recordFiles(for url: URL) -> (current: URL, legacy: URL, legacyPosition: URL) {
-        let legacy = BaselineKey.legacyKey(forPath: url.path)
-        return (file(for: url), file(forKey: legacy), positionFile(forKey: legacy))
-    }
+    /// Where the record and the position for `url` live (smoke test).
+    static func recordFiles(for url: URL) -> (record: URL, position: URL) { (file(for: url), positionFile(for: url)) }
 
     /// Saves the reading position, and the whole record when `baselineChanged`
     /// or when there is none under the key yet (a symlink now pointing to
     /// another file): `load` needs the record, not just the position.
     static func save(_ record: Record, for url: URL, baselineChanged: Bool) {
         let target = file(for: url), positionTarget = positionFile(for: url)
-        let position = Position(topBlockIndex: record.topBlockIndex, topOffset: record.topOffset,
-                                topExcerpt: record.topExcerpt, savedAt: record.savedAt)
+        let position = Record.Position(record)
         queue.async {
             if baselineChanged || !FileManager.default.fileExists(atPath: target.path), let data = try? JSONEncoder().encode(record) {
                 try? data.write(to: target, options: .atomic)

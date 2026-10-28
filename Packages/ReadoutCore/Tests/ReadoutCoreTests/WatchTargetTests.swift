@@ -153,9 +153,6 @@ private struct Scratch {
         s.write("plan.md")
         #expect(BaselineKey.key(forPath: s.linked + "/plan.md") == BaselineKey.key(forPath: s.real + "/plan.md"))
         #expect(BaselineKey.key(forPath: s.linked + "/./plan.md") == BaselineKey.key(forPath: s.real + "/plan.md"))
-        // The pre-3.3 key, from the spelling, differs: it is only a fallback.
-        #expect(BaselineKey.legacyKey(forPath: s.linked + "/plan.md") != BaselineKey.legacyKey(forPath: s.real + "/plan.md"))
-        #expect(BaselineKey.legacyKey(forPath: s.real + "/plan.md") == BaselineKey.key(forPath: s.real + "/plan.md"))
     }
 }
 
