@@ -330,7 +330,7 @@ code {
   font-size: 0.9em;
   font-size-adjust: ex-height 0.53;
   overflow-wrap: break-word;
-  background: color-mix(in srgb, var(--text) var(--code-tint), transparent);
+  background: var(--fill);
   border-radius: 4px;
   padding: 0.08em 0.24em;
   /* Broken across lines, each piece keeps its padding and rounded ends. */
