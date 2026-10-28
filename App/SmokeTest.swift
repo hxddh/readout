@@ -1242,7 +1242,7 @@ enum SmokeTest {
                 if reader.model.title == before {
                     reader.saveNow()
                     BaselineStore.flush()
-                    earlyRecord = FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).current.path)
+                    earlyRecord = FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).record.path)
                 }
             }
             deadline = Date().addingTimeInterval(10)
@@ -1259,7 +1259,7 @@ enum SmokeTest {
                 // Its reading state is saved under the new target's key, record included.
                 reader.saveNow()
                 BaselineStore.flush()
-                entry["record_at_new_target"] = FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).current.path)
+                entry["record_at_new_target"] = FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).record.path)
             }
             result[name] = entry
         }
@@ -1307,7 +1307,7 @@ enum SmokeTest {
                 BaselineStore.flush()
                 result["dangle"] = ["before": before, "after": reader.model.title, "status": reader.model.status ?? "",
                                     "same_window": app?.reader(for: url) === reader,
-                                    "record_at_new_target": FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).current.path)]
+                                    "record_at_new_target": FileManager.default.fileExists(atPath: BaselineStore.recordFiles(for: url).record.path)]
             } else {
                 result["dangle"] = ["error": "no window"]
             }
@@ -1335,35 +1335,27 @@ enum SmokeTest {
                 result["unreadable"] = ["error": "no window"]
             }
         }
-        // A pre-3.3 record (keyed by the path as spelled, /tmp/...) is read once and moved.
+        // 4.0: a record saved before 3.6 (block keys without their source) is
+        // no reading state at all, its newer position included; a current one loads.
         if let tmpPath = env["READOUT_SMOKE_TMP_FILE"] {
-            let url = URL(fileURLWithPath: tmpPath).deletingLastPathComponent().appendingPathComponent("legacy-record.md")
+            let url = URL(fileURLWithPath: tmpPath).deletingLastPathComponent().appendingPathComponent("old-record.md")
             let files = BaselineStore.recordFiles(for: url)
-            let record = BaselineStore.Record(baseline: [], topBlockIndex: 3, topOffset: 0, topExcerpt: nil, savedAt: Date())
-            // Its reading position, saved later in a file of its own, must survive the move.
-            let position: [String: Any] = ["topBlockIndex": 5, "topOffset": 0, "savedAt": Date().timeIntervalSinceReferenceDate + 10]
-            if files.current != files.legacy, let data = try? JSONEncoder().encode(record),
-               let positionData = try? JSONSerialization.data(withJSONObject: position) {
-                try? data.write(to: files.legacy)
-                try? positionData.write(to: files.legacyPosition)
-                let fm = FileManager.default
-                // A copy that cannot be written (a folder in the way) keeps the old record.
-                try? fm.createDirectory(at: files.current, withIntermediateDirectories: true)
-                _ = BaselineStore.load(url)
-                BaselineStore.flush()
-                let keptOnFailure = fm.fileExists(atPath: files.legacy.path)
-                try? fm.removeItem(at: files.current)
-                let loaded = BaselineStore.load(url)
-                BaselineStore.flush()
-                let reloaded = BaselineStore.load(url)   // now from the new key
-                result["legacy"] = ["loaded": loaded?.topBlockIndex == 5, "kept_on_failure": keptOnFailure,
-                                    "position_kept": reloaded?.topBlockIndex == 5,
-                                    "old_position_removed": !fm.fileExists(atPath: files.legacyPosition.path),
-                                    "moved": fm.fileExists(atPath: files.current.path),
-                                    "old_removed": !fm.fileExists(atPath: files.legacy.path)]
-            } else {
-                result["legacy"] = ["error": "same key"]
+            let key: [String: Any] = ["fingerprint": 1, "kind": "paragraph", "text": "Read before."]
+            let old: [String: Any] = ["baseline": [key], "topBlockIndex": 3, "savedAt": Date().timeIntervalSinceReferenceDate]
+            let position: [String: Any] = ["topBlockIndex": 5, "topOffset": 0, "topExcerpt": "Read", "savedAt": Date().timeIntervalSinceReferenceDate + 10]
+            var current = key
+            current["source"] = ""
+            var now = old
+            now["baseline"] = [current]
+            func loads(_ record: [String: Any]) -> Int? {
+                guard let data = try? JSONSerialization.data(withJSONObject: record),
+                      let positionData = try? JSONSerialization.data(withJSONObject: position) else { return -1 }
+                try? data.write(to: files.record)
+                try? positionData.write(to: files.position)
+                return BaselineStore.load(url)?.topBlockIndex
             }
+            result["old_format"] = ["ignored": loads(old) == nil, "current_loads": loads(now) == 5]
+            for f in [files.record, files.position] { try? FileManager.default.removeItem(at: f) }
         }
         guard !result.isEmpty, let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) else { return }
         try? data.write(to: out.appendingPathComponent("live-updates.json"))
