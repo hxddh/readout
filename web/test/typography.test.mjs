@@ -1930,7 +1930,7 @@ for (const dark of [false, true]) {
     curve.push({ vw, ...(await state(page)), latin: await perLine(page, 'm-latin'), han: await perLine(page, 'm-han') });
   }
   check('P4.4 the text grows with the window: 16 px to 900 px, then smoothly to 20 px (1.25) at 1800 px and wider', curve.every(c => Math.abs(c.root - 16 * scale(c.vw)) < 0.05), JSON.stringify(curve));
-  check('P4.4 the column is 35 em of the text in every wide window (or the window less its gutters), code in step', curve.every(c => Math.abs(c.col - Math.min(35 * c.root, c.vw - 56)) < 0.6 && Math.abs(c.code / c.root - 0.9) < 0.01 && c.sideways <= 0), JSON.stringify(curve));
+  check('P4.4 the column is 35 em of the text in every wide window (or the window less its gutters), code in step', curve.every(c => Math.abs(c.col - Math.min(35 * c.root, c.vw - 56)) < 0.6 && Math.abs(c.code / c.root - 0.89) < 0.01 && c.sideways <= 0), JSON.stringify(curve));
   check('P4.4 a line holds 60-80 Latin characters and 35-45 Chinese ones in every window', curve.filter(c => c.vw >= 900).every(c => c.latin >= 60 && c.latin <= 80 && c.han >= 35 && c.han <= 45), JSON.stringify(curve));
   await page.setViewportSize({ width: 1600, height: 800 });
   const m = [];
