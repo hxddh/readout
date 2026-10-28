@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 42,
-   "style": "29443017",
+   "style": "798df76f",
    "content": "414eb5b3",
    "text": "Summary"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 54,
    "h": 158,
-   "style": "aeaf0f68",
+   "style": "dbbd5a66",
    "content": "368f915c",
    "text": "修复 Binance OHLC 在 USE_HTTP_PROXY=true 场景下因缺失 req"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 212,
    "h": 102,
-   "style": "fdd45950",
+   "style": "694aae31",
    "content": "fdfd0ef5",
    "text": "同时补充了 Futures Kline 按 limit 分段权重、Spot/Margin 使用统"
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 314,
    "h": 65,
-   "style": "2eedc1ee",
+   "style": "4a68b67c",
    "content": "3d12df9a",
    "text": "Validation"
   },
@@ -42,25 +42,25 @@
    "kind": "listItem",
    "top": 379,
    "h": 54,
-   "style": "56125060",
-   "content": "65e5e8c9",
-   "text": "./node_modules/typescript/bin/tsc --noEmit --pro"
+   "style": "90b43a73",
+   "content": "7f516b1e",
+   "text": "./node_​modules/​typescript/​bin/tsc --noEmit --"
   },
   {
    "slot": 6,
    "kind": "listItem",
    "top": 433,
    "h": 45,
-   "style": "b1e22a7f",
-   "content": "e3f4508e",
-   "text": "rush build --to @yuants/vendor-binance（workdir: "
+   "style": "88fffc6f",
+   "content": "b3a737c4",
+   "text": "rush build --to @yuants/​vendor-​binance（workdir"
   },
   {
    "slot": 7,
    "kind": "heading",
    "top": 478,
    "h": 65,
-   "style": "2eedc1ee",
+   "style": "4a68b67c",
    "content": "0c5b177b",
    "text": "Risks"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 543,
    "h": 31,
-   "style": "bd4e925c",
+   "style": "64f1e6d6",
    "content": "0620204f",
    "text": "当前缺少代理场景的集成测试，真实代理链路仍建议补充端到端验证"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 574,
    "h": 47,
-   "style": "b6a9f982",
+   "style": "fbd1102f",
    "content": "96e815af",
    "text": "public-api 中其他 endpoint 仍有模板重复，后续可继续收敛统一"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 621,
    "h": 65,
-   "style": "2eedc1ee",
+   "style": "4a68b67c",
    "content": "769c309d",
    "text": "Rollback"
   },
@@ -96,9 +96,9 @@
    "kind": "paragraph",
    "top": 686,
    "h": 102,
-   "style": "f5a82d62",
-   "content": "57a2bc75",
-   "text": "回滚 apps/vendor-binance/src/api/public-api.ts 中新增"
+   "style": "151aad3d",
+   "content": "f8579133",
+   "text": "回滚 apps/​vendor-​binance/​src/​api/​public-​api."
   }
  ]
 }

@@ -45,6 +45,7 @@ import Testing
         // Presentation-only wrappers, and the break opportunities in long autolinks' text.
         sub(#"</?(div|span)\b[^>]*>"#, "")
         sub("<wbr>", "")
+        sub("\u{200B}", "")
         // Keep only meaningful attributes, in a fixed order.
         s = keepAttributes(s)
         // One list per list-item block: merge adjacent lists of the same kind.

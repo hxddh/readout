@@ -17,36 +17,36 @@ import Testing
         let h = html("This is Phase 0 work item 7 (`docs/superpowers/plans/2026-08-08-stresseur-phase0-1.md` §4.1.7).\n")
         // WebKit breaks after a `-` of its own: a part holding one where no break
         // belongs (a date, `phase0-1.md`) is kept on one line (span.nb).
-        #expect(h.contains("<code>docs/<wbr>superpowers/<wbr>plans/<wbr><span class=\"nb\">2026-08-08-</span><wbr>stresseur-<wbr><span class=\"nb\">phase0-1.md</span></code>"), "\(h)")
+        #expect(h.contains("<code>docs/\u{200B}superpowers/\u{200B}plans/\u{200B}<span class=\"nb\">2026-08-08-</span>\u{200B}stresseur-\u{200B}<span class=\"nb\">phase0-1.md</span></code>"), "\(h)")
         #expect(html("`apps/cli/internal/loadrun.Run` and `apps/cli/internal/loadrun`\n")
-            == "<p><code>apps/<wbr>cli/<wbr>internal/<wbr>loadrun.Run</code> and <code>apps/<wbr>cli/<wbr>internal/<wbr>loadrun</code></p>")
+            == "<p><code>apps/\u{200B}cli/\u{200B}internal/\u{200B}loadrun.Run</code> and <code>apps/\u{200B}cli/\u{200B}internal/\u{200B}loadrun</code></p>")
         // As in a table cell (typography.test.mjs T2): `src/` keeps its one-letter part.
         #expect(html("`src/a/very/long/path/to/some/deeply/nested/module.ts`\n")
-            == "<p><code>src/a/<wbr>very/<wbr>long/<wbr>path/<wbr>to/<wbr>some/<wbr>deeply/<wbr>nested/<wbr>module.ts</code></p>")
+            == "<p><code>src/a/\u{200B}very/\u{200B}long/\u{200B}path/\u{200B}to/\u{200B}some/\u{200B}deeply/\u{200B}nested/\u{200B}module.ts</code></p>")
         // `::`, `.`, `_` and `-` are parts too; a run of separators stays together.
-        #expect(html("`std::collections::HashMap`\n") == "<p><code>std::<wbr>collections::<wbr>HashMap</code></p>")
+        #expect(html("`std::collections::HashMap`\n") == "<p><code>std::\u{200B}collections::\u{200B}HashMap</code></p>")
         // (A part after a dot is five characters at least: `boot.` stays with `springframework.`.)
-        #expect(html("`org.springframework.boot.autoconfigure`\n") == "<p><code>org.<wbr>springframework.boot.<wbr>autoconfigure</code></p>")
-        #expect(html("`E_PROXY_BUCKET_EXHAUSTED_ERROR`\n") == "<p><code>E_PROXY_<wbr>BUCKET_<wbr>EXHAUSTED_<wbr>ERROR</code></p>")
-        #expect(html("`--dangerously-skip-permissions`\n") == "<p><code><span class=\"nb\">--dangerously-</span><wbr>skip-<wbr>permissions</code></p>")
-        #expect(html("`https://registry.npmjs.org/package`\n").contains("https://<wbr>registry.<wbr>npmjs.org/<wbr>package"))
+        #expect(html("`org.springframework.boot.autoconfigure`\n") == "<p><code>org.\u{200B}springframework.boot.\u{200B}autoconfigure</code></p>")
+        #expect(html("`E_PROXY_BUCKET_EXHAUSTED_ERROR`\n") == "<p><code>E_PROXY_\u{200B}BUCKET_\u{200B}EXHAUSTED_\u{200B}ERROR</code></p>")
+        #expect(html("`--dangerously-skip-permissions`\n") == "<p><code><span class=\"nb\">--dangerously-</span>\u{200B}skip-\u{200B}permissions</code></p>")
+        #expect(html("`https://registry.npmjs.org/package`\n").contains("https://\u{200B}registry.\u{200B}npmjs.org/\u{200B}package"))
     }
 
     @Test func breaksLeaveNoScraps() {
         // Nothing in the first three characters (`~/`, `./`), no part shorter than
         // two (five after a dot: an extension stays with its name), at least five left.
-        #expect(html("`~/.codemoss/prompt.json`\n") == "<p><code>~/.codemoss/<wbr>prompt.json</code></p>")
-        #expect(html("`./coverage/lcov-report/index.html`\n") == "<p><code>./coverage/<wbr>lcov-<wbr>report/<wbr>index.html</code></p>")
-        #expect(html("`app/src/main/AndroidManifest.xml`\n") == "<p><code>app/<wbr>src/<wbr>main/<wbr>AndroidManifest.xml</code></p>")
+        #expect(html("`~/.codemoss/prompt.json`\n") == "<p><code>~/.codemoss/\u{200B}prompt.json</code></p>")
+        #expect(html("`./coverage/lcov-report/index.html`\n") == "<p><code>./coverage/\u{200B}lcov-\u{200B}report/\u{200B}index.html</code></p>")
+        #expect(html("`app/src/main/AndroidManifest.xml`\n") == "<p><code>app/\u{200B}src/\u{200B}main/\u{200B}AndroidManifest.xml</code></p>")
         #expect(html("`class=\"glyphicon glyphicon-X\"`\n") == "<p><code>class=&quot;glyphicon <span class=\"nb\">glyphicon-X&quot;</span></code></p>")
         // A hidden folder breaks before its dot, not after it.
-        #expect(html("`$root/.superpowers/sdd/progress.md`\n") == "<p><code>$root/<wbr>.superpowers/<wbr>sdd/<wbr>progress.md</code></p>")
+        #expect(html("`$root/.superpowers/sdd/progress.md`\n") == "<p><code>$root/\u{200B}.superpowers/\u{200B}sdd/\u{200B}progress.md</code></p>")
         // Not between digits: dates, versions, addresses.
-        #expect(html("`release-2026-08-08-v1.25.10-final`\n") == "<p><code>release-<wbr><span class=\"nb\">2026-08-08-</span><wbr>v1.25.10-<wbr>final</code></p>")
-        #expect(html("`http://127.0.0.1:3000/status/health`\n") == "<p><code>http://<wbr>127.0.0.1:3000/<wbr>status/<wbr>health</code></p>")
+        #expect(html("`release-2026-08-08-v1.25.10-final`\n") == "<p><code>release-\u{200B}<span class=\"nb\">2026-08-08-</span>\u{200B}v1.25.10-\u{200B}final</code></p>")
+        #expect(html("`http://127.0.0.1:3000/status/health`\n") == "<p><code>http://\u{200B}127.0.0.1:3000/\u{200B}status/\u{200B}health</code></p>")
         // A single colon is no part (`cli:test`, `//go:build`), punctuation alone has none.
-        #expect(html("`//go:build loadbench_integration`\n") == "<p><code>//go:build loadbench_<wbr>integration</code></p>")
-        #expect(!html("`!\"#$%&'()*+,-./:;<=>?@[]^_{|}~`\n").contains("<wbr>"))
+        #expect(html("`//go:build loadbench_integration`\n") == "<p><code>//go:build loadbench_\u{200B}integration</code></p>")
+        #expect(!html("`!\"#$%&'()*+,-./:;<=>?@[]^_{|}~`\n").contains("\u{200B}"))
     }
 
     @Test func shortCodeAndWordsAreLeftWhole() {
@@ -55,25 +55,25 @@ import Testing
             == "<p><code>loadrun.Run</code>, <code>cli:test</code>, <code>load run</code>, <code>a/b/c/d/e/f/g</code></p>")
         // Each token of a longer span on its own: only the long one gets breaks.
         #expect(html("`grep -n foo skills/subagent-driven-development/SKILL.md`\n")
-            == "<p><code>grep -n foo skills/<wbr>subagent-<wbr>driven-<wbr>development/<wbr>SKILL.md</code></p>")
+            == "<p><code>grep -n foo skills/\u{200B}subagent-\u{200B}driven-\u{200B}development/\u{200B}SKILL.md</code></p>")
         // An identifier without separators is not broken.
-        #expect(!html("`AndroidFloatingWindowManagerImplementation`\n").contains("<wbr>"))
+        #expect(!html("`AndroidFloatingWindowManagerImplementation`\n").contains("\u{200B}"))
         // Code blocks are not touched.
-        #expect(!html("```\ndocs/superpowers/plans/2026-08-08-stresseur-phase0-1.md\n```\n").contains("<wbr>"))
+        #expect(!html("```\ndocs/superpowers/plans/2026-08-08-stresseur-phase0-1.md\n```\n").contains("\u{200B}"))
     }
 
     @Test func bareLongPathsInTextBreakAfterSlashes() {
         let h = html("Add it to docs/superpowers/specs/phase0-bench-report.md and commit.\n")
-        #expect(h == "<p>Add it to docs/<wbr>superpowers/<wbr>specs/<wbr>phase0-bench-report.md and commit.</p>", "\(h)")
+        #expect(h == "<p>Add it to docs/\u{200B}superpowers/\u{200B}specs/\u{200B}phase0-bench-report.md and commit.</p>", "\(h)")
         // Only tokens with a slash (prose breaks at its own hyphens), only long ones.
-        #expect(!html("A state-of-the-art-and-then-some approach, and/or src/a.ts.\n").contains("<wbr>"))
+        #expect(!html("A state-of-the-art-and-then-some approach, and/or src/a.ts.\n").contains("\u{200B}"))
         // Not in link text the author wrote; a bare URL keeps its own breaks (3.6).
-        #expect(!html("[docs/superpowers/specs/phase0-bench.md](docs/superpowers/specs/phase0-bench.md)\n").contains("<wbr>"))
+        #expect(!html("[docs/superpowers/specs/phase0-bench.md](docs/superpowers/specs/phase0-bench.md)\n").contains("\u{200B}"))
         #expect(html("See https://github.com/hxddh/readout/blob/main/docs/design.md for it.\n")
             .contains(">https://github.com/<wbr>hxddh/<wbr>readout/<wbr>blob/<wbr>main/<wbr>docs/<wbr>design.md</a>"))
         // In a CJK sentence too.
         #expect(html("更新 00-Prerequisites/deep-learning-basics/README.md 文件\n")
-            .contains("00-Prerequisites/<wbr>deep-learning-basics/<wbr>README.md"))
+            .contains("00-Prerequisites/\u{200B}deep-learning-basics/\u{200B}README.md"))
     }
 
     @Test func shortHyphenatedCodeStaysOnOneLine() {
@@ -91,13 +91,14 @@ import Testing
     }
 
     @Test func breakOpportunitiesAreNoText() {
-        // The text the page shows, finds and copies is the source's, to the character.
+        // The text is the source's, to the character, but for the zero-width
+        // spaces, which copy and find leave out (web: copy.js, find.js).
         for md in ["`docs/superpowers/plans/2026-08-08-stresseur-phase0-1.md`", "`std::collections::HashMap<K, V>`",
                    "`a&b=c&d=e/f/g/h/i/j?k=l#mmmmm`", "docs/superpowers/plans/2026-08-08-stresseur-phase0-1.md"] {
             let h = html(md + "\n")
-            #expect(h.contains("<wbr>"), "\(md)")
+            #expect(h.contains("\u{200B}"), "\(md)")
             #expect(md.hasPrefix("`") || !h.contains("nb"), "\(h)")
-            #expect(text(h).replacingOccurrences(of: "&lt;", with: "<").replacingOccurrences(of: "&gt;", with: ">") == md.replacingOccurrences(of: "`", with: ""), "\(h)")
+            #expect(text(h).replacingOccurrences(of: "\u{200B}", with: "").replacingOccurrences(of: "&lt;", with: "<").replacingOccurrences(of: "&gt;", with: ">") == md.replacingOccurrences(of: "`", with: ""), "\(h)")
         }
     }
 

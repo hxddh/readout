@@ -204,15 +204,15 @@ struct HTMLRenderer {
     /// they move to the next line whole, a few characters of raggedness at most.
     static let breakToken = 20
 
-    /// Inline code, escaped, with break opportunities (`<wbr>`) in its long
+    /// Inline code, escaped, with break opportunities (`breakHere`) in its long
     /// paths and identifiers (`appendToken`): it wraps after a separator, at
     /// the parts the reader sees, not wherever the line ends (`…-phase0-`
     /// on one line, `1.md` alone on the next). WebKit breaks code after a
     /// `-` or `?` of its own, so a part holding one where no break belongs
     /// (`2026-08-08`, `phase0-1.md`, a short `glyphicon-X`) is kept on one
     /// line (`<span class="nb">`, nowrap; `nb` true: the whole span is such
-    /// a part, and the code element itself takes the class). `<wbr>` and the
-    /// span are no text: copy, find and the reading anchor never see them.
+    /// a part, and the code element itself takes the class). The span is no
+    /// text, and copy and find leave the zero-width spaces out.
     static func breakableCode(_ code: String) -> (html: String, nb: Bool) {
         let u = code.utf8
         guard u.count >= breakToken || u.contains(where: { $0 == 0x2D || $0 == 0x3F }) else { return (HTML.escape(code), false) }
@@ -317,7 +317,14 @@ struct HTMLRenderer {
         return String(decoding: out, as: UTF8.self)
     }
 
-    /// One token (`b[start..<end]`, `total` characters), escaped, with `<wbr>`
+    /// The break opportunity put after a separator: a zero-width space
+    /// (U+200B), not `<wbr>`. An element per break made WebKit lay out and
+    /// paint inline code measurably slower (scrolling a 1 MB document: the
+    /// longest frame 1.3-1.4x, #99); a character in the text costs nothing.
+    /// Copy and find leave it out (web: copy.js, find.js).
+    static let breakHere: [UInt8] = Array("\u{200B}".utf8)
+
+    /// One token (`b[start..<end]`, `total` characters), escaped, with a break opportunity (`breakHere`)
     /// after its separators: `/`, `\`, `.`, `-`, `_`, `#`, `?`, `&`, `=` and
     /// `::`, before a letter or a digit (after the last of a run, so `//` and
     /// `::` stay together, and never in punctuation alone). Never within its
@@ -363,7 +370,7 @@ struct HTMLRenderer {
                    c != 0x3A || b[k - 1] == 0x3A,          // a colon only as the end of `::`
                    !(digit(b[k - 1]) && digit(b[next])) {
                     appendPiece(b, from, next, keep: !slashesOnly, to: &out)
-                    out.append(contentsOf: "<wbr>".utf8)
+                    out.append(contentsOf: breakHere)
                     from = next
                 }
             }

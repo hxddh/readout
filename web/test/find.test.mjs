@@ -104,6 +104,29 @@ ops[far - 1] = { ...ops[far - 1], kind: 'paragraph', html: '<p>The Zebracórn li
   await page.close();
 }
 
+// ---------------------------------------------------------------- Across a long path's breaks
+
+// 4.0 (#99): ReadoutCore puts a zero-width space after a long path's
+// separators (where it may break). Find matches across them (a query has
+// none), whole or in part, in code and in text, and selects the match with
+// them in it; a query of one character still matches once per character.
+{
+  const page = await open();
+  const z = '\u200b';
+  await page.evaluate(p => window.readout.apply(p), patch(blocks([
+    `<p>See <code>docs/${z}superpowers/${z}plans/${z}2026-08-08-${z}stresseur-${z}phase0-1.md</code> first.</p>`,
+    `<p>Then docs/${z}superpowers/${z}specs/${z}phase0-bench-report.md in text.</p>`,
+    '<p>Nothing here.</p>'])));
+  const n1 = await find(page, 'superpowers/plans/2026');
+  const sel1 = await selected(page);
+  const n2 = await find(page, 'docs/superpowers/');
+  const n3 = await find(page, 'phase0-');
+  const n4 = await find(page, 'S');
+  check('find matches across the breaks in a long path, in code and in text', n1 === 1 && sel1.replace(/\u200b/g, '') === 'superpowers/plans/2026' && n2 === 2 && n3 === 2, JSON.stringify({ n1, sel1, n2, n3 }));
+  check('a one-character query counts each character once, not the breaks', n4 === (await page.evaluate(() => [...document.querySelectorAll('#ro-doc p')].map(p => p.textContent.toLowerCase().split('s').length - 1).reduce((a, b) => a + b, 0))), String(n4));
+  await page.close();
+}
+
 // ---------------------------------------------------------------- The count, next and previous
 
 {
