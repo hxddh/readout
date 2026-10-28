@@ -319,8 +319,9 @@ function setupCode(cb, old) {
   if (cb.parentElement.classList.contains('k-code')) cb.parentElement.style.setProperty('--cb-cols', prose ? 0 : codeColumns(text));
   codeOf.set(cb, text);
   // The same code a block this patch took away showed coloured: its <pre> moved over.
-  const key = `${cb.dataset.lang}\0${text}`, same = leaving.get(key);
-  if (same) { leaving.delete(key); cb.querySelector('pre').replaceWith(same); cb.dataset.hl = 'done'; return; }
+  // (Nothing taken away, as at a first open: no key made, its whole code a string the size of it.)
+  const same = leaving.size ? leaving.get(`${cb.dataset.lang}\0${text}`) : null;
+  if (same) { leaving.delete(`${cb.dataset.lang}\0${text}`); cb.querySelector('pre').replaceWith(same); cb.dataset.hl = 'done'; return; }
   cb.dataset.hl = 'pending';
   fresh.push(cb);
   if (old) keepLines(cb, text, old);
@@ -474,8 +475,8 @@ function ask(cb, prio, dy = 0, upto = prio <= SCREEN ? linesShown(cb, dy) : 0) {
     // The parts after the first put in as they come (not a long block's, nor one showing lines kept from before).
     const stream = !inPart.has(cb) && code.split('\n', PARTS_MAX + 1).length <= PARTS_MAX;
     asked.set(cb, { prio, upto, id: hl.request(code, lang, prio, upto, stream, {
-      done: html => arrived(cb, lang, html),
-      part: (html, lines, first) => part(cb, lang, html, code, lines, first),
+      done: html => deliver(cb, () => arrived(cb, lang, html)),
+      part: (html, lines, first) => deliver(cb, () => part(cb, lang, html, code, lines, first)),
       // Its grammar not loaded yet: nothing waits for it (it shows plain, coloured once it is).
       loading: () => { slow.add(cb); shown(cb); },
     }) });
@@ -485,6 +486,25 @@ function ask(cb, prio, dy = 0, upto = prio <= SCREEN ? linesShown(cb, dy) : 0) {
   screenObserver.observe(cb);
   if (prio > NEAR) nearObserver.observe(cb);
 }
+// What arrives is put in at the next frame, all of it at once, before
+// that frame's layout (one layout, not one per answer, nor one forced by
+// the next patch's measurements); what a hold waits for at once.
+let batched = [], batchFrame = 0;
+function deliver(cb, f) {
+  if (![...holds].some(h => h.cbs.has(cb))) {
+    batched.push(f);
+    batchFrame ||= requestAnimationFrame(flushArrived);
+    return;
+  }
+  flushArrived();   // (in order: what came before for it first)
+  f();
+}
+function flushArrived() {
+  if (batchFrame) cancelAnimationFrame(batchFrame);
+  batchFrame = 0;
+  for (const f of batched.splice(0)) f();
+}
+
 // (Off screen again, a block not waited for goes back behind those on it.)
 const nearer = prio => new IntersectionObserver(es => {
   for (const e of es) {
