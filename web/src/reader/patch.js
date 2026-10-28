@@ -30,8 +30,19 @@ onKeptScroll(dy => { if (tail) tail.y += dy; });
 /** The reader came to rest at the end of the page (reader.js, after a scroll settles). */
 export function restedAtEnd() { tail = { y: document.scrollingElement.scrollTop }; }
 
+// What ReadoutCore adds for line breaks and lead-ins (<wbr>, a part kept
+// whole, class="lead") is not text: it does not count towards a block's
+// estimated height (nor, through it, where a chunk ends).
+const NOT_TEXT = /<wbr>|<span class="nb">|<code class="nb">| class="lead"/g;
+const NOT_TEXT_LEN = { '<wbr>': 5, '<span class="nb">': 24, '<code class="nb">': 11, ' class="lead"': 13 };
+function textLength(html) {
+  let n = html.length;
+  if (html.includes('<wbr>') || html.includes('class="')) for (const m of html.matchAll(NOT_TEXT)) n -= NOT_TEXT_LEN[m[0]];
+  return n;
+}
+
 function estimateHeight(kind, html) {
-  const text = html.length;
+  const text = textLength(html);
   const perLine = 75;
   switch (kind) {
     case 'heading': return 48;
