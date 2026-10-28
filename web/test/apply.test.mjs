@@ -132,7 +132,7 @@ const follows = [];
 for (const [slot, after] of [[202, 40], [203, 202]]) {
   await page.evaluate(([slot, after]) => window.readout.apply({
     version: 6, reset: false, rewrite: false,
-    ops: [{ op: 'insert', slot, after, html: `<p>${'appended at the end of the document '.repeat(52)}</p>`, kind: 'paragraph' }],
+    ops: [{ op: 'insert', slot, after, html: `<p>${'appended at the end of the document '.repeat(60)}</p>`, kind: 'paragraph' }],
     marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
   }), [slot, after]);
   follows.push(await page.evaluate(slot => {
@@ -2258,7 +2258,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
 
 // 4.0 (#99 smoke "refill"): a document reset and the reader's place put back
 // (scrollToAnchor, as the app does after a refill) with a table above it
-// whose short cells only fit the 35 rem column wrapped (.nw-off, measured by
+// whose short cells only fit the column wrapped (.nw-off, measured by
 // the page a frame later, 42 px taller then): the anchor stays within 1 px.
 {
   const p = await browser.newPage({ viewport: { width: 900, height: 589 } });
@@ -2268,8 +2268,8 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
   await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
   const cell = (s, i) => `<td>${s} ${i}</td>`;
-  const row = i => `<tr><td><code>actions/configure-pages-${i}</code></td>${['S1 / GREEN', 'Medium risk', 'Owner team', 'Drop-in'].map(cell).join('')}<td>Inputs changed between majors; check the changelog</td></tr>`;
-  const table = `<div class="table-wrap"><table><thead><tr><th>Action</th><th>Status</th><th>Risk</th><th>Owner</th><th>Note</th><th>Notes</th></tr></thead><tbody>${[1, 2, 3, 4].map(row).join('')}</tbody></table></div>`;
+  const row = i => `<tr><td><code>actions/configure-pages-${i}</code></td>${['S1 / GREEN', 'Medium risk', 'Owner team', 'Drop-in', 'Platform'].map(cell).join('')}<td>Inputs changed between majors; check the changelog</td></tr>`;
+  const table = `<div class="table-wrap"><table><thead><tr><th>Action</th><th>Status</th><th>Risk</th><th>Owner</th><th>Note</th><th>Area</th><th>Notes</th></tr></thead><tbody>${[1, 2, 3, 4].map(row).join('')}</tbody></table></div>`;
   const ops = [];
   for (let i = 1; i <= 60; i++) ops.push({ op: 'insert', slot: 3000 + i, after: i === 1 ? 0 : 2999 + i, kind: i === 20 ? 'table' : 'paragraph', html: i === 20 ? table : `<p>Paragraph ${i} of a plan an agent wrote, long enough to wrap once or twice in the column of the reader.</p>` });
   const reset = (version, list) => ({ version, reset: true, rewrite: false, ops: list, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
@@ -2295,45 +2295,6 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   // no overflow-anchor and drops it from the CSSOM).
   const css = readFileSync(new URL('../src/reader.css', import.meta.url), 'utf8');
   check('the page turns off WebKit\'s scroll anchoring (it keeps the place itself)', /\nhtml, body \{ overflow-anchor: none; \}/.test(css));
-  await p.close();
-}
-
-// 4.0: the text grows with the window (reader.css: html's font-size), so a
-// resize across the curve reflows every block: the reader keeps the same
-// block at the same share of it at the top of the window (drift <= 1 px),
-// with a code block and a table above and below.
-{
-  const p = await browser.newPage({ viewport: { width: 800, height: 700 } });
-  collectPageErrors(p, errors);
-  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
-  await p.goto(`${base}/reader.html`);
-  for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
-  const ops = [];
-  for (let i = 1; i <= 90; i++) {
-    const kind = i % 15 === 7 ? 'code' : i % 15 === 11 ? 'table' : 'paragraph';
-    const html = kind === 'code' ? `<div class="code-block" data-lang="ts"><pre><code>${'const value = compute(input, options);\n'.repeat(6)}</code></pre></div>`
-      : kind === 'table' ? `<div class="table-wrap"><table><thead><tr><th>Step</th><th>Owner</th><th>Note</th></tr></thead><tbody>${'<tr><td>build</td><td>agent</td><td>A note that wraps in a narrow column of the reader</td></tr>'.repeat(3)}</tbody></table></div>`
-      : `<p>Paragraph ${i}: the agent's plan goes on, sentence after sentence, long enough to wrap over two or three lines in the reader's column.</p>`;
-    ops.push({ op: 'insert', slot: 5000 + i, after: i === 1 ? 0 : 4999 + i, kind, html });
-  }
-  await p.evaluate(x => window.readout.apply(x), { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
-  await p.waitForTimeout(500);
-  // Block 5045 at the top of the window, a third of it above the top.
-  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + e.getBoundingClientRect().height / 3); });
-  await p.waitForTimeout(400);
-  const share = () => p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'), r = e.getBoundingClientRect(); return { above: 52 - r.top, h: r.height, root: parseFloat(getComputedStyle(document.documentElement).fontSize) }; });
-  const s0 = await share();
-  const f = s0.above / s0.h;
-  const drift = [];
-  for (const vw of [1100, 1400, 1700, 2100, 2400, 1280, 1000, 800]) {
-    await p.setViewportSize({ width: vw, height: 700 });
-    await p.waitForTimeout(450);
-    const s = await share();
-    drift.push({ vw, root: s.root, drift: Math.round((s.above - f * s.h) * 10) / 10 });
-  }
-  check('resizing across the text-size curve keeps the same block at the same share of it at the top (drift <= 1 px)',
-    drift.every(d => Math.abs(d.drift) <= 1) && drift.some(d => d.root > 19), JSON.stringify(drift));
   await p.close();
 }
 

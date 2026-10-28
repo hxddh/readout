@@ -221,8 +221,7 @@ window.addEventListener('scroll', () => {
     reportActiveHeading();
     clearTimeout(followAnchor);
     followAnchor = setTimeout(() => post({ type: 'anchor', anchor: captureAnchor() }), 400);
-    // Not the scroll that put the place back at the end of a resize: the page is where it settled.
-    if (!resizeAnchor && !(settledAnchor && Math.abs(document.scrollingElement.scrollTop - settledY) <= 1)) settle();
+    if (!resizeAnchor) settle();
   });
 }, { passive: true });
 
@@ -268,17 +267,7 @@ window.addEventListener('resize', () => {
   };
   hold();
   clearTimeout(resizeEnd);
-  // The place stays the one the reader left, not one taken again after each
-  // resize: the text grows with the window, so every resize reflows the page,
-  // and a place taken again each time would carry its rounding (a scroll lands
-  // on whole pixels) from one resize to the next.
-  resizeEnd = setTimeout(() => {
-    hold();
-    const se = document.scrollingElement;
-    settledAnchor = resizeAnchor; settledBottom = resizeBottom; settledY = se.scrollTop;
-    clearTimeout(settleTimer);
-    resizeAnchor = null;
-  }, 200);
+  resizeEnd = setTimeout(() => { hold(); resizeAnchor = null; settle(); }, 200);
 });
 
 function apply(p) {
@@ -312,10 +301,10 @@ function setAppearance(o) {
   }
   // Type size reflows every block, the one being read included. (The
   // column's width follows the window and the type size by itself: reader.css.)
-  if (o.fontSize && root.style.getPropertyValue('--fs') !== String(o.fontSize)) {
+  if (o.fontSize && root.style.getPropertyValue('--size') !== `${o.fontSize}px`) {
     const anchor = captureAnchor(), bottom = atBottom();
     keepPlace(() => {
-      root.style.setProperty('--fs', String(o.fontSize));
+      root.style.setProperty('--size', `${o.fontSize}px`);
       measureTables();   // the column decides which tables scroll
     }, { ratio: true, anchor, bottom });
     // Diagram text follows the reading size. A diagram in view is drawn

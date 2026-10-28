@@ -52,10 +52,9 @@ function diagramTheme() {
   return printTheme || pageTheme();
 }
 
-/** Diagram text: 13 px at the default 16 px reading size, following ⌘+ and
- * ⌘− (not the window: a diagram is not drawn again as the window resizes). */
+/** Diagram text: 13 px at the default 16 px reading size, following ⌘+ and ⌘−. */
 function diagramFontSize() {
-  return Math.round((parseFloat(root.style.getPropertyValue('--fs')) || 16) * 13 / 16 * 10) / 10 || 13;
+  return Math.round(parseFloat(getComputedStyle(root).fontSize) * 13 / 16 * 10) / 10 || 13;
 }
 
 /** What a drawing depends on besides its source: the theme and the type size. */
