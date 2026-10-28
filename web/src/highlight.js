@@ -72,7 +72,6 @@ let soon = false;
 export function startSoon(quicklook) {
   if (soon || ready) return;   // (the first appearance says which)
   quick = quicklook;
-  later();
 }
 // (A task from now: a block asking first, inside an apply, does not make it there either.)
 function later() {
