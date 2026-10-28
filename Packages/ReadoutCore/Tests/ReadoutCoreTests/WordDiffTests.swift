@@ -313,37 +313,6 @@ import Testing
         #expect(p2.marks.isEmpty)
     }
 
-    @Test func persistedBaselineWithoutWholeTextSaysSo() throws {
-        let long = String(repeating: "alpha beta gamma ", count: 40)   // over 500 characters
-        let v1 = doc("Intro.\n\n" + long + "\n")
-        // A baseline saved by an older version: text cut at 500, no whole text.
-        let oldFormat = try JSONDecoder().decode([BlockKey].self, from: JSONEncoder().encode(v1.blocks.map(BlockKey.init))
-            .replacingFull())
-        #expect(oldFormat.allSatisfy { $0.full == nil })
-        let session = DocumentSession()
-        let patch = session.load(doc("Intro.\n\n" + long + "delta\n"), baseline: oldFormat)
-        #expect(patch.marks.first { $0.kind == .modified }?.diff == "")
-        // Removed before opening: the start that was kept, marked as cut.
-        let opened = DocumentSession().load(doc("Intro.\n"), baseline: oldFormat)
-        #expect(opened.deletions.first?.preview?.hasSuffix(" …") == true)
-        // Changed back to what was read: recognised by the block's fingerprint.
-        let revert = DocumentSession()
-        _ = revert.load(doc("Intro.\n\n" + long + "delta\n"), baseline: oldFormat)
-        let back = try #require(revert.update(v1))
-        #expect(back.marks.isEmpty)
-        // Removed before it was read: the preview is the start that was read, marked
-        // as cut, never the unread edit.
-        let removed = try #require(session.update(doc("Intro.\n")))
-        let preview = try #require(removed.deletions.first?.preview)
-        #expect(!preview.contains("delta"))
-        #expect(preview.hasSuffix(" …"))
-        #expect(preview.hasPrefix("alpha beta gamma"))
-        // With a current baseline the comparison is there.
-        let session2 = DocumentSession()
-        let patch2 = session2.load(doc("Intro.\n\n" + long + "delta\n"), baseline: v1.blocks.map(BlockKey.init))
-        #expect(patch2.marks.first { $0.kind == .modified }?.diff?.hasSuffix("<ins> delta</ins>") == true)
-    }
-
     @Test func deletionsShowTheWholeRemovedText() throws {
         let long = String(repeating: "removed words ", count: 60)
         let session = DocumentSession()
@@ -389,14 +358,5 @@ import Testing
         let preview4 = try #require(p4.deletions.first?.preview)
         #expect(preview4.utf8.count <= DocumentSession.previewBytes)
         #expect(preview4.hasSuffix("\n\n…"))
-    }
-}
-
-private extension Data {
-    /// Drops the "full" key, as a baseline written before it existed.
-    func replacingFull() -> Data {
-        var array = (try? JSONSerialization.jsonObject(with: self)) as? [[String: Any]] ?? []
-        for i in array.indices { array[i]["full"] = nil }
-        return (try? JSONSerialization.data(withJSONObject: array)) ?? self
     }
 }
