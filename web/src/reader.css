@@ -400,8 +400,6 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: var(--flow); }
    a paragraph's gap away. At the top level (the list items are blocks of
    their own: the paragraph's block ends with the shorter gap, and its change
    bar and flash with it) and in an item, a quote, an alert or a disclosure. */
-#ro-doc > .chunk > .k-paragraph:has(> p.lead):has(+ .k-listItem) { --flow: 0.4rem; }
-p.lead:has(+ ul, + ol), .li-block li > p.lead:has(+ ul, + ol) { margin-bottom: 0.4rem; }
 p.lead + ul, p.lead + ol, .li-block li > p.lead + ul, .li-block li > p.lead + ol { margin-top: 0; }
 li { margin: 0.12em 0; }
 /* Each item is a block of its own: half the gap on each side of it. */
