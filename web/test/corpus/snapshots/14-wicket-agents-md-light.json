@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "3520a94f",
+   "style": "31a7d51b",
    "content": "a283977e",
    "text": "Apache Wicket"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 122,
-   "style": "7b41de60",
+   "style": "bce85044",
    "content": "e83f75ef",
    "text": "Component-based Java web framework. master is th"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 192,
    "h": 96,
-   "style": "b6c6613f",
+   "style": "f066fe1b",
    "content": "37aff0b0",
    "text": "Versions — the Java release, the Servlet level, "
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 288,
    "h": 148,
-   "style": "1adfc41a",
+   "style": "69120fc6",
    "content": "c2cbdbe5",
    "text": "The code format (tabs, braces on their own line,"
   },
@@ -42,7 +42,7 @@
    "kind": "heading",
    "top": 436,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "b6ce1a2c",
    "text": "How a change lands"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 501,
    "h": 106,
-   "style": "32e68e79",
+   "style": "b09f45bd",
    "content": "5671ba0c",
    "text": "Prepare the change and stop. Whether it goes in "
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 607,
    "h": 97,
-   "style": "de2fb8e4",
+   "style": "4466e258",
    "content": "93732041",
    "text": "Fixes go on master first and are cherry-picked d"
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 704,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "827e28bd",
    "text": "Commits"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 769,
    "h": 106,
-   "style": "9a2f5ac4",
+   "style": "8365d878",
    "content": "3cbcada8",
    "text": "The subject says what the change does, in plain "
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 875,
    "h": 123,
-   "style": "0edf47af",
+   "style": "489fc08b",
    "content": "0cd65737",
    "text": "The body carries the reasoning: what the behavio"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 998,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "2620b54e",
    "text": "Build and test"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1063,
    "h": 87,
-   "style": "889b3a35",
+   "style": "f74fc531",
    "content": "d2c9f06e",
    "text": "A full mvn clean verify has to be green before a"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 1151,
    "h": 139,
-   "style": "880cedac",
+   "style": "972f4230",
    "content": "0e1998b5",
    "text": "Getting there is not how to work there. While it"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1290,
    "h": 298,
-   "style": "0b45f0ec",
+   "style": "b8c75f68",
    "content": "7dd3fe4a",
    "text": "Most tests are not in the module they exercise, "
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1588,
    "h": 97,
-   "style": "88c77ef5",
+   "style": "6a3ea589",
    "content": "2b9265bb",
    "text": "A test class must be named *Test.java. Surefire "
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 1685,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "75406731",
    "text": "Where code goes"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1750,
    "h": 158,
-   "style": "1d58a6fc",
+   "style": "1cf790c8",
    "content": "384875f7",
    "text": "A component's markup, .properties, .js and .css "
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1908,
    "h": 184,
-   "style": "99d6a63f",
+   "style": "b95765d3",
    "content": "20f0b06e",
    "text": "Tests live in the module's -tests companion wher"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 2092,
    "h": 123,
-   "style": "14777466",
+   "style": "af3f5b62",
    "content": "ccff4837",
    "text": "WicketTester, WicketTestCase, FormTester and Tag"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 2215,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "e5b8758c",
    "text": "Poms"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 2280,
    "h": 132,
-   "style": "42bf15e4",
+   "style": "487172d8",
    "content": "c7269ddd",
    "text": "Section, dependency and plugin order is enforced"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 2413,
    "h": 71,
-   "style": "bbcf2442",
+   "style": "73e46b8e",
    "content": "c4a2c140",
    "text": "A module pom carries no <version> for a dependen"
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 2484,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "1976c76b",
    "text": "API compatibility"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2549,
    "h": 158,
-   "style": "c273a0d1",
+   "style": "f9e5101d",
    "content": "70cc28d2",
    "text": "japicmp fails the build on binary-incompatible c"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2707,
    "h": 106,
-   "style": "db2734b3",
+   "style": "a265a1df",
    "content": "eb6d1dd4",
    "text": "Quiet is not permission. Changing or removing pu"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2813,
    "h": 175,
-   "style": "a79b2f0e",
+   "style": "3e14a2ea",
    "content": "248fc238",
    "text": "An API change owes users a migration path. Add a"
   },
@@ -240,7 +240,7 @@
    "kind": "heading",
    "top": 2988,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "91184615",
    "text": "Javadoc"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 3054,
    "h": 80,
-   "style": "d98dedc2",
+   "style": "a997f9e6",
    "content": "9582ac3c",
    "text": "Javadoc is user-facing documentation, not a form"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 3134,
    "h": 175,
-   "style": "8c6073dd",
+   "style": "a9678859",
    "content": "4e11c14b",
    "text": "Say what a method does to the value it is given,"
   },
@@ -267,7 +267,7 @@
    "kind": "heading",
    "top": 3309,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "52582af7",
    "text": "Comments"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 3374,
    "h": 54,
-   "style": "0b9d5ed2",
+   "style": "0649a27e",
    "content": "68b2346d",
    "text": "Only write a comment when it really matters. Mos"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 3428,
    "h": 54,
-   "style": "ddad8856",
+   "style": "bf0af05a",
    "content": "5ed2a9b1",
    "text": "Prefer a clearer name or an extracted method ove"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 3483,
    "h": 80,
-   "style": "8d2a7eca",
+   "style": "d4b5a066",
    "content": "5f1c0f15",
    "text": "Comment the why, not the what. Never restate wha"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 3563,
    "h": 80,
-   "style": "fbbf0a72",
+   "style": "d49d3d7e",
    "content": "f905aa7c",
    "text": "Keep an inline comment to a single line of inten"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 3643,
    "h": 80,
-   "style": "fbbf0a72",
+   "style": "d49d3d7e",
    "content": "2eb47fda",
    "text": "A comment that no longer matches the code is wor"
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 3723,
    "h": 54,
-   "style": "ddad8856",
+   "style": "bf0af05a",
    "content": "82c2223e",
    "text": "Don't dump your reasoning into a comment. Deeper"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 3778,
    "h": 123,
-   "style": "0edf47af",
+   "style": "489fc08b",
    "content": "0aaa8808",
    "text": "Before finalizing an edit that adds a comment, r"
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 3901,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "9a73db9b",
    "text": "Language"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 3966,
    "h": 80,
-   "style": "bcf60736",
+   "style": "d0e9a77a",
    "content": "1b72ddcd",
    "text": "Everything you write is English: identifiers, co"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 4046,
    "h": 123,
-   "style": "7bfad35c",
+   "style": "a42c5370",
    "content": "972e06b0",
    "text": "The localized bundles (Application_xx.utf8.prope"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 4169,
    "h": 65,
-   "style": "4408f1e5",
+   "style": "1e95d8b1",
    "content": "c2fe21db",
    "text": "Security"
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 4234,
    "h": 184,
-   "style": "9209a122",
+   "style": "693ca526",
    "content": "eed9572e",
    "text": "SECURITY.md is the policy, and it is long: the s"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 4418,
    "h": 80,
-   "style": "c124a7cc",
+   "style": "ba903f60",
    "content": "64de40e3",
    "text": "A suspected vulnerability does not go into a Git"
   },
@@ -393,7 +393,7 @@
    "kind": "listItem",
    "top": 4499,
    "h": 97,
-   "style": "b586138f",
+   "style": "29610893",
    "content": "a21334d6",
    "text": "Working notes, draft advisories and CVE records "
   }

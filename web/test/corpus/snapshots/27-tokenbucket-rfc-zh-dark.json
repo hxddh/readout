@@ -1,12 +1,12 @@
 {
- "height": 11592,
+ "height": 11581,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "71fc935b",
+   "style": "df626787",
    "content": "05776869",
    "text": "RFC: Proxy IP TokenBucket v2（去除 terminal_id 信任边界"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 109,
    "h": 130,
-   "style": "9405cb4b",
+   "style": "90e5edaf",
    "content": "b5462ea2",
    "text": "状态: Draft（增量修订）目标文件: .legion/tasks/vendor-tokenb"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 238,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "7e0b5103",
    "text": "摘要 / 动机"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 303,
    "h": 130,
-   "style": "b2fe960e",
+   "style": "a24e8602",
    "content": "16a900ce",
    "text": "本次修订收敛 HTTPProxy 的信任模型：terminal_id 不再被视为稳定身份，也不得"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 433,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "a105a23e",
    "text": "动机有三点："
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 467,
    "h": 59,
-   "style": "dad8016a",
+   "style": "8aaeefde",
    "content": "4d5411a3",
    "text": "terminal_id 不稳定，继续把它当作 trust boundary 会导致配置漂移、误拒"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 526,
    "h": 59,
-   "style": "28e6e41f",
+   "style": "61dc563b",
    "content": "ff879eeb",
    "text": "当前限流与实际出口已经以 ip 为核心维度；继续把 terminal_id 混入 helper "
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 585,
    "h": 75,
-   "style": "da62a327",
+   "style": "9a7ab163",
    "content": "fa0b24ac",
    "text": "用户最新要求已经明确：同一 host 网络内所有 terminal 默认互信，因此信任边界应上移"
   },
@@ -78,7 +78,7 @@
    "kind": "paragraph",
    "top": 660,
    "h": 74,
-   "style": "747a4475",
+   "style": "713c1e29",
    "content": "a668de82",
    "text": "结论：本 RFC 将 v2 方案改为“host 内默认互信 + IP 维度选路/限流”，并显式删"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 734,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "27c7daa5",
    "text": "目标与非目标"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 799,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "fa83f282",
    "text": "目标"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 841,
    "h": 59,
-   "style": "7c22fed5",
+   "style": "d0ba6d29",
    "content": "319700e6",
    "text": "代理模式下，helper MUST 仅基于同 host 网络中可见的 HTTPProxy 服务、"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 900,
    "h": 59,
-   "style": "7e6e9ab9",
+   "style": "4f43800d",
    "content": "06b95577",
    "text": "helper MUST 不再读取、解析、缓存或依赖 TRUSTED_HTTP_PROXY_TER"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 958,
    "h": 87,
-   "style": "8ef723d4",
+   "style": "35f99000",
    "content": "90b0ce37",
    "text": "libraries/http-services/src/proxy-ip.ts 内所有导出的 H"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1045,
    "h": 59,
-   "style": "b0dc73e1",
+   "style": "29d6dcb5",
    "content": "5a7372e0",
    "text": "helper 返回值 MUST 从 { ip, terminalId, bucketKey } "
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1104,
    "h": 59,
-   "style": "530eaeb2",
+   "style": "4d4da4ce",
    "content": "6d9fabd5",
    "text": "vendor 请求路由 MUST 只写入 labels.ip，MUST NOT 再写入 labe"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1162,
    "h": 59,
-   "style": "665d40fb",
+   "style": "c31d96ef",
    "content": "92cce579",
    "text": "apps/http-proxy 服务注册 MUST 删除 labels.terminal_id；"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1221,
    "h": 59,
-   "style": "f1a73711",
+   "style": "84a91a45",
    "content": "9e116609",
    "text": "同一 host 网络内多个 terminal 共享同一出口 IP 时，MUST 视为同一个限流/"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1280,
    "h": 75,
-   "style": "6724e885",
+   "style": "a08df731",
    "content": "ce6213f5",
    "text": "RFC 必须明确回答：后续不应继续在请求 labels 或 helper 返回值中使用 term"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 1355,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "00705f4e",
    "text": "非目标"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 1397,
    "h": 31,
-   "style": "96f03cf9",
+   "style": "21d5bd4d",
    "content": "4454221b",
    "text": "不修改 tokenBucket 底层算法、acquireSync 语义和 semaphore 实"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 1428,
    "h": 31,
-   "style": "0ad1cfa3",
+   "style": "86f435e7",
    "content": "b29a4fb8",
    "text": "不改造协议层 terminal_id 作为消息寻址字段的既有职责。"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1458,
    "h": 31,
-   "style": "f22e695b",
+   "style": "e5aede7f",
    "content": "0f527e22",
    "text": "不在本次 scope 内引入新的 host 级鉴权、mTLS 或网络分区机制。"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 1489,
    "h": 75,
-   "style": "c9fede71",
+   "style": "fa3272bd",
    "content": "d5f6d49f",
    "text": "不扩大到所有 vendor 的立即实现；本次落地范围仍以 http-services、http-"
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 1564,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "88b35f8c",
    "text": "定义"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 1630,
    "h": 59,
-   "style": "1ac9793c",
+   "style": "3adcd8c0",
    "content": "0295c059",
    "text": "Host 网络: 同一个 Terminal Host 视图内可见、可被当前 terminal 枚"
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 1688,
    "h": 59,
-   "style": "3986abf6",
+   "style": "49070c92",
    "content": "5f2e29aa",
    "text": "HTTPProxy 候选: 同 host 网络内声明了 HTTPProxy 服务，且 tags."
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 1747,
    "h": 59,
-   "style": "d77c9675",
+   "style": "86fe0921",
    "content": "6c168879",
    "text": "IP 等价类: 具有相同 tags.ip 的一个或多个 HTTPProxy terminal；调"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 1806,
    "h": 31,
-   "style": "6e37c93d",
+   "style": "70c3d609",
    "content": "c5f21165",
    "text": "BaseKey: vendor 现有的限流基键。"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 1836,
    "h": 28,
-   "style": "09911b4a",
+   "style": "46f21bd6",
    "content": "528091cb",
    "text": "BucketKey: encodePath([baseKey, ip])。"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 1865,
    "h": 47,
-   "style": "8e611527",
+   "style": "e2b6354b",
    "content": "1df2d600",
    "text": "Stage: 错误归属阶段，取值 {pool|acquire|route|request}。"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 1912,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "83fbccf1",
    "text": "现状与问题"
   },
@@ -294,7 +294,7 @@
    "kind": "paragraph",
    "top": 1977,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "99727df4",
    "text": "基于当前代码与任务上下文，可确认以下现状："
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 2012,
    "h": 87,
-   "style": "8e115f1a",
+   "style": "4d70b1fe",
    "content": "a780b129",
    "text": "libraries/http-services/src/proxy-ip.ts 通过 TRUST"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 2098,
    "h": 59,
-   "style": "d237a274",
+   "style": "45649968",
    "content": "7e0c6e04",
    "text": "apps/http-proxy/src/index.ts 会把 labels.terminal_"
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 2157,
    "h": 103,
-   "style": "73bccdb3",
+   "style": "2189b207",
    "content": "4d545dab",
    "text": "apps/vendor-binance/src/api/client.ts 在代理模式下把 { "
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 2260,
    "h": 102,
-   "style": "707b841c",
+   "style": "d37e64a0",
    "content": "03d4b052",
    "text": "这三处共同构成了当前错误的身份模型：虽然 bucket 已经按 IP 维度工作，但信任准入和路由"
   },
@@ -339,7 +339,7 @@
    "kind": "heading",
    "top": 2362,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "30268521",
    "text": "拟议设计"
   },
@@ -348,7 +348,7 @@
    "kind": "heading",
    "top": 2427,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "239c048a",
    "text": "1. 信任模型"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 2469,
    "h": 31,
-   "style": "6e047447",
+   "style": "bc4f3eb3",
    "content": "fb3a9ed9",
    "text": "同一 host 网络中的所有 terminal 默认互信。"
   },
@@ -366,7 +366,7 @@
    "kind": "listItem",
    "top": 2500,
    "h": 31,
-   "style": "6aa5b34d",
+   "style": "2c9e59f9",
    "content": "6a12f5a0",
    "text": "terminal_id 不再参与 HTTPProxy 候选准入。"
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 2530,
    "h": 140,
-   "style": "53efbbf6",
+   "style": "806bd38a",
    "content": "188f4e68",
    "text": "HTTPProxy 候选的最小准入条件收敛为： 提供 HTTPProxy 服务；tags.ip "
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 2670,
    "h": 102,
-   "style": "fe1fb5d8",
+   "style": "9db83db4",
    "content": "ab6d5461",
    "text": "这意味着 trust boundary 从“terminal allowlist”上移为“是否已"
   },
@@ -393,7 +393,7 @@
    "kind": "heading",
    "top": 2772,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "b2703f0f",
    "text": "2. 候选池与去重"
   },
@@ -402,7 +402,7 @@
    "kind": "listItem",
    "top": 2814,
    "h": 31,
-   "style": "0c58b826",
+   "style": "c54ede8a",
    "content": "a0be21f0",
    "text": "helper 从 terminal.terminalInfos 枚举全部 HTTPProxy t"
   },
@@ -411,7 +411,7 @@
    "kind": "listItem",
    "top": 2844,
    "h": 31,
-   "style": "5df867ec",
+   "style": "3e7bf0c0",
    "content": "8ed4f8ec",
    "text": "先过滤非法 IP、缺失 ip_source、非 HTTPProxy 服务。"
   },
@@ -420,7 +420,7 @@
    "kind": "listItem",
    "top": 2875,
    "h": 31,
-   "style": "3a612a27",
+   "style": "885bb513",
    "content": "ba4e8d30",
    "text": "再按 ip 去重，得到 IPPool。"
   },
@@ -429,7 +429,7 @@
    "kind": "listItem",
    "top": 2906,
    "h": 59,
-   "style": "f1a73711",
+   "style": "84a91a45",
    "content": "3e8372fa",
    "text": "同一 IP 对应多个 terminal 时，helper 只保留一个 IP 候选；不对外暴露 t"
   },
@@ -438,7 +438,7 @@
    "kind": "listItem",
    "top": 2965,
    "h": 159,
-   "style": "be03ad86",
+   "style": "c42b1142",
    "content": "aa949bfc",
    "text": "listHTTPProxyIps、waitForHTTPProxyIps、selectHTTPP"
   },
@@ -447,7 +447,7 @@
    "kind": "paragraph",
    "top": 3124,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "cc418866",
    "text": "理由："
   },
@@ -456,7 +456,7 @@
    "kind": "listItem",
    "top": 3158,
    "h": 31,
-   "style": "6e047447",
+   "style": "bc4f3eb3",
    "content": "618699ce",
    "text": "token bucket 已按 IP 维度隔离；"
   },
@@ -465,7 +465,7 @@
    "kind": "listItem",
    "top": 3189,
    "h": 31,
-   "style": "f8be2108",
+   "style": "0e885144",
    "content": "7be24802",
    "text": "请求路由也只需 labels.ip；"
   },
@@ -474,7 +474,7 @@
    "kind": "listItem",
    "top": 3220,
    "h": 75,
-   "style": "aff64f42",
+   "style": "3d1c9806",
    "content": "ac9ea48a",
    "text": "同一 host 网络内多个 terminal 共享同一出口 IP 时，额外携带 terminal"
   },
@@ -483,7 +483,7 @@
    "kind": "heading",
    "top": 3295,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "56a62bcc",
    "text": "3. 调度与请求流程"
   },
@@ -492,7 +492,7 @@
    "kind": "paragraph",
    "top": 3337,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "66439af6",
    "text": "端到端流程如下："
   },
@@ -501,7 +501,7 @@
    "kind": "listItem",
    "top": 3371,
    "h": 31,
-   "style": "d40a242e",
+   "style": "0754add2",
    "content": "28672253",
    "text": "vendor 计算 baseKey 与 weight，传入 getBucketOptions(b"
   },
@@ -510,7 +510,7 @@
    "kind": "listItem",
    "top": 3402,
    "h": 59,
-   "style": "c6fc00cd",
+   "style": "1feb3e31",
    "content": "f26d0609",
    "text": "helper 枚举同 host 网络内全部 HTTPProxy 候选，并按 IP 去重得到 IP"
   },
@@ -519,7 +519,7 @@
    "kind": "listItem",
    "top": 3461,
    "h": 59,
-   "style": "c79d023e",
+   "style": "6e9a92fa",
    "content": "7841a4ac",
    "text": "helper 维持现有“可承载组优先”策略：优先尝试 read() >= weight 的 IP"
   },
@@ -528,7 +528,7 @@
    "kind": "listItem",
    "top": 3519,
    "h": 59,
-   "style": "d27683cb",
+   "style": "f2b66337",
    "content": "b2ad2b4e",
    "text": "对每个 IP 候选执行 acquireSync(weight)；成功即返回 { ip, buck"
   },
@@ -537,7 +537,7 @@
    "kind": "listItem",
    "top": 3578,
    "h": 59,
-   "style": "f1d79dcf",
+   "style": "4ec8a22b",
    "content": "c3d9a98d",
    "text": "vendor 将返回的 ip 写入 fetch.labels.ip，不再写入 labels.te"
   },
@@ -546,7 +546,7 @@
    "kind": "listItem",
    "top": 3637,
    "h": 75,
-   "style": "73ca0142",
+   "style": "3db530fe",
    "content": "d9b9c962",
    "text": "fetch 依赖协议层现有 schema 匹配能力，按 labels.ip 路由到任一满足该 I"
   },
@@ -555,7 +555,7 @@
    "kind": "heading",
    "top": 3712,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "cada7da2",
    "text": "4. 接口收敛"
   },
@@ -564,7 +564,7 @@
    "kind": "paragraph",
    "top": 3754,
    "h": 46,
-   "style": "4d3ebf7e",
+   "style": "a4034ee2",
    "content": "d4909855",
    "text": "AcquireProxyBucketResult 调整为："
   },
@@ -573,7 +573,7 @@
    "kind": "code",
    "top": 3800,
    "h": 122,
-   "style": "da07076b",
+   "style": "3f9084ff",
    "content": "dec77a1e",
    "text": "type AcquireProxyBucketResult = { ip: string; bu"
   },
@@ -582,7 +582,7 @@
    "kind": "paragraph",
    "top": 3921,
    "h": 46,
-   "style": "76052f70",
+   "style": "c3f9718c",
    "content": "3c7dfc45",
    "text": "IRequestContext 在代理模式下调整为："
   },
@@ -591,7 +591,7 @@
    "kind": "code",
    "top": 3967,
    "h": 142,
-   "style": "97aeb38f",
+   "style": "a152236b",
    "content": "5bbc0806",
    "text": "type IRequestContext = { ip: string; bucketKey: "
   },
@@ -600,7 +600,7 @@
    "kind": "paragraph",
    "top": 4109,
    "h": 46,
-   "style": "e09793ea",
+   "style": "40034496",
    "content": "c43b77ae",
    "text": "请求标签调整为："
   },
@@ -609,7 +609,7 @@
    "kind": "code",
    "top": 4154,
    "h": 102,
-   "style": "3255b31e",
+   "style": "00ad98ca",
    "content": "22b13f05",
    "text": "labels: { ip: proxyIp; }"
   },
@@ -618,7 +618,7 @@
    "kind": "paragraph",
    "top": 4256,
    "h": 130,
-   "style": "9e2873ef",
+   "style": "402668e3",
    "content": "2497138d",
    "text": "明确回答：后续不应继续在 helper 返回值或请求 labels 中使用 terminal_i"
   },
@@ -627,7 +627,7 @@
    "kind": "paragraph",
    "top": 4386,
    "h": 130,
-   "style": "880c096f",
+   "style": "714bf0bb",
    "content": "2da4323b",
    "text": "额外 gate：AcquireProxyBucketResult、IRequestContext"
   },
@@ -636,7 +636,7 @@
    "kind": "heading",
    "top": 4515,
    "h": 42,
-   "style": "983ec1a1",
+   "style": "1e151f45",
    "content": "59b6ec84",
    "text": "5. apps/http-proxy 标签契约"
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 4557,
    "h": 31,
-   "style": "4d04a6d3",
+   "style": "7a1da137",
    "content": "d6dfb497",
    "text": "保留 labels.ip，因为它是路由键。"
   },
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 4588,
    "h": 31,
-   "style": "192a2d04",
+   "style": "8f67b458",
    "content": "013053a9",
    "text": "删除 labels.terminal_id，因为它不再承担任何必须语义。"
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 4619,
    "h": 47,
-   "style": "eaa6ee42",
+   "style": "ef8ffaf6",
    "content": "061d685a",
    "text": "labels.hostname 可保留，仅作为观测维度，不参与信任决策。"
   },
@@ -672,7 +672,7 @@
    "kind": "heading",
    "top": 4666,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "206fdcd5",
    "text": "6. 关于同 IP 多 terminal 的行为"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 4708,
    "h": 31,
-   "style": "b1156b56",
+   "style": "8be2e322",
    "content": "04987ce4",
    "text": "同一 IP 下多个 HTTPProxy terminal 默认互信。"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 4738,
    "h": 31,
-   "style": "f22e695b",
+   "style": "e5aede7f",
    "content": "1f7a3e82",
    "text": "路由命中该 IP 时，允许由协议层随机命中任一匹配 terminal。"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 4769,
    "h": 75,
-   "style": "a27fb0d4",
+   "style": "56c5ea68",
    "content": "2cb8a1e7",
    "text": "这不是不确定性 bug，而是新的显式约定：同 IP 代表同一个出口等价类，terminal 级别"
   },
@@ -708,7 +708,7 @@
    "kind": "heading",
    "top": 4845,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "abe6504c",
    "text": "备选方案"
   },
@@ -717,7 +717,7 @@
    "kind": "heading",
    "top": 4910,
    "h": 42,
-   "style": "873a23bc",
+   "style": "f57ed310",
    "content": "ee9e7fcc",
    "text": "方案 A：继续保留 TRUSTED_HTTP_PROXY_TERMINAL_IDS"
   },
@@ -726,7 +726,7 @@
    "kind": "listItem",
    "top": 4952,
    "h": 75,
-   "style": "933c112a",
+   "style": "dfbda51e",
    "content": "f5722032",
    "text": "放弃原因：与“terminal_id 不稳定”这一事实正面冲突；每次 terminal 重建/迁"
   },
@@ -735,7 +735,7 @@
    "kind": "heading",
    "top": 5027,
    "h": 42,
-   "style": "e2e79195",
+   "style": "f3ddfb49",
    "content": "1a4160c1",
    "text": "方案 B：改用 terminal_id + ip 双因子"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 5069,
    "h": 75,
-   "style": "e6c46317",
+   "style": "ff96c643",
    "content": "1dfa8453",
    "text": "放弃原因：本质上仍把 terminal_id 当成稳定身份，只是把失败模式藏得更深；同时会继续污"
   },
@@ -753,7 +753,7 @@
    "kind": "heading",
    "top": 5144,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "578863f5",
    "text": "方案 C：引入 host 级显式信任域配置"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 5186,
    "h": 75,
-   "style": "28c0f89a",
+   "style": "2c3f21f6",
    "content": "42ff0493",
    "text": "放弃原因：方向上比 terminal allowlist 正确，但超出本次 scope；当前用户"
   },
@@ -771,7 +771,7 @@
    "kind": "paragraph",
    "top": 5261,
    "h": 46,
-   "style": "00dfb8f8",
+   "style": "d819035c",
    "content": "ec9d4ff2",
    "text": "本次选择：直接采用“host 内默认互信 + IP 等价类”模型。"
   },
@@ -780,7 +780,7 @@
    "kind": "heading",
    "top": 5307,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "6c21e14b",
    "text": "数据模型与接口"
   },
@@ -789,7 +789,7 @@
    "kind": "heading",
    "top": 5372,
    "h": 42,
-   "style": "d3fc84b9",
+   "style": "7fe422ed",
    "content": "e258453d",
    "text": "AcquireProxyBucketInput"
   },
@@ -798,7 +798,7 @@
    "kind": "code",
    "top": 5414,
    "h": 162,
-   "style": "9eff5b0a",
+   "style": "f92e9dae",
    "content": "f3bcb083",
    "text": "type AcquireProxyBucketInput = { baseKey: string"
   },
@@ -807,7 +807,7 @@
    "kind": "paragraph",
    "top": 5576,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "ff0ef938",
    "text": "约束："
   },
@@ -816,7 +816,7 @@
    "kind": "listItem",
    "top": 5610,
    "h": 31,
-   "style": "bd867cb9",
+   "style": "208a6695",
    "content": "7f4c1081",
    "text": "getBucketOptions 仍是唯一 options 来源；本次修订不改变这一点。"
   },
@@ -825,7 +825,7 @@
    "kind": "listItem",
    "top": 5641,
    "h": 31,
-   "style": "f22e695b",
+   "style": "e5aede7f",
    "content": "58fc414e",
    "text": "helper MUST NOT 引入隐式默认 options。"
   },
@@ -834,7 +834,7 @@
    "kind": "listItem",
    "top": 5671,
    "h": 47,
-   "style": "5b344d94",
+   "style": "4e9624b8",
    "content": "f19a825a",
    "text": "helper MUST NOT 读取任何 terminal allowlist 环境变量。"
   },
@@ -843,7 +843,7 @@
    "kind": "heading",
    "top": 5719,
    "h": 42,
-   "style": "cf9dfd5e",
+   "style": "c6749812",
    "content": "b5f1d3f6",
    "text": "AcquireProxyBucketResult"
   },
@@ -852,7 +852,7 @@
    "kind": "code",
    "top": 5761,
    "h": 122,
-   "style": "da07076b",
+   "style": "3f9084ff",
    "content": "dec77a1e",
    "text": "type AcquireProxyBucketResult = { ip: string; bu"
   },
@@ -860,710 +860,710 @@
    "slot": 96,
    "kind": "paragraph",
    "top": 5882,
-   "h": 46,
-   "style": "e09793ea",
+   "h": 34,
+   "style": "a8057024",
    "content": "404eb3af",
    "text": "兼容策略："
   },
   {
    "slot": 97,
    "kind": "listItem",
-   "top": 5928,
+   "top": 5917,
    "h": 31,
-   "style": "ed521893",
+   "style": "3997112f",
    "content": "5a27ed65",
    "text": "删除 terminalId 字段，属于有意 API 收敛。"
   },
   {
    "slot": 98,
    "kind": "listItem",
-   "top": 5959,
+   "top": 5948,
    "h": 31,
-   "style": "915966a0",
+   "style": "9db5f954",
    "content": "43e2e7c0",
    "text": "所有消费方必须改为只依赖 ip 与 bucketKey。"
   },
   {
    "slot": 99,
    "kind": "listItem",
-   "top": 5989,
+   "top": 5978,
    "h": 47,
-   "style": "3432ac92",
+   "style": "7ccef5ce",
    "content": "2f7edc0d",
    "text": "http-services.api.md 必须同步更新，避免导出面残留旧身份模型。"
   },
   {
    "slot": 100,
    "kind": "heading",
-   "top": 6037,
+   "top": 6026,
    "h": 42,
-   "style": "5fd62208",
+   "style": "7d76a83c",
    "content": "37cd0af6",
    "text": "apps/http-proxy 服务标签"
   },
   {
    "slot": 101,
    "kind": "listItem",
-   "top": 6079,
+   "top": 6067,
    "h": 31,
-   "style": "82367704",
+   "style": "1fe220e0",
    "content": "9b9af84d",
    "text": "MUST 包含 ip。"
   },
   {
    "slot": 102,
    "kind": "listItem",
-   "top": 6109,
+   "top": 6098,
    "h": 31,
-   "style": "726a7e8e",
+   "style": "73646d9a",
    "content": "6b81a6db",
    "text": "MAY 包含 hostname。"
   },
   {
    "slot": 103,
    "kind": "listItem",
-   "top": 6140,
+   "top": 6129,
    "h": 47,
-   "style": "7d912c17",
+   "style": "b45b8533",
    "content": "53bb95b1",
    "text": "MUST NOT 包含用于信任/路由 pin 的 terminal_id。"
   },
   {
    "slot": 104,
    "kind": "heading",
-   "top": 6187,
+   "top": 6176,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "0703a2d7",
    "text": "错误语义"
   },
   {
    "slot": 105,
    "kind": "table",
-   "top": 6253,
+   "top": 6241,
    "h": 329,
-   "style": "49361435",
+   "style": "10b81d15",
    "content": "9179fa6a",
    "text": "stage触发条件错误码恢复语义poolhost 网络内无可用 HTTPProxy IPE_PR"
   },
   {
    "slot": 106,
    "kind": "paragraph",
-   "top": 6582,
+   "top": 6571,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "e12e2062",
    "text": "补充约束："
   },
   {
    "slot": 107,
    "kind": "listItem",
-   "top": 6616,
+   "top": 6605,
    "h": 31,
-   "style": "76afa179",
+   "style": "9b37d8ad",
    "content": "4c8058cb",
    "text": "SEMAPHORE_INSUFFICIENT_PERMS 仍映射为 acquire 阶段的可恢复"
   },
   {
    "slot": 108,
    "kind": "listItem",
-   "top": 6647,
+   "top": 6636,
    "h": 75,
-   "style": "287a3829",
+   "style": "d9cc6b85",
    "content": "418d314b",
    "text": "删除 allowlist 后，empty_pool 不再包含“白名单为空”这一原因分支，只保留“"
   },
   {
    "slot": 109,
    "kind": "heading",
-   "top": 6722,
+   "top": 6711,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "01349bdc",
    "text": "安全考虑"
   },
   {
    "slot": 110,
    "kind": "heading",
-   "top": 6787,
+   "top": 6776,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "39f4f5c8",
    "text": "结论"
   },
   {
    "slot": 111,
    "kind": "paragraph",
-   "top": 6829,
+   "top": 6818,
    "h": 46,
-   "style": "00dfb8f8",
+   "style": "d819035c",
    "content": "387ff4ac",
    "text": "风险分级为 Medium。"
   },
   {
    "slot": 112,
    "kind": "paragraph",
-   "top": 6875,
+   "top": 6864,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "cc418866",
    "text": "理由："
   },
   {
    "slot": 113,
    "kind": "listItem",
-   "top": 6909,
+   "top": 6898,
    "h": 59,
-   "style": "c24b1b50",
+   "style": "2bf083cc",
    "content": "2136e0b5",
    "text": "变更会扩大同 host 网络内默认可用的 proxy 范围，从“显式 allowlist”变为“"
   },
   {
    "slot": 114,
    "kind": "listItem",
-   "top": 6968,
+   "top": 6957,
    "h": 87,
-   "style": "78db7c4e",
+   "style": "c3279a3a",
    "content": "dfca3996",
    "text": "但实际 trust boundary 已由用户明确上移到 host 网络，本次只是让实现与该模型"
   },
   {
    "slot": 115,
    "kind": "listItem",
-   "top": 7055,
+   "top": 7043,
    "h": 75,
-   "style": "63aa6e42",
+   "style": "81f67d46",
    "content": "c0fda824",
    "text": "现有安全控制仍保留两道最小约束：必须是 HTTPProxy 服务，且 tags.ip/ip_so"
   },
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 7130,
+   "top": 7119,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "0f5cce67",
    "text": "安全要求："
   },
   {
    "slot": 117,
    "kind": "listItem",
-   "top": 7164,
+   "top": 7153,
    "h": 31,
-   "style": "dceba033",
+   "style": "e12da46f",
    "content": "b376750a",
    "text": "MUST 校验 tags.ip 为合法 IP，非法值不得进入候选池。"
   },
   {
    "slot": 118,
    "kind": "listItem",
-   "top": 7195,
+   "top": 7184,
    "h": 59,
-   "style": "68ee5d2a",
+   "style": "873d430e",
    "content": "09ef5e13",
    "text": "MUST 校验 tags.ip_source === 'http-services'，避免把未注"
   },
   {
    "slot": 119,
    "kind": "listItem",
-   "top": 7254,
+   "top": 7242,
    "h": 59,
-   "style": "353c286f",
+   "style": "43cc4523",
    "content": "063f2cee",
    "text": "MUST 对 IP 候选按 ip 去重，避免通过 terminal fan-out 放大 buc"
   },
   {
    "slot": 120,
    "kind": "listItem",
-   "top": 7312,
+   "top": 7301,
    "h": 31,
-   "style": "9b52dc8e",
+   "style": "04ba0532",
    "content": "03bd2012",
    "text": "MUST NOT 以 terminal_id 作为授权、白名单、路由 pin 或稳定身份。"
   },
   {
    "slot": 121,
    "kind": "listItem",
-   "top": 7343,
+   "top": 7332,
    "h": 75,
-   "style": "a27fb0d4",
+   "style": "56c5ea68",
    "content": "586b4ef1",
    "text": "SHOULD 在文档中明确：若未来需要隔离不同代理租户，必须在 host 级接入面做隔离，而不是"
   },
   {
    "slot": 122,
    "kind": "heading",
-   "top": 7418,
+   "top": 7407,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "8f3f6e56",
    "text": "向后兼容、发布与回滚"
   },
   {
    "slot": 123,
    "kind": "heading",
-   "top": 7484,
+   "top": 7472,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "bb798945",
    "text": "向后兼容"
   },
   {
    "slot": 124,
    "kind": "listItem",
-   "top": 7525,
+   "top": 7514,
    "h": 31,
-   "style": "9d776a54",
+   "style": "b1c6fb70",
    "content": "472aca42",
    "text": "TRUSTED_HTTP_PROXY_TERMINAL_IDS 从本次开始失效并从实现中删除。"
   },
   {
    "slot": 125,
    "kind": "listItem",
-   "top": 7556,
+   "top": 7545,
    "h": 59,
-   "style": "a52e6e3e",
+   "style": "a622ffea",
    "content": "9a9d437f",
    "text": "AcquireProxyBucketResult.terminalId 删除，属于编译期可发现的"
   },
   {
    "slot": 126,
    "kind": "listItem",
-   "top": 7615,
+   "top": 7604,
    "h": 75,
-   "style": "35116dd3",
+   "style": "d888a057",
    "content": "28baaf11",
    "text": "代理请求不再发送 labels.terminal_id；只要 HTTPProxy 服务按 lab"
   },
   {
    "slot": 127,
    "kind": "heading",
-   "top": 7690,
+   "top": 7679,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "4ce88af4",
    "text": "发布步骤"
   },
   {
    "slot": 128,
    "kind": "listItem",
-   "top": 7732,
+   "top": 7721,
    "h": 59,
-   "style": "1dd51606",
+   "style": "c4d1e722",
    "content": "55b474fd",
    "text": "先修改 http-services：删除 allowlist 与 terminalId 返回值，"
   },
   {
    "slot": 129,
    "kind": "listItem",
-   "top": 7791,
+   "top": 7780,
    "h": 31,
-   "style": "5faec0d4",
+   "style": "e731bd10",
    "content": "d0e4d0fe",
    "text": "再修改 apps/http-proxy：移除服务标签中的 terminal_id。"
   },
   {
    "slot": 130,
    "kind": "listItem",
-   "top": 7821,
+   "top": 7810,
    "h": 75,
-   "style": "d6c4de35",
+   "style": "e80ed7a9",
    "content": "675ffe91",
    "text": "最后修改 apps/vendor-binance：请求上下文与 fetch.labels 只保留"
   },
   {
    "slot": 131,
    "kind": "heading",
-   "top": 7897,
+   "top": 7886,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "6a5d9ff0",
    "text": "回滚策略"
   },
   {
    "slot": 132,
    "kind": "listItem",
-   "top": 7939,
+   "top": 7927,
    "h": 59,
-   "style": "5f0dff4e",
+   "style": "33756d81",
    "content": "8f646cea",
    "text": "若新逻辑出现异常，回滚到上一个 commit/版本；不再保留运行时开关恢复 terminal a"
   },
   {
    "slot": 133,
    "kind": "listItem",
-   "top": 7997,
+   "top": 7986,
    "h": 75,
-   "style": "9e3a0d8d",
+   "style": "f0cf0f27",
    "content": "9405ef2f",
    "text": "回滚判据：E_PROXY_TARGET_NOT_FOUND 异常升高且排查确认为 host 网络"
   },
   {
    "slot": 134,
    "kind": "heading",
-   "top": 8073,
+   "top": 8062,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "c59e9fad",
    "text": "验证计划"
   },
   {
    "slot": 135,
    "kind": "paragraph",
-   "top": 8138,
+   "top": 8127,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "6a07873a",
    "text": "关键行为到测试/验收的映射如下："
   },
   {
    "slot": 136,
    "kind": "listItem",
-   "top": 8172,
+   "top": 8161,
    "h": 59,
-   "style": "871054a7",
+   "style": "05617f4f",
    "content": "c02373bd",
    "text": "V1 删除 allowlist 后，只要同 host 网络内存在合法 HTTPProxy + i"
   },
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 8231,
+   "top": 8220,
    "h": 31,
-   "style": "83699046",
+   "style": "a392a758",
    "content": "c7e7c4c7",
    "text": "V2 TRUSTED_HTTP_PROXY_TERMINAL_IDS 即使设置，也不会影响候选结"
   },
   {
    "slot": 138,
    "kind": "listItem",
-   "top": 8262,
+   "top": 8250,
    "h": 31,
-   "style": "6a12b6a9",
+   "style": "7abd805d",
    "content": "c074a2cd",
    "text": "V3 helper 返回值不再包含 terminalId，API report 同步收敛。"
   },
   {
    "slot": 139,
    "kind": "listItem",
-   "top": 8292,
+   "top": 8281,
    "h": 31,
-   "style": "ccdc764b",
+   "style": "6c56603f",
    "content": "ed4f9d4e",
    "text": "V4 vendor 代理请求只携带 labels.ip，不再携带 labels.terminal"
   },
   {
    "slot": 140,
    "kind": "listItem",
-   "top": 8323,
+   "top": 8312,
    "h": 59,
-   "style": "691d7728",
+   "style": "5e4934ec",
    "content": "835edec4",
    "text": "V5 同 IP 多 terminal 时，helper 只生成一个 bucketKey，不会因 "
   },
   {
    "slot": 141,
    "kind": "listItem",
-   "top": 8382,
+   "top": 8371,
    "h": 59,
-   "style": "f56cf5cf",
+   "style": "a4c87e7b",
    "content": "3e739b68",
    "text": "V6 同 IP 多 terminal 时，请求只带 labels.ip 仍可成功路由到任一匹配代"
   },
   {
    "slot": 142,
    "kind": "listItem",
-   "top": 8440,
+   "top": 8429,
    "h": 59,
-   "style": "cdd473f5",
+   "style": "672b20a1",
    "content": "c17b95d2",
    "text": "V7 可承载组优先、失败切换、空池、全失败、options 冲突等旧 v2 行为保持不变。"
   },
   {
    "slot": 143,
    "kind": "listItem",
-   "top": 8499,
+   "top": 8488,
    "h": 103,
-   "style": "c6f4a0b8",
+   "style": "517a82aa",
    "content": "179ea8a5",
    "text": "V8 apps/http-proxy 不再注册 labels.terminal_id；若仅按 l"
   },
   {
    "slot": 144,
    "kind": "paragraph",
-   "top": 8603,
+   "top": 8591,
    "h": 34,
-   "style": "baa71b13",
+   "style": "a8057024",
    "content": "9daacd9c",
    "text": "建议最小测试集合："
   },
   {
    "slot": 145,
    "kind": "listItem",
-   "top": 8637,
+   "top": 8626,
    "h": 155,
-   "style": "9f9a50ec",
+   "style": "2cbb4f88",
    "content": "3d7bcdcf",
    "text": "proxy-ip.test.ts 删除“allowlist 为空 fail-closed”断言。"
   },
   {
    "slot": 146,
    "kind": "listItem",
-   "top": 8792,
+   "top": 8781,
    "h": 211,
-   "style": "786dacc6",
+   "style": "63aaebaa",
    "content": "30c90c88",
    "text": "client/vendor 测试 断言代理请求只传 labels.ip。断言 IRequestC"
   },
   {
    "slot": 147,
    "kind": "listItem",
-   "top": 9004,
+   "top": 8993,
    "h": 109,
-   "style": "76bfa0fb",
+   "style": "73fbb90f",
    "content": "e6c42914",
    "text": "构建验收 libraries/http-services 单测通过。apps/vendor-bi"
   },
   {
    "slot": 148,
    "kind": "heading",
-   "top": 9113,
+   "top": 9102,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "2c3f052d",
    "text": "开放问题"
   },
   {
    "slot": 149,
    "kind": "listItem",
-   "top": 9178,
+   "top": 9167,
    "h": 59,
-   "style": "e2f0cc1b",
+   "style": "251ebbbf",
    "content": "54100ffe",
    "text": "当前保留 ip_source === 'http-services' 作为最小标签可信信号；若未"
   },
   {
    "slot": 150,
    "kind": "listItem",
-   "top": 9237,
+   "top": 9226,
    "h": 75,
-   "style": "a7c8b675",
+   "style": "6ef66a39",
    "content": "7ba85443",
    "text": "同 IP 多 terminal 的随机命中是否需要额外 observability（如命中 te"
   },
   {
    "slot": 151,
    "kind": "heading",
-   "top": 9312,
+   "top": 9301,
    "h": 65,
-   "style": "4f1752b9",
+   "style": "d24d79cd",
    "content": "e8f5a5db",
    "text": "落地计划"
   },
   {
    "slot": 152,
    "kind": "heading",
-   "top": 9377,
+   "top": 9366,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "0ae81627",
    "text": "文件变更点"
   },
   {
    "slot": 153,
    "kind": "listItem",
-   "top": 9419,
+   "top": 9408,
    "h": 181,
-   "style": "3527fa66",
+   "style": "2a1c8354",
    "content": "5a1eaa4b",
    "text": "libraries/http-services/src/proxy-ip.ts 删除 TRUST"
   },
   {
    "slot": 154,
    "kind": "listItem",
-   "top": 9600,
+   "top": 9589,
    "h": 91,
-   "style": "a2342837",
+   "style": "50d82303",
    "content": "ad091757",
    "text": "libraries/http-services/src/client.ts 文档与接口注释更新为"
   },
   {
    "slot": 155,
    "kind": "listItem",
-   "top": 9691,
+   "top": 9680,
    "h": 63,
-   "style": "4609b9f7",
+   "style": "953be253",
    "content": "7d41b0b7",
    "text": "libraries/http-services/src/index.ts 仅确认导出面与收敛后的"
   },
   {
    "slot": 156,
    "kind": "listItem",
-   "top": 9755,
+   "top": 9743,
    "h": 63,
-   "style": "2542438d",
+   "style": "c41014fb",
    "content": "147bd2ed",
    "text": "libraries/http-services/src/__tests__/proxy-ip.t"
   },
   {
    "slot": 157,
    "kind": "listItem",
-   "top": 9818,
+   "top": 9807,
    "h": 63,
-   "style": "64270d65",
+   "style": "d446c961",
    "content": "98b851d6",
    "text": "libraries/http-services/src/__tests__/client.tes"
   },
   {
    "slot": 158,
    "kind": "listItem",
-   "top": 9881,
+   "top": 9870,
    "h": 91,
-   "style": "b68ea404",
+   "style": "531b7014",
    "content": "0a587e57",
    "text": "libraries/http-services/src/__tests__/integratio"
   },
   {
    "slot": 159,
    "kind": "listItem",
-   "top": 9973,
+   "top": 9961,
    "h": 63,
-   "style": "ff4ea770",
+   "style": "fd1fb36e",
    "content": "5bc16014",
    "text": "libraries/http-services/etc/http-services.api.md"
   },
   {
    "slot": 160,
    "kind": "listItem",
-   "top": 10036,
+   "top": 10025,
    "h": 91,
-   "style": "5946c440",
+   "style": "550c2b14",
    "content": "823985c3",
    "text": "apps/http-proxy/src/index.ts 删除 labels.terminal_"
   },
   {
    "slot": 161,
    "kind": "listItem",
-   "top": 10127,
+   "top": 10116,
    "h": 140,
-   "style": "476eb582",
+   "style": "15fd1bb6",
    "content": "55b730c4",
    "text": "apps/vendor-binance/src/api/client.ts 删除 IReques"
   },
   {
    "slot": 162,
    "kind": "heading",
-   "top": 10267,
+   "top": 10256,
    "h": 42,
-   "style": "ac0ca14a",
+   "style": "165d11fe",
    "content": "38a5d2ee",
    "text": "最小验证步骤"
   },
   {
    "slot": 163,
    "kind": "listItem",
-   "top": 10309,
+   "top": 10298,
    "h": 59,
-   "style": "675c9dc7",
+   "style": "c22ce725",
    "content": "ae124c28",
    "text": "跑 libraries/http-services 单测，确认去 allowlist 后候选池/"
   },
   {
    "slot": 164,
    "kind": "listItem",
-   "top": 10368,
+   "top": 10357,
    "h": 59,
-   "style": "ea8ea4d8",
+   "style": "78642e84",
    "content": "56e9de5f",
    "text": "跑 apps/vendor-binance 构建，确认类型收敛没有残留 terminalId 依"
   },
   {
    "slot": 165,
    "kind": "listItem",
-   "top": 10426,
+   "top": 10415,
    "h": 87,
-   "style": "5aa455e2",
+   "style": "fb8ed550",
    "content": "a62314a2",
    "text": "自动化验证：两个同 host 的 HTTPProxy terminal 共享同一 IP 时，请求"
   },
   {
    "slot": 166,
    "kind": "listItem",
-   "top": 10513,
+   "top": 10502,
    "h": 75,
-   "style": "a7c8b675",
+   "style": "6ef66a39",
    "content": "97f7fca9",
    "text": "如有条件，再做一次本地 smoke：确认任一 terminal 可被路由命中且 bucketKe"
   },
   {
    "slot": 167,
    "kind": "heading",
-   "top": 10589,
+   "top": 10577,
    "h": 65,
-   "style": "247025d0",
+   "style": "732d5734",
    "content": "e7f2ed02",
    "text": "发现的类似 terminal_id 依赖与处置建议"
   },
   {
    "slot": 168,
    "kind": "paragraph",
-   "top": 10654,
+   "top": 10642,
    "h": 62,
-   "style": "52d0600d",
+   "style": "873f0710",
    "content": "77a2ea7d",
    "text": "以下位置仍把 terminal_id 放在 HTTPProxy 相关链路中，应在本次实现内一并收"
   },
   {
    "slot": 169,
    "kind": "listItem",
-   "top": 10716,
+   "top": 10705,
    "h": 94,
-   "style": "220d5b9f",
+   "style": "e00cb1b3",
    "content": "557abadb",
    "text": "apps/http-proxy/src/index.ts 当前把 terminal.termin"
   },
   {
    "slot": 170,
    "kind": "listItem",
-   "top": 10810,
+   "top": 10799,
    "h": 122,
-   "style": "ddad229b",
+   "style": "4b452251",
    "content": "400d39df",
    "text": "apps/vendor-binance/src/api/client.ts 当前消费 helpe"
   },
   {
    "slot": 171,
    "kind": "listItem",
-   "top": 10932,
+   "top": 10921,
    "h": 165,
-   "style": "00d00d95",
+   "style": "128147f1",
    "content": "08cc62d5",
    "text": "libraries/http-services/src/proxy-ip.ts 当前以 allo"
   },
   {
    "slot": 172,
    "kind": "paragraph",
-   "top": 11097,
+   "top": 11086,
    "h": 62,
-   "style": "eebf515c",
+   "style": "04fa6e43",
    "content": "691e439c",
    "text": "以下位置也出现 terminal_id，但本次判断不属于“trust boundary/稳定身份"
   },
   {
    "slot": 173,
    "kind": "listItem",
-   "top": 11160,
+   "top": 11149,
    "h": 87,
-   "style": "92d4e6b1",
+   "style": "d7d736f9",
    "content": "dbc3b4a0",
    "text": "libraries/http-services/src/proxy-ip.ts 中以 termi"
   },
   {
    "slot": 174,
    "kind": "listItem",
-   "top": 11246,
+   "top": 11235,
    "h": 75,
-   "style": "f4eb47f4",
+   "style": "2f42afd2",
    "content": "1e310afe",
    "text": "协议层 libraries/protocol/* 中的 terminal_id 仍是消息寻址字段"
   }
