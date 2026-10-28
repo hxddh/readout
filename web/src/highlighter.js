@@ -481,6 +481,7 @@ export function ensureLang(id, spare = false) {
       const main = m.default.find(g => g.name === id) || m.default[m.default.length - 1];
       lazyOf.set(id, main?.embeddedLangsLazy || []);
       grammarsOf.set(id, m.default);
+      grammarsChanged++;
       return highlighter.loadLanguage(m.default);
     }).catch(() => { failed.add(id); });
     registry = done;
@@ -580,8 +581,8 @@ export function highlightPart(code, id, state, limit = options.limit) {
 
 // A block is highlighted a part at a time, each part going on from the
 // state the last left (the parts joined are the block highlighted whole:
-// test/grammars.test.mjs), each about PART_MS long (by what lines took of
-// late), so a block asked for
+// test/grammars.test.mjs), each about PART_MS long (by what characters
+// took of late), so a block asked for
 // more urgently (on screen) waits for one part at most behind a long one.
 // The lines the screen shows of a block (`upto`, from the page) end a part
 // of their own, sent ahead with the lines before them, and each part after
@@ -596,8 +597,14 @@ export function highlightPart(code, id, state, limit = options.limit) {
 // (a line in it may have been cut short) is highlighted again, its patterns
 // compiled by then. With a grammar used before it never is, however long it
 // takes (many fast lines add up; that is not a cut-short line).
-const PART_MS = 50;
-let lineMs = 2;           // what a line takes, of late (a part's lines sized by it)
+const PART_MS = 20;
+let charMs = 0.05;        // what a character takes, of late: a part is as many lines as PART_MS
+                          // takes (by their length: a part of short lines must not run long on long ones)
+// Registering a grammar makes Shiki load again every grammar that embeds it
+// (Markdown's fences, Vue's blocks): a grammar state carried from a part
+// before it is no longer that grammar's. A block a grammar was registered
+// during starts again from its first line (its lines on screen sent again).
+let grammarsChanged = 0;
 const used = new Set();   // grammar ids that have highlighted a block
 export const redone = { parts: 0 };   // (the tests)
 /**
@@ -611,22 +618,27 @@ export const redone = { parts: 0 };   // (the tests)
  */
 export function* blockSteps(r, partial = () => {}, size = 0) {
   const lines = r.code.split('\n'), id = r.lang;
-  let head = null, state, sent = false;
-  const inner = [];
+  let head = null, state, sent = false, inner = [], epoch = grammarsChanged;
   for (let at = 0; at < lines.length;) {
     if (at) yield;
+    if (epoch !== grammarsChanged) {
+      if (!canHighlight(r.code, id)) return null;
+      epoch = grammarsChanged; at = 0; head = null; state = undefined; sent = false; inner = [];
+    }
     // Up to the screen's last line, if that ends this part.
     const upto = !sent && r.upto > at && r.upto < lines.length ? r.upto : Infinity;
-    const n = size || Math.max(4, Math.min(4096, Math.round(PART_MS / lineMs)));
-    const end = Math.min(lines.length, at + n, upto);
+    let end = at;
+    if (size) end = at + size;
+    else for (let chars = 0, most = PART_MS / charMs; end < lines.length && (end === at || chars + lines[end].length < most); end++) chars += lines[end].length + 1;
+    end = Math.min(lines.length, end, upto);
     const part = lines.slice(at, end).join('\n');
     const cold = !used.has(id), t = performance.now();
     let x = highlightPart(part, id, state, options.cut && cold ? cutShort() : options.limit);
     if (x && cold && performance.now() - t >= options.limit) { redone.parts++; x = highlightPart(part, id, state); }
     if (!x) return null;
     used.add(id);
-    // What a line takes (not a cold part's: compiling patterns is not that).
-    if (!cold) lineMs = (lineMs + (performance.now() - t) / (end - at)) / 2;
+    // What a character takes (not in a cold part: compiling patterns is not that).
+    if (!cold) charMs = (charMs + (performance.now() - t) / Math.max(1, part.length)) / 2;
     if (end === lines.length && !at) return x.html;
     const m = /^(<pre\b[^>]*><code>)([\s\S]*)<\/code><\/pre>$/.exec(x.html);
     if (!m) return null;
@@ -662,6 +674,7 @@ function cutShort() {
  *   {op: 'spare', n, ok}: the answer to {op: 'spare?', n} (may the spare warm-up go on)
  * and {op: 'mark', name, detail} back for the tests' performance marks.
  */
+const TURN_MS = 40;
 export function serve(post) {
   mark = (name, detail) => post({ op: 'mark', name, detail });
   const asking = new Map();   // n -> resolve: whether a spare job may go on (the page's answer)
@@ -677,9 +690,16 @@ export function serve(post) {
   const turn = () => {
     queued = false;
     if (!initialized) return;
-    let r = null;
-    for (const x of asked.values()) if (!x.loading && (!r || x.prio < r.prio || (x.prio === r.prio && x.seq < r.seq))) r = x;
-    if (r) { step(r); later(); } else if (jobSlice()) later();
+    // Parts for TURN_MS (each time the most urgent block's), then the grammar jobs.
+    const t0 = performance.now();
+    for (;;) {
+      let r = null;
+      for (const x of asked.values()) if (!x.loading && (!r || x.prio < r.prio || (x.prio === r.prio && x.seq < r.seq))) r = x;
+      if (!r) break;
+      step(r);
+      if (performance.now() - t0 > TURN_MS) return later();
+    }
+    if (jobSlice()) later();
   };
   const step = r => {
     if (!r.steps) {

@@ -203,6 +203,8 @@ export function forgetBlock(el) {
   for (const x of el.querySelectorAll('.code-block, .mermaid-block')) {
     lazyObserver.unobserve(x);
     codeObserver.unobserve(x);
+    applyObserver.unobserve(x);
+    ready.delete(x);
     waitingForChunk.delete(x);
     if (diagrams.delete(x)) sweepLater();   // a diagram gone: its drawing kept a while, then dropped
     const a = asked.get(x);
@@ -358,10 +360,11 @@ function keepLines(cb, text, o) {
   for (let n = spans[k - 1].nextSibling; n;) { const next = n.nextSibling; n.remove(); n = next; }
   const rest = document.createTextNode(k < lines.length ? '\n' + lines.slice(k).join('\n') : '');
   o.pre.firstElementChild.append(rest);
-  cb.querySelector('pre').replaceWith(o.pre);
+  const plain = cb.querySelector('pre');
+  plain.replaceWith(o.pre);
   // All of its lines kept: it is that code coloured, nothing to ask for.
   if (k === lines.length) { rest.remove(); cb.dataset.hl = 'done'; fresh.pop(); return; }
-  inPart.set(cb, { rest, lines, done: k, kept: true });
+  inPart.set(cb, { rest, lines, done: k, kept: true, plain });
 }
 
 const PROSE_LANGS = new Set(['', 'text', 'txt', 'plain', 'plaintext', 'markdown', 'md', 'prompt']);
@@ -431,26 +434,35 @@ function codeColumns(text) {
 let fresh = [];
 
 // Highlighting runs in a worker (highlight.js), never on this thread: a
-// block asks for its HTML once it comes within the lookahead (two screens,
-// as far as chunks are laid out ahead: chunks.js), the more urgent the
-// nearer it is (on screen, within a screen, further), raised as the reader
-// comes nearer; the HTML replaces its plain <pre> when it arrives. Asked
-// that far ahead, a block scrolled to has arrived before it shows; the
-// frames that would show code on screen before it has (a document's first
-// paint, a jump) wait for it instead, for a moment at most (hold).
-const SCREEN = 0, NEAR = 1, FAR = 2;
+// block asks for its HTML once it comes within the lookahead (four screens:
+// at a fling's speed the worker has the time a block takes to cross them),
+// the more urgent the nearer it is (on screen first, then by how far it is,
+// raised as the reader comes nearer), and no longer when it falls out of
+// reach before it arrives. Its HTML replaces its plain <pre> once the block
+// is within a screen (kept until then: a block further off is not coloured
+// in the page, its spans restyled with every theme switch), the reader's
+// selection in it kept. The frames that would show code on screen before it
+// has arrived (a document's first paint, a jump, find landing in code) wait
+// for it instead, for a moment at most (hold).
+const URGENT = -1, SCREEN = 0, NEAR = 1;   // URGENT: what a hold waits for (a jump, a first paint)
 const asked = new Map();   // code block -> {id, prio, upto}: asked, not arrived
+const ready = new Map();   // code block -> {lang, html}: arrived, put in once it is within a screen
+const within = new WeakSet();   // blocks within a screen of the viewport (applyObserver)
+let everything = false;   // all of it wanted coloured (printing: highlightAll), until the next document
+/** On screen: 0; else 1 and how many screens away. */
 function prioOf(r) {
   if (r.bottom > 0 && r.top < innerHeight) return SCREEN;
-  return r.bottom > -innerHeight && r.top < 2 * innerHeight ? NEAR : FAR;
+  return NEAR + (r.top >= innerHeight ? r.top - innerHeight : -r.bottom) / innerHeight;
 }
 
 /**
  * `dy`: a jump about to scroll by that much (holdJump): on screen where it
  * lands. `upto`: the lines it shows (on screen: as far as the screen shows).
  */
-function ask(cb, prio, dy = 0, upto = prio === SCREEN ? linesShown(cb, dy) : 0) {
+function ask(cb, prio, dy = 0, upto = prio <= SCREEN ? linesShown(cb, dy) : 0) {
   if (cb.dataset.hl !== 'pending') return;
+  if (ready.has(cb)) { if (prio <= NEAR) put(cb); return; }
+  if (prio === URGENT) urgent.add(cb);
   const lang = hl.resolveLang(cb.dataset.lang);
   if (!lang) { cb.dataset.hl = 'none'; return; }
   const a = asked.get(cb);
@@ -467,16 +479,34 @@ function ask(cb, prio, dy = 0, upto = prio === SCREEN ? linesShown(cb, dy) : 0) 
       // Its grammar not loaded yet: nothing waits for it (it shows plain, coloured once it is).
       loading: () => { slow.add(cb); shown(cb); },
     }) });
+    applyObserver.observe(cb);
   }
   // Nearer as the reader comes nearer (asked for sooner).
-  if (prio > SCREEN) screenObserver.observe(cb);
+  screenObserver.observe(cb);
   if (prio > NEAR) nearObserver.observe(cb);
 }
-const nearer = prio => new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) ask(e.target, prio); }, { rootMargin: prio === SCREEN ? '0px' : '100% 0px 100% 0px' });
+// (Off screen again, a block not waited for goes back behind those on it.)
+const nearer = prio => new IntersectionObserver(es => {
+  for (const e of es) {
+    if (e.isIntersecting) { ask(e.target, prio); continue; }
+    const a = asked.get(e.target);
+    if (prio === SCREEN && a && a.prio <= SCREEN && !urgent.has(e.target)) { a.prio = prioOf(e.boundingClientRect); hl.prioritise(a.id, a.prio, a.upto); }
+  }
+}, { rootMargin: prio === SCREEN ? '0px' : '100% 0px 100% 0px' });
 const screenObserver = nearer(SCREEN), nearObserver = nearer(NEAR);
+const urgent = new WeakSet();
+// Within a screen: arrived HTML is put in.
+const applyObserver = new IntersectionObserver(es => {
+  for (const e of es) {
+    if (!e.isIntersecting) { within.delete(e.target); continue; }
+    within.add(e.target);
+    if (ready.has(e.target)) put(e.target);
+  }
+}, { rootMargin: '100% 0px 100% 0px' });
 function unasked(cb) {
   asked.delete(cb);
   slow.delete(cb);
+  urgent.delete(cb);
   screenObserver.unobserve(cb);
   nearObserver.unobserve(cb);
 }
@@ -495,20 +525,61 @@ function toPre(html, lang) {
   return pre;
 }
 
+/** `pre` in place of the block's <pre>, the same text (keeping the reader's selection in it). */
+function swap(cb, pre) {
+  const old = cb.querySelector('pre');
+  keepSelection(old, () => old.replaceWith(pre), () => pre);
+}
+/**
+ * `change()` rewrites a <pre>'s nodes, its text the same: the reader's
+ * selection in it (an end of it) kept, by its offsets in that text (`after()`: the <pre> then).
+ */
+function keepSelection(old, change, after = () => old) {
+  const sel = getSelection();
+  if (!sel.rangeCount || !(old.contains(sel.anchorNode) || old.contains(sel.focusNode))) return change();
+  const offset = (n, o) => { if (!old.contains(n)) return null; const r = document.createRange(); r.setStart(old, 0); r.setEnd(n, o); return r.toString().length; };
+  const [an, ao, fn, fo] = [sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset];
+  const aat = offset(an, ao), fat = offset(fn, fo);
+  change();
+  const pre = after();
+  const at = n => {
+    const w = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
+    for (let t = w.nextNode(); t; t = w.nextNode()) { if (n <= t.length) return [t, n]; n -= t.length; }
+    return [pre, pre.childNodes.length];
+  };
+  sel.setBaseAndExtent(...(aat == null ? [an, ao] : at(aat)), ...(fat == null ? [fn, fo] : at(fat)));
+}
+
 function arrived(cb, lang, html) {
   unasked(cb);
-  codeObserver.unobserve(cb);
   if (!cb.isConnected) return;
+  const v = inPart.get(cb);
+  // Not near the screen yet (nothing waits for it): kept until it is.
+  if (html && !v && !everything && !within.has(cb) && ![...holds].some(h => h.cbs.has(cb))) { ready.set(cb, { lang, html }); return; }
+  applyObserver.unobserve(cb);
   if (html === '') {
     // All of it came in parts: in place already.
-    const v = inPart.get(cb);
     if (v?.rest && !v.rest.length) v.rest.remove();
     cb.dataset.hl = 'done';
   } else if (html) {
-    cb.querySelector('pre').replaceWith(toPre(html, lang));
+    swap(cb, toPre(html, lang));
     cb.dataset.hl = 'done';
-  } else cb.dataset.hl = 'none';
+  } else {
+    // Not highlighted: shown plain again, all of it.
+    if (v?.plain) swap(cb, v.plain);
+    cb.dataset.hl = 'none';
+  }
   inPart.delete(cb);
+  shown(cb);
+}
+/** Arrived HTML put in (the block within a screen now, or waited for). */
+function put(cb) {
+  const r = ready.get(cb);
+  ready.delete(cb);
+  applyObserver.unobserve(cb);
+  if (!cb.isConnected || cb.dataset.hl !== 'pending') return;
+  swap(cb, toPre(r.html, r.lang));
+  cb.dataset.hl = 'done';
   shown(cb);
 }
 
@@ -517,7 +588,7 @@ function arrived(cb, lang, html) {
 // block of more than PARTS_MAX lines takes only the first: each is the
 // whole block laid out again (a block of 28,000 lines: a second).
 const PARTS_MAX = 1000;
-const inPart = new WeakMap();   // block -> {rest: its plain text node, lines: its lines, done: how many coloured, kept: from before (keepLines)}
+const inPart = new WeakMap();   // block -> {rest: its plain text node, lines, done: how many coloured, plain: its plain <pre>, kept: from before (keepLines)}
 function part(cb, lang, html, code, done, first) {
   if (!cb.isConnected || cb.dataset.hl !== 'pending') return;
   let v = inPart.get(cb);
@@ -525,11 +596,11 @@ function part(cb, lang, html, code, done, first) {
     if (v?.kept && done <= v.done) return;   // its kept lines show as much
     const pre = toPre(html, lang);
     const lines = code.split('\n');
-    v = { rest: document.createTextNode('\n' + lines.slice(done).join('\n')), lines, done };
+    v = { rest: document.createTextNode('\n' + lines.slice(done).join('\n')), lines, done, plain: v?.plain ?? cb.querySelector('pre') };
     pre.firstElementChild.append(v.rest);
-    cb.querySelector('pre').replaceWith(pre);
+    swap(cb, pre);
     inPart.set(cb, v);
-    shown(cb, false);
+    shown(cb);
     return;
   }
   if (!v || v.kept || v.lines.length > PARTS_MAX) return;
@@ -539,14 +610,13 @@ function part(cb, lang, html, code, done, first) {
   markDiff(lines, lang);
   let len = 0;
   for (let i = v.done; i < done; i++) len += v.lines[i].length + 1;
-  v.rest.deleteData(0, len);
-  v.rest.before(...lines.childNodes);
+  keepSelection(cb.querySelector('pre'), () => { v.rest.deleteData(0, len); v.rest.before(...lines.childNodes); });
   v.done = done;
 }
 
-/** `cb` shows coloured (`all` of it, or what the screen shows of it): what waited for it goes on. */
-function shown(cb, all = true) {
-  for (const h of [...holds]) if ((all || !h.whole) && h.cbs.delete(cb) && !h.cbs.size) release(h);
+/** `cb` shows coloured (all of it, or what the screen shows of it): what waited for it goes on. */
+function shown(cb) {
+  for (const h of [...holds]) if (h.cbs.delete(cb) && !h.cbs.size) release(h);
 }
 
 function markDiff(root, id) {
@@ -560,26 +630,36 @@ function markDiff(root, id) {
 
 // Holds: what waits for code on screen to be coloured (`then`), for HOLD_MS
 // at most: what highlighting it on this thread took the frame before (the
-// lines on screen of a long block: they come first). A document's first
-// paint waits with the document hidden (a reset: none of the old document is
-// left; code it shows again is coloured at once, keepColours, and waits for
-// nothing); a jump waits before it scrolls; find, before it selects a match
-// in code (highlighting replaces the text). An edit shows the code it keeps
-// coloured at once, the rest plain until it arrives.
+// lines a block shows where the reader lands come first). A document's
+// first paint waits with the document hidden (a reset: none of the old
+// document is left; code it shows again is coloured at once, keepColours,
+// and waits for nothing); a jump waits before it scrolls; find, before it
+// selects a match in code (highlighting replaces the text). An edit shows
+// the code it keeps coloured at once, the rest plain until it arrives.
 const holds = new Set();
-const HOLD_MS = 1000;
-/** The hold, or null: nothing to wait for (`then` is not called then). `whole`: until all of each block is coloured. */
-function hold(cbs, then, dy = 0, upto, whole = false) {
-  const h = { cbs: new Set(), then, whole };
-  for (const cb of cbs) { ask(cb, SCREEN, dy, upto); if (whole ? cb.dataset.hl === 'pending' && !slow.has(cb) : waits(cb)) h.cbs.add(cb); }
+const HOLD_MS = 3000;
+/** The hold, or null: nothing to wait for (`then` is not called then). */
+function hold(cbs, then, dy = 0, upto) {
+  const h = { cbs: new Set(), then, all: cbs };
+  for (const cb of cbs) { h.cbs.add(cb); ask(cb, URGENT, dy, upto); }
+  for (const cb of h.cbs) if (!waits(cb)) h.cbs.delete(cb);
   if (!h.cbs.size) return null;
   h.timer = setTimeout(() => release(h), HOLD_MS);
   holds.add(h);
   return h;
 }
+// A hold over: what it waited for no more urgent than the rest on screen.
+function calm(h) {
+  for (const cb of h.all) {
+    urgent.delete(cb);
+    const a = asked.get(cb);
+    if (a && a.prio < SCREEN) { a.prio = SCREEN; hl.prioritise(a.id, SCREEN, a.upto); }
+  }
+}
 function release(h) {
   if (!holds.delete(h)) return;
   clearTimeout(h.timer);
+  calm(h);
   h.then();
 }
 // Code not coloured on screen yet (neither all of it, nor its lines on screen).
@@ -587,11 +667,15 @@ const waits = cb => cb.dataset.hl === 'pending' && !slow.has(cb) && !(inPart.has
 const slow = new WeakSet();   // blocks whose grammar was not loaded when asked for
 const pending = blocks => blocks.flatMap(b => [...b.querySelectorAll('.code-block[data-hl="pending"]')].filter(waits));
 
-/** `then` once the code in `blocks` is coloured, all of it (find: before it selects a match there). Returns a cancel. */
-export function whenColoured(blocks, then) {
-  const h = hold(blocks.flatMap(b => [...b.querySelectorAll('.code-block[data-hl="pending"]')]), then, 0, undefined, true);
+/**
+ * `then` once the code in `blocks` is coloured as far as `line` and a
+ * screen below it (find: before it selects a match there, on that line).
+ * Returns a cancel.
+ */
+export function whenColoured(blocks, then, line = 0) {
+  const h = hold(pending(blocks), then, 0, line + Math.ceil((innerHeight + 120) / 16));
   if (!h) then();
-  return () => { if (h) { holds.delete(h); clearTimeout(h.timer); } };
+  return () => { if (h) { holds.delete(h); clearTimeout(h.timer); calm(h); } };
 }
 
 let firstPaint = null;   // the hold of a document's first paint, the document hidden meanwhile
@@ -618,14 +702,14 @@ export function holdJump(el, off, again) {
   const cbs = pending(blocks);
   if (!cbs.length) return false;
   if (firstPaint) {
-    for (const cb of cbs) { ask(cb, SCREEN, d); if (waits(cb)) firstPaint.cbs.add(cb); }
+    for (const cb of cbs) { firstPaint.cbs.add(cb); ask(cb, URGENT, d); if (!waits(cb)) firstPaint.cbs.delete(cb); }
     return false;
   }
   jumpHold = hold(cbs, () => { jumpHold = null; again(); }, d);
   return !!jumpHold;
 }
 let jumpHold = null;
-function cancelJump() { if (jumpHold) { holds.delete(jumpHold); clearTimeout(jumpHold.timer); jumpHold = null; } }
+function cancelJump() { if (jumpHold) { holds.delete(jumpHold); clearTimeout(jumpHold.timer); calm(jumpHold); jumpHold = null; } }
 // The reader taking over (as aimAt ends a jump) drops a jump still waiting.
 for (const type of ['wheel', 'keydown', 'mousedown', 'touchstart']) window.addEventListener(type, cancelJump, { capture: true, passive: true });
 
@@ -651,14 +735,15 @@ const codeObserver = new IntersectionObserver(entries => {
     waitingForChunk.delete(cb);
     ask(cb, prioOf(e.boundingClientRect));
   }
-}, { rootMargin: '200% 0px 200% 0px' });
+}, { rootMargin: '400% 0px 400% 0px' });
 // Out of reach again before it arrived (a fling, a jump away): not asked for
 // any more (asked again if it comes back), unless it shows in part already,
 // or a jump waits for it (it is out of reach of where the jump starts).
 function away(cb) {
+  ready.delete(cb);
   const a = asked.get(cb);
   if (!a || [...holds].some(h => h.cbs.has(cb))) return;
-  if (inPart.has(cb)) { a.prio = FAR; hl.prioritise(a.id, FAR, 0); return; }
+  if (inPart.has(cb)) { a.prio = NEAR + 4; hl.prioritise(a.id, a.prio, 0); return; }
   hl.cancel(a.id);
   unasked(cb);
 }
@@ -714,7 +799,9 @@ function pump() {
 
 /** Highlights every code block not highlighted yet, wherever it is (printing). */
 export function highlightAll() {
-  for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) ask(cb, SCREEN);
+  everything = true;
+  for (const cb of [...ready.keys()]) put(cb);
+  for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) ask(cb, NEAR, 0, 0);
 }
 
 /**
@@ -723,6 +810,7 @@ export function highlightAll() {
  * paint waits for that code.
  */
 export function renderLazy(near = inViewport, first = false) {
+  if (first) everything = false;
   const blocks = fresh;
   fresh = [];
   leaving.clear();

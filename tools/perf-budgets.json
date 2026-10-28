@@ -345,7 +345,11 @@
     "laying out the 28,000 highlighted lines (3.8.0 on the experiment runner 84,456-85,906 ms, this branch 86,836-89,175):",
     "extreme class, so 3.8.0's same-runner maximum x1.15 (the user's 3.9.1 bar), guard 98,800. The lines on screen",
     "plain in the frame that shows the landing: 0, strict.",
-    "web_n_jump_5mb_ms (N among 200 changes at 5 MB) and web_scroll_5mb_own_per_frame_ms measured 59-86 and 0.6-1.2 on CI."
+    "web_n_jump_5mb_ms (N among 200 changes at 5 MB) and web_scroll_5mb_own_per_frame_ms measured 59-86 and 0.6-1.2 on CI.",
+    "web_code_heavy_plain_frames_*: frames showing code not coloured yet while the code document scrolls (4.0: the",
+    "highlighting is in a worker, the page no longer stops to do it). Steady at 2400 px/s: 0, strict. Flinging at",
+    "9000 px/s outruns any highlighter (3.9 painted no plain frame there only by stopping the page on every one):",
+    "reported, not gated."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -431,6 +435,8 @@
   "web_code_heavy_scroll_max_ms": { "where": "linux-webkit", "unit": "ms",   "target": 170,  "guard": 230 },
   "web_code_heavy_long_frames": { "where": "linux-webkit", "unit": "frames", "target": 4,    "guard": 19 },
   "web_code_heavy_blank_px":    { "where": "linux-webkit", "unit": "px",     "target": 0,    "guard": 0 },
+  "web_code_heavy_plain_frames_2400": { "where": "linux-webkit", "unit": "frames", "target": 0, "guard": 0 },
+  "web_code_heavy_plain_frames_fling": { "where": "linux-webkit", "unit": "frames", "target": null, "guard": null },
   "web_code_heavy_private_mb":  { "where": "linux-webkit", "unit": "MB",     "target": 450,  "guard": 510 },
   "web_one_huge_code_jump_ms":  { "where": "linux-webkit", "unit": "ms",     "target": 20,   "guard": 60 },
   "web_one_huge_code_theme_ms": { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },

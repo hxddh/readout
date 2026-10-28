@@ -19,6 +19,8 @@ const sent = [];          // what the highlighter was told besides blocks (given
 const asked = new Map();  // request id -> {msg, done}
 let nextId = 1;
 let mode = 'worker';
+const READY_MS = 2000;
+let alive = false;
 
 /** Whether the highlighter has started (it answers within a part's time). */
 export let started = false;
@@ -34,6 +36,7 @@ function received(m) {
   else if (m.op === 'loading') asked.get(m.id)?.loading();
   else if (m.op === 'mark') performance.mark(m.name, { detail: m.detail });
   else if (m.op === 'ready') { started = true; onReady(); }
+  else if (m.op === 'hello') alive = true;
   else if (m.op === 'failed') fallBack();
   // The spare warm-up goes on only while no document is shown, as the page sees it now.
   else if (m.op === 'spare?') engine({ op: 'spare', n: m.n, ok: !shown });
@@ -50,6 +53,9 @@ function fallBack() {
 }
 
 function tell(m) {
+  // (What a fallback needs told again: the latest of each kind, the languages asked for before a document showed.)
+  if (m.op !== 'prepare') for (let i = sent.length - 1; i >= 0; i--) if (sent[i].op === m.op) sent.splice(i, 1);
+  if (m.op === 'shown') for (let i = sent.length - 1; i >= 0; i--) if (sent[i].op === 'warm' || sent[i].op === 'prepare') sent.splice(i, 1);
   sent.push(m);
   engine(m);
 }
@@ -63,6 +69,10 @@ export function init(quicklook = false) {
     worker.onmessage = e => { if (worker) received(e.data); };
     worker.onerror = worker.onmessageerror = () => { if (worker) fallBack(); };
     engine = m => worker.postMessage(m);
+    // A worker that never says it runs (its script held up, a hang): the
+    // page's own after a while. (It says so as soon as its module runs,
+    // before it loads Shiki: a slow start is not taken for a hang.)
+    setTimeout(() => { if (worker && !alive) fallBack(); }, READY_MS);
   } catch {
     mode = 'page';
     engine = serve(received);
@@ -108,7 +118,7 @@ export function cancel(id) {
 export function warm() { init(); tell({ op: 'warm' }); return ready; }
 
 /** The fence languages of the document being parsed (before its apply). */
-export function prepareLangs(langs) { init(); tell({ op: 'prepare', langs }); }
+export function prepareLangs(langs) { if (shown) return; init(); tell({ op: 'prepare', langs }); }
 
 /** The tests: the grammars registered, as a 'readout-hl-langs' mark. */
 export function loadedLangs() { init(); engine({ op: 'langs' }); }

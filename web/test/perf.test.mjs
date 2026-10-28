@@ -233,8 +233,8 @@ await page.close();
 // 1 MB document, then its interactions.
 // A jump (N, a rail tick, a link) onto block `slot`, from the top: the
 // longest frame from the jump to 3 s after, and the lines on screen in the
-// frame that shows the landing (the first with the block on screen) not
-// coloured.
+// frame that shows the landing (the first with any of the block on screen)
+// not coloured.
 const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
   window.scrollTo(0, 0);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 300))));
@@ -245,8 +245,8 @@ const landOn = (p, slot) => p.evaluate(slot => new Promise(async resolve => {
   const frame = now => {
     gaps.push(now - last);
     last = now;
-    const top = document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top;
-    if (plain === null && top >= -1 && top < innerHeight) {
+    const b = document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect();
+    if (plain === null && b.bottom > 0 && b.top < innerHeight) {
       const cb = document.querySelector(`.blk[data-slot="${slot}"] .code-block`);
       const lines = [...cb.querySelectorAll('pre .line')].filter(l => { const r = l.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; });
       const r = cb.getBoundingClientRect();
@@ -705,6 +705,9 @@ const result = {
   // The page's own tasks over 50 ms while scrolling the code (3.9: highlighting on screen in the scroll event; now in a worker).
   web_code_heavy_own_long_tasks: codeHeavy.scroll.ownLong,
   web_code_heavy_blank_px: codeHeavy.scroll.blankPx,
+  // Frames showing code still plain: scrolling steadily at 2400 px/s, and flinging (9000 px/s, decaying).
+  web_code_heavy_plain_frames_2400: codeHeavy.scroll.plainFrames.wheel,
+  web_code_heavy_plain_frames_fling: codeHeavy.scroll.plainFrames.fling,
   web_code_heavy_private_mb: codeHeavy.mb,
   web_one_huge_code_jump_ms: Math.round(oneHuge.jump),
   web_one_huge_code_theme_ms: Math.round(oneHuge.act.theme),

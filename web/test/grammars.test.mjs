@@ -10,7 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { createHighlighterCore } from 'shiki/core';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 import { shikiGrammars } from '../shiki-grammars.mjs';
-import { resolveLang, plainTokens, init, prepare, highlightSync, blockSteps, redone } from '../src/highlighter.js';
+import { resolveLang, plainTokens, init, prepare, highlightSync, blockSteps, redone, ensureLang } from '../src/highlighter.js';
 
 let failures = 0;
 function check(name, cond, extra = '') {
@@ -165,6 +165,25 @@ check(`corpus code blocks highlight as with Shiki's grammars (${blocks})`, block
   check('a slow part with a cold grammar is highlighted again once; with a warm one, or quick parts adding up, never',
     coldOnce === 1 && warmAgain === 0 && quickAgain === 0 && cold === warm && cold === highlightSync(lua, 'lua') && quick === highlightSync(perl, 'perl'),
     JSON.stringify({ coldOnce, warmAgain, quickAgain }));
+}
+
+// A grammar registered between two parts of a block (another block's, in
+// the worker) makes Shiki load again the grammars that embed it, and the
+// state carried from the part before is no longer theirs: the block starts
+// again from its first line, and comes out as highlighted whole.
+{
+  const md = '---\ntitle: x\n---\n# H\n\n```ts\nconst x: number = 1;\n```\n\n```python\nprint("x")\n```\n\n```bash\necho hi\n```';
+  const code = md + '\n' + md;
+  await prepare('markdown', code);
+  const whole = highlightSync(code, 'markdown');
+  const bad = [];
+  for (const other of ['lua', 'rust', 'html', 'vue']) {
+    const steps = blockSteps({ code, lang: 'markdown' }, () => {}, 15);
+    let x = steps.next(), k = 0;
+    while (!x.done) { if (k++ === 0) await ensureLang(other); x = steps.next(); }
+    if (x.value !== whole) bad.push(other);
+  }
+  check('a grammar registered between a block\'s parts: the block comes out as highlighted whole', bad.length === 0, bad.join(', '));
 }
 
 console.log(failures ? `${failures} failure(s)` : 'all grammar checks passed');

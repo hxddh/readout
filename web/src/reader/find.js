@@ -12,6 +12,7 @@ import { doc, slots, post, firstItem, nextItem, isChunk } from './core.js';
 import { aimAt, pinLanding, topInset, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
 import { whenColoured } from './enhance.js';
+import { cv } from './chunks.js';
 
 // Not the document's text: controls, the MathML copy of a formula (its
 // rendering is searched), a drawn diagram's source, a comparison panel.
@@ -334,21 +335,25 @@ function selectLater() {
 }
 function selectNow() {
   selecting = null;
-  // The page may have changed since the search, a frame ago (a long block's
-  // part coloured in place of its plain text, an edit): the match where it
-  // is now, not at offsets into text that may have shrunk.
+  if (current()) select(rangeOf(matches[cur]));
+}
+
+/**
+ * The page may have changed since the search (a long block's later lines
+ * coloured in place of its plain text, an edit): the current match where it
+ * is now, not at offsets into text that may have shrunk. False: it is gone.
+ */
+function current() {
   changed(observer.takeRecords());
   if (reread()) {
     search(around());
     const [i] = resolve();
-    if (i < 0) { cur = -1; return; }
+    if (i < 0) { cur = -1; return false; }
     goTo(base + i);
     place();
     mark();
   }
-  const m = matches[cur];
-  if (!m) return;
-  select(rangeOf(m));
+  return !!matches[cur];
 }
 
 /** Tells the app the count (current 0: none yet): after every search, after an edit only when it changed. */
@@ -380,10 +385,16 @@ function land(waited = false) {
   if (!waited && el.querySelector('.code-block[data-hl="pending"]')) {
     // Where it is, kept meanwhile (pos): a refresh (an edit, other code
     // coloured) searches again, and the landing goes to the match found
-    // there then, not the one it waited with.
+    // there then, not the one it waited with. It waits for the lines up to
+    // the match's and a screen below (a long block's first, the rest later:
+    // what comes later goes in after them, the match's text left as it is).
     place();
     const mine = {};
     landing = mine;
+    // The line it is on in its code (the lines up to it, and a screen more, are coloured first).
+    const r = rangeOf(m), pre = r.startContainer.parentElement?.closest('pre');
+    let line = 0;
+    if (pre) { const before = document.createRange(); before.setStart(pre, 0); before.setEnd(r.startContainer, r.startOffset); line = before.toString().split('\n').length - 1; }
     colouring = whenColoured([el], () => {
       if (landing !== mine) return;
       landing = colouring = null;
@@ -394,7 +405,7 @@ function land(waited = false) {
       if (i < 0) return;
       goTo(base + i);
       land(true);
-    });
+    }, line);
     return;
   }
   let range = rangeOf(m);
@@ -404,11 +415,15 @@ function land(waited = false) {
   range = mark();
   place();
   selectLater();
-  // Off screen, the block is not laid out (content-visibility): it is aimed
-  // at first, the match once the frames after the jump have laid it out.
+  // Off screen in a large document, the block is not laid out
+  // (content-visibility): it is aimed at first, the match once the frames
+  // after the jump have laid it out. Otherwise the match at once (in long
+  // code, the block's top would leave it screens below, with no frames after).
   const off = () => {
+    // (Its text nodes replaced meanwhile: the lines after its code's first part coloured.)
+    if (!range.startContainer.isConnected && current()) range = rangeOf(matches[cur]);
     const b = el.getBoundingClientRect();
-    const r = b.bottom > 0 && b.top < innerHeight && range.getClientRects().length ? range.getBoundingClientRect() : b;
+    const r = (!cv() || (b.bottom > 0 && b.top < innerHeight)) && range.getClientRects().length ? range.getBoundingClientRect() : b;
     const inset = topInset();
     if (r.top >= inset + 8 && r.bottom <= innerHeight - 8) return 0;
     return r.top - inset - (innerHeight - inset) / 3;
