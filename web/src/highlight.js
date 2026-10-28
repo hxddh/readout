@@ -61,7 +61,21 @@ function tell(m) {
 }
 
 /** Starts the highlighter (the first appearance, or the app's warm-up): `quicklook` loads only what a preview needs. */
-export function init(quicklook = false) {
+let quick = false;
+/**
+ * The highlighter is for Quick Look (it loads only the grammars a preview
+ * shows), and starts a task later: making the worker is not part of the
+ * appearance's task (nor of the first document's, which may ask first).
+ */
+let soon = false;
+export function startSoon(quicklook) {
+  if (soon || ready) return;   // (the first appearance says which)
+  soon = true;
+  quick = quicklook;
+  setTimeout(() => init(), 0);
+}
+
+export function init(quicklook = quick) {
   if (ready) return ready;
   ready = new Promise(r => { onReady = r; });
   try {

@@ -284,7 +284,7 @@ function setAppearance(o) {
   const t0 = performance.now();
   // The highlighter starts with the first appearance (or the app's warm-up),
   // which tells Quick Look apart: a preview loads only the grammars it shows.
-  hl.init(o.mode === 'quicklook');
+  hl.startSoon(o.mode === 'quicklook');
   if (o.dark !== undefined) {
     const t = o.dark ? 'dark' : 'light';
     if (root.dataset.theme !== t) {
