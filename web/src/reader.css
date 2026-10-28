@@ -23,7 +23,7 @@
   --pop-bg: #ffffff;          /* a popover over the page */
   --pop-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.12);
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
-  --code-tint: 3%;            /* inline code's fill: this much of the text colour */
+  --code-fill: rgb(29 29 31 / 3%);   /* inline code's fill: 3% of the text colour */
 
   /* The text column: 42.5 rem (3.9's), in rem so ⌘+ and ⌘− keep the
      characters per line; in a narrower window, the window less the gutters.
@@ -72,7 +72,7 @@
   --pop-bg: #333336;
   --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
   --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
-  --code-tint: 5%;
+  --code-fill: rgb(232 232 234 / 5%);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -94,7 +94,7 @@
     --pop-bg: #333336;
     --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
     --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
-    --code-tint: 5%;
+    --code-fill: rgb(232 232 234 / 5%);
     color-scheme: dark;
   }
 }
@@ -320,41 +320,31 @@ sup, sub { line-height: 0; }
 del { color: var(--text-2); }
 
 /* Inline code reads with the sentence around it (agent documents are dense
-   with it): relative to the text it sits in (a heading's, a table's), its
-   x-height 0.9 of the text's whatever the monospace font (SF Mono, Menlo:
-   0.53 of the size, as SF Pro and the Latin letters of a Chinese line), on a
-   faint tint of the text colour, so it shows on any surface (page, alert,
-   table header) in both themes, with little padding. An inline's padding
-   never changes the line's height. A long path or identifier breaks after a
-   separator (ReadoutCore puts <wbr> there), and anywhere only when a part is
-   wider than the whole column. */
+   with it): relative to the text it sits in (a heading's, a table's), at
+   0.89 em, which puts SF Mono's x-height at about 0.9 of SF Pro's, on a
+   faint tint of the text colour (a colour per theme), so it shows on any
+   surface (page, alert, table header) in both themes, with little padding.
+   An inline's padding never changes the line's height. A long path or
+   identifier wraps as any text does, and breaks anywhere only when a part
+   is wider than the whole column (overflow-wrap). Not font-size-adjust, a
+   color-mix() fill, or break opportunities of ReadoutCore's own (<wbr>, a
+   zero-width space): each made the page measurably slower in WebKit than
+   3.9 (same-runner A/B, #99). */
 code {
   font-family: var(--mono);
-  font-size: 0.9em;
-  font-size-adjust: ex-height 0.53;
+  font-size: 0.89em;
   overflow-wrap: break-word;
-  background: color-mix(in srgb, var(--text) var(--code-tint), transparent);
+  background: var(--code-fill);
   border-radius: 4px;
   padding: 0.08em 0.24em;
   /* Broken across lines, each piece keeps its padding and rounded ends. */
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
-/* A part of a path WebKit would break inside, after a - or ? (ReadoutCore),
-   or a short code span that is such a part: one unit that goes to the next
-   line whole, and breaks inside (at that - first, then anywhere) only when it
-   is wider than the whole line. (nowrap left a part wider than a narrow
-   column, a timestamp at 24 px in a nested item, running past it.) */
-code.nb, code .nb { display: inline-block; max-width: 100%; }
-/* Its fill as tall as any code's (the font's own height and the padding),
-   not the line's: an inline-block's box is its line height. */
-code.nb { line-height: normal; margin-block: -0.08em; }   /* the padding not in the line's height */
-code .nb { max-width: calc(100% - 0.5em); }   /* and the code's own padding (0.24em a side) */
-/* Not in a table's cell: a part kept whole there is the cell's narrowest,
-   and a column of short identifiers kept whole starves its neighbours (a
-   sentence of notes six lines tall) or runs past the page. There it breaks
-   where the path's breaks are, as any text in a cell. */
-:is(td, th) :is(code.nb, code .nb) { display: inline; margin-block: 0; line-height: inherit; }
+/* In a table's cell a long one may break anywhere (counted in the cell's
+   narrowest width), so it does not widen the table past the column: 3.9
+   broke it after its slashes with <wbr>, 4.0 adds none (#99). */
+:is(td, th):not([data-nw]) code:not([data-nw]) { overflow-wrap: anywhere; }   /* a long one: a short one stays whole (enhance.js) */
 /* Before full-width punctuation, which brings its own space (enhance.js);
    a path link keeps its outline even. */
 code.before-punct:not(.path-link) { padding-right: 0.08em; }
@@ -575,7 +565,7 @@ td.num, th.num { text-align: right; }
     linear-gradient(to left, var(--cb-bg) 18px, transparent) local right / 28px 100% no-repeat,
     linear-gradient(to left, color-mix(in srgb, var(--text) 9%, transparent), transparent) scroll right / 18px 100% no-repeat !important;
 }
-.code-block pre code { background: none; padding: 0; font-size: inherit; font-size-adjust: none; border-radius: 0; }
+.code-block pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
 .code-block .cb-tools {
   position: absolute; top: 0; right: 0;
   display: flex; gap: 2px; align-items: center;
@@ -890,7 +880,7 @@ details ul, details ol { padding-left: 1.5em; }
     --caution: #c9342b;
     --pop-bg: #ffffff;
     --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
-    --code-tint: 3%;
+    --code-fill: rgb(29 29 31 / 3%);
     color-scheme: light;
   }
   :root[data-theme="dark"] .shiki span, :root:not([data-theme="light"]) .shiki span { color: var(--shiki-light); }

@@ -900,7 +900,7 @@ const v36 = patch([
   ['code', '<div class="code-block" id="c-console" data-lang="console"><pre><code>$ npm test\nall checks passed</code></pre></div>'],
   ['table', '<div class="table-wrap"><table id="t-cells"><thead><tr><th>Action</th><th>Status</th><th>Notes</th></tr></thead><tbody>'
     + '<tr><td><code id="t-code">actions/configure-pages</code></td><td id="t-short">S1 / GREEN</td><td id="t-long">A longer note that is allowed to wrap onto more than one line in a narrow column like this one.</td></tr>'
-    + '<tr><td><code id="t-path">src/a/<wbr>very/<wbr>long/<wbr>path/<wbr>to/<wbr>some/<wbr>deeply/<wbr>nested/<wbr>module.ts</code></td><td id="t-zh">部分覆盖</td><td id="t-br">one<br>two</td></tr></tbody></table></div>'],
+    + '<tr><td><code id="t-path">src/a/very/long/path/to/some/deeply/nested/module.ts</code></td><td id="t-zh">部分覆盖</td><td id="t-br">one<br>two</td></tr></tbody></table></div>'],
 ]);
 
 {
@@ -972,14 +972,14 @@ const v36 = patch([
   check('a code block in an alert takes --fill-2, off the alert\'s --fill', cbg.alert === cbg.fill && cbg.inAlert === cbg.fill2 && cbg.plain === cbg.fill && cbg.inAlert !== cbg.alert, JSON.stringify(cbg));
   check('its right-edge shade and toolbar fade into --fill-2', cbg.shade.includes(cbg.fill2) && cbg.tools.includes(cbg.fill2), JSON.stringify(cbg));
 
-  // TD. Box drawing: tighter lines. TI: code in a cell at 0.9 of the cell's size.
+  // TD. Box drawing: tighter lines. TI: code in a cell at 0.89 of the cell's size.
   const misc = await page.evaluate(() => {
     const cs = s => getComputedStyle(document.querySelector(s));
     return { tree: document.getElementById('c-tree').className, treeLh: parseFloat(cs('#c-tree').lineHeight) / parseFloat(cs('#c-tree').fontSize), plainLh: parseFloat(cs('#c-plain').lineHeight) / parseFloat(cs('#c-plain').fontSize),
       td: parseFloat(cs('#t-short').fontSize), tdCode: parseFloat(cs('#t-code').fontSize) };
   });
   check('a code block with box drawing has class cb-tree and line height 1.3', /cb-tree/.test(misc.tree) && Math.abs(misc.treeLh - 1.3) < 0.01 && Math.abs(misc.plainLh - 1.55) < 0.01, JSON.stringify(misc));
-  check('code in a table cell is 0.9 of the cell\'s text', Math.abs(misc.tdCode - 0.9 * misc.td) < 0.05, JSON.stringify(misc));
+  check('code in a table cell is 0.89 of the cell\'s text, as everywhere', Math.abs(misc.tdCode - 0.89 * misc.td) < 0.05, JSON.stringify(misc));
 
   // T7. A console transcript highlights as a shell session: the command, not its output.
   // Each run of text and its colour (a token in the block's own colours is its text alone: highlight.js).
@@ -992,7 +992,7 @@ const v36 = patch([
   check('a token in the code block\'s own colours is no span of its own', own.spans > 0 && own.own === 0, JSON.stringify(own));
 
   // T2. Short cells and identifiers stay on one line while the table fits; a
-  //     long path may break after a slash; a cell with a <br> may wrap.
+  //     long path wraps (anywhere, overflow-wrap); a cell with a <br> may wrap.
   const cells = await page.evaluate(() => {
     const lines = el => { const r = document.createRange(); r.selectNodeContents(el); return new Set([...r.getClientRects()].filter(b => b.width > 0).map(b => Math.round(b.top))).size; };
     const $ = id => document.getElementById(id);
@@ -1000,7 +1000,7 @@ const v36 = patch([
       codeNw: getComputedStyle($('t-code')).whiteSpace, brNw: getComputedStyle($('t-br')).whiteSpace, scrolls: $('t-cells').parentElement.classList.contains('scrolls') };
   });
   check('short cells and identifiers in a table stay on one line', cells.code === 1 && cells.short === 1 && cells.zh === 1 && cells.codeNw === 'nowrap', JSON.stringify(cells));
-  check('a long cell still wraps, a cell with a line break is left alone, a long path breaks after its slashes (ReadoutCore\'s <wbr>)', cells.long > 1 && cells.brNw !== 'nowrap' && cells.path.length > 1 && cells.path.slice(0, -1).every(l => l.endsWith('/')) && !cells.scrolls, JSON.stringify(cells));
+  check('a long cell still wraps, a cell with a line break is left alone, a long path wraps in its cell (4.0: no break opportunities of its own)', cells.long > 1 && cells.brNw !== 'nowrap' && cells.path.length > 1 && !cells.scrolls, JSON.stringify(cells));
   await page.close();
 }
 
@@ -1668,72 +1668,8 @@ const v36 = patch([
 
 // 4.0 P4: readability of agent Markdown.
 
-// P4.1 A long path or identifier breaks after a separator, never inside a
-//      part and never leaving a scrap: ReadoutCore's <wbr>, and span.nb or
-//      code.nb where WebKit would break after a - or ? of its own
-//      (Readability40Tests). The phase-0 report's paragraph and more, as
-//      ReadoutCore renders them, at every column from 244 to 844 px: in a
-//      code span and in the bare path, every line break but one at a space
-//      comes right after a separator, with 5 characters or more of the token
-//      after it. The same paragraph as 3.9 rendered it broke inside a part,
-//      or left a scrap ("1.md").
-{
-  const withBreaks = '<p>This is Phase 0 work item 7 (<code>docs/<wbr>superpowers/<wbr>plans/<wbr><span class="nb">2026-08-08-</span><wbr>stresseur-<wbr><span class="nb">phase0-1.md</span></code>\n§4.1.7): measure what one load worker (one CLI process, one <code>load run</code>) can actually\ngenerate, using the real <code>loadrun</code> engine (<code>apps/<wbr>cli/<wbr>internal/<wbr>loadrun</code>), not a\nreimplementation of its scheduling. See <code>org.<wbr>springframework.boot.<wbr>autoconfigure</code>, <code>std::<wbr>collections::<wbr>HashMap</code>, <code class="nb">glyphicon-X</code>, <code>release-<wbr><span class="nb">2026-08-08-</span><wbr>v1.25.10-<wbr>final</code>, <code><span class="nb">--dangerously-</span><wbr>skip-<wbr>permissions</code> and docs/<wbr>superpowers/<wbr>specs/<wbr>phase0-bench-report.md here.</p>';
-  const without = withBreaks.replace(/<wbr>|<span class="nb">|<\/span>| class="nb"/g, '');
-  // Each code span's (and the bare path's) text, and the places its lines break.
-  const breaksOf = (pg, html) => pg.evaluate(h => {
-    const host = document.getElementById('t-brk');
-    host.innerHTML = h;
-    const p = host.firstElementChild;
-    const bare = [...p.childNodes].find(n => n.nodeType === 3 && n.data.includes(' and docs/'));
-    const spans = [...p.querySelectorAll('code')];
-    if (bare) {
-      // The path alone, in a span of its own: from "docs/" to " here.".
-      const last = [...p.childNodes].find(n => n.nodeType === 3 && n.data.includes(' here.'));
-      const r = document.createRange(); r.setStart(bare, bare.data.indexOf('docs/')); r.setEnd(last, last.data.indexOf(' here.'));
-      const s = document.createElement('span'); r.surroundContents(s); spans.push(s);
-    }
-    return spans.map(el => {
-      let text = '', prevTop = null;
-      const breaks = [];
-      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-      for (let t; (t = w.nextNode());) for (let i = 0; i < t.data.length; i++) {
-        const r = document.createRange(); r.setStart(t, i); r.setEnd(t, i + 1);
-        const box = [...r.getClientRects()].find(b => b.width > 0);
-        if (box && !/\s/.test(t.data[i])) {
-          const top = Math.round(box.top);
-          if (prevTop !== null && Math.abs(top - prevTop) > 4) breaks.push(text.length);
-          prevTop = top;
-        }
-        text += t.data[i];
-      }
-      return { text, breaks };
-    });
-  }, html);
-  const SEP = /[\/\\._\-:#?&=]/;
-  // A break at a space is a word break; any other must follow a separator, with 5 or more of its token after it.
-  const wrong = ({ text, breaks }) => breaks.filter(i => !/\s/.test(text[i - 1]) && !/\s/.test(text[i]) &&
-    (!SEP.test(text[i - 1]) || (text.slice(i).match(/^\S*/)[0].replace(/[)\],.;]+$/, '').length < 5))).map(i => `${text.slice(0, i)}|${text.slice(i)}`);
-  page = await open(900);
-  await page.evaluate(p => window.readout.apply(p), patch([['paragraph', '<div id="t-brk"></div>']]));
-  const found = { withBreaks: [], without: [] };
-  let broken = 0;
-  for (let w = 300; w <= 900; w += 10) {
-    await page.setViewportSize({ width: w, height: 800 });
-    for (const [k, html] of [['withBreaks', withBreaks], ['without', without]]) {
-      for (const span of await breaksOf(page, html)) {
-        if (k === 'withBreaks' && span.breaks.length) broken++;
-        for (const x of wrong(span)) if (found[k].length < 6) found[k].push({ w, at: x });
-      }
-    }
-  }
-  check('P4.1 long paths and identifiers break only after a separator and leave no scrap, at every column from 244 to 844 px', broken > 40 && found.withBreaks.length === 0, JSON.stringify({ broken, wrong: found.withBreaks }));
-  check('P4.1 as 3.9 rendered them (no break opportunities), they broke inside a part or left a scrap', found.without.length > 0, JSON.stringify(found.without));
-  await page.close();
-}
-
 // P4.2 Inline code is lighter and sits in the sentence: its x-height 0.9 of
-//      the text's (font-size-adjust, whatever the monospace font), a fill a
+//      the text's (0.89 em: about that for SF Mono beside SF Pro, and for the CI fonts), a fill a
 //      step fainter than 3.9's (#f5f5f7 light, #2a2a2c dark) that still shows
 //      on the page and in an alert, and padding that leaves the line height
 //      as it is, in Latin and Chinese text.
@@ -1780,7 +1716,7 @@ for (const dark of [false, true]) {
   const theme = dark ? 'dark' : 'light';
   // 3.9: #f5f5f7 on #fff is 1.09:1, #2a2a2c on #1e1e1f 1.16:1.
   const before = dark ? 1.16 : 1.09;
-  check(`P4.2 inline code's x-height is 0.85-0.95 of the text's, in Latin and Chinese lines (${theme})`, /ex-height 0\.53|^0\.53$/.test(r.adjust) && r.xLatin > 0.85 && r.xLatin < 0.95 && r.xZh > 0.85 && r.xZh < 0.95, JSON.stringify(r));
+  check(`P4.2 inline code's x-height is 0.85-0.95 of the text's, in Latin and Chinese lines (${theme})`, Math.abs(r.size - 0.89) < 0.005 && r.xLatin > 0.85 && r.xLatin < 0.95 && r.xZh > 0.85 && r.xZh < 0.95, JSON.stringify(r));
   check(`P4.2 inline code's fill is fainter than 3.9's and still shows, on the page and in an alert (${theme})`, r.fill > 1.04 && r.fill < before - 0.02 && r.fillInAlert > 1.04, JSON.stringify(r));
   // Relative to the plain text and to 3.9's code under the same fonts (a
   // monospace font's own metrics can open a line either way: with Noto Sans
@@ -1897,14 +1833,16 @@ for (const dark of [false, true]) {
 }
 
 
-// P4.5 A part kept on one line (span.nb, code.nb) still breaks when it is
-//      wider than the whole line: a narrow pane at the largest text size
-//      (24 px), in an item two levels deep, never runs past the column.
+// P4.5 A long path or identifier in code has no break opportunities of
+//      ReadoutCore's own (4.0, #99: each form measured slowed the page), and
+//      still never runs past the column: it breaks anywhere when it is wider
+//      than the line (overflow-wrap), in a narrow pane at the largest text
+//      size (24 px), in an item two levels deep.
 {
   page = await open(360);
   await page.evaluate(() => window.readout.setAppearance({ fontSize: 24 }));
-  const longs = ['<code><span class="nb">2026-10-28T12:34:56.123456789Z</span></code>', '<code class="nb">glyphicon-arrow-left</code>',
-    '<code>docs/<wbr>superpowers/<wbr>plans/<wbr><span class="nb">2026-08-08-</span><wbr>stresseur-<wbr><span class="nb">phase0-1.md</span></code>'];
+  const longs = ['<code>2026-10-28T12:34:56.123456789Z</code>', '<code>glyphicon-arrow-left</code>',
+    '<code>docs/superpowers/plans/2026-08-08-stresseur-phase0-1.md</code>'];
   await page.evaluate(p => window.readout.apply(p), patch([
     ['paragraph', `<p id="o-p">Logged at ${longs.join(', ')} and so on.</p>`],
     ['listItem', `<ul class="li-block li-first li-last"><li>Outer<ul><li id="o-li">Inner: ${longs.join(' ')}</li></ul></li></ul>`],
@@ -1915,7 +1853,7 @@ for (const dark of [false, true]) {
     const codes = [...document.querySelectorAll('#o-p code, #o-li code')].map(c => { const rs = [...c.getClientRects()]; return { text: c.textContent.slice(0, 16), right: Math.max(...rs.map(r => r.right)), lines: rs.length }; });
     return { col: [col.left, col.right], sideways: document.scrollingElement.scrollWidth - innerWidth, past: codes.filter(c => c.right > col.right + 0.5), codes };
   });
-  check('P4.5 at 24 px in a 360 px window, kept parts and long paths never run past the column, in text or a nested item', o.sideways <= 0 && o.past.length === 0, JSON.stringify(o));
+  check('P4.5 at 24 px in a 360 px window, long paths and identifiers in code never run past the column, in text or a nested item', o.sideways <= 0 && o.past.length === 0, JSON.stringify(o));
   await page.close();
   // The review's cases: corpus 12, 13 and 27 at 24 px in a 300 px window and
   // a Quick Look pane as narrow (dist/swagger-ui.js ran 46 px past it), read
@@ -1945,16 +1883,6 @@ for (const dark of [false, true]) {
     check(`P4.5 corpus ${name.slice(0, 2)} at 24 px, 300 px wide (${mode}): no inline code runs past the column, the page does not scroll sideways`, past.length === 0 && sideways <= 0, JSON.stringify({ past: past.slice(0, 5), sideways }));
     await pg.close();
   }
-  // Kept as a unit (an inline-block), a code span's fill and its line are as tall as any code's.
-  page = await open(900);
-  await page.evaluate(p => window.readout.apply(p), patch([
-    ['paragraph', '<p id="k-a">Plain text, no code.</p>'], ['paragraph', '<p id="k-b">With <code id="k-c1">plain</code> code.</p>'],
-    ['paragraph', '<p id="k-c">With <code class="nb" id="k-c2">glyphicon-X</code> code.</p>'], ['paragraph', '<p id="k-d">With <code id="k-c3">x<span class="nb">2026-08-08-</span>y</code> code.</p>'],
-    ['heading', '<h2 id="k-h1">Task 1: plain</h2>'], ['heading', '<h2 id="k-h2">Task 1: <code class="nb">wiki-init</code></h2>'],
-  ]));
-  const k = await page.evaluate(() => Object.fromEntries(['k-a', 'k-b', 'k-c', 'k-d', 'k-c1', 'k-c2', 'k-c3', 'k-h1', 'k-h2'].map(id => [id, Math.round(document.getElementById(id).getBoundingClientRect().height * 100) / 100])));
-  check('P4.5 a kept code span\'s fill and line are as tall as other code\'s, in text and in a heading', k['k-c2'] === k['k-c1'] && k['k-c3'] === k['k-c1'] && k['k-a'] === k['k-c'] && k['k-a'] === k['k-d'] && k['k-h1'] === k['k-h2'], JSON.stringify(k));
-  await page.close();
 }
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));

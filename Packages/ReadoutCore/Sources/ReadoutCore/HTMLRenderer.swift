@@ -86,11 +86,9 @@ struct HTMLRenderer {
                 var attrs = "data-path=\"\(HTML.escape(ref.path))\""
                 if let l = ref.line { attrs += " data-line=\"\(l)\"" }
                 if let col = ref.column { attrs += " data-col=\"\(col)\"" }
-                let (inner, nb) = Self.breakableCode(code)
-                return "<code class=\"path-link\(nb ? " nb" : "")\" \(attrs)>\(inner)</code>"
+                return "<code class=\"path-link\" \(attrs)>\(HTML.escape(code))</code>"
             }
-            let (inner, nb) = Self.breakableCode(code)
-            return nb ? "<code class=\"nb\">\(inner)</code>" : "<code>\(inner)</code>"
+            return "<code>\(HTML.escape(code))</code>"
         case let l as Link:
             let dest = math.restore(plain: l.destination ?? "")
             var title = ""
@@ -143,17 +141,16 @@ struct HTMLRenderer {
     /// `&amp;` followed by letters and digits just before a `;` reads as an entity reference: GFM leaves it out of the link.
     private static let trailingEntity = try! NSRegularExpression(pattern: #"&[A-Za-z0-9]+$"#)
 
-    /// Escapes text and links bare URLs, `www.` hosts and emails (GFM autolink
-    /// extension); a long bare path gets break opportunities (`breakablePaths`).
+    /// Escapes text and links bare URLs, `www.` hosts and emails (GFM autolink extension).
     private func autolink(_ text: String) -> String {
         guard text.utf8.contains(0x3A) /* ":" */ || text.utf8.contains(0x40) /* "@" */ || text.contains("www.")
-        else { return Self.breakablePaths(text) }
+        else { return HTML.escape(text) }
         let ns = text as NSString
         let fullLength = ns.length
         var out = ""
         var last = 0
         for m in HTMLRenderer.urlRegex.matches(in: text, range: NSRange(location: 0, length: fullLength)) {
-            out += Self.breakablePaths(ns.substring(with: NSRange(location: last, length: m.range.location - last)))
+            out += HTML.escape(ns.substring(with: NSRange(location: last, length: m.range.location - last)))
             // The regex strips every trailing ")", but GFM keeps balanced
             // ones: https://en.wikipedia.org/wiki/X_(film) must link fully.
             // Reclaim ")" chars that follow the match while parens balance.
@@ -178,7 +175,7 @@ struct HTMLRenderer {
             out += "<a href=\"\(HTML.escape(href))\">\(Self.breakable(url))</a>"
             last = end
         }
-        out += Self.breakablePaths(ns.substring(from: last))
+        out += HTML.escape(ns.substring(from: last))
         return out
     }
 
@@ -198,178 +195,6 @@ struct HTMLRenderer {
             i = next
         }
         return out
-    }
-
-    /// Tokens shorter than this (in characters) get no break opportunities:
-    /// they move to the next line whole, a few characters of raggedness at most.
-    static let breakToken = 20
-
-    /// Inline code, escaped, with break opportunities (`<wbr>`) in its long
-    /// paths and identifiers (`appendToken`): it wraps after a separator, at
-    /// the parts the reader sees, not wherever the line ends (`…-phase0-`
-    /// on one line, `1.md` alone on the next). WebKit breaks code after a
-    /// `-` or `?` of its own, so a part holding one where no break belongs
-    /// (`2026-08-08`, `phase0-1.md`, a short `glyphicon-X`) is kept on one
-    /// line (`<span class="nb">`, nowrap; `nb` true: the whole span is such
-    /// a part, and the code element itself takes the class). `<wbr>` and the
-    /// span are no text: copy, find and the reading anchor never see them.
-    static func breakableCode(_ code: String) -> (html: String, nb: Bool) {
-        let u = code.utf8
-        guard u.count >= breakToken || u.contains(where: { $0 == 0x2D || $0 == 0x3F }) else { return (HTML.escape(code), false) }
-        let r = withBytes(code) { b -> (String?, Bool?) in
-            if !b.contains(where: isSpace), chars(b, 0, b.count) < breakToken { return (nil, breaksInside(b, 0, b.count)) }
-            return (breakTokens(b, slashesOnly: false), nil)
-        }
-        if let nb = r.1 { return (HTML.escape(code), nb) }
-        return (r.0 ?? HTML.escape(code), false)
-    }
-
-    /// The longest part kept on one line (`nb`): longer ones may break where
-    /// WebKit breaks them, rather than run past a narrow column.
-    static let keepTogether = 30
-
-    /// Text, escaped, with break opportunities in its long bare paths: a
-    /// token of `breakToken` characters or more with a `/` or `\` in it,
-    /// after its slashes only (prose breaks at its own hyphens).
-    static func breakablePaths(_ text: String) -> String {
-        guard text.utf8.count >= breakToken, text.utf8.contains(where: { $0 == 0x2F || $0 == 0x5C }) else { return HTML.escape(text) }
-        return withBytes(text) { breakTokens($0, slashesOnly: true) } ?? HTML.escape(text)
-    }
-
-    // The scanning below works on UTF-8 bytes: every separator is ASCII, and a
-    // character is a byte that is not a continuation byte.
-    private typealias Bytes = UnsafeBufferPointer<UInt8>
-
-    /// `s`'s UTF-8 bytes in place (a native string's), else a copy.
-    private static func withBytes<R>(_ s: String, _ f: (Bytes) -> R) -> R {
-        if let r = s.utf8.withContiguousStorageIfAvailable(f) { return r }
-        return Array(s.utf8).withUnsafeBufferPointer(f)
-    }
-
-    /// ASCII white space: what separates tokens (agent text has no other in paths).
-    @inline(__always) private static func isSpace(_ b: UInt8) -> Bool { b == 0x20 || b == 0x09 || b == 0x0A || b == 0x0D }
-
-    /// The characters in `b[from..<to]`.
-    @inline(__always) private static func chars(_ b: Bytes, _ from: Int, _ to: Int) -> Int {
-        var n = 0
-        for i in from..<to where b[i] & 0xC0 != 0x80 { n += 1 }
-        return n
-    }
-
-    /// A `-` or `?` inside `b[from..<to]` (not first or last), after which
-    /// WebKit would break the line.
-    private static func breaksInside(_ b: Bytes, _ from: Int, _ to: Int) -> Bool {
-        guard to - from >= 3 else { return false }
-        for i in (from + 1)..<(to - 1) where b[i] == 0x2D || b[i] == 0x3F { return true }
-        return false
-    }
-
-    /// Appends `b[from..<to]`, escaped as `HTML.escape` does.
-    private static func appendEscaped(_ b: Bytes, _ from: Int, _ to: Int, to out: inout [UInt8]) {
-        for i in from..<to {
-            switch b[i] {
-            case 0x26: out.append(contentsOf: "&amp;".utf8)
-            case 0x3C: out.append(contentsOf: "&lt;".utf8)
-            case 0x3E: out.append(contentsOf: "&gt;".utf8)
-            case 0x22: out.append(contentsOf: "&quot;".utf8)
-            case 0x27: out.append(contentsOf: "&#39;".utf8)
-            default: out.append(b[i])
-            }
-        }
-    }
-
-    /// A part, escaped, kept on one line (span.nb) if `keep` and WebKit would break it inside.
-    private static func appendPiece(_ b: Bytes, _ from: Int, _ to: Int, keep: Bool, to out: inout [UInt8]) {
-        let nb = keep && breaksInside(b, from, to) && chars(b, from, to) <= keepTogether
-        if nb { out.append(contentsOf: "<span class=\"nb\">".utf8) }
-        appendEscaped(b, from, to, to: &out)
-        if nb { out.append(contentsOf: "</span>".utf8) }
-    }
-
-    /// The bytes escaped, each run of non-white-space that needs it given its
-    /// break opportunities (`appendToken`) or kept on one line: a token of
-    /// `breakToken` characters or more (in text, only one with a slash), or
-    /// in code a shorter one WebKit would break inside. Nil when no token
-    /// needs either (most text and code): the caller escapes it whole.
-    private static func breakTokens(_ b: Bytes, slashesOnly: Bool) -> String? {
-        var out: [UInt8] = []
-        var copied = 0   // bytes before this are in `out`
-        var i = 0
-        while i < b.count {
-            if isSpace(b[i]) { i += 1; continue }
-            var j = i, n = 0, slash = false
-            while j < b.count, !isSpace(b[j]) {
-                if b[j] & 0xC0 != 0x80 { n += 1 }
-                if b[j] == 0x2F || b[j] == 0x5C { slash = true }
-                j += 1
-            }
-            let long = n >= breakToken && (!slashesOnly || slash)
-            if long || (!slashesOnly && n <= keepTogether && breaksInside(b, i, j)) {
-                if out.isEmpty { out.reserveCapacity(b.count + 64) }
-                appendEscaped(b, copied, i, to: &out)
-                if long { appendToken(b, i, j, chars: n, slashesOnly: slashesOnly, to: &out) } else { appendPiece(b, i, j, keep: true, to: &out) }
-                copied = j
-            }
-            i = j
-        }
-        if copied == 0 { return nil }
-        appendEscaped(b, copied, b.count, to: &out)
-        return String(decoding: out, as: UTF8.self)
-    }
-
-    /// One token (`b[start..<end]`, `total` characters), escaped, with `<wbr>`
-    /// after its separators: `/`, `\`, `.`, `-`, `_`, `#`, `?`, `&`, `=` and
-    /// `::`, before a letter or a digit (after the last of a run, so `//` and
-    /// `::` stay together, and never in punctuation alone). Never within its
-    /// first 3 characters (`~/`, `./`), leaving fewer than 5 after it, or a
-    /// part shorter than 2 (5 after a dot): `1.md`, `.Run`, `app.rs`,
-    /// `glyphicon-X` stay with what they belong to. Not between two digits
-    /// (`2026-08-08`, `1.25.5`). Nowhere else: a word is not broken inside.
-    private static func appendToken(_ b: Bytes, _ start: Int, _ end: Int, chars total: Int, slashesOnly: Bool, to out: inout [UInt8]) {
-        func separator(_ c: UInt8) -> Bool {
-            switch c {
-            case 0x2F, 0x5C: return true                                       // / \
-            case 0x2E, 0x2D, 0x5F, 0x23, 0x3F, 0x26, 0x3D, 0x3A: return !slashesOnly   // . - _ # ? & = :
-            default: return false
-            }
-        }
-        func digit(_ c: UInt8) -> Bool { c >= 0x30 && c <= 0x39 }
-        // What follows the break starts a part: a letter or a digit.
-        func wordStart(_ i: Int) -> Bool {
-            let c = b[i]
-            if c < 0x80 { let v = c | 0x20; return (v >= 0x61 && v <= 0x7A) || digit(c) }
-            guard let s = String(decoding: b[i..<min(end, i + 4)], as: UTF8.self).unicodeScalars.first else { return false }
-            return s.properties.isAlphabetic || s.properties.numericType != nil
-        }
-        // The characters of the part after a break, up to the next separator.
-        func part(from i: Int) -> Int {
-            var j = i
-            while j < end, !separator(b[j]) { j += 1 }
-            return chars(b, i, j)
-        }
-        var from = start   // where the current part starts
-        var before = 0     // characters up to and including b[k]
-        var k = start
-        while k < end {
-            let c = b[k]
-            if c & 0xC0 != 0x80 { before += 1 }
-            let next = k + 1
-            if separator(c), next < end, before >= 3, total - before >= 5 {
-                // `/.hidden`: after the slash, not the dot, which belongs to the name.
-                let hidden = c == 0x2F && next + 1 < end && b[next] == 0x2E && wordStart(next + 1)
-                if wordStart(next) || hidden,
-                   !(c == 0x2E && (b[k - 1] == 0x2F || b[k - 1] == 0x5C)),
-                   hidden || part(from: next) >= (c == 0x2E ? 5 : 2),
-                   c != 0x3A || b[k - 1] == 0x3A,          // a colon only as the end of `::`
-                   !(digit(b[k - 1]) && digit(b[next])) {
-                    appendPiece(b, from, next, keep: !slashesOnly, to: &out)
-                    out.append(contentsOf: "<wbr>".utf8)
-                    from = next
-                }
-            }
-            k = next
-        }
-        appendPiece(b, from, end, keep: !slashesOnly, to: &out)
     }
 
     /// Every line of the paragraph (at least two) reads `Key: value`
