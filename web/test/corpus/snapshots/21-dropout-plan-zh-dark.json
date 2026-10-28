@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 2822,
    "h": 32,
-   "style": "c663230f",
+   "style": "09fb7f62",
    "content": "cbb32ef1",
    "text": "生成掩码：mi∼Bernoulli(1−p)m_i \\sim \\text{Bernoulli}("
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 2854,
    "h": 32,
-   "style": "38c427d7",
+   "style": "80e45050",
    "content": "7a9fa581",
    "text": "逐元素相乘：h~i=mi⋅hi\\tilde{h}_i = m_i \\cdot h_ih~i​=m"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2885,
    "h": 46,
-   "style": "3a03f2c5",
+   "style": "5ad9a6e9",
    "content": "b5b6d2da",
    "text": "缩放：h~i=mi⋅hi1−p\\tilde{h}_i = \\frac{m_i \\cdot h_i"
   },
@@ -222,7 +222,7 @@
    "kind": "paragraph",
    "top": 2931,
    "h": 104,
-   "style": "9c8417c7",
+   "style": "dfb2850d",
    "content": "c80fab2a",
    "text": "为什么除以 (1−p)(1-p)(1−p)？ 这是 inverted dropout 的关键：在"
   },
@@ -267,7 +267,7 @@
    "kind": "math",
    "top": 3297,
    "h": 67,
-   "style": "cf597351",
+   "style": "2582504a",
    "content": "f11dc6a7",
    "text": "Lreg=L+λ2∥θ∥2L_{reg} = L + \\frac{\\lambda}{2}\\|\\t"
   },
@@ -276,7 +276,7 @@
    "kind": "paragraph",
    "top": 3365,
    "h": 75,
-   "style": "87da8a99",
+   "style": "b7f615f4",
    "content": "f4188227",
    "text": "梯度更新时多出一项 λθ\\lambda \\thetaλθ，效果是每次更新都把权重往零拉一点——这"
   },
@@ -303,7 +303,7 @@
    "kind": "paragraph",
    "top": 3709,
    "h": 131,
-   "style": "f057d7b2",
+   "style": "9282b8ec",
    "content": "b6194741",
    "text": "PyTorch 中 optimizer = torch.optim.AdamW(model.pa"
   },
@@ -339,7 +339,7 @@
    "kind": "math",
    "top": 3998,
    "h": 52,
-   "style": "6d430694",
+   "style": "4def1415",
    "content": "3db0bc3f",
    "text": "W~=M⊙W\\tilde{W} = M \\odot WW~=M⊙W"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 4051,
    "h": 47,
-   "style": "1252bac5",
+   "style": "98e33353",
    "content": "40862e2b",
    "text": "其中 MMM 是与 WWW 同形状的 Bernoulli 掩码。"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 4260,
    "h": 75,
-   "style": "1980f1e1",
+   "style": "53c6953d",
    "content": "d9ff2f1c",
    "text": "SpatialDropout 直接 drop 整个 channel：以概率 ppp 把某个特征图"
   },
