@@ -41,7 +41,7 @@ async function newPage({ width = 900, height = 700 } = {}) {
   });
   await page.goto(`${base}/reader.html`);
   await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   return page;
 }
 

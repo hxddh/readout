@@ -95,9 +95,10 @@ function markCjkEmphasis(el) {
 // Table cells. A short cell (16 columns or fewer, a CJK character counting
 // two) and a short identifier in code (32 characters or fewer) stay on one
 // line while the column has room: "S1 / GREEN" or `actions/configure-pages`
-// broken in two read badly. A longer identifier may break after a slash.
-// Only while the table fits that way: one they would push past the column
-// wraps them again, and scrolls only if it is still too wide (measureTables).
+// broken in two read badly. A longer identifier may break after a separator
+// (ReadoutCore's <wbr>, as in any inline code). Only while the table fits
+// that way: one they would push past the column wraps them again, and
+// scrolls only if it is still too wide (measureTables).
 const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦\u{1f000}-\u{1faff}\u{20000}-\u{3fffd}]/u;
 function columns(s) {
   let n = 0;
@@ -106,28 +107,10 @@ function columns(s) {
 }
 
 function setupTable(t) {
-  for (const c of t.querySelectorAll('td code, th code')) {
-    const s = c.textContent;
-    if (s.length <= 32) c.dataset.nw = '';
-    else if (s.includes('/')) breakAfterSlashes(c);
-  }
+  for (const c of t.querySelectorAll('td code, th code')) if (c.textContent.length <= 32) c.dataset.nw = '';
   for (const cell of t.querySelectorAll('td, th')) {
     const n = columns(cell.textContent.trim());
     if (n && n <= 16 && !cell.querySelector('br')) cell.dataset.nw = '';
-  }
-}
-
-function breakAfterSlashes(el) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.includes('/')) nodes.push(n);
-  for (const n of nodes) {
-    const frag = document.createDocumentFragment();
-    n.data.split('/').forEach((part, i, all) => {
-      if (part) frag.append(part);
-      if (i < all.length - 1) frag.append('/', document.createElement('wbr'));
-    });
-    n.replaceWith(frag);
   }
 }
 
@@ -391,6 +374,7 @@ const SLOW_HIGHLIGHT_MS = 200;
 const sourceOf = new WeakMap();   // code block -> original code text
 const warmGrammars = new Set();   // grammar ids that have highlighted a block
 const prepared = new WeakSet();   // code blocks whose grammars have been loaded once
+const retried = new WeakSet();    // and of those, the ones loaded a second time after a failure
 
 // A block ahead of the screen is highlighted PART_LINES lines at a time,
 // a few parts a turn of the lazy pump, and shown once whole:
@@ -556,9 +540,16 @@ function highlightBlock(cb, need = 'screen') {
     pre.replaceWith(newPre);
     cb.dataset.hl = slow ? 'recheck' : 'done';
     if (slow) setTimeout(() => { if (cb.isConnected) { queue.push(cb); pump(); } else cb.dataset.hl = 'done'; }, 50);
-  } else if (prepared.has(cb)) {
-    cb.dataset.hl = 'none';   // everything it needs was loaded and it still failed
+  } else if (prepared.has(cb) && retried.has(cb)) {
+    // Everything it needs was loaded, twice, and it still failed: plain for
+    // good ('failed', apart from 'none', a language there is no grammar for).
+    cb.dataset.hl = 'failed';
   } else {
+    // Its grammars loaded once and it failed anyway (a load still settling
+    // when it was asked, seen on a loaded CI machine: the block stayed plain
+    // in one render of the same page and was coloured in the next): loaded
+    // again, and tried once more, so the page comes out the same every time.
+    if (prepared.has(cb)) retried.add(cb);
     cb.dataset.hl = 'loading';
     prepared.add(cb);
     // Then by the lazy pump (a part at a time, a long block in several turns).

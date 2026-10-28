@@ -130,8 +130,11 @@ export async function interactions(page) {
   return page.evaluate(async () => {
     const frame = f => new Promise(res => { const t0 = performance.now(); f(); requestAnimationFrame(() => setTimeout(() => res(performance.now() - t0), 0)); });
     const med = xs => xs.slice().sort((a, b) => a - b)[xs.length >> 1];
+    // A run of text in the block on screen, or the next one that has one (a
+    // block of short runs: a long code path's parts between its <wbr>).
     const textOnScreen = () => {
-      const w = document.createTreeWalker(document.elementFromPoint(450, 450).closest('.blk'), NodeFilter.SHOW_TEXT, { acceptNode: n => n.data.length > 10 ? 1 : 3 });
+      const w = document.createTreeWalker(document.getElementById('ro-doc'), NodeFilter.SHOW_TEXT, { acceptNode: n => n.data.length > 10 ? 1 : 3 });
+      w.currentNode = document.elementFromPoint(450, 450).closest('.blk');
       return w.nextNode();
     };
     const out = {};

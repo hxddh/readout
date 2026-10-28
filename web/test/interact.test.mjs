@@ -42,7 +42,7 @@ async function newPage({ width = 900, height = 700, appearance = {} } = {}) {
   });
   await page.goto(`${base}/reader.html`);
   await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await page.evaluate(a => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16, ...a }), appearance);
+  await page.evaluate(a => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, ...a }), appearance);
   return page;
 }
 
@@ -93,15 +93,15 @@ const watchCv = page => page.evaluate(() => {
 });
 const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect(); return window.__cv; });
 
-// 1. A table that scrolled in a narrow window fits again once the window, the
-//    column or the type size leaves it room.
+// 1. A table that scrolled in a narrow window fits again once the window
+//    (which sizes the column) leaves it room.
 {
-  const page = await newPage({ width: 520, height: 800 });
+  const page = await newPage({ width: 400, height: 800 });
   const long = 'A full sentence of reasoning about the option, as agents write in comparison tables. '.repeat(2);
   // Headers that cannot wrap (no-break spaces): short cells that can wrap do
   // so before a table scrolls (typography.test.mjs).
-  const html = `<div class="table-wrap"><table><thead><tr><th>Option&nbsp;name</th><th>Rationale</th><th>Monthly&nbsp;cost</th><th>Risk&nbsp;level</th><th>Owner&nbsp;team</th><th>Status</th></tr></thead><tbody>
-<tr><td>A</td><td>${long}</td><td>12</td><td>low</td><td>team-a</td><td>ok</td></tr><tr><td>B</td><td>${long}</td><td>40</td><td>high</td><td>team-b</td><td>ok</td></tr></tbody></table></div>`;
+  const html = `<div class="table-wrap"><table><thead><tr><th>Option&nbsp;name</th><th>Rationale</th><th>Monthly&nbsp;cost</th><th>Risk&nbsp;level</th><th>Status</th></tr></thead><tbody>
+<tr><td>A</td><td>${long}</td><td>12</td><td>low</td><td>ok</td></tr><tr><td>B</td><td>${long}</td><td>40</td><td>high</td><td>ok</td></tr></tbody></table></div>`;
   await page.evaluate(p => window.readout.apply(p), patch(1, [{ op: 'insert', slot: 1, after: 0, html, kind: 'table' }], { reset: true }));
   await page.waitForTimeout(300);
   const scrolls = () => page.evaluate(() => document.querySelector('.table-wrap').classList.contains('scrolls'));
@@ -111,27 +111,6 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   const wide = await scrolls();
   check('a table that scrolled fits again when the window widens', narrow && !wide, JSON.stringify({ narrow, wide }));
   await page.close();
-
-  // The column (no window resize): a table of long words that fits the wide
-  // column but not the narrow one.
-  const p2 = await newPage({ width: 1300, height: 800 });
-  const words = ['Implementation', 'Responsibility', 'Configuration', 'Documentation', 'Compatibility', 'Infrastructure', 'Observability'];
-  const row = words.map(w => `<td>${w}</td>`).join('');
-  await p2.evaluate(p => window.readout.apply(p), patch(1, [{ op: 'insert', slot: 1, after: 0, kind: 'table',
-    html: `<div class="table-wrap"><table><thead><tr>${words.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody><tr>${row}</tr></tbody></table></div>` }], { reset: true }));
-  await p2.waitForTimeout(300);
-  const state = async () => (await p2.evaluate(() => document.querySelector('.table-wrap').classList.contains('scrolls')));
-  // (The column is set in rem: a type size change scales it with the table.)
-  const steps = { narrow: await state() };
-  await p2.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
-  steps.wide = await state();
-  await p2.evaluate(() => window.readout.setAppearance({ width: 'narrow' }));
-  steps.narrowAgain = await state();
-  await p2.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
-  steps.wideAgain = await state();
-  check('a table that scrolled fits again when the column widens',
-    steps.narrow && !steps.wide && steps.narrowAgain && !steps.wideAgain, JSON.stringify(steps));
-  await p2.close();
 }
 
 // 2. A short page that grows above a reader at its top leaves them at the top
@@ -1294,7 +1273,7 @@ for (const n of [60, 400]) {
   });
   await page.goto(`${base}/reader.html`);
   await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const words = ['Implementation', 'Responsibility', 'Configuration', 'Documentation', 'Compatibility', 'Infrastructure', 'Observability'];
   const table = `<div class="table-wrap"><table><thead><tr>${words.map(w => `<th>${w}</th>`).join('')}</tr></thead><tbody><tr>${words.map(w => `<td>${w}</td>`).join('')}</tr></tbody></table></div>`;
   const isTable = i => i % 40 === 0;

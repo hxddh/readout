@@ -94,7 +94,7 @@ await page.addInitScript(() => {
 });
 await page.goto(`${base}/reader.html`);
 await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
 
 // In the page: copy a range; return what the clipboard got.
 await page.evaluate(() => {
@@ -160,7 +160,9 @@ const FUZZ = Math.max(0, +(process.env.COPY_FUZZ ?? 8));
 const copies = [];
 const fuzz = (doc, got) => { for (const c of got) if (!/^(?:> ?)*\|.*\|$/m.test(c.text)) copies.push({ doc, ...c }); };
 
-let exact = 0, structural = 0, blankDiffs = 0, partials = 0, wholes = 0;
+let exact = 0, structural = 0, blankDiffs = 0, partials = 0, wholes = 0, wbrCodes = 0;
+// 4.0: the break opportunities ReadoutCore puts in long paths (<wbr>) are the page's, not the text's.
+const carriesBreaks = c => /<wbr/i.test(c.html || '') || /[\u200b\u00ad]/.test(c.text || '');
 for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
   const patch = JSON.parse(readFileSync(`${CORPUS}/patches/${name}`, 'utf8'));
   const source = readFileSync(`${CORPUS}/${name.replace(/\.json$/, '.md')}`, 'utf8');
@@ -183,6 +185,18 @@ for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
   if (want.join('\n').replace(/\n{3,}/g, '\n\n').trim() !== got.join('\n').trim()) blankDiffs++;
   if (source.replace(/\s+$/, '') === all.text) exact++;
   if (process.env.COPY_DUMP) (await import('node:fs')).writeFileSync(`${process.env.COPY_DUMP}/${name}.all.md`, all.text);
+  if (carriesBreaks(all)) fail(`${name}: select-all copies break opportunities (<wbr>) as text or markup`);
+  // A long path in code, selected inside it and whole (its <wbr> in the selection): the code's text, to the character.
+  const inCode = await page.evaluate(() => [...document.querySelectorAll('#ro-doc code:not(pre code)')].filter(c => c.querySelector('wbr')).slice(0, 6).map(c => {
+    const r = document.createRange(); r.selectNodeContents(c);
+    const whole = document.createRange(); whole.selectNode(c);
+    return { want: c.textContent, inside: window.__copy(r), whole: window.__copy(whole) };
+  }));
+  for (const c of inCode) {
+    if (c.inside.text !== c.want || carriesBreaks(c.inside)) fail(`${name}: a selection inside a long code path copies ${JSON.stringify(c.inside.text)}, not ${JSON.stringify(c.want)}${carriesBreaks(c.inside) ? ' (with its break opportunities)' : ''}`);
+    if (!c.whole.text.includes(c.want) || carriesBreaks(c.whole)) fail(`${name}: a long code path copied whole is ${JSON.stringify(c.whole.text)}`);
+  }
+  wbrCodes += inCode.length;
 
   // 2-4. Per block.
   const res = await page.evaluate(stride => {
@@ -196,7 +210,8 @@ for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
       if (a && z) {
         const p = document.createRange(); p.setStart(...a); p.setEnd(...z);
         if (!p.collapsed) {
-          const leaf = p.commonAncestorContainer.parentElement?.closest('pre, code, .math, .math-block, .k-frontMatter');
+          // (Inside a long code path the selection's container is the code itself: its <wbr> split the text.)
+          const c = p.commonAncestorContainer, leaf = (c.nodeType === 1 ? c : c.parentElement)?.closest('pre, code, .math, .math-block, .k-frontMatter');
           out.push({ kind: 'part', slot: +b.dataset.slot, leaf: leaf ? leaf.className || leaf.tagName : null, fragment: (() => { const d = document.createElement('div'); d.appendChild(p.cloneContents()); d.querySelectorAll('button, .cb-tools, .katex-mathml, .mermaid-src').forEach(e => e.remove()); return d.innerHTML; })(), ...window.__copy(p) });
         }
       }
@@ -208,6 +223,7 @@ for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
     });
     return out;
   }, STRIDE);
+  for (const r of res) if (carriesBreaks(r)) fail(`${name}: a copy of block ${r.slot} (${r.kind}) carries break opportunities: ${JSON.stringify((r.html || r.text).slice(0, 200))}`);
   fuzz(name, await page.evaluate(([n, seed]) => window.__fuzz(n, seed), [FUZZ, k * 7 + 11]));
   const srcOf = new Map(patch.ops.map(o => [o.slot, o.src]));
   for (const r of res) {
@@ -511,6 +527,8 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
 }
 
 if (errors.length) fail(`page errors: ${errors.join('; ')}`);
+if (!quick && wbrCodes < 20) fail(`only ${wbrCodes} long code paths with break opportunities were copied (the corpus has more)`);
+console.log(`copy: ${wbrCodes} long code paths copied without their break opportunities`);
 console.log(`copy: ${docs.length} documents; select-all matches the source (non-blank lines) in ${structural}, byte-exact in ${exact}, blank lines differ in ${blankDiffs}; ${wholes} whole blocks, ${partials} partial selections; ${failures} failures`);
 await browser.close();
 server.close();
