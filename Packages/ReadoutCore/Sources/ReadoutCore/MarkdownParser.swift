@@ -376,9 +376,10 @@ public enum MarkdownParser {
                 func html() -> String {
                     guard let alert else { return renderer.block(q) }
                     let inner = renderer.children(q)
+                    // (The first paragraph may be a lead-in, `<p class="lead">`: `[!NOTE] Steps:`.)
                     let stripped = inner.replacingOccurrences(
-                        of: #"^<p>\[![A-Za-z]+\]\s*(<br>)?\s*"#, with: "<p>", options: .regularExpression)
-                        .replacingOccurrences(of: "^<p></p>", with: "", options: .regularExpression)
+                        of: #"^<p( class="lead")?>\[![A-Za-z]+\]\s*(<br>)?\s*"#, with: "<p$1>", options: .regularExpression)
+                        .replacingOccurrences(of: #"^<p( class="lead")?></p>"#, with: "", options: .regularExpression)
                     let label = alert.prefix(1).uppercased() + alert.dropFirst()
                     return "<div class=\"alert alert-\(alert)\"><p class=\"alert-title\">\(label)</p>\(stripped)</div>"
                 }
