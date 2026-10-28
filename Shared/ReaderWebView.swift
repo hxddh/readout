@@ -115,6 +115,8 @@ final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
 @MainActor
 final class ReaderWebView: WKWebView, WKScriptMessageHandler {
     private(set) var isReady = false
+    /// What the page loaded speaks, from its `ready` (legacy until then).
+    private(set) var pageProtocol = PageProtocol.legacy
     private var readyCallbacks: [() -> Void] = []
     /// Receives every message other than `ready`.
     var onMessage: (([String: Any]) -> Void)?
@@ -170,6 +172,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
 
     func reloadReader() {
         isReady = false
+        pageProtocol = .legacy
         pendingCalls = []   // for the page that is gone
         load(URLRequest(url: Self.readerURL))
     }
@@ -250,12 +253,19 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         }
         if type == "ready" {
             isReady = true
+            pageProtocol = PageProtocol(ready: body)
             let callbacks = readyCallbacks
             readyCallbacks = []
             callbacks.forEach { $0() }
             return
         }
         onMessage?(body)
+    }
+
+    /// `patch` as this page takes it: lean when it announced `lean`
+    /// (PageProtocol), every op with its HTML otherwise.
+    func page(_ patch: RenderPatch) -> RenderPatch.Outgoing {
+        patch.page(lean: pageProtocol.lean)
     }
 
     /// Calls `window.readout.<function>(<json>)`.
