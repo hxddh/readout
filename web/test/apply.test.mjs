@@ -2256,6 +2256,48 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
     && one[950].sheet !== one[951].sheet && one[950].sheet === two[950].sheet && one[951].sheet === two[951].sheet, JSON.stringify({ one, two }));
 }
 
+// 4.0 (#99 smoke "refill"): a document reset and the reader's place put back
+// (scrollToAnchor, as the app does after a refill) with a table above it
+// whose short cells only fit the 35 rem column wrapped (.nw-off, measured by
+// the page a frame later, 42 px taller then): the anchor stays within 1 px.
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 589 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  const cell = (s, i) => `<td>${s} ${i}</td>`;
+  const row = i => `<tr><td><code>actions/configure-pages-${i}</code></td>${['S1 / GREEN', 'Medium risk', 'Owner team', 'Drop-in'].map(cell).join('')}<td>Inputs changed between majors; check the changelog</td></tr>`;
+  const table = `<div class="table-wrap"><table><thead><tr><th>Action</th><th>Status</th><th>Risk</th><th>Owner</th><th>Note</th><th>Notes</th></tr></thead><tbody>${[1, 2, 3, 4].map(row).join('')}</tbody></table></div>`;
+  const ops = [];
+  for (let i = 1; i <= 60; i++) ops.push({ op: 'insert', slot: 3000 + i, after: i === 1 ? 0 : 2999 + i, kind: i === 20 ? 'table' : 'paragraph', html: i === 20 ? table : `<p>Paragraph ${i} of a plan an agent wrote, long enough to wrap once or twice in the column of the reader.</p>` });
+  const reset = (version, list) => ({ version, reset: true, rewrite: false, ops: list, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p.evaluate(x => window.readout.apply(x), reset(1, ops));
+  await p.waitForTimeout(600);
+  const before = await p.evaluate(() => { const t = document.querySelector('.table-wrap'); return { nwOff: t.classList.contains('nw-off'), scrolls: t.classList.contains('scrolls') }; });
+  // The reader with slot 3025, five blocks under the table, at the top; the place as the app keeps it.
+  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="3025"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + 21); });
+  await p.waitForTimeout(300);
+  const anchor = await p.evaluate(() => window.readout.captureAnchor());
+  // Refill: emptied, then written back; the app puts the place back right after the refill.
+  await p.evaluate(x => window.readout.apply(x), reset(2, []));
+  await p.waitForTimeout(200);
+  const t0 = await p.evaluate(() => performance.now());
+  const placed = await p.evaluate(([x, a]) => { window.readout.apply(x); window.readout.scrollToAnchor(a); const e = document.querySelector(`.blk[data-slot="${a.slot}"]`); return e.getBoundingClientRect().top; }, [reset(3, ops), anchor]);
+  await p.waitForTimeout(800);
+  const after = await p.evaluate(([t0, slot]) => ({ top: document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top,
+    compensate: window.readout.trace().filter(e => e.type === 'compensate' && e.t >= t0).map(e => e.delta) }), [t0, anchor.slot]);
+  check('a reset and its place put back with a wrapping table above: the place holds (<= 1 px)',
+    before.nwOff && Math.abs(after.top - placed) <= 1, JSON.stringify({ before, placed, after }));
+  // WebKit's own scroll anchoring stays off: the page's compensation and it
+  // moved the place twice on macOS 26 (read from the source: this WebKit has
+  // no overflow-anchor and drops it from the CSSOM).
+  const css = readFileSync(new URL('../src/reader.css', import.meta.url), 'utf8');
+  check('the page turns off WebKit\'s scroll anchoring (it keeps the place itself)', /\nhtml, body \{ overflow-anchor: none; \}/.test(css));
+  await p.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
