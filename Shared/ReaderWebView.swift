@@ -325,13 +325,12 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         }
     }
 
-    func setAppearance(dark: Bool? = nil, accent: NSColor? = nil, width: String? = nil, fontSize: Double? = nil,
+    func setAppearance(dark: Bool? = nil, accent: NSColor? = nil, fontSize: Double? = nil,
                        strings: [String: String]? = nil, codeWrap: Bool? = nil,
                        mode: String? = nil) {
         var o: [String: Any] = [:]
         if let dark { o["dark"] = dark }
         if let accent { o["accent"] = accent.hexString }
-        if let width { o["width"] = width }
         if let fontSize { o["fontSize"] = fontSize }
         if let strings { o["strings"] = strings }
         if let codeWrap { o["codeWrap"] = codeWrap }

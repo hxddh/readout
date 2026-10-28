@@ -37,7 +37,6 @@ A file is **waiting** when it has unread changes, or was opened in the backgroun
 | <kbd>⌘F</kbd> | Find |
 | <kbd>⌘G</kbd> / <kbd>⇧⌘G</kbd> | Find next / previous |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | Bigger / smaller / actual text size |
-| <kbd>⌥⌘\</kbd> | Narrow / wide text |
 | <kbd>⌃⌘S</kbd> | Show / hide the sidebar |
 | <kbd>⌃⌘F</kbd> | Full screen |
 | <kbd>⌘,</kbd> | Settings |
