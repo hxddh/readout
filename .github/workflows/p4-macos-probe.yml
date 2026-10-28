@@ -1,0 +1,29 @@
+name: P4 macOS probe (temporary)
+on:
+  push:
+    branches: [m16/readability]
+jobs:
+  probe:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          path: main-tree
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: This branch, with the system fonts
+        working-directory: web
+        run: npm ci && npm run build && npx playwright install webkit && node test/mac-probe.mjs
+      - name: main, the same probe
+        working-directory: main-tree/web
+        run: npm ci && npm run build && cp ../../web/test/mac-probe.mjs test/ && node test/mac-probe.mjs
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: mac-probe
+          path: |
+            web/test/out/mac-probe
+            main-tree/web/test/out/mac-probe
