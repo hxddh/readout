@@ -11,7 +11,8 @@ import { resolveLang, serve } from './highlighter.js';
 
 export { resolveLang };
 
-let engine = null;        // posts a message to the highlighter
+let early = [];           // what was posted before the highlighter was made (sent once it is)
+let engine = m => early.push(m);   // posts a message to the highlighter
 let worker = null;
 let ready = null;         // resolves once the highlighter has started
 let onReady = () => {};
@@ -70,8 +71,13 @@ let quick = false;
 let soon = false;
 export function startSoon(quicklook) {
   if (soon || ready) return;   // (the first appearance says which)
-  soon = true;
   quick = quicklook;
+  later();
+}
+// (A task from now: a block asking first, inside an apply, does not make it there either.)
+function later() {
+  if (soon || ready) return;
+  soon = true;
   setTimeout(() => init(), 0);
 }
 
@@ -92,6 +98,7 @@ export function init(quicklook = quick) {
     engine = serve(received);
   }
   tell({ op: 'init', quicklook, limit: globalThis.READOUT_TOKENIZE_LIMIT, spans: !!globalThis.READOUT_TOKEN_SPANS, cut: !!globalThis.READOUT_CUT_FIRST_PART });
+  for (const m of early.splice(0)) engine(m);
   return ready;
 }
 
@@ -106,7 +113,7 @@ export function init(quicklook = quick) {
  * Returns the request's id.
  */
 export function request(code, lang, prio, upto, stream, { done, part, loading }) {
-  init();
+  later();
   const id = nextId++;
   const msg = { op: 'hl', id, code, lang, prio, upto, stream };
   asked.set(id, { msg, done, part, loading });
@@ -142,6 +149,6 @@ let shown = false;
 export function stopWarmUp() {
   if (shown) return;
   shown = true;
-  init();
+  later();
   tell({ op: 'shown' });
 }

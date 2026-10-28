@@ -178,7 +178,7 @@ export function apply(p) {
   // is asked for as its block is made (askEarly), by the heights estimated
   // above it (lines of at least 18 px).
   const reach = window.innerHeight + 120;
-  let above = p.reset && !anchor ? 0 : Infinity;
+  let above = p.reset && fromTop ? 0 : Infinity;
   for (const op of p.ops) {
     if (op.op === 'remove') {
       const el = slots.get(op.slot);
