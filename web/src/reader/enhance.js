@@ -106,11 +106,40 @@ function columns(s) {
   return n;
 }
 
+// Not so many that they starve a column of sentences: the columns' longest
+// kept lines together take at most NW_ROOM characters (a little over half
+// the column at the table's size, 35 em), else the column of the longest
+// identifiers breaks them after their separators. Counted, not measured:
+// no layout, and the same in any window.
+const NW_ROOM = 40;
 function setupTable(t) {
-  for (const c of t.querySelectorAll('td code, th code')) if (c.textContent.length <= 32) c.dataset.nw = '';
-  for (const cell of t.querySelectorAll('td, th')) {
-    const n = columns(cell.textContent.trim());
-    if (n && n <= 16 && !cell.querySelector('br')) cell.dataset.nw = '';
+  const kept = [];      // per column: its longest kept line, and its kept code
+  let prose = false;    // a cell of words wider than a kept one
+  for (const row of t.querySelectorAll('tr')) {
+    let i = 0;
+    for (const cell of row.children) {
+      const col = kept[i] ??= { most: 0, codes: [] };
+      i += cell.colSpan || 1;
+      const n = columns(cell.textContent.trim());
+      if (n && n <= 16 && !cell.querySelector('br')) { cell.dataset.nw = ''; col.most = Math.max(col.most, n); continue; }
+      let codes = 0;
+      for (const c of cell.querySelectorAll('code')) {
+        const len = c.textContent.length;
+        if (len > 32) continue;
+        c.dataset.nw = '';
+        col.codes.push(c);
+        col.most = Math.max(col.most, len);
+        codes += len;
+      }
+      if (n > codes + 16) prose = true;
+    }
+  }
+  if (!prose) return;
+  let room = kept.reduce((s, c) => s + c.most, 0);
+  for (const col of [...kept].filter(c => c.codes.length).sort((a, b) => b.most - a.most)) {
+    if (room <= NW_ROOM) break;
+    for (const c of col.codes) delete c.dataset.nw;
+    room -= col.most;
   }
 }
 

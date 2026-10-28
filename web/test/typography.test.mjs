@@ -794,7 +794,7 @@ for (const dark of [false, true]) {
   await page.close();
 }
 
-// 2. The column's width: P4.4 below (4.0: it sizes itself; no narrow or wide).
+// 2. The column's width and the text size: P4.4 below (4.0: no narrow or wide).
 
 // 6. Paragraphs and items ask for better line breaks (text-wrap: pretty; a
 //    no-op in a WebKit without it, which drops it from the CSSOM: read the source).
@@ -1039,7 +1039,7 @@ const v36 = patch([
     const unread = b => { const read = b.classList.contains('m-read'); b.classList.remove('m-read'); const x = bar(b); if (read) b.classList.add('m-read'); return x; };
     const pre = document.querySelector('#b-long pre'), huge = document.querySelector('#b-huge pre');
     return { col: [col.left, col.width], long: [r('b-long').left, r('b-long').width], huge: [r('b-huge').left, r('b-huge').width], short: [r('b-short').left, r('b-short').width],
-      li: r('b-li').width, table: [r('b-table').left, r('b-table').width], tableScrolls: document.getElementById('b-table').classList.contains('scrolls'),
+      li: r('b-li').width, table: [r('b-table').left, r('b-table').width], tableScrolls: document.getElementById('b-table').classList.contains('scrolls'), tableNwOff: document.getElementById('b-table').classList.contains('nw-off'),
       longScrolls: pre.scrollWidth > pre.clientWidth, hugeScrolls: huge.scrollWidth > huge.clientWidth,
       barGap: { long: r('b-long').left - bar(blk('b-long')), para: col.left - bar(blk('b-p')) },
       // As unread (a read mark has faded out).
@@ -1059,7 +1059,8 @@ const v36 = patch([
   check('a longer one widens as far and scrolls (with its shade)', Math.abs(w.huge[1] - 1.35 * M) < 1 && centred(w.huge) && w.hugeScrolls, JSON.stringify(w));
   check('a code block that fits, and one in a list, keep the column', Math.abs(w.short[1] - M) < 0.5 && w.short[0] === w.col[0] && w.li < M, JSON.stringify(w));
   // 3.7 (T9): to the right only, so its first column and its change bar stay on the text's edge.
-  check('a wide table widens to the right only, as far as it needs', w.tableScrolls && Math.abs(w.table[0] - w.col[0]) < 0.5 && w.table[1] > M + 10 && w.table[1] <= 1.35 * M + 1, JSON.stringify(w));
+  // (4.0: widened, wrapping its short cells again if they still do not fit, nw-off.)
+  check('a wide table widens to the right only, as far as it needs', (w.tableScrolls || w.tableNwOff) && Math.abs(w.table[0] - w.col[0]) < 0.5 && w.table[1] > M + 10 && w.table[1] <= 1.35 * M + 1, JSON.stringify(w));
   check('the change bar stays beside a widened code block, as beside text', Math.abs(w.barGap.long - w.barGap.para) < 0.5 && w.sideways <= 0, JSON.stringify(w));
   check('a widened table\'s change bar and a deletion marker line up with the text\'s change bars', Math.abs(w.bars.table - w.bars.para) < 0.5 && Math.abs(w.bars.deletion - w.bars.para) < 0.5, JSON.stringify(w.bars));
   const tbPrint = await (async () => { await page.emulateMedia({ media: 'print' }); const m = await page.evaluate(() => [document.getElementById('b-long').getBoundingClientRect().width, document.getElementById('b-p').getBoundingClientRect().width]); await page.emulateMedia({ media: 'screen' }); return m; })();
@@ -1070,8 +1071,9 @@ const v36 = patch([
   // 4.0: the column follows the type size (35 rem): code widens from it in step.
   await page.evaluate(() => window.readout.setAppearance({ codeWrap: false, fontSize: 20 }));
   await page.waitForTimeout(100);
-  const big = await page.evaluate(() => { const r = id => document.getElementById(id).getBoundingClientRect(); return { col: [r('b-p').left, r('b-p').width], long: [r('b-long').left, r('b-long').width], huge: [r('b-huge').left, r('b-huge').width], sideways: document.scrollingElement.scrollWidth - innerWidth }; });
-  check('at 20 px the column is 35 rem and code that runs past it widens to 1.35 columns', Math.abs(big.col[1] - 700) < 0.5 && Math.abs(big.long[1] - 1.35 * 700) < 1 && Math.abs(big.huge[1] - 1.35 * 700) < 1 && big.sideways <= 0, JSON.stringify(big));
+  const big = await page.evaluate(() => { const r = id => document.getElementById(id).getBoundingClientRect(); return { root: parseFloat(getComputedStyle(document.documentElement).fontSize), col: [r('b-p').left, r('b-p').width], long: [r('b-long').left, r('b-long').width], huge: [r('b-huge').left, r('b-huge').width], sideways: document.scrollingElement.scrollWidth - innerWidth }; });
+  const C = 35 * big.root;   // 20 px at 1600 px: 23.9 px
+  check('at 20 px the column is 35 rem and code that runs past it widens to 1.35 columns', Math.abs(big.col[1] - C) < 0.5 && Math.abs(big.long[1] - 1.35 * C) < 1 && Math.abs(big.huge[1] - 1.35 * C) < 1 && big.sideways <= 0, JSON.stringify(big));
   await page.close();
   for (const width of [860, 1200]) {
     page = await open(width);
@@ -1362,12 +1364,40 @@ const v36 = patch([
     await pg.close();
     return r;
   };
-  // (Not 17's two since 4.0: a 38-character identifier is more than the
-  // 35 rem column leaves its cell, so they widen into the margin or scroll.)
   const cases = [['01-sdd-fix-loop-plan', 640, [0]], ['11-mongodb-adapter-deep-dive', 900, [0]]];
   for (const [name, width, which] of cases) {
     const r = await corpusTables(name, width, which);
     check(`corpus ${name.slice(0, 2)} at ${width} px: tables of short cells wrap them and fit instead of scrolling`, r.every(t => !t.scrolls && t.over <= 1), JSON.stringify(r));
+  }
+  // 17's two are 36 em at their narrowest, more than the 35 em column (3.9's
+  // narrow column was 42.5 em): from a window with room beside the column
+  // they widen into it, wrapping their short cells again if they must, and
+  // fit at every size of the text after it (1000 px: the text 1.03 times,
+  // 1600: 1.19).
+  // 31's table of actions: identifiers kept on one line do not starve its
+  // column of notes (3 lines for its longest note, not 7), and a part of a
+  // path kept whole elsewhere is not in a cell.
+  {
+    const pg = await open(900);
+    await pg.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync('test/corpus/patches/31-readout-typesetting-cases.json', 'utf8')));
+    await pg.waitForTimeout(300);
+    const r = await pg.evaluate(() => {
+      const t = document.querySelector('.table-wrap'), row = t.querySelector('tbody tr'), notes = row.lastElementChild;
+      const lh = parseFloat(getComputedStyle(notes).lineHeight) || parseFloat(getComputedStyle(notes).fontSize) * 1.5;
+      const nb = t.querySelector('code.nb, code .nb');
+      return { notesEm: Math.round(notes.getBoundingClientRect().width / parseFloat(getComputedStyle(notes).fontSize) * 10) / 10,
+        lines: Math.round((notes.getBoundingClientRect().height - parseFloat(getComputedStyle(notes).paddingTop) * 2) / lh),
+        kept: [...t.querySelectorAll('tbody td:first-child code')].map(c => c.hasAttribute('data-nw')),
+        versionsKept: [...t.querySelectorAll('tbody td:nth-child(2) code')].every(c => !!c.closest('[data-nw]')),
+        nbDisplay: nb ? getComputedStyle(nb).display : null, over: t.scrollWidth - t.clientWidth };
+    });
+    check('corpus 31 at 900 px: a column of identifiers kept whole does not starve the notes beside it; versions stay whole; no part kept whole in a cell',
+      r.notesEm >= 12 && r.lines <= 4 && r.kept.every(k => !k) && r.versionsKept && (r.nbDisplay === null || r.nbDisplay === 'inline') && r.over <= 1, JSON.stringify(r));
+    await pg.close();
+  }
+  for (const width of [1000, 1600]) {
+    const r = await corpusTables('17-dataagent-tdd-design', width, [4, 6]);
+    check(`corpus 17 at ${width} px: its tables of identifiers and short cells widen into the margin and fit, without scrolling`, r.every(t => t.over <= 1), JSON.stringify(r));
   }
   page = await open(640);
   await page.evaluate(p => window.readout.apply(p), patch([
@@ -1747,7 +1777,11 @@ for (const dark of [false, true]) {
     ['paragraph', `<p id="z-plain">${zh}，${zh}。</p>`, { cjk: true }],
     ['paragraph', `<p id="z-code">${zh.replace('提示词存储', '<code id="z-1">~/.codemoss/prompt.json</code>')}，${zh.replace('团队共享', '<code>team</code>')}。</p>`, { cjk: true }],
     ['alert', '<div class="alert alert-note"><p class="alert-title">Note</p><p>In an alert: <code id="c-alert">make test</code></p></div>'],
+    // The same lines with 3.9's inline code (its size and padding), under the same fonts.
+    ['paragraph', `<p id="c-was">${filler.replace('agent', 'agent <code class="was">src/app.ts</code>').replace('words', '<code class="was">words</code>')}, ${filler.replace('column', '<code class="was">column</code>')}, ${filler.replace('sentence', '<code class="was">sentence</code>')}.</p>`],
+    ['paragraph', `<p id="z-was">${zh.replace('提示词存储', '<code class="was">~/.codemoss/prompt.json</code>')}，${zh.replace('团队共享', '<code class="was">team</code>')}。</p>`, { cjk: true }],
   ]));
+  await page.addStyleTag({ content: '#ro-doc code.was { font-size: 0.84em; font-size-adjust: none; padding: 0.12em 0.36em; border-radius: 5px; }' });
   const r = await page.evaluate(() => {
     const ex = el => { const s = document.createElement('span'); s.style.cssText = 'display:inline-block;width:0;height:1ex;vertical-align:baseline'; el.appendChild(s); const h = s.getBoundingClientRect().height; s.remove(); return h; };
     // "rgb(r, g, b)", "rgba(r, g, b, a)" or "color(srgb r g b / a)" (0-1), as 0-255 and alpha.
@@ -1770,6 +1804,7 @@ for (const dark of [false, true]) {
       padTop: parseFloat(cs.paddingTop) / parseFloat(cs.fontSize), padX: parseFloat(cs.paddingLeft) / parseFloat(cs.fontSize),
       latin: { plain: h('c-plain') / lines('c-plain'), code: h('c-code') / lines('c-code'), n: [lines('c-plain'), lines('c-code')] },
       zh: { plain: h('z-plain') / lines('z-plain'), code: h('z-code') / lines('z-code'), n: [lines('z-plain'), lines('z-code')] },
+      was: { latin: h('c-was') / lines('c-was'), zh: h('z-was') / lines('z-was') },
     };
   });
   const theme = dark ? 'dark' : 'light';
@@ -1777,7 +1812,11 @@ for (const dark of [false, true]) {
   const before = dark ? 1.16 : 1.09;
   check(`P4.2 inline code's x-height is 0.85-0.95 of the text's, in Latin and Chinese lines (${theme})`, /ex-height 0\.53|^0\.53$/.test(r.adjust) && r.xLatin > 0.85 && r.xLatin < 0.95 && r.xZh > 0.85 && r.xZh < 0.95, JSON.stringify(r));
   check(`P4.2 inline code's fill is fainter than 3.9's and still shows, on the page and in an alert (${theme})`, r.fill > 1.04 && r.fill < before - 0.02 && r.fillInAlert > 1.04, JSON.stringify(r));
-  check(`P4.2 inline code's padding leaves the line height as it is (${theme})`, r.padTop <= 0.1 && r.padX <= 0.25 && Math.abs(r.latin.plain - r.latin.code) < 0.5 && Math.abs(r.zh.plain - r.zh.code) < 0.5 && r.latin.n[1] > 1 && r.zh.n[1] > 1, JSON.stringify(r));
+  // Relative to the plain text and to 3.9's code under the same fonts (a
+  // monospace font's own metrics can open a line either way: with Noto Sans
+  // CJK, 3.9's code already did by 2 px).
+  const keeps = (plain, code, was) => code - plain < 0.5 || code - was < 0.5;
+  check(`P4.2 inline code's padding leaves the line height as it is, or as 3.9's left it (${theme})`, r.padTop <= 0.1 && r.padX <= 0.25 && keeps(r.latin.plain, r.latin.code, r.was.latin) && keeps(r.zh.plain, r.zh.code, r.was.zh) && r.latin.code - r.latin.plain > -0.5 && r.zh.code - r.zh.plain > -0.5 && r.latin.n[1] > 1 && r.zh.n[1] > 1, JSON.stringify(r));
   await page.close();
 }
 
@@ -1801,25 +1840,70 @@ for (const dark of [false, true]) {
     ['paragraph', '<p class="lead" id="l-code">Run:</p>'],
     ['code', '<div class="code-block" id="l-code-1"><pre><code>make test</code></pre></div>'],
     ['quote', '<blockquote><p class="lead" id="l-q">Options:</p><ul><li id="l-q-1">one</li><li>two</li></ul></blockquote>'],
+    ['listItem', '<ul class="li-block li-first li-last li-loose"><li><p class="lead" id="l-li">Then:</p><ul><li id="l-li-1">one</li><li>two</li></ul></li></ul>'],
   ]));
   const g = await page.evaluate(() => {
     const box = id => document.getElementById(id).getBoundingClientRect();
     const gap = (a, b) => Math.round((box(b).top - box(a).bottom) * 10) / 10;
     const blk = id => document.getElementById(id).closest('.blk');
     const bar = id => { const b = blk(id), r = b.getBoundingClientRect(); return r.bottom - parseFloat(getComputedStyle(b, '::before').bottom); };
-    return { zh: gap('l-zh', 'l-zh-1'), zhItems: gap('l-zh-1', 'l-zh-2'), en: gap('l-en', 'l-en-1'), none: gap('n-en', 'n-en-1'), code: gap('l-code', 'l-code-1'), quote: gap('l-q', 'l-q-1'),
+    return { zh: gap('l-zh', 'l-zh-1'), zhItems: gap('l-zh-1', 'l-zh-2'), en: gap('l-en', 'l-en-1'), none: gap('n-en', 'n-en-1'), code: gap('l-code', 'l-code-1'), quote: gap('l-q', 'l-q-1'), item: gap('l-li', 'l-li-1'),
       barZh: Math.round(bar('l-zh') - box('l-zh').bottom), listTop: Math.round(box('l-zh-1').top - box('l-zh').bottom) };
   });
-  check('P4.3 a lead-in and its list are one unit: under half a paragraph gap, more than between items (Chinese, English, in a quote)',
-    g.zh < g.none * 0.45 && g.en < g.none * 0.45 && g.quote < g.none * 0.45 && g.zh > g.zhItems + 2 && g.en > 2 && g.quote > 2, JSON.stringify(g));
+  check('P4.3 a lead-in and its list are one unit: under half a paragraph gap, more than between items (Chinese, English, in a quote, in an item)',
+    g.zh < g.none * 0.45 && g.en < g.none * 0.45 && g.quote < g.none * 0.45 && g.item < g.none * 0.45 && g.item > 2 && Math.abs(g.item - g.quote) < 1 && g.zh > g.zhItems + 2 && g.en > 2 && g.quote > 2, JSON.stringify(g));
   check('P4.3 a paragraph that is no lead-in, or a lead-in before code, keeps the paragraph gap', g.none >= 16 && g.code >= 16, JSON.stringify(g));
   check('P4.3 a lead-in\'s change bar ends with its text, not in the list', g.barZh <= g.listTop, JSON.stringify(g));
   await page.close();
 }
 
-// P4.4 The column sizes itself (no setting): 35 rem at most, so ⌘+ and ⌘−
-//      keep the characters per line (about 60-80 of Latin text, 35-45 of
-//      Chinese); in a narrower window, the window less its gutters. An old
+// P4.3 (chunks) The lead-in's gap is decided per block: a lead-in last in its
+//      chunk, its list first in the next, has the same gap as in one chunk,
+//      and keeps it as chunks split and join and as the blocks next to it
+//      change (a list item written after it, removed, the lead-in rewritten).
+{
+  page = await open(900);
+  const blocks = [];
+  for (let i = 1; i <= 31; i++) blocks.push(['paragraph', `<p>Paragraph ${i} of the agent's report.</p>`]);
+  blocks.push(['paragraph', '<p class="lead" id="cl">Steps:</p>']);
+  blocks.push(['listItem', '<ol class="li-block li-first"><li id="cl-1">Build it.</li></ol>']);
+  blocks.push(['listItem', '<ol class="li-block li-last"><li>Ship it.</li></ol>']);
+  for (let i = 35; i <= 40; i++) blocks.push(['paragraph', `<p id="cp-${i}">Paragraph ${i} after the list.</p>`]);
+  await page.evaluate(p => window.readout.apply(p), patch(blocks));
+  const ops = (v, list) => page.evaluate(p => window.readout.apply(p), { version: v, reset: false, rewrite: false, ops: list, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  const state = () => page.evaluate(() => {
+    const l = document.getElementById('cl'), b = l.closest('.blk'), n = b.nextElementSibling || b.parentElement.nextElementSibling?.firstElementChild;
+    const below = n?.querySelector('li, p');
+    return { gap: below ? Math.round((below.getBoundingClientRect().top - l.getBoundingClientRect().bottom) * 10) / 10 : null,
+      lastInChunk: !b.nextElementSibling, next: n?.className.match(/k-\w+/)?.[0] };
+  });
+  const seen = [];
+  const s0 = await state(); seen.push(['reset', s0]);
+  // Ten paragraphs written above it: its chunk splits.
+  await ops(2, Array.from({ length: 40 }, (_, i) => ({ op: 'insert', slot: 100 + i, after: i ? 99 + i : 3, kind: 'paragraph', html: `<p>Inserted ${i}.</p>` })));
+  const s1 = await state(); seen.push(['split', s1]);
+  await ops(3, Array.from({ length: 40 }, (_, i) => ({ op: 'remove', slot: 100 + i })));
+  await page.waitForTimeout(2600);   // chunks.js rebalance joins them
+  const s2 = await state(); seen.push(['joined', s2]);
+  await ops(4, [{ op: 'remove', slot: 33 }, { op: 'remove', slot: 34 }]);
+  const s3 = await state(); seen.push(['list removed', s3]);
+  await ops(5, [{ op: 'insert', slot: 41, after: 32, kind: 'listItem', html: '<ol class="li-block li-first li-last"><li>Written again.</li></ol>' }]);
+  const s4 = await state(); seen.push(['list written', s4]);
+  await ops(6, [{ op: 'replace', slot: 32, kind: 'paragraph', html: '<p id="cl">Steps, no colon</p>', change: 'content' }]);
+  const s5 = await state(); seen.push(['no longer a lead-in', s5]);
+  const tight = g => g !== null && g < 10, wide = g => g !== null && g >= 16;
+  check('P4.3 a lead-in last in its chunk, its list first in the next, has the lead-in gap', s0.lastInChunk && s0.next === 'k-listItem' && tight(s0.gap), JSON.stringify(seen));
+  check('P4.3 the lead-in gap holds as its chunk splits and joins', tight(s1.gap) && tight(s2.gap) && Math.abs(s1.gap - s0.gap) < 0.5 && Math.abs(s2.gap - s0.gap) < 0.5, JSON.stringify(seen));
+  check('P4.3 the gap follows edits next to it: list removed (paragraph gap), written again (lead-in gap), lead-in rewritten (paragraph gap)', wide(s3.gap) && tight(s4.gap) && wide(s5.gap), JSON.stringify(seen));
+  await page.close();
+}
+
+// P4.4 No width setting: the column is 35 em of the text, so a line holds
+//      about 60-80 Latin and 35-45 Chinese characters at every text size and
+//      window; the text grows with the window (the reader's size up to 900
+//      px, 1.25 times it from 1800 px, smoothly between), the reader's ⌘+ and
+//      ⌘− multiply it, and Actual Size returns to the automatic size. In a
+//      narrower window the column is the window less its gutters. An old
 //      caller's width: "wide" changes nothing.
 {
   const latin = 'Agents write long plans and reports, and the reader keeps them readable: a line of text that the eye can follow back to its start without losing its place, in a window of any size and at any text size the reader chooses. '.repeat(3);
@@ -1835,27 +1919,45 @@ for (const dark of [false, true]) {
     const n = [...lines.values()]; n.pop();   // the last line is short
     return n.reduce((a, b) => a + b, 0) / n.length;
   }, id);
-  page = await open(1600);
-  await page.evaluate(p => window.readout.apply(p), patch([['paragraph', `<p id="m-latin">${latin}</p>`], ['paragraph', `<p id="m-han">${han}</p>`, { cjk: true }]]));
-  const m = [];
-  for (const fs of [13, 16, 20, 24]) {
-    await page.evaluate(fs => window.readout.setAppearance({ fontSize: fs }), fs);
-    m.push({ fs, col: await page.evaluate(() => document.getElementById('m-latin').getBoundingClientRect().width), latin: await perLine(page, 'm-latin'), han: await perLine(page, 'm-han') });
-  }
-  check('P4.4 in a wide window the column is 35 em at 13/16/20/24 px (560 px at 16)', m.every(x => Math.abs(x.col / x.fs - 35) < 0.05) && Math.abs(m[1].col - 560) < 0.5, JSON.stringify(m));
-  check('P4.4 a line holds 60-80 Latin characters and 35-45 Chinese ones, at every text size', m.every(x => x.latin >= 60 && x.latin <= 80 && x.han >= 35 && x.han <= 45), JSON.stringify(m));
-  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16 }));
-  const sizes = [];
-  for (const vw of [1600, 1000, 760, 640, 480, 360]) {
+  const state = pg => pg.evaluate(() => ({ root: parseFloat(getComputedStyle(document.documentElement).fontSize), col: document.getElementById('m-latin').getBoundingClientRect().width,
+    code: parseFloat(getComputedStyle(document.getElementById('m-code')).fontSize), sideways: document.scrollingElement.scrollWidth - innerWidth }));
+  const scale = vw => Math.min(1.25, Math.max(1, 1 + (vw - 900) / 3600));
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([['paragraph', `<p id="m-latin">${latin} <code id="m-code">src/app.ts</code></p>`], ['paragraph', `<p id="m-han">${han}</p>`, { cjk: true }]]));
+  const curve = [];
+  for (const vw of [900, 1280, 1600, 1800, 2400, 700]) {
     await page.setViewportSize({ width: vw, height: 800 });
-    sizes.push({ vw, col: await page.evaluate(() => document.getElementById('m-latin').getBoundingClientRect().width), sideways: await page.evaluate(() => document.scrollingElement.scrollWidth - innerWidth) });
+    curve.push({ vw, ...(await state(page)), latin: await perLine(page, 'm-latin'), han: await perLine(page, 'm-han') });
   }
-  const want = vw => Math.min(560, vw - 2 * 28);
-  check('P4.4 in a narrower window the column is the window less its gutters', sizes.every(s => Math.abs(s.col - want(s.vw)) < 0.6 && s.sideways <= 0), JSON.stringify(sizes));
+  check('P4.4 the text grows with the window: 16 px to 900 px, then smoothly to 20 px (1.25) at 1800 px and wider', curve.every(c => Math.abs(c.root - 16 * scale(c.vw)) < 0.05), JSON.stringify(curve));
+  check('P4.4 the column is 35 em of the text in every wide window (or the window less its gutters), code in step', curve.every(c => Math.abs(c.col - Math.min(35 * c.root, c.vw - 56)) < 0.6 && Math.abs(c.code / c.root - 0.9) < 0.01 && c.sideways <= 0), JSON.stringify(curve));
+  check('P4.4 a line holds 60-80 Latin characters and 35-45 Chinese ones in every window', curve.filter(c => c.vw >= 900).every(c => c.latin >= 60 && c.latin <= 80 && c.han >= 35 && c.han <= 45), JSON.stringify(curve));
   await page.setViewportSize({ width: 1600, height: 800 });
+  const m = [];
+  for (const fs of [13, 16, 20, 24, 16]) {
+    await page.evaluate(fs => window.readout.setAppearance({ fontSize: fs }), fs);
+    m.push({ fs, ...(await state(page)), latin: await perLine(page, 'm-latin') });
+  }
+  check('P4.4 the reader\'s size multiplies the window\'s (1600 px: 1.19), Actual Size back to the automatic size; the characters per line stay', m.every(x => Math.abs(x.root - x.fs * scale(1600)) < 0.05) && m[4].root === m[1].root && m.every(x => Math.abs(x.latin - m[1].latin) <= 3), JSON.stringify(m));
+  const sizes = [];
+  for (const vw of [760, 640, 480, 360]) {
+    await page.setViewportSize({ width: vw, height: 800 });
+    sizes.push({ vw, ...(await state(page)) });
+  }
+  check('P4.4 in a narrower window the column is the window less its gutters', sizes.every(s => Math.abs(s.col - Math.min(560, s.vw - 56)) < 0.6 && s.sideways <= 0), JSON.stringify(sizes));
+  await page.setViewportSize({ width: 900, height: 800 });
   const old = await page.evaluate(() => { window.readout.setAppearance({ width: 'wide' }); return { col: document.getElementById('m-latin').getBoundingClientRect().width, attr: document.documentElement.hasAttribute('data-width') }; });
   check('P4.4 there is no width setting: width "wide" changes nothing', Math.abs(old.col - 560) < 0.5 && !old.attr, JSON.stringify(old));
   await page.close();
+  // Decided before the first paint: the size a wide window opens at is its size in the first frame.
+  const pg = await browser.newPage({ viewport: { width: 1600, height: 800 } });
+  await pg.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    window.__first = null; requestAnimationFrame(() => { window.__first = parseFloat(getComputedStyle(document.documentElement).fontSize); }); });
+  await pg.goto(`${base}/reader.html`);
+  await until(pg, () => window.__first !== null);
+  const first = await pg.evaluate(() => [window.__first, parseFloat(getComputedStyle(document.documentElement).fontSize)]);
+  check('P4.4 the window decides the text size before the first frame (no script)', Math.abs(first[0] - 16 * scale(1600)) < 0.05 && first[0] === first[1], JSON.stringify(first));
+  await pg.close();
 }
 
 
@@ -1879,6 +1981,34 @@ for (const dark of [false, true]) {
   });
   check('P4.5 at 24 px in a 360 px window, kept parts and long paths never run past the column, in text or a nested item', o.sideways <= 0 && o.past.length === 0, JSON.stringify(o));
   await page.close();
+  // The review's cases: corpus 12, 13 and 27 at 24 px in a 300 px window and
+  // a Quick Look pane as narrow (dist/swagger-ui.js ran 46 px past it), read
+  // down to the end so every chunk is laid out.
+  for (const mode of ['app', 'quicklook']) for (const name of ['12-codex-agents-md', '13-swagger-ui-claude-md', '27-tokenbucket-rfc-zh']) {
+    const pg = await open(300);
+    await pg.evaluate(m => window.readout.setAppearance({ fontSize: 24, ...(m === 'quicklook' ? { mode: 'quicklook' } : {}) }), mode);
+    await pg.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync(`test/corpus/patches/${name}.json`, 'utf8')));
+    await pg.waitForTimeout(200);
+    const past = [];
+    for (let k = 0; k < 400; k++) {
+      const d = await pg.evaluate(() => {
+        const right = innerWidth - parseFloat(getComputedStyle(document.body).paddingRight), out = [];
+        for (const c of document.querySelectorAll('#ro-doc code')) {
+          if (c.closest('pre, .table-wrap, .front-matter') || !c.checkVisibility({ contentVisibilityAuto: true })) continue;
+          const m = Math.max(...[...c.getClientRects()].map(x => x.right));
+          if (m > right + 0.5) out.push(`${c.textContent.slice(0, 30)} +${Math.round(m - right)}`);
+        }
+        const y = scrollY; window.scrollBy(0, innerHeight);
+        return { out, moved: scrollY !== y };
+      });
+      for (const x of d.out) if (!past.includes(x)) past.push(x);
+      if (!d.moved) break;
+      await pg.waitForTimeout(20);
+    }
+    const sideways = await pg.evaluate(() => document.scrollingElement.scrollWidth - innerWidth);
+    check(`P4.5 corpus ${name.slice(0, 2)} at 24 px, 300 px wide (${mode}): no inline code runs past the column, the page does not scroll sideways`, past.length === 0 && sideways <= 0, JSON.stringify({ past: past.slice(0, 5), sideways }));
+    await pg.close();
+  }
   // Kept as a unit (an inline-block), a code span's fill and its line are as tall as any code's.
   page = await open(900);
   await page.evaluate(p => window.readout.apply(p), patch([

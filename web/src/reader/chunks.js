@@ -5,7 +5,7 @@
 // frame that scrolls (5 MB of blocks: tens of milliseconds a frame, and each
 // block blank for the frame it came on screen in). Chunks within two screens
 // of the viewport are laid out ahead (`near`), so what scrolls in is drawn.
-import { doc, heights, isChunk } from './core.js';
+import { doc, heights, isChunk, nextItem, prevItem } from './core.js';
 import { resizeObserver } from './anchor.js';
 import { nearChunk } from './enhance.js';
 
@@ -411,6 +411,43 @@ export function flushStarts() {
     }
   }
 }
+/**
+ * A paragraph ending with a colon (p.lead) right before a list item leads
+ * into it: the gap under it is the shorter one (reader.css: lead-list).
+ * Decided per block, not by a sibling selector, so the gap is the same with
+ * the list item first in the next chunk, and as chunks split or join.
+ * patch.js notes the blocks a change can concern (noteLead: a block written
+ * and the one before it, the one before a block removed); a reset, all.
+ */
+const leadNoted = new Set();
+const shownBlock = (e, step) => { for (e = e && step(e); e; e = step(e)) if (e.classList.contains('blk')) return e; return null; };
+export const prevBlock = e => shownBlock(e, prevItem);
+export function noteLead(el) { if (el) leadNoted.add(el); }
+export function leadIns(all = false) {
+  const els = all ? [...doc.querySelectorAll('.chunk > .k-paragraph > p.lead')].map(p => p.parentElement) : leadNoted;
+  for (const el of els) {
+    if (!el.isConnected || !el.classList.contains('k-paragraph')) continue;
+    const n = shownBlock(el, nextItem);
+    const on = !!n && n.classList.contains('k-listItem') && el.firstElementChild?.matches('p.lead') === true;
+    if (on === el.classList.contains('lead-list')) continue;
+    // Like a heading's flush start: its chunk is touched, its height taken
+    // again (flushed); in a chunk laid out and skipped, the change in its
+    // margin is the chunk's change in size.
+    const c = chunkOf(el);
+    const skipped = laidOut.has(c) && cv() && !c.classList.contains('near');
+    const was = skipped ? bottomMargin(el) : 0;
+    el.classList.toggle('lead-list', on);
+    touched.add(c);
+    flushed.add(el);
+    if (skipped) {
+      const d = bottomMargin(el) - was;
+      if (d) { account(c, 0, d); if (heights.has(el)) heights.set(el, heights.get(el) + d); }
+    }
+  }
+  leadNoted.clear();
+}
+const bottomMargin = el => parseFloat(getComputedStyle(el.firstElementChild || el).marginBottom) || 0;
+
 // A block written, replaced or removed changes the top margin of a heading
 // right after it too (reader.css: after a rule, after front matter, first in
 // the document). patch.js notes that heading before the change (noteNext);
