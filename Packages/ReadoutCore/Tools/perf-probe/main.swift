@@ -2,7 +2,7 @@
 // agent rewriting 20 paragraphs of a corpus-built document) as a program,
 // and the other paths CI counts.
 //
-// Usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes] [SCENARIO]
+// Usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes | heap] [SCENARIO]
 //   SCENARIO: update (default): load the document, then 20 paragraphs edited;
 //             append: load it, then one paragraph appended at the end (an agent writing on);
 //             tail: load it, then a few words added to its last line (an agent streaming
@@ -18,6 +18,10 @@
 //   RUNS = 0 (default): runs up to and including the measured step once.
 //   load: runs up to the measured step only (for update and append, loads the document).
 //   bytes: prints the size of the measured step's patch as sent to the page (JSON).
+//   heap: what opening the document takes natively (`heapInUse`: the session,
+//   the parser's state and the render cache, not the document's text), how
+//   much of the blocks' HTML that holds, and what serving the page every block
+//   once (`DocumentSession.serve`: the slot index) adds.
 // The step's instruction count, which does not depend on the machine, is
 // the difference between RUNS = 0 and load under valgrind (Tools/perf-instructions.sh).
 // Parsing runs on several threads, so the count covers the whole process.
@@ -27,12 +31,13 @@ import ReadoutCore
 
 let args = CommandLine.arguments
 guard args.count >= 3, let bytes = Int(args[2]) else {
-    FileHandle.standardError.write("usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes] [update | append | tail | open-unique | mid]\n".data(using: .utf8)!)
+    FileHandle.standardError.write("usage: perf-probe CORPUS_DIR BYTES [RUNS | load | bytes | heap] [update | append | tail | open-unique | mid]\n".data(using: .utf8)!)
     exit(2)
 }
 let corpus = URL(fileURLWithPath: args[1])
 let loadOnly = args.count > 3 && args[3] == "load"
 let printBytes = args.count > 3 && args[3] == "bytes"
+let printHeap = args.count > 3 && args[3] == "heap"
 let runs = args.count > 3 ? Int(args[3]) ?? 0 : 0
 let scenario = args.count > 4 ? args[4] : "update"
 guard ["update", "append", "tail", "open-unique", "mid"].contains(scenario) else {
@@ -138,6 +143,41 @@ case "open-unique": data = Data(original.utf8)
 case "mid": data = Data(revisedMiddle(original).utf8)
 default: data = Data(edited(original, count: 20).utf8)
 }
+/// The process's memory in use: on Linux its resident size once malloc has
+/// given back what is free (`malloc_trim`; Glibc does not export mallinfo2
+/// to Swift), on macOS malloc's bytes in use.
+func heapInUse() -> Int {
+    #if canImport(Glibc)
+    typealias Trim = @convention(c) (Int) -> Int32
+    if let f = dlsym(nil, "malloc_trim") {   // RTLD_DEFAULT
+        _ = unsafeBitCast(f, to: Trim.self)(0)
+    }
+    let statm = (try? String(contentsOfFile: "/proc/self/statm", encoding: .utf8)) ?? ""
+    let pages = statm.split(separator: " ").dropFirst().first.flatMap { Int($0) } ?? 0
+    return pages * Int(sysconf(Int32(_SC_PAGESIZE)))
+    #else
+    var s = malloc_statistics_t()
+    malloc_zone_statistics(nil, &s)
+    return Int(s.size_in_use)
+    #endif
+}
+
+if printHeap {
+    let before = heapInUse()
+    let cache = MarkdownParser.RenderCache(), session = DocumentSession(), parser = IncrementalParser()
+    cache.beginGeneration()
+    _ = session.load(parser.parse(original, resolver: FileResolver(baseDirectory: nil), cache: cache))
+    let open = heapInUse() - before
+    let html = session.blocks.reduce(0) { $0 + $1.html.utf8.count }
+    print("document \(original.utf8.count) bytes, \(session.blocks.count) blocks, HTML \(html) bytes")
+    print("native after open: \(open) bytes")
+    let n = session.serve(slots: session.blocks.map(\.slot), version: session.version, request: 1).blocks.count
+    let served = heapInUse() - before
+    print("native after serving all \(n) blocks once: \(served) bytes (+\(served - open), the slot index)")
+    withExtendedLifetime((cache, session, parser)) {}
+    exit(0)
+}
+
 var samples: [Double] = []
 for _ in 0..<max(runs, 1) {
     let cache = MarkdownParser.RenderCache(), session = DocumentSession(), parser = IncrementalParser()

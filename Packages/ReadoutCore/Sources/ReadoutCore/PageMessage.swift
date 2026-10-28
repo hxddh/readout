@@ -50,6 +50,11 @@ public enum PageMessage: Equatable, Sendable {
     /// The find field's search: which match is the current one (1-based; 0:
     /// none) of how many, after a search or an edit while finding.
     case found(current: Int, total: Int)
+    /// The page (protocol 2, `lean`: `PageProtocol`) wants the HTML of these
+    /// blocks as of the version it has applied (`{type: "blocks", version,
+    /// slots, request}`): the app replies with `DocumentSession.serve`,
+    /// which echoes `request` (0 when the page gave none).
+    case blocks(version: Int, slots: [Int], request: Int)
 
     public init?(_ msg: [String: Any]) {
         func int(_ v: Any?) -> Int? { (v as? NSNumber)?.intValue ?? (v as? Int) }
@@ -101,6 +106,9 @@ public enum PageMessage: Equatable, Sendable {
         case "found":
             guard let current = int(msg["current"]), let total = int(msg["total"]), current >= 0, current <= total else { return nil }
             self = .found(current: current, total: total)
+        case "blocks":
+            guard let version = int(msg["version"]) else { return nil }
+            self = .blocks(version: version, slots: ints(msg["slots"]), request: int(msg["request"]) ?? 0)
         case "error":
             self = .error(message: msg["message"] as? String ?? "")
         default:
