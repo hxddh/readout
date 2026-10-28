@@ -1333,13 +1333,16 @@ const v36 = patch([
   await page.waitForTimeout(3000);
   const later = spareOnly();
   // The chain stopped (one at a time: the last fetched was the one in
-  // flight when the page was taken), and that one is not registered (the
-  // highlighter's grammars: it loads as a block's own, as on any page not warmed).
+  // flight when the page was taken). The worker hears of it a message
+  // later: the one in flight then may be registered, if it was in by then,
+  // and no other spare-only grammar (the highlighter's grammars; the rest
+  // load as a block's own, as on any page not warmed).
   const inFlight = later[later.length - 1];
   await page.evaluate(() => window.readout.loadedLangs());
   await until(page, () => performance.getEntriesByName('readout-hl-langs').length > 0, 10000);
   const langs = await page.evaluate(() => performance.getEntriesByName('readout-hl-langs')[0]?.detail ?? null);
-  check('a window taking the spare right after warm() stops its spare-only grammars', later.length < 9 && !!langs && !langs.includes(inFlight), JSON.stringify({ later, inFlight, langs }));
+  const spareIn = (langs || []).filter(l => ['javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'].includes(l));
+  check('a window taking the spare right after warm() stops its spare-only grammars', later.length < 9 && !!langs && spareIn.every(l => l === inFlight), JSON.stringify({ later, inFlight, spareIn }));
   await page.close();
 }
 

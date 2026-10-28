@@ -334,6 +334,18 @@ function selectLater() {
 }
 function selectNow() {
   selecting = null;
+  // The page may have changed since the search, a frame ago (a long block's
+  // part coloured in place of its plain text, an edit): the match where it
+  // is now, not at offsets into text that may have shrunk.
+  changed(observer.takeRecords());
+  if (reread()) {
+    search(around());
+    const [i] = resolve();
+    if (i < 0) { cur = -1; return; }
+    goTo(base + i);
+    place();
+    mark();
+  }
   const m = matches[cur];
   if (!m) return;
   select(rangeOf(m));
@@ -356,6 +368,7 @@ function place() {
 
 /** To the current match (a search): selected, and on screen (it stays where it is if it is already). */
 let colouring = null;   // cancels a landing waiting for its code to be coloured
+let landing = null;     // that landing (a later one, or the search ended, drops it)
 function land(waited = false) {
   const m = matches[cur];
   const el = m.el;
@@ -363,13 +376,23 @@ function land(waited = false) {
   // replaces the text nodes): it waits for that (enhance.js), a moment. And
   // a folded <details> it is in opened.
   colouring?.();
-  colouring = null;
+  colouring = landing = null;
   if (!waited && el.querySelector('.code-block[data-hl="pending"]')) {
+    // Where it is, kept meanwhile (pos): a refresh (an edit, other code
+    // coloured) searches again, and the landing goes to the match found
+    // there then, not the one it waited with.
+    place();
+    const mine = {};
+    landing = mine;
     colouring = whenColoured([el], () => {
-      colouring = null;
-      if (!observing || matches[cur] !== m) return;
+      if (landing !== mine) return;
+      landing = colouring = null;
+      if (!observing || query == null) return;
       changed(observer.takeRecords());
-      reread();
+      if (reread()) search(around());
+      const [i] = resolve();
+      if (i < 0) return;
+      goTo(base + i);
       land(true);
     });
     return;
@@ -505,7 +528,7 @@ export function find(text, backwards = false) {
  */
 export function findEnd(keep = false) {
   colouring?.();
-  colouring = null;
+  colouring = landing = null;
   if (selecting) selectNow();
   query = null;
   clearTimeout(refreshTimer);

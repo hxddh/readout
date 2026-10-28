@@ -529,7 +529,7 @@ function part(cb, lang, html, code, done, first) {
     pre.firstElementChild.append(v.rest);
     cb.querySelector('pre').replaceWith(pre);
     inPart.set(cb, v);
-    shown(cb);
+    shown(cb, false);
     return;
   }
   if (!v || v.kept || v.lines.length > PARTS_MAX) return;
@@ -544,9 +544,9 @@ function part(cb, lang, html, code, done, first) {
   v.done = done;
 }
 
-/** `cb` shows coloured (all of it, or what the screen shows of it): what waited for it goes on. */
-function shown(cb) {
-  for (const h of [...holds]) if (h.cbs.delete(cb) && !h.cbs.size) release(h);
+/** `cb` shows coloured (`all` of it, or what the screen shows of it): what waited for it goes on. */
+function shown(cb, all = true) {
+  for (const h of [...holds]) if ((all || !h.whole) && h.cbs.delete(cb) && !h.cbs.size) release(h);
 }
 
 function markDiff(root, id) {
@@ -568,10 +568,10 @@ function markDiff(root, id) {
 // coloured at once, the rest plain until it arrives.
 const holds = new Set();
 const HOLD_MS = 1000;
-/** The hold, or null: nothing to wait for (`then` is not called then). */
-function hold(cbs, then, dy = 0, upto) {
-  const h = { cbs: new Set(), then };
-  for (const cb of cbs) { ask(cb, SCREEN, dy, upto); if (waits(cb)) h.cbs.add(cb); }
+/** The hold, or null: nothing to wait for (`then` is not called then). `whole`: until all of each block is coloured. */
+function hold(cbs, then, dy = 0, upto, whole = false) {
+  const h = { cbs: new Set(), then, whole };
+  for (const cb of cbs) { ask(cb, SCREEN, dy, upto); if (whole ? cb.dataset.hl === 'pending' && !slow.has(cb) : waits(cb)) h.cbs.add(cb); }
   if (!h.cbs.size) return null;
   h.timer = setTimeout(() => release(h), HOLD_MS);
   holds.add(h);
@@ -587,9 +587,9 @@ const waits = cb => cb.dataset.hl === 'pending' && !slow.has(cb) && !(inPart.has
 const slow = new WeakSet();   // blocks whose grammar was not loaded when asked for
 const pending = blocks => blocks.flatMap(b => [...b.querySelectorAll('.code-block[data-hl="pending"]')].filter(waits));
 
-/** `then` once the code in `blocks` is coloured (find: before it selects a match there). Returns a cancel. */
+/** `then` once the code in `blocks` is coloured, all of it (find: before it selects a match there). Returns a cancel. */
 export function whenColoured(blocks, then) {
-  const h = hold(pending(blocks), then);
+  const h = hold(blocks.flatMap(b => [...b.querySelectorAll('.code-block[data-hl="pending"]')]), then, 0, undefined, true);
   if (!h) then();
   return () => { if (h) { holds.delete(h); clearTimeout(h.timer); } };
 }
