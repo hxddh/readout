@@ -70,9 +70,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.$workspaces.sink { paths in WorkspaceIndex.shared.configure(paths) }.store(in: &cancellables)
         WorkspaceIndex.shared.onWrite = { [weak self] urls in self?.noteAgentWrites(urls) }
 
-        if let smoke = SmokeTest.launchFile {
+        if let smoke = ProcessInfo.processInfo.environment["READOUT_SMOKE_FILE"] {
             openedAtLaunch = true
-            open(smoke)
+            open(URL(fileURLWithPath: smoke))
             SmokeTest.didOpen()
         }
 

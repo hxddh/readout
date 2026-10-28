@@ -3,9 +3,7 @@ import SwiftUI
 import WebKit
 import ReadoutCore
 
-/// Read-only state export used by CI (tools/smoke-run.py). Built only into
-/// the Smoke configuration (project.yml): the Release app that ships has the
-/// no-op hooks of App/SmokeHooks.swift instead. Enabled only when
+/// Read-only state export used by CI (tools/smoke-run.py). Enabled only when
 /// READOUT_SMOKE_OUT is set. The app never modifies the document here: the
 /// external harness performs every file write the way an agent would, and
 /// this side only captures what the reader shows, into READOUT_SMOKE_OUT.
@@ -33,11 +31,6 @@ import ReadoutCore
 enum SmokeTest {
     /// The harness's warm-up launch (READOUT_SMOKE_PASS=boot): it adds nothing to the recent documents.
     static var isBootPass: Bool { outputDirectory != nil && ProcessInfo.processInfo.environment["READOUT_SMOKE_PASS"] == "boot" }
-
-    /// The document the harness opens at launch.
-    static var launchFile: URL? {
-        ProcessInfo.processInfo.environment["READOUT_SMOKE_FILE"].map { URL(fileURLWithPath: $0) }
-    }
 
     static var outputDirectory: URL? {
         ProcessInfo.processInfo.environment["READOUT_SMOKE_OUT"].map { URL(fileURLWithPath: $0, isDirectory: true) }

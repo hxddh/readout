@@ -7,14 +7,6 @@ options:
   developmentLanguage: en
   groupSortPosition: top
 
-# Smoke: Release with the smoke-test harness (Smoke/SmokeTest.swift) built in,
-# for CI's smoke run only (verify.yml, docs/TESTING.md). Release, the
-# configuration that ships, has App/SmokeHooks.swift (no-op hooks) instead.
-configs:
-  Debug: debug
-  Release: release
-  Smoke: release
-
 settings:
   base:
     MARKETING_VERSION: "3.9.1"
@@ -41,7 +33,6 @@ targets:
       - path: App
         excludes: ["Help/**"]
       - path: Shared
-      - path: Smoke
       - path: web/build/Web
         type: folder
         buildPhase: resources
@@ -121,11 +112,6 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
         CODE_SIGN_ENTITLEMENTS: App/Readout.entitlements
-        # The harness is compiled only into the Smoke configuration, the no-op hooks into every other.
-        EXCLUDED_SOURCE_FILE_NAMES: SmokeTest.swift
-      configs:
-        Smoke:
-          EXCLUDED_SOURCE_FILE_NAMES: SmokeHooks.swift
 
   ReadoutQuickLook:
     type: app-extension

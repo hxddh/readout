@@ -1,11 +1,8 @@
 name: Verify signed product
 
-# Builds exactly what Release builds, signs it with tools/sign.sh, and uploads
-# the signed app zip. Release publishes ONLY this artifact — it never rebuilds.
-# The smoke test runs on the same commit's Smoke build (project.yml: Release
-# with the harness, Smoke/SmokeTest.swift, built in), signed the same way and
-# installed in /Applications; the app that ships carries no harness at all,
-# and is then installed there, launched, and checked with Quick Look.
+# Builds exactly what Release builds, signs it with tools/sign.sh, boots the
+# signed app from /Applications, asserts on its smoke output, and uploads the
+# signed app zip. Release publishes ONLY this artifact — it never rebuilds.
 #
 # The disk image (dmgbuild: the app, an Applications link, a 2x background with
 # an arrow and, while not notarized, the first-open hint) is built here from the
@@ -108,24 +105,12 @@ jobs:
           mkdir -p dist
           ditto build/Build/Products/"$CONFIG"/Readout.app dist/Readout.app
 
-      - name: Build the smoke app (Smoke configuration, this runner's architecture)
-        run: |
-          set -o pipefail
-          xcodebuild -project Readout.xcodeproj -scheme Readout -configuration Smoke \
-            -derivedDataPath build -destination 'generic/platform=macOS' \
-            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
-            ARCHS="$(uname -m)" ONLY_ACTIVE_ARCH=NO \
-            build 2>&1 | xcbeautify --renderer github-actions
-          mkdir -p dist-smoke
-          ditto build/Build/Products/Smoke/Readout.app dist-smoke/Readout.app
-
       - name: Sign (ad-hoc, hardened runtime)
         if: env.NOTARIZE != 'true'
         run: |
           echo "Notarization: ${{ inputs.notarize && 'asked for, but the signing secrets are not set: ad hoc' || 'not asked for: ad hoc' }}"
           chmod +x tools/sign.sh
           tools/sign.sh dist/Readout.app "-"
-          tools/sign.sh dist-smoke/Readout.app "-"
 
       - name: Import the Developer ID certificate (temporary keychain)
         if: env.NOTARIZE == 'true'
@@ -158,8 +143,6 @@ jobs:
         run: |
           chmod +x tools/sign.sh
           tools/sign.sh dist/Readout.app "$IDENTITY"
-          # Signed as what ships is (not notarized: it never leaves the runner).
-          tools/sign.sh dist-smoke/Readout.app "$IDENTITY"
 
       - name: Notarize and staple the app
         if: env.NOTARIZE == 'true'
@@ -173,39 +156,23 @@ jobs:
       - name: The shipped app never writes the document
         run: |
           # File edits during the smoke test come from tools/smoke-run.py, not the app.
-          # Allowlist: the only place the shipped app may write files at all is
-          # the baseline store (Application Support). Any other write API
-          # anywhere fails the build. (The harness, Smoke/, writes its captures
-          # into READOUT_SMOKE_OUT and is not part of the app that ships.)
+          # Allowlist: the only places the app may write files at all are the
+          # smoke capture export (into READOUT_SMOKE_OUT) and the baseline store
+          # (Application Support). Any other write API anywhere fails the build.
           WRITES='replaceItemAt|[^a-zA-Z]copyItem\(|[^a-zA-Z]moveItem\(|[^a-zA-Z]linkItem\(|createFile\(|removeItem\(at:|trashItem\(|\.write\(to:|\.write\(toFile:|write\(to: *[a-zA-Z]|forWritingTo|forWritingAtPath|forUpdating|fopen\(|open\(.*O_WRONLY|O_RDWR|NSFileCoordinator'
-          if grep -rnE "$WRITES" App Shared QuickLook | grep -vE '^App/Settings\.swift:'; then
-            echo "FAIL: file-writing code outside App/Settings.swift (baseline store)"; exit 1
+          if grep -rnE "$WRITES" App Shared QuickLook | grep -vE '^App/(SmokeTest|Settings)\.swift:'; then
+            echo "FAIL: file-writing code outside App/SmokeTest.swift and App/Settings.swift (baseline store)"; exit 1
           fi
-          # The harness's environment and marker files: in the smoke build, never in what ships.
-          SMOKE='READOUT_SMOKE|readout-smoke|await-edit|live-updates\.json'
-          if strings -a dist/Readout.app/Contents/MacOS/Readout | grep -E "$SMOKE"; then
-            echo "FAIL: the app that ships carries smoke-test code"; exit 1
+          if strings -a dist/Readout.app/Contents/MacOS/Readout | grep -E "READOUT_SMOKE_(EDIT|EARLY)|readout-smoke"; then
+            echo "FAIL: the signed binary still carries smoke edit code"; exit 1
           fi
-          strings -a dist-smoke/Readout.app/Contents/MacOS/Readout | grep -qE "$SMOKE" || { echo "FAIL: the smoke build has no harness"; exit 1; }
-          echo "ok: no document writes and no smoke harness in the product"
+          echo "ok: no document writes in the product"
 
-      - name: Smoke test the signed smoke build from /Applications
-        run: |
-          rm -rf /Applications/Readout.app
-          ditto dist-smoke/Readout.app /Applications/Readout.app
-          python3 tools/smoke-run.py /Applications/Readout.app/Contents/MacOS/Readout "$RUNNER_TEMP/smoke" smoke-out
-
-      - name: Install the app that ships and launch it
+      - name: Smoke test the signed app from /Applications
         run: |
           rm -rf /Applications/Readout.app
           ditto dist/Readout.app /Applications/Readout.app
-          /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/Readout.app
-          # It opens a document and is still running a few seconds later.
-          open -a /Applications/Readout.app "$RUNNER_TEMP/smoke/plan.md"
-          sleep 8
-          pgrep -x Readout || { echo "FAIL: the app that ships did not stay up"; exit 1; }
-          pkill -x Readout || true
-          sleep 1
+          python3 tools/smoke-run.py /Applications/Readout.app/Contents/MacOS/Readout "$RUNNER_TEMP/smoke" smoke-out
 
       - name: Quick Look check
         run: |

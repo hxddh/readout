@@ -54,10 +54,8 @@ a user can see, feel or rely on, in their words:
 - `ci.yml` (every `main` push, in full): Core tests (Linux),
   Web tests (WebKit — the production engine), Rendering baselines (WebKit:
   the real-agent corpus against its snapshots and screenshots), and the full
-  Verify-signed-product run (Release and Smoke builds + ad-hoc sign + the
-  smoke test on the signed Smoke build from /Applications +
-  `tools/smoke-assert.py` + the signed Release app launched from there + Quick
-  Look check; docs/TESTING.md).
+  Verify-signed-product run (Release build + ad-hoc sign + boot the signed
+  app from /Applications + `tools/smoke-assert.py` + Quick Look check).
   A red Core tests run blocks every release — this is what let v1.0.1 ship
   broken, and it can no longer happen.
   Pull requests run less to save macOS minutes (docs/TESTING.md, "What CI
@@ -112,10 +110,7 @@ always ad hoc). With the secrets, verify:
 2. zips the app (`ditto`), submits it with `xcrun notarytool submit --key …
    --key-id … --issuer … --wait --timeout 30m`, prints Apple's log, fails unless
    the status is `Accepted`, then staples and validates the ticket;
-3. runs the whole smoke test on the Smoke build of the same commit, signed
-   with the same identity (not notarized: it never leaves the runner), then
-   installs the notarized app in /Applications, launches it and runs the
-   Quick Look check with it;
+3. runs the whole smoke test on that notarized app from /Applications;
 4. builds the DMG from the tested app (without the "Open Anyway" line), signs
    it, notarizes and staples it the same way (`tools/notarize.sh`), and uploads
    it in the verified artifact with its SHA-256;
