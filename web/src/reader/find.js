@@ -472,7 +472,12 @@ export function find(text, backwards = false) {
   if (!same) {
     query = q;
     pos = null;
-    re = new RegExp(q.split(/ +/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' +'), 'g');
+    // Across the zero-width spaces ReadoutCore puts in long paths (where
+    // they may break), which the text keeps and the query does not: one may
+    // follow any character but the last. The text stays as it is, its
+    // offsets the nodes'.
+    const word = w => [...w].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\u200b?');
+    re = new RegExp(q.replace(/\u200b/g, '').split(/ +/).map(word).join(' +'), 'g');
   }
   // Next and Previous go on from the current match, unless the reader has
   // selected something else since, or clicked somewhere (the caret).

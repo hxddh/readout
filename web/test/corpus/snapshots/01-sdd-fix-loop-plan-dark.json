@@ -1,12 +1,12 @@
 {
- "height": 38927,
+ "height": 38953,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "d65dc654",
+   "style": "efef7570",
    "content": "2ca5d3a4",
    "text": "SDD Fix-Loop Redesign Implementation Plan"
   },
@@ -15,7 +15,7 @@
    "kind": "quote",
    "top": 109,
    "h": 96,
-   "style": "f05ed130",
+   "style": "8099e313",
    "content": "bb9c2018",
    "text": "For agentic workers: REQUIRED SUB-SKILL: Use sup"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 204,
    "h": 122,
-   "style": "5bc6ec78",
+   "style": "fd7c1d4c",
    "content": "b44ce3f4",
    "text": "Goal: Make subagent-driven-development's review-"
   },
@@ -33,8 +33,8 @@
    "kind": "paragraph",
    "top": 326,
    "h": 174,
-   "style": "075a9006",
-   "content": "57fa6407",
+   "style": "c4e43cab",
+   "content": "22836743",
    "text": "Architecture: Two repos. The superpowers repo (b"
   },
   {
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 500,
    "h": 96,
-   "style": "b7b11c4e",
+   "style": "fdcc3e57",
    "content": "26641b26",
    "text": "Tech Stack: Markdown skill content; Bash scenari"
   },
@@ -51,16 +51,16 @@
    "kind": "paragraph",
    "top": 595,
    "h": 70,
-   "style": "db930031",
-   "content": "20052c98",
-   "text": "Design spec: docs/superpowers/specs/2026-07-15-s"
+   "style": "23b809de",
+   "content": "12874474",
+   "text": "Design spec: docs/​superpowers/​specs/​2026-07-1"
   },
   {
    "slot": 7,
    "kind": "heading",
    "top": 665,
    "h": 65,
-   "style": "2eedc1ee",
+   "style": "4a68b67c",
    "content": "e4b1f13e",
    "text": "Global Constraints"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 730,
    "h": 80,
-   "style": "d598dc34",
+   "style": "9fc82752",
    "content": "34cdcc21",
    "text": "Verbatim-move rule: eval-tuned sentences from th"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 810,
    "h": 106,
-   "style": "5ed87c61",
+   "style": "dafdfa23",
    "content": "b4a97e42",
    "text": "Round cap: 5 fix rounds per task. Rounds 1–3 res"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 916,
    "h": 280,
-   "style": "f56ba68a",
+   "style": "06adc609",
    "content": "f501248e",
    "text": "Ledger line formats (exact — scenarios grep for "
   },
@@ -96,8 +96,8 @@
    "kind": "listItem",
    "top": 1197,
    "h": 80,
-   "style": "1c0d50c7",
-   "content": "def26aef",
+   "style": "9b2e1c2c",
+   "content": "4cbd62c0",
    "text": "Template placeholders keep the existing bracket "
   },
   {
@@ -105,16 +105,16 @@
    "kind": "listItem",
    "top": 1277,
    "h": 80,
-   "style": "264a6f65",
-   "content": "1ae429be",
-   "text": "Commit discipline: superpowers commits on sdd-fi"
+   "style": "39b28fc0",
+   "content": "18926bda",
+   "text": "Commit discipline: superpowers commits on sdd-​f"
   },
   {
    "slot": 13,
    "kind": "listItem",
    "top": 1357,
    "h": 54,
-   "style": "73a9b9ab",
+   "style": "b67476f8",
    "content": "007fa135",
    "text": "Static gates before any live run: bun run check "
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1412,
    "h": 80,
-   "style": "6c0adfc3",
+   "style": "83ccd3dd",
    "content": "bbbf1f2b",
    "text": "Live runs are trusted-maintainer operations — th"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1492,
    "h": 97,
-   "style": "f1dc0019",
+   "style": "acc24f97",
    "content": "3de94c72",
    "text": "Collision note: PR #1943 (ledger session-scoping"
   },
@@ -141,7 +141,7 @@
    "kind": "heading",
    "top": 1589,
    "h": 65,
-   "style": "2eedc1ee",
+   "style": "4a68b67c",
    "content": "dcf1613a",
    "text": "File Structure"
   },
@@ -150,7 +150,7 @@
    "kind": "paragraph",
    "top": 1654,
    "h": 32,
-   "style": "22b63225",
+   "style": "42ad7b45",
    "content": "0af82a28",
    "text": "superpowers repo:"
   },
@@ -159,1710 +159,1710 @@
    "kind": "listItem",
    "top": 1686,
    "h": 54,
-   "style": "e43cf0e2",
-   "content": "8ca80ea8",
-   "text": "Create: skills/subagent-driven-development/re-re"
+   "style": "471f1173",
+   "content": "e53a9710",
+   "text": "Create: skills/​subagent-​driven-​development/​r"
   },
   {
    "slot": 19,
    "kind": "listItem",
    "top": 1741,
    "h": 54,
-   "style": "78fda3b4",
-   "content": "340be465",
-   "text": "Modify: skills/subagent-driven-development/imple"
+   "style": "0ddf3efa",
+   "content": "dd7da7c4",
+   "text": "Modify: skills/​subagent-​driven-​development/​i"
   },
   {
    "slot": 20,
    "kind": "listItem",
    "top": 1795,
    "h": 54,
-   "style": "a13466c3",
-   "content": "06d4c094",
-   "text": "Modify: skills/subagent-driven-development/task-"
+   "style": "79c96288",
+   "content": "e0dfbc8a",
+   "text": "Modify: skills/​subagent-​driven-​development/​t"
   },
   {
    "slot": 21,
    "kind": "listItem",
    "top": 1849,
    "h": 54,
-   "style": "deaecac6",
-   "content": "fc833346",
-   "text": "Modify: skills/using-superpowers/references/code"
+   "style": "ff63567d",
+   "content": "13fc3625",
+   "text": "Modify: skills/​using-​superpowers/​references/​"
   },
   {
    "slot": 22,
    "kind": "listItem",
    "top": 1904,
-   "h": 45,
-   "style": "79d68c3d",
-   "content": "a8c97583",
-   "text": "Modify: skills/subagent-driven-development/SKILL"
+   "h": 71,
+   "style": "1cafec42",
+   "content": "79a9a375",
+   "text": "Modify: skills/​subagent-​driven-​development/​S"
   },
   {
    "slot": 23,
    "kind": "paragraph",
-   "top": 1949,
+   "top": 1975,
    "h": 32,
-   "style": "8886e07a",
+   "style": "91e092c9",
    "content": "448a6243",
    "text": "superpowers-evals repo (evals/):"
   },
   {
    "slot": 24,
    "kind": "listItem",
-   "top": 1981,
+   "top": 2007,
    "h": 54,
-   "style": "1e7510cd",
-   "content": "bea7864c",
-   "text": "Modify: src/setup-helpers/sdd-fixtures.ts — add "
+   "style": "2c63dfd9",
+   "content": "569ec360",
+   "text": "Modify: src/​setup-​helpers/​sdd-​fixtures.ts — "
   },
   {
    "slot": 25,
    "kind": "listItem",
-   "top": 2035,
+   "top": 2061,
    "h": 28,
-   "style": "ed1858a3",
-   "content": "668d9479",
-   "text": "Modify: src/setup-helpers/registry.ts — register"
+   "style": "b881a31f",
+   "content": "13ec805e",
+   "text": "Modify: src/​setup-​helpers/​registry.ts — regis"
   },
   {
    "slot": 26,
    "kind": "listItem",
-   "top": 2064,
+   "top": 2090,
    "h": 28,
-   "style": "74608e6c",
-   "content": "2e17ebe8",
-   "text": "Modify: test/setup-helpers-sdd.test.ts — unit te"
+   "style": "1badbb37",
+   "content": "d9e2c2a3",
+   "text": "Modify: test/​setup-​helpers-​sdd.test.ts — unit"
   },
   {
    "slot": 27,
    "kind": "listItem",
-   "top": 2092,
+   "top": 2118,
    "h": 54,
-   "style": "d6d24250",
-   "content": "aefb5f01",
-   "text": "Create: scenarios/sdd-fix-loop-resumes-implement"
+   "style": "1a61bd52",
+   "content": "180ade22",
+   "text": "Create: scenarios/​sdd-​fix-​loop-​resumes-​impl"
   },
   {
    "slot": 28,
    "kind": "listItem",
-   "top": 2146,
+   "top": 2172,
    "h": 54,
-   "style": "3b43df01",
-   "content": "4a015e61",
-   "text": "Create: scenarios/sdd-breaker-adjudicates-at-cap"
+   "style": "8c896865",
+   "content": "937ac670",
+   "text": "Create: scenarios/​sdd-​breaker-​adjudicates-​at"
   },
   {
    "slot": 29,
    "kind": "listItem",
-   "top": 2200,
+   "top": 2226,
    "h": 54,
-   "style": "ebf3779d",
-   "content": "96415c44",
-   "text": "Create: scenarios/sdd-breaker-structural-blocks/"
+   "style": "1cfa1972",
+   "content": "eb3931b6",
+   "text": "Create: scenarios/​sdd-​breaker-​structural-​blo"
   },
   {
    "slot": 30,
    "kind": "listItem",
-   "top": 2255,
+   "top": 2281,
    "h": 71,
-   "style": "6d6aa364",
-   "content": "9d606904",
-   "text": "Create: docs/experiments/2026-07-sdd-fix-loop-re"
+   "style": "f7591b6e",
+   "content": "955eff74",
+   "text": "Create: docs/​experiments/​2026-07-​sdd-​fix-​lo"
   },
   {
    "slot": 31,
    "kind": "rule",
-   "top": 2326,
+   "top": 2352,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
   {
    "slot": 32,
    "kind": "heading",
-   "top": 2373,
+   "top": 2399,
    "h": 32,
-   "style": "84dbbd0b",
+   "style": "51effc8d",
    "content": "1134c188",
    "text": "Task 1: Create the scoped re-review template"
   },
   {
    "slot": 33,
    "kind": "paragraph",
-   "top": 2405,
+   "top": 2431,
    "h": 32,
-   "style": "2f7c19d2",
+   "style": "3a803b72",
    "content": "dcd190be",
    "text": "Files:"
   },
   {
    "slot": 34,
    "kind": "listItem",
-   "top": 2438,
+   "top": 2464,
    "h": 45,
-   "style": "df8f50d3",
-   "content": "738571a1",
-   "text": "Create: skills/subagent-driven-development/re-re"
+   "style": "66ff2b04",
+   "content": "b7e9d619",
+   "text": "Create: skills/​subagent-​driven-​development/​r"
   },
   {
    "slot": 35,
    "kind": "paragraph",
-   "top": 2482,
+   "top": 2508,
    "h": 32,
-   "style": "6f3d3b94",
+   "style": "950c64b4",
    "content": "a2cb5599",
    "text": "Interfaces:"
   },
   {
    "slot": 36,
    "kind": "listItem",
-   "top": 2515,
+   "top": 2541,
    "h": 87,
-   "style": "70035172",
+   "style": "8ebfbf4d",
    "content": "b3f9b56b",
    "text": "Produces: template placeholders [MODEL], [BRIEF_"
   },
   {
    "slot": 37,
    "kind": "listItem",
-   "top": 2602,
+   "top": 2628,
    "h": 45,
-   "style": "fdca12be",
+   "style": "e3244480",
    "content": "3265f731",
    "text": "Step 1: Write the file with exactly this content"
   },
   {
    "slot": 38,
    "kind": "code",
-   "top": 2647,
+   "top": 2673,
    "h": 2162,
-   "style": "ca4158d4",
+   "style": "bc9203b2",
    "content": "22a12cb6",
    "text": "# Scoped Re-Review Prompt Template Use this temp"
   },
   {
    "slot": 39,
    "kind": "listItem",
-   "top": 4809,
+   "top": 4835,
    "h": 45,
-   "style": "ab45883f",
+   "style": "1ed32ced",
    "content": "caba6ecc",
    "text": "Step 2: Verify the file parses as the other temp"
   },
   {
    "slot": 40,
    "kind": "paragraph",
-   "top": 4853,
+   "top": 4879,
    "h": 96,
-   "style": "03c4795c",
-   "content": "4f551dd8",
-   "text": "Run: grep -c '^\\[MODEL' skills/subagent-driven-d"
+   "style": "1d83b4a9",
+   "content": "44759e40",
+   "text": "Run: grep -c '^\\[MODEL' skills/​subagent-​driven"
   },
   {
    "slot": 41,
    "kind": "paragraph",
-   "top": 4949,
+   "top": 4975,
    "h": 96,
-   "style": "e079e283",
-   "content": "912ddfe0",
-   "text": "Run: grep -n 'FIX_BASE_SHA' skills/subagent-driv"
+   "style": "2e57cd56",
+   "content": "56cec348",
+   "text": "Run: grep -n 'FIX_BASE_SHA' skills/​subagent-​dr"
   },
   {
    "slot": 42,
    "kind": "listItem",
-   "top": 5044,
+   "top": 5070,
    "h": 45,
-   "style": "db297325",
+   "style": "704bc697",
    "content": "794963ed",
    "text": "Step 3: Commit"
   },
   {
    "slot": 43,
    "kind": "code",
-   "top": 5089,
+   "top": 5115,
    "h": 82,
-   "style": "4dd7e318",
+   "style": "dd1533c2",
    "content": "3b95a758",
    "text": "git add skills/subagent-driven-development/re-re"
   },
   {
    "slot": 44,
    "kind": "rule",
-   "top": 5171,
+   "top": 5197,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
   {
    "slot": 45,
    "kind": "heading",
-   "top": 5218,
+   "top": 5244,
    "h": 55,
-   "style": "311a1c5e",
+   "style": "928b7994",
    "content": "847ff357",
    "text": "Task 2: Align the implementer and task-reviewer "
   },
   {
    "slot": 46,
    "kind": "paragraph",
-   "top": 5273,
+   "top": 5299,
    "h": 32,
-   "style": "2f7c19d2",
+   "style": "3a803b72",
    "content": "dcd190be",
    "text": "Files:"
   },
   {
    "slot": 47,
    "kind": "listItem",
-   "top": 5305,
+   "top": 5331,
    "h": 54,
-   "style": "74cab688",
-   "content": "df1850ba",
-   "text": "Modify: skills/subagent-driven-development/imple"
+   "style": "29ff566e",
+   "content": "0e7b9d6b",
+   "text": "Modify: skills/​subagent-​driven-​development/​i"
   },
   {
    "slot": 48,
    "kind": "listItem",
-   "top": 5360,
+   "top": 5386,
    "h": 54,
-   "style": "70f009ef",
-   "content": "93679655",
-   "text": "Modify: skills/subagent-driven-development/task-"
+   "style": "79c96288",
+   "content": "2073e3ff",
+   "text": "Modify: skills/​subagent-​driven-​development/​t"
   },
   {
    "slot": 49,
    "kind": "listItem",
-   "top": 5414,
+   "top": 5440,
    "h": 71,
-   "style": "b427bd9c",
-   "content": "cff61a8e",
-   "text": "Modify: skills/using-superpowers/references/code"
+   "style": "cc595fd5",
+   "content": "b0d7338d",
+   "text": "Modify: skills/​using-​superpowers/​references/​"
   },
   {
    "slot": 50,
    "kind": "paragraph",
-   "top": 5485,
+   "top": 5511,
    "h": 32,
-   "style": "6f3d3b94",
+   "style": "950c64b4",
    "content": "a2cb5599",
    "text": "Interfaces:"
   },
   {
    "slot": 51,
    "kind": "listItem",
-   "top": 5517,
+   "top": 5543,
    "h": 35,
-   "style": "9b574698",
+   "style": "91236968",
    "content": "e810ddf9",
    "text": "Consumes: re-review-prompt.md exists (Task 1)."
   },
   {
    "slot": 52,
    "kind": "listItem",
-   "top": 5553,
+   "top": 5579,
    "h": 61,
-   "style": "e5dd06dc",
+   "style": "6ec95a5a",
    "content": "4958b4aa",
    "text": "Produces: the implementer contract Task 3's fix "
   },
   {
    "slot": 53,
    "kind": "listItem",
-   "top": 5614,
+   "top": 5640,
    "h": 71,
-   "style": "335e1869",
+   "style": "f94d96b3",
    "content": "e9524def",
    "text": "Step 1: Replace the \"After Review Findings\" sect"
   },
   {
    "slot": 54,
    "kind": "paragraph",
-   "top": 5685,
+   "top": 5711,
    "h": 44,
-   "style": "91379f53",
+   "style": "6262683b",
    "content": "d376fce3",
    "text": "Old text (exact):"
   },
   {
    "slot": 55,
    "kind": "code",
-   "top": 5728,
+   "top": 5754,
    "h": 142,
-   "style": "ab7b3a27",
+   "style": "71a73ccd",
    "content": "e5746650",
    "text": "## After Review Findings If a reviewer finds iss"
   },
   {
    "slot": 56,
    "kind": "paragraph",
-   "top": 5870,
+   "top": 5896,
    "h": 44,
-   "style": "91379f53",
+   "style": "6262683b",
    "content": "3367e7f8",
    "text": "New text (exact):"
   },
   {
    "slot": 57,
    "kind": "code",
-   "top": 5914,
+   "top": 5940,
    "h": 202,
-   "style": "d97c231b",
+   "style": "d859ee95",
    "content": "55cc0c75",
    "text": "## After Review Findings If the task review find"
   },
   {
    "slot": 58,
    "kind": "listItem",
-   "top": 6115,
+   "top": 6141,
    "h": 71,
-   "style": "a2ff8219",
+   "style": "e4437f2b",
    "content": "cf3c2679",
    "text": "Step 2: Delete the trailing re-review paragraph "
   },
   {
    "slot": 59,
    "kind": "paragraph",
-   "top": 6186,
+   "top": 6212,
    "h": 44,
-   "style": "91379f53",
+   "style": "6262683b",
    "content": "e271a32a",
    "text": "Delete this text (exact, at end of file):"
   },
   {
    "slot": 60,
    "kind": "code",
-   "top": 6230,
+   "top": 6256,
    "h": 82,
-   "style": "938cce75",
+   "style": "a824df53",
    "content": "57a08d96",
    "text": "A fix dispatch can address spec gaps and quality"
   },
   {
    "slot": 61,
    "kind": "paragraph",
-   "top": 6311,
+   "top": 6337,
    "h": 70,
-   "style": "3de07fb4",
+   "style": "d7723e34",
    "content": "6613fd08",
    "text": "Nothing replaces it — the scoped re-review contr"
   },
   {
    "slot": 62,
    "kind": "listItem",
-   "top": 6381,
+   "top": 6407,
    "h": 71,
-   "style": "28bc3f8a",
+   "style": "dd63ac00",
    "content": "c76a7d0f",
    "text": "Step 3: Update the Codex subagent close-timing s"
   },
   {
    "slot": 63,
    "kind": "paragraph",
-   "top": 6451,
+   "top": 6477,
    "h": 44,
-   "style": "91379f53",
+   "style": "6262683b",
    "content": "6ee49fec",
    "text": "Old text (exact, line 10):"
   },
   {
    "slot": 64,
    "kind": "code",
-   "top": 6495,
+   "top": 6521,
    "h": 82,
-   "style": "895dae89",
+   "style": "4748681d",
    "content": "da88307e",
    "text": "When using subagent-driven-development, you shou"
   },
   {
    "slot": 65,
    "kind": "paragraph",
-   "top": 6577,
+   "top": 6603,
    "h": 44,
-   "style": "91379f53",
+   "style": "6262683b",
    "content": "3367e7f8",
    "text": "New text (exact):"
   },
   {
    "slot": 66,
    "kind": "code",
-   "top": 6620,
+   "top": 6646,
    "h": 142,
-   "style": "95b05319",
+   "style": "808e61d5",
    "content": "9cf0837f",
    "text": "When using subagent-driven-development, close re"
   },
   {
    "slot": 67,
    "kind": "listItem",
-   "top": 6762,
+   "top": 6788,
    "h": 45,
-   "style": "b4a063b6",
+   "style": "f4839b94",
    "content": "fa8b4baf",
    "text": "Step 4: Verify no template still references dedi"
   },
   {
    "slot": 68,
    "kind": "paragraph",
-   "top": 6807,
+   "top": 6833,
    "h": 96,
-   "style": "5983f7a7",
-   "content": "0b5edfc9",
-   "text": "Run: grep -rn \"fix subagent\" skills/subagent-dri"
+   "style": "c25c5a0b",
+   "content": "ff204b9a",
+   "text": "Run: grep -rn \"fix subagent\" skills/​subagent-​d"
   },
   {
    "slot": 69,
    "kind": "paragraph",
-   "top": 6902,
+   "top": 6928,
    "h": 122,
-   "style": "17a0fdf9",
-   "content": "acf97698",
-   "text": "Run: grep -rn \"fix subagent\" skills/subagent-dri"
+   "style": "5cb0bb90",
+   "content": "1a426ec7",
+   "text": "Run: grep -rn \"fix subagent\" skills/​subagent-​d"
   },
   {
    "slot": 70,
    "kind": "listItem",
-   "top": 7024,
+   "top": 7050,
    "h": 45,
-   "style": "db297325",
+   "style": "704bc697",
    "content": "c5f9adef",
    "text": "Step 5: Commit"
   },
   {
    "slot": 71,
    "kind": "code",
-   "top": 7068,
+   "top": 7094,
    "h": 82,
-   "style": "56d92ef5",
+   "style": "2809495d",
    "content": "c02d88bf",
    "text": "git add skills/subagent-driven-development/imple"
   },
   {
    "slot": 72,
    "kind": "rule",
-   "top": 7150,
+   "top": 7176,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
   {
    "slot": 73,
    "kind": "heading",
-   "top": 7198,
+   "top": 7224,
    "h": 55,
-   "style": "311a1c5e",
+   "style": "928b7994",
    "content": "ef3726cb",
    "text": "Task 3: Restructure SKILL.md by lifecycle with t"
   },
   {
    "slot": 74,
    "kind": "paragraph",
-   "top": 7253,
+   "top": 7279,
    "h": 32,
-   "style": "2f7c19d2",
+   "style": "3a803b72",
    "content": "dcd190be",
    "text": "Files:"
   },
   {
    "slot": 75,
    "kind": "listItem",
-   "top": 7285,
+   "top": 7311,
    "h": 71,
-   "style": "f7439b5a",
-   "content": "6290c45d",
-   "text": "Modify: skills/subagent-driven-development/SKILL"
+   "style": "fcd432d6",
+   "content": "9ea9e79f",
+   "text": "Modify: skills/​subagent-​driven-​development/​S"
   },
   {
    "slot": 76,
    "kind": "paragraph",
-   "top": 7356,
+   "top": 7382,
    "h": 32,
-   "style": "6f3d3b94",
+   "style": "950c64b4",
    "content": "a2cb5599",
    "text": "Interfaces:"
   },
   {
    "slot": 77,
    "kind": "listItem",
-   "top": 7388,
+   "top": 7414,
    "h": 61,
-   "style": "e4df5a8f",
-   "content": "e914c665",
+   "style": "527611bb",
+   "content": "f234bcdd",
    "text": "Consumes: all three templates (Tasks 1–2); scrip"
   },
   {
    "slot": 78,
    "kind": "listItem",
-   "top": 7450,
+   "top": 7476,
    "h": 61,
-   "style": "5076b86b",
+   "style": "c1d2b47f",
    "content": "0a8e8f87",
    "text": "Produces: the ledger line formats in Global Cons"
   },
   {
    "slot": 79,
    "kind": "listItem",
-   "top": 7511,
+   "top": 7537,
    "h": 45,
-   "style": "87c5b97f",
+   "style": "3f6314b1",
    "content": "15c6f2f7",
    "text": "Step 1: Replace the entire SKILL.md body with ex"
   },
   {
    "slot": 80,
    "kind": "code",
-   "top": 7556,
+   "top": 7582,
    "h": 9682,
-   "style": "57c5ac9a",
+   "style": "fecb8fbc",
    "content": "181fe026",
    "text": "--- name: subagent-driven-development descriptio"
   },
   {
    "slot": 81,
    "kind": "listItem",
-   "top": 17238,
+   "top": 17264,
    "h": 45,
-   "style": "5f5d2b84",
+   "style": "fe8105b6",
    "content": "6065ba24",
    "text": "Step 2: Verify the move map — every row below mu"
   },
   {
    "slot": 82,
    "kind": "paragraph",
-   "top": 17282,
+   "top": 17308,
    "h": 122,
-   "style": "07a3fcf3",
-   "content": "b3dac1e0",
+   "style": "462c84a7",
+   "content": "62822d8f",
    "text": "The move map. \"Verbatim\" rows: the sentence(s) m"
   },
   {
    "slot": 83,
    "kind": "table",
-   "top": 17404,
+   "top": 17430,
    "h": 3335,
-   "style": "a8cfda3a",
+   "style": "35ff8e33",
    "content": "5296df68",
    "text": "Current SKILL.md (dev)ContentNew locationDisposi"
   },
   {
    "slot": 84,
    "kind": "paragraph",
-   "top": 20738,
+   "top": 20764,
    "h": 96,
-   "style": "9edf4705",
-   "content": "372cdfcf",
-   "text": "Run: grep -n \"fix subagent\" skills/subagent-driv"
+   "style": "7479e3de",
+   "content": "049a5609",
+   "text": "Run: grep -n \"fix subagent\" skills/​subagent-​dr"
   },
   {
    "slot": 85,
    "kind": "paragraph",
-   "top": 20834,
+   "top": 20860,
    "h": 70,
-   "style": "118b9e50",
-   "content": "a7f51de8",
-   "text": "Run: grep -c \"Task <N>\" skills/subagent-driven-d"
+   "style": "7cbf51ec",
+   "content": "2fe55256",
+   "text": "Run: grep -c \"Task <N>\" skills/​subagent-​driven"
   },
   {
    "slot": 86,
    "kind": "paragraph",
-   "top": 20904,
+   "top": 20930,
    "h": 70,
-   "style": "0e985612",
-   "content": "1bb0cf3e",
-   "text": "Run: grep -n \"same subagent\" skills/subagent-dri"
+   "style": "5956bcf0",
+   "content": "ac9ce844",
+   "text": "Run: grep -n \"same subagent\" skills/​subagent-​d"
   },
   {
    "slot": 87,
    "kind": "listItem",
-   "top": 20973,
+   "top": 20999,
    "h": 45,
-   "style": "a19997ba",
+   "style": "ff007024",
    "content": "c81a7513",
    "text": "Step 3: Render the dot graphs to catch syntax er"
   },
   {
    "slot": 88,
    "kind": "paragraph",
-   "top": 21018,
+   "top": 21044,
    "h": 148,
-   "style": "4bd9564f",
-   "content": "5b382c3c",
-   "text": "Run: awk '/```dot/,/```/' skills/subagent-driven"
+   "style": "fb8861f8",
+   "content": "fc3b8596",
+   "text": "Run: awk '/```dot/,/```/' skills/​subagent-​driv"
   },
   {
    "slot": 89,
    "kind": "listItem",
-   "top": 21165,
+   "top": 21191,
    "h": 45,
-   "style": "db297325",
+   "style": "704bc697",
    "content": "e799c660",
    "text": "Step 4: Commit"
   },
   {
    "slot": 90,
    "kind": "code",
-   "top": 21210,
+   "top": 21236,
    "h": 82,
-   "style": "c6f770cd",
+   "style": "1db715af",
    "content": "2ae593ff",
    "text": "git add skills/subagent-driven-development/SKILL"
   },
   {
    "slot": 91,
    "kind": "rule",
-   "top": 21292,
+   "top": 21318,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
   {
    "slot": 92,
    "kind": "heading",
-   "top": 21339,
+   "top": 21365,
    "h": 55,
-   "style": "311a1c5e",
+   "style": "928b7994",
    "content": "9f1f74db",
    "text": "Task 4: Add the two mid-loop ledger fixture help"
   },
   {
    "slot": 93,
    "kind": "paragraph",
-   "top": 21394,
+   "top": 21420,
    "h": 32,
-   "style": "2f7c19d2",
+   "style": "3a803b72",
    "content": "dcd190be",
    "text": "Files:"
   },
   {
    "slot": 94,
    "kind": "listItem",
-   "top": 21427,
+   "top": 21453,
    "h": 54,
-   "style": "9d7daa8a",
-   "content": "5bd8467a",
-   "text": "Modify: evals/src/setup-helpers/sdd-fixtures.ts "
+   "style": "7baba7fb",
+   "content": "88e91bef",
+   "text": "Modify: evals/​src/​setup-​helpers/​sdd-​fixture"
   },
   {
    "slot": 95,
    "kind": "listItem",
-   "top": 21481,
+   "top": 21507,
    "h": 28,
-   "style": "17cab5d4",
-   "content": "b2d4d59b",
-   "text": "Modify: evals/src/setup-helpers/registry.ts (imp"
+   "style": "aeaff53f",
+   "content": "92e82af1",
+   "text": "Modify: evals/​src/​setup-​helpers/​registry.ts "
   },
   {
    "slot": 96,
    "kind": "listItem",
-   "top": 21509,
+   "top": 21535,
    "h": 45,
-   "style": "16063b60",
-   "content": "a8349354",
-   "text": "Modify: evals/test/setup-helpers-sdd.test.ts (te"
+   "style": "39b08d51",
+   "content": "c4e58278",
+   "text": "Modify: evals/​test/​setup-​helpers-​sdd.test.ts"
   },
   {
    "slot": 97,
    "kind": "paragraph",
-   "top": 21554,
+   "top": 21580,
    "h": 32,
-   "style": "6f3d3b94",
+   "style": "950c64b4",
    "content": "a2cb5599",
    "text": "Interfaces:"
   },
   {
    "slot": 98,
    "kind": "listItem",
-   "top": 21586,
+   "top": 21612,
    "h": 54,
-   "style": "70435783",
-   "content": "22123d38",
+   "style": "b53175e9",
+   "content": "b9b0f172",
    "text": "Consumes: HelperContext, ensureWorkdir, writeFix"
   },
   {
    "slot": 99,
    "kind": "listItem",
-   "top": 21641,
+   "top": 21667,
    "h": 149,
-   "style": "0bfa3e89",
-   "content": "d46915ac",
-   "text": "Produces: registry names scaffold_sdd_midloop_pa"
+   "style": "c751fcc0",
+   "content": "fa41c39c",
+   "text": "Produces: registry names scaffold_​sdd_​midloop_"
   },
   {
    "slot": 100,
    "kind": "paragraph",
-   "top": 21790,
+   "top": 21816,
    "h": 32,
-   "style": "348c4155",
-   "content": "aa7ab4aa",
-   "text": "Work in evals/ on branch sdd-fix-loop-scenarios:"
+   "style": "da2873d9",
+   "content": "db7c53b7",
+   "text": "Work in evals/ on branch sdd-​fix-​loop-​scenari"
   },
   {
    "slot": 101,
    "kind": "listItem",
-   "top": 21822,
+   "top": 21848,
    "h": 45,
-   "style": "72c4552e",
+   "style": "30db59dc",
    "content": "22784fdb",
    "text": "Step 0: Create the evals branch"
   },
   {
    "slot": 102,
    "kind": "code",
-   "top": 21867,
+   "top": 21893,
    "h": 82,
-   "style": "35309a68",
+   "style": "bd54e232",
    "content": "04b0802e",
    "text": "cd evals git checkout -b sdd-fix-loop-scenarios"
   },
   {
    "slot": 103,
    "kind": "listItem",
-   "top": 21948,
+   "top": 21974,
    "h": 45,
-   "style": "2bf0c14a",
+   "style": "9f51d918",
    "content": "54a79fe3",
    "text": "Step 1: Write the failing tests"
   },
   {
    "slot": 104,
    "kind": "paragraph",
-   "top": 21993,
+   "top": 22019,
    "h": 70,
-   "style": "04a3060f",
-   "content": "f76c18e9",
-   "text": "Append to evals/test/setup-helpers-sdd.test.ts, "
+   "style": "c70f2cc1",
+   "content": "fe0b5be1",
+   "text": "Append to evals/​test/​setup-​helpers-​sdd.test."
   },
   {
    "slot": 105,
    "kind": "code",
-   "top": 22063,
+   "top": 22089,
    "h": 1002,
-   "style": "fab16122",
+   "style": "99dd49ac",
    "content": "be9894f2",
    "text": "test('scaffoldSddMidloopParked seeds a round-5 l"
   },
   {
    "slot": 106,
    "kind": "paragraph",
-   "top": 23064,
+   "top": 23090,
    "h": 44,
-   "style": "4e421315",
+   "style": "7b72b088",
    "content": "a37307a0",
    "text": "Add readFileSync to the node:fs import line at t"
   },
   {
    "slot": 107,
    "kind": "listItem",
-   "top": 23108,
+   "top": 23134,
    "h": 45,
-   "style": "666d38e2",
+   "style": "a05022dc",
    "content": "1721b0f5",
    "text": "Step 2: Run tests to verify they fail"
   },
   {
    "slot": 108,
    "kind": "paragraph",
-   "top": 23153,
+   "top": 23179,
    "h": 96,
-   "style": "f3982d1e",
-   "content": "0a1d8267",
-   "text": "Run: cd evals && bun test test/setup-helpers-sdd"
+   "style": "3643b5fc",
+   "content": "3806bdbe",
+   "text": "Run: cd evals && bun test test/​setup-​helpers-​"
   },
   {
    "slot": 109,
    "kind": "listItem",
-   "top": 23248,
+   "top": 23274,
    "h": 45,
-   "style": "190df041",
+   "style": "60fc0913",
    "content": "4da8e187",
    "text": "Step 3: Implement the helpers"
   },
   {
    "slot": 110,
    "kind": "paragraph",
-   "top": 23293,
+   "top": 23319,
    "h": 44,
-   "style": "ea6003a0",
-   "content": "732c00e2",
-   "text": "Append to evals/src/setup-helpers/sdd-fixtures.t"
+   "style": "eb1fba93",
+   "content": "f4821a3f",
+   "text": "Append to evals/​src/​setup-​helpers/​sdd-​fixtu"
   },
   {
    "slot": 111,
    "kind": "code",
-   "top": 23336,
+   "top": 23362,
    "h": 4742,
-   "style": "bb472385",
+   "style": "0fb28db3",
    "content": "21ca3853",
    "text": "const MIDLOOP_PACKAGE_JSON = `{ \"name\": \"metrics"
   },
   {
    "slot": 112,
    "kind": "paragraph",
-   "top": 28078,
+   "top": 28104,
    "h": 96,
-   "style": "676678e6",
+   "style": "c51feeae",
    "content": "9eda712f",
    "text": "Note on the Task 2: implementer DONE line: it is"
   },
   {
    "slot": 113,
    "kind": "listItem",
-   "top": 28174,
+   "top": 28200,
    "h": 45,
-   "style": "d8ea725e",
+   "style": "a2e3ef08",
    "content": "03283f82",
    "text": "Step 4: Register the helpers"
   },
   {
    "slot": 114,
    "kind": "paragraph",
-   "top": 28218,
+   "top": 28244,
    "h": 44,
-   "style": "81ca3c3a",
-   "content": "980e0e2f",
-   "text": "In evals/src/setup-helpers/registry.ts, extend t"
+   "style": "d74ecdc3",
+   "content": "5a28a27d",
+   "text": "In evals/​src/​setup-​helpers/​registry.ts, exte"
   },
   {
    "slot": 115,
    "kind": "code",
-   "top": 28262,
+   "top": 28288,
    "h": 222,
-   "style": "13bbf230",
+   "style": "a8d70a2e",
    "content": "d1625635",
    "text": "import { addSddAuthPlan, scaffoldSddBrokenPlan, "
   },
   {
    "slot": 116,
    "kind": "paragraph",
-   "top": 28484,
+   "top": 28510,
    "h": 44,
-   "style": "91379f53",
+   "style": "6262683b",
    "content": "7836d450",
    "text": "and add to the dispatch table, alphabetically be"
   },
   {
    "slot": 117,
    "kind": "code",
-   "top": 28527,
+   "top": 28553,
    "h": 82,
-   "style": "2e90c216",
+   "style": "49aa8c30",
    "content": "3f27037b",
    "text": "scaffold_sdd_midloop_parked: { fn: scaffoldSddMi"
   },
   {
    "slot": 118,
    "kind": "listItem",
-   "top": 28609,
+   "top": 28635,
    "h": 45,
-   "style": "d5ca90c6",
+   "style": "34a204e4",
    "content": "973bcd0a",
    "text": "Step 5: Run the tests and static gates"
   },
   {
    "slot": 119,
    "kind": "paragraph",
-   "top": 28653,
+   "top": 28679,
    "h": 122,
-   "style": "f7abc4ea",
-   "content": "f71c4c14",
-   "text": "Run: cd evals && bun test test/setup-helpers-sdd"
+   "style": "660a79ad",
+   "content": "be0f7122",
+   "text": "Run: cd evals && bun test test/​setup-​helpers-​"
   },
   {
    "slot": 120,
    "kind": "paragraph",
-   "top": 28775,
+   "top": 28801,
    "h": 96,
-   "style": "9fbc4110",
+   "style": "2db23394",
    "content": "8023f71c",
    "text": "Run: cd evals && bun run checkExpected: PASS (bi"
   },
   {
    "slot": 121,
    "kind": "listItem",
-   "top": 28871,
+   "top": 28897,
    "h": 45,
-   "style": "e0765b2a",
+   "style": "7fb71ad4",
    "content": "3e5de5de",
    "text": "Step 6: Verify the parked fixture's tests are gr"
   },
   {
    "slot": 122,
    "kind": "code",
-   "top": 28915,
+   "top": 28941,
    "h": 82,
-   "style": "f643ac4c",
+   "style": "1c3d57e0",
    "content": "771fab2b",
    "text": "cd \"$(mktemp -d)\" && export QW=$PWD && cd - >/de"
   },
   {
    "slot": 123,
    "kind": "paragraph",
-   "top": 28997,
+   "top": 29023,
    "h": 70,
-   "style": "4c8020a3",
+   "style": "4fa2de9e",
    "content": "30d340d5",
    "text": "Expected: npm test passes (2 test files, 4 tests"
   },
   {
    "slot": 124,
    "kind": "listItem",
-   "top": 29067,
+   "top": 29093,
    "h": 45,
-   "style": "ffd4b830",
+   "style": "3dc90456",
    "content": "ea39c7ef",
    "text": "Step 7: Commit (evals repo)"
   },
   {
    "slot": 125,
    "kind": "code",
-   "top": 29111,
+   "top": 29137,
    "h": 102,
-   "style": "ce17a080",
+   "style": "bca6dd86",
    "content": "2796bc5f",
    "text": "cd evals git add src/setup-helpers/sdd-fixtures."
   },
   {
    "slot": 126,
    "kind": "rule",
-   "top": 29213,
+   "top": 29239,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
   {
    "slot": 127,
    "kind": "heading",
-   "top": 29260,
+   "top": 29286,
    "h": 32,
-   "style": "84dbbd0b",
+   "style": "51effc8d",
    "content": "44740715",
    "text": "Task 5: Scenario — fix rounds resume the impleme"
   },
   {
    "slot": 128,
    "kind": "paragraph",
-   "top": 29292,
+   "top": 29318,
    "h": 32,
-   "style": "2f7c19d2",
+   "style": "3a803b72",
    "content": "dcd190be",
    "text": "Files:"
   },
   {
    "slot": 129,
    "kind": "listItem",
-   "top": 29325,
+   "top": 29351,
    "h": 28,
-   "style": "96223361",
-   "content": "d082f156",
-   "text": "Create: evals/scenarios/sdd-fix-loop-resumes-imp"
+   "style": "761757f2",
+   "content": "cef0eb53",
+   "text": "Create: evals/​scenarios/​sdd-​fix-​loop-​resume"
   },
   {
    "slot": 130,
    "kind": "listItem",
-   "top": 29353,
+   "top": 29379,
    "h": 28,
-   "style": "bc267f12",
-   "content": "e72b3494",
-   "text": "Create: evals/scenarios/sdd-fix-loop-resumes-imp"
+   "style": "ddd10a6e",
+   "content": "e4039365",
+   "text": "Create: evals/​scenarios/​sdd-​fix-​loop-​resume"
   },
   {
    "slot": 131,
    "kind": "listItem",
-   "top": 29381,
+   "top": 29407,
    "h": 45,
-   "style": "c679b355",
-   "content": "37f3ff40",
-   "text": "Create: evals/scenarios/sdd-fix-loop-resumes-imp"
+   "style": "dc0c1f3a",
+   "content": "d63225ef",
+   "text": "Create: evals/​scenarios/​sdd-​fix-​loop-​resume"
   },
   {
    "slot": 132,
    "kind": "paragraph",
-   "top": 29426,
+   "top": 29452,
    "h": 32,
-   "style": "6f3d3b94",
+   "style": "950c64b4",
    "content": "a2cb5599",
    "text": "Interfaces:"
   },
   {
    "slot": 133,
    "kind": "listItem",
-   "top": 29459,
+   "top": 29485,
    "h": 61,
-   "style": "3140e0f6",
-   "content": "bc285fd0",
-   "text": "Consumes: existing helper scaffold_sdd_quality_d"
+   "style": "b4e71359",
+   "content": "f75968f9",
+   "text": "Consumes: existing helper scaffold_​sdd_​quality"
   },
   {
    "slot": 134,
    "kind": "listItem",
-   "top": 29520,
+   "top": 29546,
    "h": 61,
-   "style": "42d2b89d",
-   "content": "6e018fdf",
-   "text": "Produces: scenario name sdd-fix-loop-resumes-imp"
+   "style": "8e31f277",
+   "content": "47bca95d",
+   "text": "Produces: scenario name sdd-​fix-​loop-​resumes-"
   },
   {
    "slot": 135,
    "kind": "listItem",
-   "top": 29581,
+   "top": 29607,
    "h": 45,
-   "style": "a93e7b52",
+   "style": "804f37f8",
    "content": "d6f86463",
    "text": "Step 1: Write story.md"
   },
   {
    "slot": 136,
    "kind": "code",
-   "top": 29626,
+   "top": 29652,
    "h": 1242,
-   "style": "c3cee594",
+   "style": "c6a6ce61",
    "content": "4e7df03e",
    "text": "--- id: sdd-fix-loop-resumes-implementer title: "
   },
   {
    "slot": 137,
    "kind": "listItem",
-   "top": 30868,
+   "top": 30894,
    "h": 45,
-   "style": "c182841d",
+   "style": "9bb19813",
    "content": "5c5f88fc",
    "text": "Step 2: Write setup.sh"
   },
   {
    "slot": 138,
    "kind": "code",
-   "top": 30912,
+   "top": 30938,
    "h": 102,
-   "style": "8cd2901e",
+   "style": "ca6cb590",
    "content": "7d217f52",
    "text": "#!/usr/bin/env bash set -euo pipefail setup-help"
   },
   {
    "slot": 139,
    "kind": "listItem",
-   "top": 31014,
+   "top": 31040,
    "h": 71,
-   "style": "e73bff70",
+   "style": "85288872",
    "content": "e8515806",
    "text": "Step 3: Write checks.sh (no executable bit; the "
   },
   {
    "slot": 140,
    "kind": "code",
-   "top": 31085,
+   "top": 31111,
    "h": 402,
-   "style": "cb0e40c5",
+   "style": "dbeefa5d",
    "content": "e396a076",
    "text": "# coding-agents: claude pre() { git-repo git-bra"
   },
   {
    "slot": 141,
    "kind": "paragraph",
-   "top": 31486,
+   "top": 31512,
    "h": 148,
-   "style": "7481ad0f",
+   "style": "100f38a0",
    "content": "d5156482",
    "text": "The deterministic core is tool-called SendMessag"
   },
   {
    "slot": 142,
    "kind": "listItem",
-   "top": 31634,
+   "top": 31660,
    "h": 45,
-   "style": "456f4410",
+   "style": "b831be96",
    "content": "37b5c299",
    "text": "Step 4: Validate and commit (evals repo)"
   },
   {
    "slot": 143,
    "kind": "paragraph",
-   "top": 31679,
+   "top": 31705,
    "h": 70,
-   "style": "995ad904",
+   "style": "3b337bc6",
    "content": "57368b82",
    "text": "Run: cd evals && bun run quorum checkExpected: P"
   },
   {
    "slot": 144,
    "kind": "code",
-   "top": 31748,
+   "top": 31774,
    "h": 102,
-   "style": "0ae96547",
+   "style": "f0e6c02d",
    "content": "dac0e7df",
    "text": "cd evals git add scenarios/sdd-fix-loop-resumes-"
   },
   {
    "slot": 145,
    "kind": "rule",
-   "top": 31850,
+   "top": 31876,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
   {
    "slot": 146,
    "kind": "heading",
-   "top": 31897,
+   "top": 31923,
    "h": 55,
-   "style": "311a1c5e",
+   "style": "928b7994",
    "content": "0fa7ee94",
    "text": "Task 6: Scenario — breaker trips at the cap, adj"
   },
   {
    "slot": 147,
    "kind": "paragraph",
-   "top": 31952,
+   "top": 31978,
    "h": 32,
-   "style": "2f7c19d2",
+   "style": "3a803b72",
    "content": "dcd190be",
    "text": "Files:"
   },
   {
    "slot": 148,
    "kind": "listItem",
-   "top": 31985,
+   "top": 32011,
    "h": 28,
-   "style": "034a7297",
-   "content": "aaa11421",
-   "text": "Create: evals/scenarios/sdd-breaker-adjudicates-"
+   "style": "4be78b39",
+   "content": "39c9abe0",
+   "text": "Create: evals/​scenarios/​sdd-​breaker-​adjudica"
   },
   {
    "slot": 149,
    "kind": "listItem",
-   "top": 32013,
+   "top": 32039,
    "h": 28,
-   "style": "4cf1ce5a",
-   "content": "5b73b0a7",
-   "text": "Create: evals/scenarios/sdd-breaker-adjudicates-"
+   "style": "f446f085",
+   "content": "1d7aa802",
+   "text": "Create: evals/​scenarios/​sdd-​breaker-​adjudica"
   },
   {
    "slot": 150,
    "kind": "listItem",
-   "top": 32041,
+   "top": 32067,
    "h": 45,
-   "style": "d03d1a7b",
-   "content": "a8ecd209",
-   "text": "Create: evals/scenarios/sdd-breaker-adjudicates-"
+   "style": "e699f944",
+   "content": "edeb1e46",
+   "text": "Create: evals/​scenarios/​sdd-​breaker-​adjudica"
   },
   {
    "slot": 151,
    "kind": "paragraph",
-   "top": 32086,
+   "top": 32112,
    "h": 32,
-   "style": "6f3d3b94",
+   "style": "950c64b4",
    "content": "a2cb5599",
    "text": "Interfaces:"
   },
   {
    "slot": 152,
    "kind": "listItem",
-   "top": 32119,
+   "top": 32145,
    "h": 61,
-   "style": "2fbca0cf",
-   "content": "ee43ed6d",
-   "text": "Consumes: helper scaffold_sdd_midloop_parked (Ta"
+   "style": "2a3ebc2a",
+   "content": "41a29cb0",
+   "text": "Consumes: helper scaffold_​sdd_​midloop_​parked "
   },
   {
    "slot": 153,
    "kind": "listItem",
-   "top": 32180,
+   "top": 32206,
    "h": 35,
-   "style": "25829764",
-   "content": "a7630f50",
-   "text": "Produces: scenario name sdd-breaker-adjudicates-"
+   "style": "66b73214",
+   "content": "62f9f79f",
+   "text": "Produces: scenario name sdd-​breaker-​adjudicate"
   },
   {
    "slot": 154,
    "kind": "listItem",
-   "top": 32215,
+   "top": 32241,
    "h": 45,
-   "style": "a93e7b52",
+   "style": "804f37f8",
    "content": "d6f86463",
    "text": "Step 1: Write story.md"
   },
   {
    "slot": 155,
    "kind": "code",
-   "top": 32260,
+   "top": 32286,
    "h": 1022,
-   "style": "a0b1ec59",
+   "style": "ed4be329",
    "content": "a9142794",
    "text": "--- id: sdd-breaker-adjudicates-at-cap title: SD"
   },
   {
    "slot": 156,
    "kind": "listItem",
-   "top": 33282,
+   "top": 33308,
    "h": 45,
-   "style": "c182841d",
+   "style": "9bb19813",
    "content": "5c5f88fc",
    "text": "Step 2: Write setup.sh"
   },
   {
    "slot": 157,
    "kind": "code",
-   "top": 33326,
+   "top": 33352,
    "h": 102,
-   "style": "3046399c",
+   "style": "5687b71a",
    "content": "f09508eb",
    "text": "#!/usr/bin/env bash set -euo pipefail setup-help"
   },
   {
    "slot": 158,
    "kind": "listItem",
-   "top": 33428,
+   "top": 33454,
    "h": 45,
-   "style": "7505b4fc",
+   "style": "e1f7000a",
    "content": "a563481c",
    "text": "Step 3: Write checks.sh (no executable bit)"
   },
   {
    "slot": 159,
    "kind": "code",
-   "top": 33473,
+   "top": 33499,
    "h": 422,
-   "style": "c033f4c1",
+   "style": "46bd25cd",
    "content": "8267a618",
    "text": "pre() { git-repo git-branch main requires-tool n"
   },
   {
    "slot": 160,
    "kind": "listItem",
-   "top": 33894,
+   "top": 33920,
    "h": 45,
-   "style": "456f4410",
+   "style": "b831be96",
    "content": "37b5c299",
    "text": "Step 4: Validate and commit (evals repo)"
   },
   {
    "slot": 161,
    "kind": "paragraph",
-   "top": 33939,
+   "top": 33965,
    "h": 70,
-   "style": "995ad904",
+   "style": "3b337bc6",
    "content": "abfa28e8",
    "text": "Run: cd evals && bun run quorum checkExpected: P"
   },
   {
    "slot": 162,
    "kind": "code",
-   "top": 34009,
+   "top": 34035,
    "h": 102,
-   "style": "aba14e92",
+   "style": "057eae04",
    "content": "10424479",
    "text": "cd evals git add scenarios/sdd-breaker-adjudicat"
   },
   {
    "slot": 163,
    "kind": "rule",
-   "top": 34110,
+   "top": 34136,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
   {
    "slot": 164,
    "kind": "heading",
-   "top": 34158,
+   "top": 34184,
    "h": 55,
-   "style": "311a1c5e",
+   "style": "928b7994",
    "content": "ba871e23",
    "text": "Task 7: Scenario — structural finding stops the "
   },
   {
    "slot": 165,
    "kind": "paragraph",
-   "top": 34213,
+   "top": 34239,
    "h": 32,
-   "style": "2f7c19d2",
+   "style": "3a803b72",
    "content": "dcd190be",
    "text": "Files:"
   },
   {
    "slot": 166,
    "kind": "listItem",
-   "top": 34245,
+   "top": 34271,
    "h": 28,
-   "style": "13e2f86e",
-   "content": "f51ed841",
-   "text": "Create: evals/scenarios/sdd-breaker-structural-b"
+   "style": "76bbe021",
+   "content": "0ea2e779",
+   "text": "Create: evals/​scenarios/​sdd-​breaker-​structur"
   },
   {
    "slot": 167,
    "kind": "listItem",
-   "top": 34273,
+   "top": 34299,
    "h": 28,
-   "style": "5fc02298",
-   "content": "6f44a647",
-   "text": "Create: evals/scenarios/sdd-breaker-structural-b"
+   "style": "8db9819d",
+   "content": "1c883f7f",
+   "text": "Create: evals/​scenarios/​sdd-​breaker-​structur"
   },
   {
    "slot": 168,
    "kind": "listItem",
-   "top": 34302,
+   "top": 34328,
    "h": 45,
-   "style": "32943ccf",
-   "content": "cce82ba9",
-   "text": "Create: evals/scenarios/sdd-breaker-structural-b"
+   "style": "c0ddd48e",
+   "content": "73581e51",
+   "text": "Create: evals/​scenarios/​sdd-​breaker-​structur"
   },
   {
    "slot": 169,
    "kind": "paragraph",
-   "top": 34347,
+   "top": 34373,
    "h": 32,
-   "style": "6f3d3b94",
+   "style": "950c64b4",
    "content": "a2cb5599",
    "text": "Interfaces:"
   },
   {
    "slot": 170,
    "kind": "listItem",
-   "top": 34379,
+   "top": 34405,
    "h": 35,
-   "style": "9a7b2055",
-   "content": "6959380d",
-   "text": "Consumes: helper scaffold_sdd_midloop_structural"
+   "style": "f7fd3e34",
+   "content": "8a0f45d2",
+   "text": "Consumes: helper scaffold_​sdd_​midloop_​structu"
   },
   {
    "slot": 171,
    "kind": "listItem",
-   "top": 34414,
+   "top": 34440,
    "h": 35,
-   "style": "deed8488",
-   "content": "b550c9e0",
-   "text": "Produces: scenario name sdd-breaker-structural-b"
+   "style": "658580a4",
+   "content": "8b4adbef",
+   "text": "Produces: scenario name sdd-​breaker-​structural"
   },
   {
    "slot": 172,
    "kind": "listItem",
-   "top": 34450,
+   "top": 34476,
    "h": 45,
-   "style": "a93e7b52",
+   "style": "804f37f8",
    "content": "d6f86463",
    "text": "Step 1: Write story.md"
   },
   {
    "slot": 173,
    "kind": "code",
-   "top": 34494,
+   "top": 34520,
    "h": 1042,
-   "style": "68227ca8",
+   "style": "ea951858",
    "content": "d8571af8",
    "text": "--- id: sdd-breaker-structural-blocks title: SDD"
   },
   {
    "slot": 174,
    "kind": "listItem",
-   "top": 35536,
+   "top": 35562,
    "h": 45,
-   "style": "c182841d",
+   "style": "9bb19813",
    "content": "5c5f88fc",
    "text": "Step 2: Write setup.sh"
   },
   {
    "slot": 175,
    "kind": "code",
-   "top": 35581,
+   "top": 35607,
    "h": 102,
-   "style": "8c094d0d",
+   "style": "6814a29b",
    "content": "eaef5431",
    "text": "#!/usr/bin/env bash set -euo pipefail setup-help"
   },
   {
    "slot": 176,
    "kind": "listItem",
-   "top": 35682,
+   "top": 35708,
    "h": 45,
-   "style": "7505b4fc",
+   "style": "e1f7000a",
    "content": "a563481c",
    "text": "Step 3: Write checks.sh (no executable bit)"
   },
   {
    "slot": 177,
    "kind": "code",
-   "top": 35727,
+   "top": 35753,
    "h": 342,
-   "style": "8374a5a8",
+   "style": "fa7c7ac0",
    "content": "627278a1",
    "text": "pre() { git-repo git-branch main file-exists '.s"
   },
   {
    "slot": 178,
    "kind": "paragraph",
-   "top": 36069,
+   "top": 36095,
    "h": 122,
-   "style": "37c90df3",
+   "style": "462c84a7",
    "content": "3cb070b9",
    "text": "The BLOCKED-surfacing behavior is graded by the "
   },
   {
    "slot": 179,
    "kind": "listItem",
-   "top": 36190,
+   "top": 36216,
    "h": 45,
-   "style": "456f4410",
+   "style": "b831be96",
    "content": "37b5c299",
    "text": "Step 4: Validate and commit (evals repo)"
   },
   {
    "slot": 180,
    "kind": "paragraph",
-   "top": 36235,
+   "top": 36261,
    "h": 70,
-   "style": "995ad904",
+   "style": "3b337bc6",
    "content": "abfa28e8",
    "text": "Run: cd evals && bun run quorum checkExpected: P"
   },
   {
    "slot": 181,
    "kind": "code",
-   "top": 36305,
+   "top": 36331,
    "h": 102,
-   "style": "d6dcd171",
+   "style": "7ef4cbc9",
    "content": "732bd7a9",
    "text": "cd evals git add scenarios/sdd-breaker-structura"
   },
   {
    "slot": 182,
    "kind": "rule",
-   "top": 36406,
+   "top": 36432,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
   {
    "slot": 183,
    "kind": "heading",
-   "top": 36454,
+   "top": 36480,
    "h": 55,
-   "style": "311a1c5e",
+   "style": "928b7994",
    "content": "e9bcbf0c",
    "text": "Task 8: Live eval campaign — RED baselines, GREE"
   },
   {
    "slot": 184,
    "kind": "paragraph",
-   "top": 36509,
+   "top": 36535,
    "h": 174,
-   "style": "4299024c",
-   "content": "42d45278",
+   "style": "aa3da5ce",
+   "content": "705d0360",
    "text": "TRUSTED-MAINTAINER TASK. Live runs launch Claude"
   },
   {
    "slot": 185,
    "kind": "paragraph",
-   "top": 36682,
+   "top": 36708,
    "h": 32,
-   "style": "2f7c19d2",
+   "style": "3a803b72",
    "content": "dcd190be",
    "text": "Files:"
   },
   {
    "slot": 186,
    "kind": "listItem",
-   "top": 36715,
+   "top": 36741,
    "h": 45,
-   "style": "b98fc403",
-   "content": "c3509d68",
-   "text": "Create: evals/docs/experiments/2026-07-sdd-fix-l"
+   "style": "09176e39",
+   "content": "af36f66d",
+   "text": "Create: evals/​docs/​experiments/​2026-07-​sdd-​"
   },
   {
    "slot": 187,
    "kind": "paragraph",
-   "top": 36760,
+   "top": 36786,
    "h": 32,
-   "style": "6f3d3b94",
+   "style": "950c64b4",
    "content": "a2cb5599",
    "text": "Interfaces:"
   },
   {
    "slot": 188,
    "kind": "listItem",
-   "top": 36792,
+   "top": 36818,
    "h": 61,
-   "style": "eeece33b",
+   "style": "dc858f52",
    "content": "34cf11b4",
    "text": "Consumes: everything from Tasks 1–7; a second su"
   },
   {
    "slot": 189,
    "kind": "listItem",
-   "top": 36853,
+   "top": 36879,
    "h": 35,
-   "style": "35e19ac0",
+   "style": "ea3a5bee",
    "content": "a6a362bf",
    "text": "Produces: verdicts for the PR's before/after evi"
   },
   {
    "slot": 190,
    "kind": "listItem",
-   "top": 36889,
+   "top": 36915,
    "h": 45,
-   "style": "e178fb5e",
+   "style": "8fedab58",
    "content": "984e2d3f",
    "text": "Step 1: Prepare the two SUPERPOWERS_ROOT checkou"
   },
   {
    "slot": 191,
    "kind": "code",
-   "top": 36933,
+   "top": 36959,
    "h": 102,
-   "style": "0fbce208",
+   "style": "ef9b8016",
    "content": "a8688688",
    "text": "git -C /Users/jesse/git/superpowers-workspace/su"
   },
   {
    "slot": 192,
    "kind": "paragraph",
-   "top": 37035,
+   "top": 37061,
    "h": 96,
-   "style": "ef53bf94",
-   "content": "3e59df98",
+   "style": "2b856343",
+   "content": "db8fcce3",
    "text": "Confirm: git -C \"$REDESIGN_ROOT\" branch --show-c"
   },
   {
    "slot": 193,
    "kind": "listItem",
-   "top": 37131,
+   "top": 37157,
    "h": 45,
-   "style": "9f9b7aac",
+   "style": "c81ca6c2",
    "content": "b7ab0455",
    "text": "Step 2: RED — run the three new scenarios agains"
   },
   {
    "slot": 194,
    "kind": "code",
-   "top": 37175,
+   "top": 37201,
    "h": 142,
-   "style": "cb344852",
+   "style": "037be340",
    "content": "2a827992",
    "text": "cd evals SUPERPOWERS_ROOT=\"$BASELINE_ROOT\" bun r"
   },
   {
    "slot": 195,
    "kind": "paragraph",
-   "top": 37317,
+   "top": 37343,
    "h": 200,
-   "style": "2dc59059",
+   "style": "a5825096",
    "content": "507a38af",
    "text": "Expected (record actuals either way): resumes-im"
   },
   {
    "slot": 196,
    "kind": "listItem",
-   "top": 37517,
+   "top": 37543,
    "h": 45,
-   "style": "23499f8b",
+   "style": "6d4d0ce5",
    "content": "dfdaf64f",
    "text": "Step 3: GREEN — run the three new scenarios agai"
   },
   {
    "slot": 197,
    "kind": "code",
-   "top": 37561,
+   "top": 37587,
    "h": 142,
-   "style": "cb344852",
+   "style": "037be340",
    "content": "9c1e5ee2",
    "text": "cd evals SUPERPOWERS_ROOT=\"$REDESIGN_ROOT\" bun r"
   },
   {
    "slot": 198,
    "kind": "paragraph",
-   "top": 37703,
+   "top": 37729,
    "h": 96,
-   "style": "a60fb89b",
-   "content": "053c5bcb",
+   "style": "c13c2c8f",
+   "content": "fc586fe9",
    "text": "Expected: all three PASS. Triage any non-pass wi"
   },
   {
    "slot": 199,
    "kind": "listItem",
-   "top": 37799,
+   "top": 37825,
    "h": 71,
-   "style": "a2ff8219",
+   "style": "e4437f2b",
    "content": "dd55ee98",
    "text": "Step 4: Regression — run the existing SDD scenar"
   },
   {
    "slot": 200,
    "kind": "code",
-   "top": 37869,
+   "top": 37895,
    "h": 142,
-   "style": "92b67bd7",
+   "style": "d8b6d0a9",
    "content": "ec00200e",
    "text": "cd evals for s in sdd-quality-reviewer-catches-p"
   },
   {
    "slot": 201,
    "kind": "paragraph",
-   "top": 38011,
+   "top": 38037,
    "h": 96,
-   "style": "5ae76b91",
+   "style": "2faec0ed",
    "content": "7069e809",
    "text": "Expected: all PASS. These scenarios' fix cycles "
   },
   {
    "slot": 202,
    "kind": "listItem",
-   "top": 38106,
+   "top": 38132,
    "h": 45,
-   "style": "4b761d21",
+   "style": "957c2153",
    "content": "8edbc52f",
    "text": "Step 5: Write the experiment log entry"
   },
   {
    "slot": 203,
    "kind": "paragraph",
-   "top": 38151,
+   "top": 38177,
    "h": 174,
-   "style": "0a27fd75",
-   "content": "1ea960bf",
-   "text": "Create evals/docs/experiments/2026-07-sdd-fix-lo"
+   "style": "553b4dd5",
+   "content": "6f4b3230",
+   "text": "Create evals/​docs/​experiments/​2026-07-​sdd-​f"
   },
   {
    "slot": 204,
    "kind": "listItem",
-   "top": 38325,
+   "top": 38351,
    "h": 45,
-   "style": "84a63667",
+   "style": "5017a4bd",
    "content": "89c0d43f",
    "text": "Step 6: Commit (evals repo) and clean up"
   },
   {
    "slot": 205,
    "kind": "code",
-   "top": 38369,
+   "top": 38395,
    "h": 122,
-   "style": "ea529b9a",
+   "style": "bc67b27e",
    "content": "0cb138cd",
    "text": "cd evals git add docs/experiments/2026-07-sdd-fi"
   },
   {
    "slot": 206,
    "kind": "listItem",
-   "top": 38491,
+   "top": 38517,
    "h": 45,
-   "style": "1f6d80e8",
+   "style": "101e49fa",
    "content": "c4e80a2c",
    "text": "Step 7: Hand off"
   },
   {
    "slot": 207,
    "kind": "paragraph",
-   "top": 38536,
+   "top": 38562,
    "h": 122,
-   "style": "ab89749d",
-   "content": "c9ff8e9b",
-   "text": "Both branches ready: sdd-fix-loop-redesign (supe"
+   "style": "35581e70",
+   "content": "aac018eb",
+   "text": "Both branches ready: sdd-​fix-​loop-​redesign (s"
   }
  ]
 }

@@ -102,7 +102,7 @@ function markCjkEmphasis(el) {
 const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦\u{1f000}-\u{1faff}\u{20000}-\u{3fffd}]/u;
 function columns(s) {
   let n = 0;
-  for (const ch of s) n += WIDE.test(ch) ? 2 : 1;
+  for (const ch of s) if (ch !== '\u200b') n += WIDE.test(ch) ? 2 : 1;
   return n;
 }
 
@@ -124,7 +124,7 @@ function setupTable(t) {
       if (n && n <= 16 && !cell.querySelector('br')) { cell.dataset.nw = ''; col.most = Math.max(col.most, n); continue; }
       let codes = 0;
       for (const c of cell.querySelectorAll('code')) {
-        const len = c.textContent.length;
+        const len = c.textContent.replace(/\u200b/g, '').length;
         if (len > 32) continue;
         c.dataset.nw = '';
         col.codes.push(c);

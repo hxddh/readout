@@ -163,7 +163,14 @@ export function inDocument(r) {
  * The Markdown for a selection range; null when the page leaves the copy to
  * the browser (a selection inside an open comparison or removed-text panel).
  */
+// ReadoutCore's break opportunities in long paths (a zero-width space after
+// a separator) are the page's, not the text's: no copy carries them.
+const ZWSP = /\u200b/g;
 export function markdownOf(r) {
+  const md = markdownOfRange(r);
+  return md == null ? md : md.replace(ZWSP, '');
+}
+function markdownOfRange(r) {
   let within = r.commonAncestorContainer;
   if (within.nodeType !== Node.ELEMENT_NODE) within = within.parentElement;
   if (!within || !doc.contains(within) || within.closest('.wd-panel, .del-pop')) return null;
@@ -516,8 +523,8 @@ export function htmlOf(range) {
   const math = within && within.closest('.math, .math-block, .math-display');
   if (math) box.replaceChildren(math.cloneNode(true));
   box.querySelectorAll('.wd-panel, .del-pop, .del-mark, button, .cb-tools').forEach(e => e.remove());
-  // Where a long path may break (ReadoutCore's <wbr>, and span.nb where it
-  // may not) is the page's, not the text's.
+  // Where a long path may break (ReadoutCore's zero-width spaces, <wbr> in a
+  // bare URL, and span.nb where it may not) is the page's, not the text's.
   if (box.querySelector('wbr, span.nb')) {
     box.querySelectorAll('wbr').forEach(e => e.remove());
     for (const s of box.querySelectorAll('span.nb')) s.replaceWith(...s.childNodes);
@@ -582,7 +589,7 @@ export function htmlOf(range) {
   for (const b of box.querySelectorAll('.chunk, .blk')) b.replaceWith(...b.childNodes);
   box.querySelectorAll('[tabindex]').forEach(e => e.removeAttribute('tabindex'));
   safeHTML(box);
-  return box.innerHTML;
+  return box.innerHTML.replace(ZWSP, '');
 }
 
 // Pasted HTML runs nowhere and loads nothing: no scripts, embeds or media,

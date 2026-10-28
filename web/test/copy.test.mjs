@@ -103,7 +103,7 @@ await page.evaluate(() => {
     const grab = e => { out.text = e.clipboardData.getData('text/plain'); out.html = e.clipboardData.getData('text/html'); out.handled = e.defaultPrevented; };
     window.addEventListener('copy', grab);
     getSelection().removeAllRanges(); getSelection().addRange(range);
-    out.selected = getSelection().toString();
+    out.selected = getSelection().toString().replace(/\u200b/g, '');
     document.execCommand('copy');
     window.removeEventListener('copy', grab);
     return out;
@@ -185,12 +185,12 @@ for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
   if (want.join('\n').replace(/\n{3,}/g, '\n\n').trim() !== got.join('\n').trim()) blankDiffs++;
   if (source.replace(/\s+$/, '') === all.text) exact++;
   if (process.env.COPY_DUMP) (await import('node:fs')).writeFileSync(`${process.env.COPY_DUMP}/${name}.all.md`, all.text);
-  if (carriesBreaks(all)) fail(`${name}: select-all copies break opportunities (<wbr>) as text or markup`);
-  // A long path in code, selected inside it and whole (its <wbr> in the selection): the code's text, to the character.
-  const inCode = await page.evaluate(() => [...document.querySelectorAll('#ro-doc code:not(pre code)')].filter(c => c.querySelector('wbr')).slice(0, 6).map(c => {
+  if (carriesBreaks(all)) fail(`${name}: select-all copies break opportunities (<wbr>, zero-width spaces) as text or markup`);
+  // A long path in code, selected inside it and whole (its break opportunities, zero-width spaces, in the selection): the code's text, to the character, without them.
+  const inCode = await page.evaluate(() => [...document.querySelectorAll('#ro-doc code:not(pre code)')].filter(c => c.textContent.includes('\u200b')).slice(0, 6).map(c => {
     const r = document.createRange(); r.selectNodeContents(c);
     const whole = document.createRange(); whole.selectNode(c);
-    return { want: c.textContent, inside: window.__copy(r), whole: window.__copy(whole) };
+    return { want: c.textContent.replace(/\u200b/g, ''), inside: window.__copy(r), whole: window.__copy(whole) };
   }));
   for (const c of inCode) {
     if (c.inside.text !== c.want || carriesBreaks(c.inside)) fail(`${name}: a selection inside a long code path copies ${JSON.stringify(c.inside.text)}, not ${JSON.stringify(c.want)}${carriesBreaks(c.inside) ? ' (with its break opportunities)' : ''}`);
@@ -238,7 +238,9 @@ for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
     partials++;
     if (r.kind === 'part' && r.leaf) {
       // Code, a code span, TeX or front matter: the text itself, no Markdown.
-      if (/^(pre|code|CODE|PRE)/i.test(r.leaf) && r.text !== r.selected) fail(`${name} part ${r.slot}: code copied with Markdown: ${JSON.stringify(r.text)}`);
+      // (The selection's own text drops a space at the end of a wrapped line,
+      // where a path wraps after it; the copy, the range's text, keeps it.)
+      if (/^(pre|code|CODE|PRE)/i.test(r.leaf) && r.text !== r.selected && r.text.trimEnd() !== r.selected.trimEnd()) fail(`${name} part ${r.slot}: code copied with Markdown: ${JSON.stringify(r.text)} (selected ${JSON.stringify(r.selected)})`);
       continue;
     }
     // Rendered again, the copy reads as the selection did.
@@ -274,7 +276,7 @@ const leaves = await page.evaluate(() => {
   const span = document.querySelector('.k-table td code');
   r.selectNodeContents(span);
   const inlineCode = window.__copy(r);
-  return { block, inlineCode, codeText: code.textContent, spanText: span.textContent };
+  return { block, inlineCode, codeText: code.textContent, spanText: span.textContent.replace(/\u200b/g, '') };
 });
 if (leaves.block.text !== leaves.codeText) fail(`code block selection: ${JSON.stringify(leaves.block.text)}`);
 if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSON.stringify(leaves.inlineCode.text)}`);

@@ -972,14 +972,14 @@ const v36 = patch([
   check('a code block in an alert takes --fill-2, off the alert\'s --fill', cbg.alert === cbg.fill && cbg.inAlert === cbg.fill2 && cbg.plain === cbg.fill && cbg.inAlert !== cbg.alert, JSON.stringify(cbg));
   check('its right-edge shade and toolbar fade into --fill-2', cbg.shade.includes(cbg.fill2) && cbg.tools.includes(cbg.fill2), JSON.stringify(cbg));
 
-  // TD. Box drawing: tighter lines. TI: code in a cell at 0.9 of the cell's size.
+  // TD. Box drawing: tighter lines. TI: code in a cell at 0.89 of the cell's size.
   const misc = await page.evaluate(() => {
     const cs = s => getComputedStyle(document.querySelector(s));
     return { tree: document.getElementById('c-tree').className, treeLh: parseFloat(cs('#c-tree').lineHeight) / parseFloat(cs('#c-tree').fontSize), plainLh: parseFloat(cs('#c-plain').lineHeight) / parseFloat(cs('#c-plain').fontSize),
       td: parseFloat(cs('#t-short').fontSize), tdCode: parseFloat(cs('#t-code').fontSize) };
   });
   check('a code block with box drawing has class cb-tree and line height 1.3', /cb-tree/.test(misc.tree) && Math.abs(misc.treeLh - 1.3) < 0.01 && Math.abs(misc.plainLh - 1.55) < 0.01, JSON.stringify(misc));
-  check('code in a table cell is 0.9 of the cell\'s text', Math.abs(misc.tdCode - 0.9 * misc.td) < 0.05, JSON.stringify(misc));
+  check('code in a table cell is 0.89 of the cell\'s text, as everywhere', Math.abs(misc.tdCode - 0.89 * misc.td) < 0.05, JSON.stringify(misc));
 
   // T7. A console transcript highlights as a shell session: the command, not its output.
   // Each run of text and its colour (a token in the block's own colours is its text alone: highlight.js).
@@ -1733,7 +1733,7 @@ const v36 = patch([
 }
 
 // P4.2 Inline code is lighter and sits in the sentence: its x-height 0.9 of
-//      the text's (font-size-adjust, whatever the monospace font), a fill a
+//      the text's (0.89 em: about that for SF Mono beside SF Pro, and for the CI fonts), a fill a
 //      step fainter than 3.9's (#f5f5f7 light, #2a2a2c dark) that still shows
 //      on the page and in an alert, and padding that leaves the line height
 //      as it is, in Latin and Chinese text.
@@ -1780,7 +1780,7 @@ for (const dark of [false, true]) {
   const theme = dark ? 'dark' : 'light';
   // 3.9: #f5f5f7 on #fff is 1.09:1, #2a2a2c on #1e1e1f 1.16:1.
   const before = dark ? 1.16 : 1.09;
-  check(`P4.2 inline code's x-height is 0.85-0.95 of the text's, in Latin and Chinese lines (${theme})`, /ex-height 0\.53|^0\.53$/.test(r.adjust) && r.xLatin > 0.85 && r.xLatin < 0.95 && r.xZh > 0.85 && r.xZh < 0.95, JSON.stringify(r));
+  check(`P4.2 inline code's x-height is 0.85-0.95 of the text's, in Latin and Chinese lines (${theme})`, Math.abs(r.size - 0.89) < 0.005 && r.xLatin > 0.85 && r.xLatin < 0.95 && r.xZh > 0.85 && r.xZh < 0.95, JSON.stringify(r));
   check(`P4.2 inline code's fill is fainter than 3.9's and still shows, on the page and in an alert (${theme})`, r.fill > 1.04 && r.fill < before - 0.02 && r.fillInAlert > 1.04, JSON.stringify(r));
   // Relative to the plain text and to 3.9's code under the same fonts (a
   // monospace font's own metrics can open a line either way: with Noto Sans

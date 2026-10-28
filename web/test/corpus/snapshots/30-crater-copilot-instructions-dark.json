@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "9b8dab68",
+   "style": "81175950",
    "content": "e6fdeaae",
    "text": "Crater 项目通用准则"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 74,
-   "style": "b5c17111",
+   "style": "4ce61257",
    "content": "3b7e5cd3",
    "text": "此文档定义了项目开发的通用标准，并规定了所有指令文档的执行等级，适用于 GitHub Copil"
   },
@@ -24,7 +24,7 @@
    "kind": "rule",
    "top": 144,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 192,
    "h": 42,
-   "style": "96236aa3",
+   "style": "eb46a757",
    "content": "78baacb9",
    "text": "执行等级定义 (Guideline Levels)"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 234,
    "h": 62,
-   "style": "3824de73",
+   "style": "7b0760ca",
    "content": "a700efec",
    "text": "项目中所有的子指令文档（*.instructions.md）及本文档中的准则均遵循以下两个等级，"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 297,
    "h": 178,
-   "style": "5968f8a0",
+   "style": "f9e808b1",
    "content": "d7d2e21c",
    "text": "核心规范 (Core Requirements / MUST): coding-agent: 应"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 475,
    "h": 122,
-   "style": "70653f67",
+   "style": "8e9d133f",
    "content": "299cb7fc",
    "text": "优化建议 (Optimization Suggestions / SHOULD): coding"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 597,
    "h": 79,
-   "style": "e66937db",
+   "style": "87ab2314",
    "content": "ac5e77f8",
    "text": "补充说明 (Supplemental Instructions): 各子指令文档（*.instr"
   },
@@ -78,7 +78,7 @@
    "kind": "rule",
    "top": 675,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 723,
    "h": 42,
-   "style": "96236aa3",
+   "style": "eb46a757",
    "content": "fab87722",
    "text": "智能体角色行为指引 (Agent Role Guidelines)"
   },
@@ -96,7 +96,7 @@
    "kind": "heading",
    "top": 765,
    "h": 42,
-   "style": "4ff2e4e0",
+   "style": "02554d25",
    "content": "9bedc045",
    "text": "coding-agent (编码助手)"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 807,
    "h": 87,
-   "style": "4d90312e",
+   "style": "246ce1d8",
    "content": "d1aad7b7",
    "text": "协作模式: 优先响应并精准执行用户当前的修改指令。对于规范要求的跨模块联动（如配置、文档同步等）"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 894,
    "h": 59,
-   "style": "7762f820",
+   "style": "1dde702e",
    "content": "c527fad9",
    "text": "用户需求与体验: 功能应服务真实用户需求。设计行为、错误信息、操作流程、默认值和文档时，应持续考"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 952,
    "h": 59,
-   "style": "95613462",
+   "style": "578fb7d8",
    "content": "0672caac",
    "text": "代码质量: 自动生成的代码应自带必要的英文注释，并保持与项目既有命名风格、架构模式的高度一致。"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1011,
    "h": 31,
-   "style": "559f3997",
+   "style": "17781ef9",
    "content": "c7389d70",
    "text": "不确定性处理: 若规范或上下文信息不完整，请主动引导用户提供补充信息，严禁盲目推测。"
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1042,
    "h": 31,
-   "style": "14c875aa",
+   "style": "a01fcdd4",
    "content": "95424f8a",
    "text": "方案优先: 在执行复杂任务或多步修改之前，必须先提供技术方案并获得用户确认。"
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1072,
    "h": 87,
-   "style": "51863e96",
+   "style": "7bbf9f9c",
    "content": "812b718b",
    "text": "提交 / 推送前人工检查: 最终提交、推送或创建 PR 描述前，必须要求开发者提供亲自执行的人工"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1159,
    "h": 59,
-   "style": "52ba0db2",
+   "style": "1526008c",
    "content": "0aef9a51",
    "text": "PR 创建前确认: AI 可以协助整理 PR 描述并在工具可用时创建 PR，但必须先把最终 PR"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1218,
    "h": 87,
-   "style": "ce0485a7",
+   "style": "41039eed",
    "content": "a72f3eb1",
    "text": "PR 后续迭代: 创建 PR 后提醒开发者检查 workflow 状态。处理 Copilot r"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1304,
    "h": 131,
-   "style": "8c401325",
+   "style": "a0bcdcd3",
    "content": "7b00cfe3",
    "text": "专家直觉与规范演进: 作为经验丰富的程序员和项目经理，你应在遵循现有指令的同时保持批判性思考。若"
   },
@@ -186,7 +186,7 @@
    "kind": "heading",
    "top": 1436,
    "h": 42,
-   "style": "54539083",
+   "style": "558284e6",
    "content": "10f0b778",
    "text": "code-review (审查助手)"
   },
@@ -195,7 +195,7 @@
    "kind": "paragraph",
    "top": 1478,
    "h": 74,
-   "style": "488cdea9",
+   "style": "84660191",
    "content": "117ea707",
    "text": "在执行审查任务时，你应遵循以下准则及逻辑顺序，确保审查结果符合项目标准并具备良好的沟通体验。"
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1551,
    "h": 31,
-   "style": "f606faca",
+   "style": "1ff9008c",
    "content": "3d50bd7f",
    "text": "语言规范: 确保所有评价、总结、统计表及自动生成的描述内容均使用简体中文。"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 1582,
    "h": 59,
-   "style": "fe0fe516",
+   "style": "aa740f7c",
    "content": "2dcd016e",
    "text": "专业与温度: 作为一个资深专家，你的角色不仅是守门员，更是导师。在指出问题的同时，应保持礼貌、专"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 1641,
    "h": 103,
-   "style": "39870bdd",
+   "style": "ebd068cf",
    "content": "d0d75760",
    "text": "规范演进建议: 作为具备项目经理视角的资深审查者，如果你认为某项现有规范在当前代码场景下不再适用"
   },
@@ -231,7 +231,7 @@
    "kind": "heading",
    "top": 1744,
    "h": 36,
-   "style": "4d51ad61",
+   "style": "b18c3737",
    "content": "d4394608",
    "text": "行内评论 (Inline Comments)"
   },
@@ -240,7 +240,7 @@
    "kind": "paragraph",
    "top": 1780,
    "h": 34,
-   "style": "4cd4ac77",
+   "style": "1d85fa67",
    "content": "58433b96",
    "text": "在审查代码细节时，请遵循以下要求："
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 1814,
    "h": 31,
-   "style": "03675cd7",
+   "style": "38907d45",
    "content": "dbc66d1d",
    "text": "结构: [分类标签] 问题描述 + 简要改进建议。"
   },
@@ -258,7 +258,7 @@
    "kind": "listItem",
    "top": 1845,
    "h": 31,
-   "style": "e4f8954e",
+   "style": "6b17c0c4",
    "content": "a4297fdf",
    "text": "分类标注: 每条行内评论必须在开头明确标注该问题属于 【核心规范】 还是 【优化建议】。"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 1876,
    "h": 59,
-   "style": "fa5450e1",
+   "style": "921759fb",
    "content": "6a57ec11",
    "text": "禁止重复评论: 严禁对同一类重复出现的问题进行多处行内评论。例如：若文件内存在多处硬编码文本，仅"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 1934,
    "h": 59,
-   "style": "fa5450e1",
+   "style": "921759fb",
    "content": "ac21ee7a",
    "text": "保持评论精炼: 评论应言简意赅。对于涉及范围广的复杂问题，避免在单个行内评论中堆砌过多内容或长段"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 1993,
    "h": 103,
-   "style": "a9564a65",
+   "style": "410c2a5b",
    "content": "865b5f3e",
    "text": "改进建议代码: 在给出修改建议代码时，请注意参考项目其它代码、Workflow 和 lint 配"
   },
@@ -294,7 +294,7 @@
    "kind": "heading",
    "top": 2097,
    "h": 36,
-   "style": "4d51ad61",
+   "style": "b18c3737",
    "content": "786986dd",
    "text": "总览评论 (Overview Comment)"
   },
@@ -303,7 +303,7 @@
    "kind": "paragraph",
    "top": 2133,
    "h": 34,
-   "style": "4cd4ac77",
+   "style": "1d85fa67",
    "content": "79ab6dcd",
    "text": "在撰写总览评论时："
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 2167,
    "h": 87,
-   "style": "fb6745b7",
+   "style": "8823fafd",
    "content": "be7db4d4",
    "text": "PR 描述校验与总结: 评估开发者的 PR 描述是否涵盖了变更意图、核心改动及测试验证。若描述缺"
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 2254,
    "h": 59,
-   "style": "fa5450e1",
+   "style": "921759fb",
    "content": "9a5f5891",
    "text": "人工检查校验: 评估 PR 描述是否区分 AI / 自动化检查与开发者人工检查；文档改动若缺少开"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 2312,
    "h": 59,
-   "style": "c54bceac",
+   "style": "5ae730e6",
    "content": "1763729c",
    "text": "质量评估: 对 PR 的代码逻辑、测试完整性及架构契合度进行综合评价，重点肯定表现优异的亮点，而"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 2371,
    "h": 103,
-   "style": "172ab8ba",
+   "style": "abbb01d8",
    "content": "a54c41c3",
    "text": "寄语与建议: 在评论最后，请用亲切且具激励性的语气肯定开发者为项目作出的贡献。基于本次 PR 的"
   },
@@ -348,7 +348,7 @@
    "kind": "rule",
    "top": 2474,
    "h": 47,
-   "style": "e0adf855",
+   "style": "2cfb4fcd",
    "content": "811c9dc5",
    "text": ""
   },
@@ -357,7 +357,7 @@
    "kind": "heading",
    "top": 2522,
    "h": 42,
-   "style": "96236aa3",
+   "style": "eb46a757",
    "content": "ac574c8e",
    "text": "项目概览 (Repository Overview)"
   },
@@ -366,7 +366,7 @@
    "kind": "paragraph",
    "top": 2564,
    "h": 102,
-   "style": "3c22d163",
+   "style": "2584e3d6",
    "content": "849ee118",
    "text": "Crater 是基于 Kubernetes 的异构（GPU）算力管理平台，monorepo 含 "
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 2666,
    "h": 65,
-   "style": "6b05ab0c",
+   "style": "ad21d4ae",
    "content": "a2543105",
    "text": "文档来源 (Documentation Sources)"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 2731,
    "h": 62,
-   "style": "01256e16",
+   "style": "543c8ccf",
    "content": "9276fd99",
    "text": "开发与贡献的完整权威规范是各级 CONTRIBUTING，本文件与各 *.instruction"
   },
@@ -393,7 +393,7 @@
    "kind": "listItem",
    "top": 2793,
    "h": 31,
-   "style": "739666bf",
+   "style": "a5d9fd0a",
    "content": "92f2a565",
    "text": "全局守则、流程、Commit / PR 规范：根 CONTRIBUTING.md"
   },
@@ -402,7 +402,7 @@
    "kind": "listItem",
    "top": 2824,
    "h": 75,
-   "style": "e039f9f5",
+   "style": "acc3a2a7",
    "content": "32e965ea",
    "text": "各模块规范：backend/、frontend/、website/、cli/、charts/ 各"
   },
@@ -411,7 +411,7 @@
    "kind": "paragraph",
    "top": 2899,
    "h": 102,
-   "style": "6692a638",
+   "style": "c0bc1a65",
    "content": "b44e4d76",
    "text": "*.instructions.md 的职责是为审查固化最重要的 MUST/SHOULD 拦截项与"
   },
@@ -420,7 +420,7 @@
    "kind": "paragraph",
    "top": 3001,
    "h": 102,
-   "style": "a1267c78",
+   "style": "956738e5",
    "content": "6ae2f310",
    "text": "新增或修改开发约定时，也遵循这一职责划分：影响最终代码、文档、API、UI、Chart 或测试结"
   }
