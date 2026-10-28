@@ -35,6 +35,8 @@ function received(m) {
   else if (m.op === 'mark') performance.mark(m.name, { detail: m.detail });
   else if (m.op === 'ready') { started = true; onReady(); }
   else if (m.op === 'failed') fallBack();
+  // The spare warm-up goes on only while no document is shown, as the page sees it now.
+  else if (m.op === 'spare?') engine({ op: 'spare', n: m.n, ok: !shown });
 }
 
 /** The highlighter on the page's own thread, told again what the worker was. */

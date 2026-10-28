@@ -184,7 +184,9 @@ export function warm() {
     for (const id of WARM_ORDER) jobs.push({ id, steps: null });
     // The whole path once, as a block is highlighted (both themes, HTML);
     // marked done after its slice is counted.
-    jobs.push({ steps: (function* () { highlightSync('x', 'json'); })(), after: () => {
+    let whole = false;
+    jobs.push({ steps: (function* () { if ((whole = yield* allowed())) highlightSync('x', 'json'); })(), after: () => {
+      if (!whole) return;
       const grammars = WARM_ORDER.filter(id => !failed.has(id));
       mark('readout-hl-warm', { ms: performance.now() - start, longestSlice, grammars });
     } });
@@ -389,7 +391,18 @@ const WARM_ORDER = ['typescript', 'shellscript', 'python', 'json', 'javascript',
 // A job's steps, one per next(): a promise yielded is waited for (the slice
 // ends there). Loading: the grammar's import and registration.
 function* loadSteps(id, spare) {
+  if (spare && !(yield* allowed())) return;
   if (!loaded(id)) yield ensureLang(id, spare);
+}
+// A spare job goes on only while the page has shown no document: the page
+// says so (spareAllowed), at each job's start and before a spare grammar is
+// registered. Its word is the page's own, at that moment: the worker hears
+// of a document shown only a message later, and meanwhile would go on.
+let spareAllowed = () => Promise.resolve(!shown);
+function* allowed() {
+  const r = { ok: false };
+  yield spareAllowed().then(ok => { r.ok = ok && !shown; });
+  return r.ok;
 }
 // Then compiling, sliced and measured like the rest (the walk too): each of
 // its regexes (as the build precompiled them; WebKit compiles each on its
@@ -397,7 +410,8 @@ function* loadSteps(id, spare) {
 // then its sample (or a generic one) a line per step, carrying the
 // grammar's state, so the rules it reaches are set up as they are for a block.
 function* grammarSteps(id, spare) {
-  yield* loadSteps(id, spare);
+  if (spare && !(yield* allowed())) return;
+  if (!loaded(id)) yield ensureLang(id, spare);
   if (failed.has(id) || !highlighter.getLoadedLanguages().includes(id)) return;
   const seen = new Set(), stack = [grammarsOf.get(id)];
   while (stack.length) {
@@ -459,9 +473,11 @@ export function ensureLang(id, spare = false) {
   if (highlighter.getLoadedLanguages().includes(id)) return Promise.resolve();
   if (!loading.has(id)) {
     const load = LANGS[id]();   // fetch in parallel, register in order
-    const done = registry.then(() => load).then(m => {
+    const done = registry.then(() => load)
+      .then(m => spare && !needed.has(id) ? spareAllowed().then(ok => ok ? m : null) : m)
+      .then(m => {
       // The page was taken meanwhile and nothing it shows asked for it: not registered.
-      if (shown && !needed.has(id)) { loading.delete(id); return; }
+      if (!m || (shown && !needed.has(id))) { loading.delete(id); return; }
       const main = m.default.find(g => g.name === id) || m.default[m.default.length - 1];
       lazyOf.set(id, main?.embeddedLangsLazy || []);
       grammarsOf.set(id, m.default);
@@ -643,10 +659,14 @@ function cutShort() {
  *                                                 and {op: 'loading', id} first if its grammars must be loaded
  *   {op: 'prio', id, prio, upto}, {op: 'cancel', id}
  *   {op: 'warm'}, {op: 'prepare', langs}, {op: 'shown'}, {op: 'langs'} (the tests)
+ *   {op: 'spare', n, ok}: the answer to {op: 'spare?', n} (may the spare warm-up go on)
  * and {op: 'mark', name, detail} back for the tests' performance marks.
  */
 export function serve(post) {
   mark = (name, detail) => post({ op: 'mark', name, detail });
+  const asking = new Map();   // n -> resolve: whether a spare job may go on (the page's answer)
+  let asks = 0;
+  spareAllowed = () => new Promise(resolve => { const n = ++asks; asking.set(n, resolve); post({ op: 'spare?', n }); });
   const asked = new Map();   // id -> {id, code, lang, prio, seq, steps, loading, prepared}
   let seq = 0, queued = false, started = false;
   // One turn a task, so messages (a cancel, a block more urgent) are read
@@ -693,6 +713,7 @@ export function serve(post) {
       case 'warm': warm(); break;
       case 'prepare': prepareLangs(m.langs); break;
       case 'shown': stopWarmUp(); break;
+      case 'spare': asking.get(m.n)?.(m.ok); asking.delete(m.n); break;
       case 'langs': mark('readout-hl-langs', highlighter?.getLoadedLanguages() ?? []); break;   // (the tests)
     }
     later();

@@ -1316,9 +1316,11 @@ const v36 = patch([
   await page.close();
   // A window taking the spare right after warm() (a rapid second open)
   // stops its spare-only grammars at the next step: none is fetched after
-  // it, and the one in flight is not registered (its block is not coloured
-  // in its apply; it loads as the block's own, as on any page not warmed).
+  // it, and the one in flight is not registered (it loads as a block's own,
+  // as on any page not warmed). The first spare grammar's import is held
+  // back 800 ms, so it is the one in flight whatever the machine's speed.
   requests.length = 0;
+  delays.push([/\/chunks\/javascript-/, 800]);
   page = await browser.newPage({ viewport: { width: 700, height: 800 } });
   collectPageErrors(page, errors);
   await page.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
@@ -1333,16 +1335,17 @@ const v36 = patch([
   await page.waitForTimeout(3000);
   const later = spareOnly();
   // The chain stopped (one at a time: the last fetched was the one in
-  // flight when the page was taken). The worker hears of it a message
-  // later: the one in flight then may be registered, if it was in by then,
-  // and no other spare-only grammar (the highlighter's grammars; the rest
-  // load as a block's own, as on any page not warmed).
+  // flight when the page was taken), and that one is not registered (the
+  // highlighter's grammars: it loads as a block's own, as on any page not
+  // warmed). The worker asks the page before each spare step and before
+  // registering a spare grammar: the page's word, not a message's timing.
   const inFlight = later[later.length - 1];
   await page.evaluate(() => window.readout.loadedLangs());
   await until(page, () => performance.getEntriesByName('readout-hl-langs').length > 0, 10000);
   const langs = await page.evaluate(() => performance.getEntriesByName('readout-hl-langs')[0]?.detail ?? null);
+  delays.length = 0;
   const spareIn = (langs || []).filter(l => ['javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'].includes(l));
-  check('a window taking the spare right after warm() stops its spare-only grammars', later.length < 9 && !!langs && spareIn.every(l => l === inFlight), JSON.stringify({ later, inFlight, spareIn }));
+  check('a window taking the spare right after warm() stops its spare-only grammars', ['', 'javascript'].includes(later.join()) && !!langs && spareIn.length === 0, JSON.stringify({ later, inFlight, langs }));
   await page.close();
 }
 
