@@ -1,0 +1,63 @@
+name: Perf A/B (temporary, #99)
+on:
+  push:
+    branches: [exp/p4-ab11]
+jobs:
+  ab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build main and the PR side by side
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git worktree add "$RUNNER_TEMP/A" origin/main
+          git worktree add "$RUNNER_TEMP/B" HEAD^
+          for s in A B; do (cd "$RUNNER_TEMP/$s/web" && npm ci && npm run build); done
+          (cd "$RUNNER_TEMP/B/web" && npx playwright install --with-deps webkit)
+          echo "A=$(git rev-parse origin/main) B=$(git rev-parse HEAD^)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: "Interleaved runs (A B B A, twice, 4 runs each)"
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          n=0
+          for round in 1 2; do
+            for s in A B B A; do
+              n=$((n+1))
+              (cd "$RUNNER_TEMP/$s/web" && node test/perf.test.mjs > "$GITHUB_WORKSPACE/out/$n-$s.log" 2>&1); echo "run $n $s exit $?"
+              cp "$RUNNER_TEMP/$s/web/test/out/perf-web.json" "out/$n-$s.json" || true
+            done
+          done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: perf-ab
+          path: out/
+  corpus:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build and install WebKit
+        working-directory: web
+        run: npm ci && npm run build && npx playwright install --with-deps webkit
+      - name: Corpus
+        working-directory: web
+        run: npm run corpus
+      - name: Deterministic (3 renders)
+        if: success() || failure()
+        working-directory: web
+        run: node test/corpus.test.mjs --repeat=3 20-aios,21-dropout,29-a2a
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: corpus-actual
+          path: web/test/out/corpus
