@@ -57,7 +57,9 @@ import Testing
         // Not found: the saved index, except in a rewritten document (the top).
         #expect(ExcerptAnchor.resumeIndex(excerpt: "gone", index: 2, in: texts, rewritten: false) == 2)
         #expect(ExcerptAnchor.resumeIndex(excerpt: "gone", index: 2, in: texts, rewritten: true) == nil)
+        #expect(ExcerptAnchor.resumeIndex(excerpt: "gone", index: 5, in: texts, rewritten: false) == nil)
+        // 4.0: a position with an index and no excerpt (saved before 3.0) is none.
+        #expect(ExcerptAnchor.resumeIndex(excerpt: nil, index: 2, in: texts, rewritten: false) == nil)
         #expect(ExcerptAnchor.resumeIndex(excerpt: nil, index: 2, in: texts, rewritten: true) == nil)
-        #expect(ExcerptAnchor.resumeIndex(excerpt: nil, index: 5, in: texts, rewritten: false) == nil)
     }
 }
