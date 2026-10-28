@@ -6,24 +6,20 @@ import Testing
 /// app's editor at the line (S5), the Edit menu without what macOS adds (S8),
 /// the About panel's Acknowledgements link (E8), the folder list's height (E14).
 @Suite struct AppShell39Tests {
-    @Test func theShortcutIsAToggleThatKeepsAStoredKey() {
-        // Nothing stored, or a value from no version: ⌃⌥⌘R, on.
-        #expect(OpenLatestKey(stored: nil) == .ctrlOptCmdR)
-        #expect(OpenLatestKey(stored: "bogus") == .ctrlOptCmdR)
-        // A key chosen before 3.9 keeps working and is what is shown.
-        for (stored, title) in [("optCmdR", "⌥⌘R"), ("ctrlOptR", "⌃⌥R"), ("ctrlOptCmdR", "⌃⌥⌘R")] {
+    @Test func theShortcutIsAToggle() {
+        // Nothing stored, or any other value (4.0: the keys 3.8 offered, ⌥⌘R
+        // and ⌃⌥R, are no longer kept): ⌃⌥⌘R, on.
+        for stored in [nil, "bogus", "optCmdR", "ctrlOptR", "ctrlOptCmdR"] {
             let key = OpenLatestKey(stored: stored)
-            #expect(key.isGlobal && key.title == title)
+            #expect(key == .ctrlOptCmdR && key.isGlobal && key.title == "⌃⌥⌘R")
             #expect(key.turned(on: true) == key)
             #expect(key.turned(on: false) == OpenLatestKey.none)
         }
-        // Off (stored "none", the picker's Off before 3.9): not global, but the
-        // menu still has ⌃⌥⌘R; on again gives ⌃⌥⌘R.
+        // Off (stored "none"): not global, but the menu still has ⌃⌥⌘R; on again gives ⌃⌥⌘R.
         let off = OpenLatestKey(stored: "none")
         #expect(!off.isGlobal && off.title == "⌃⌥⌘R" && off.modifiers == [.control, .option, .command])
         #expect(off.turned(on: true) == .ctrlOptCmdR)
-        #expect(OpenLatestKey.ctrlOptR.modifiers == [.control, .option])
-        #expect(OpenLatestKey.optCmdR.modifiers == [.option, .command])
+        #expect(OpenLatestKey.allCases == [.ctrlOptCmdR, .none])
     }
 
     @Test func theDefaultAppIsLineAwareWhenItIsAKnownEditor() {

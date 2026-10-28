@@ -56,7 +56,7 @@ struct SettingsView: View {
             }
 
             Section {
-                // On or off: ⌃⌥⌘R, or the key chosen before 3.9 (⌥⌘R, ⌃⌥R), kept and shown.
+                // On or off: ⌃⌥⌘R from any app.
                 Toggle(String(format: NSLocalizedString("Open latest agent file with %@ from any app", comment: "Settings toggle; %@ is the shortcut, like ⌃⌥⌘R"), settings.hotKey.title),
                        isOn: Binding(get: { settings.hotKey.isGlobal }, set: { settings.hotKey = settings.hotKey.turned(on: $0) }))
                 Picker(NSLocalizedString("Editor", comment: "Settings label: the app Open in Editor (⌘E) and path:line links open files in"), selection: $settings.editor) {

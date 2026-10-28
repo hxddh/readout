@@ -269,23 +269,6 @@ import Testing
         #expect(reopened.unreadCount == s.unreadCount)
     }
 
-    /// Baselines saved by 3.5 (no `source`) still load and mark as before.
-    @Test func olderBaselinesStillLoad() throws {
-        let v1 = "# T\n\n1. First step of the plan.\n2. Second step of the plan.\n\nClosing words.\n"
-        let first = DocumentSession()
-        _ = first.load(parse(v1))
-        var objects = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(first.baseline)) as? [[String: Any]])
-        for i in objects.indices { objects[i]["source"] = nil }
-        let old = try JSONDecoder().decode([BlockKey].self, from: JSONSerialization.data(withJSONObject: objects))
-        #expect(old.allSatisfy { $0.source == nil })
-        let s = DocumentSession()
-        let p = s.load(parse("# T\n\n1. First step of the plan, revised.\n2. Second step of the plan.\n"), baseline: old)
-        // Compared as normalized text, as 3.5 did: no list marker noise.
-        #expect(p.marks.first { $0.kind == .modified }?.diff == "- First step of the plan<ins>, revised</ins>.")
-        #expect(p.deletions.map(\.preview) == ["Closing words."])
-        #expect(s.load(parse(v1), baseline: old).marks.isEmpty)
-    }
-
     // MARK: U7: comparisons and removed text show the source
 
     @Test func removedTextAndComparisonsShowTheSource() throws {

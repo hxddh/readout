@@ -6,23 +6,23 @@ public struct BlockKey: Codable, Sendable, Equatable {
     public let kind: BlockKind
     /// Normalized text, truncated, for similarity matching.
     public let text: String
-    /// The whole text when `text` is cut short, so a changed block can be
-    /// compared word by word with what was read. Baselines saved before this
-    /// field existed lack it (decoded as nil).
+    /// The whole text when `text` is cut short (nil when it is not), so a
+    /// changed block can be compared word by word with what was read.
     public let full: String?
     /// Checkbox states of the block's task items (not part of the
     /// fingerprint), so a box ticked while the app was closed is noticed.
-    /// Nil for blocks without tasks and in baselines saved before this field existed.
+    /// Nil for blocks without tasks.
     public let taskState: [Bool]?
     /// The block's Markdown source (`Block.source`) when it differs from
-    /// the whole normalized text, "" when it does not; nil in baselines
-    /// saved before this field existed, which kept only normalized text.
-    public let source: String?
+    /// the whole normalized text, "" when it does not. Required: a baseline
+    /// saved before 3.6 has none, and does not decode (4.0 reads it as no
+    /// reading state at all, so the file opens as new).
+    public let source: String
     /// In a baseline: a block of an unread deletion (`DocumentSession.baseline`),
     /// kept removed when the document is opened against it. Nil otherwise.
     public let removed: Bool?
 
-    public init(fingerprint: UInt64, kind: BlockKind, text: String, taskState: [Bool]? = nil, source: String? = "") {
+    public init(fingerprint: UInt64, kind: BlockKind, text: String, taskState: [Bool]? = nil, source: String = "") {
         self.fingerprint = fingerprint
         self.kind = kind
         self.taskState = taskState
@@ -40,21 +40,18 @@ public struct BlockKey: Codable, Sendable, Equatable {
         }
     }
 
-    /// The block's whole text, or nil when only a prefix was kept (an older baseline).
-    public var wholeText: String? { full ?? (text.utf8.count < 500 || text.count < 500 ? text : nil) }
+    /// The block's whole text.
+    public var wholeText: String { full ?? text }
 
-    /// The block's whole Markdown source, or nil when it is not known (an older baseline).
-    public var wholeSource: String? {
-        guard let source else { return nil }
-        return source.isEmpty ? wholeText : source
-    }
+    /// The block's whole Markdown source.
+    public var wholeSource: String { source.isEmpty ? wholeText : source }
 
     public init(_ block: Block) {
         self.init(fingerprint: block.fingerprint, kind: block.kind, text: block.text,
                   taskState: block.taskState.isEmpty ? nil : block.taskState, source: block.source)
     }
 
-    private init(fingerprint: UInt64, kind: BlockKind, text: String, full: String?, taskState: [Bool]?, source: String?, removed: Bool?) {
+    private init(fingerprint: UInt64, kind: BlockKind, text: String, full: String?, taskState: [Bool]?, source: String, removed: Bool?) {
         self.fingerprint = fingerprint
         self.kind = kind
         self.text = text

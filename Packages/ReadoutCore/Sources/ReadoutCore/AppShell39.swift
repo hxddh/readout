@@ -3,11 +3,11 @@ import Foundation
 // App shell 3.9: one key for Open Latest Agent File, the default app's editor
 // at the line, the Edit menu without what macOS adds, the About panel's link.
 
-/// File ▸ Open Latest Agent File's key, stored as `hotKey`: R with the
-/// modifiers of the choice. Settings turns it on or off; on, it works from any
-/// app. A key chosen before 3.9 (⌥⌘R, ⌃⌥R) is kept, and shown.
+/// File ▸ Open Latest Agent File's key, ⌃⌥⌘R, stored as `hotKey`. Settings
+/// turns it on or off; on, it works from any app. Any other stored value (the
+/// keys 3.8 offered, ⌥⌘R and ⌃⌥R) reads as the default, on.
 public enum OpenLatestKey: String, CaseIterable, Sendable {
-    case optCmdR, ctrlOptCmdR, ctrlOptR, none
+    case ctrlOptCmdR, none
 
     /// The stored value; ⌃⌥⌘R when there is none (not ⌥⌘R, which Safari and Xcode use).
     public init(stored: String?) { self = stored.flatMap(Self.init(rawValue:)) ?? .ctrlOptCmdR }
@@ -15,12 +15,8 @@ public enum OpenLatestKey: String, CaseIterable, Sendable {
     /// Works from any app (registered system-wide).
     public var isGlobal: Bool { self != .none }
 
-    /// Settings' toggle: on keeps the stored key (⌃⌥⌘R when it was off), off is `none`.
-    public func turned(on: Bool) -> Self { on ? menuKey : .none }
-
-    /// The key the menu shows: the global one, or with that off ⌃⌥⌘R, which
-    /// then works inside Readout only.
-    public var menuKey: Self { self == .none ? .ctrlOptCmdR : self }
+    /// Settings' toggle.
+    public func turned(on: Bool) -> Self { on ? .ctrlOptCmdR : .none }
 
     public struct Modifiers: OptionSet, Sendable {
         public let rawValue: Int
@@ -30,20 +26,11 @@ public enum OpenLatestKey: String, CaseIterable, Sendable {
         public static let command = Modifiers(rawValue: 4)
     }
 
-    /// The modifiers of `menuKey`, with R.
-    public var modifiers: Modifiers {
-        switch menuKey {
-        case .optCmdR: return [.option, .command]
-        case .ctrlOptR: return [.control, .option]
-        case .ctrlOptCmdR, .none: return [.control, .option, .command]
-        }
-    }
+    /// The modifiers, with R: global, or with that off inside Readout only.
+    public var modifiers: Modifiers { [.control, .option, .command] }
 
-    /// `menuKey` as the menu writes it: "⌃⌥⌘R".
-    public var title: String {
-        let m = modifiers
-        return (m.contains(.control) ? "⌃" : "") + (m.contains(.option) ? "⌥" : "") + (m.contains(.command) ? "⌘" : "") + "R"
-    }
+    /// As the menu writes it.
+    public var title: String { "⌃⌥⌘R" }
 }
 
 /// The editors that open a file at a line, as Settings ▸ Editor stores them
