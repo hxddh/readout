@@ -25,13 +25,17 @@
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
   --code-tint: 3%;            /* inline code's fill: this much of the text colour */
 
-  /* The text column: 42.5 rem (3.9's), in rem so ⌘+ and ⌘− keep the
-     characters per line; in a narrower window, the window less the gutters.
-     It is the column's width in every window, so code and tables widen from
-     it into the margins (--bleed) by the room there really is. No width
-     setting (View ▸ Wide Text is gone). */
-  --measure: min(42.5rem, 100vw - 2 * var(--gutter));
-  --size: 16px;
+  /* The text column: 35 em of the text, so every text size keeps the
+     characters per line (measured in WebKit on macOS: about 78 of Latin
+     text in SF Pro, 36 of Chinese in PingFang; 3.9's 42.5 rem held 94 Latin
+     ones, its wide 57.5 rem some 127); in a narrower window, the window
+     less the gutters. It is the column's width in every window, so code
+     and tables widen from it into the margins (--bleed) by the room there
+     really is. No width setting: in a wide window the text itself grows
+     (html's font-size below), and the column with it. */
+  --measure: min(35rem, 100vw - 2 * var(--gutter));
+  /* The reader's text size (⌘+ ⌘− ⌘0, set by the app; 16 is Actual Size). */
+  --fs: 16;
   --lh: 1.65;
   --lh-cjk: 1.8;
   --gutter: 28px;
@@ -105,7 +109,13 @@ html {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: var(--size);
+  /* The text grows with the window: the reader's size up to a content area
+     of 900 px, then smoothly to 1.25 times it at 1800 px and wider (1280 px:
+     1.11, 1600 px: 1.19), so a wide window is not mostly margin. Everything
+     in rem and em (the column, code, tables, the bleed) follows; CSS alone,
+     so it is decided before the first paint and costs a resize nothing but
+     the reflow it brings anyway. The reader's ⌘+ and ⌘− multiply it. */
+  font-size: clamp(calc(var(--fs) * 1px), calc(var(--fs) * (1px + (100vw - 900px) / 3600)), calc(var(--fs) * 1.25px));
   line-height: var(--lh);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;

@@ -1024,7 +1024,7 @@ const v36 = patch([
 {
   const tb = patch([
     ['paragraph', '<p id="b-p">The text column stays as it is.</p>'],
-    ['code', `<div class="code-block" id="b-long" data-lang="ts"><pre><code>${'const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key, Range: range }));'}</code></pre></div>`],
+    ['code', `<div class="code-block" id="b-long" data-lang="ts"><pre><code>${'const result = await client.send(new GetObjectCommand({ Bucket, Key, Range }));'}</code></pre></div>`],
     ['code', `<div class="code-block" id="b-huge" data-lang="ts"><pre><code>${longLine} ${longLine}</code></pre></div>`],
     ['code', '<div class="code-block" id="b-short" data-lang="sh"><pre><code>npm test</code></pre></div>'],
     ['listItem', `<ul class="li-block li-first li-last"><li>In a list:<div class="code-block" id="b-li"><pre><code>${longLine}</code></pre></div></li></ul>`],
@@ -1068,19 +1068,19 @@ const v36 = patch([
   await page.evaluate(() => window.readout.setAppearance({ codeWrap: true }));
   const wrapped = await measure(page);
   check('with code wrapping on, code blocks keep the column', Math.abs(wrapped.long[1] - wrapped.col[1]) < 0.5, JSON.stringify(wrapped));
-  // 4.0: the column follows the type size (42.5 rem): code widens from it in step.
+  // 4.0: the column follows the type size (35 rem): code widens from it in step.
   await page.evaluate(() => window.readout.setAppearance({ codeWrap: false, fontSize: 20 }));
   await page.waitForTimeout(100);
   const big = await page.evaluate(() => { const r = id => document.getElementById(id).getBoundingClientRect(); return { root: parseFloat(getComputedStyle(document.documentElement).fontSize), col: [r('b-p').left, r('b-p').width], long: [r('b-long').left, r('b-long').width], huge: [r('b-huge').left, r('b-huge').width], sideways: document.scrollingElement.scrollWidth - innerWidth }; });
-  const C = 42.5 * big.root;   // 850 px at 20 px
-  check('at 20 px the column is 42.5 rem and code that runs past it widens to 1.35 columns', Math.abs(big.col[1] - C) < 0.5 && Math.abs(big.long[1] - 1.35 * C) < 1 && Math.abs(big.huge[1] - 1.35 * C) < 1 && big.sideways <= 0, JSON.stringify(big));
+  const C = 35 * big.root;   // 20 px at 1600 px: 23.9 px
+  check('at 20 px the column is 35 rem and code that runs past it widens to 1.35 columns', Math.abs(big.col[1] - C) < 0.5 && Math.abs(big.long[1] - 1.35 * C) < 1 && Math.abs(big.huge[1] - 1.35 * C) < 1 && big.sideways <= 0, JSON.stringify(big));
   await page.close();
-  for (const width of [900, 1200]) {
+  for (const width of [860, 1200]) {
     page = await open(width);
     await page.evaluate(p => window.readout.apply(p), tb);
     await page.waitForTimeout(150);
     const n = await measure(page);
-    const fits = width === 1200;   // 1.35 x 680 px and 4 rem each side fit in 1200 px, not in 900
+    const fits = width === 1200;   // 1.35 x 560 px and 4 rem each side (884 px) fit in 1200 px, not in 860
     check(`at ${width} px code ${fits ? 'widens' : 'keeps the column'}`, fits ? Math.abs(n.long[1] - 1.35 * n.col[1]) < 1 : Math.abs(n.long[1] - n.col[1]) < 0.5 && n.sideways <= 0, JSON.stringify(n));
     // Widening to the right only, a table keeps 4 rem from the window's edge.
     check(`at ${width} px a table keeps the text's left edge and 4 rem from the window's edge`, Math.abs(n.table[0] - n.col[0]) < 0.5 && n.table[0] + n.table[1] <= n.vw - 64 + 0.5 && n.sideways <= 0, JSON.stringify(n));
@@ -1364,10 +1364,40 @@ const v36 = patch([
     await pg.close();
     return r;
   };
-  const cases = [['01-sdd-fix-loop-plan', 640, [0]], ['17-dataagent-tdd-design', 640, [4, 6]], ['11-mongodb-adapter-deep-dive', 900, [0]]];
+  const cases = [['01-sdd-fix-loop-plan', 640, [0]], ['11-mongodb-adapter-deep-dive', 900, [0]]];
   for (const [name, width, which] of cases) {
     const r = await corpusTables(name, width, which);
     check(`corpus ${name.slice(0, 2)} at ${width} px: tables of short cells wrap them and fit instead of scrolling`, r.every(t => !t.scrolls && t.over <= 1), JSON.stringify(r));
+  }
+  // 17's two are 36 em at their narrowest, more than the 35 em column (3.9's
+  // narrow column was 42.5 em): from a window with room beside the column
+  // they widen into it, wrapping their short cells again if they must, and
+  // fit at every size of the text after it (1000 px: the text 1.03 times,
+  // 1600: 1.19).
+  // 31's table of actions: identifiers kept on one line do not starve its
+  // column of notes (3 lines for its longest note, not 7), and a part of a
+  // path kept whole elsewhere is not in a cell.
+  {
+    const pg = await open(900);
+    await pg.evaluate(p => window.readout.apply(p), JSON.parse(readFileSync('test/corpus/patches/31-readout-typesetting-cases.json', 'utf8')));
+    await pg.waitForTimeout(300);
+    const r = await pg.evaluate(() => {
+      const t = document.querySelector('.table-wrap'), row = t.querySelector('tbody tr'), notes = row.lastElementChild;
+      const lh = parseFloat(getComputedStyle(notes).lineHeight) || parseFloat(getComputedStyle(notes).fontSize) * 1.5;
+      const nb = t.querySelector('code.nb, code .nb');
+      return { notesEm: Math.round(notes.getBoundingClientRect().width / parseFloat(getComputedStyle(notes).fontSize) * 10) / 10,
+        lines: Math.round((notes.getBoundingClientRect().height - parseFloat(getComputedStyle(notes).paddingTop) * 2) / lh),
+        kept: [...t.querySelectorAll('tbody td:first-child code')].map(c => c.hasAttribute('data-nw')),
+        versionsKept: [...t.querySelectorAll('tbody td:nth-child(2) code')].every(c => !!c.closest('[data-nw]')),
+        nbDisplay: nb ? getComputedStyle(nb).display : null, over: t.scrollWidth - t.clientWidth };
+    });
+    check('corpus 31 at 900 px: a column of identifiers kept whole does not starve the notes beside it; versions stay whole; no part kept whole in a cell',
+      r.notesEm >= 12 && r.lines <= 4 && r.kept.every(k => !k) && r.versionsKept && (r.nbDisplay === null || r.nbDisplay === 'inline') && r.over <= 1, JSON.stringify(r));
+    await pg.close();
+  }
+  for (const width of [1000, 1600]) {
+    const r = await corpusTables('17-dataagent-tdd-design', width, [4, 6]);
+    check(`corpus 17 at ${width} px: its tables of identifiers and short cells widen into the margin and fit, without scrolling`, r.every(t => t.over <= 1), JSON.stringify(r));
   }
   page = await open(640);
   await page.evaluate(p => window.readout.apply(p), patch([
@@ -1547,7 +1577,7 @@ const v36 = patch([
     ['code', `<div class="code-block" id="f-shell" data-lang="text"><pre><code>$ npm test\n${prose}</code></pre></div>`],
     ['code', `<div class="code-block" id="f-tabs" data-lang="text"><pre><code>path\tsize\tnote\nsrc/reader.css\t22 KB\t${prose}\nsrc/reader/enhance.js\t31 KB\tshort</code></pre></div>`],
   ]);
-  for (const width of [900, 1600]) {
+  for (const width of [860, 1600]) {
     page = await open(width);
     await page.evaluate(p => window.readout.apply(p), fp);
     await until(page, () => [...document.querySelectorAll('.code-block[data-lang]')].every(c => c.dataset.hl === 'done'));
@@ -1561,10 +1591,10 @@ const v36 = patch([
     check(`prose fences (none, text, txt, plain, plaintext, md, markdown, prompt) wrap in the column, without a Wrap button (${width})`,
       r.prose.every(f => f.prose && f.ws === 'pre-wrap' && !f.scrolls && Math.abs(f.left) < 0.5 && Math.abs(f.width) < 0.5 && f.wrapBtn === 'none') && r.sideways <= 0, JSON.stringify(r.prose.filter(f => !(f.prose && !f.scrolls && Math.abs(f.left) < 0.5 && Math.abs(f.width) < 0.5 && f.wrapBtn === 'none'))));
     // At 1600 px they widen into the margins, where the aligned listing fits.
-    check(`code, a tree and an aligned listing do not wrap and keep their Wrap button${width === 900 ? ', and scroll' : ''} (${width})`,
-      [r.js, r.tree, r.aligned].every(f => !f.prose && f.ws === 'pre' && (width > 900 || f.scrolls) && f.wrapBtn !== 'none'), JSON.stringify([r.js, r.tree, r.aligned]));
-    check(`a short aligned table and a tab-separated listing are not prose: unwrapped, with their Wrap button${width === 900 ? ', the long one scrolling' : ''} (${width})`,
-      [r.short, r.tabs].every(f => !f.prose && f.ws === 'pre' && f.wrapBtn !== 'none') && (width > 900 || r.tabs.scrolls), JSON.stringify([r.short, r.tabs]));
+    check(`code, a tree and an aligned listing do not wrap and keep their Wrap button${width === 860 ? ', and scroll' : ''} (${width})`,
+      [r.js, r.tree, r.aligned].every(f => !f.prose && f.ws === 'pre' && (width > 860 || f.scrolls) && f.wrapBtn !== 'none'), JSON.stringify([r.js, r.tree, r.aligned]));
+    check(`a short aligned table and a tab-separated listing are not prose: unwrapped, with their Wrap button${width === 860 ? ', the long one scrolling' : ''} (${width})`,
+      [r.short, r.tabs].every(f => !f.prose && f.ws === 'pre' && f.wrapBtn !== 'none') && (width > 860 || r.tabs.scrolls), JSON.stringify([r.short, r.tabs]));
     // Prose only on a positive signal: a stack trace (indented frames) and a
     // shell transcript are not prose, long sentences in them notwithstanding.
     check(`a stack trace and a shell transcript in an unlabelled or text fence are not prose (${width})`,
@@ -1868,32 +1898,66 @@ for (const dark of [false, true]) {
   await page.close();
 }
 
-// P4.4 No width setting: the column is 42.5 em (3.9's narrow column) at
-//      every text size, so ⌘+ and ⌘− keep the characters per line; in a
-//      narrower window, the window less its gutters. An old caller's
-//      width: "wide" changes nothing.
+// P4.4 No width setting: the column is 35 em of the text, so a line holds
+//      about 60-80 Latin and 35-45 Chinese characters at every text size and
+//      window; the text grows with the window (the reader's size up to 900
+//      px, 1.25 times it from 1800 px, smoothly between), the reader's ⌘+ and
+//      ⌘− multiply it, and Actual Size returns to the automatic size. In a
+//      narrower window the column is the window less its gutters. An old
+//      caller's width: "wide" changes nothing.
 {
   const latin = 'Agents write long plans and reports, and the reader keeps them readable: a line of text that the eye can follow back to its start without losing its place, in a window of any size and at any text size the reader chooses. '.repeat(3);
-  page = await open(1600);
-  await page.evaluate(p => window.readout.apply(p), patch([['paragraph', `<p id="m-latin">${latin}</p>`]]));
-  const m = [];
-  for (const fs of [13, 16, 20, 24]) {
-    await page.evaluate(fs => window.readout.setAppearance({ fontSize: fs }), fs);
-    m.push({ fs, col: await page.evaluate(() => document.getElementById('m-latin').getBoundingClientRect().width) });
-  }
-  check('P4.4 in a wide window the column is 42.5 em at 13/16/20/24 px (680 px at 16)', m.every(x => Math.abs(x.col / x.fs - 42.5) < 0.05) && Math.abs(m[1].col - 680) < 0.5, JSON.stringify(m));
-  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16 }));
-  const sizes = [];
-  for (const vw of [1600, 1000, 760, 640, 480, 360]) {
+  const han = '在现有全局提示词存储的基础上，增加项目级别的提示词存储功能。项目提示词存储在项目根目录的文件中，实现团队共享和项目特定的提示词管理，并保持阅读的节奏。'.repeat(3);
+  const perLine = (pg, id) => pg.evaluate(id => {
+    const el = document.getElementById(id), lines = new Map();
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let t; (t = w.nextNode());) for (let i = 0; i < t.data.length; i++) {
+      const r = document.createRange(); r.setStart(t, i); r.setEnd(t, i + 1);
+      const b = r.getClientRects()[0]; if (!b) continue;
+      const k = Math.round(b.top / 4); lines.set(k, (lines.get(k) || 0) + 1);
+    }
+    const n = [...lines.values()]; n.pop();   // the last line is short
+    return n.reduce((a, b) => a + b, 0) / n.length;
+  }, id);
+  const state = pg => pg.evaluate(() => ({ root: parseFloat(getComputedStyle(document.documentElement).fontSize), col: document.getElementById('m-latin').getBoundingClientRect().width,
+    code: parseFloat(getComputedStyle(document.getElementById('m-code')).fontSize), sideways: document.scrollingElement.scrollWidth - innerWidth }));
+  const scale = vw => Math.min(1.25, Math.max(1, 1 + (vw - 900) / 3600));
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([['paragraph', `<p id="m-latin">${latin} <code id="m-code">src/app.ts</code></p>`], ['paragraph', `<p id="m-han">${han}</p>`, { cjk: true }]]));
+  const curve = [];
+  for (const vw of [900, 1280, 1600, 1800, 2400, 700]) {
     await page.setViewportSize({ width: vw, height: 800 });
-    sizes.push({ vw, col: await page.evaluate(() => document.getElementById('m-latin').getBoundingClientRect().width), sideways: await page.evaluate(() => document.scrollingElement.scrollWidth - innerWidth) });
+    curve.push({ vw, ...(await state(page)), latin: await perLine(page, 'm-latin'), han: await perLine(page, 'm-han') });
   }
-  const want = vw => Math.min(680, vw - 2 * 28);
-  check('P4.4 in a narrower window the column is the window less its gutters', sizes.every(s => Math.abs(s.col - want(s.vw)) < 0.6 && s.sideways <= 0), JSON.stringify(sizes));
+  check('P4.4 the text grows with the window: 16 px to 900 px, then smoothly to 20 px (1.25) at 1800 px and wider', curve.every(c => Math.abs(c.root - 16 * scale(c.vw)) < 0.05), JSON.stringify(curve));
+  check('P4.4 the column is 35 em of the text in every wide window (or the window less its gutters), code in step', curve.every(c => Math.abs(c.col - Math.min(35 * c.root, c.vw - 56)) < 0.6 && Math.abs(c.code / c.root - 0.9) < 0.01 && c.sideways <= 0), JSON.stringify(curve));
+  check('P4.4 a line holds 60-80 Latin characters and 35-45 Chinese ones in every window', curve.filter(c => c.vw >= 900).every(c => c.latin >= 60 && c.latin <= 80 && c.han >= 35 && c.han <= 45), JSON.stringify(curve));
   await page.setViewportSize({ width: 1600, height: 800 });
+  const m = [];
+  for (const fs of [13, 16, 20, 24, 16]) {
+    await page.evaluate(fs => window.readout.setAppearance({ fontSize: fs }), fs);
+    m.push({ fs, ...(await state(page)), latin: await perLine(page, 'm-latin') });
+  }
+  check('P4.4 the reader\'s size multiplies the window\'s (1600 px: 1.19), Actual Size back to the automatic size; the characters per line stay', m.every(x => Math.abs(x.root - x.fs * scale(1600)) < 0.05) && m[4].root === m[1].root && m.every(x => Math.abs(x.latin - m[1].latin) <= 3), JSON.stringify(m));
+  const sizes = [];
+  for (const vw of [760, 640, 480, 360]) {
+    await page.setViewportSize({ width: vw, height: 800 });
+    sizes.push({ vw, ...(await state(page)) });
+  }
+  check('P4.4 in a narrower window the column is the window less its gutters', sizes.every(s => Math.abs(s.col - Math.min(560, s.vw - 56)) < 0.6 && s.sideways <= 0), JSON.stringify(sizes));
+  await page.setViewportSize({ width: 900, height: 800 });
   const old = await page.evaluate(() => { window.readout.setAppearance({ width: 'wide' }); return { col: document.getElementById('m-latin').getBoundingClientRect().width, attr: document.documentElement.hasAttribute('data-width') }; });
-  check('P4.4 there is no width setting: width "wide" changes nothing', Math.abs(old.col - 680) < 0.5 && !old.attr, JSON.stringify(old));
+  check('P4.4 there is no width setting: width "wide" changes nothing', Math.abs(old.col - 560) < 0.5 && !old.attr, JSON.stringify(old));
   await page.close();
+  // Decided before the first paint: the size a wide window opens at is its size in the first frame.
+  const pg = await browser.newPage({ viewport: { width: 1600, height: 800 } });
+  await pg.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+    window.__first = null; requestAnimationFrame(() => { window.__first = parseFloat(getComputedStyle(document.documentElement).fontSize); }); });
+  await pg.goto(`${base}/reader.html`);
+  await until(pg, () => window.__first !== null);
+  const first = await pg.evaluate(() => [window.__first, parseFloat(getComputedStyle(document.documentElement).fontSize)]);
+  check('P4.4 the window decides the text size before the first frame (no script)', Math.abs(first[0] - 16 * scale(1600)) < 0.05 && first[0] === first[1], JSON.stringify(first));
+  await pg.close();
 }
 
 
