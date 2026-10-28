@@ -1,12 +1,12 @@
 {
- "height": 2258,
+ "height": 2417,
  "blocks": [
   {
    "slot": 1,
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "6f8b3d54",
+   "style": "ab82f3d9",
    "content": "9a39d04a",
    "text": "Typesetting cases"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 96,
-   "style": "1af0b983",
+   "style": "763224a8",
    "content": "542d9844",
    "text": "Synthetic: written for Readout's rendering basel"
   },
@@ -24,7 +24,7 @@
    "kind": "heading",
    "top": 166,
    "h": 65,
-   "style": "f64ad384",
+   "style": "a0373c7b",
    "content": "c29ab271",
    "text": "Code inside an alert"
   },
@@ -33,7 +33,7 @@
    "kind": "alert",
    "top": 231,
    "h": 175,
-   "style": "89d828b3",
+   "style": "4f2be544",
    "content": "9b520699",
    "text": "NoteBuild the reader before running the tests:cd"
   },
@@ -42,7 +42,7 @@
    "kind": "alert",
    "top": 407,
    "h": 93,
-   "style": "a2bd96ce",
+   "style": "c328986b",
    "content": "a69b819c",
    "text": "WarningBaselines come from CI's WebKit, not a de"
   },
@@ -51,7 +51,7 @@
    "kind": "heading",
    "top": 500,
    "h": 65,
-   "style": "f64ad384",
+   "style": "a0373c7b",
    "content": "9c8014c6",
    "text": "A terminal transcript"
   },
@@ -60,7 +60,7 @@
    "kind": "code",
    "top": 565,
    "h": 122,
-   "style": "3a297845",
+   "style": "77ca9522",
    "content": "cefa7893",
    "text": "$ npm run corpus ok: 01-sdd-fix-loop-plan-light "
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 687,
    "h": 65,
-   "style": "f64ad384",
+   "style": "a0373c7b",
    "content": "bf28170d",
    "text": "A directory tree"
   },
@@ -78,7 +78,7 @@
    "kind": "code",
    "top": 752,
    "h": 178,
-   "style": "3e2bc32f",
+   "style": "68d7515c",
    "content": "e6fd53e2",
    "text": "web/ ├── src/ │ ├── reader/ │ │ ├── enhance.js │"
   },
@@ -87,7 +87,7 @@
    "kind": "heading",
    "top": 930,
    "h": 65,
-   "style": "f64ad384",
+   "style": "a0373c7b",
    "content": "b0b9e079",
    "text": "Short cells and identifiers"
   },
@@ -95,116 +95,116 @@
    "slot": 11,
    "kind": "table",
    "top": 995,
-   "h": 281,
-   "style": "d9bb916e",
+   "h": 386,
+   "style": "a60e4310",
    "content": "fb2714a9",
    "text": "ActionCurrentLatestRiskNotesactions/configure-pa"
   },
   {
    "slot": 12,
    "kind": "heading",
-   "top": 1276,
+   "top": 1381,
    "h": 65,
-   "style": "f64ad384",
+   "style": "a0373c7b",
    "content": "d3e2c464",
    "text": "Superscripts and footnotes"
   },
   {
    "slot": 13,
    "kind": "paragraph",
-   "top": 1341,
-   "h": 70,
-   "style": "08522a49",
+   "top": 1446,
+   "h": 96,
+   "style": "8121fa63",
    "content": "b9303a9b",
    "text": "The cost grows as n2 with the number of blocks, "
   },
   {
    "slot": 14,
    "kind": "heading",
-   "top": 1411,
+   "top": 1542,
    "h": 65,
-   "style": "6f7d928e",
+   "style": "4f1752b9",
    "content": "c65c33ff",
    "text": "中文排版"
   },
   {
    "slot": 15,
    "kind": "paragraph",
-   "top": 1476,
-   "h": 74,
-   "style": "8a96de78",
+   "top": 1607,
+   "h": 102,
+   "style": "2f757df5",
    "content": "55e014e1",
    "text": "这一段测试着重号：强调文字不用斜体，标点不加点。——也不加，混排的调用 API 接口只在汉字下加"
   },
   {
    "slot": 16,
    "kind": "paragraph",
-   "top": 1549,
+   "top": 1708,
    "h": 74,
-   "style": "c8179faf",
+   "style": "a79b9b99",
    "content": "9df8e94b",
    "text": "长的强调：正确性属性是系统在所有有效执行中都应保持为真的特征或行为，本质上是关于系统应该做什么的"
   },
   {
    "slot": 17,
    "kind": "paragraph",
-   "top": 1623,
+   "top": 1782,
    "h": 46,
-   "style": "bbb57000",
+   "style": "4ea2b95b",
    "content": "c9975091",
    "text": "整段强调的段落不加着重号，而是略微加重字重。"
   },
   {
    "slot": 18,
    "kind": "listItem",
-   "top": 1669,
+   "top": 1828,
    "h": 30,
-   "style": "3f9ba2b4",
+   "style": "ba7e80c7",
    "content": "2c9cf511",
    "text": "已完成：检查复选框与这一行居中"
   },
   {
    "slot": 19,
    "kind": "listItem",
-   "top": 1698,
+   "top": 1857,
    "h": 45,
-   "style": "8853a855",
+   "style": "63bdb716",
    "content": "ef23225f",
    "text": "未完成：Latin task item in a CJK list"
   },
   {
    "slot": 20,
    "kind": "paragraph",
-   "top": 1743,
+   "top": 1902,
    "h": 46,
-   "style": "7cfdb7e7",
+   "style": "c929ff4e",
    "content": "b2b5a8f2",
    "text": "日本語の段落：強調は傍点で示します。"
   },
   {
    "slot": 21,
    "kind": "heading",
-   "top": 1789,
+   "top": 1948,
    "h": 65,
-   "style": "f64ad384",
+   "style": "a0373c7b",
    "content": "51213cae",
    "text": "Code that runs past the column"
   },
   {
    "slot": 22,
    "kind": "code",
-   "top": 1854,
+   "top": 2013,
    "h": 62,
-   "style": "211edf37",
+   "style": "a6f68620",
    "content": "826ac941",
    "text": "const result = await client.send(new GetObjectCo"
   },
   {
    "slot": 23,
    "kind": "footnotes",
-   "top": 1915,
+   "top": 2074,
    "h": 72,
-   "style": "85b71239",
+   "style": "7f1ccad0",
    "content": "bb47eb4b",
    "text": "A footnote reference sits on the same line pitch"
   }

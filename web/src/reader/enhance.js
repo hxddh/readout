@@ -374,6 +374,7 @@ const SLOW_HIGHLIGHT_MS = 200;
 const sourceOf = new WeakMap();   // code block -> original code text
 const warmGrammars = new Set();   // grammar ids that have highlighted a block
 const prepared = new WeakSet();   // code blocks whose grammars have been loaded once
+const retried = new WeakSet();    // and of those, the ones loaded a second time after a failure
 
 // A block ahead of the screen is highlighted PART_LINES lines at a time,
 // a few parts a turn of the lazy pump, and shown once whole:
@@ -539,9 +540,16 @@ function highlightBlock(cb, need = 'screen') {
     pre.replaceWith(newPre);
     cb.dataset.hl = slow ? 'recheck' : 'done';
     if (slow) setTimeout(() => { if (cb.isConnected) { queue.push(cb); pump(); } else cb.dataset.hl = 'done'; }, 50);
-  } else if (prepared.has(cb)) {
-    cb.dataset.hl = 'none';   // everything it needs was loaded and it still failed
+  } else if (prepared.has(cb) && retried.has(cb)) {
+    // Everything it needs was loaded, twice, and it still failed: plain for
+    // good ('failed', apart from 'none', a language there is no grammar for).
+    cb.dataset.hl = 'failed';
   } else {
+    // Its grammars loaded once and it failed anyway (a load still settling
+    // when it was asked, seen on a loaded CI machine: the block stayed plain
+    // in one render of the same page and was coloured in the next): loaded
+    // again, and tried once more, so the page comes out the same every time.
+    if (prepared.has(cb)) retried.add(cb);
     cb.dataset.hl = 'loading';
     prepared.add(cb);
     // Then by the lazy pump (a part at a time, a long block in several turns).

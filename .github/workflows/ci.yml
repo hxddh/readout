@@ -167,6 +167,12 @@ jobs:
       - name: Corpus snapshots and screenshots
         working-directory: web
         run: npm run corpus
+      # The documents with diagrams, formulas and long code blocks, each
+      # rendered three times: every render the same, or the page is not
+      # deterministic (a lazy renderer settling differently between runs).
+      - name: Deterministic rendering (diagrams, formulas, long code; 3 renders)
+        working-directory: web
+        run: node test/corpus.test.mjs --repeat=3 20-aios,21-dropout,29-a2a
       - name: Upload actual renderings, diffs and full pages
         if: always()
         uses: actions/upload-artifact@v5

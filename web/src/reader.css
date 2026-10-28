@@ -25,14 +25,15 @@
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
   --code-tint: 3%;            /* inline code's fill: this much of the text colour */
 
-  /* The text column sizes itself, with no setting: 39 rem at most, in rem so
-     ⌘+ and ⌘− keep the characters per line (about 78 of Latin text in the
-     system font, 39 of Chinese or Japanese: inside 60–80 and 35–45; 3.9's
-     42.5 rem held some 85 Latin ones, its wide 57.5 rem 115); in a narrower
+  /* The text column sizes itself, with no setting: 35 rem at most, in rem so
+     ⌘+ and ⌘− keep the characters per line (measured in WebKit on macOS:
+     about 78 of Latin text in SF Pro, 36 of Chinese in PingFang: inside
+     60–80 and 35–45; 3.9's 42.5 rem held 94 Latin ones, its wide 57.5 rem
+     some 127); in a narrower
      window (or at a larger text size), the window less the gutters. It is
      the column's width in every window, so code and tables widen from it
      into the margins (--bleed) by the room there really is. */
-  --measure: min(39rem, 100vw - 2 * var(--gutter));
+  --measure: min(35rem, 100vw - 2 * var(--gutter));
   --size: 16px;
   --lh: 1.65;
   --lh-cjk: 1.8;
