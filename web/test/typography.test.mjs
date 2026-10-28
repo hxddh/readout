@@ -1858,6 +1858,39 @@ for (const dark of [false, true]) {
   await page.close();
 }
 
+
+// P4.5 A part kept on one line (span.nb, code.nb) still breaks when it is
+//      wider than the whole line: a narrow pane at the largest text size
+//      (24 px), in an item two levels deep, never runs past the column.
+{
+  page = await open(360);
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 24 }));
+  const longs = ['<code><span class="nb">2026-10-28T12:34:56.123456789Z</span></code>', '<code class="nb">glyphicon-arrow-left</code>',
+    '<code>docs/<wbr>superpowers/<wbr>plans/<wbr><span class="nb">2026-08-08-</span><wbr>stresseur-<wbr><span class="nb">phase0-1.md</span></code>'];
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['paragraph', `<p id="o-p">Logged at ${longs.join(', ')} and so on.</p>`],
+    ['listItem', `<ul class="li-block li-first li-last"><li>Outer<ul><li id="o-li">Inner: ${longs.join(' ')}</li></ul></li></ul>`],
+  ]));
+  await page.waitForTimeout(200);
+  const o = await page.evaluate(() => {
+    const col = document.getElementById('o-p').getBoundingClientRect();
+    const codes = [...document.querySelectorAll('#o-p code, #o-li code')].map(c => { const rs = [...c.getClientRects()]; return { text: c.textContent.slice(0, 16), right: Math.max(...rs.map(r => r.right)), lines: rs.length }; });
+    return { col: [col.left, col.right], sideways: document.scrollingElement.scrollWidth - innerWidth, past: codes.filter(c => c.right > col.right + 0.5), codes };
+  });
+  check('P4.5 at 24 px in a 360 px window, kept parts and long paths never run past the column, in text or a nested item', o.sideways <= 0 && o.past.length === 0, JSON.stringify(o));
+  await page.close();
+  // Kept as a unit (an inline-block), a code span's fill and its line are as tall as any code's.
+  page = await open(900);
+  await page.evaluate(p => window.readout.apply(p), patch([
+    ['paragraph', '<p id="k-a">Plain text, no code.</p>'], ['paragraph', '<p id="k-b">With <code id="k-c1">plain</code> code.</p>'],
+    ['paragraph', '<p id="k-c">With <code class="nb" id="k-c2">glyphicon-X</code> code.</p>'], ['paragraph', '<p id="k-d">With <code id="k-c3">x<span class="nb">2026-08-08-</span>y</code> code.</p>'],
+    ['heading', '<h2 id="k-h1">Task 1: plain</h2>'], ['heading', '<h2 id="k-h2">Task 1: <code class="nb">wiki-init</code></h2>'],
+  ]));
+  const k = await page.evaluate(() => Object.fromEntries(['k-a', 'k-b', 'k-c', 'k-d', 'k-c1', 'k-c2', 'k-c3', 'k-h1', 'k-h2'].map(id => [id, Math.round(document.getElementById(id).getBoundingClientRect().height * 100) / 100])));
+  check('P4.5 a kept code span\'s fill and line are as tall as other code\'s, in text and in a heading', k['k-c2'] === k['k-c1'] && k['k-c3'] === k['k-c1'] && k['k-a'] === k['k-c'] && k['k-a'] === k['k-d'] && k['k-h1'] === k['k-h2'], JSON.stringify(k));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();

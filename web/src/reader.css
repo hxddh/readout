@@ -121,6 +121,11 @@ html {
 }
 
 body { margin: 0; }
+/* The page keeps the reader's place itself (anchor.js: restores, and what
+   grows above the reader made up for). WebKit's own scroll anchoring (macOS
+   26) moved the page as well when a table above grew after a restore, so
+   the place moved twice (#99 smoke: refill, 42 px). */
+html, body { overflow-anchor: none; }
 pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 /* Native selection colour: it follows the accent and greys in an inactive window. */
 
@@ -338,8 +343,15 @@ code {
   box-decoration-break: clone;
 }
 /* A part of a path WebKit would break inside, after a - or ? (ReadoutCore),
-   or a short code span that is such a part: on one line. */
-code.nb, code .nb { white-space: nowrap; }
+   or a short code span that is such a part: one unit that goes to the next
+   line whole, and breaks inside (at that - first, then anywhere) only when it
+   is wider than the whole line. (nowrap left a part wider than a narrow
+   column, a timestamp at 24 px in a nested item, running past it.) */
+code.nb, code .nb { display: inline-block; max-width: 100%; }
+/* Its fill as tall as any code's (the font's own height and the padding),
+   not the line's: an inline-block's box is its line height. */
+code.nb { line-height: normal; margin-block: -0.08em; }   /* the padding not in the line's height */
+code .nb { max-width: calc(100% - 0.5em); }   /* and the code's own padding (0.24em a side) */
 /* Before full-width punctuation, which brings its own space (enhance.js);
    a path link keeps its outline even. */
 code.before-punct:not(.path-link) { padding-right: 0.08em; }
@@ -504,7 +516,7 @@ td { font-variant-numeric: tabular-nums; }
    fits that way; when they would push it past the column, they wrap again
    (.nw-off, enhance.js) and it scrolls only if it is still too wide. */
 :is(td, th)[data-nw], :is(td, th) code[data-nw] { white-space: nowrap; }
-.table-wrap.nw-off :is(td, th, td code, th code, td .nb, th .nb) { white-space: normal; }
+.table-wrap.nw-off :is(td, th, td code, th code) { white-space: normal; }
 tbody tr:last-child td { border-bottom: 0; }
 /* A header row with no text (a table written only for its body) is not shown. */
 thead:not(:has(th:not(:empty))) { display: none; }
