@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Drives the signed-product smoke test from outside the app.
 
-The app only exports what it shows (READOUT_SMOKE_OUT, see App/SmokeTest.swift);
+The app only exports what it shows (READOUT_SMOKE_OUT, see Smoke/SmokeTest.swift);
 every write to the document happens here, the way agents write: a temp file
 in the same directory, then an atomic rename over the target.
 
 usage: tools/smoke-run.py APP_BINARY WORK_DIR OUT_DIR
+
+APP_BINARY is the app of a Smoke build (`xcodebuild -configuration Smoke`, project.yml):
+the Release app that ships has no harness.
 
   0. launches the app once on a copy of plan.md (WORK_DIR/boot/boot.md, output in
      OUT_DIR/boot), lets it paint and quit, and removes what that launch saved
@@ -54,7 +57,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# Opens of the second document in App/SmokeTest.swift (warm_open_ms is their median).
+# Opens of the second document in Smoke/SmokeTest.swift (warm_open_ms is their median).
 WARM_OPENS = 3
 FIXTURES = ROOT / "web" / "test" / "fixtures"
 
@@ -113,7 +116,7 @@ def launch_timings(app: dict, spawn: float) -> dict:
     if "window_init" in phases and "did_load" in phases:
         t["cold_window_to_load_ms"] = round((phases["did_load"] - phases["window_init"]) * 1000, 1)
     # After the first document is on screen: the longest a call into its page
-    # waited (App/SmokeTest.swift), what a click or a key pressed then waits for.
+    # waited (Smoke/SmokeTest.swift), what a click or a key pressed then waits for.
     if isinstance(app.get("post_paint_input_delay_ms"), (int, float)):
         t["cold_post_paint_input_delay_ms"] = app["post_paint_input_delay_ms"]
     if all(k in phases for k in ("page_ready", "did_load", "apply")):

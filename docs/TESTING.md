@@ -44,12 +44,25 @@ serves another build (to see a check fail on an older one).
 `tools/smoke-run.py` launches the built app on a copy of `plan.md` and
 plays the agent: it rewrites the file (temp file + rename) shortly after the
 app opens it (`plan-early.md`) and again mid-session (`plan-v2.md`). The app
-side, `App/SmokeTest.swift` (enabled by `READOUT_SMOKE_OUT`), is read-only: it
+side, `Smoke/SmokeTest.swift` (enabled by `READOUT_SMOKE_OUT`), is read-only: it
 captures stats JSON and screenshots into the output directory, signals the
-harness through marker files, and quits by itself. The app never writes the
-document; `verify.yml` fails if document-writing smoke code returns to the
-sources or the signed binary. `verify.yml` runs it against the **signed
-Release app copied to /Applications** — the exact bytes users install — and
+harness through marker files, and quits by itself.
+
+The harness is built only into the **Smoke** configuration (`project.yml`:
+Release plus `Smoke/SmokeTest.swift`, in place of the no-op hooks of
+`App/SmokeHooks.swift`). The Release app that ships has no harness at all.
+`verify.yml` builds both from the same commit, signs both the same way, and:
+
+1. fails if the shipping binary has any smoke-test string (`READOUT_SMOKE`,
+   the marker files) or the smoke build has none, and if file-writing code
+   appears anywhere in `App/`, `Shared/` or `QuickLook/` but the baseline
+   store (the app never writes the document);
+2. runs the smoke test on the **signed Smoke build copied to /Applications**
+   (this runner's architecture);
+3. installs the **signed Release app** in its place — the exact bytes users
+   install, hashed and put in the disk image afterwards — opens a document in
+   it, and runs the Quick Look checks below with its extension.
+
 `tools/smoke-assert.py` asserts:
 
 - `1-initial`: blocks == 33, highlighted >= 2, math >= 3
