@@ -1,0 +1,59 @@
+name: Perf isolation 4 (temporary, #99)
+on:
+  push:
+    branches: [exp/p4-ab5]
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [pr, anchor, col680, mainpatches, notables]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build main and the variant
+        env:
+          V: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git worktree add "$RUNNER_TEMP/M" origin/main
+          git worktree add "$RUNNER_TEMP/X" HEAD^
+          css="$RUNNER_TEMP/X/web/src/reader.css"
+          case "$V" in
+            anchor) grep -q '^html, body { overflow-anchor: none; }$' "$css"; sed -i '/^html, body { overflow-anchor: none; }$/d' "$css" ;;
+            col680) grep -q 'min(35rem, 100vw' "$css"; sed -i 's/min(35rem, 100vw/min(42.5rem, 100vw/' "$css" ;;
+            mainpatches) rm -rf "$RUNNER_TEMP/X/web/test/corpus/patches"; cp -r "$RUNNER_TEMP/M/web/test/corpus/patches" "$RUNNER_TEMP/X/web/test/corpus/patches" ;;
+            notables) for f in src/reader.css src/reader/enhance.js; do git -C "$RUNNER_TEMP/X" show e6709e4:web/$f > /dev/null; done
+              python3 - "$css" <<'PY'
+          import sys
+          p = sys.argv[1]; s = open(p).read()
+          s = s.replace(':is(.scrolls, .nw-off)', '.scrolls').replace(':is(td, th) :is(code.nb, code .nb) { display: inline; margin-block: 0; line-height: inherit; }', '')
+          open(p, 'w').write(s)
+          PY
+              ;;
+          esac
+          (cd "$RUNNER_TEMP/X" && git diff --stat | cat)
+          for s in M X; do (cd "$RUNNER_TEMP/$s/web" && npm ci && npm run build); done
+          (cd "$RUNNER_TEMP/X/web" && npx playwright install --with-deps webkit)
+      - name: "Interleaved runs (M X X M M X)"
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          n=0
+          for s in M X X M M X; do
+            n=$((n+1))
+            (cd "$RUNNER_TEMP/$s/web" && node test/perf.test.mjs > "$GITHUB_WORKSPACE/out/$n-$s.log" 2>&1); echo "run $n $s exit $?"
+            cp "$RUNNER_TEMP/$s/web/test/out/perf-web.json" "out/$n-$s.json" || true
+          done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: perf-iso-${{ matrix.variant }}
+          path: out/
