@@ -1,0 +1,51 @@
+name: Perf A/B 14 (temporary, #99)
+on:
+  push:
+    branches: [exp/p4-ab14]
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [pr, pr2, adjust, mix]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build main and the variant
+        env:
+          V: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git worktree add "$RUNNER_TEMP/M" origin/main
+          git worktree add "$RUNNER_TEMP/X" HEAD^
+          css="$RUNNER_TEMP/X/web/src/reader.css"
+          case "$V" in
+            adjust) grep -q '^  font-size: 0.89em;$' "$css"; sed -i 's/^  font-size: 0.89em;$/  font-size: 0.9em;\n  font-size-adjust: ex-height 0.53;/' "$css" ;;
+            mix) grep -q 'background: var(--code-fill);' "$css"; sed -i 's|background: var(--code-fill);|background: color-mix(in srgb, var(--text) 3%, transparent);|' "$css" ;;
+          esac
+          (cd "$RUNNER_TEMP/X" && git diff | cat)
+          (cd "$RUNNER_TEMP/X" && git diff --stat | cat)
+          for s in M X; do (cd "$RUNNER_TEMP/$s/web" && npm ci && npm run build); done
+          (cd "$RUNNER_TEMP/X/web" && npx playwright install --with-deps webkit)
+      - name: "Interleaved runs (M X X M M X)"
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          n=0
+          for s in M X X M M X; do
+            n=$((n+1))
+            (cd "$RUNNER_TEMP/$s/web" && node test/perf.test.mjs > "$GITHUB_WORKSPACE/out/$n-$s.log" 2>&1); echo "run $n $s exit $?"
+            cp "$RUNNER_TEMP/$s/web/test/out/perf-web.json" "out/$n-$s.json" || true
+          done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: perf-iso-${{ matrix.variant }}
+          path: out/
