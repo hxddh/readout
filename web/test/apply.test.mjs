@@ -2298,6 +2298,45 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.close();
 }
 
+// 4.0: the text grows with the window (reader.css: html's font-size), so a
+// resize across the curve reflows every block: the reader keeps the same
+// block at the same share of it at the top of the window (drift <= 1 px),
+// with a code block and a table above and below.
+{
+  const p = await browser.newPage({ viewport: { width: 800, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  const ops = [];
+  for (let i = 1; i <= 90; i++) {
+    const kind = i % 15 === 7 ? 'code' : i % 15 === 11 ? 'table' : 'paragraph';
+    const html = kind === 'code' ? `<div class="code-block" data-lang="ts"><pre><code>${'const value = compute(input, options);\n'.repeat(6)}</code></pre></div>`
+      : kind === 'table' ? `<div class="table-wrap"><table><thead><tr><th>Step</th><th>Owner</th><th>Note</th></tr></thead><tbody>${'<tr><td>build</td><td>agent</td><td>A note that wraps in a narrow column of the reader</td></tr>'.repeat(3)}</tbody></table></div>`
+      : `<p>Paragraph ${i}: the agent's plan goes on, sentence after sentence, long enough to wrap over two or three lines in the reader's column.</p>`;
+    ops.push({ op: 'insert', slot: 5000 + i, after: i === 1 ? 0 : 4999 + i, kind, html });
+  }
+  await p.evaluate(x => window.readout.apply(x), { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p.waitForTimeout(500);
+  // Block 5045 at the top of the window, a third of it above the top.
+  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + e.getBoundingClientRect().height / 3); });
+  await p.waitForTimeout(400);
+  const share = () => p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'), r = e.getBoundingClientRect(); return { above: 52 - r.top, h: r.height, root: parseFloat(getComputedStyle(document.documentElement).fontSize) }; });
+  const s0 = await share();
+  const f = s0.above / s0.h;
+  const drift = [];
+  for (const vw of [1100, 1400, 1700, 2100, 2400, 1280, 1000, 800]) {
+    await p.setViewportSize({ width: vw, height: 700 });
+    await p.waitForTimeout(450);
+    const s = await share();
+    drift.push({ vw, root: s.root, drift: Math.round((s.above - f * s.h) * 10) / 10 });
+  }
+  check('resizing across the text-size curve keeps the same block at the same share of it at the top (drift <= 1 px)',
+    drift.every(d => Math.abs(d.drift) <= 1) && drift.some(d => d.root > 19), JSON.stringify(drift));
+  await p.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();

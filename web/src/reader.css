@@ -25,16 +25,17 @@
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
   --code-tint: 3%;            /* inline code's fill: this much of the text colour */
 
-  /* The text column sizes itself, with no setting: 35 rem at most, in rem so
-     ⌘+ and ⌘− keep the characters per line (measured in WebKit on macOS:
-     about 78 of Latin text in SF Pro, 36 of Chinese in PingFang: inside
-     60–80 and 35–45; 3.9's 42.5 rem held 94 Latin ones, its wide 57.5 rem
-     some 127); in a narrower
-     window (or at a larger text size), the window less the gutters. It is
-     the column's width in every window, so code and tables widen from it
-     into the margins (--bleed) by the room there really is. */
+  /* The text column: 35 em of the text, so every text size keeps the
+     characters per line (measured in WebKit on macOS: about 78 of Latin
+     text in SF Pro, 36 of Chinese in PingFang; 3.9's 42.5 rem held 94 Latin
+     ones, its wide 57.5 rem some 127); in a narrower window, the window
+     less the gutters. It is the column's width in every window, so code
+     and tables widen from it into the margins (--bleed) by the room there
+     really is. No width setting: in a wide window the text itself grows
+     (html's font-size below), and the column with it. */
   --measure: min(35rem, 100vw - 2 * var(--gutter));
-  --size: 16px;
+  /* The reader's text size (⌘+ ⌘− ⌘0, set by the app; 16 is Actual Size). */
+  --fs: 16;
   --lh: 1.65;
   --lh-cjk: 1.8;
   --gutter: 28px;
@@ -108,7 +109,13 @@ html {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: var(--size);
+  /* The text grows with the window: the reader's size up to a content area
+     of 900 px, then smoothly to 1.25 times it at 1800 px and wider (1280 px:
+     1.11, 1600 px: 1.19), so a wide window is not mostly margin. Everything
+     in rem and em (the column, code, tables, the bleed) follows; CSS alone,
+     so it is decided before the first paint and costs a resize nothing but
+     the reflow it brings anyway. The reader's ⌘+ and ⌘− multiply it. */
+  font-size: clamp(calc(var(--fs) * 1px), calc(var(--fs) * (1px + (100vw - 900px) / 3600)), calc(var(--fs) * 1.25px));
   line-height: var(--lh);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -183,7 +190,8 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    A table too wide for the column widens to the right only, as far as it
    needs (--tb-w, measured), up to the same 0.35 column and never closer than
    4 rem to the window's edge: its first column, which is read down like the
-   text, and its change bar stay on the text's edge. */
+   text, and its change bar stay on the text's edge. So does one whose short
+   cells wrap again to fit (nw-off): widened, they need wrap less. */
 @property --out { syntax: "<length>"; inherits: true; initial-value: 0px; }
 #ro-doc > .chunk > .blk:is(.k-code, .k-table) {
   --bleed: clamp(0px, (100vw - 8rem - 1.35 * var(--measure)) * 1000, 0.175 * var(--measure));
@@ -196,12 +204,12 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 :root[data-code-wrap="on"] #ro-doc > .chunk > .blk.k-code { --out: 0px; }
 #ro-doc > .chunk > .blk.k-code > .code-block { margin-inline: calc(-1 * var(--out)); }
 @media not print {
-  #ro-doc > .chunk > .blk.k-table:has(> .table-wrap.scrolls) {
+  #ro-doc > .chunk > .blk.k-table:has(> .table-wrap:is(.scrolls, .nw-off)) {
     --out-end: clamp(0px, var(--tb-w, 0px) - var(--measure), min(var(--bleed) * 1000, 2 * var(--bleed), (100vw - var(--measure)) / 2 - 4rem));
     margin-inline-end: calc(-1 * (var(--gutter) + var(--out-end)));
     padding-inline-end: calc(var(--gutter) + var(--out-end));
   }
-  #ro-doc > .chunk > .blk.k-table > .table-wrap.scrolls { margin-inline-end: calc(-1 * var(--out-end)); }
+  #ro-doc > .chunk > .blk.k-table > .table-wrap:is(.scrolls, .nw-off) { margin-inline-end: calc(-1 * var(--out-end)); }
 }
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
 /* CJK emphasis: upright (Han and kana have no italic), with emphasis dots
@@ -352,6 +360,11 @@ code.nb, code .nb { display: inline-block; max-width: 100%; }
    not the line's: an inline-block's box is its line height. */
 code.nb { line-height: normal; margin-block: -0.08em; }   /* the padding not in the line's height */
 code .nb { max-width: calc(100% - 0.5em); }   /* and the code's own padding (0.24em a side) */
+/* Not in a table's cell: a part kept whole there is the cell's narrowest,
+   and a column of short identifiers kept whole starves its neighbours (a
+   sentence of notes six lines tall) or runs past the page. There it breaks
+   where the path's breaks are, as any text in a cell. */
+:is(td, th) :is(code.nb, code .nb) { display: inline; margin-block: 0; line-height: inherit; }
 /* Before full-width punctuation, which brings its own space (enhance.js);
    a path link keeps its outline even. */
 code.before-punct:not(.path-link) { padding-right: 0.08em; }
@@ -412,9 +425,12 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: var(--flow); }
    a paragraph's gap away. At the top level (the list items are blocks of
    their own: the paragraph's block ends with the shorter gap, and its change
    bar and flash with it) and in an item, a quote, an alert or a disclosure. */
-#ro-doc > .chunk > .k-paragraph:has(> p.lead):has(+ .k-listItem) { --flow: 0.4rem; }
-p.lead:has(+ ul, + ol), .li-block li > p.lead:has(+ ul, + ol) { margin-bottom: 0.4rem; }
-p.lead + ul, p.lead + ol, .li-block li > p.lead + ul, .li-block li > p.lead + ol { margin-top: 0; }
+#ro-doc > .chunk > .k-paragraph.lead-list { --flow: 0.4rem; }   /* patch.js marks it: chunks.js leadIns */
+/* In a block: the list's top margin, negative, collapses with the lead-in's
+   own (a paragraph's gap) to 0.4rem. Not :has(): a sibling selector in it is
+   matched again on every change to a parent's children in a large page. */
+p.lead + :is(ul, ol) { margin-top: calc(0.4rem - var(--flow)); }
+.li-block li > p.lead + :is(ul, ol) { margin-top: calc(0.4rem - 0.5em); }
 li { margin: 0.12em 0; }
 /* Each item is a block of its own: half the gap on each side of it. */
 #ro-doc > .chunk > .blk > .li-block > li { margin-top: 0.06em; }
