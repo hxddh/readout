@@ -115,6 +115,20 @@ function columns(s) {
 // identifiers breaks them after their separators. Counted, not measured:
 // no layout, and the same in any window.
 const NW_ROOM = 40;
+function breakAfterSlashes(el) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.includes('/')) nodes.push(n);
+  for (const n of nodes) {
+    const frag = document.createDocumentFragment();
+    n.data.split('/').forEach((part, i, all) => {
+      if (part) frag.append(part);
+      if (i < all.length - 1) frag.append('/', document.createElement('wbr'));
+    });
+    n.replaceWith(frag);
+  }
+}
+
 function setupTable(t) {
   const kept = [];      // per column: its longest kept line, and its kept code
   let prose = false;    // a cell of words wider than a kept one
@@ -128,7 +142,7 @@ function setupTable(t) {
       let codes = 0;
       for (const c of cell.querySelectorAll('code')) {
         const len = c.textContent.length;
-        if (len > 32) continue;
+        if (len > 32) { if (c.textContent.includes('/')) breakAfterSlashes(c); continue; }
         c.dataset.nw = '';
         col.codes.push(c);
         col.most = Math.max(col.most, len);
