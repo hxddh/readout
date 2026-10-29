@@ -30,7 +30,7 @@
      It is the column's width in every window, so code and tables widen from
      it into the margins (--bleed) by the room there really is. No width
      setting (View ▸ Wide Text is gone). */
-  --measure: min(42.5rem, 100vw - 2 * var(--gutter));
+  --measure: 42.5rem;
   --size: 16px;
   --lh: 1.65;
   --lh-cjk: 1.8;
