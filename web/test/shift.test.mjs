@@ -14,8 +14,7 @@
 //     inline math on screen, and jumps onto those; (c) outline jumps, N and
 //     find landing in a 5 MB document and in a code-heavy one (700 blocks
 //     of 90-line code); (d) an image loading as a document opens, on its
-//     first screen and above a place restored. The window's toolbar inset
-//     (52 px), a 900×900 window.
+//     first screen and above a place restored. A 900×900 window.
 //
 // Each case at most MAX_SHIFT, gated. Before the page kept its first frame
 // (a9e7da3), in px (worst sample; the
@@ -94,7 +93,7 @@ async function newPage() {
   await p.addInitScript(recorder);
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   // The highlighter up (as in a window: the app's warm-up), so a first paint waits for its code on screen.
   await p.evaluate(() => window.readout.warm());
   return p;
@@ -112,7 +111,6 @@ async function newPage() {
 function recorder() {
   window.shift = (act, target, ms = 1500) => new Promise(resolve => {
     const doc = document.getElementById('ro-doc');
-    const inset = () => parseFloat(document.documentElement.style.getPropertyValue('--top-inset')) || 0;
     const rectOf = x => typeof x === 'function' ? x() : x && x.isConnected ? x.getBoundingClientRect() : null;
     const debug = !!window.SHIFT_DEBUG, log = [];
     const chunks = () => [...doc.children].map(c => `${c.className} ${Math.round(c.getBoundingClientRect().height)}`);
@@ -129,12 +127,12 @@ function recorder() {
       if (!tracked) {
         const t = !doc.classList.contains('hold') && target();
         const r = t && rectOf(t);
-        if (!doc.classList.contains('hold') && !(r && r.bottom > inset() && r.top < innerHeight)) early++;
+        if (!doc.classList.contains('hold') && !(r && r.bottom > 0 && r.top < innerHeight)) early++;
         else if (r) {
           first = now;
           tracked = [{ name: 'target', x: t, top: r.top }];
           // Every other block on screen (in the chunks on screen: one in a chunk skipped would be laid out to answer).
-          const shown = r => r.bottom > inset() && r.top < innerHeight;
+          const shown = r => r.bottom > 0 && r.top < innerHeight;
           for (const b of [...doc.children].filter(c => shown(c.getBoundingClientRect())).flatMap(c => [...c.children])) {
             const r = b.getBoundingClientRect();
             if (shown(r) && b !== t && b.classList.contains('blk')) tracked.push({ name: `slot ${b.dataset.slot} ${b.className}`, x: b, top: r.top });
@@ -205,7 +203,7 @@ const mb1 = chain(1_000_000);
 const mid = ops => ops[Math.floor(ops.length * 0.5)].slot;
 {
   const p = await newPage();
-  // (The block at the top under the toolbar, in the frame that first shows the document.)
+  // (The block at the top, in the frame that first shows the document.)
   report('open 1 MB at top', await p.evaluate(d => window.shift(() => window.readout.apply(d),
     () => { const a = window.readout.captureAnchor(); return a && document.querySelector(`#ro-doc .blk[data-slot="${a.slot}"]`); }), reset(mb1)));
   await p.close();
