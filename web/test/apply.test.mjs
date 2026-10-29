@@ -132,7 +132,7 @@ const follows = [];
 for (const [slot, after] of [[202, 40], [203, 202]]) {
   await page.evaluate(([slot, after]) => window.readout.apply({
     version: 6, reset: false, rewrite: false,
-    ops: [{ op: 'insert', slot, after, html: `<p>${'appended at the end of the document '.repeat(60)}</p>`, kind: 'paragraph' }],
+    ops: [{ op: 'insert', slot, after, html: `<p>${'appended at the end of the document '.repeat(52)}</p>`, kind: 'paragraph' }],
     marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
   }), [slot, after]);
   follows.push(await page.evaluate(slot => {
@@ -2215,7 +2215,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
 
 // 4.0 (#99 smoke "refill"): a document reset and the reader's place put back
 // (scrollToAnchor, as the app does after a refill) with a table above it
-// whose short cells only fit the column wrapped (.nw-off, measured by
+// whose short cells only fit the 42.5 rem column wrapped (.nw-off, measured by
 // the page a frame later, 42 px taller then): the anchor stays within 1 px.
 {
   const p = await browser.newPage({ viewport: { width: 900, height: 589 } });
@@ -2245,21 +2245,66 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="3025"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + 21); });
   await p.waitForTimeout(300);
   const anchor = await p.evaluate(() => window.readout.captureAnchor());
-  // Refill: emptied, then written back; the app puts the place back right after the refill.
-  await p.evaluate(x => window.readout.apply(x), reset(2, []));
-  await p.waitForTimeout(200);
-  const t0 = await p.evaluate(() => performance.now());
-  const placed = await p.evaluate(([x, a]) => { window.readout.apply(x); window.readout.scrollToAnchor(a); const e = document.querySelector(`.blk[data-slot="${a.slot}"]`); return e.getBoundingClientRect().top; }, [reset(3, ops), anchor]);
-  await p.waitForTimeout(800);
-  const after = await p.evaluate(([t0, slot]) => ({ top: document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top,
-    compensate: window.readout.trace().filter(e => e.type === 'compensate' && e.t >= t0).map(e => e.delta) }), [t0, anchor.slot]);
-  check('a reset and its place put back with a wrapping table above: the place holds (<= 1 px)',
-    before.nwOff && Math.abs(after.top - placed) <= 1, JSON.stringify({ before, placed, after }));
+  const was = await p.evaluate(slot => document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top, anchor.slot);
+  // Refill: emptied, then written back; the app puts the place back after
+  // the refill, in the page's next frame (ReaderWindowController: restorePlace),
+  // the frame the new table is measured in (and wraps again, taller).
+  const refill = async (version, appOrder) => {
+    await p.evaluate(x => window.readout.apply(x), reset(version, []));
+    await p.waitForTimeout(200);
+    const t0 = await p.evaluate(() => performance.now());
+    await p.evaluate(([x, a, app]) => { window.readout.apply(x); if (app) requestAnimationFrame(() => window.readout.scrollToAnchor(a)); else window.readout.scrollToAnchor(a); }, [reset(version + 1, ops), anchor, appOrder]);
+    await p.waitForTimeout(800);
+    return p.evaluate(([t0, slot]) => ({ top: document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top,
+      trace: window.readout.trace().filter(e => e.t >= t0 && /compensate|scrollToAnchor|apply/.test(e.type)).map(e => `${e.type}${e.delta ? ' ' + e.delta : ''}@${e.y}`) }), [t0, anchor.slot]);
+  };
+  const now = await refill(3, false), app = await refill(5, true);
+  check('a reset and its place put back with a wrapping table above: the place holds (<= 1 px), restored at once or in the next frame as the app does',
+    before.nwOff && Math.abs(now.top - was) <= 1 && Math.abs(app.top - was) <= 1, JSON.stringify({ before, was, now, app }));
   // WebKit's own scroll anchoring stays off: the page's compensation and it
   // moved the place twice on macOS 26 (read from the source: this WebKit has
   // no overflow-anchor and drops it from the CSSOM).
   const css = readFileSync(new URL('../src/reader.css', import.meta.url), 'utf8');
   check('the page turns off WebKit\'s scroll anchoring (it keeps the place itself)', /\nhtml, body \{ overflow-anchor: none; \}/.test(css));
+  await p.close();
+}
+
+// 4.0: the text grows with the window (reader.css: html's font-size), so a
+// resize across the curve reflows every block: the reader keeps the same
+// block at the same share of it at the top of the window (drift <= 1 px),
+// with a code block and a table above and below.
+{
+  const p = await browser.newPage({ viewport: { width: 800, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  const ops = [];
+  for (let i = 1; i <= 90; i++) {
+    const kind = i % 15 === 7 ? 'code' : i % 15 === 11 ? 'table' : 'paragraph';
+    const html = kind === 'code' ? `<div class="code-block" data-lang="ts"><pre><code>${'const value = compute(input, options);\n'.repeat(6)}</code></pre></div>`
+      : kind === 'table' ? `<div class="table-wrap"><table><thead><tr><th>Step</th><th>Owner</th><th>Note</th></tr></thead><tbody>${'<tr><td>build</td><td>agent</td><td>A note that wraps in a narrow column of the reader</td></tr>'.repeat(3)}</tbody></table></div>`
+      : `<p>Paragraph ${i}: the agent's plan goes on, sentence after sentence, long enough to wrap over two or three lines in the reader's column.</p>`;
+    ops.push({ op: 'insert', slot: 5000 + i, after: i === 1 ? 0 : 4999 + i, kind, html });
+  }
+  await p.evaluate(x => window.readout.apply(x), { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p.waitForTimeout(500);
+  // Block 5045 at the top of the window, a third of it above the top.
+  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + e.getBoundingClientRect().height / 3); });
+  await p.waitForTimeout(400);
+  const share = () => p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'), r = e.getBoundingClientRect(); return { above: 52 - r.top, h: r.height, root: parseFloat(getComputedStyle(document.documentElement).fontSize) }; });
+  const s0 = await share();
+  const f = s0.above / s0.h;
+  const drift = [];
+  for (const vw of [1100, 1400, 1700, 2100, 2400, 2180, 1280, 1060, 1000, 840, 800]) {   // 2400/2180, 1280/1060, 1060/840: the outline shown or hidden (220 px)
+    await p.setViewportSize({ width: vw, height: 700 });
+    await p.waitForTimeout(450);
+    const s = await share();
+    drift.push({ vw, root: s.root, drift: Math.round((s.above - f * s.h) * 10) / 10 });
+  }
+  check('resizing across the text-size curve keeps the same block at the same share of it at the top (drift <= 1 px)',
+    drift.every(d => Math.abs(d.drift) <= 1) && drift.some(d => d.root > 19), JSON.stringify(drift));
   await p.close();
 }
 
