@@ -827,7 +827,9 @@ export function holdJump(el, off, again) {
   for (let e = prevItem(blk); e; e = prevItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.unshift(e); }
   for (let e = nextItem(blk); e; e = nextItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.push(e); }
   reserve(toReserve(blocks));
-  const cbs = pending(blocks);
+  // (Its code not before the highlighter has started, as a first paint's:
+  // the first window at launch lands at once, its code plain first.)
+  const cbs = pending(blocks).filter(x => hl.started || !isCode(x));
   if (!cbs.length) return false;
   if (firstPaint || unshown) { holdFirst(cbs, d); return false; }
   jumpHold = hold(cbs, () => { jumpHold = null; again(); }, d);
@@ -863,11 +865,11 @@ const codeObserver = new IntersectionObserver(entries => {
 }, { rootMargin: '400% 0px 400% 0px' });
 // Out of reach again before it arrived (a fling, a jump away): not asked for
 // any more (asked again if it comes back), unless it shows in part already,
-// or a jump waits for it (it is out of reach of where the jump starts).
+// all of it is wanted (printing: highlightAll), or a jump waits for it (it is out of reach of where the jump starts).
 function away(cb) {
   ready.delete(cb);
   const a = asked.get(cb);
-  if (!a || [...holds].some(h => h.cbs.has(cb))) return;
+  if (!a || everything || [...holds].some(h => h.cbs.has(cb))) return;
   if (inPart.has(cb)) { a.prio = NEAR + 4; hl.prioritise(a.id, a.prio, 0); return; }
   hl.cancel(a.id);
   unasked(cb);
