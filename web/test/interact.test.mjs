@@ -166,7 +166,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 //    next heading close under it, until the reader scrolls; in a large
 //    document it lands where it aimed.
 {
-  const page = await newPage({ appearance: { topInset: 52 } });
+  const page = await newPage();
   // Sections whose first subsection follows their heading closely.
   const review = corpus('08-clawd-tank-code-review.json');
   await page.evaluate(p => window.readout.apply(p), review);
@@ -192,7 +192,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.close();
 
   // A large document (content-visibility): from the top to headings far down.
-  const p2 = await newPage({ appearance: { topInset: 52 } });
+  const p2 = await newPage();
   const big = corpus('17-dataagent-tdd-design.json');
   await p2.evaluate(p => window.readout.apply(p), big);
   await p2.waitForTimeout(400);
@@ -220,7 +220,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   }, big.toc.at(-1).slot);
   check('scrolling away right after a TOC jump stays where the reader went', away === 0, `scrollTop=${away}`);
   const cv = await p2.evaluate(() => document.getElementById('ro-doc').classList.contains('cv'));
-  check('TOC jumps in a large document land the heading under the toolbar and report it', cv && offs.every(o => (o.end || Math.abs(o.top - 68) <= 2) && o.active === o.s), JSON.stringify(offs));
+  check('TOC jumps in a large document land the heading 16 px from the top and report it', cv && offs.every(o => (o.end || Math.abs(o.top - 16) <= 2) && o.active === o.s), JSON.stringify(offs));
   await p2.close();
 }
 
@@ -228,7 +228,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 //    Home / Command-Up the top; j and k step like the arrow keys; Caps Lock
 //    does not turn n into N or g into G.
 {
-  const page = await newPage({ appearance: { topInset: 52 } });
+  const page = await newPage();
   await page.evaluate(p => window.readout.apply(p), corpus('13-swagger-ui-claude-md.json'));
   await page.waitForTimeout(400);
   // End, Home and Command-arrows are pressed for real: WebKit scrolls by itself for them.
@@ -486,7 +486,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 // 14. On a rewrite the reader goes to the section they were in, if it is
 //     still there, else to the top (not where the old offset lands).
 {
-  const page = await newPage({ appearance: { topInset: 52 } });
+  const page = await newPage();
   const sections = (base, names) => {
     const ops = [];
     let slot = base;
@@ -506,7 +506,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.waitForTimeout(100);
   await page.evaluate(p => window.readout.apply(p), patch(3, sections(2000, ['one', 'two', 'three', 'four']), { reset: true, rewrite: true }));
   const top = await scrollTop(page);
-  check('a rewrite keeps the reader in their section if it is still there, else goes to the top', kept === 52 + 16 && top === 0, JSON.stringify({ kept, top }));
+  check('a rewrite keeps the reader in their section if it is still there, else goes to the top', kept === 16 && top === 0, JSON.stringify({ kept, top }));
   await page.close();
 }
 
@@ -1003,7 +1003,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 //     on no block (an outline jump forced 40 blocks laid out, and back a frame
 //     later), and still land where they aim.
 {
-  const page = await newPage({ appearance: { topInset: 52 } });
+  const page = await newPage();
   const big = doc(600, i => i % 50 === 1 ? `<h2 id="s${i}">Section ${i}</h2>` : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(1 + (i * 7) % 11)}</p>`,
     i => i % 50 === 1 ? 'heading' : 'paragraph');
   big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
@@ -1019,7 +1019,7 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   await page.waitForTimeout(1200);
   const n = { writes: await cvWrites(page), ...await page.evaluate(() => ({ top: Math.round(document.querySelector('.blk[data-slot="560"]').getBoundingClientRect().top), want: Math.round(innerHeight / 3) })) };
   check('an outline jump and N in a large document force no block\'s layout and land where they aim',
-    toc.writes === 0 && Math.abs(toc.top - 68) <= 2 && n.writes === 0 && Math.abs(n.top - n.want) <= 30, JSON.stringify({ toc, n }));
+    toc.writes === 0 && Math.abs(toc.top - 16) <= 2 && n.writes === 0 && Math.abs(n.top - n.want) <= 30, JSON.stringify({ toc, n }));
   await page.close();
 }
 

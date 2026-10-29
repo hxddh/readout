@@ -1,8 +1,8 @@
 // Unread changes: block marks and deletion markers, read detection, jumping
 // between changes.
-import { doc, slots, heights, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem, prevItem } from './core.js';
+import { doc, slots, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem, prevItem, precedes, smooth } from './core.js';
 import { place, unplace, roughRect, itemsChanged, noteNext } from './chunks.js';
-import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, topInset, pinLanding, baseline, aimAt } from './anchor.js';
+import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, pinLanding, baseline, aimAt } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -451,9 +451,8 @@ let visited = null;   // {el, run, at, shown, timer}
 /** Most of it on screen (all of a short block, half of a tall one, half a screen of a very tall one). */
 function seen(el) {
   const r = el.getBoundingClientRect();
-  const inset = topInset();
-  if (r.bottom < inset || r.top > window.innerHeight) return false;
-  const visible = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, inset);
+  if (r.bottom < 0 || r.top > window.innerHeight) return false;
+  const visible = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0);
   return visible >= Math.min(r.height / 2, window.innerHeight / 2);
 }
 
@@ -514,16 +513,7 @@ function inDocumentOrder(els) {
     for (let e = firstItem(); e; e = nextItem(e)) if (want.has(e)) out.push(e);
     return out;
   }
-  return els.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
-}
-
-/** The block or removal marker shown right after `el` (null: none). */
-function nextShown(el) {
-  for (let e = nextItem(el); e; e = nextItem(e)) {
-    if (!e.classList.contains('blk') && !e.classList.contains('del-mark')) continue;
-    return e;
-  }
-  return null;
+  return els.sort((a, b) => precedes(a, b) ? -1 : 1);
 }
 
 // Where an outline click, G, Home / End or a #section landed: N goes on
@@ -546,13 +536,13 @@ export function jump(dir, first = false) {
   // Nothing to go to: the app goes on to the next document with unread
   // changes, and beeps when there is none (`jump`: N's, not D's).
   if (!list.length) { closeAutoDiff(); post({ type: 'nothing', jump: true }); return; }
-  // Runs: unread blocks one right after the other.
+  // Runs: unread blocks one right after the other (items are blocks and removal markers).
   const run = [0];
-  for (let i = 1; i < list.length; i++) run.push(nextShown(list[i - 1]) === list[i] ? run[i - 1] : run[i - 1] + 1);
+  for (let i = 1; i < list.length; i++) run.push(nextItem(list[i - 1]) === list[i] ? run[i - 1] : run[i - 1] + 1);
   // What the change left behind showed of its run is read (or about to be).
   const skip = new Set(left ? left.run.filter(m => m !== left.el && m.isConnected && seen(m)) : []);
   const line = window.innerHeight / 3;
-  const from = land ? (land.el ? land.el.getBoundingClientRect().top : topInset()) : null;
+  const from = land ? (land.el ? land.el.getBoundingClientRect().top : 0) : null;
   // (Roughly where those in chunks not laid out are: asked exactly, WebKit
   // would lay each such chunk out. Only the target's chunk is, by the jump.)
   const tops = list.map(e => roughRect(e).top);
@@ -574,7 +564,6 @@ export function jump(dir, first = false) {
   // the way and change height, and the compensation for them fights the
   // animation: jump at once, then aim again once the blocks around the
   // target have their real heights.
-  const smooth = !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   // The change it lands on stays where it landed while the chunk around it
   // is laid out (not the first block on screen, the resize compensation's
   // usual choice), aimed at again as it is (aimAt).
@@ -582,7 +571,7 @@ export function jump(dir, first = false) {
   // waits for it, enhance.js): one cancelled before it lands (another N
   // meanwhile) marks nothing read.
   const go = once(() => visit(target, members));
-  if (smooth) { window.scrollBy({ top: target.getBoundingClientRect().top - line, behavior: 'smooth' }); go(); }
+  if (smooth()) { window.scrollBy({ top: target.getBoundingClientRect().top - line, behavior: 'smooth' }); go(); }
   else aimAt(target, () => target.getBoundingClientRect().top - line, () => { pinLanding(target); go(); }, line);
   focusBlock(target);
   pulse(target);

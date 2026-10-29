@@ -1,7 +1,7 @@
 // The change rail: one tick per unread change, positioned by document offset.
 import { strings, quicklook } from './core.js';
 import { unreadElements, focusBlock, visit, pulse, once } from './marks.js';
-import { scrollToElement, topInset } from './anchor.js';
+import { scrollToElement } from './anchor.js';
 import { roughRect } from './chunks.js';
 
 const rail = document.getElementById('ro-rail');
@@ -36,9 +36,7 @@ function drawRail() {
   const total = document.scrollingElement.scrollHeight;
   if (total <= window.innerHeight) { rail.replaceChildren(); return; }
   const scrollTop = document.scrollingElement.scrollTop;
-  // The track runs from the bottom of the window toolbar to the bottom of the window.
-  const inset = Math.min(topInset(), window.innerHeight / 2);
-  const track = window.innerHeight - inset;
+  const track = window.innerHeight;
   // All reads before any write, so the page is laid out once.
   const rects = list.map(roughRect);
   rail.replaceChildren();
@@ -51,7 +49,7 @@ function drawRail() {
     // Task changes fall back to "edited" until the app sends a word for them.
     const kind = strings[key] || (key === 'railTask' && strings.railEdited) || key;
     const height = Math.max(TICK_MIN_PX, (rects[i].height / total) * track);
-    tick.style.top = `${Math.min(window.innerHeight - height, inset + (top / total) * track)}px`;
+    tick.style.top = `${Math.min(window.innerHeight - height, (top / total) * track)}px`;
     if (height > TICK_MIN_PX) tick.style.height = `${height}px`;
     const label = (strings.railChange || 'Unread change %d of %d: %@')
       .replace('%d', i + 1).replace('%d', list.length).replace('%@', kind);

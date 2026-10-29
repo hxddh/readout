@@ -7,11 +7,8 @@ export const root = document.documentElement;
 export const slots = new Map();          // slot -> element
 export const heights = new WeakMap();    // element -> last observed height
 
-// The page's items (blocks and removal markers) live in chunks of about 32,
-// the chunks in the document: #ro-doc > .chunk > .blk. A large document
-// skips laying out the chunks away from the screen (content-visibility):
-// WebKit checks every element that can be skipped in every frame that
-// scrolls, so a few hundred chunks cost what tens of thousands of blocks did not.
+// The page's items (blocks and removal markers) live in chunks (chunks.js):
+// #ro-doc > .chunk > .blk.
 export const isChunk = e => !!e?.classList?.contains('chunk');
 /** The item after `e`, across chunks (null: none). */
 export function nextItem(e) {
@@ -33,6 +30,14 @@ export function lastItem() {
   for (let c = doc.lastElementChild; c; c = c.previousElementSibling) if (isChunk(c) && c.lastElementChild) return c.lastElementChild;
   return null;
 }
+/** The first block after `e` (`step`: prevItem, before it), past removal markers; null: none. */
+export function blockAfter(e, step = nextItem) {
+  for (e = e && step(e); e; e = step(e)) if (e.classList.contains('blk')) return e;
+  return null;
+}
+/** Scrolls animate, unless the document is large (an instant scroll compensating for a block laid out on the way would cut the animation short) or the reader asked for less motion. */
+export const smooth = () => !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const precedes = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 /** The item (a block or a removal marker) node `n` is in, or null. */
 export const itemOf = n => (n && n.nodeType !== Node.ELEMENT_NODE ? n.parentElement : n)?.closest('#ro-doc > .chunk > *') ?? null;
 
@@ -57,7 +62,7 @@ export function mergeStrings(s) { strings = { ...strings, ...s }; }
 export function pageTheme() {
   const t = root.getAttribute('data-theme');
   if (t === 'dark' || t === 'light') return t;
-  return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 /**

@@ -1,6 +1,5 @@
 // Reports the heading at the top of the viewport so the native TOC can follow.
 import { doc, slots, post, onKeptScroll } from './core.js';
-import { topInset } from './anchor.js';
 import { roughRect } from './chunks.js';
 
 let lastActive = null;
@@ -40,8 +39,8 @@ export function reportActiveHeading() {
   if (!headings) headings = Array.from(doc.querySelectorAll('.k-heading'));
   // Headings are in document order, so their tops increase: binary search
   // for the last one at or above the line (nothing hides a heading).
-  // Below the window toolbar: jumps land a heading 16 px under it.
-  const line = 80 + topInset();
+  // (Jumps land a heading 16 px from the top.)
+  const line = 80;
   let lo = 0, hi = headings.length - 1, active = null;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
