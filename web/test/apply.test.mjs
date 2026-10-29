@@ -2290,6 +2290,12 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.evaluate(x => window.readout.apply(x), { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p.waitForTimeout(200);
   check('a table with a spanned column no row fills is made, and the blocks after it', await p.evaluate(() => !!document.querySelector('.blk[data-slot="2"]') && !!document.querySelector('.table-wrap code[data-nw]')));
+  // A path of more than 32 characters in a cell may break after its slashes
+  // (3.9's <wbr>, tables only), so it does not squeeze the column beside it.
+  const path = '<div class="table-wrap"><table><thead><tr><th>File</th><th>What it does</th></tr></thead><tbody><tr><td><code>Packages/ReadoutCore/Sources/ReadoutCore/DocumentSession.swift</code></td><td>Keeps the reading state of one open document and diffs each write against what was read.</td></tr></tbody></table></div>';
+  await p.evaluate(x => window.readout.apply(x), { version: 2, reset: true, rewrite: false, ops: [{ op: 'insert', slot: 1, after: 0, kind: 'table', html: path }], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p.waitForTimeout(200);
+  check('a long path in a table cell may break after its slashes', await p.evaluate(() => document.querySelectorAll('.table-wrap td code wbr').length === 4));
   await p.close();
 }
 

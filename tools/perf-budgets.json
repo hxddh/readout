@@ -382,7 +382,10 @@
     "(web_scroll_500kb_* but the marks run's p95, web_scroll_1mb_*, web_scroll_up_jump_px,",
     "web_code_heavy_scroll_max_ms, web_code_heavy_long_frames, web_code_heavy_blank_px,",
     "web_code_heavy_plain_frames_2400), and so do web_first_apply_1mb_ms (the synchronous first",
-    "apply) and web_find_next_1mb_frame_ms: 35 gated in all."
+    "apply) and web_find_next_1mb_frame_ms. By the same rule (4.0 review) the 5 MB and one-huge-block",
+    "scroll metrics are gated again too: web_scroll_5mb_frame_max_ms, web_scroll_5mb_long_frames,",
+    "web_code_heavy_scroll_p95_ms, web_one_huge_code_scroll_p95_ms, web_one_huge_code_blank_px and",
+    "web_one_huge_code_land_plain_lines (0, strict): 41 gated in all."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -443,8 +446,8 @@
   "web_scroll_1mb_frame_max_ms": { "where": "linux-webkit", "unit": "ms",    "target": 50,   "guard": 100 },
   "web_scroll_1mb_long_frames": { "where": "linux-webkit", "unit": "frames", "target": 0,    "guard": 5 },
   "web_scroll_5mb_frame_p95_ms": { "where": "linux-webkit", "unit": "ms",    "target": 17,   "guard": 34 },
-  "web_scroll_5mb_frame_max_ms": { "where": "linux-webkit", "unit": "ms",    "target": 90,   "gated": false, "guard": 175 },
-  "web_scroll_5mb_long_frames": { "where": "linux-webkit", "unit": "frames", "target": 10,   "gated": false, "guard": 22 },
+  "web_scroll_5mb_frame_max_ms": { "where": "linux-webkit", "unit": "ms",    "target": 90,   "guard": 175 },
+  "web_scroll_5mb_long_frames": { "where": "linux-webkit", "unit": "frames", "target": 10,   "guard": 22 },
   "web_scroll_own_longest_ms":  { "where": "linux-webkit", "unit": "ms",     "target": 50,   "gated": false, "guard": 150 },
   "web_select_1mb_ms":          { "where": "linux-webkit", "unit": "ms",     "target": 17,   "gated": false, "guard": 34 },
   "web_select_5mb_ms":          { "where": "linux-webkit", "unit": "ms",     "target": 17,   "gated": false, "guard": 34 },
@@ -464,7 +467,7 @@
   "web_code_heavy_theme_ms":    { "where": "linux-webkit", "unit": "ms",     "target": null, "guard": null },
   "web_code_heavy_theme_over_raw": { "where": "linux-webkit", "unit": "x",   "target": 1.0,  "gated": false, "guard": 1.05 },
   "web_code_heavy_elements":    { "where": "linux-webkit", "unit": "elements", "target": 33000, "gated": false, "guard": 40000 },
-  "web_code_heavy_scroll_p95_ms": { "where": "linux-webkit", "unit": "ms",   "target": 17,   "gated": false, "guard": 34 },
+  "web_code_heavy_scroll_p95_ms": { "where": "linux-webkit", "unit": "ms",   "target": 17,   "guard": 34 },
   "web_code_heavy_scroll_max_ms": { "where": "linux-webkit", "unit": "ms",   "target": 170,  "guard": 230 },
   "web_code_heavy_long_frames": { "where": "linux-webkit", "unit": "frames", "target": 4,    "guard": 19 },
   "web_code_heavy_blank_px":    { "where": "linux-webkit", "unit": "px",     "target": 0,    "guard": 0 },
@@ -476,8 +479,8 @@
   "web_one_huge_code_theme_over_raw": { "where": "linux-webkit", "unit": "x", "target": 1.0, "gated": false, "guard": 1.18 },
   "web_one_huge_code_elements": { "where": "linux-webkit", "unit": "elements", "target": 300000, "gated": false, "guard": 370000 },
   "web_one_huge_code_land_longest_ms": { "where": "linux-webkit", "unit": "ms", "target": 86000, "gated": false, "guard": 98800 },
-  "web_one_huge_code_land_plain_lines": { "where": "linux-webkit", "unit": "lines", "target": 0, "gated": false, "guard": 0 },
-  "web_one_huge_code_scroll_p95_ms": { "where": "linux-webkit", "unit": "ms", "target": 17, "gated": false, "guard": 34 },
-  "web_one_huge_code_blank_px": { "where": "linux-webkit", "unit": "px",     "target": 0,    "gated": false, "guard": 0 },
+  "web_one_huge_code_land_plain_lines": { "where": "linux-webkit", "unit": "lines", "target": 0, "guard": 0 },
+  "web_one_huge_code_scroll_p95_ms": { "where": "linux-webkit", "unit": "ms", "target": 17, "guard": 34 },
+  "web_one_huge_code_blank_px": { "where": "linux-webkit", "unit": "px",     "target": 0,    "guard": 0 },
   "web_one_huge_code_private_mb": { "where": "linux-webkit", "unit": "MB",   "target": 1300, "gated": false, "guard": 1750 }
 }
