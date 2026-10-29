@@ -5,8 +5,9 @@ usage: tools/perf-assert.py WHERE RESULTS.json [RESULTS.json ...]
   WHERE: mac | linux-webkit (only that environment's budgets are checked)
 
 Result files are flat JSON objects of metric -> number, or (core tests)
-metric -> {"ms": number, ...}. Fails when a metric with a guard is missing
-or over its guard. Prints every metric with its target and guard.
+metric -> {"ms": number, ...}. Fails when a gated metric (a guard, and not
+"gated": false) is missing or over its guard. Prints every metric with its
+target and guard; a tracked metric over its guard is reported, not failed.
 """
 import json
 import sys
@@ -33,17 +34,18 @@ for name, b in budgets.items():
         continue
     v = measured.get(name)
     target, guard, unit = b.get("target"), b.get("guard"), b.get("unit", "ms")
-    limits = f"target {target if target is not None else '-'}, guard {guard if guard is not None else 'not set'}"
+    gated = guard is not None and b.get("gated", True)
+    limits = f"target {target if target is not None else '-'}, guard {guard if guard is not None else 'not set'}{'' if gated or guard is None else ', tracked'}"
     if v is None:
-        if guard is not None:
+        if gated:
             failures += 1
             print(f"FAIL: {name} was not measured ({limits})")
         else:
             print(f"--: {name} not measured ({limits})")
         continue
     if guard is not None and v > guard:
-        failures += 1
-        print(f"FAIL: {name} = {v} {unit}, over its guard ({limits})")
+        failures += gated
+        print(f"{'FAIL' if gated else 'tracked, over its guard'}: {name} = {v} {unit} ({limits})")
     elif target is not None and v <= target:
         print(f"ok: {name} = {v} {unit}, meets target ({limits})")
     else:
