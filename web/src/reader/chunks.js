@@ -5,7 +5,7 @@
 // frame that scrolls (5 MB of blocks: tens of milliseconds a frame, and each
 // block blank for the frame it came on screen in). Chunks within two screens
 // of the viewport are laid out ahead (`near`), so what scrolls in is drawn.
-import { doc, heights, isChunk, nextItem, prevItem } from './core.js';
+import { doc, heights, isChunk, prevItem, blockAfter } from './core.js';
 import { resizeObserver } from './anchor.js';
 import { nearChunk } from './enhance.js';
 
@@ -29,6 +29,9 @@ export const estimateOf = c => chunkEstimates.get(c) || 0;
 export const itemEstimate = el => estimates.get(el) || 0;
 /** Whether WebKit has laid `c` out yet, in a large document (it is at its estimated height). */
 export const neverLaidOut = c => cv() && !laidOut.has(c) && heights.get(c) === estimateOf(c);
+/** Skipped by content-visibility now (not near the screen); `since`: and laid out before. */
+const skipped = (c, since = false) => cv() && !c.classList.contains('near') && (!since || laidOut.has(c));
+const estimateSum = items => { let d = 0; for (const e of items) d += estimates.get(e) || 0; return d; };
 
 // Laid out ahead of the viewport (class near, reader.css): content-visibility
 // decides only for the element touching it, and that one would show blank
@@ -171,7 +174,7 @@ function account(c, d, seen = d) {
   const est = estimateOf(c) + d;
   chunkEstimates.set(c, est);
   if (!laidOut.has(c)) c.style.containIntrinsicSize = `auto ${est}px`;
-  else if (cv() && !c.classList.contains('near')) {
+  else if (skipped(c)) {
     // Its height set (reader.css: stale): WebKit does not lay a skipped
     // element out again for a new contain-intrinsic-size.
     const size = Math.max(0, (stale.get(c) ?? heights.get(c) ?? est) + seen);
@@ -241,12 +244,13 @@ function moveOut(c, items, before) {
   if (before) c.before(fresh); else c.after(fresh);
   // Out of a chunk laid out and skipped since: the new one is skipped at
   // what they count for there (their heights as laid out), as `c` was.
-  const skipped = laidOut.has(c) && cv() && !c.classList.contains('near');
-  let d = 0, seen = 0;
-  for (const e of items) { d += estimates.get(e) || 0; seen += counted(c, e); }
+  const was = skipped(c, true);
+  const d = estimateSum(items);
+  let seen = 0;
+  for (const e of items) seen += counted(c, e);
   fresh.append(...items);
   account(c, -d, -seen);
-  if (skipped) { laidOut.add(fresh); stale.set(fresh, 0); }
+  if (was) { laidOut.add(fresh); stale.set(fresh, 0); }
   account(fresh, d, seen);
 }
 
@@ -300,7 +304,7 @@ function uneven(c) {
   rebalanceTimer = setTimeout(rebalance, 600);
 }
 function inUse(c) {
-  return (cv() && !c.classList.contains('near')) || holds(c.firstElementChild, c.lastElementChild);
+  return skipped(c) || holds(c.firstElementChild, c.lastElementChild);
 }
 /** Whether the items `first` to `last` hold the focus, the selection or one of find's marks. */
 function holds(first, last) {
@@ -316,7 +320,7 @@ function holds(first, last) {
     if (span.comparePoint(r.endContainer, r.endOffset) >= 0 && span.comparePoint(r.startContainer, r.startOffset) <= 0) return true;
   }
   // Find's marks (static ranges: moved, they would point at nothing).
-  if (typeof CSS !== 'undefined' && CSS.highlights) for (const name of ['ro-find', 'ro-find-cur']) {
+  for (const name of ['ro-find', 'ro-find-cur']) {
     for (const r of CSS.highlights.get(name) || []) if (inside(r.startContainer) || inside(r.endContainer)) return true;
   }
   return false;
@@ -330,7 +334,7 @@ function rebalance() {
   for (const c of unevenChunks) {
     if (!c.isConnected) { unevenChunks.delete(c); continue; }
     // Skipped: done once it is laid out again (lookahead).
-    if (cv() && !c.classList.contains('near')) { unevenChunks.delete(c); continue; }
+    if (skipped(c)) { unevenChunks.delete(c); continue; }
     const n = c.childElementCount;
     if (overfull(c)) {
       if (inUse(c) || !reported(c)) continue;
@@ -349,8 +353,7 @@ function rebalance() {
         fresh.classList.toggle('near', c.classList.contains('near'));
         at.after(fresh);
         fresh.append(...part);
-        let d = 0;
-        for (const e of part) d += estimates.get(e) || 0;
+        const d = estimateSum(part);
         account(c, -d); account(fresh, d);
         done.push(fresh);
         at = fresh;
@@ -360,9 +363,7 @@ function rebalance() {
       const other = [c.previousElementSibling, c.nextElementSibling].find(o => isChunk(o) && o.childElementCount + n <= CHUNK && estimateOf(o) + estimateOf(c) <= SPAN);
       if (other) {
         if (inUse(c) || inUse(other) || !reported(c) || !reported(other)) continue;
-        const items = [...c.children];
-        let d = 0;
-        for (const e of items) d += estimates.get(e) || 0;
+        const items = [...c.children], d = estimateSum(items);
         if (other === c.previousElementSibling) other.append(...items); else other.prepend(...items);
         account(other, d);
         dropChunk(c);
@@ -400,15 +401,11 @@ export function flushStarts() {
     // (touched; flushed, the block's height taken again). In a chunk laid
     // out and skipped, its skipped size and the block's height as laid out
     // change by the margin (its style, no layout).
-    const skipped = laidOut.has(x) && cv() && !x.classList.contains('near');
-    const was = skipped ? topMargin(h) : 0;
+    const was = skipped(x, true) ? topMargin(h) : null;
     h.classList.toggle('h-flush', on);
     touched.add(x);
     flushed.add(h);
-    if (skipped) {
-      const d = topMargin(h) - was;
-      if (d) { account(x, 0, d); if (heights.has(h)) heights.set(h, heights.get(h) + d); }
-    }
+    if (was !== null) marginMoved(x, h, topMargin(h) - was);
   }
 }
 /**
@@ -421,8 +418,7 @@ export function flushStarts() {
  * lead-in paragraph it makes (the page is all new: no query of the page).
  */
 const leadNoted = new Set();
-const shownBlock = (e, step) => { for (e = e && step(e); e; e = step(e)) if (e.classList.contains('blk')) return e; return null; };
-export const prevBlock = e => shownBlock(e, prevItem);
+export const prevBlock = e => blockAfter(e, prevItem);
 export function noteLead(el) { if (el) leadNoted.add(el); }
 export function leadIns(all = false) {
   const noted = [...leadNoted];
@@ -430,30 +426,30 @@ export function leadIns(all = false) {
   // A reset: the page is new, nothing to keep a place or a height for (and
   // a height asked for here would lay out the whole page before its first frame).
   if (all) {
-    for (const el of noted) if (shownBlock(el, nextItem)?.classList.contains('k-listItem')) el.classList.add('lead-list');
+    for (const el of noted) if (blockAfter(el)?.classList.contains('k-listItem')) el.classList.add('lead-list');
     return;
   }
   for (const el of noted) {
     if (!el.isConnected || !el.classList.contains('k-paragraph')) continue;
-    const n = shownBlock(el, nextItem);
+    const n = blockAfter(el);
     const on = !!n && n.classList.contains('k-listItem') && el.firstElementChild?.matches('p.lead') === true;
     if (on === el.classList.contains('lead-list')) continue;
     // Like a heading's flush start: its chunk is touched, its height taken
     // again (flushed); in a chunk laid out and skipped, the change in its
     // margin is the chunk's change in size.
     const c = chunkOf(el);
-    const skipped = laidOut.has(c) && cv() && !c.classList.contains('near');
-    const was = skipped ? bottomMargin(el) : 0;
+    const was = skipped(c, true) ? bottomMargin(el) : null;
     el.classList.toggle('lead-list', on);
     touched.add(c);
     flushed.add(el);
-    if (skipped) {
-      const d = bottomMargin(el) - was;
-      if (d) { account(c, 0, d); if (heights.has(el)) heights.set(el, heights.get(el) + d); }
-    }
+    if (was !== null) marginMoved(c, el, bottomMargin(el) - was);
   }
 }
 const bottomMargin = el => parseFloat(getComputedStyle(el.firstElementChild || el).marginBottom) || 0;
+/** `el`'s margin changed by `d` in chunk `c`, laid out and skipped: its skipped size and `el`'s height as laid out follow. */
+function marginMoved(c, el, d) {
+  if (d) { account(c, 0, d); if (heights.has(el)) heights.set(el, heights.get(el) + d); }
+}
 
 // A block written, replaced or removed changes the top margin of a heading
 // right after it too (reader.css: after a rule, after front matter, first in
@@ -464,7 +460,7 @@ const nextHeadings = new Map();   // heading block -> its top margin before (in 
 export function noteNext(n) {
   if (!n || nextHeadings.has(n) || !n.classList.contains('k-heading')) return;
   const c = chunkOf(n);
-  nextHeadings.set(n, laidOut.has(c) && cv() && !c.classList.contains('near') ? topMargin(n) : null);
+  nextHeadings.set(n, skipped(c, true) ? topMargin(n) : null);
 }
 /** After a patch's changes: the noted headings not in a skipped chunk, their heights to take again. */
 export function settleNext() {
@@ -472,10 +468,8 @@ export function settleNext() {
   for (const [n, was] of nextHeadings) {
     if (!n.isConnected) continue;
     const c = chunkOf(n);
-    if (was !== null && laidOut.has(c) && cv() && !c.classList.contains('near')) {
-      const d = topMargin(n) - was;
-      if (d) { account(c, 0, d); if (heights.has(n)) heights.set(n, heights.get(n) + d); }
-    } else out.push(n);
+    if (was !== null && skipped(c, true)) marginMoved(c, n, topMargin(n) - was);
+    else out.push(n);
   }
   nextHeadings.clear();
   return out;
@@ -523,7 +517,6 @@ export function unstale() {
   stale.clear();
 }
 
-/** Every chunk out of the document (a reset). */
 /** Tests: chunks the observers' sets hold that are no longer in the page, and chunks past their limits. */
 export function chunksHeld() {
   const out = c => [...c].filter(x => !x.isConnected).length;
@@ -531,6 +524,7 @@ export function chunksHeld() {
   return { chunksDetached: Object.values(by).reduce((a, b) => a + b, 0), chunksBy: by, overfull: [...doc.children].filter(c => isChunk(c) && overfull(c)).length };
 }
 
+/** Every chunk out of the document (a reset). */
 export function clearChunks() {
   for (const c of [...doc.children]) if (isChunk(c)) dropChunk(c);
 }

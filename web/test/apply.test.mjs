@@ -144,7 +144,7 @@ for (const [slot, after] of [[202, 40], [203, 202]]) {
 check('append at end follows (tall block, twice)', follows.every(f => f.gap < 48 && f.height >= 600 && f.height <= 900), JSON.stringify(follows));
 
 // 5. Fragment scroll. (The heading is not the first block: at the top of the
-// page the first block rests 12 px under the toolbar, above the 16 px gap;
+// page the first block rests 12 px from the top, above the 16 px gap;
 // the heading text, not its block's top margin, lands 16 px down.)
 await page.evaluate(() => window.scrollTo(0, 0));
 await page.evaluate(p => window.readout.apply({
@@ -1226,9 +1226,8 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   }));
   check('code a link jump lands on is coloured in its first frame', r.length === 2 && r.every(([hl, top]) => hl === 'done' && top < 700), JSON.stringify(r));
 }
-// 7b. An outline jump into a page of long code blocks, the window toolbar
-//     over its top: the frame that shows the landing has every line on
-//     screen coloured, under the toolbar too (a long block coloured as far
+// 7b. An outline jump into a page of long code blocks: the frame that shows
+//     the landing has every line on screen coloured (a long block coloured as far
 //     as the screen shows first: highlighter.js, blockSteps). Then, the
 //     code asked for around the landing arrived, a screen down at once, and
 //     another: coloured (asked for two screens ahead). (3.9 coloured on this
@@ -1236,7 +1235,6 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
 //     is asked for ahead, as fast as it highlights.)
 {
   const code = i => `<div class="code-block" data-lang="json"><pre><code>${Array.from({ length: 90 }, (_, l) => `{ "k${i}_${l}": [${l}, true, "v"] },`).join('\n')}</code></pre></div>`;
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
   await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i % 10 === 1 ? `<h2 id="j${i}">Part ${i}</h2>` : code(i), i => i % 10 === 1 ? 'heading' : 'code'));
   await settled();
   await page.waitForTimeout(800);
@@ -1280,8 +1278,7 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
     for (let k = 0; k < 2; k++) { await page.evaluate(() => window.scrollBy(0, innerHeight - 40)); out.at(-1)[`down${k}`] = await plainNow(); }
     await page.waitForTimeout(300);
   }
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check('an outline jump into long code blocks: every line on screen coloured in its first frame, under the toolbar too, and a screen down at once after it', out.every(o => o.plain === 0 && o.down0 === 0 && o.down1 === 0), JSON.stringify(out));
+  check('an outline jump into long code blocks: every line on screen coloured in its first frame, and a screen down at once after it', out.every(o => o.plain === 0 && o.down0 === 0 && o.down1 === 0), JSON.stringify(out));
 }
 // 8. Scrolls of more than a screen at once (the scrollbar dragged, End,
 //    Home, a page down): the frame that shows the landing has the chunks
@@ -1423,19 +1420,17 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
     a0.slot === 80 && steps.every(s => s === 80) && Math.abs(restored.offset) <= 3, JSON.stringify({ steps, offset: restored.offset }));
 }
 
-// Jump targets aim below the window toolbar the page scrolls under.
+// Jump targets land 16 px from the top (the app gives WebKit the window toolbar's inset: obscuredContentInsets).
 {
   const r = fixReset(60, i => i === 30 ? '<h2 id="inset-target">Target</h2>' : `<p>para ${i}</p>`, i => i === 30 ? 'heading' : 'paragraph');
   r.ops[29].anchor = 'inset-target';
   await page.evaluate(p => window.readout.apply(p), r);
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.evaluate(() => window.readout.scrollToSlot(40));
   const slotTop = await topOf(40);
   await page.evaluate(() => window.readout.scrollToFragment({ fragment: 'inset-target' }));
   const fragTop = await page.evaluate(() => Math.round(document.getElementById('inset-target').getBoundingClientRect().top));
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check('TOC and fragment jumps land below the toolbar inset', Math.abs(slotTop - 68) <= 2 && Math.abs(fragTop - 68) <= 2, JSON.stringify({ slotTop, fragTop }));
+  check('TOC and fragment jumps land 16 px from the top', Math.abs(slotTop - 16) <= 2 && Math.abs(fragTop - 16) <= 2, JSON.stringify({ slotTop, fragTop }));
 }
 
 // n in a large document lands on the change (no smooth scroll fighting the compensator).
@@ -1630,23 +1625,20 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   const a1 = await page.evaluate(() => window.readout.captureAnchor());
   check('printing with a folded section above keeps the place', a1.slot === a0.slot && Math.abs(a1.offset - a0.offset) <= 2, JSON.stringify({ a0, a1 }));
 }
-// The TOC follows a jump under a tall toolbar (toolbar and tab bar): the
-// heading it lands on is the active one.
+// The TOC follows a jump: the heading it lands on is the active one.
 {
   const r = fixReset(80, i => i % 20 === 1 ? `<h2>Sec ${i}</h2>` : `<p>para ${i} ${'lorem ipsum '.repeat(10)}</p>`, i => i % 20 === 1 ? 'heading' : 'paragraph');
   r.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `sec-${o.slot}`; });
   await page.evaluate(p => window.readout.apply(p), r);
   const active = [];
-  for (const inset of [52, 66, 80]) {
-    await page.evaluate(i => window.readout.setAppearance({ topInset: i }), inset);
+  for (let k = 0; k < 3; k++) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(150);
     await page.evaluate(() => window.readout.scrollToSlot(41));
     await page.waitForTimeout(300);
     active.push(await page.evaluate(() => window.__msgs.filter(m => m.type === 'activeHeading').at(-1)?.slot));
   }
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check('TOC highlights the heading a jump lands on under a tall toolbar', active.every(s => s === 41), JSON.stringify(active));
+  check('TOC highlights the heading a jump lands on', active.every(s => s === 41), JSON.stringify(active));
 }
 
 // Printing from dark mode: diagrams are drawn light for paper, then dark
@@ -1740,56 +1732,52 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
     Object.values(gaps).every(g => g <= 1), JSON.stringify(gaps));
 }
 
-// Under the window toolbar: the block at the top is the first one below it,
-// and when that block is removed the next one takes its place below the toolbar.
+// At the top of the viewport: the block at the top is the first one below its edge,
+// and when that block is removed the next one takes its place there.
 {
   await page.evaluate(p => window.readout.apply(p), fixReset(60));
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
-  // A block hidden under the toolbar is removed: the text below it stays put.
-  await toTop(30, 30);   // block 29 ends under the toolbar, block 30 shows below it
+  // A block hidden above the edge is removed: the text below it stays put.
+  await toTop(30, -22);   // block 29 ends above the edge, block 30 shows across it
   await page.waitForTimeout(300);
   const under = await page.evaluate(() => {
-    const b = [...document.querySelectorAll('#ro-doc > .chunk > .blk')].find(e => e.getBoundingClientRect().bottom > 8);
+    const b = [...document.querySelectorAll('#ro-doc > .chunk > .blk')].find(e => e.getBoundingClientRect().bottom > -44);
     return { slot: +b.dataset.slot, bottom: Math.round(b.getBoundingClientRect().bottom) };
   });
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: under.slot }], deletions: [{ id: 1, after: under.slot - 1, count: 1, preview: 'x' }] }));
   const kept = await topOf(30);
-  // The block at the toolbar's edge goes, with the one under the toolbar above
-  // it: the next block takes its place below the toolbar, not under it.
-  await toTop(40, 52);
+  // The block at the edge goes, with the one above it: the next block takes
+  // its place at the edge, not above it.
+  await toTop(40, 0);
   await page.waitForTimeout(300);
   const a = await page.evaluate(() => window.readout.captureAnchor());
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'remove', slot: 39 }, { op: 'remove', slot: 40 }], deletions: [{ id: 2, after: 38, count: 2, preview: 'x' }] }));
   const nextTop = await topOf(41);
-  // A block straddling the toolbar's edge grows: the share of it above the
-  // edge stays the same, so the line being read stays at the edge.
-  await toTop(20, 12);
+  // A block straddling the edge grows: the share of it above the edge stays
+  // the same, so the line being read stays at the edge.
+  await toTop(20, -40);
   await page.waitForTimeout(300);
   const grow = await page.evaluate(() => {
     const r = document.querySelector('.blk[data-slot="20"]').getBoundingClientRect();
-    return { slot: window.readout.captureAnchor().slot, above: (52 - r.top) / r.height };
+    return { slot: window.readout.captureAnchor().slot, above: -r.top / r.height };
   });
   await page.evaluate(p => window.readout.apply(p), fixPatch({ ops: [{ op: 'replace', slot: 20, html: `<p>para 20 ${'lorem ipsum dolor sit amet '.repeat(18)}</p>`, kind: 'paragraph', change: 'content' }] }));
   grow.after = await page.evaluate(() => {
     const r = document.querySelector('.blk[data-slot="20"]').getBoundingClientRect();
-    return { above: (52 - r.top) / r.height, h: r.height };
+    return { above: -r.top / r.height, h: r.height };
   });
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check('a block at the toolbar edge keeps its share above the edge when it grows',
+  check('a block at the top edge keeps its share above the edge when it grows',
     grow.slot === 20 && Math.abs(grow.after.above * grow.after.h - grow.above * grow.after.h) <= 2, JSON.stringify(grow));
-  // A block under the toolbar grows later (an image, a diagram): the text below it stays put.
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
-  await toTop(10, 30);
+  // A block above the edge grows later (an image, a diagram): the text below it stays put.
+  await toTop(10, -22);
   await page.waitForTimeout(300);
   await page.evaluate(() => { const d = document.createElement('div'); d.id = 'grown'; d.style.height = '100px'; document.querySelector('.blk[data-slot="9"]').appendChild(d); });
   await page.waitForTimeout(300);
   const grown = await topOf(10);
   await page.evaluate(() => document.getElementById('grown').remove());
   await page.waitForTimeout(300);
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check('a block growing under the toolbar leaves the text below it in place', Math.abs(grown - 30) <= 2, `top=${grown}`);
-  check('removing a block under the toolbar leaves the text below it in place', under.slot === 29 && under.bottom <= 52 && Math.abs(kept - 30) <= 2, JSON.stringify({ under, kept }));
-  check('the reading position is taken below the toolbar and kept there', a.slot === 40 && Math.abs(nextTop - 52) <= 2, JSON.stringify({ slot: a.slot, nextTop }));
+  check('a block growing above the top leaves the text below it in place', Math.abs(grown + 22) <= 2, `top=${grown}`);
+  check('removing a block above the top leaves the text below it in place', under.slot === 29 && under.bottom <= 0 && Math.abs(kept + 22) <= 2, JSON.stringify({ under, kept }));
+  check('the reading position is taken at the top edge and kept there', a.slot === 40 && Math.abs(nextTop) <= 2, JSON.stringify({ slot: a.slot, nextTop }));
 }
 
 // A file emptied and written again (an agent truncating it first) brings the
@@ -1918,12 +1906,12 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
     JSON.stringify({ ...r2, unread }));
 }
 
-// Rail ticks: placed below the window toolbar, at least 6 px tall, titled
+// Rail ticks: in the window, at least 6 px tall, titled
 // with their label; a checkbox change is an edit, not an addition.
 {
   const r = fixReset(30, i => i === 2 ? '<ul><li><input type="checkbox" checked disabled> task</li></ul>' : `<p style="min-height:170px">rail probe ${i}</p>`, i => i === 2 ? 'listItem' : 'paragraph');
   r.marks = [{ slot: 1, kind: 'inserted' }, { slot: 2, kind: 'state' }];
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52, strings: { railChange: 'Unread change %d of %d: %@', railAdded: 'added', railEdited: 'edited', railRemoved: 'removed' } }));
+  await page.evaluate(() => window.readout.setAppearance({ strings: { railChange: 'Unread change %d of %d: %@', railAdded: 'added', railEdited: 'edited', railRemoved: 'removed' } }));
   await page.evaluate(p => window.readout.apply(p), r);
   await page.waitForTimeout(400);
   const ticks = () => page.evaluate(() => [...document.querySelectorAll('#ro-rail button')].map(b => {
@@ -1935,16 +1923,14 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.evaluate(() => window.readout.setAppearance({ strings: { railTask: 'task' } }));
   await page.waitForTimeout(400);
   const after = await ticks();
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check('rail ticks sit below the toolbar, 6 px tall at least, titled with their label',
-    before.length === 2 && before.every(t => t.top >= 52 && t.h >= 6 && t.w === 3 && t.title === t.label), JSON.stringify(before));
+  check('rail ticks sit in the window, 6 px tall at least, titled with their label',
+    before.length === 2 && before.every(t => t.top >= 0 && t.h >= 6 && t.w === 3 && t.title === t.label), JSON.stringify(before));
   check('a task change is labelled as one (or as an edit), not as an addition',
     before[1]?.label === 'Unread change 2 of 2: edited' && after[1]?.label === 'Unread change 2 of 2: task', JSON.stringify({ before, after }));
 }
 
-// The rewrite notice sits below the window toolbar, and fades before it goes.
+// The rewrite notice sits at the top of the window, and fades before it goes.
 {
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
   const rw = fixReset(60, i => `<p>rewritten ${i}</p>`, () => 'paragraph', 3000);
   rw.rewrite = true;
   const r = await page.evaluate(async p => {
@@ -1961,8 +1947,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
     const t1 = Math.round(document.querySelector('.blk[data-slot="3030"]').getBoundingClientRect().top);
     return { top, fading, hidden: notice.hidden, t0, t1 };
   }, rw);
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check('the rewrite notice sits below the toolbar', r.top >= 52 + 8, JSON.stringify(r));
+  check('the rewrite notice sits at the top of the window', r.top >= 8, JSON.stringify(r));
   check('the rewrite notice fades out, then goes without moving the text',
     !r.fading.hidden && r.fading.opacity < 1 && r.hidden && Math.abs(r.t1 - r.t0) <= 1, JSON.stringify(r));
 }
@@ -2024,14 +2009,16 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   });
   await short.goto(`${base}/reader.html`);
   await short.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 80 }));
+  // (Large type: the empty page is taller than the window, and scrolls.)
+  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 64 }));
   await short.evaluate(p => window.readout.apply(p), { ...fixBase, version: 1, reset: true, ops: [] });
   const emptyTop = await short.evaluate(() => { window.scrollTo(0, 10000); return document.scrollingElement.scrollTop; });
   await short.waitForTimeout(200);
   await short.evaluate(p => window.readout.apply(p), { ...fixBase, version: 2, reset: false, ops: fixReset(60).ops, marks: [] });
-  const first = await short.evaluate(() => Math.round(document.querySelector('.blk[data-slot="1"]').getBoundingClientRect().top));
+  const [first, y] = await short.evaluate(() => [Math.round(document.querySelector('.blk[data-slot="1"]').getBoundingClientRect().top), Math.round(document.scrollingElement.scrollTop)]);
   await short.close();
-  check('content arriving in an empty page shows from the top, not from its end', emptyTop > 0 && first >= 0 && first < 160, JSON.stringify({ emptyTop, first }));
+  // (Where the empty page was scrolled to, at most: the first block on screen.)
+  check('content arriving in an empty page shows from the top, not from its end', emptyTop > 0 && y <= emptyTop && first < 160, JSON.stringify({ emptyTop, first, y }));
 }
 
 // A file emptied and written again: scrolling the empty page in between
@@ -2048,25 +2035,6 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   const after = await page.evaluate(() => window.readout.captureAnchor());
   check('scrolling the emptied page does not lose the reading position', after?.slot === 30 && Math.abs(after.offset - before.offset) <= 2,
     JSON.stringify({ before: [before.slot, before.offset], after: after && [after.slot, after.offset] }));
-}
-
-// The toolbar inset changes (a tab bar appears): a reader inside the document
-// keeps their place; at the top, the document moves down from under the toolbar.
-{
-  await page.evaluate(p => window.readout.apply(p), fixReset(60));
-  await toTop(40, 100);
-  await page.waitForTimeout(300);
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
-  const inside = await topOf(40);
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  const back = await topOf(40);
-  await page.evaluate(() => window.scrollTo(0, 0));
-  const top0 = await topOf(1);
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
-  const top52 = await topOf(1);
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  check('a toolbar inset change keeps a reader in the document in place, and moves the top down',
-    Math.abs(inside - 100) <= 2 && Math.abs(back - 100) <= 2 && top52 - top0 === 52, JSON.stringify({ inside, back, top0, top52 }));
 }
 
 // A read that catches the file half written cuts the document short below
@@ -2223,7 +2191,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await p.goto(`${base}/reader.html`);
   for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const cell = (s, i) => `<td>${s} ${i}</td>`;
   const pool = ['S1 / GREEN', 'Medium risk', 'Owner team', 'Drop-in', 'Platform', 'Quarterly', 'Reviewed', 'Ready now', 'Pinned'];
   const reset = (version, list) => ({ version, reset: true, rewrite: false, ops: list, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
@@ -2279,7 +2247,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await p.goto(`${base}/reader.html`);
   for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const ops = [];
   for (let i = 1; i <= 90; i++) {
     const kind = i % 15 === 7 ? 'code' : i % 15 === 11 ? 'table' : 'paragraph';
@@ -2291,9 +2259,9 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.evaluate(x => window.readout.apply(x), { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p.waitForTimeout(500);
   // Block 5045 at the top of the window, a third of it above the top.
-  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + e.getBoundingClientRect().height / 3); });
+  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'); window.scrollBy(0, e.getBoundingClientRect().top + e.getBoundingClientRect().height / 3); });
   await p.waitForTimeout(400);
-  const share = () => p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'), r = e.getBoundingClientRect(); return { above: 52 - r.top, h: r.height, root: parseFloat(getComputedStyle(document.documentElement).fontSize) }; });
+  const share = () => p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'), r = e.getBoundingClientRect(); return { above: -r.top, h: r.height, root: parseFloat(getComputedStyle(document.documentElement).fontSize) }; });
   const s0 = await share();
   const f = s0.above / s0.h;
   const drift = [];

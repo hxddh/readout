@@ -139,9 +139,8 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 #ro-doc {
   max-width: calc(var(--measure) + var(--gutter) * 2);
   margin: 0 auto;
-  /* The page scrolls under the window toolbar (--top-inset tall): at rest the
-     document starts the same distance below it, whatever its height. */
-  padding: calc(var(--top-inset, 0px) + 12px) var(--gutter) 30vh;
+  /* The app gives WebKit the window toolbar's inset: 12 px below it. */
+  padding: 12px var(--gutter) 30vh;
   position: relative;
   /* A long URL or word breaks rather than scrolling the page sideways. */
   overflow-wrap: break-word;
@@ -309,9 +308,10 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading h2 { letter-spacing: -0.01em; }
 /* Han and kana are set solid: tracking them in pulls the characters together. */
 .k-heading:is(:lang(zh), :lang(ja)) :is(h1, h2) { letter-spacing: 0; }
-.k-heading h5 { color: var(--text-2); }
-/* h6: smaller than h5 in the same secondary colour (AA: 6.3:1 light, 7.0:1 dark). */
-.k-heading h6 { color: var(--text-2); }
+/* h5 and h6 (smaller) in the secondary colour (AA: 6.3:1 light, 7.0:1 dark).
+   Tag names, not :is(h5, h6): style matching finds a rule by its last tag
+   name, which a rule ending in :is() may not give it. */
+.k-heading h5, .k-heading h6 { color: var(--text-2); }
 /* Headings that wrap break into lines of even length. */
 h1, h2, h3, h4 { text-wrap: balance; }
 
@@ -495,9 +495,9 @@ blockquote > :last-child { margin-bottom: 0; }
      edge read as a second one. */
   background: var(--fill);
   --surface: var(--fill);
+  --cb-bg: var(--fill-2);
 }
 .alert > :last-child { margin-bottom: 0; }
-.alert { --cb-bg: var(--fill-2); }
 .alert-title { font-weight: 650; color: var(--alert-c); margin: 0 0 0.25em; font-size: var(--fs-sm); }
 .alert-note { --alert-c: var(--note); }
 .alert-tip { --alert-c: var(--tip); }
@@ -516,7 +516,7 @@ blockquote > :last-child { margin-bottom: 0; }
 }
 .fm-item { display: contents; }
 .fm-val { min-width: 0; }
-.fm-key { color: var(--text-2); font-weight: 500; }
+.fm-key { font-weight: 500; }
 
 /* Tables */
 .table-wrap { overflow-x: auto; }
@@ -539,8 +539,7 @@ td.num, th.num { text-align: right; }
    one scrolls sideways inside its wrapper (which then cannot also pin the
    header to the page) and keeps its first column in view instead. */
 .table-wrap:not(.scrolls) { overflow-x: visible; }
-/* --top-inset: the height of the window toolbar the page scrolls under. */
-.table-wrap:not(.scrolls) thead th { position: sticky; top: var(--top-inset, 0px); background: var(--surface, var(--bg)); z-index: 1; }
+.table-wrap:not(.scrolls) thead th { position: sticky; top: 0; background: var(--surface, var(--bg)); z-index: 1; }
 .table-wrap.scrolls td:first-child, .table-wrap.scrolls th:first-child {
   position: sticky; left: 0; background: var(--surface, var(--bg)); z-index: 1;
 }
@@ -651,7 +650,6 @@ details ul, details ol { padding-left: 1.5em; }
 .fn-ref { font-size: 0.72em; line-height: 0; vertical-align: super; }
 .fn-ref a { text-decoration: none; padding: 0 0.12em; }
 .footnotes {
-  margin-top: 2.2em;
   padding-top: 0.9em;
   border-top: 1px solid var(--rule);
   font-size: var(--fs-sm);
@@ -673,8 +671,7 @@ details ul, details ol { padding-left: 1.5em; }
 /* The block's own margins space a formula; KaTeX's 1em above and below came on top. */
 .math-block .katex-display { margin: 0; }
 .math-block:not(.done), .math:not(.done) { font-family: var(--mono); font-size: 0.84em; color: var(--text-2); }
-.math-block:not(.done) { font-size: var(--fs-code); }
-.math-block:not(.done) { white-space: pre-wrap; text-align: left; }
+.math-block:not(.done) { font-size: var(--fs-code); white-space: pre-wrap; text-align: left; }
 .math-inline.done { font-size: 1.02em; }
 
 /* Mermaid */
@@ -779,8 +776,8 @@ details ul, details ol { padding-left: 1.5em; }
   border-left: 6px solid var(--accent);
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
+  transition: border-color 600ms ease;
 }
-.del-mark > button::before { transition: border-color 600ms ease; }
 .del-mark.m-read > button::before { border-left-color: transparent; }
 .del-pop {
   position: absolute;
@@ -827,14 +824,13 @@ details ul, details ol { padding-left: 1.5em; }
 
 /* Rewrite notice */
 #ro-notice {
-  position: sticky; top: calc(var(--top-inset, 0px) + 10px); z-index: 20;
+  position: sticky; top: 10px; z-index: 20;
   margin: 0 auto 1.4em; width: max-content; max-width: 100%;
   font-size: var(--fs-xs); color: var(--text-2);
   background: var(--bg); padding: 4px 12px; border-radius: 999px;
   box-shadow: 0 0 0 1px var(--rule);
   transition: opacity 400ms;
 }
-#ro-notice[hidden] { display: none; }
 
 /* A block a jump moved the keyboard focus to shows no focus ring (it is where the jump landed). */
 #ro-doc > .chunk > [tabindex="-1"]:focus { outline: none; }

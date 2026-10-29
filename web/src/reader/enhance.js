@@ -204,7 +204,6 @@ const skippedTables = new IntersectionObserver(entries => {
   if (shown.length) measureTables(shown);
 }, { rootMargin: '200% 0px' });   // the lookahead's (chunks.js): measured before it is on screen
 
-/** Tables of `el` (a block leaving the page or getting new content) no longer watched. */
 /**
  * `el` (a block) is replaced, removed or reset away: nothing of its keeps
  * watching or waiting (its tables, its code and diagrams for lazy work),

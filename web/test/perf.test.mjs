@@ -233,7 +233,7 @@ const scrollUpJump = await page.evaluate(() => new Promise(async resolve => {
 await page.close();
 
 // Scrolling down through parts not seen yet (scrollperf.mjs), on a page set
-// up as a window is (the toolbar inset): a 500 KB agent document with few
+// up as a window is: a 500 KB agent document with few
 // code blocks, static and with every eighth block changed and unread, and the
 // 1 MB document, then its interactions.
 // A jump (N, a rail tick, a link) onto block `slot`, from the top: the
@@ -274,7 +274,7 @@ async function scrollDoc(docOps, { marks = false, act = false, jumps = false, la
   });
   await p.goto(`${base}/reader.html`);
   await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   await p.evaluate(p => window.readout.apply(p), { version: 1, reset: true, rewrite: false, ops: docOps, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p.waitForTimeout(1500);
   if (marks) {
