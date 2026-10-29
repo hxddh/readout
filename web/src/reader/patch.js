@@ -219,6 +219,7 @@ export function apply(p) {
       else placeItem(el, null, estimateOp(op));
       slots.set(op.slot, el);
       if (!p.reset) { noteLead(el); noteLead(prevBlock(el)); }
+      else if (op.kind === 'paragraph' && op.html.startsWith('<p class="lead"')) noteLead(el);   // a lead-in: leadIns(true)
       resizeObserver.observe(el);
       if (!p.reset) { changed.add(op.slot); inserted.push(el); maybeVisible.push(el); }
     }
