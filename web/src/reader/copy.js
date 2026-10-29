@@ -9,7 +9,7 @@
 // selection inside one code block, code span or formula copies just that code
 // or TeX, as it always did. Rich text (Notes, Pages, Mail, Slack, Notion) is
 // the selected HTML without the page's controls, panels and state.
-import { doc, isChunk, itemOf, firstItem, lastItem, nextItem, prevItem } from './core.js';
+import { doc, isChunk, itemOf, firstItem, lastItem, nextItem, prevItem, blockAfter } from './core.js';
 
 /** block element -> its Markdown source (patch.js sets it from `op.src`). */
 export const sources = new WeakMap();
@@ -117,13 +117,18 @@ function textEdge(el, last) {
   return [n, i];
 }
 
-/** Whether the range holds some of the block's text (a block without text counts when inside). */
-function coversText(r, el) {
+/** The part of `el` inside range `r`, as a range. */
+export function partIn(r, el) {
   const part = document.createRange();
   part.selectNodeContents(el);
   if (r.compareBoundaryPoints(Range.START_TO_START, part) > 0) part.setStart(r.startContainer, r.startOffset);
   if (r.compareBoundaryPoints(Range.END_TO_END, part) < 0) part.setEnd(r.endContainer, r.endOffset);
-  const box = part.cloneContents();
+  return part;
+}
+
+/** Whether the range holds some of the block's text (a block without text counts when inside). */
+function coversText(r, el) {
+  const box = partIn(r, el).cloneContents();
   box.querySelectorAll(CHROME).forEach(e => e.remove());
   if (box.textContent.trim() !== '') return true;
   // A block without text (a rule, an image, empty front matter) counts when the range holds all of it.
@@ -185,18 +190,11 @@ export function markdownOf(r) {
     const whole = (b !== blocks[0] && b !== lastBlock) || coversAll(r, b);
     const text = whole ? (sources.get(b) ?? convertBlock(b, b)) : partial(r, b, false);
     if (text === '') continue;
-    if (prev) out += (sources.has(b) ? tight.has(b) && previousBlock(b) === prev : tightAfter(prev, b)) ? '\n' : '\n\n';
+    if (prev) out += (sources.has(b) ? tight.has(b) && blockAfter(b, prevItem) === prev : tightAfter(prev, b)) ? '\n' : '\n\n';
     out += text;
     prev = b;
   }
   return withDefinitions(out);
-}
-
-/** The block before `b` (a removed-text marker between them is not one). */
-function previousBlock(b) {
-  let e = prevItem(b);
-  while (e && !e.classList.contains('blk')) e = prevItem(e);
-  return e;
 }
 
 /** Items of one tight list follow each other on the next line; everything else after a blank line. */
@@ -212,10 +210,7 @@ function tightAfter(a, b) {
 function partial(r, b, alone) {
   // Front matter is copied whole unless the selection lies inside it.
   if (b.classList.contains('k-frontMatter')) return alone ? r.toString() : (sources.get(b) ?? convertBlock(b, b));
-  const part = document.createRange();
-  part.selectNodeContents(b);
-  if (r.compareBoundaryPoints(Range.START_TO_START, part) > 0) part.setStart(r.startContainer, r.startOffset);
-  if (r.compareBoundaryPoints(Range.END_TO_END, part) < 0) part.setEnd(r.endContainer, r.endOffset);
+  const part = partIn(r, b);
   let within = part.commonAncestorContainer;
   if (within.nodeType !== Node.ELEMENT_NODE) within = within.parentElement;
   const box = document.createElement('div');
@@ -366,8 +361,11 @@ function fence(code, lang) {
   return `${f}${lang}\n${code}\n${f}`;
 }
 
+/** The TeX a KaTeX rendering keeps in its MathML (undefined: none). */
+const annotation = k => k.querySelector('annotation[encoding="application/x-tex"]')?.textContent;
+
 function texOf(m, wrapInline) {
-  const tex = m.dataset.tex ?? m.querySelector('annotation[encoding="application/x-tex"]')?.textContent ?? m.textContent;
+  const tex = m.dataset.tex ?? annotation(m) ?? m.textContent;
   const display = m.matches('.math-block, .math-display');
   if (display) return wrapInline ? `$$${tex}$$` : `$$\n${tex}\n$$`;
   return `$${tex}$`;
@@ -460,11 +458,8 @@ function inl(n) {
   if (n.nodeType !== Node.ELEMENT_NODE) return '';
   const cls = n.classList;
   if (n.matches(CHROME) || cls.contains('task-box') || cls.contains('mermaid-src')) return '';
-  if (cls.contains('math') || cls.contains('math-inline')) return texOf(n, true);
-  if (cls.contains('katex')) {
-    const tex = n.querySelector('annotation[encoding="application/x-tex"]')?.textContent;
-    return tex != null ? `$${tex}$` : '';
-  }
+  if (cls.contains('math')) return texOf(n, true);
+  if (cls.contains('katex')) { const tex = annotation(n); return tex != null ? `$${tex}$` : ''; }
   if (cls.contains('remote-img')) return `![${n.dataset.alt || ''}](${n.dataset.src || ''})`;
   if (cls.contains('fm-key')) return n.textContent + ':';
   switch (n.tagName) {
@@ -527,10 +522,7 @@ export function htmlOf(range) {
     if (!box.contains(m)) continue;
     m.replaceWith(texOf(m, true));
   }
-  for (const k of box.querySelectorAll('.katex')) {
-    const tex = k.querySelector('annotation[encoding="application/x-tex"]')?.textContent;
-    k.replaceWith(tex != null ? `$${tex}$` : '');
-  }
+  for (const k of box.querySelectorAll('.katex')) { const tex = annotation(k); k.replaceWith(tex != null ? `$${tex}$` : ''); }
   for (const t of box.querySelectorAll('.task-box')) t.replaceWith(t.classList.contains('checked') ? '[x] ' : '[ ] ');
   box.querySelectorAll('[data-footnote-backref]').forEach(e => e.remove());
   for (const a of box.querySelectorAll('[data-footnote-ref]')) (a.closest('sup') || a).replaceWith(`[${a.textContent.trim()}]`);

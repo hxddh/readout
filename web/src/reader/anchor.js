@@ -1,13 +1,13 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
-import { doc, root, slots, heights, trace, keptScroll, onKeptScroll, isChunk, nextItem, prevItem } from './core.js';
+import { doc, slots, heights, trace, keptScroll, onKeptScroll, isChunk, nextItem, prevItem, blockAfter, precedes } from './core.js';
 import { scheduleRail } from './rail.js';
 import { forceLayout, laidOut, estimateOf, neverLaidOut, cv, scrolledTo } from './chunks.js';
 import { holdJump } from './enhance.js';
 
-/** First block whose bottom edge is below the top of the viewport (under the window toolbar). */
+/** First block whose bottom edge is below the top of the viewport. */
 function topBlock() {
-  const line = topInset() + 8;
+  const line = 8;
   // Binary searches, over the chunks and then over the chunk's items, with
   // no list of every block and no offsetParent read for each (a layout
   // question per block, in every patch).
@@ -34,22 +34,17 @@ export function captureAnchor() {
   if (!el) return null;
   const r = el.getBoundingClientRect();
   const offset = -r.top;
-  // The share of the block above the toolbar's edge, kept when its height changes.
-  const ratio = r.height > 0 ? (topInset() - r.top) / r.height : 0;
+  // The share of the block above the viewport's edge, kept when its height changes.
+  const ratio = r.height > 0 ? -r.top / r.height : 0;
   let heading = null;
   for (let e = el; e; e = prevItem(e)) {
     if (e.classList.contains('k-heading')) { heading = e.dataset.anchor || null; break; }
   }
   // The neighbours stand in for the anchor block if a patch removes it.
-  const prev = shownSibling(el, prevItem);
-  const next = shownSibling(el, nextItem);
+  const prev = blockAfter(el, prevItem);
+  const next = blockAfter(el);
   return { slot: +el.dataset.slot, offset, ratio, heading,
     prev: prev ? +prev.dataset.slot : null, next: next ? +next.dataset.slot : null };
-}
-
-function shownSibling(el, step) {
-  for (let e = step(el); e; e = step(e)) if (e.classList.contains('blk')) return e;
-  return null;
 }
 
 /**
@@ -58,7 +53,28 @@ function shownSibling(el, step) {
  * cannot scroll that far).
  */
 export function restoreAnchor(a, changedSlots) {
-  return restoreAnchorTo(a, changedSlots);
+  if (!a) return false;
+  const el = slots.get(a.slot);
+  if (el) {
+    forceLayout(el);
+    const r = el.getBoundingClientRect();
+    const want = changedSlots.has(a.slot) ? a.ratio * r.height : a.offset;
+    keepBy(r.top + want);
+    return slots.has(a.slot) && Math.abs(el.getBoundingClientRect().top + want) <= 1;
+  }
+  // The anchor block is gone: the block that followed it takes its place at
+  // the top (or, at the end of the document, the one before it ends there).
+  // Only then the section heading, which can be far above.
+  for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
+    const n = slot != null ? slots.get(slot) : null;
+    if (n) forceLayout(n);
+    if (n) { keepBy(n.getBoundingClientRect()[edge]); return false; }
+  }
+  if (a.heading) {
+    const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
+    if (h) { forceLayout(h); keepBy(h.getBoundingClientRect().top); }
+  }
+  return false;
 }
 
 /**
@@ -83,39 +99,7 @@ export function anchorMiss(a, changedSlots) {
   const el = a && slots.get(a.slot);
   if (!el) return 0;
   const r = el.getBoundingClientRect();
-  return r.top + (changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset);
-}
-
-function restoreAnchorTo(a, changedSlots) {
-  if (!a) return false;
-  const el = slots.get(a.slot);
-  if (el) {
-    forceLayout(el);
-    const r = el.getBoundingClientRect();
-    const want = changedSlots.has(a.slot) ? a.ratio * r.height - topInset() : a.offset;
-    keepBy(r.top + want);
-    return slots.has(a.slot) && Math.abs(el.getBoundingClientRect().top + want) <= 1;
-  }
-  // The anchor block is gone: the block that followed it takes its place at
-  // the top (or, at the end of the document, the one before it ends there).
-  // Only then the section heading, which can be far above. The top is the
-  // bottom of the window toolbar the page scrolls under.
-  const inset = topInset();
-  for (const [slot, edge] of [[a.next, 'top'], [a.prev, 'bottom']]) {
-    const n = slot != null ? slots.get(slot) : null;
-    if (n) forceLayout(n);
-    if (n) { keepBy(n.getBoundingClientRect()[edge] - inset); return false; }
-  }
-  if (a.heading) {
-    const h = doc.querySelector(`.k-heading[data-anchor="${CSS.escape(a.heading)}"]`);
-    if (h) { forceLayout(h); keepBy(h.getBoundingClientRect().top - inset); }
-  }
-  return false;
-}
-
-/** The height of the window toolbar the page scrolls under (set by the app). */
-export function topInset() {
-  return parseFloat(root.style.getPropertyValue('--top-inset')) || 0;
+  return r.top + (changedSlots.has(a.slot) ? a.ratio * r.height : a.offset);
 }
 
 /** `el`'s height (and its chunk's) taken as they are now, after a change whose place the caller kept. */
@@ -180,9 +164,7 @@ export function scrollToElement(target, { center = false, gap, landed = () => {}
   const margin = gap ?? (parseFloat(getComputedStyle(target).scrollMarginTop) || 0);
   aimAt(target, () => {
     const r = target.getBoundingClientRect();
-    // The top of the page lies under the window toolbar: aim below it.
-    const inset = topInset();
-    return center ? r.top + r.height / 2 - (window.innerHeight + inset) / 2 : r.top - margin - inset;
+    return center ? r.top + r.height / 2 - window.innerHeight / 2 : r.top - margin;
   }, () => { pinLanding(target); landed(); }, center ? window.innerHeight / 2 : 0);
 }
 
@@ -235,7 +217,7 @@ let settleQueued = false;
 let landed = null;   // {el, top, until, y}: its top on screen, and where the page was left
 // The page at its end: a scroll position moved since a jump left it may be
 // the page growing shorter (a chunk near the end laid out), not the reader.
-const atEnd = () => { const se = document.scrollingElement; return se.scrollTop >= se.scrollHeight - window.innerHeight - 1; };
+export const atEnd = () => { const se = document.scrollingElement; return se.scrollTop >= se.scrollHeight - window.innerHeight - 1; };
 onKeptScroll(dy => { if (landed) landed.y += dy; });
 export function pinLanding(el) {
   landed = cv()
@@ -286,8 +268,6 @@ export function aimAt(el, off, landed, room = 0, waited = false) {
   };
   requestAnimationFrame(reaim);
 }
-
-const precedes = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 /**
  * The block whose place on screen the compensation keeps: the landing of a
@@ -346,7 +326,6 @@ function keptBlock(resized, chunks, firstChunks, above) {
 // reader opened at the top of the window grows down from where it is.
 export const resizeObserver = new ResizeObserver(entries => {
   let delta = 0;
-  const inset = topInset();
   const resized = new Map();      // block -> change in height
   const chunks = new Map();       // chunk -> change in height
   const firstChunks = new Set();  // of those, the chunks laid out for the first time
@@ -370,7 +349,7 @@ export const resizeObserver = new ResizeObserver(entries => {
     let grew = 0;
     for (const c of [...chunks.keys()].sort((a, b) => precedes(a, b) ? -1 : 1)) {
       grew += chunks.get(c);
-      if (c.getBoundingClientRect().bottom - grew <= inset + 1) above.add(c);
+      if (c.getBoundingClientRect().bottom - grew <= 1) above.add(c);
     }
     const kept = keptBlock(resized, chunks, firstChunks, above);
     if (kept && kept === landed?.el) {
@@ -383,7 +362,7 @@ export const resizeObserver = new ResizeObserver(entries => {
         if (c === own) continue;
         if (kept && firstChunks.has(c) ? precedes(c, kept) : above.has(c)) delta += d;
       }
-      for (const [el, d] of resized) if (own && el.parentElement === own && el.getBoundingClientRect().bottom - d <= inset + 1) delta += d;
+      for (const [el, d] of resized) if (own && el.parentElement === own && el.getBoundingClientRect().bottom - d <= 1) delta += d;
     }
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) {
@@ -393,9 +372,8 @@ export const resizeObserver = new ResizeObserver(entries => {
     trace('compensate', { delta: Math.round(delta) });
   }
   // Chunks laid out as they come near change size again; measured at the
-  // start of the next frame, they settle before its observations. Left to the frame's own layout, WebKit reports a
-  // ResizeObserver loop. (3.3 got this measurement from redrawing the rail
-  // on every callback; the rail is now redrawn at most every 250 ms.)
+  // start of the next frame, they settle before its observations (left to
+  // the frame's own layout, WebKit reports a ResizeObserver loop).
   if (!settleQueued) {
     settleQueued = true;
     requestAnimationFrame(() => { settleQueued = false; void document.scrollingElement.scrollHeight; });

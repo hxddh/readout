@@ -61,14 +61,13 @@ function tell(m) {
   engine(m);
 }
 
-/** Starts the highlighter (the first appearance, or the app's warm-up): `quicklook` loads only what a preview needs. */
-let quick = false;
+let quick = false, soon = false;
 /**
- * The highlighter is for Quick Look (it loads only the grammars a preview
- * shows), and starts a task later: making the worker is not part of the
- * appearance's task (nor of the first document's, which may ask first).
+ * Starts the highlighter (the first appearance, or the app's warm-up) a task
+ * later: making the worker is not part of the appearance's task (nor of the
+ * first document's, which may ask first). `quicklook`: it loads only the
+ * grammars a preview shows.
  */
-let soon = false;
 export function startSoon(quicklook) {
   if (soon || ready) return;   // (the first appearance says which)
   quick = quicklook;
@@ -81,7 +80,7 @@ function later() {
   setTimeout(() => init(), 0);
 }
 
-export function init(quicklook = quick) {
+function init() {
   if (ready) return ready;
   ready = new Promise(r => { onReady = r; });
   try {
@@ -97,7 +96,7 @@ export function init(quicklook = quick) {
     mode = 'page';
     engine = serve(received);
   }
-  tell({ op: 'init', quicklook, limit: globalThis.READOUT_TOKENIZE_LIMIT, spans: !!globalThis.READOUT_TOKEN_SPANS, cut: !!globalThis.READOUT_CUT_FIRST_PART });
+  tell({ op: 'init', quicklook: quick, limit: globalThis.READOUT_TOKENIZE_LIMIT, spans: !!globalThis.READOUT_TOKEN_SPANS, cut: !!globalThis.READOUT_CUT_FIRST_PART });
   for (const m of early.splice(0)) engine(m);
   return ready;
 }

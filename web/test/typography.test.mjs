@@ -396,15 +396,10 @@ for (const dark of [false, true]) {
   await settleMath(page);
   await page.waitForTimeout(300);
 
-  // 1. At rest the document starts the same distance under any toolbar.
-  const tops = [];
-  for (const inset of [0, 52, 80]) {
-    await page.evaluate(i => window.readout.setAppearance({ topInset: i }), inset);
-    tops.push(await page.evaluate(() => { window.scrollTo(0, 0); return Math.round(document.getElementById('v-top').getBoundingClientRect().top); }));
-  }
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 0 }));
-  // 3.5: 12 px (was 28): the document starts close under the toolbar.
-  check(`first heading sits 12 px under the toolbar at insets 0/52/80 (${th})`, tops[0] === 12 && tops[1] === 64 && tops[2] === 92, JSON.stringify(tops));
+  // 1. At rest the document starts 12 px down (3.5; was 28): close under the
+  //    window toolbar, whose inset the app gives WebKit (obscuredContentInsets).
+  const top = await page.evaluate(() => { window.scrollTo(0, 0); return Math.round(document.getElementById('v-top').getBoundingClientRect().top); });
+  check(`first heading sits 12 px from the top (${th})`, top === 12, JSON.stringify(top));
 
   const g = await page.evaluate(() => {
     const $ = s => document.querySelector(s);
@@ -675,7 +670,6 @@ const v35 = patch([
 for (const dark of [false, true]) {
   const th = dark ? 'dark' : 'light';
   page = await open(600, dark);
-  await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
   await page.evaluate(p => window.readout.apply(p), v35);
   await until(page, () => [...document.querySelectorAll('.code-block')].every(c => c.dataset.hl === 'done'));
   await page.waitForTimeout(300);
@@ -1528,7 +1522,7 @@ const v36 = patch([
     await pg.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
     await pg.addStyleTag({ content: '#ro-doc { -webkit-text-fill-color: transparent } .em-dot { color: #000 !important }' });
     for (let fs = 13; fs <= 22; fs++) {
-      await pg.evaluate(f => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: f, topInset: 0 }), fs);
+      await pg.evaluate(f => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: f }), fs);
       if (fs === 13) await pg.evaluate(p => window.readout.apply(p), dotDoc);
       await pg.waitForTimeout(80);
       const info = await pg.evaluate(() => {

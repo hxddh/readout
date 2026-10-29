@@ -1,27 +1,18 @@
 // Readout renderer: applies block patches from the native side, keeps the reading position
-// stable, shows unread changes, and renders code, math and diagrams lazily.
-//
-// Modules (web/src/reader/):
-//   core     shared state, strings, native message channel
-//   anchor   reading position, resize compensation, #fragment resolution
-//   patch    applying RenderPatches
-//   marks    unread marks, read detection, jumps
-//   find     find in page
-//   rail     change rail
-//   enhance  per-block code/table/heading/remote setup, lazy highlighting
-//   math / mermaid / remote / heading
+// stable, shows unread changes, and renders code, math and diagrams lazily
+// (web/src/reader/, a module each). This module: links, keys, copy, the native API.
 import * as hl from './highlight.js';
-import { doc, root, slots, post, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, topInset, atBottom, blocksOnScreen, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
+import { doc, root, slots, post, smooth, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
+import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, atBottom, atEnd, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
-import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld } from './reader/marks.js';
+import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld, pulse } from './reader/marks.js';
 import { chunksHeld } from './reader/chunks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelButtons, setCodeWrap, highlightAll, measureTables, lazyHeld } from './reader/enhance.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
-import { markdownOf, htmlOf, inDocument, sources, definitionsUsed } from './reader/copy.js';
+import { markdownOf, htmlOf, inDocument, sources, definitionsUsed, partIn } from './reader/copy.js';
 import { find, findEnd } from './reader/find.js';
 
 // ---------------------------------------------------------------- Links & keys
@@ -48,10 +39,7 @@ doc.addEventListener('click', ev => {
     const note = a.matches('[data-footnote-ref], [data-footnote-backref]');
     scrollToElement(target, { center: note });
     noteLanding(target);
-    if (note) {
-      const spot = target.closest('li, sup') || target;
-      spot.classList.remove('landed'); void spot.offsetWidth; spot.classList.add('landed');
-    }
+    if (note) pulse(target.closest('li, sup') || target);
     return;
   }
   post({ type: 'open', href });
@@ -135,13 +123,7 @@ function selectedSlots() {
       seen = true;
       touched.push(e);
     }
-    const hasText = e => {
-      const part = document.createRange();
-      part.selectNodeContents(e);
-      if (r.compareBoundaryPoints(Range.START_TO_START, part) > 0) part.setStart(r.startContainer, r.startOffset);
-      if (r.compareBoundaryPoints(Range.END_TO_END, part) < 0) part.setEnd(r.endContainer, r.endOffset);
-      return part.toString().trim() !== '';
-    };
+    const hasText = e => partIn(r, e).toString().trim() !== '';
     while (touched.length && !hasText(touched[0])) touched.shift();
     while (touched.length && !hasText(touched[touched.length - 1])) touched.pop();
     for (const e of touched) out.push(+e.dataset.slot);
@@ -159,12 +141,8 @@ function quoteSelection() {
   return { slots: s, links: definitionsUsed(s.map(k => sources.get(slots.get(k)) ?? '').join('\n\n')) };
 }
 
-// j and k scroll as far as the arrow keys do; smoothly, as change jumps do,
-// unless the document is large (an instant scroll compensating for a block
-// laid out on the way would cut the animation short) or the reader asked for
-// less motion.
+// j and k scroll as far as the arrow keys do; smoothly, as change jumps do (smooth).
 const LINE_STEP = 40;   // WebKit's arrow-key step (macOS)
-function smooth() { return !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches; }
 
 /**
  * To the very top or end. In a large document the blocks around the place it
@@ -182,8 +160,7 @@ function scrollToEdge(end) {
   const reaim = () => {
     // Moved from where it was left, other than by the end coming closer (a
     // page growing shorter holds the reader at its end): the reader scrolled.
-    const atEnd = se.scrollTop >= se.scrollHeight - innerHeight - 1;
-    if (edge !== mine || (Math.abs(se.scrollTop - mine.y) > 2 && !(end && atEnd))) return;
+    if (edge !== mine || (Math.abs(se.scrollTop - mine.y) > 2 && !(end && atEnd()))) return;
     aim();
     if (performance.now() < until) requestAnimationFrame(reaim);
   };
@@ -255,7 +232,7 @@ window.addEventListener('resize', () => {
   if (!resizeAnchor) {
     // Moved since it settled, other than by a shorter page being clamped to its new end.
     const se = document.scrollingElement;
-    const clamped = se.scrollTop < settledY && se.scrollTop >= se.scrollHeight - innerHeight - 1;
+    const clamped = se.scrollTop < settledY && atEnd();
     const settled = settledAnchor && (Math.abs(se.scrollTop - settledY) <= 1 || clamped) ? settledAnchor : null;
     resizeBottom = settled ? settledBottom : atBottom();
     resizeAnchor = settled || captureAnchor();
@@ -332,15 +309,6 @@ function setAppearance(o) {
     relabelButtons();
   }
   if (o.codeWrap !== undefined) setCodeWrap(!!o.codeWrap);
-  if (o.topInset !== undefined) {
-    // The inset pads the top of the document: a reader inside it keeps their
-    // place (at the top, the document moves down from under the toolbar).
-    const inset = `${Math.max(0, +o.topInset || 0)}px`;
-    if (root.style.getPropertyValue('--top-inset') !== inset) {
-      const set = () => root.style.setProperty('--top-inset', inset);
-      if (document.scrollingElement.scrollTop > 0) keepPlace(set); else { set(); rebaselineHeights(); }
-    }
-  }
   if (o.mode === 'quicklook') { enableQuicklook(); staticRemoteImages(); }
   scheduleRail();
   if (!resizeAnchor) settle();
@@ -348,7 +316,7 @@ function setAppearance(o) {
 }
 
 /**
- * The TOC's jump to a section: its heading 16 px under the toolbar. The TOC
+ * The TOC's jump to a section: its heading 16 px from the top. The TOC
  * shows that section as the current one until the reader scrolls (the line
  * the current heading is read at lies lower, and a document ending soon
  * after cannot bring the heading up there).
@@ -356,8 +324,8 @@ function setAppearance(o) {
 function scrollToSlot(slot) {
   const el = slots.get(slot);
   if (!el) return;
-  // (What shows above it, under the window toolbar too: room for the chunk before to be laid out if it shows.)
-  aimAt(el, () => el.getBoundingClientRect().top - 16 - topInset(), () => { pinActiveHeading(slot); noteLanding(el); pinLanding(el); }, 16 + topInset());
+  // (What shows above it: room for the chunk before to be laid out if it shows.)
+  aimAt(el, () => el.getBoundingClientRect().top - 16, () => { pinActiveHeading(slot); noteLanding(el); pinLanding(el); }, 16);
 }
 
 function scrollToAnchor(a) {

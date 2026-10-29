@@ -2,10 +2,7 @@
 // page's main thread: this module runs in a worker (hl-worker.js), which
 // answers the page's requests (highlight.js), each block's HTML, the most
 // urgent first (serve). Where a worker cannot run, the page runs it itself.
-// Grammars are loaded on demand; the three agent output uses most are
-// preloaded (not in Quick Look, which loads only what the preview shows), the
-// spare page loads nine more, and the languages a document's fences name are
-// loaded while it parses (prepareLangs). Shiki itself is loaded on first use.
+// Grammars are loaded on demand, or ahead of it (PRELOAD, prepareLangs).
 //
 // The grammars come mostly converted: the build (shiki-grammars.mjs) serves
 // each '@shikijs/langs/<id>' import with its patterns already converted to
@@ -108,15 +105,6 @@ export function resolveLang(lang) {
   const l = lang.toLowerCase();
   const id = ALIASES[l] || l;
   return LANGS[id] ? id : null;
-}
-
-/** Quick Look: no grammars are loaded ahead of need (call before init). */
-export function noPreload() { preload = false; }
-
-/** The tests' settings (see options), before the first highlight. */
-export function configure({ limit, spans } = {}) {
-  if (typeof limit === 'number') options.limit = limit;
-  options.spans = !!spans;
 }
 
 // A terminal transcript's output is secondary text, not the link blue the
@@ -722,8 +710,9 @@ export function serve(post) {
       case 'init':
         if (started) return;
         started = true;
-        if (m.quicklook) noPreload();
-        configure(m);
+        if (m.quicklook) preload = false;   // before init: no grammars loaded ahead of need
+        if (typeof m.limit === 'number') options.limit = m.limit;
+        options.spans = !!m.spans;
         options.cut = !!m.cut;
         init().then(() => { post({ op: 'ready' }); later(); }, () => post({ op: 'failed' }));
         return;

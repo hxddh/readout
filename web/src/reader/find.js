@@ -8,8 +8,8 @@
 // every match of a large document makes WebKit's paint take tens of seconds).
 // Every match is counted, but only a window of them around the current one
 // is kept (a one-letter search of 5 MB matches 300,000 times).
-import { doc, slots, post, firstItem, nextItem, isChunk } from './core.js';
-import { aimAt, pinLanding, topInset, blocksOnScreen } from './anchor.js';
+import { doc, slots, post, firstItem, nextItem, isChunk, precedes } from './core.js';
+import { aimAt, pinLanding, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
 import { whenColoured } from './enhance.js';
 import { cv } from './chunks.js';
@@ -45,7 +45,6 @@ const fold = s => (ACCENTED.test(s)
 const NEAR = 10;      // blocks either side of the current match whose matches are marked
 const MARKED = 300;   // and at most this many marks
 const KEPT = 10_000;  // matches kept, around the current one
-const HL = typeof CSS !== 'undefined' && 'highlights' in CSS;
 
 let query = null;       // the folded text searched for; null: not finding
 let re = null;
@@ -120,8 +119,7 @@ function search(at) {
     if (!e.classList.contains('blk')) continue;
     bi++;
     if (e.hidden) continue;
-    let x = texts.get(e);
-    if (!x) texts.set(e, x = textOf(e));
+    const x = textFor(e);
     const c = x.s.match(re)?.length ?? 0;
     if (at && e === at.el) center = total + Math.min(at.ord, Math.max(0, c - 1));
     if (!c) continue;
@@ -148,13 +146,11 @@ function around() {
     const after = pos.next && slots.get(pos.next);
     if (after && after.isConnected) return { el: after, ord: 0 };
   }
-  const sel = getSelection();
-  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  const r = selRange();
   const el = r && blockOf(r.startContainer);
   if (!el) return { el: blocksOnScreen()[0], ord: 0 };
   // In its block: the place of the first match at or after the selection's start (a block can hold more than KEPT).
-  let x = texts.get(el);
-  if (!x) texts.set(el, x = textOf(el));
+  const x = textFor(el);
   const { startContainer: n, startOffset: o } = r;
   let at = x.s.length;
   for (const [start, node, map] of x.segs) {
@@ -189,7 +185,15 @@ function rangeOf(m) {
   return r;
 }
 
-const before = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+/** A block's text, read once while finding. */
+function textFor(el) {
+  let x = texts.get(el);
+  if (!x) texts.set(el, x = textOf(el));
+  return x;
+}
+const selRange = () => { const sel = getSelection(); return sel.rangeCount ? sel.getRangeAt(0) : null; };
+/** Compares a match's block with `el` (< 0 before it, 0 in it, > 0 after it). */
+const byBlock = el => m => m.el === el ? 0 : precedes(m.el, el) ? -1 : 1;
 
 const blockOf = n => n && doc.contains(n) ? (n.nodeType === Node.ELEMENT_NODE ? n : n.parentElement).closest('#ro-doc > .chunk > .blk') : null;
 
@@ -200,13 +204,12 @@ const blockOf = n => n && doc.contains(n) ? (n.nodeType === Node.ELEMENT_NODE ? 
  * it); strict: a match at it is not the next one (it is the last one).
  */
 function origin() {
-  const sel = getSelection();
-  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  const r = selRange();
   const blk = r && blockOf(r.startContainer);
   if (blk) {
     const { startContainer: n, startOffset: o } = r;
     return [m => {
-      if (m.el !== blk) return before(m.el, blk) ? -1 : 1;
+      if (m.el !== blk) return precedes(m.el, blk) ? -1 : 1;
       const at = document.createRange();
       at.setStart(...point(m, m.start, false));
       return -at.comparePoint(n, o);
@@ -214,11 +217,7 @@ function origin() {
   }
   return [topNow(), false];
 }
-function fromTop(m) {
-  const top = fromTop.top;
-  return !top || m.el === top ? 0 : before(m.el, top) ? -1 : 1;
-}
-const topNow = () => { fromTop.top = blocksOnScreen()[0]; return fromTop; };
+const topNow = () => { const top = blocksOnScreen()[0]; return top ? byBlock(top) : () => 0; };
 
 /**
  * The current match after a search of the page: [index, exact]. exact: in
@@ -231,10 +230,10 @@ function resolve() {
   const el = slots.get(pos.slot);
   if (!el || !el.isConnected) {
     const after = pos.next && slots.get(pos.next);
-    if (after && after.isConnected) return [next(m => m.el === after ? 0 : before(m.el, after) ? -1 : 1, false, false), false];
+    if (after && after.isConnected) return [next(byBlock(after), false, false), false];
     return [next(topNow(), false, false), false];
   }
-  const i = next(m => m.el === el ? 0 : before(m.el, el) ? -1 : 1, false, false);
+  const i = next(byBlock(el), false, false);
   if (matches[i]?.el !== el) return [i, false];
   delete pos.next;
   // In its block: the match nearest where it was, counted from the block's
@@ -276,7 +275,7 @@ function next(cmp, strict, backwards) {
 // page (an agent's edit anywhere, a block drawn as it comes near).
 let near = null;      // {q, n, at: [[x, segs, start, end], ...]}: the query, the number of the first, and each match
 let curMark = null;
-const unmark = () => { near = curMark = null; if (HL) { CSS.highlights.delete('ro-find'); CSS.highlights.delete('ro-find-cur'); } };
+const unmark = () => { near = curMark = null; CSS.highlights.delete('ro-find'); CSS.highlights.delete('ro-find-cur'); };
 const same = (m, [x, segs, start, end]) => !!m && m.x === x && x.segs === segs && m.start === start && m.end === end;
 /** Where the near marks are in matches (a search may have renumbered them), -1 if they are not all as they were. */
 function nearAt() {
@@ -290,7 +289,6 @@ function mark() {
   const m = matches[cur];
   if (!m) { unmark(); return null; }
   const range = rangeOf(m);
-  if (!HL) return range;
   // Kept while they still reach NEAR / 2 blocks (or MARKED / 4 marks) past the current match either way.
   const lo = nearAt(), hi = lo + (near?.at.length ?? 0) - 1;
   const reach = (end, d) => Math.abs(end - cur) >= MARKED / 4 || Math.abs((matches[end + d]?.bi ?? Infinity) - m.bi) > NEAR / 2;
@@ -315,11 +313,7 @@ function select(range) {
 }
 const sameRange = (a, b) => !!a && !!b && a.startContainer === b.startContainer && a.startOffset === b.startOffset
   && a.endContainer === b.endContainer && a.endOffset === b.endOffset;
-const isOwn = () => {
-  const sel = getSelection();
-  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
-  return sameRange(own, r);
-};
+const isOwn = () => sameRange(own, selRange());
 // The reader selecting something else: the selection is theirs.
 document.addEventListener('selectionchange', () => { if (own && !isOwn()) own = null; });
 
@@ -424,11 +418,10 @@ function land(waited = false) {
     if (!range.startContainer.isConnected && current()) range = rangeOf(matches[cur]);
     const b = el.getBoundingClientRect();
     const r = (!cv() || (b.bottom > 0 && b.top < innerHeight)) && range.getClientRects().length ? range.getBoundingClientRect() : b;
-    const inset = topInset();
-    if (r.top >= inset + 8 && r.bottom <= innerHeight - 8) return 0;
-    return r.top - inset - (innerHeight - inset) / 3;
+    if (r.top >= 8 && r.bottom <= innerHeight - 8) return 0;
+    return r.top - innerHeight / 3;
   };
-  aimAt(el, off, () => { noteLanding(el); pinLanding(el); }, (innerHeight + 2 * topInset()) / 3);
+  aimAt(el, off, () => { noteLanding(el); pinLanding(el); }, innerHeight / 3);
 }
 
 // While finding, an edit (an agent writing) is found in too: the count
@@ -523,8 +516,7 @@ export function find(text, backwards = false) {
   }
   // Next and Previous go on from the current match, unless the reader has
   // selected something else since, or clicked somewhere (the caret).
-  const sel = getSelection();
-  const r = sel.rangeCount ? sel.getRangeAt(0) : null;
+  const r = selRange();
   const theirs = !!r && !selecting && !isOwn() && !!blockOf(r.startContainer);
   if (theirs) pos = null;
   search(around());
