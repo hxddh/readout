@@ -166,6 +166,8 @@ for (const [k, name] of (quick ? docs.slice(0, 4) : docs).entries()) {
   const source = readFileSync(`${CORPUS}/${name.replace(/\.json$/, '.md')}`, 'utf8');
   await page.evaluate(p => window.readout.apply(p), patch);
   await page.waitForTimeout(400);
+  // Its code on screen highlighted (in the worker; the first paint waits for it).
+  for (let i = 0; i < 400 && await page.evaluate(() => getComputedStyle(document.getElementById('ro-doc')).visibility === 'hidden'); i++) await page.waitForTimeout(25);
 
   // 1. Select All.
   const all = await page.evaluate(() => { const r = document.createRange(); r.selectNodeContents(document.getElementById('ro-doc')); return window.__copy(r); });

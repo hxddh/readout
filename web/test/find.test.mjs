@@ -522,6 +522,89 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await page.close();
 }
 
+// 4.0: a match in code waits for the code to be highlighted (in the worker:
+// highlighting replaces the text it selects). A find refresh while it waits
+// (an agent's edit, and code elsewhere coloured meanwhile: both search
+// again, and may move the current match) does not lose it: the landing goes
+// to the match where it was, selected and on screen.
+{
+  const page = await open();
+  const code = (n, at) => `<div class="code-block" data-lang="ts"><pre><code>${Array.from({ length: n }, (_, l) => l === at ? 'const needle = 1;' : `export const v${l}: number = f(${l}); // line ${l}`).join('\n')}</code></pre></div>`;
+  const doc = [code(30, -1), ...Array.from({ length: 60 }, (_, i) => `<p>para ${i + 2} with some words to fill the column</p>`), code(300, 3)];
+  // The match's block's request held back until __releaseNeedle(), then sent as urgent (what the landing asked).
+  await page.evaluate(() => {
+    const pm = Worker.prototype.postMessage, held = [];
+    let released = false;
+    Worker.prototype.postMessage = function (m) {
+      if (!released && m && (m.op === 'hl' && m.code.includes('needle') || m.op === 'prio' && held.some(h => h.m.id === m.id))) { if (m.op === 'hl') held.push({ w: this, m }); return; }
+      pm.call(this, m);
+    };
+    window.__releaseNeedle = () => { if (released) return; released = true; for (const { w, m } of held) pm.call(w, { ...m, prio: -1 }); };
+  });
+  await page.evaluate(p => window.readout.apply(p), patch(doc.map((html, i) => ({ op: 'insert', slot: i + 1, after: i, html, kind: i === 0 || i === doc.length - 1 ? 'code' : 'paragraph' }))));
+  for (let i = 0; i < 600 && await page.evaluate(() => document.querySelector('.blk[data-slot="1"] .code-block').dataset.hl !== 'done'); i++) await page.waitForTimeout(50);
+  await page.waitForTimeout(500);
+  const r = await page.evaluate(([edited, para]) => new Promise(resolve => {
+    const far = document.querySelector('.blk[data-slot="62"] .code-block');
+    const waited = far.dataset.hl === 'pending';
+    // (The match's block is held back from the worker, whatever the
+    // machine's speed: asked for once a refresh has come while the landing
+    // waits, with the other block coloured again by then.)
+    let refreshedWhileWaiting = false;
+    new PerformanceObserver(l => {
+      if (!l.getEntriesByName('readout-find-refresh').length || far.dataset.hl !== 'pending' || getSelection().toString()) return;
+      refreshedWhileWaiting = true;
+      const go = () => document.querySelector('.blk[data-slot="1"] .code-block').dataset.hl === 'done' ? window.__releaseNeedle() : setTimeout(go, 20);
+      go();
+    }).observe({ entryTypes: ['mark'] });
+    window.readout.find('needle');
+    // While the landing waits: an edit above it (a block inserted), and the
+    // code on screen rewritten (coloured again in the worker, meanwhile).
+    window.readout.apply({ version: 2, reset: false, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 }, ops: [
+      { op: 'insert', slot: 100, after: 30, kind: 'paragraph', html: para },
+      { op: 'replace', slot: 1, change: 'content', kind: 'code', html: edited },
+    ] });
+    const t0 = performance.now();
+    const check = () => {
+      const s = getSelection(), n = s.rangeCount ? s.getRangeAt(0).startContainer : null;
+      const b = n && (n.nodeType === 1 ? n : n.parentElement).closest('.blk');
+      const rect = s.rangeCount ? s.getRangeAt(0).getBoundingClientRect() : null;
+      const ok = s.toString() === 'needle' && b?.dataset.slot === '62' && rect && rect.top >= 0 && rect.bottom <= innerHeight && far.dataset.hl === 'done'
+        && document.querySelector('.blk[data-slot="1"] .code-block').dataset.hl === 'done';
+      if (ok || performance.now() - t0 > 20000) resolve({ waited, ok, sel: s.toString(), slot: b?.dataset.slot, top: rect && Math.round(rect.top), hl: far.dataset.hl,
+        refreshedWhileWaiting, editedHl: document.querySelector('.blk[data-slot="1"] .code-block').dataset.hl });
+      else setTimeout(check, 50);
+    };
+    check();
+  }), [code(32, -1), '<p>An edit above the match, while it waits.</p>']);
+  check('a match in code waiting for its highlighting, a refresh meanwhile (an edit, other code coloured): selected and on screen',
+    r.waited && r.ok && r.refreshedWhileWaiting && r.editedHl === 'done', JSON.stringify(r));
+  await page.close();
+}
+
+// What a match's offsets point into can change between the search and the
+// frame its selection is made in (a long block coloured a part at a time
+// takes each part's lines out of its plain text; an agent's edit): the
+// selection is made where the match is then, never at an offset past its
+// text. (CI: IndexSizeError, a part coming in under a find.)
+{
+  const page = await open();
+  const lines = Array.from({ length: 60 }, (_, l) => `plain line ${l} of a block no grammar colours`).concat(['the zebrafish at its end']);
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 1, after: 0, kind: 'code', html: `<div class="code-block" data-lang="none"><pre><code>${lines.join('\n')}</code></pre></div>` }]));
+  await page.waitForTimeout(300);
+  const r = await page.evaluate(() => new Promise(resolve => {
+    const text = document.querySelector('.code-block pre code').firstChild;
+    const n = window.readout.find('zebrafish');
+    // Before the frame that selects it: its first lines out of the text node, as a part takes them.
+    text.deleteData(0, text.data.indexOf('\n', 400) + 1);
+    requestAnimationFrame(() => setTimeout(() => setTimeout(() => resolve({ n, sel: getSelection().toString() }), 50), 0));
+  }));
+  await page.waitForTimeout(200);
+  check('a match whose text node changed before its selection is made: selected where it is, no error', r.n === 1 && r.sel === 'zebrafish' && errors.length === 0, JSON.stringify({ ...r, errors }));
+  await page.evaluate(() => window.readout.findEnd());
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, JSON.stringify(errors));
 await browser.close();
 server.close();

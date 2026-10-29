@@ -1546,6 +1546,7 @@ enum SmokeTest {
             JSON.stringify({
               blocks: document.querySelectorAll('.blk').length,
               highlighted: document.querySelectorAll('.code-block[data-hl="done"]').length,
+              highlighter: window.readout.highlighter(),
               math: document.querySelectorAll('.math.done, .math-block.done').length,
               mermaid: document.querySelectorAll('.mermaid-block.done').length,
               marks: document.querySelectorAll('.m-inserted, .m-modified, .m-state').length,

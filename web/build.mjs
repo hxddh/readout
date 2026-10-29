@@ -9,7 +9,9 @@ mkdirSync(`${out}/vendor/katex`, { recursive: true });
 mkdirSync(`${out}/vendor/mermaid`, { recursive: true });
 
 await esbuild.build({
-  entryPoints: ['src/reader.js'],
+  // The page, and the worker that highlights its code (hl-worker.js): the
+  // modules they share (the highlighter, its grammars) are chunks of both.
+  entryPoints: ['src/reader.js', 'src/hl-worker.js'],
   plugins: [shikiGrammars],
   bundle: true,
   splitting: true,

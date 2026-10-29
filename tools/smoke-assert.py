@@ -44,6 +44,9 @@ initial = load("1-initial.json")
 print(f"1-initial: {initial}")
 check("1-initial blocks == 35", initial.get("blocks") == 35, initial)
 check("1-initial highlighted >= 2", (initial.get("highlighted") or 0) >= 2, initial)
+# 4.0: code is highlighted in a worker (web/src/hl-worker.js); "page" means
+# the window's page could not start one (its CSP, the scheme handler).
+check("1-initial code highlighted in a worker", initial.get("highlighter") == "worker", initial)
 check("1-initial math >= 3", (initial.get("math") or 0) >= 3, initial)
 # Task E4: tools/smoke-run.py replaced the file 50ms after the app opened it;
 # the first capture must already show the replacement, not the stale content.
@@ -620,6 +623,10 @@ if m:
 # kept running) renders the same document in full.
 previews = re.findall(r"preview (applied|timed out): rendered (-?\d+) of (\d+) blocks", qrt)
 check("quicklook second preview applied, 36 blocks", len(previews) >= 2 and previews[1] == ("applied", "36", "36"), previews)
+# Where the preview's code was highlighted: a worker, or the page itself
+# where an extension's page cannot start one (reported, not gated).
+hlm = re.search(r"preview highlighter: (\w+)", qrt)
+print(f"quicklook highlighter: {hlm.group(1) if hlm else 'not logged'}")
 # The preview is asked for, then applied: both logged (ql_open_ms comes from the second).
 check("quicklook logs the request", "preview requested" in qrt, qrt[-500:])
 # P9: the web view is made before the document is parsed, and its page's

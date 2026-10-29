@@ -11,7 +11,8 @@
 import { doc, slots, post, firstItem, nextItem, isChunk } from './core.js';
 import { aimAt, pinLanding, topInset, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
-import { highlightIn } from './enhance.js';
+import { whenColoured } from './enhance.js';
+import { cv } from './chunks.js';
 
 // Not the document's text: controls, the MathML copy of a formula (its
 // rendering is searched), a drawn diagram's source, a comparison panel.
@@ -334,9 +335,25 @@ function selectLater() {
 }
 function selectNow() {
   selecting = null;
-  const m = matches[cur];
-  if (!m) return;
-  select(rangeOf(m));
+  if (current()) select(rangeOf(matches[cur]));
+}
+
+/**
+ * The page may have changed since the search (a long block's later lines
+ * coloured in place of its plain text, an edit): the current match where it
+ * is now, not at offsets into text that may have shrunk. False: it is gone.
+ */
+function current() {
+  changed(observer.takeRecords());
+  if (reread()) {
+    search(around());
+    const [i] = resolve();
+    if (i < 0) { cur = -1; return false; }
+    goTo(base + i);
+    place();
+    mark();
+  }
+  return !!matches[cur];
 }
 
 /** Tells the app the count (current 0: none yet): after every search, after an edit only when it changed. */
@@ -355,15 +372,41 @@ function place() {
 }
 
 /** To the current match (a search): selected, and on screen (it stays where it is if it is already). */
-function land() {
+let colouring = null;   // cancels a landing waiting for its code to be coloured
+let landing = null;     // that landing (a later one, or the search ended, drops it)
+function land(waited = false) {
   const m = matches[cur];
   const el = m.el;
   // Its code highlighted before the match is selected in it (highlighting
-  // replaces the text nodes), and a folded <details> it is in opened.
-  if (el.querySelector('.code-block[data-hl="pending"]')) {
-    highlightIn([el]);
-    changed(observer.takeRecords());
-    reread();
+  // replaces the text nodes): it waits for that (enhance.js), a moment. And
+  // a folded <details> it is in opened.
+  colouring?.();
+  colouring = landing = null;
+  if (!waited && el.querySelector('.code-block[data-hl="pending"]')) {
+    // Where it is, kept meanwhile (pos): a refresh (an edit, other code
+    // coloured) searches again, and the landing goes to the match found
+    // there then, not the one it waited with. It waits for the lines up to
+    // the match's and a screen below (a long block's first, the rest later:
+    // what comes later goes in after them, the match's text left as it is).
+    place();
+    const mine = {};
+    landing = mine;
+    // The line it is on in its code (the lines up to it, and a screen more, are coloured first).
+    const r = rangeOf(m), pre = r.startContainer.parentElement?.closest('pre');
+    let line = 0;
+    if (pre) { const before = document.createRange(); before.setStart(pre, 0); before.setEnd(r.startContainer, r.startOffset); line = before.toString().split('\n').length - 1; }
+    colouring = whenColoured([el], () => {
+      if (landing !== mine) return;
+      landing = colouring = null;
+      if (!observing || query == null) return;
+      changed(observer.takeRecords());
+      if (reread()) search(around());
+      const [i] = resolve();
+      if (i < 0) return;
+      goTo(base + i);
+      land(true);
+    }, line);
+    return;
   }
   let range = rangeOf(m);
   for (let d = range.startContainer.parentElement.closest('details'); d && el.contains(d); d = d.parentElement.closest('details')) {
@@ -372,11 +415,15 @@ function land() {
   range = mark();
   place();
   selectLater();
-  // Off screen, the block is not laid out (content-visibility): it is aimed
-  // at first, the match once the frames after the jump have laid it out.
+  // Off screen in a large document, the block is not laid out
+  // (content-visibility): it is aimed at first, the match once the frames
+  // after the jump have laid it out. Otherwise the match at once (in long
+  // code, the block's top would leave it screens below, with no frames after).
   const off = () => {
+    // (Its text nodes replaced meanwhile: the lines after its code's first part coloured.)
+    if (!range.startContainer.isConnected && current()) range = rangeOf(matches[cur]);
     const b = el.getBoundingClientRect();
-    const r = b.bottom > 0 && b.top < innerHeight && range.getClientRects().length ? range.getBoundingClientRect() : b;
+    const r = (!cv() || (b.bottom > 0 && b.top < innerHeight)) && range.getClientRects().length ? range.getBoundingClientRect() : b;
     const inset = topInset();
     if (r.top >= inset + 8 && r.bottom <= innerHeight - 8) return 0;
     return r.top - inset - (innerHeight - inset) / 3;
@@ -495,6 +542,8 @@ export function find(text, backwards = false) {
  * is still open (its text edited), the blocks' text is kept for the next search.
  */
 export function findEnd(keep = false) {
+  colouring?.();
+  colouring = landing = null;
   if (selecting) selectNow();
   query = null;
   clearTimeout(refreshTimer);

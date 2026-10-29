@@ -374,14 +374,22 @@ const tickOpacity = await page.evaluate(() => [...document.querySelectorAll('#ro
 check('an edited rail tick is as strong as an added one', tickOpacity.length === 2 && tickOpacity.every(o => o === '1'), JSON.stringify(tickOpacity));
 
 // The first highlight with a grammar pays for compiling its patterns, and
-// Shiki's 500 ms per-line guard may cut it short. If that cold highlight was
-// slow it is redone once; highlights with a warm grammar never are.
+// Shiki's 500 ms per-line guard may cut it short. The worker highlights such
+// a part again before it sends the block (highlighter.js: blockSteps): the
+// page replaces the block's code once, with it right. Here the first part a
+// cold grammar highlights is cut short (READOUT_CUT_FIRST_PART: a 500 ms
+// hold, then a limit of 1 ms), Ruby's, which is not preloaded; a second
+// block of the same text, the grammar warm, comes out the same.
 {
-  const r = await page.evaluate(async () => {
-    // Every performance.now() reading jumps 300 ms: every highlight looks slow.
-    const real = performance.now.bind(performance);
-    let skew = 0;
-    performance.now = () => (skew += 300) + real();
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; window.READOUT_CUT_FIRST_PART = true; });
+  await p.goto(`${base}/reader.html`);
+  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  const r = await p.evaluate(async () => {
+    const block = (slot, after) => ({ op: 'insert', slot, after, kind: 'code',
+      html: `<div class="code-block" data-lang="ruby"><pre><code># note\nx = [${Array.from({ length: 300 }, (_, k) => `a${k} + ${k} * c`).join(', ')}]\ny = "a #{1} b"\ndef f(y) = y * 2</code></pre></div>` });
     const pres = new Map();
     const watch = slot => {
       const cb = document.querySelector(`.blk[data-slot="${slot}"] .code-block`);
@@ -390,25 +398,21 @@ check('an edited rail tick is as strong as an added one', tickOpacity.length ===
         .observe(cb, { childList: true });
       return cb;
     };
-    const block = (slot, after) => ({ op: 'insert', slot, after, kind: 'code',
-      html: '<div class="code-block" data-lang="ruby"><pre><code># note\nx = 1</code></pre></div>' });
-    // Ruby is not preloaded, so this block is the grammar's first, cold, highlight.
+    const wait = async cb => { for (let i = 0; i < 400 && cb.dataset.hl !== 'done'; i++) await new Promise(r => setTimeout(r, 25)); };
     window.readout.apply({ version: 90, reset: true, rewrite: false, ops: [block(901, 0)], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
     const cold = watch(901);
-    const states = [];
-    for (let i = 0; i < 200 && cold.dataset.hl !== 'done'; i++) { states.push(cold.dataset.hl); await new Promise(r => setTimeout(r, 25)); }
-    // A second Ruby block: the grammar is warm now.
+    await wait(cold);
     window.readout.apply({ version: 91, reset: false, rewrite: false, ops: [block(902, 901)], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
     const warm = watch(902);
-    const warmFirst = warm.dataset.hl;
+    await wait(warm);
     await new Promise(r => setTimeout(r, 300));
-    performance.now = real;
-    return { sawRecheck: states.includes('recheck'), coldFinal: cold.dataset.hl, coldPres: pres.get(901),
-      warmFirst, warmFinal: warm.dataset.hl, warmPres: pres.get(902),
-      colored: !!cold.querySelector('pre.shiki span[style]') && !!warm.querySelector('pre.shiki span[style]') };
+    return { cold: cold.dataset.hl, coldPres: pres.get(901), warm: warm.dataset.hl, warmPres: pres.get(902),
+      same: cold.querySelector('pre').outerHTML === warm.querySelector('pre').outerHTML,
+      spans: cold.querySelectorAll('pre.shiki span[style]').length };
   });
-  check('slow cold-grammar highlight is redone once and settles', r.sawRecheck && r.coldFinal === 'done' && r.coldPres === 2 && r.colored, JSON.stringify(r));
-  check('slow warm-grammar highlight is not redone', r.warmFirst === 'done' && r.warmFinal === 'done' && r.warmPres === 0 && r.colored, JSON.stringify(r));
+  await p.close();
+  check('a cold grammar\'s first part cut short is highlighted again in the worker: the block replaced once, and right',
+    r.cold === 'done' && r.coldPres === 1 && r.warm === 'done' && r.warmPres === 1 && r.same && r.spans > 4, JSON.stringify(r));
 }
 // Footnotes: a reference lands on its note mid-screen and marks where; the
 // back link returns to the reference.
@@ -920,10 +924,9 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
 }
 
 // Code is coloured whenever it shows: a long block on the first screen of a
-// document opened is highlighted before its first paint (all of it at once:
-// only a block ahead of the screen is highlighted a part at a time), and
-// while the reader scrolls, every block that comes on screen is already
-// highlighted.
+// document opened is coloured in its first paint (the lines on screen, the
+// rest after: the paint waits for those, enhance.js: hold), and while the
+// reader scrolls, every block that comes on screen is already highlighted.
 {
   const code = (i, n) => `<div class="code-block" data-lang="ts"><pre><code>${Array.from({ length: n }, (_, l) => `export const v${i}_${l}: number = f(${l}); // line ${l}`).join('\n')}</code></pre></div>`;
   const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
@@ -932,22 +935,28 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
   await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
-  // Let the grammar load first (a page's first TypeScript), as a window's spare page has it.
-  await p.evaluate(x => window.readout.apply(x), fixReset(1, () => code(0, 3), () => 'code'));
-  await p.waitForTimeout(1500);
+  // The grammar loaded and compiled first, as a window's page has it: the
+  // app names the document's fence languages while it parses (readout.prepare).
+  await p.evaluate(() => window.readout.prepare(['ts']));
+  for (let i = 0; i < 800 && !(await p.evaluate(() => performance.getEntriesByName('readout-hl-prepared').length > 0)); i++) await p.waitForTimeout(25);
   // Opened: a paragraph, then a 120-line block filling the rest of the screen and beyond, then more.
-  const first = await p.evaluate(x => {
+  const first = await p.evaluate(x => new Promise(resolve => {
+    const t0 = performance.now();
     window.readout.apply(x);
-    // Before anything is painted: the lines on screen.
-    // (A block of more than 40 lines is coloured as far as the screen shows
-    // and 120 px more, its rest still plain text, the next lines a
-    // slice at a time: enhance.js, showParts.)
-    const cb = document.querySelector('.blk[data-slot="2"] .code-block');
-    const shown = [...cb.querySelectorAll('pre .line')].filter(l => l.getBoundingClientRect().top < innerHeight);
-    const rest = cb.querySelector('pre code').lastChild;
-    const plainRest = !cb.querySelector('pre .line') || (rest.nodeType === 3 && rest.length > 1 && (() => { const r = new Range(); r.setStart(rest, 1); r.setEnd(rest, 2); return r.getBoundingClientRect().top < innerHeight; })());
-    return { hl: cb.dataset.hl, shown: shown.length, plain: shown.filter(l => !l.querySelector('span[style]')).length, plainRest };
-  }, fixReset(300, i => i === 2 ? code(i, 120) : i % 4 === 0 ? code(i, 80) : `<p>para ${i} lorem ipsum dolor</p>`, i => i === 2 || i % 4 === 0 ? 'code' : 'paragraph'));
+    // The first frame that shows the document (painted: a task queued from
+    // its animation callbacks runs after its paint): the lines on screen.
+    // (A long block is coloured as far as the screen shows and 120 px more
+    // first, its rest still plain text: highlighter.js, blockSteps.)
+    const frame = () => requestAnimationFrame(() => setTimeout(() => {
+      if (getComputedStyle(document.getElementById('ro-doc')).visibility === 'hidden') return frame();
+      const cb = document.querySelector('.blk[data-slot="2"] .code-block');
+      const shown = [...cb.querySelectorAll('pre .line')].filter(l => l.getBoundingClientRect().top < innerHeight);
+      const rest = cb.querySelector('pre code').lastChild;
+      const plainRest = !cb.querySelector('pre .line') || (rest.nodeType === 3 && rest.length > 1 && (() => { const r = new Range(); r.setStart(rest, 1); r.setEnd(rest, 2); return r.getBoundingClientRect().top < innerHeight; })());
+      resolve({ hl: cb.dataset.hl, shown: shown.length, plain: shown.filter(l => !l.querySelector('span[style]')).length, plainRest, ms: Math.round(performance.now() - t0) });
+    }, 0));
+    frame();
+  }), fixReset(300, i => i === 2 ? code(i, 120) : i % 4 === 0 ? code(i, 80) : `<p>para ${i} lorem ipsum dolor</p>`, i => i === 2 || i % 4 === 0 ? 'code' : 'paragraph'));
   // Scrolling 25 px a frame down to 4,500 px (by position, not time: a slow
   // machine scrolls as far): each frame, the code on screen.
   const scrolled = await p.evaluate(async () => {
@@ -967,73 +976,6 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await p.close();
   check('a long code block on the first screen is coloured in the first paint', first.shown > 5 && first.plain === 0 && !first.plainRest, JSON.stringify(first));
   check('while scrolling, every code block that comes on screen is already coloured', scrolled.frames > 60 && scrolled.y > 4000 && scrolled.plain === 0, JSON.stringify(scrolled));
-}
-
-// A cold grammar's first part of a long block ahead of the screen cut short
-// by Shiki's guard (here a limit of 1 ms after a 300 ms hold, for that one
-// part): the block is rechecked once assembled, and ends up right (its first
-// line as its fifth, the same text, in the next part).
-{
-  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
-  collectPageErrors(p, errors);
-  await p.addInitScript(() => {
-    window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
-    Object.defineProperty(globalThis, 'READOUT_TOKENIZE_LIMIT', { get() {
-      if (!window.__cut) return 500;
-      window.__cut = false; window.__wasCut = true;
-      for (const t = performance.now(); performance.now() - t < 300;);
-      return 1;
-    } });
-  });
-  await p.goto(`${base}/reader.html`);
-  await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
-  const long = Array.from({ length: 300 }, (_, k) => `local a${k} = b${k} + ${k} * c`).join('; ');
-  const lua = `<div class="code-block" data-lang="lua"><pre><code>${[long, 'local p = 1', 'local q = 2', 'local r = 3', long, ...Array.from({ length: 55 }, (_, l) => `local x${l} = f(${l}) -- note`)].join('\n')}</code></pre></div>`;
-  const r = await p.evaluate(async x => {
-    window.readout.apply(x);
-    const cb = document.querySelector('.blk[data-slot="9"] .code-block');
-    const states = [];
-    // Armed once the grammar is in: the block's first part is the next highlight.
-    new MutationObserver(() => { states.push(cb.dataset.hl); if (cb.dataset.hl === 'pending' && !window.__wasCut) window.__cut = true; }).observe(cb, { attributes: true, attributeFilter: ['data-hl'] });
-    const onScreen = cb.getBoundingClientRect().top < innerHeight;
-    for (let i = 0; i < 400 && !(cb.dataset.hl === 'done' && states.includes('done')); i++) await new Promise(r => setTimeout(r, 25));
-    await new Promise(r => setTimeout(r, 300));
-    const lines = cb.querySelectorAll('pre .line');
-    return { onScreen, cut: !!window.__wasCut, states, final: cb.dataset.hl, same: lines.length > 4 && lines[0].innerHTML === lines[4].innerHTML,
-      spans: [lines[0]?.querySelectorAll('span').length, lines[4]?.querySelectorAll('span').length] };
-  }, fixReset(20, i => i === 9 ? lua : '<p style="min-height:100px">para</p>', i => i === 9 ? 'code' : 'paragraph'));
-  await p.close();
-  check('a cold block whose first part was cut short is rechecked once assembled, and ends up right',
-    !r.onScreen && r.cut && r.states.includes('recheck') && r.final === 'done' && r.same && r.spans[0] > 100, JSON.stringify(r));
-}
-
-// A long block of a cold grammar, every part of it quick, adds up to more
-// than the slow limit: it is not highlighted twice (only a part that slow
-// is a line cut short). Each clock reading here moves on 5 ms: a part takes
-// about 5 ms, the block's 100 parts 500 ms.
-{
-  await page.evaluate(p => window.readout.apply(p), fixReset(1));
-  await page.evaluate(() => window.scrollTo(0, 0));
-  const perl = `<div class="code-block" data-lang="perl"><pre><code>${Array.from({ length: 400 }, (_, l) => `my $x${l} = $y + ${l};`).join('\n')}</code></pre></div>`;
-  const r = await page.evaluate(async x => {
-    const real = performance.now.bind(performance);
-    let skew = 0;
-    window.readout.apply(x);
-    const cb = document.querySelector('.blk[data-slot="9"] .code-block');
-    const states = [];
-    new MutationObserver(() => {
-      states.push(cb.dataset.hl);
-      if (cb.dataset.hl === 'pending') performance.now = () => (skew += 5) + real();
-    }).observe(cb, { attributes: true, attributeFilter: ['data-hl'] });
-    const onScreen = cb.getBoundingClientRect().top < innerHeight;
-    for (let i = 0; i < 400 && cb.dataset.hl !== 'done'; i++) await new Promise(r => setTimeout(r, 25));
-    performance.now = real;
-    await new Promise(r => setTimeout(r, 300));
-    return { onScreen, states, final: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]') };
-  }, fixReset(20, i => i === 9 ? perl : '<p style="min-height:100px">para</p>', i => i === 9 ? 'code' : 'paragraph'));
-  check('a long cold-grammar block with every part quick is highlighted once, not redone',
-    !r.onScreen && r.final === 'done' && !r.states.includes('recheck') && r.colored, JSON.stringify(r));
 }
 
 // An agent rewriting a long code block again and again, near the reader and
@@ -1263,7 +1205,8 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   const r = await page.evaluate(() => { const t = document.querySelector('.blk[data-slot="200"] .table-wrap'); const r = t.getBoundingClientRect(); return { below: Math.round(r.top - innerHeight), measured: t.classList.contains('scrolls') || !!t.parentElement.style.getPropertyValue('--tb-w') }; });
   check('a wide table two screens ahead is measured before it comes on screen', r.below > 0 && r.measured, JSON.stringify(r));
 }
-// 7. A link jump lands on code: it is coloured in the first frame that shows it.
+// 7. A link jump lands on code: it is coloured in the first frame that shows
+//    it (the jump waits for it, a moment: enhance.js, holdJump).
 {
   await page.evaluate(p => window.readout.apply(p), fixReset(400, i => i === 1 ? '<p><a href="#far">to far</a></p>' : i === 300 ? '<h2 id="far">Far</h2>' : i > 300 && i < 306 ? `<div class="code-block" data-lang="json"><pre><code>{\n  "k": ${i}\n}</code></pre></div>` : `<p>para ${i}</p>`,
     i => i === 300 ? 'heading' : i > 300 && i < 306 ? 'code' : 'paragraph'));
@@ -1274,14 +1217,23 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   const r = await page.evaluate(() => new Promise(res => {
     document.querySelector('a[href="#far"]').click();
     const cbs = [...document.querySelectorAll('.blk[data-slot="301"] .code-block, .blk[data-slot="302"] .code-block')];
-    requestAnimationFrame(() => res(cbs.map(cb => [cb.dataset.hl, Math.round(cb.getBoundingClientRect().top)])));
+    const t0 = performance.now();
+    const frame = () => requestAnimationFrame(() => {
+      const at = cbs.map(cb => [cb.dataset.hl, Math.round(cb.getBoundingClientRect().top)]);
+      if (at.some(([, top]) => top < 700) || performance.now() - t0 > 3000) res(at); else frame();
+    });
+    frame();
   }));
   check('code a link jump lands on is coloured in its first frame', r.length === 2 && r.every(([hl, top]) => hl === 'done' && top < 700), JSON.stringify(r));
 }
 // 7b. An outline jump into a page of long code blocks, the window toolbar
 //     over its top: the frame that shows the landing has every line on
-//     screen coloured, under the toolbar too (blocks of more than 40 lines
-//     coloured only as far as the screen shows: enhance.js, showParts).
+//     screen coloured, under the toolbar too (a long block coloured as far
+//     as the screen shows first: highlighter.js, blockSteps). Then, the
+//     code asked for around the landing arrived, a screen down at once, and
+//     another: coloured (asked for two screens ahead). (3.9 coloured on this
+//     thread, in the scroll event, whatever it had to; a worker colours what
+//     is asked for ahead, as fast as it highlights.)
 {
   const code = i => `<div class="code-block" data-lang="json"><pre><code>${Array.from({ length: 90 }, (_, l) => `{ "k${i}_${l}": [${l}, true, "v"] },`).join('\n')}</code></pre></div>`;
   await page.evaluate(() => window.readout.setAppearance({ topInset: 52 }));
@@ -1306,7 +1258,10 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
     })));
     out.push(await page.evaluate(slot => new Promise(res => {
       window.readout.scrollToSlot(slot);
-      requestAnimationFrame(() => {
+      const h = document.querySelector(`.blk[data-slot="${slot}"]`), t0 = performance.now();
+      const frame = () => requestAnimationFrame(() => {
+        const top = h.getBoundingClientRect().top;
+        if ((top < 0 || top > innerHeight) && performance.now() - t0 < 3000) return frame();
         let plain = 0;
         for (const cb of document.querySelectorAll('.code-block')) {
           const r = cb.getBoundingClientRect();
@@ -1318,7 +1273,9 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
         }
         res({ slot, plain });
       });
+      frame();
     }), slot));
+    await until(() => window.readout.lazyHeld().queued === 0, null, 20000);
     // Then at once a screen down (Page Down), and another: the frames that show them.
     for (let k = 0; k < 2; k++) { await page.evaluate(() => window.scrollBy(0, innerHeight - 40)); out.at(-1)[`down${k}`] = await plainNow(); }
     await page.waitForTimeout(300);

@@ -91,6 +91,8 @@ const slotOf = sel => doc.ops.findIndex(o => o.html.includes(sel)) + 1;
 let page = await open(600);
 await page.evaluate(p => window.readout.apply(p), doc);
 await page.waitForTimeout(600);
+// Its code highlighted (in the worker, a page not warmed: its grammars load first).
+await until(page, () => !document.querySelector('.code-block[data-hl="pending"]'));
 
 const support = await page.evaluate(() => ({
   'text-autospace: normal': CSS.supports('text-autospace', 'normal'),
@@ -1150,16 +1152,22 @@ const v36 = patch([
   // are loaded and compiled before its apply, which then colours their
   // blocks in its first paint: a language never preloaded (Kotlin), and a
   // name as written in the fence (an alias, upper case).
-  // blocks: [id, lang, code]; each block's state when the apply returns,
-  // and whether its YAML front matter (if any) has a key token of its own.
-  const firstPaint = (pg, blocks) => pg.evaluate(blocks => {
+  // blocks: [id, lang, code]; each block's state in the first frame that
+  // shows the document (a task queued from its animation callbacks runs
+  // after its paint; the paint waits for the code on screen: enhance.js,
+  // hold), and whether its YAML front matter (if any) has a key token of its own.
+  const firstPaint = (pg, blocks) => pg.evaluate(blocks => new Promise(resolve => {
     window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
       ops: blocks.map(([id, lang, code], i) => ({ op: 'insert', slot: i + 1, after: i, kind: 'code', cjk: false, html: `<div class="code-block" id="${id}" data-lang="${lang}"><pre><code>${code}</code></pre></div>` })) });
-    return Object.fromEntries(blocks.map(([id]) => {
-      const cb = document.getElementById(id);
-      return [id, { hl: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]'), key: [...cb.querySelectorAll('pre.shiki span')].some(s => s.textContent === 'name') }];
-    }));
-  }, blocks);
+    const frame = () => requestAnimationFrame(() => setTimeout(() => {
+      if (getComputedStyle(document.getElementById('ro-doc')).visibility === 'hidden') return frame();
+      resolve(Object.fromEntries(blocks.map(([id]) => {
+        const cb = document.getElementById(id);
+        return [id, { hl: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]'), key: [...cb.querySelectorAll('pre.shiki span')].some(s => s.textContent === 'name') }];
+      })));
+    }, 0));
+    frame();
+  }), blocks);
   const FM = ['p-fm', 'markdown', '---\nname: plan\n---\n# Title'];
   const ok = b => b.hl === 'done' && b.colored;
   requests.length = 0;
@@ -1246,26 +1254,6 @@ const v36 = patch([
   const stopped = await page.evaluate(() => performance.getEntriesByName('readout-hl-warm').length === 0);
   check('a warmed spare page compiles the common grammars, and stops once it shows a document', done && stopped, JSON.stringify({ done, stopped }));
   await page.close();
-  // Its longest slice (web_hl_warm_longest_slice_ms) counts the last one too:
-  // here the last is made the longest, its one highlight held up 150 ms (the
-  // tokenize limit is read only by a block's highlight, the warm-up's last step).
-  page = await browser.newPage({ viewport: { width: 700, height: 800 } });
-  collectPageErrors(page, errors);
-  await page.addInitScript(() => {
-    window.__msgs = [];
-    window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
-    Object.defineProperty(globalThis, 'READOUT_TOKENIZE_LIMIT', { get() {
-      if (!window.__held) { window.__held = true; for (const t = performance.now(); performance.now() - t < 150;); }
-      return 500;
-    } });
-  });
-  await page.goto(`${base}/reader.html`);
-  await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await page.evaluate(() => { window.readout.setAppearance({ dark: false }); window.readout.warm(); });
-  await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
-  const last = await page.evaluate(() => ({ held: !!window.__held, longest: performance.getEntriesByName('readout-hl-warm')[0].detail.longestSlice }));
-  check("the warm-up's longest slice counts its last slice", last.held && last.longest >= 150, JSON.stringify(last));
-  await page.close();
   // It waits for every preloaded grammar, however slow its import (SQL's
   // held back 7 s, longer than the warm-up's delay), and warms it before done.
   const openWarm = async () => {
@@ -1285,19 +1273,21 @@ const v36 = patch([
   delays.length = 0;
   check('the warm-up waits for a slow grammar and warms it before it is done', slowDone && Date.now() - t0 > 7000 && (slow.grammars || []).includes('sql'), JSON.stringify({ slowDone, ms: Date.now() - t0, grammars: slow.grammars }));
   await page.close();
-  // Walking a grammar for its patterns is a sliced step too: a walk held up
-  // 150 ms (an inherited getter, added once the grammars are in, that the
-  // walk reads on a grammar's root) shows in the longest slice.
+  // The warm-up runs in the highlighting worker a slice at a time, between
+  // blocks asked for: a block a document shows mid-warm-up (the grammars
+  // being compiled) is highlighted at once, not after the warm-up.
   page = await openWarm();
-  await page.waitForTimeout(3000);   // the grammars registered; the warm-up starts 5 s after
-  await page.evaluate(() => {
-    Object.defineProperty(Object.prototype, '__walkProbe', { enumerable: true, configurable: true, get() {
-      if (!window.__walkHeld && typeof this.scopeName === 'string') { window.__walkHeld = true; for (const t = performance.now(); performance.now() - t < 150;); }
-    } });
-  });
-  await until(page, () => performance.getEntriesByName('readout-hl-warm').length > 0, 40000);
-  const walk = await page.evaluate(() => ({ held: !!window.__walkHeld, longest: performance.getEntriesByName('readout-hl-warm')[0]?.detail?.longestSlice }));
-  check("walking a grammar for its patterns is counted in the warm-up's longest slice", walk.held && walk.longest >= 150, JSON.stringify(walk));
+  await page.waitForTimeout(5500);   // the grammars in, the idle delay over: compiling
+  const ahead = await page.evaluate(() => new Promise(resolve => {
+    window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+      ops: [{ op: 'insert', slot: 1, after: 0, kind: 'code', cjk: false, html: '<div class="code-block" id="t-json" data-lang="json"><pre><code>{ "a": 1 }</code></pre></div>' }] });
+    const t0 = performance.now();
+    const wait = () => document.getElementById('t-json').dataset.hl === 'done'
+      ? resolve({ ms: Math.round(performance.now() - t0), warmDone: performance.getEntriesByName('readout-hl-warm').length > 0 })
+      : setTimeout(wait, 5);
+    wait();
+  }));
+  check('a block shown mid-warm-up is highlighted ahead of the rest of it', !ahead.warmDone && ahead.ms < 1000, JSON.stringify(ahead));
   await page.close();
   // A document arriving mid-warm-up names SQL, a grammar the spare page
   // queued late: its job moves to the front and is compiled before the
@@ -1307,23 +1297,30 @@ const v36 = patch([
   await page.waitForTimeout(5500);   // the grammars in, the idle delay over: compiling
   await page.evaluate(() => window.readout.prepare(['sql']));
   const sqlIn = await until(page, () => performance.getEntriesByName('readout-hl-prepared').length > 0, 10000);
-  const mid = await page.evaluate(() => {
+  const mid = await page.evaluate(() => new Promise(resolve => {
     const warmDone = performance.getEntriesByName('readout-hl-warm').length > 0;
     window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
       ops: [{ op: 'insert', slot: 1, after: 0, kind: 'code', cjk: false, html: '<div class="code-block" id="t-sql" data-lang="sql"><pre><code>SELECT 1 FROM t;</code></pre></div>' }] });
-    const cb = document.getElementById('t-sql');
-    return { warmDone, hl: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]') };
-  });
+    // Its first paint (it waits for the code on screen: enhance.js, hold).
+    const frame = () => requestAnimationFrame(() => setTimeout(() => {
+      if (getComputedStyle(document.getElementById('ro-doc')).visibility === 'hidden') return frame();
+      const cb = document.getElementById('t-sql');
+      resolve({ warmDone, hl: cb.dataset.hl, colored: !!cb.querySelector('pre.shiki span[style]') });
+    }, 0));
+    frame();
+  }));
   await page.waitForTimeout(8000);
   const markedAfter = await page.evaluate(() => performance.getEntriesByName('readout-hl-warm').length > 0);
-  check('a grammar the document requests mid-warm-up is compiled before its apply, which colours it', sqlIn && mid.hl === 'done' && mid.colored, JSON.stringify({ sqlIn, ...mid }));
+  check('a grammar the document requests mid-warm-up is compiled before its apply, which colours it in its first paint', sqlIn && mid.hl === 'done' && mid.colored, JSON.stringify({ sqlIn, ...mid }));
   check('the apply drops the spare jobs left', mid.warmDone || !markedAfter, JSON.stringify({ ...mid, markedAfter }));
   await page.close();
   // A window taking the spare right after warm() (a rapid second open)
   // stops its spare-only grammars at the next step: none is fetched after
-  // it, and the one in flight is not registered (its block is not coloured
-  // in its apply; it loads as the block's own, as on any page not warmed).
+  // it, and the one in flight is not registered (it loads as a block's own,
+  // as on any page not warmed). The first spare grammar's import is held
+  // back 800 ms, so it is the one in flight whatever the machine's speed.
   requests.length = 0;
+  delays.push([/\/chunks\/javascript-/, 800]);
   page = await browser.newPage({ viewport: { width: 700, height: 800 } });
   collectPageErrors(page, errors);
   await page.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
@@ -1338,15 +1335,17 @@ const v36 = patch([
   await page.waitForTimeout(3000);
   const later = spareOnly();
   // The chain stopped (one at a time: the last fetched was the one in
-  // flight when the page was taken), and that one is not registered: its
-  // block is not coloured in its apply.
+  // flight when the page was taken), and that one is not registered (the
+  // highlighter's grammars: it loads as a block's own, as on any page not
+  // warmed). The worker asks the page before each spare step and before
+  // registering a spare grammar: the page's word, not a message's timing.
   const inFlight = later[later.length - 1];
-  const hl = inFlight ? await page.evaluate(lang => {
-    window.readout.apply({ version: 2, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
-      ops: [{ op: 'insert', slot: 1, after: 0, kind: 'code', cjk: false, html: `<div class="code-block" id="t-in" data-lang="${lang}"><pre><code>x = 1</code></pre></div>` }] });
-    return document.getElementById('t-in').dataset.hl;
-  }, inFlight) : null;
-  check('a window taking the spare right after warm() stops its spare-only grammars', later.length < 9 && hl !== 'done', JSON.stringify({ later, inFlight, hl }));
+  await page.evaluate(() => window.readout.loadedLangs());
+  await until(page, () => performance.getEntriesByName('readout-hl-langs').length > 0, 10000);
+  const langs = await page.evaluate(() => performance.getEntriesByName('readout-hl-langs')[0]?.detail ?? null);
+  delays.length = 0;
+  const spareIn = (langs || []).filter(l => ['javascript', 'python', 'swift', 'go', 'rust', 'yaml', 'diff', 'markdown', 'sql'].includes(l));
+  check('a window taking the spare right after warm() stops its spare-only grammars', ['', 'javascript'].includes(later.join()) && !!langs && spareIn.length === 0, JSON.stringify({ later, inFlight, langs }));
   await page.close();
 }
 

@@ -45,18 +45,27 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
             return fail(task, 404)
         }
         guard let data = try? Data(contentsOf: fileURL) else { return fail(task, 404) }
-        let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: [
+        var headers = [
             "Content-Type": Self.mimeType(fileURL.pathExtension),
             "Content-Length": String(data.count),
             "Cache-Control": "no-cache",
             "Access-Control-Allow-Origin": "*",
-        ])!
+        ]
+        // The highlighting worker's own policy (a worker takes the one its
+        // script is served with, not the page's): its modules from the app's
+        // files, nothing else, no network.
+        if url.host == "app" && url.path == "/hl-worker.js" { headers["Content-Security-Policy"] = Self.workerPolicy }
+        let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: headers)!
         task.didReceive(response)
         task.didReceive(data)
         task.didFinish()
     }
 
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
+
+    /// The highlighting worker's Content-Security-Policy (web/test/privacy.test.mjs serves the same).
+    static let workerPolicy = "default-src 'none'; script-src 'self'"
+
 
     private func fail(_ task: WKURLSchemeTask, _ code: Int) {
         NSLog("Readout scheme handler: %d for %@", code, task.request.url?.absoluteString ?? "?")
