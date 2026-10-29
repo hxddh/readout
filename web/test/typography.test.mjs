@@ -287,6 +287,27 @@ for (const width of [1100, 600]) {
   await page.close();
 }
 
+// 1b. A tall diagram a first paint showed before it was drawn keeps its box
+//     on screen (enhance.js: reserve), the drawing fitted in it; printed, it
+//     is at its own size (the box is the screen's only).
+{
+  page = await open(800);
+  const tall = patch([['mermaid', `<div class="mermaid-block"><pre class="mermaid-src">flowchart TD\n  ${Array.from({ length: 12 }, (_, i) => `N${i} --> N${i + 1}`).join('\n  ')}</pre></div>`]]);
+  await page.evaluate(p => window.readout.apply(p), tall);
+  await until(page, () => !!document.querySelector('.mermaid-block.done svg'));
+  const size = () => page.evaluate(() => {
+    const b = document.querySelector('.mermaid-block'), svg = b.querySelector('svg'), vb = svg.viewBox.baseVal, r = svg.getBoundingClientRect();
+    return { reserved: b.classList.contains('reserved'), block: Math.round(b.getBoundingClientRect().height), svg: Math.round(r.height), natural: Math.round(r.width * vb.height / vb.width) };
+  });
+  const screen = await size();
+  await page.emulateMedia({ media: 'print' });
+  const printed = await size();
+  await page.emulateMedia({ media: 'screen' });
+  check('a tall diagram drawn after the first paint keeps its box on screen', screen.reserved && screen.svg < screen.natural - 50 && screen.svg <= screen.block, JSON.stringify(screen));
+  check('printed, a diagram in its box is at its own size', printed.reserved && Math.abs(printed.svg - printed.natural) <= 1 && printed.block >= printed.svg, JSON.stringify(printed));
+  await page.close();
+}
+
 // 8. Printing a dark page prints light: dark text, Shiki's light colours, wrapped tables.
 page = await open(800, true);
 await page.evaluate(p => window.readout.apply(p), doc);
