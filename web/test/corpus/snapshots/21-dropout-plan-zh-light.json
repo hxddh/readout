@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "c4bf7307",
+   "style": "c04e6745",
    "content": "1b28e7cb",
    "text": "Dropout 与正则化章节实现计划"
   },
@@ -15,7 +15,7 @@
    "kind": "quote",
    "top": 71,
    "h": 96,
-   "style": "ae1c0a0c",
+   "style": "f21eda32",
    "content": "bb9c2018",
    "text": "For agentic workers: REQUIRED SUB-SKILL: Use sup"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 166,
    "h": 74,
-   "style": "36aee33b",
+   "style": "8bfe869d",
    "content": "34cba4fc",
    "text": "Goal: 在 00-Prerequisites/regularization/ 下新建正则化与"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 240,
    "h": 102,
-   "style": "e5aad6d6",
+   "style": "7a797cb0",
    "content": "bbe35a35",
    "text": "Architecture: 新建独立目录 00-Prerequisites/regulariza"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 342,
    "h": 46,
-   "style": "7c2d6abb",
+   "style": "992d0c09",
    "content": "385dde6b",
    "text": "Tech Stack: Markdown (含 Mermaid 图)、Python/PyTorc"
   },
@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 387,
    "h": 70,
-   "style": "32156b19",
+   "style": "fd242567",
    "content": "8057b7aa",
    "text": "Design Spec: docs/superpowers/specs/2026-04-02-d"
   },
@@ -60,7 +60,7 @@
    "kind": "rule",
    "top": 457,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 504,
    "h": 32,
-   "style": "09250b84",
+   "style": "d204cbf6",
    "content": "3c86b3e2",
    "text": "Task 1: 创建 regularization 目录和 README.md 主文件"
   },
@@ -78,7 +78,7 @@
    "kind": "paragraph",
    "top": 536,
    "h": 32,
-   "style": "c08b1d26",
+   "style": "605d8800",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 569,
    "h": 35,
-   "style": "cd730571",
+   "style": "4517bda7",
    "content": "55f84e74",
    "text": "Create: 00-Prerequisites/regularization/README.m"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 604,
    "h": 47,
-   "style": "fa83a743",
+   "style": "abb57c8d",
    "content": "ba4a68f2",
    "text": "Step 1: 创建目录"
   },
@@ -105,7 +105,7 @@
    "kind": "code",
    "top": 650,
    "h": 62,
-   "style": "a9405ab1",
+   "style": "c1c6df63",
    "content": "1215ca3e",
    "text": "mkdir -p 00-Prerequisites/regularization"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 712,
    "h": 47,
-   "style": "0d071f7c",
+   "style": "7d5336c2",
    "content": "a467aaba",
    "text": "Step 2: 写入 README.md 完整内容"
   },
@@ -123,7 +123,7 @@
    "kind": "paragraph",
    "top": 759,
    "h": 74,
-   "style": "5849f464",
+   "style": "380b5fb2",
    "content": "bf41e879",
    "text": "写入 00-Prerequisites/regularization/README.md，完整内"
   },
@@ -132,7 +132,7 @@
    "kind": "code",
    "top": 832,
    "h": 1182,
-   "style": "1df16fb7",
+   "style": "5e8ab4a5",
    "content": "b92606c7",
    "text": "# 为什么模型会\"死记硬背\"？—— 正则化与 Dropout ## 这个问题从哪来 > 2012"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 2014,
    "h": 74,
-   "style": "65fbf74a",
+   "style": "ac5ee80c",
    "content": "7d3fe198",
    "text": "过拟合的根源是模型容量 > 数据提供的信息量。参数越多、数据越少，模型越有\"余力\"去记忆噪声而非"
   },
@@ -150,7 +150,7 @@
    "kind": "paragraph",
    "top": 2088,
    "h": 74,
-   "style": "bd3b31a4",
+   "style": "e026a2a2",
    "content": "81115ed9",
    "text": "诊断方法很简单：画训练 loss 和验证 loss 的曲线。当两条线开始分叉——训练 loss "
   },
@@ -159,7 +159,7 @@
    "kind": "quote",
    "top": 2161,
    "h": 74,
-   "style": "deafc92c",
+   "style": "86125172",
    "content": "38cf41de",
    "text": "你要记住：正则化的本质不是\"让模型变差\"，而是\"限制有效容量\"，让模型把有限的容量花在学习规律而"
   },
@@ -168,7 +168,7 @@
    "kind": "heading",
    "top": 2235,
    "h": 42,
-   "style": "6d5aa3a0",
+   "style": "aef0c74a",
    "content": "db1a9ac1",
    "text": "2.2 Dropout：核心机制"
   },
@@ -177,7 +177,7 @@
    "kind": "mermaid",
    "top": 2277,
    "h": 429,
-   "style": "53f50c00",
+   "style": "93747836",
    "content": "7b9c0cd5",
    "text": "graph TD H[\"隐藏层输出 h\\n(batch, hidden)\"]:::input M"
   },
@@ -186,7 +186,7 @@
    "kind": "paragraph",
    "top": 2705,
    "h": 34,
-   "style": "5fccf8f0",
+   "style": "28f5af8a",
    "content": "6a19ce84",
    "text": "Inverted Dropout 的操作分三步："
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 2740,
    "h": 32,
-   "style": "280f6c16",
+   "style": "6a88be3c",
    "content": "cbb32ef1",
    "text": "生成掩码：mi∼Bernoulli(1−p)m_i \\sim \\text{Bernoulli}("
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 2772,
    "h": 32,
-   "style": "a730bcb8",
+   "style": "29b20efa",
    "content": "7a9fa581",
    "text": "逐元素相乘：h~i=mi⋅hi\\tilde{h}_i = m_i \\cdot h_ih~i​=m"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2803,
    "h": 46,
-   "style": "551ea4a3",
+   "style": "003dd025",
    "content": "b5b6d2da",
    "text": "缩放：h~i=mi⋅hi1−p\\tilde{h}_i = \\frac{m_i \\cdot h_i"
   },
@@ -222,7 +222,7 @@
    "kind": "paragraph",
    "top": 2849,
    "h": 76,
-   "style": "8be25984",
+   "style": "05c365da",
    "content": "c80fab2a",
    "text": "为什么除以 (1−p)(1-p)(1−p)？ 这是 inverted dropout 的关键：在"
   },
@@ -231,7 +231,7 @@
    "kind": "paragraph",
    "top": 2925,
    "h": 102,
-   "style": "9aad0059",
+   "style": "9477565b",
    "content": "f6a31486",
    "text": "从贝叶斯视角看，Dropout 等价于对指数级多个子网络做模型平均（model averagin"
   },
@@ -240,7 +240,7 @@
    "kind": "quote",
    "top": 3026,
    "h": 74,
-   "style": "791d117c",
+   "style": "614c47ba",
    "content": "d46c82cb",
    "text": "你要记住：Dropout 推理时必须关闭——它不是在给网络加噪声，是在做模型平均的近似。忘记 m"
   },
@@ -249,7 +249,7 @@
    "kind": "heading",
    "top": 3100,
    "h": 42,
-   "style": "6d5aa3a0",
+   "style": "aef0c74a",
    "content": "ae96179c",
    "text": "2.3 权重衰减（L2 正则化）"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 3142,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "9b0f2a37",
    "text": "在损失函数后加一个对参数大小的惩罚项："
   },
@@ -267,7 +267,7 @@
    "kind": "math",
    "top": 3187,
    "h": 67,
-   "style": "23a7722f",
+   "style": "4616299d",
    "content": "f11dc6a7",
    "text": "Lreg=L+λ2∥θ∥2L_{reg} = L + \\frac{\\lambda}{2}\\|\\t"
   },
@@ -276,7 +276,7 @@
    "kind": "paragraph",
    "top": 3255,
    "h": 47,
-   "style": "32a2aa96",
+   "style": "ca83259c",
    "content": "f4188227",
    "text": "梯度更新时多出一项 λθ\\lambda \\thetaλθ，效果是每次更新都把权重往零拉一点——这"
   },
@@ -285,7 +285,7 @@
    "kind": "paragraph",
    "top": 3301,
    "h": 46,
-   "style": "af515823",
+   "style": "7b3db9f5",
    "content": "83d9d9a7",
    "text": "与 Dropout 的对比："
   },
@@ -294,7 +294,7 @@
    "kind": "table",
    "top": 3347,
    "h": 224,
-   "style": "5ba40127",
+   "style": "b456d0b9",
    "content": "7228337d",
    "text": "维度L2 正则化Dropout作用对象参数值的大小神经元的激活直觉不允许任何权重过大不允许任何神"
   },
@@ -303,7 +303,7 @@
    "kind": "paragraph",
    "top": 3571,
    "h": 131,
-   "style": "973ae9c9",
+   "style": "2a291887",
    "content": "b6194741",
    "text": "PyTorch 中 optimizer = torch.optim.AdamW(model.pa"
   },
@@ -312,7 +312,7 @@
    "kind": "heading",
    "top": 3701,
    "h": 42,
-   "style": "6d5aa3a0",
+   "style": "aef0c74a",
    "content": "f14ed2f1",
    "text": "2.4 变体演进"
   },
@@ -321,7 +321,7 @@
    "kind": "paragraph",
    "top": 3743,
    "h": 44,
-   "style": "4ffa433d",
+   "style": "3eb794af",
    "content": "aa48c1bd",
    "text": "DropConnect（2013, Wan et al.）"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 3787,
    "h": 74,
-   "style": "58073c57",
+   "style": "0bf487b9",
    "content": "2d9a787d",
    "text": "不 drop 激活值，而是 drop 权重矩阵的元素。比 Dropout 更激进——每次前向传播"
   },
@@ -339,7 +339,7 @@
    "kind": "math",
    "top": 3860,
    "h": 52,
-   "style": "a641175c",
+   "style": "677c6296",
    "content": "3db0bc3f",
    "text": "W~=M⊙W\\tilde{W} = M \\odot WW~=M⊙W"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 3913,
    "h": 47,
-   "style": "67d72aa3",
+   "style": "7f4b0f7d",
    "content": "40862e2b",
    "text": "其中 MMM 是与 WWW 同形状的 Bernoulli 掩码。"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 3959,
    "h": 46,
-   "style": "d6d0658a",
+   "style": "2477c240",
    "content": "5c0271fd",
    "text": "优势：更强的正则化效果。代价：实现更复杂，训练更慢，实际使用较少。"
   },
@@ -366,7 +366,7 @@
    "kind": "paragraph",
    "top": 4005,
    "h": 44,
-   "style": "47456c49",
+   "style": "a3ba1193",
    "content": "34015de4",
    "text": "SpatialDropout（2014）"
   },
@@ -375,7 +375,7 @@
    "kind": "paragraph",
    "top": 4048,
    "h": 74,
-   "style": "bd3b31a4",
+   "style": "e026a2a2",
    "content": "854164ee",
    "text": "标准 Dropout 对特征图的每个像素独立 drop，但 CNN 的特征图中相邻像素高度相关—"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 4122,
    "h": 75,
-   "style": "2eb3eefd",
+   "style": "167b3cf3",
    "content": "d9ff2f1c",
    "text": "SpatialDropout 直接 drop 整个 channel：以概率 ppp 把某个特征图"
   },
@@ -393,7 +393,7 @@
    "kind": "code",
    "top": 4197,
    "h": 102,
-   "style": "f815130f",
+   "style": "30052e35",
    "content": "d9363994",
    "text": "# 标准 Dropout vs SpatialDropout nn.Dropout(p) # 每"
   },
@@ -402,7 +402,7 @@
    "kind": "paragraph",
    "top": 4298,
    "h": 44,
-   "style": "13fa06d9",
+   "style": "5a83b94f",
    "content": "a4050c6f",
    "text": "DropBlock（2018, Ghose et al.）"
   },
@@ -411,7 +411,7 @@
    "kind": "paragraph",
    "top": 4342,
    "h": 74,
-   "style": "06a12889",
+   "style": "560bf69b",
    "content": "dd609757",
    "text": "SpatialDropout drop 整个 channel，但有时特征的相关性不在整个通道上，"
   },
@@ -420,7 +420,7 @@
    "kind": "paragraph",
    "top": 4416,
    "h": 102,
-   "style": "a9219d29",
+   "style": "e438f45b",
    "content": "3c56325d",
    "text": "DropBlock drop 的是连续的方形区域。参数 block_size 控制区域大小，是 "
   },
@@ -429,7 +429,7 @@
    "kind": "paragraph",
    "top": 4517,
    "h": 44,
-   "style": "354fb7fa",
+   "style": "cb2544dc",
    "content": "42b15946",
    "text": "Dropout in RNNs（2014, Zaremba et al.）"
   },
@@ -438,7 +438,7 @@
    "kind": "paragraph",
    "top": 4561,
    "h": 74,
-   "style": "bd3b31a4",
+   "style": "e026a2a2",
    "content": "a208c9f9",
    "text": "RNN 的循环连接是时间步之间传递信息的通道。如果在这里加 Dropout，每一步都可能丢掉关键"
   },
@@ -447,7 +447,7 @@
    "kind": "paragraph",
    "top": 4634,
    "h": 74,
-   "style": "44425eee",
+   "style": "085bab00",
    "content": "0b7ce773",
    "text": "Zaremba 的方案：只在非循环连接上（层与层之间）加 Dropout，循环连接上不加。这样既"
   },
@@ -456,7 +456,7 @@
    "kind": "code",
    "top": 4708,
    "h": 102,
-   "style": "d52f5300",
+   "style": "f53fc5ae",
    "content": "8adb3c1a",
    "text": "# PyTorch 的 LSTM/GRU 内置了这个策略 nn.LSTM(input_size,"
   },
@@ -465,7 +465,7 @@
    "kind": "heading",
    "top": 4810,
    "h": 42,
-   "style": "6d5aa3a0",
+   "style": "aef0c74a",
    "content": "bdbc1f42",
    "text": "2.5 其他正则化手段（点到为止）"
   },
@@ -474,7 +474,7 @@
    "kind": "paragraph",
    "top": 4852,
    "h": 74,
-   "style": "567e9e4a",
+   "style": "42c13904",
    "content": "6ab19d9b",
    "text": "Early Stopping：验证集 loss 连续 N 个 epoch 不降就停止训练。N 称"
   },
@@ -483,7 +483,7 @@
    "kind": "paragraph",
    "top": 4925,
    "h": 102,
-   "style": "605cb664",
+   "style": "caacd656",
    "content": "41266925",
    "text": "Data Augmentation：对训练数据做随机变换（图像的裁剪、翻转、颜色抖动；文本的同义"
   },
@@ -492,7 +492,7 @@
    "kind": "paragraph",
    "top": 5027,
    "h": 74,
-   "style": "fe319809",
+   "style": "8053dc5b",
    "content": "1616bd57",
    "text": "Label Smoothing：把硬标签 [0, 1, 0] 软化为 [0.1, 0.8, 0."
   },
@@ -501,7 +501,7 @@
    "kind": "quote",
    "top": 5100,
    "h": 74,
-   "style": "deafc92c",
+   "style": "86125172",
    "content": "6ff67586",
    "text": "你要记住：正则化手段没有银弹，实际效果取决于数据、模型和任务的组合。最常见的组合是 Data A"
   },
@@ -510,7 +510,7 @@
    "kind": "heading",
    "top": 5174,
    "h": 42,
-   "style": "6d5aa3a0",
+   "style": "aef0c74a",
    "content": "916b6fc1",
    "text": "2.6 渐进式实现"
   },
@@ -519,7 +519,7 @@
    "kind": "paragraph",
    "top": 5216,
    "h": 46,
-   "style": "8a50c545",
+   "style": "803c7e97",
    "content": "42ce89db",
    "text": "Step 1 · 纯 NumPy 实现 inverted dropout（核心逻辑，可独立运行）"
   },
@@ -528,7 +528,7 @@
    "kind": "code",
    "top": 5261,
    "h": 342,
-   "style": "14f5294f",
+   "style": "016b12a9",
    "content": "dea170ee",
    "text": "# 实现 inverted dropout：训练时 mask+缩放，推理时直接通过 import"
   },
@@ -537,7 +537,7 @@
    "kind": "paragraph",
    "top": 5603,
    "h": 46,
-   "style": "5bc8440a",
+   "style": "6da4c8d4",
    "content": "53d65c47",
    "text": "Step 2 · PyTorch nn.Dropout + train/eval 切换"
   },
@@ -546,7 +546,7 @@
    "kind": "code",
    "top": 5649,
    "h": 402,
-   "style": "a8d2b3d9",
+   "style": "fee5b4bb",
    "content": "026684cc",
    "text": "# 对比手动实现和 PyTorch 内置，验证 train/eval 模式切换行为 import"
   },
@@ -555,7 +555,7 @@
    "kind": "paragraph",
    "top": 6051,
    "h": 46,
-   "style": "cd4a4250",
+   "style": "c5bf5b5a",
    "content": "52c7db27",
    "text": "Step 3 · CNN 中 SpatialDropout 的使用"
   },
@@ -564,7 +564,7 @@
    "kind": "code",
    "top": 6096,
    "h": 362,
-   "style": "2a5f8bf7",
+   "style": "34f7479d",
    "content": "5a889ca7",
    "text": "# SpatialDropout drop 整个 channel，适配 CNN 特征图的空间相关"
   },
@@ -573,7 +573,7 @@
    "kind": "paragraph",
    "top": 6458,
    "h": 46,
-   "style": "52079af8",
+   "style": "39dd3f86",
    "content": "5f9600ce",
    "text": "Step 4 · 对比实验：不同 Dropout 率下的 train/val loss"
   },
@@ -582,7 +582,7 @@
    "kind": "code",
    "top": 6504,
    "h": 1202,
-   "style": "2175abb4",
+   "style": "2fa6b26e",
    "content": "4333ce7a",
    "text": "# 验证 Dropout 率对过拟合的影响 # 同一 MLP，仅改变 dropout rate，"
   },
@@ -591,7 +591,7 @@
    "kind": "rule",
    "top": 7705,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -600,7 +600,7 @@
    "kind": "heading",
    "top": 7753,
    "h": 42,
-   "style": "eb6fdb62",
+   "style": "3bdd2d00",
    "content": "a145960c",
    "text": "3. 工程陷阱"
   },
@@ -609,7 +609,7 @@
    "kind": "paragraph",
    "top": 7795,
    "h": 34,
-   "style": "5fccf8f0",
+   "style": "28f5af8a",
    "content": "714276f8",
    "text": "优先级从高到低："
   },
@@ -618,7 +618,7 @@
    "kind": "listItem",
    "top": 7830,
    "h": 66,
-   "style": "f7e640a8",
+   "style": "4eb33d2e",
    "content": "4b1c5841",
    "text": "Dropout rate 过高（> 0.5） → 浅层网络欠拟合，训练 loss 降不下去处置："
   },
@@ -627,7 +627,7 @@
    "kind": "listItem",
    "top": 7895,
    "h": 66,
-   "style": "a3be7eff",
+   "style": "14cab339",
    "content": "1e5beece",
    "text": "忘记 model.eval() → 推理时 Dropout 仍然生效，每次预测结果不同处置：推理"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 7961,
    "h": 66,
-   "style": "d12a0d88",
+   "style": "f6ebe3b2",
    "content": "eba0c4db",
    "text": "weight_decay + Adam 的互动 → 标准 Adam 中 weight_decay"
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 8027,
    "h": 94,
-   "style": "9ae4f677",
+   "style": "4211e2a1",
    "content": "20fe7fe1",
    "text": "BatchNorm 和 Dropout 顺序不当 → Dropout 改变激活分布，BatchN"
   },
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 8121,
    "h": 75,
-   "style": "272e93a0",
+   "style": "8f7e1832",
    "content": "416fc4a8",
    "text": "RNN 中 Dropout 加错位置 → 在循环连接上加 Dropout 会破坏长程依赖处置：使"
   },
@@ -663,7 +663,7 @@
    "kind": "rule",
    "top": 8196,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -672,7 +672,7 @@
    "kind": "heading",
    "top": 8243,
    "h": 42,
-   "style": "eb6fdb62",
+   "style": "3bdd2d00",
    "content": "c610782c",
    "text": "演进笔记"
   },
@@ -681,7 +681,7 @@
    "kind": "quote",
    "top": 8286,
    "h": 203,
-   "style": "edde8e6b",
+   "style": "4dbb4511",
    "content": "5846674b",
    "text": "正则化的遗产：从 2012 年 Dropout 开始，正则化手段从\"手动加噪声\"演变为\"自适应正"
   },
@@ -690,7 +690,7 @@
    "kind": "paragraph",
    "top": 8489,
    "h": 46,
-   "style": "7d0de682",
+   "style": "701e29b8",
    "content": "44086af3",
    "text": "→ 下一章：训练与优化 — 为什么加深网络之后训练反而变差了？"
   },
@@ -699,7 +699,7 @@
    "kind": "rule",
    "top": 8535,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -708,7 +708,7 @@
    "kind": "paragraph",
    "top": 8582,
    "h": 46,
-   "style": "628ef2dd",
+   "style": "de789b6f",
    "content": "625bc5f5",
    "text": "上一章: 深度学习基础 | 下一章: 训练与优化"
   },
@@ -717,7 +717,7 @@
    "kind": "code",
    "top": 8628,
    "h": 162,
-   "style": "fe53f391",
+   "style": "4d40d07f",
    "content": "08dc3f5c",
    "text": "- [ ] **Step 3: 检查文件是否正确写入** ```bash head -5 00-"
   },
@@ -726,7 +726,7 @@
    "kind": "paragraph",
    "top": 8789,
    "h": 46,
-   "style": "d6d0658a",
+   "style": "2477c240",
    "content": "c313536b",
    "text": "预期：看到标题行，总行数约 250-280 行。"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 8835,
    "h": 47,
-   "style": "4f8551ea",
+   "style": "07c07724",
    "content": "eebdf13d",
    "text": "Step 4: 提交"
   },
@@ -744,7 +744,7 @@
    "kind": "code",
    "top": 8881,
    "h": 82,
-   "style": "811bab0e",
+   "style": "6115d4c8",
    "content": "02f31071",
    "text": "git add 00-Prerequisites/regularization/README.m"
   },
@@ -753,7 +753,7 @@
    "kind": "rule",
    "top": 8963,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -762,7 +762,7 @@
    "kind": "heading",
    "top": 9011,
    "h": 32,
-   "style": "09250b84",
+   "style": "d204cbf6",
    "content": "7d015610",
    "text": "Task 2: 更新 00-Prerequisites/README.md"
   },
@@ -771,7 +771,7 @@
    "kind": "paragraph",
    "top": 9043,
    "h": 32,
-   "style": "c08b1d26",
+   "style": "605d8800",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 9075,
    "h": 35,
-   "style": "2ddf1c79",
+   "style": "cfb6c453",
    "content": "847efd11",
    "text": "Modify: 00-Prerequisites/README.md"
   },
@@ -789,7 +789,7 @@
    "kind": "listItem",
    "top": 9110,
    "h": 47,
-   "style": "d1552276",
+   "style": "f23d6ec8",
    "content": "0bd52508",
    "text": "Step 1: 添加 regularization 模块链接"
   },
@@ -798,7 +798,7 @@
    "kind": "paragraph",
    "top": 9157,
    "h": 46,
-   "style": "2dda3859",
+   "style": "ef681883",
    "content": "fa3daa6d",
    "text": "在 ## 本阶段内容 下，### [深度学习基础] 之后，添加新的子节。将："
   },
@@ -807,7 +807,7 @@
    "kind": "code",
    "top": 9203,
    "h": 162,
-   "style": "1aeb7766",
+   "style": "2e3faea0",
    "content": "696fccb1",
    "text": "### [深度学习基础](deep-learning-basics/README.md) - 神"
   },
@@ -816,7 +816,7 @@
    "kind": "paragraph",
    "top": 9364,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -825,7 +825,7 @@
    "kind": "code",
    "top": 9410,
    "h": 262,
-   "style": "b9c56675",
+   "style": "6e01d31b",
    "content": "fdf590c6",
    "text": "### [深度学习基础](deep-learning-basics/README.md) - 神"
   },
@@ -834,7 +834,7 @@
    "kind": "paragraph",
    "top": 9672,
    "h": 46,
-   "style": "e1775677",
+   "style": "cb304d55",
    "content": "69bfae7a",
    "text": "注意：原来 深度学习基础 条目下的 过拟合与正则化基础 移除，因为这个内容现在由新模块承担。"
   },
@@ -843,7 +843,7 @@
    "kind": "listItem",
    "top": 9717,
    "h": 47,
-   "style": "d53fa1ab",
+   "style": "0d6b6d85",
    "content": "6b833d81",
    "text": "Step 2: 验证改动"
   },
@@ -852,7 +852,7 @@
    "kind": "code",
    "top": 9764,
    "h": 62,
-   "style": "edf8a5f4",
+   "style": "e48c23be",
    "content": "1bec9715",
    "text": "cat 00-Prerequisites/README.md"
   },
@@ -861,7 +861,7 @@
    "kind": "paragraph",
    "top": 9826,
    "h": 46,
-   "style": "8b6c9a7f",
+   "style": "fb465b11",
    "content": "8c37eb82",
    "text": "预期：看到两个 ### 子节，且 过拟合与正则化基础 不再出现在 深度学习基础 下。"
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 9871,
    "h": 47,
-   "style": "4f8551ea",
+   "style": "07c07724",
    "content": "0ce1b68c",
    "text": "Step 3: 提交"
   },
@@ -879,7 +879,7 @@
    "kind": "code",
    "top": 9918,
    "h": 82,
-   "style": "e8e91374",
+   "style": "2baff616",
    "content": "25a1dddc",
    "text": "git add 00-Prerequisites/README.md git commit -m"
   },
@@ -888,7 +888,7 @@
    "kind": "rule",
    "top": 10000,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -897,7 +897,7 @@
    "kind": "heading",
    "top": 10047,
    "h": 32,
-   "style": "09250b84",
+   "style": "d204cbf6",
    "content": "dc230e9c",
    "text": "Task 3: 更新 deep-learning-basics 导航和交叉引用"
   },
@@ -906,7 +906,7 @@
    "kind": "paragraph",
    "top": 10079,
    "h": 32,
-   "style": "c08b1d26",
+   "style": "605d8800",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -915,7 +915,7 @@
    "kind": "listItem",
    "top": 10111,
    "h": 35,
-   "style": "24ee08e5",
+   "style": "5b5c03f7",
    "content": "2107ba33",
    "text": "Modify: 00-Prerequisites/deep-learning-basics/RE"
   },
@@ -924,7 +924,7 @@
    "kind": "listItem",
    "top": 10147,
    "h": 47,
-   "style": "61553f5d",
+   "style": "6848663b",
    "content": "8d3d2ea8",
    "text": "Step 1: 更新末尾导航链接"
   },
@@ -933,7 +933,7 @@
    "kind": "paragraph",
    "top": 10193,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a7d4b7f5",
    "text": "将文件末尾的导航从："
   },
@@ -942,7 +942,7 @@
    "kind": "code",
    "top": 10239,
    "h": 62,
-   "style": "15d635d3",
+   "style": "0a05a34d",
    "content": "ba3f37d8",
    "text": "**上一章**：[前置准备概览](../README.md) | **下一章**：[CNN 架构"
   },
@@ -951,7 +951,7 @@
    "kind": "paragraph",
    "top": 10301,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -960,7 +960,7 @@
    "kind": "code",
    "top": 10346,
    "h": 62,
-   "style": "ba19dadc",
+   "style": "feafdd4a",
    "content": "c1e4dfbc",
    "text": "**上一章**：[前置准备概览](../README.md) | **下一章**：[正则化与 D"
   },
@@ -969,7 +969,7 @@
    "kind": "listItem",
    "top": 10408,
    "h": 47,
-   "style": "e79b3a6a",
+   "style": "ba11bf48",
    "content": "46a9325a",
    "text": "Step 2: 更新演进笔记中的链接"
   },
@@ -978,7 +978,7 @@
    "kind": "paragraph",
    "top": 10455,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "f6fc0d29",
    "text": "将演进笔记中的："
   },
@@ -987,7 +987,7 @@
    "kind": "code",
    "top": 10500,
    "h": 62,
-   "style": "66c4750d",
+   "style": "85f60aab",
    "content": "23d52e1a",
    "text": "→ 下一章：[CNN 架构 — 为什么全连接网络处理图像太浪费了？](../../01-Visu"
   },
@@ -996,7 +996,7 @@
    "kind": "paragraph",
    "top": 10562,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -1005,7 +1005,7 @@
    "kind": "code",
    "top": 10608,
    "h": 62,
-   "style": "cd697e47",
+   "style": "5af54fcd",
    "content": "08c365a9",
    "text": "→ 下一章：[正则化与 Dropout — 为什么模型会\"死记硬背\"？](../regulari"
   },
@@ -1014,7 +1014,7 @@
    "kind": "listItem",
    "top": 10669,
    "h": 47,
-   "style": "a7e46ff3",
+   "style": "bd050da9",
    "content": "9ece78bb",
    "text": "Step 3: 在 Step 3 渐进式实现中添加交叉引用"
   },
@@ -1023,7 +1023,7 @@
    "kind": "paragraph",
    "top": 10716,
    "h": 46,
-   "style": "8f87a2c4",
+   "style": "3188cd6a",
    "content": "3a287cd6",
    "text": "在 Step 3 代码块之前的注释中，Dropout 防过拟合 后面追加交叉引用提示。将："
   },
@@ -1032,7 +1032,7 @@
    "kind": "code",
    "top": 10762,
    "h": 122,
-   "style": "90d331ed",
+   "style": "a33f0fa3",
    "content": "67bf753b",
    "text": "**Step 3 · 工程完善（BatchNorm + Dropout + 权重初始化）** `"
   },
@@ -1041,7 +1041,7 @@
    "kind": "paragraph",
    "top": 10883,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -1050,7 +1050,7 @@
    "kind": "code",
    "top": 10929,
    "h": 162,
-   "style": "41caa76c",
+   "style": "f3e1f8ee",
    "content": "115da87e",
    "text": "**Step 3 · 工程完善（BatchNorm + Dropout + 权重初始化）** >"
   },
@@ -1059,7 +1059,7 @@
    "kind": "listItem",
    "top": 11091,
    "h": 47,
-   "style": "a678e9a3",
+   "style": "913dc49d",
    "content": "f34cfd80",
    "text": "Step 4: 同样在 Step 4 中添加交叉引用"
   },
@@ -1068,7 +1068,7 @@
    "kind": "paragraph",
    "top": 11137,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "3611dde2",
    "text": "在 Step 4 代码块前的注释行中，将："
   },
@@ -1077,7 +1077,7 @@
    "kind": "code",
    "top": 11183,
    "h": 82,
-   "style": "29a39cc7",
+   "style": "f0b75ad5",
    "content": "2fb21290",
    "text": "# 梯度裁剪防止爆炸；train/eval 模式切换影响 BatchNorm 和 Dropout"
   },
@@ -1086,7 +1086,7 @@
    "kind": "paragraph",
    "top": 11265,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -1095,7 +1095,7 @@
    "kind": "code",
    "top": 11310,
    "h": 102,
-   "style": "08e600a1",
+   "style": "8d5217fb",
    "content": "d8347834",
    "text": "# 梯度裁剪防止爆炸；train/eval 模式切换影响 BatchNorm 和 Dropout"
   },
@@ -1104,7 +1104,7 @@
    "kind": "listItem",
    "top": 11412,
    "h": 47,
-   "style": "d53fa1ab",
+   "style": "0d6b6d85",
    "content": "87c166c0",
    "text": "Step 5: 验证改动"
   },
@@ -1113,7 +1113,7 @@
    "kind": "code",
    "top": 11459,
    "h": 62,
-   "style": "ee837375",
+   "style": "027396cf",
    "content": "f9a41ee3",
    "text": "tail -5 00-Prerequisites/deep-learning-basics/RE"
   },
@@ -1122,7 +1122,7 @@
    "kind": "paragraph",
    "top": 11520,
    "h": 46,
-   "style": "696d7383",
+   "style": "2358e165",
    "content": "f69d8a38",
    "text": "预期：末尾导航指向 ../regularization/README.md。"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 11566,
    "h": 47,
-   "style": "4f8551ea",
+   "style": "07c07724",
    "content": "26f86317",
    "text": "Step 6: 提交"
   },
@@ -1140,7 +1140,7 @@
    "kind": "code",
    "top": 11612,
    "h": 82,
-   "style": "698fb525",
+   "style": "5b79105f",
    "content": "3ed35d99",
    "text": "git add 00-Prerequisites/deep-learning-basics/RE"
   },
@@ -1149,7 +1149,7 @@
    "kind": "rule",
    "top": 11694,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1158,7 +1158,7 @@
    "kind": "heading",
    "top": 11742,
    "h": 32,
-   "style": "9433a25d",
+   "style": "26c1a6d7",
    "content": "f4b412be",
    "text": "Task 4: 精简 training 章节的 Dropout 子节并添加交叉引用"
   },
@@ -1167,7 +1167,7 @@
    "kind": "paragraph",
    "top": 11774,
    "h": 32,
-   "style": "c08b1d26",
+   "style": "605d8800",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -1176,7 +1176,7 @@
    "kind": "listItem",
    "top": 11806,
    "h": 35,
-   "style": "ba45afee",
+   "style": "216005ec",
    "content": "0f11b01c",
    "text": "Modify: 01-Visual-Intelligence/training/README.m"
   },
@@ -1185,7 +1185,7 @@
    "kind": "listItem",
    "top": 11842,
    "h": 47,
-   "style": "9d82d9f7",
+   "style": "96c90c09",
    "content": "3c27c1f7",
    "text": "Step 1: 精简 2.2 小节"
   },
@@ -1194,7 +1194,7 @@
    "kind": "paragraph",
    "top": 11888,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "6fb18cca",
    "text": "将现有的 2.2 小节（约 8 行）替换为精简版 + 交叉引用。将："
   },
@@ -1203,7 +1203,7 @@
    "kind": "code",
    "top": 11934,
    "h": 222,
-   "style": "ee03b982",
+   "style": "8c2db268",
    "content": "e5c1c0ed",
    "text": "### 2.2 Dropout 训练时以概率 $p$ 随机将神经元输出置零，推理时所有神经元都激"
   },
@@ -1212,7 +1212,7 @@
    "kind": "paragraph",
    "top": 12155,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -1221,7 +1221,7 @@
    "kind": "code",
    "top": 12201,
    "h": 142,
-   "style": "3af110cf",
+   "style": "b3854b85",
    "content": "6a3151a1",
    "text": "### 2.2 Dropout 训练时以概率 $p$ 随机将神经元置零，推理时关闭。关键：**训"
   },
@@ -1230,7 +1230,7 @@
    "kind": "listItem",
    "top": 12343,
    "h": 47,
-   "style": "d53fa1ab",
+   "style": "0d6b6d85",
    "content": "6b833d81",
    "text": "Step 2: 验证改动"
   },
@@ -1239,7 +1239,7 @@
    "kind": "code",
    "top": 12389,
    "h": 62,
-   "style": "a504e628",
+   "style": "6cfeeaa6",
    "content": "7c0248cb",
    "text": "grep -n \"2.2 Dropout\" -A 5 01-Visual-Intelligenc"
   },
@@ -1248,7 +1248,7 @@
    "kind": "paragraph",
    "top": 12451,
    "h": 46,
-   "style": "f04b1d16",
+   "style": "e8df8238",
    "content": "d993b757",
    "text": "预期：看到精简后的内容，包含指向 00-Prerequisites/regularization"
   },
@@ -1257,7 +1257,7 @@
    "kind": "listItem",
    "top": 12497,
    "h": 47,
-   "style": "4f8551ea",
+   "style": "07c07724",
    "content": "0ce1b68c",
    "text": "Step 3: 提交"
   },
@@ -1266,7 +1266,7 @@
    "kind": "code",
    "top": 12543,
    "h": 82,
-   "style": "7365ab91",
+   "style": "c01fd9bb",
    "content": "ce3330fa",
    "text": "git add 01-Visual-Intelligence/training/README.m"
   },
@@ -1275,7 +1275,7 @@
    "kind": "rule",
    "top": 12625,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1284,7 +1284,7 @@
    "kind": "heading",
    "top": 12672,
    "h": 32,
-   "style": "09250b84",
+   "style": "d204cbf6",
    "content": "ce23da69",
    "text": "Task 5: 更新 Phase 01 概览"
   },
@@ -1293,7 +1293,7 @@
    "kind": "paragraph",
    "top": 12705,
    "h": 32,
-   "style": "c08b1d26",
+   "style": "605d8800",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -1302,7 +1302,7 @@
    "kind": "listItem",
    "top": 12737,
    "h": 35,
-   "style": "196806f5",
+   "style": "02ab6ba3",
    "content": "fb2c3225",
    "text": "Modify: 01-Visual-Intelligence/README.md"
   },
@@ -1311,7 +1311,7 @@
    "kind": "listItem",
    "top": 12772,
    "h": 47,
-   "style": "36a6f271",
+   "style": "901ace27",
    "content": "3e848dd7",
    "text": "Step 1: 确认并更新 training 模块描述"
   },
@@ -1320,7 +1320,7 @@
    "kind": "paragraph",
    "top": 12819,
    "h": 46,
-   "style": "2b5bfa37",
+   "style": "3dcf7c49",
    "content": "5f490e2c",
    "text": "在 ### [训练与优化](training/README.md) 下，将："
   },
@@ -1329,7 +1329,7 @@
    "kind": "code",
    "top": 12864,
    "h": 82,
-   "style": "37bc544e",
+   "style": "397583d4",
    "content": "c16383c4",
    "text": "Dropout、Batch Norm、数据增强、GPU 训练技巧 - 正则化：Dropout、D"
   },
@@ -1338,7 +1338,7 @@
    "kind": "paragraph",
    "top": 12946,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -1347,7 +1347,7 @@
    "kind": "code",
    "top": 12992,
    "h": 82,
-   "style": "8936e17e",
+   "style": "0a249154",
    "content": "fc6f8d16",
    "text": "Dropout、Batch Norm、数据增强、GPU 训练技巧 - 正则化：Dropout、D"
   },
@@ -1356,7 +1356,7 @@
    "kind": "listItem",
    "top": 13074,
    "h": 47,
-   "style": "d53fa1ab",
+   "style": "0d6b6d85",
    "content": "6b833d81",
    "text": "Step 2: 验证改动"
   },
@@ -1365,7 +1365,7 @@
    "kind": "code",
    "top": 13120,
    "h": 62,
-   "style": "57b17d8e",
+   "style": "2ef09fd8",
    "content": "02f9ac15",
    "text": "grep -n \"DropConnect\" 01-Visual-Intelligence/REA"
   },
@@ -1374,7 +1374,7 @@
    "kind": "paragraph",
    "top": 13182,
    "h": 46,
-   "style": "d6d0658a",
+   "style": "2477c240",
    "content": "2da00a84",
    "text": "预期：看到更新后的描述，包含指向前置章节的链接。"
   },
@@ -1383,7 +1383,7 @@
    "kind": "listItem",
    "top": 13228,
    "h": 47,
-   "style": "4f8551ea",
+   "style": "07c07724",
    "content": "0ce1b68c",
    "text": "Step 3: 提交"
   },
@@ -1392,7 +1392,7 @@
    "kind": "code",
    "top": 13274,
    "h": 82,
-   "style": "55c75cc4",
+   "style": "d2443e9a",
    "content": "ab9006e2",
    "text": "git add 01-Visual-Intelligence/README.md git com"
   },
@@ -1401,7 +1401,7 @@
    "kind": "rule",
    "top": 13356,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1410,7 +1410,7 @@
    "kind": "heading",
    "top": 13403,
    "h": 32,
-   "style": "09250b84",
+   "style": "d204cbf6",
    "content": "f92c7bc8",
    "text": "Task 6: 更新 Timeline 链接"
   },
@@ -1419,7 +1419,7 @@
    "kind": "paragraph",
    "top": 13435,
    "h": 32,
-   "style": "c08b1d26",
+   "style": "605d8800",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -1428,7 +1428,7 @@
    "kind": "listItem",
    "top": 13468,
    "h": 45,
-   "style": "8038863a",
+   "style": "3cdf0310",
    "content": "eec97ad5",
    "text": "Modify: 00-Timeline/README.md"
   },
@@ -1437,7 +1437,7 @@
    "kind": "paragraph",
    "top": 13513,
    "h": 46,
-   "style": "d6d0658a",
+   "style": "2477c240",
    "content": "5cd8adaa",
    "text": "需要更新三个年份的条目链接。"
   },
@@ -1446,7 +1446,7 @@
    "kind": "listItem",
    "top": 13558,
    "h": 47,
-   "style": "16145bdb",
+   "style": "bf7e3515",
    "content": "63819ef3",
    "text": "Step 1: 更新 2012 年 Dropout 条目"
   },
@@ -1455,7 +1455,7 @@
    "kind": "paragraph",
    "top": 13605,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "85270081",
    "text": "在 2012 同年关键工作速览表中，将 Dropout 行的所属模块从："
   },
@@ -1464,7 +1464,7 @@
    "kind": "code",
    "top": 13650,
    "h": 62,
-   "style": "84839fdd",
+   "style": "0c0ee0e3",
    "content": "37d56a1d",
    "text": "| Dropout | Hinton 组（Toronto） | 随机失活防过拟合，深度学习标准正"
   },
@@ -1473,7 +1473,7 @@
    "kind": "paragraph",
    "top": 13712,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -1482,7 +1482,7 @@
    "kind": "code",
    "top": 13758,
    "h": 62,
-   "style": "4d85abfc",
+   "style": "436f804a",
    "content": "4ee2b12d",
    "text": "| Dropout | Hinton 组（Toronto） | 随机失活防过拟合，深度学习标准正"
   },
@@ -1491,7 +1491,7 @@
    "kind": "listItem",
    "top": 13820,
    "h": 47,
-   "style": "f2605ca1",
+   "style": "5194707f",
    "content": "2d9fcd3d",
    "text": "Step 2: 更新 2013 年 DropConnect 条目"
   },
@@ -1500,7 +1500,7 @@
    "kind": "paragraph",
    "top": 13866,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "669d4ad6",
    "text": "在 2013 同年关键工作速览表中，将 DropConnect 行从："
   },
@@ -1509,7 +1509,7 @@
    "kind": "code",
    "top": 13912,
    "h": 62,
-   "style": "6f27f0a0",
+   "style": "34375fc2",
    "content": "f7560fc5",
    "text": "| DropConnect | Wan et al.（NYU） | 在权重而非激活上随机置零，D"
   },
@@ -1518,7 +1518,7 @@
    "kind": "paragraph",
    "top": 13973,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -1527,7 +1527,7 @@
    "kind": "code",
    "top": 14019,
    "h": 62,
-   "style": "79e05652",
+   "style": "a238307c",
    "content": "611629c5",
    "text": "| DropConnect | Wan et al.（NYU） | 在权重而非激活上随机置零，D"
   },
@@ -1536,7 +1536,7 @@
    "kind": "listItem",
    "top": 14081,
    "h": 47,
-   "style": "7f4d6dd5",
+   "style": "916cd327",
    "content": "e5c464f9",
    "text": "Step 3: 更新 2014 年 Dropout in RNNs 条目"
   },
@@ -1545,7 +1545,7 @@
    "kind": "paragraph",
    "top": 14127,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "4a5d052d",
    "text": "在 2014 同年关键工作速览表中，将 Dropout in RNNs 行从："
   },
@@ -1554,7 +1554,7 @@
    "kind": "code",
    "top": 14173,
    "h": 62,
-   "style": "035463b2",
+   "style": "5ee2ff04",
    "content": "bfe367fb",
    "text": "| Dropout in RNNs | Zaremba et al.（NYU） | 解决 RNN"
   },
@@ -1563,7 +1563,7 @@
    "kind": "paragraph",
    "top": 14235,
    "h": 46,
-   "style": "fbf32168",
+   "style": "e914a6ce",
    "content": "a153f8b0",
    "text": "改为："
   },
@@ -1572,7 +1572,7 @@
    "kind": "code",
    "top": 14280,
    "h": 62,
-   "style": "a88cc9d0",
+   "style": "6bbc47a6",
    "content": "bb32e6ff",
    "text": "| Dropout in RNNs | Zaremba et al.（NYU） | 解决 RNN"
   },
@@ -1581,7 +1581,7 @@
    "kind": "listItem",
    "top": 14342,
    "h": 47,
-   "style": "b076a9c8",
+   "style": "98226e96",
    "content": "767ff516",
    "text": "Step 4: 验证三处改动"
   },
@@ -1590,7 +1590,7 @@
    "kind": "code",
    "top": 14389,
    "h": 62,
-   "style": "07a170d6",
+   "style": "4c87503c",
    "content": "9bb3e507",
    "text": "grep -n \"00·前置·正则化\" 00-Timeline/README.md"
   },
@@ -1599,7 +1599,7 @@
    "kind": "paragraph",
    "top": 14450,
    "h": 46,
-   "style": "d6d0658a",
+   "style": "2477c240",
    "content": "cb48643c",
    "text": "预期：看到 3 行匹配。"
   },
@@ -1608,7 +1608,7 @@
    "kind": "listItem",
    "top": 14496,
    "h": 47,
-   "style": "4f8551ea",
+   "style": "07c07724",
    "content": "f8a5b4c6",
    "text": "Step 5: 提交"
   },
@@ -1617,7 +1617,7 @@
    "kind": "code",
    "top": 14543,
    "h": 82,
-   "style": "aa92e671",
+   "style": "0cc51d13",
    "content": "254559b3",
    "text": "git add 00-Timeline/README.md git commit -m \"con"
   },
@@ -1626,7 +1626,7 @@
    "kind": "rule",
    "top": 14624,
    "h": 47,
-   "style": "14c310b8",
+   "style": "64d3a252",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1635,7 +1635,7 @@
    "kind": "heading",
    "top": 14672,
    "h": 32,
-   "style": "09250b84",
+   "style": "d204cbf6",
    "content": "7dd4fe9c",
    "text": "Task 7: 最终验证"
   },
@@ -1644,7 +1644,7 @@
    "kind": "listItem",
    "top": 14704,
    "h": 47,
-   "style": "c4a7ad24",
+   "style": "79a77d46",
    "content": "d8194627",
    "text": "Step 1: 检查所有链接可解析"
   },
@@ -1653,7 +1653,7 @@
    "kind": "code",
    "top": 14750,
    "h": 222,
-   "style": "c631b690",
+   "style": "c47d83d6",
    "content": "efcfdcd4",
    "text": "# 验证新文件存在 ls -la 00-Prerequisites/regularization"
   },
@@ -1662,7 +1662,7 @@
    "kind": "paragraph",
    "top": 14972,
    "h": 46,
-   "style": "d6d0658a",
+   "style": "2477c240",
    "content": "6f2cf31a",
    "text": "预期：每个 grep 都有至少一行输出。"
   },
@@ -1671,7 +1671,7 @@
    "kind": "listItem",
    "top": 15018,
    "h": 47,
-   "style": "b076a9c8",
+   "style": "98226e96",
    "content": "e40c143f",
    "text": "Step 2: 验证阅读顺序"
   },
@@ -1680,7 +1680,7 @@
    "kind": "paragraph",
    "top": 15064,
    "h": 46,
-   "style": "ff8ab03d",
+   "style": "c6e4babf",
    "content": "fc459cb7",
    "text": "从 deep-learning-basics 出发，追踪导航链路："
   },
@@ -1689,7 +1689,7 @@
    "kind": "code",
    "top": 15110,
    "h": 62,
-   "style": "cd652835",
+   "style": "e4b1bcab",
    "content": "b55de891",
    "text": "deep-learning-basics → regularization → 01-Visua"
   },
@@ -1698,7 +1698,7 @@
    "kind": "code",
    "top": 15172,
    "h": 82,
-   "style": "8b9038ca",
+   "style": "b28010fc",
    "content": "99b55f62",
    "text": "grep \"下一章\" 00-Prerequisites/deep-learning-basics"
   },
@@ -1707,7 +1707,7 @@
    "kind": "paragraph",
    "top": 15254,
    "h": 34,
-   "style": "5fccf8f0",
+   "style": "28f5af8a",
    "content": "98ef511a",
    "text": "预期："
   },
@@ -1716,7 +1716,7 @@
    "kind": "listItem",
    "top": 15288,
    "h": 38,
-   "style": "4f071c5f",
+   "style": "26e2192d",
    "content": "6786d113",
    "text": "deep-learning-basics 的下一章指向 regularization"
   },
@@ -1725,7 +1725,7 @@
    "kind": "listItem",
    "top": 15326,
    "h": 38,
-   "style": "9764390b",
+   "style": "ec368801",
    "content": "fef8a978",
    "text": "regularization 的下一章指向 training"
   },
@@ -1734,7 +1734,7 @@
    "kind": "listItem",
    "top": 15363,
    "h": 47,
-   "style": "bfb88770",
+   "style": "e9a1263e",
    "content": "4fd41c7e",
    "text": "Step 3: 验证 STYLE.md 签名三元素"
   },
@@ -1743,7 +1743,7 @@
    "kind": "code",
    "top": 15410,
    "h": 102,
-   "style": "41fe5013",
+   "style": "982ad869",
    "content": "682a4ea5",
    "text": "echo \"=== 这个问题从哪来 ===\" && grep -c \"这个问题从哪来\" 00-P"
   },
@@ -1752,7 +1752,7 @@
    "kind": "paragraph",
    "top": 15512,
    "h": 46,
-   "style": "e778918a",
+   "style": "ae78d110",
    "content": "57d5059c",
    "text": "预期：这个问题从哪来 = 1，你要记住 ≤ 3，演进笔记 = 1。"
   },
@@ -1761,7 +1761,7 @@
    "kind": "listItem",
    "top": 15557,
    "h": 47,
-   "style": "d56a73bb",
+   "style": "8011c3fd",
    "content": "39ac3e37",
    "text": "Step 4: 验证 git 状态"
   },
@@ -1770,7 +1770,7 @@
    "kind": "code",
    "top": 15604,
    "h": 82,
-   "style": "f90a39db",
+   "style": "fafaf719",
    "content": "0b6d9251",
    "text": "git status git log --oneline -7"
   },
@@ -1779,7 +1779,7 @@
    "kind": "paragraph",
    "top": 15686,
    "h": 46,
-   "style": "d6d0658a",
+   "style": "2477c240",
    "content": "4e7a0051",
    "text": "预期：7 个新 commit，无未提交更改。"
   }
