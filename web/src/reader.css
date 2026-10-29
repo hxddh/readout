@@ -122,7 +122,6 @@ body { margin: 0; }
    grows above the reader made up for). WebKit's own scroll anchoring (macOS
    26) moved the page as well when a table above grew after a restore, so
    the place moved twice (#99 smoke: refill, 42 px). */
-html, body { overflow-anchor: none; }
 pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 /* Native selection colour: it follows the accent and greys in an inactive window. */
 
