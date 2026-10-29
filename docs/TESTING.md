@@ -109,8 +109,9 @@ goal from the release plan) and a `guard` (the regression limit CI enforces).
 `tools/perf-assert.py WHERE FILE...` fails when a gated metric is missing or
 over its guard; metrics with `"guard": null` are printed but not gated, and
 tracked ones (`"gated": false`, the file's notes say why) are printed with
-their guard and reported when over it, without failing. At most 20 metrics
-are gated.
+their guard and reported when over it, without failing. 20 metrics are
+gated, and every scroll blank and stutter metric at the common and
+code-heavy sizes besides (the file's notes).
 
 | Where | Measured by | Metrics |
 | --- | --- | --- |
