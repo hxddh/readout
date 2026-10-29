@@ -2259,9 +2259,9 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.evaluate(x => window.readout.apply(x), { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p.waitForTimeout(500);
   // Block 5045 at the top of the window, a third of it above the top.
-  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + e.getBoundingClientRect().height / 3); });
+  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'); window.scrollBy(0, e.getBoundingClientRect().top + e.getBoundingClientRect().height / 3); });
   await p.waitForTimeout(400);
-  const share = () => p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'), r = e.getBoundingClientRect(); return { above: 52 - r.top, h: r.height, root: parseFloat(getComputedStyle(document.documentElement).fontSize) }; });
+  const share = () => p.evaluate(() => { const e = document.querySelector('.blk[data-slot="5045"]'), r = e.getBoundingClientRect(); return { above: -r.top, h: r.height, root: parseFloat(getComputedStyle(document.documentElement).fontSize) }; });
   const s0 = await share();
   const f = s0.above / s0.h;
   const drift = [];
