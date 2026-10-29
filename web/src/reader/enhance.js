@@ -18,7 +18,7 @@ export function enhance(el) {
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
   for (const m of el.querySelectorAll('.mermaid-block')) { setupMermaid(m); diagrams.add(m); }
   if (el.querySelector('.math, .math-block')) renderMath(el);
-  for (const img of el.querySelectorAll('img')) if (!img.complete && !(img.getAttribute('width') && img.getAttribute('height'))) images.push(img);
+  for (const img of el.querySelectorAll('img')) if (!img.complete && !(img.getAttribute('width') && img.getAttribute('height'))) { images.push(img); sizeless = true; }
   setLang(el);
   markCjkEmphasis(el);
   markCodeBeforePunct(el);
@@ -799,7 +799,7 @@ export function holdJump(el, off, again) {
   const blocks = [blk];
   for (let e = prevItem(blk); e; e = prevItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.unshift(e); }
   for (let e = nextItem(blk); e; e = nextItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.push(e); }
-  reserve(toReserve(blocks), blk);
+  if (diagrams.size || sizeless) reserve(toReserve(blocks), blk);
   // (Its code not before the highlighter has started, as a first paint's:
   // the first window at launch lands at once, its code plain first.)
   const cbs = pending(blocks).filter(x => hl.started || !isCode(x));
@@ -952,4 +952,5 @@ export function renderLazy(near = inViewport, first = false) {
   }
 }
 let images = [];   // images set up since the last renderLazy(), still loading, their size not given
+let sizeless = false;   // the page has had such an image (a jump looks for them only then)
 const diagrams = new Set();   // every diagram block set up (enhance), until it leaves the page

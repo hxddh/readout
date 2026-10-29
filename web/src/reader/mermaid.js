@@ -410,9 +410,9 @@ function place(block, out, src) {
  */
 export function placeCached(block) {
   const src = block.querySelector('.mermaid-src')?.textContent;
-  if (!mermaidLook || src == null || mermaidLook !== diagramLook()) return false;
+  // (The look asked only for a drawing kept: it reads the page's style.)
+  if (!mermaidLook || src == null || !mermaidCache.has(mermaidLook + '\u0000' + src) || mermaidLook !== diagramLook()) return false;
   const out = cacheGet(mermaidLook + '\u0000' + src);
-  if (!out) return false;
   const i = mermaidQueue.indexOf(block);
   if (i >= 0) mermaidQueue.splice(i, 1);
   place(block, out, src);
