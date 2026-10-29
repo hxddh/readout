@@ -335,11 +335,11 @@ del { color: var(--text-2); }
    3.9 (same-runner A/B, #99). */
 code {
   font-family: var(--mono);
-  font-size: 0.89em;
+  font-size: 0.84em;
   overflow-wrap: break-word;
-  background: var(--code-fill);
-  border-radius: 4px;
-  padding: 0.08em 0.24em;
+  background: var(--fill);
+  border-radius: 5px;
+  padding: 0.12em 0.36em;
   /* Broken across lines, each piece keeps its padding and rounded ends. */
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -372,7 +372,7 @@ mark {
 kbd, samp { font-family: var(--mono); font-size: 0.84em; }
 kbd {
   padding: 0.05em 0.38em;
-  border-radius: 4px;
+  border-radius: 5px;
   background: var(--fill);
   box-shadow: inset 0 0 0 1px var(--rule), inset 0 -1px 0 var(--rule);
   white-space: nowrap;
@@ -438,7 +438,7 @@ li.task > .task-box {
   top: calc((var(--lh) - 1.01) * 0.5em);
   width: 0.95em;
   height: 0.95em;
-  border-radius: 4px;
+  border-radius: 5px;
   box-shadow: inset 0 0 0 1.25px var(--text-3);
 }
 .blk.cjk li.task > .task-box { top: calc((var(--lh-cjk) - 1.01) * 0.5em); }
@@ -479,6 +479,7 @@ blockquote > :last-child { margin-bottom: 0; }
   --surface: var(--fill);
 }
 .alert > :last-child { margin-bottom: 0; }
+.alert code { background: var(--fill-2); }
 .alert { --cb-bg: var(--fill-2); }
 .alert-title { font-weight: 650; color: var(--alert-c); margin: 0 0 0.25em; font-size: var(--fs-sm); }
 .alert-note { --alert-c: var(--note); }
@@ -507,6 +508,7 @@ th, td { padding: 0.45em 0.9em 0.45em 0; text-align: left; vertical-align: top; 
 th:last-child, td:last-child { padding-right: 0; }
 th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; }
 td { font-variant-numeric: tabular-nums; }
+td code, th code { font-size: 0.9em; }
 /* Short cells, identifiers and headers stay on one line while the table
    fits that way; when they would push it past the column, they wrap again
    (.nw-off, enhance.js) and it scrolls only if it is still too wide. */
@@ -777,7 +779,7 @@ details ul, details ol { padding-left: 1.5em; }
 .blk.flash::after {
   content: ""; position: absolute; z-index: -1; pointer-events: none;
   left: var(--gutter); right: var(--gutter); top: 0; bottom: var(--flow);
-  border-radius: 4px;
+  border-radius: 5px;
   animation: arrive 1.2s ease-out forwards;
 }
 .k-heading.flash::after { bottom: 0.2em; }
