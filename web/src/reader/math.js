@@ -1,21 +1,22 @@
 // Math with KaTeX, loaded on first use.
+import { shown } from './enhance.js';
+
 const mathCache = new Map();      // tex+display -> html
 
+/** Math waiting for KaTeX to load (a first paint showing it waits too: enhance.js). */
+export const typesetting = new Set();
+
 let katexPromise = null;
+// Its script and its style sheet (typeset without it, math is laid out at another height).
 function loadKatex() {
-  if (window.katex) return Promise.resolve(window.katex);
   if (!katexPromise) {
-    katexPromise = new Promise((resolve, reject) => {
-      const css = document.createElement('link');
-      css.rel = 'stylesheet';
-      css.href = 'vendor/katex/katex.min.css';
-      document.head.appendChild(css);
-      const s = document.createElement('script');
-      s.src = 'vendor/katex/katex.min.js';
-      s.onload = () => resolve(window.katex);
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
+    const load = el => new Promise((resolve, reject) => { el.onload = resolve; el.onerror = reject; document.head.appendChild(el); });
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'vendor/katex/katex.min.css';
+    const s = document.createElement('script');
+    s.src = 'vendor/katex/katex.min.js';
+    katexPromise = Promise.all([load(css), load(s)]).then(() => { katexPromise.done = true; return window.katex; });
   }
   return katexPromise;
 }
@@ -23,19 +24,28 @@ function loadKatex() {
 export function renderMath(el) {
   const nodes = el.querySelectorAll('.math:not(.done), .math-block:not(.done)');
   if (!nodes.length) return;
-  loadKatex().then(katex => {
-    for (const n of nodes) {
-      if (!n.isConnected || n.classList.contains('done')) continue;
-      const tex = n.dataset.tex;
-      const display = n.classList.contains('math-block') || n.classList.contains('math-display');
-      const key = (display ? 'D' : 'I') + tex;
-      let html = mathCache.get(key);
-      if (html === undefined) {
-        try { html = katex.renderToString(tex, { displayMode: display, throwOnError: false, output: 'htmlAndMathml', strict: 'ignore' }); }
-        catch { html = null; }
-        mathCache.set(key, html);
-      }
-      if (html) { n.innerHTML = html; n.classList.add('done'); }
+  // Loaded: typeset now, before the frame that shows it.
+  if (katexPromise?.done) return typeset(window.katex, nodes);
+  for (const n of nodes) typesetting.add(n);
+  loadKatex().then(katex => typeset(katex, nodes)).catch(() => {
+    for (const n of nodes) { typesetting.delete(n); shown(n); }
+  });
+}
+
+function typeset(katex, nodes) {
+  for (const n of nodes) {
+    typesetting.delete(n);
+    if (!n.isConnected || n.classList.contains('done')) continue;
+    const tex = n.dataset.tex;
+    const display = n.classList.contains('math-block') || n.classList.contains('math-display');
+    const key = (display ? 'D' : 'I') + tex;
+    let html = mathCache.get(key);
+    if (html === undefined) {
+      try { html = katex.renderToString(tex, { displayMode: display, throwOnError: false, output: 'htmlAndMathml', strict: 'ignore' }); }
+      catch { html = null; }
+      mathCache.set(key, html);
     }
-  }).catch(() => {});
+    if (html) { n.innerHTML = html; n.classList.add('done'); }
+    shown(n);
+  }
 }

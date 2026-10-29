@@ -1,6 +1,6 @@
 // Mermaid diagrams, loaded on first use and rendered one at a time.
 import { doc, root, strings, inViewport, pageTheme, quicklook } from './core.js';
-import { lazyObserver } from './enhance.js';
+import { lazyObserver, shown, grows } from './enhance.js';
 
 // Drawings by look and source, most recently used last. An agent writing a
 // diagram makes a source of every few characters it adds: at most CACHE_MAX
@@ -361,32 +361,7 @@ async function pumpMermaid() {
       if (!block.isConnected) continue;
       // The theme or type size changed while it was being drawn: draw it again.
       if (theme !== diagramLook()) { mermaidQueue.push(block); continue; }
-      let fresh;
-      if (out.svg) {
-        fresh = document.createElement('div');
-        fresh.className = 'mermaid-svg';
-        // The SVG's styles and markers refer to its id: every later copy on
-        // the page (the same diagram twice, or from the cache) gets an id of its own.
-        fresh.innerHTML = out.svg;
-        if (out.used) renameIds(fresh, out.id, `mmd-${++mermaidSeq}`);
-        out.used = true;
-        // Natural size, never narrower than three quarters of it (the block scrolls).
-        const svg = fresh.querySelector('svg'), w = svg && svg.viewBox.baseVal && svg.viewBox.baseVal.width; if (w) svg.style.minWidth = `${Math.round(w * 0.75)}px`;
-      } else {
-        fresh = document.createElement('div');
-        fresh.className = 'mermaid-error';
-        fresh.textContent = `${strings.diagramError}: ${out.error}`;
-      }
-      // Swapped in place: the old drawing (a theme change) stays until the new one is ready.
-      const old = block.querySelectorAll('.mermaid-svg, .mermaid-error');
-      if (old.length) { old[0].replaceWith(fresh); for (let i = 1; i < old.length; i++) old[i].remove(); }
-      else block.appendChild(fresh);
-      block.classList.toggle('done', !!out.svg);
-      delete block.dataset.stale;
-      delete block.dataset.waiting;
-      block.classList.remove('busy');
-      const slot = diagramSlot(block);
-      if (slot) { slot.src = src; if (out.svg) slot.node = fresh; }
+      place(block, out, src);
     }
   } finally {
     mermaidBusy = false;
@@ -394,6 +369,55 @@ async function pumpMermaid() {
   }
 }
 const idle = [];   // resolvers waiting for the queue to drain
+
+/** Puts `out` (a drawing, or why there is none) in `block`, drawn from `src`. */
+function place(block, out, src) {
+  let fresh;
+  if (out.svg) {
+    fresh = document.createElement('div');
+    fresh.className = 'mermaid-svg';
+    // The SVG's styles and markers refer to its id: every later copy on
+    // the page (the same diagram twice, or from the cache) gets an id of its own.
+    fresh.innerHTML = out.svg;
+    if (out.used) renameIds(fresh, out.id, `mmd-${++mermaidSeq}`);
+    out.used = true;
+    // Natural size, never narrower than three quarters of it (the block scrolls).
+    const svg = fresh.querySelector('svg'), w = svg && svg.viewBox.baseVal && svg.viewBox.baseVal.width; if (w) svg.style.minWidth = `${Math.round(w * 0.75)}px`;
+  } else {
+    fresh = document.createElement('div');
+    fresh.className = 'mermaid-error';
+    fresh.textContent = `${strings.diagramError}: ${out.error}`;
+  }
+  // Swapped in place: the old drawing (a theme change) stays until the new
+  // one is ready. (One a landing showed undrawn: the reader's place kept.)
+  grows(block, () => {
+    const old = block.querySelectorAll('.mermaid-svg, .mermaid-error');
+    if (old.length) { old[0].replaceWith(fresh); for (let i = 1; i < old.length; i++) old[i].remove(); }
+    else block.appendChild(fresh);
+    block.classList.toggle('done', !!out.svg);
+  });
+  delete block.dataset.stale;
+  delete block.dataset.waiting;
+  block.classList.remove('busy');
+  shown(block);
+  const slot = diagramSlot(block);
+  if (slot) { slot.src = src; if (out.svg) slot.node = fresh; }
+}
+
+/**
+ * A diagram drawn before (the cache has it, in the page's look): put in now,
+ * before the frame that shows it (enhance.js: reserve). false: not drawn.
+ */
+export function placeCached(block) {
+  const src = block.querySelector('.mermaid-src')?.textContent;
+  // (The look asked only for a drawing kept: it reads the page's style.)
+  if (!mermaidLook || src == null || !mermaidCache.has(mermaidLook + '\u0000' + src) || mermaidLook !== diagramLook()) return false;
+  const out = cacheGet(mermaidLook + '\u0000' + src);
+  const i = mermaidQueue.indexOf(block);
+  if (i >= 0) mermaidQueue.splice(i, 1);
+  place(block, out, src);
+  return true;
+}
 
 /**
  * Gives a drawing the id `to` in place of `from`: in ids, in the attributes

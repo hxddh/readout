@@ -8,7 +8,8 @@
 // document whose code block is on screen, then of one with a Python and a YAML
 // block (both coloured in that apply), then a small plan's private memory;
 // on a fresh page not warmed, how long its first TypeScript block takes to
-// highlight; scrolling 500 KB (with and without change marks), 1 MB and
+// highlight; landing on a diagram (a place restored, an outline jump) and
+// opening with an image loading on the first screen; scrolling 500 KB (with and without change marks), 1 MB and
 // 5 MB documents (frame gaps, the page's own longest callback, blank area),
 // a selection change, a mouse drag, the dark/light switch and find Next, an
 // agent streaming at 5 MB (frame gaps) and inserting in its middle. Writes the numbers to
@@ -21,12 +22,16 @@ import http from 'node:http';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { execSync } from 'node:child_process';
+import { PNG } from 'pngjs';
 import { collectPageErrors } from './pageerrors.mjs';
 import { instrument, scrollPasses, summary, interactions, streamFrames, insertMiddle } from './scrollperf.mjs';
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const BUILD = process.env.READOUT_WEB_BUILD || 'build/Web';
+// An image (slow/…: a 480×270 picture 400 ms after it is asked for, as shift.test.mjs's).
+const picture = PNG.sync.write(new PNG({ width: 480, height: 270 }));
 const server = http.createServer((req, res) => {
+  if (req.url.startsWith('/slow/')) return setTimeout(() => { res.writeHead(200, { 'content-type': 'image/png' }); res.end(picture); }, 400);
   const p = join(BUILD, decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream' });
@@ -557,6 +562,59 @@ if (firstHighlight.pyYaml.plain.length) errors.push(`warmed page painted code pl
 if (!firstHighlight.warmed || firstHighlight.plain.length) errors.push(`first highlight not measured: ${JSON.stringify(firstHighlight)}`);
 if (firstHighlight.privateMB == null) errors.push('tab private memory not measured');
 
+// Landing on what is drawn or loaded after it is set up: on a fresh page
+// (Mermaid never loaded, the highlighter warmed up as a window's is), a
+// document opened with its place restored onto a diagram; in another, a
+// document opened with an image loading on its first screen (400 ms, as
+// shift.test.mjs's), then an outline jump onto a diagram further down a
+// document opened after it. Each: from the call to the first painted frame that
+// shows the target (the block restored, the jump's, the first block).
+const landing = await (async () => {
+  const MMD = JSON.parse(readFileSync('test/corpus/patches/20-aios-interception-architecture.json', 'utf8')).ops.find(o => o.kind === 'mermaid').html;
+  const doc = (n, at, html) => ({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+    ops: Array.from({ length: n }, (_, k) => ({ op: 'insert', slot: k + 1, after: k, kind: k === at && html.startsWith('<div') ? 'mermaid' : 'paragraph',
+      html: k === at ? html : `<p>Paragraph ${k + 1} ${'of the plan, with words to wrap over a line or two '.repeat(3)}</p>` })) });
+  const page = async () => {
+    const p = await browser.newPage({ viewport: { width: 900, height: 900 } });
+    collectPageErrors(p, errors);
+    await p.addInitScript(() => {
+      window.__msgs = [];
+      window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } };
+      // From act() to the first painted frame showing slot's block on screen (-1: not in 10 s).
+      window.landed = (act, slot) => new Promise(resolve => {
+        const d = document.getElementById('ro-doc');
+        const t0 = performance.now();
+        act();
+        const frame = () => requestAnimationFrame(() => setTimeout(() => {
+          const el = d.querySelector(`.blk[data-slot="${slot}"]`), r = el && el.getBoundingClientRect();
+          if (getComputedStyle(d).visibility !== 'hidden' && !d.classList.contains('hold') && r && r.bottom > 0 && r.top < innerHeight) resolve(performance.now() - t0);
+          else if (performance.now() - t0 > 10000) resolve(-1);
+          else frame();
+        }, 0));
+        frame();
+      });
+    });
+    await p.goto(`${base}/reader.html`);
+    await p.evaluate(() => new Promise(r => { const t = () => window.readout && window.__msgs.some(m => m.type === 'ready') ? r() : setTimeout(t, 20); t(); }));
+    await p.evaluate(() => { window.readout.warm(); window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }); });
+    await p.evaluate(() => new Promise(r => { const end = performance.now() + 40000; const t = () => performance.getEntriesByName('readout-hl-warm').length || performance.now() > end ? r() : setTimeout(t, 50); t(); }));
+    await p.waitForTimeout(200);
+    return p;
+  };
+  let p = await page();
+  const restored = await p.evaluate(([d, a]) => window.landed(() => { window.readout.apply(d); window.readout.scrollToAnchor(a); }, a.slot), [doc(200, 119, MMD), { slot: 120, offset: 0, ratio: 0 }]);
+  await p.close();
+  p = await page();
+  const image = await p.evaluate(d => window.landed(() => window.readout.apply(d), 1), doc(60, 2, '<p class="img-only"><img src="slow/perf.png" alt=""></p>'));
+  await p.waitForTimeout(1500);
+  await p.evaluate(d => window.readout.apply(d), { ...doc(200, 149, MMD), version: 2 });
+  await p.waitForTimeout(1000);
+  const jump = await p.evaluate(slot => window.landed(() => window.readout.scrollToSlot(slot), slot), 150);
+  await p.close();
+  return { restored, jump, image };
+})();
+for (const [k, v] of Object.entries(landing)) if (v < 0) errors.push(`landing (${k}) never shown`);
+
 // The first TypeScript block on a page not warmed up (the first window at
 // launch takes the spare page before its warm-up; a burst of background tabs
 // gets pages made for them): the page set up as a window does, the document
@@ -689,6 +747,10 @@ const result = {
   web_hl_warm_ms: Math.round(firstHighlight.warmStats.ms ?? -1),
   web_hl_warm_longest_slice_ms: Math.round(firstHighlight.warmStats.longestSlice ?? -1),
   web_tab_private_mb: firstHighlight.privateMB,
+  // To the first frame showing a place restored onto a diagram, a jump onto one, a document with an image loading on its first screen (Mermaid not loaded before).
+  web_land_restore_diagram_ms: Math.round(landing.restored),
+  web_land_jump_diagram_ms: Math.round(landing.jump),
+  web_land_open_image_ms: Math.round(landing.image),
   web_stream_doc_bytes: stream.bytes,
   web_stream_doc_blocks: stream.blocks,
   web_stream_append_5mb_ms: Math.round(stream.ms * 10) / 10,
