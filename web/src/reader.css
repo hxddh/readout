@@ -197,12 +197,12 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 :root[data-code-wrap="on"] #ro-doc > .chunk > .blk.k-code { --out: 0px; }
 #ro-doc > .chunk > .blk.k-code > .code-block { margin-inline: calc(-1 * var(--out)); }
 @media not print {
-  #ro-doc > .chunk > .blk.k-table:has(> .table-wrap:is(.scrolls, .nw-off)) {
+  #ro-doc > .chunk > .blk.k-table:has(> .table-wrap.scrolls) {
     --out-end: clamp(0px, var(--tb-w, 0px) - var(--measure), min(var(--bleed) * 1000, 2 * var(--bleed), (100vw - var(--measure)) / 2 - 4rem));
     margin-inline-end: calc(-1 * (var(--gutter) + var(--out-end)));
     padding-inline-end: calc(var(--gutter) + var(--out-end));
   }
-  #ro-doc > .chunk > .blk.k-table > .table-wrap:is(.scrolls, .nw-off) { margin-inline-end: calc(-1 * var(--out-end)); }
+  #ro-doc > .chunk > .blk.k-table > .table-wrap.scrolls { margin-inline-end: calc(-1 * var(--out-end)); }
 }
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
 /* CJK emphasis: upright (Han and kana have no italic), with emphasis dots
