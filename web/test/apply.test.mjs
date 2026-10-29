@@ -2225,13 +2225,21 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
   await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
   const cell = (s, i) => `<td>${s} ${i}</td>`;
-  const row = i => `<tr><td><code>actions/configure-pages-${i}</code></td>${['S1 / GREEN', 'Medium risk', 'Owner team', 'Drop-in', 'Platform'].map(cell).join('')}<td>Inputs changed between majors; check the changelog</td></tr>`;
-  const table = `<div class="table-wrap"><table><thead><tr><th>Action</th><th>Status</th><th>Risk</th><th>Owner</th><th>Note</th><th>Area</th><th>Notes</th></tr></thead><tbody>${[1, 2, 3, 4].map(row).join('')}</tbody></table></div>`;
-  const ops = [];
-  for (let i = 1; i <= 60; i++) ops.push({ op: 'insert', slot: 3000 + i, after: i === 1 ? 0 : 2999 + i, kind: i === 20 ? 'table' : 'paragraph', html: i === 20 ? table : `<p>Paragraph ${i} of a plan an agent wrote, long enough to wrap once or twice in the column of the reader.</p>` });
+  const pool = ['S1 / GREEN', 'Medium risk', 'Owner team', 'Drop-in', 'Platform', 'Quarterly', 'Reviewed', 'Ready now', 'Pinned'];
   const reset = (version, list) => ({ version, reset: true, rewrite: false, ops: list, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
-  await p.evaluate(x => window.readout.apply(x), reset(1, ops));
-  await p.waitForTimeout(600);
+  // As many short cells as it takes for the table to fit only wrapped
+  // (nw-off): the column (and so the count) differs with the build.
+  let ops = [];
+  for (let n = 3; n <= pool.length; n++) {
+    const row = i => `<tr><td><code>actions/configure-pages-${i}</code></td>${pool.slice(0, n).map(cell).join('')}<td>Inputs changed between majors; check the changelog</td></tr>`;
+    const table = `<div class="table-wrap"><table><thead><tr><th>Action</th>${pool.slice(0, n).map((_, k) => `<th>K${k}</th>`).join('')}<th>Notes</th></tr></thead><tbody>${[1, 2, 3, 4].map(row).join('')}</tbody></table></div>`;
+    ops = [];
+    for (let i = 1; i <= 60; i++) ops.push({ op: 'insert', slot: 3000 + i, after: i === 1 ? 0 : 2999 + i, kind: i === 20 ? 'table' : 'paragraph', html: i === 20 ? table : `<p>Paragraph ${i} of a plan an agent wrote, long enough to wrap once or twice in the column of the reader.</p>` });
+    await p.evaluate(x => window.readout.apply(x), reset(1, ops));
+    await p.waitForTimeout(300);
+    if (await p.evaluate(() => document.querySelector('.table-wrap').classList.contains('nw-off'))) break;
+  }
+  await p.waitForTimeout(300);
   const before = await p.evaluate(() => { const t = document.querySelector('.table-wrap'); return { nwOff: t.classList.contains('nw-off'), scrolls: t.classList.contains('scrolls') }; });
   // The reader with slot 3025, five blocks under the table, at the top; the place as the app keeps it.
   await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="3025"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + 21); });
