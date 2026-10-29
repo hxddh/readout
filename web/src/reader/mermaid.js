@@ -1,6 +1,6 @@
 // Mermaid diagrams, loaded on first use and rendered one at a time.
 import { doc, root, strings, inViewport, pageTheme, quicklook } from './core.js';
-import { lazyObserver, shown } from './enhance.js';
+import { lazyObserver, shown, keepBox } from './enhance.js';
 
 // Drawings by look and source, most recently used last. An agent writing a
 // diagram makes a source of every few characters it adds: at most CACHE_MAX
@@ -388,6 +388,7 @@ function place(block, out, src) {
     fresh.className = 'mermaid-error';
     fresh.textContent = `${strings.diagramError}: ${out.error}`;
   }
+  keepBox(block);   // (one a landing showed before it was drawn: the height it showed)
   // Swapped in place: the old drawing (a theme change) stays until the new one is ready.
   const old = block.querySelectorAll('.mermaid-svg, .mermaid-error');
   if (old.length) { old[0].replaceWith(fresh); for (let i = 1; i < old.length; i++) old[i].remove(); }

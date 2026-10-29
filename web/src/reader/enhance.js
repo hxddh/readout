@@ -716,14 +716,16 @@ function urge(x, dy, upto) {
 
 // Diagrams and images a landing shows (a first paint, a jump) not drawn or
 // loaded yet are not waited for: Mermaid's load and layout, or an image's
-// load, take up to seconds. The landing gives each a box instead, the
-// height it keeps while on screen (reader.css: .reserved): drawn or loaded,
-// it is fitted in it, and takes its own height once it is off screen (the
-// page keeps the place then: anchor.js). A diagram drawn before (in the
-// cache) is put in at once; an image with its size (ReadoutCore gives a
-// local one's) has its box already. A diagram is drawn when it would be
-// anyway (lazyObserver: once the page is still), not before the landing's
-// frame: Mermaid's layout holds the page for a few hundred milliseconds.
+// load, take up to seconds. Each gets a box instead, the height it keeps
+// while on screen (reader.css: .reserved): drawn or loaded, it is fitted in
+// it, and takes its own height once it is off screen (the page keeps the
+// place then: anchor.js). A diagram's box is the height its source shows
+// in the landing's frame (keepBox); an image's, a box for a picture (one
+// with its size, ReadoutCore gives a local one's, has its own already). A
+// diagram drawn before (in the cache) is put in at once; one not is drawn
+// when it would be anyway (lazyObserver: once the page is still), not
+// before the landing's frame: Mermaid's layout holds the page for a few
+// hundred milliseconds.
 const reserved = new Set();
 const out = new WeakSet();   // reserved, and off screen
 const finished = x => isDiagram(x) ? x.classList.contains('done') || !!x.querySelector('.mermaid-error') : x.complete;
@@ -740,18 +742,34 @@ function reserve(xs) {
   for (const x of xs) {
     if (reserved.has(x) || !x.isConnected || finished(x)) continue;
     if (isDiagram(x)) {
-      if (x.dataset.waiting || placeCached(x)) continue;
-      // As tall as its source would show, within 240 px and 60% of the window.
-      const lines = (x.querySelector('.mermaid-src')?.textContent.match(/\n/g)?.length ?? 0) + 1;
-      x.style.setProperty('--reserve', `${Math.round(Math.min(Math.max(lines * 22, 240), innerHeight * 0.6))}px`);
-    } else {
-      if (x.getAttribute('width') && x.getAttribute('height')) continue;
-      for (const type of ['load', 'error']) x.addEventListener(type, () => shown(x), { once: true });
+      // (Its box is the height its source shows, taken when it is drawn: keepBox.)
+      if (!x.dataset.waiting && !placeCached(x)) landedOn.add(x);
+      continue;
     }
-    x.classList.add('reserved');
-    reserved.add(x);
-    reserveObserver.observe(x);
+    if (x.getAttribute('width') && x.getAttribute('height')) continue;
+    for (const type of ['load', 'error']) x.addEventListener(type, () => shown(x), { once: true });
+    box(x);
   }
+}
+function box(x) {
+  x.classList.add('reserved');
+  reserved.add(x);
+  reserveObserver.observe(x);
+}
+const landedOn = new WeakSet();   // diagrams a landing showed before they were drawn
+/**
+ * Before a drawing is put in `block` (mermaid.js): one a landing showed
+ * before it was drawn, on screen now, keeps the height it shows (its
+ * source's) as its box. (Taken then, not at the landing: a box set there
+ * would lay its chunk out once more before the landing's frame.)
+ */
+export function keepBox(block) {
+  if (!landedOn.has(block)) return;
+  landedOn.delete(block);
+  const r = block.getBoundingClientRect();
+  if (r.bottom <= 0 || r.top >= innerHeight) return;
+  block.style.setProperty('--reserve', getComputedStyle(block).height);
+  box(block);
 }
 function unreserve(x) {
   reserved.delete(x);
@@ -948,8 +966,8 @@ export function renderLazy(near = inViewport, first = false) {
     // Its math on screen too, and boxes for its diagrams and images there.
     // (Its code not before the highlighter has started: the first window at
     // launch shows its code plain first, as before, rather than wait for that.)
-    reserve([...diagrams, ...imgs].filter(x => x.isConnected && near(x)));
-    const later = [...typesetting].filter(x => x.isConnected && waits(x) && near(x));
+    if (diagrams.size || imgs.length) reserve([...diagrams, ...imgs].filter(x => x.isConnected && near(x)));
+    const later = typesetting.size ? [...typesetting].filter(x => x.isConnected && waits(x) && near(x)) : [];
     holdFirst(hl.started ? [...onScreen, ...later] : later, 0, upto);
   }
   if (!first || !hl.started) for (const cb of onScreen) ask(cb, SCREEN, 0, upto);
