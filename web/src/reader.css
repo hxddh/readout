@@ -26,11 +26,11 @@
   --code-fill: rgb(29 29 31 / 3%);   /* inline code's fill: 3% of the text colour */
 
   /* The text column: 42.5 rem (3.9's), in rem so ⌘+ and ⌘− keep the
-     characters per line; in a narrower window, the window less the gutters.
-     It is the column's width in every window, so code and tables widen from
-     it into the margins (--bleed) by the room there really is. No width
-     setting (View ▸ Wide Text is gone). */
-  --measure: min(42.5rem, 100vw - 2 * var(--gutter));
+     characters per line (680 px at 16 px); a narrower window is narrower by
+     itself (#ro-doc's max-width), and there --bleed is 0. No width setting
+     (View ▸ Wide Text is gone). Not min(…, 100vw − gutters): the same
+     column, and 4–5% slower to first paint a 1 MB page (same-runner A/B, #99). */
+  --measure: 42.5rem;
   --size: 16px;
   --lh: 1.65;
   --lh-cjk: 1.8;

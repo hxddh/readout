@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "efef7570",
+   "style": "fca0636c",
    "content": "066632de",
    "text": "P2 — Cross-model Adversarial Review Implementati"
   },
@@ -15,7 +15,7 @@
    "kind": "quote",
    "top": 109,
    "h": 96,
-   "style": "8099e313",
+   "style": "9c713733",
    "content": "bb9c2018",
    "text": "For agentic workers: REQUIRED SUB-SKILL: Use sup"
   },
@@ -24,7 +24,7 @@
    "kind": "paragraph",
    "top": 204,
    "h": 122,
-   "style": "49d71bcd",
+   "style": "91b299b9",
    "content": "e3920f3f",
    "text": "Goal: Add an opt-in wiki-audit strong mode whose"
   },
@@ -33,7 +33,7 @@
    "kind": "paragraph",
    "top": 326,
    "h": 200,
-   "style": "49333f98",
+   "style": "c2aac754",
    "content": "ff7b613f",
    "text": "Architecture: Prose SKILL.md edits, no applicati"
   },
@@ -42,7 +42,7 @@
    "kind": "paragraph",
    "top": 526,
    "h": 122,
-   "style": "85d2e824",
+   "style": "81519858",
    "content": "c38273e8",
    "text": "Tech Stack: Markdown SKILL.md files. No build, n"
   },
@@ -51,7 +51,7 @@
    "kind": "paragraph",
    "top": 647,
    "h": 70,
-   "style": "f6c0482c",
+   "style": "632e4174",
    "content": "ad674801",
    "text": "Source of truth: the approved design spec at doc"
   },
@@ -60,7 +60,7 @@
    "kind": "rule",
    "top": 717,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -69,7 +69,7 @@
    "kind": "heading",
    "top": 764,
    "h": 71,
-   "style": "92ee4693",
+   "style": "b966fddb",
    "content": "2dca6127",
    "text": "Shared definitions (used verbatim across tasks —"
   },
@@ -78,7 +78,7 @@
    "kind": "paragraph",
    "top": 836,
    "h": 44,
-   "style": "aa043caa",
+   "style": "9e4e1a02",
    "content": "12e09c5f",
    "text": "Provider chain (different-provider first, determ"
   },
@@ -87,7 +87,7 @@
    "kind": "code",
    "top": 879,
    "h": 102,
-   "style": "4f02765e",
+   "style": "82d31c2a",
    "content": "e8bb3994",
    "text": "codex → model: codex, provider: openai (command "
   },
@@ -96,7 +96,7 @@
    "kind": "paragraph",
    "top": 981,
    "h": 70,
-   "style": "129816ca",
+   "style": "cf394c12",
    "content": "2aa882c6",
    "text": "The claude-sonnet/anthropic fallback is same-pro"
   },
@@ -105,7 +105,7 @@
    "kind": "paragraph",
    "top": 1050,
    "h": 70,
-   "style": "1750e692",
+   "style": "7056096a",
    "content": "80256139",
    "text": "review: frontmatter token (stamped on the AUDITE"
   },
@@ -114,7 +114,7 @@
    "kind": "code",
    "top": 1120,
    "h": 162,
-   "style": "1d56cb32",
+   "style": "e3dc6eae",
    "content": "4dfa8c7f",
    "text": "review: model: codex # gemini | claude-sonnet pr"
   },
@@ -123,7 +123,7 @@
    "kind": "paragraph",
    "top": 1282,
    "h": 44,
-   "style": "ea7d9ac3",
+   "style": "baa289ab",
    "content": "5dc2d937",
    "text": "Gitignore pattern (identical in wiki-init genera"
   },
@@ -132,7 +132,7 @@
    "kind": "code",
    "top": 1325,
    "h": 62,
-   "style": "1de9c303",
+   "style": "ea3229f1",
    "content": "d343ce10",
    "text": "wiki/pages/audit-*.md"
   },
@@ -141,7 +141,7 @@
    "kind": "paragraph",
    "top": 1387,
    "h": 70,
-   "style": "250553d3",
+   "style": "7c7c56cb",
    "content": "14c74f22",
    "text": "Finding types (Phase C only): overreach · intern"
   },
@@ -150,7 +150,7 @@
    "kind": "rule",
    "top": 1457,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -159,7 +159,7 @@
    "kind": "heading",
    "top": 1504,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "dcf1613a",
    "text": "File Structure"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1547,
    "h": 80,
-   "style": "7c4c6cd6",
+   "style": "3f590e40",
    "content": "4cc8cb16",
    "text": "Modify: skills/wiki-init/SKILL.md — (a) director"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1627,
    "h": 97,
-   "style": "1c44fa31",
+   "style": "e6c8d12b",
    "content": "ecaba2c5",
    "text": "Modify: skills/wiki-audit/SKILL.md — strong-mode"
   },
@@ -186,7 +186,7 @@
    "kind": "paragraph",
    "top": 1724,
    "h": 70,
-   "style": "ff8916de",
+   "style": "2a963bd6",
    "content": "eacbd584",
    "text": "Order matters: Task 1 establishes the gitignore "
   },
@@ -195,7 +195,7 @@
    "kind": "rule",
    "top": 1793,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -204,7 +204,7 @@
    "kind": "heading",
    "top": 1841,
    "h": 55,
-   "style": "1975ad39",
+   "style": "e84b0edf",
    "content": "d27f0c93",
    "text": "Task 1: wiki-init — generate .gitignore and docu"
   },
@@ -213,7 +213,7 @@
    "kind": "paragraph",
    "top": 1896,
    "h": 32,
-   "style": "3a803b72",
+   "style": "f8572e0c",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 1928,
    "h": 61,
-   "style": "7ea05c44",
+   "style": "17d3a56e",
    "content": "90047294",
    "text": "Modify: skills/wiki-init/SKILL.md (directory dia"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 1990,
    "h": 45,
-   "style": "e720ae93",
+   "style": "8a39cab9",
    "content": "ee5674f6",
    "text": "Step 1: Verify the current directory diagram and"
   },
@@ -240,7 +240,7 @@
    "kind": "paragraph",
    "top": 2034,
    "h": 148,
-   "style": "b18ed766",
+   "style": "771b862a",
    "content": "211fecc2",
    "text": "Run: sed -n '29,41p' skills/wiki-init/SKILL.md &"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2182,
    "h": 45,
-   "style": "cda19045",
+   "style": "7d8409cf",
    "content": "51185aea",
    "text": "Step 2: Add .gitignore to the directory diagram"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 2226,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "c1761036",
    "text": "Find (lines ~29-39):"
   },
@@ -267,7 +267,7 @@
    "kind": "code",
    "top": 2270,
    "h": 195,
-   "style": "a20f8871",
+   "style": "3b713325",
    "content": "af4588c5",
    "text": "<wiki-root>/ ├── SCHEMA.md ← conventions + absol"
   },
@@ -276,7 +276,7 @@
    "kind": "paragraph",
    "top": 2465,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "89c73e35",
    "text": "Replace with:"
   },
@@ -285,7 +285,7 @@
    "kind": "code",
    "top": 2508,
    "h": 212,
-   "style": "36563a49",
+   "style": "502e9a2b",
    "content": "2f883dfc",
    "text": "<wiki-root>/ ├── SCHEMA.md ← conventions + absol"
   },
@@ -294,7 +294,7 @@
    "kind": "listItem",
    "top": 2720,
    "h": 45,
-   "style": "20151517",
+   "style": "4bad6015",
    "content": "50eabe1e",
    "text": "Step 3: Add a .gitignore write step after the \"C"
   },
@@ -303,7 +303,7 @@
    "kind": "paragraph",
    "top": 2765,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "c393e626",
    "text": "Find (line ~41):"
   },
@@ -312,7 +312,7 @@
    "kind": "code",
    "top": 2808,
    "h": 82,
-   "style": "ef7e5be4",
+   "style": "f9a843b4",
    "content": "59cd3489",
    "text": "**Critical:** `wiki/pages/` is flat. All pages l"
   },
@@ -321,7 +321,7 @@
    "kind": "paragraph",
    "top": 2890,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "cb1c0ce5",
    "text": "Insert immediately AFTER it:"
   },
@@ -330,7 +330,7 @@
    "kind": "code",
    "top": 2934,
    "h": 362,
-   "style": "b498564a",
+   "style": "89cc4f68",
    "content": "16fafbe9",
    "text": "Ensure `<wiki-root>/.gitignore` excludes audit r"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 3295,
    "h": 45,
-   "style": "20b32593",
+   "style": "d50b4ab9",
    "content": "b105d9cc",
    "text": "Step 4: Document the review: token in the SCHEMA"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 3340,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "0cac8cd5",
    "text": "Find the end of the Citations block (lines ~128-"
   },
@@ -357,7 +357,7 @@
    "kind": "code",
    "top": 3384,
    "h": 182,
-   "style": "23eeaf02",
+   "style": "b28dc4b0",
    "content": "5b4f25ba",
    "text": "**Drive-by citation examples:** \\``` [^3]: raw/s"
   },
@@ -366,7 +366,7 @@
    "kind": "paragraph",
    "top": 3565,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "89c73e35",
    "text": "Replace with:"
   },
@@ -375,7 +375,7 @@
    "kind": "code",
    "top": 3609,
    "h": 622,
-   "style": "3b7744e8",
+   "style": "b7e97cc2",
    "content": "1b9380d5",
    "text": "**Drive-by citation examples:** \\``` [^3]: raw/s"
   },
@@ -384,7 +384,7 @@
    "kind": "listItem",
    "top": 4231,
    "h": 45,
-   "style": "60fc0913",
+   "style": "159f3881",
    "content": "7ba03623",
    "text": "Step 5: Verify the edits landed"
   },
@@ -393,7 +393,7 @@
    "kind": "paragraph",
    "top": 4275,
    "h": 148,
-   "style": "48338a87",
+   "style": "8ca837fb",
    "content": "bedbedbc",
    "text": "Run: rg -n 'wiki/pages/audit-\\*\\.md|\\.gitignore|"
   },
@@ -402,7 +402,7 @@
    "kind": "listItem",
    "top": 4423,
    "h": 45,
-   "style": "704bc697",
+   "style": "3072f865",
    "content": "3ebd93fa",
    "text": "Step 6: Commit"
   },
@@ -411,7 +411,7 @@
    "kind": "code",
    "top": 4467,
    "h": 122,
-   "style": "1747a18c",
+   "style": "380fa066",
    "content": "d43fbd78",
    "text": "git add skills/wiki-init/SKILL.md git commit -m "
   },
@@ -420,7 +420,7 @@
    "kind": "rule",
    "top": 4589,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -429,7 +429,7 @@
    "kind": "heading",
    "top": 4637,
    "h": 32,
-   "style": "39c62ecb",
+   "style": "be7b78f9",
    "content": "38894a04",
    "text": "Task 2: wiki-audit — strong-mode entry and intro"
   },
@@ -438,7 +438,7 @@
    "kind": "paragraph",
    "top": 4669,
    "h": 32,
-   "style": "3a803b72",
+   "style": "f8572e0c",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -447,7 +447,7 @@
    "kind": "listItem",
    "top": 4701,
    "h": 61,
-   "style": "8da4ff52",
+   "style": "5c3dd074",
    "content": "677a769f",
    "text": "Modify: skills/wiki-audit/SKILL.md (intro line ~"
   },
@@ -456,7 +456,7 @@
    "kind": "listItem",
    "top": 4762,
    "h": 45,
-   "style": "b23535b2",
+   "style": "96a11038",
    "content": "f891fe79",
    "text": "Step 1: Verify the current intro and page-resolu"
   },
@@ -465,7 +465,7 @@
    "kind": "paragraph",
    "top": 4807,
    "h": 122,
-   "style": "87be4fa2",
+   "style": "847ebac6",
    "content": "b6c75d64",
    "text": "Run: sed -n '8,8p' skills/wiki-audit/SKILL.md &&"
   },
@@ -474,7 +474,7 @@
    "kind": "listItem",
    "top": 4929,
    "h": 45,
-   "style": "48859c2c",
+   "style": "cc690ebe",
    "content": "4d8208e8",
    "text": "Step 2: Update the intro to mention strong mode'"
   },
@@ -483,7 +483,7 @@
    "kind": "paragraph",
    "top": 4973,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "a0bc0fcb",
    "text": "Find (line 8):"
   },
@@ -492,7 +492,7 @@
    "kind": "code",
    "top": 5017,
    "h": 102,
-   "style": "a195eb5d",
+   "style": "93bc3141",
    "content": "eea2af4a",
    "text": "Verify a single wiki page against its cited sour"
   },
@@ -501,7 +501,7 @@
    "kind": "paragraph",
    "top": 5119,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "89c73e35",
    "text": "Replace with:"
   },
@@ -510,7 +510,7 @@
    "kind": "code",
    "top": 5162,
    "h": 162,
-   "style": "9e992a07",
+   "style": "e0c81553",
    "content": "9709eece",
    "text": "Verify a single wiki page against its cited sour"
   },
@@ -519,7 +519,7 @@
    "kind": "listItem",
    "top": 5324,
    "h": 71,
-   "style": "bbcf8bbf",
+   "style": "c8931ac5",
    "content": "84d6d867",
    "text": "Step 3: Add strong-mode argument parsing to the "
   },
@@ -528,7 +528,7 @@
    "kind": "paragraph",
    "top": 5394,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "791fc189",
    "text": "Find (line 37):"
   },
@@ -537,7 +537,7 @@
    "kind": "code",
    "top": 5438,
    "h": 82,
-   "style": "c19abe90",
+   "style": "764783a0",
    "content": "96894b7a",
    "text": "If the user did not name a page, ask which page "
   },
@@ -546,7 +546,7 @@
    "kind": "paragraph",
    "top": 5520,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "89c73e35",
    "text": "Replace with:"
   },
@@ -555,7 +555,7 @@
    "kind": "code",
    "top": 5563,
    "h": 182,
-   "style": "dd14261d",
+   "style": "65073739",
    "content": "4d859ef0",
    "text": "**Mode:** if the invocation arguments contain th"
   },
@@ -564,7 +564,7 @@
    "kind": "listItem",
    "top": 5745,
    "h": 45,
-   "style": "60fc0913",
+   "style": "159f3881",
    "content": "d9cc2c56",
    "text": "Step 4: Verify the edits landed"
   },
@@ -573,7 +573,7 @@
    "kind": "paragraph",
    "top": 5790,
    "h": 70,
-   "style": "24032fb1",
+   "style": "8be3ab59",
    "content": "b61cd213",
    "text": "Run: rg -n 'strong mode|wiki-audit strong|Phase "
   },
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 5859,
    "h": 45,
-   "style": "704bc697",
+   "style": "3072f865",
    "content": "c5f9adef",
    "text": "Step 5: Commit"
   },
@@ -591,7 +591,7 @@
    "kind": "code",
    "top": 5904,
    "h": 122,
-   "style": "a409a359",
+   "style": "ceb13995",
    "content": "c0c0e05b",
    "text": "git add skills/wiki-audit/SKILL.md git commit -m"
   },
@@ -600,7 +600,7 @@
    "kind": "rule",
    "top": 6026,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 6073,
    "h": 55,
-   "style": "172cac88",
+   "style": "e5f3ff6a",
    "content": "390fffb8",
    "text": "Task 3: wiki-audit — Phase C (cross-model advers"
   },
@@ -618,7 +618,7 @@
    "kind": "paragraph",
    "top": 6128,
    "h": 96,
-   "style": "c61d5e01",
+   "style": "3631e5e5",
    "content": "cc493204",
    "text": "Insert a new section between Phase B (ends with "
   },
@@ -627,7 +627,7 @@
    "kind": "paragraph",
    "top": 6224,
    "h": 32,
-   "style": "3a803b72",
+   "style": "f8572e0c",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 6256,
    "h": 61,
-   "style": "bb16b077",
+   "style": "06c5c371",
    "content": "23efccd2",
    "text": "Modify: skills/wiki-audit/SKILL.md (insert befor"
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 6317,
    "h": 45,
-   "style": "8beec465",
+   "style": "14331acf",
    "content": "a6372103",
    "text": "Step 1: Verify the insertion point"
   },
@@ -654,7 +654,7 @@
    "kind": "paragraph",
    "top": 6362,
    "h": 122,
-   "style": "7a8ea923",
+   "style": "abb07b77",
    "content": "73558860",
    "text": "Run: sed -n '106,112p' skills/wiki-audit/SKILL.m"
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 6484,
    "h": 45,
-   "style": "91298f3c",
+   "style": "cf4643de",
    "content": "21133160",
    "text": "Step 2: Insert the Phase C section"
   },
@@ -672,7 +672,7 @@
    "kind": "paragraph",
    "top": 6528,
    "h": 44,
-   "style": "aa3d629d",
+   "style": "ba59ff05",
    "content": "1f377a1c",
    "text": "Insert immediately BEFORE the line ### 4. Write "
   },
@@ -681,7 +681,7 @@
    "kind": "code",
    "top": 6572,
    "h": 602,
-   "style": "18633e21",
+   "style": "61db5d5d",
    "content": "866c4cf8",
    "text": "### 3b. Phase C — cross-model adversarial review"
   },
@@ -690,7 +690,7 @@
    "kind": "paragraph",
    "top": 7174,
    "h": 110,
-   "style": "72893477",
+   "style": "eab6c9b1",
    "content": "21ca0ff1",
    "text": "You are an adversarial reviewer. Given a wiki pa"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 7284,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "3d750959",
    "text": "\"overreach\": a claim generalizes beyond what its"
   },
@@ -708,7 +708,7 @@
    "kind": "listItem",
    "top": 7312,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "c39ba217",
    "text": "\"internal-contradiction\": two claims on this pag"
   },
@@ -717,7 +717,7 @@
    "kind": "listItem",
    "top": 7341,
    "h": 97,
-   "style": "defdc77c",
+   "style": "cc83eb3a",
    "content": "80455c5b",
    "text": "\"cross-page-contradiction\": a claim conflicts wi"
   },
@@ -726,7 +726,7 @@
    "kind": "code",
    "top": 7437,
    "h": 462,
-   "style": "8661f466",
+   "style": "488daaba",
    "content": "0d4bede3",
    "text": "**4. Invoke the reviewer** in non-interactive mo"
   },
@@ -735,7 +735,7 @@
    "kind": "paragraph",
    "top": 7899,
    "h": 174,
-   "style": "131b3809",
+   "style": "79aa351d",
    "content": "76972d0d",
    "text": "review:model: codex # gemini | claude-sonnet, pe"
   },
@@ -744,7 +744,7 @@
    "kind": "code",
    "top": 8073,
    "h": 62,
-   "style": "c5479ff7",
+   "style": "19c13a33",
    "content": "776761b3",
    "text": "Carry the Phase C findings into step 4's report."
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 8135,
    "h": 45,
-   "style": "8987ab51",
+   "style": "eeb5ae5b",
    "content": "9555a3e4",
    "text": "Step 3: Verify the section landed in the right p"
   },
@@ -762,7 +762,7 @@
    "kind": "paragraph",
    "top": 8179,
    "h": 122,
-   "style": "1068db9c",
+   "style": "2955edd8",
    "content": "e50c32cb",
    "text": "Run: rg -n '### 3b. Phase C|provider chain|comma"
   },
@@ -771,7 +771,7 @@
    "kind": "paragraph",
    "top": 8301,
    "h": 122,
-   "style": "d3a5754e",
+   "style": "e2417aaa",
    "content": "bc30cd3c",
    "text": "Run: rg -n '^### ' skills/wiki-audit/SKILL.mdExp"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 8422,
    "h": 45,
-   "style": "704bc697",
+   "style": "3072f865",
    "content": "e799c660",
    "text": "Step 4: Commit"
   },
@@ -789,7 +789,7 @@
    "kind": "code",
    "top": 8467,
    "h": 122,
-   "style": "75f8f8ee",
+   "style": "9d1ae9e6",
    "content": "39d54e8e",
    "text": "git add skills/wiki-audit/SKILL.md git commit -m"
   },
@@ -798,7 +798,7 @@
    "kind": "rule",
    "top": 8589,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -807,7 +807,7 @@
    "kind": "heading",
    "top": 8636,
    "h": 55,
-   "style": "172cac88",
+   "style": "e5f3ff6a",
    "content": "a1fb3113",
    "text": "Task 4: wiki-audit — report section, gitignore s"
   },
@@ -816,7 +816,7 @@
    "kind": "paragraph",
    "top": 8691,
    "h": 32,
-   "style": "3a803b72",
+   "style": "f8572e0c",
    "content": "dcd190be",
    "text": "Files:"
   },
@@ -825,7 +825,7 @@
    "kind": "listItem",
    "top": 8724,
    "h": 61,
-   "style": "8da4ff52",
+   "style": "5c3dd074",
    "content": "1879dc6e",
    "text": "Modify: skills/wiki-audit/SKILL.md (report templ"
   },
@@ -834,7 +834,7 @@
    "kind": "listItem",
    "top": 8785,
    "h": 45,
-   "style": "8cf8747c",
+   "style": "63283ef6",
    "content": "f929d2e0",
    "text": "Step 1: Verify the current report template, inde"
   },
@@ -843,7 +843,7 @@
    "kind": "paragraph",
    "top": 8829,
    "h": 148,
-   "style": "f869da3d",
+   "style": "843b86f1",
    "content": "3d8fc842",
    "text": "Run: sed -n '124,151p' skills/wiki-audit/SKILL.m"
   },
@@ -852,7 +852,7 @@
    "kind": "listItem",
    "top": 8977,
    "h": 45,
-   "style": "06af5227",
+   "style": "e79d9e71",
    "content": "2af556bd",
    "text": "Step 2: Add the cross-model line to the report S"
   },
@@ -861,7 +861,7 @@
    "kind": "paragraph",
    "top": 9022,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "1eccf75e",
    "text": "Find (lines ~124-127):"
   },
@@ -870,7 +870,7 @@
    "kind": "code",
    "top": 9065,
    "h": 122,
-   "style": "5ccb6940",
+   "style": "7a8af12c",
    "content": "fa903e04",
    "text": "## Summary - Cited claims verified: N - ✅ Suppor"
   },
@@ -879,7 +879,7 @@
    "kind": "paragraph",
    "top": 9187,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "89c73e35",
    "text": "Replace with:"
   },
@@ -888,7 +888,7 @@
    "kind": "code",
    "top": 9231,
    "h": 142,
-   "style": "685a206d",
+   "style": "a65eedbf",
    "content": "60f2505e",
    "text": "## Summary - Cited claims verified: N - ✅ Suppor"
   },
@@ -897,7 +897,7 @@
    "kind": "listItem",
    "top": 9372,
    "h": 45,
-   "style": "a55c3176",
+   "style": "59115314",
    "content": "ddb2caef",
    "text": "Step 3: Add the Cross-Model Review section to th"
   },
@@ -906,7 +906,7 @@
    "kind": "paragraph",
    "top": 9417,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "5570176e",
    "text": "Find the tail of the report template (lines ~147"
   },
@@ -915,7 +915,7 @@
    "kind": "code",
    "top": 9461,
    "h": 102,
-   "style": "e9fb2381",
+   "style": "4f21ae07",
    "content": "c43340ef",
    "text": "## ✅ Supported - [^1], [^2], [^4], [^6], [^8] — "
   },
@@ -924,7 +924,7 @@
    "kind": "paragraph",
    "top": 9562,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "89c73e35",
    "text": "Replace with:"
   },
@@ -933,7 +933,7 @@
    "kind": "code",
    "top": 9606,
    "h": 402,
-   "style": "9b2ad6db",
+   "style": "f3888cfb",
    "content": "23bad5aa",
    "text": "## ✅ Supported - [^1], [^2], [^4], [^6], [^8] — "
   },
@@ -942,7 +942,7 @@
    "kind": "listItem",
    "top": 10008,
    "h": 71,
-   "style": "ee72893d",
+   "style": "7cc61e87",
    "content": "300c075a",
    "text": "Step 4: Replace the \"add to index\" line with the"
   },
@@ -951,7 +951,7 @@
    "kind": "paragraph",
    "top": 10078,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "f89762b0",
    "text": "Find (line ~151):"
   },
@@ -960,7 +960,7 @@
    "kind": "code",
    "top": 10122,
    "h": 82,
-   "style": "59d3276c",
+   "style": "47a87f3c",
    "content": "da4a498c",
    "text": "Add the report to `wiki/index.md` under the `Mai"
   },
@@ -969,7 +969,7 @@
    "kind": "paragraph",
    "top": 10204,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "89c73e35",
    "text": "Replace with:"
   },
@@ -978,7 +978,7 @@
    "kind": "code",
    "top": 10247,
    "h": 202,
-   "style": "69da03f3",
+   "style": "7fb1f4df",
    "content": "81a5b0b1",
    "text": "**Audit reports are local-only artifacts.** Befo"
   },
@@ -987,7 +987,7 @@
    "kind": "listItem",
    "top": 10449,
    "h": 45,
-   "style": "09306110",
+   "style": "08a20cba",
    "content": "283ca31f",
    "text": "Step 5: Note the local-only report in the log st"
   },
@@ -996,7 +996,7 @@
    "kind": "paragraph",
    "top": 10494,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "9f631b10",
    "text": "Find (lines ~164-172):"
   },
@@ -1005,7 +1005,7 @@
    "kind": "code",
    "top": 10537,
    "h": 222,
-   "style": "f2ef3f38",
+   "style": "00ad08ca",
    "content": "00d77a97",
    "text": "### 6. Append to `wiki/log.md` Always append — d"
   },
@@ -1014,7 +1014,7 @@
    "kind": "paragraph",
    "top": 10759,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "89c73e35",
    "text": "Replace with:"
   },
@@ -1023,7 +1023,7 @@
    "kind": "code",
    "top": 10802,
    "h": 242,
-   "style": "8bf30d10",
+   "style": "d8d55c38",
    "content": "3d701e55",
    "text": "### 6. Append to `wiki/log.md` Always append — d"
   },
@@ -1032,7 +1032,7 @@
    "kind": "listItem",
    "top": 11044,
    "h": 45,
-   "style": "60fc0913",
+   "style": "159f3881",
    "content": "9a4f9708",
    "text": "Step 6: Verify the edits landed"
   },
@@ -1041,7 +1041,7 @@
    "kind": "paragraph",
    "top": 11089,
    "h": 148,
-   "style": "bb937202",
+   "style": "99f6e536",
    "content": "f89a5d59",
    "text": "Run: rg -n '🧪 Cross-model disagreements|## 🧪 C"
   },
@@ -1050,7 +1050,7 @@
    "kind": "paragraph",
    "top": 11236,
    "h": 70,
-   "style": "5956bcf0",
+   "style": "ac3bba78",
    "content": "cd1e4e91",
    "text": "Run: rg -n 'Add the report to .wiki/index.md' sk"
   },
@@ -1059,7 +1059,7 @@
    "kind": "listItem",
    "top": 11306,
    "h": 45,
-   "style": "704bc697",
+   "style": "3072f865",
    "content": "62ee2751",
    "text": "Step 7: Commit"
   },
@@ -1068,7 +1068,7 @@
    "kind": "code",
    "top": 11351,
    "h": 122,
-   "style": "d5789920",
+   "style": "495f9b04",
    "content": "d40c5b6f",
    "text": "git add skills/wiki-audit/SKILL.md git commit -m"
   },
@@ -1077,7 +1077,7 @@
    "kind": "rule",
    "top": 11472,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1086,7 +1086,7 @@
    "kind": "heading",
    "top": 11520,
    "h": 32,
-   "style": "51effc8d",
+   "style": "e5868fa3",
    "content": "52bc9f99",
    "text": "Task 5: Cross-file consistency check + spec trac"
   },
@@ -1095,7 +1095,7 @@
    "kind": "paragraph",
    "top": 11552,
    "h": 70,
-   "style": "ff8916de",
+   "style": "2a963bd6",
    "content": "602ea54e",
    "text": "No new content — a final guard that the token, g"
   },
@@ -1104,7 +1104,7 @@
    "kind": "listItem",
    "top": 11621,
    "h": 45,
-   "style": "5173969f",
+   "style": "39be00b9",
    "content": "06660512",
    "text": "Step 1: Gitignore pattern is byte-identical in b"
   },
@@ -1113,7 +1113,7 @@
    "kind": "paragraph",
    "top": 11666,
    "h": 148,
-   "style": "6f2f4830",
+   "style": "32ce86ec",
    "content": "afba9054",
    "text": "Run: rg -n 'wiki/pages/audit-\\*\\.md' skills/wiki"
   },
@@ -1122,7 +1122,7 @@
    "kind": "listItem",
    "top": 11814,
    "h": 71,
-   "style": "42d5836d",
+   "style": "0fa623ef",
    "content": "4445bfaa",
    "text": "Step 2: review: token fields and values match be"
   },
@@ -1131,7 +1131,7 @@
    "kind": "paragraph",
    "top": 11884,
    "h": 174,
-   "style": "83be597d",
+   "style": "af8c9401",
    "content": "2f781927",
    "text": "Run: rg -n 'model: codex|provider: openai|status"
   },
@@ -1140,7 +1140,7 @@
    "kind": "listItem",
    "top": 12058,
    "h": 45,
-   "style": "9b4f47c2",
+   "style": "b251cf54",
    "content": "ef48778c",
    "text": "Step 3: Provider chain order is identical wherev"
   },
@@ -1149,7 +1149,7 @@
    "kind": "paragraph",
    "top": 12102,
    "h": 96,
-   "style": "18aee1f9",
+   "style": "660346cd",
    "content": "be347068",
    "text": "Run: rg -n 'codex|gemini|claude-sonnet' skills/w"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 12198,
    "h": 45,
-   "style": "da1cc133",
+   "style": "d052bf8d",
    "content": "5a36fd8c",
    "text": "Step 4: Section numbering is intact"
   },
@@ -1167,7 +1167,7 @@
    "kind": "paragraph",
    "top": 12242,
    "h": 122,
-   "style": "6f098a12",
+   "style": "00e52de6",
    "content": "20ab3697",
    "text": "Run: rg -n '^### ' skills/wiki-audit/SKILL.mdExp"
   },
@@ -1176,7 +1176,7 @@
    "kind": "listItem",
    "top": 12364,
    "h": 45,
-   "style": "c2796508",
+   "style": "c1ec31d6",
    "content": "286b2278",
    "text": "Step 5: Final manual trace against the spec"
   },
@@ -1185,7 +1185,7 @@
    "kind": "paragraph",
    "top": 12409,
    "h": 200,
-   "style": "7f7981a3",
+   "style": "35892def",
    "content": "fd2211ce",
    "text": "Re-read the design spec's \"Phase C\", \"Frontmatte"
   },
@@ -1194,7 +1194,7 @@
    "kind": "listItem",
    "top": 12608,
    "h": 45,
-   "style": "8838b0cb",
+   "style": "f0285fe1",
    "content": "70b7944c",
    "text": "Step 6: Commit (only if Steps 1-5 required fixes"
   },
@@ -1203,7 +1203,7 @@
    "kind": "code",
    "top": 12653,
    "h": 122,
-   "style": "b7be1d05",
+   "style": "07c1b85d",
    "content": "7bf70dc7",
    "text": "git add skills/ git commit -m \"fix: align review"
   },
@@ -1212,7 +1212,7 @@
    "kind": "rule",
    "top": 12774,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1221,7 +1221,7 @@
    "kind": "heading",
    "top": 12822,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "df9d4099",
    "text": "Self-Review (completed by plan author)"
   },
@@ -1230,7 +1230,7 @@
    "kind": "paragraph",
    "top": 12864,
    "h": 278,
-   "style": "d4d69532",
+   "style": "1e5df102",
    "content": "a0b5d335",
    "text": "Spec coverage: Every spec element maps to a task"
   },
@@ -1239,7 +1239,7 @@
    "kind": "paragraph",
    "top": 13142,
    "h": 122,
-   "style": "f256b2de",
+   "style": "aced7e4a",
    "content": "051d032d",
    "text": "Placeholder scan: No TBD/TODO. Every edit step s"
   },
@@ -1248,7 +1248,7 @@
    "kind": "paragraph",
    "top": 13263,
    "h": 174,
-   "style": "12a4573c",
+   "style": "02455768",
    "content": "5e1e9510",
    "text": "Type consistency (here: token + label spelling):"
   }

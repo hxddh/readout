@@ -352,7 +352,11 @@
     "web_code_heavy_plain_frames_*: frames showing code not coloured yet while the code document scrolls (4.0: the",
     "highlighting is in a worker, the page no longer stops to do it). Steady at 2400 px/s: 0, strict. Flinging at",
     "9000 px/s outruns any highlighter (3.9 painted no plain frame there only by stopping the page on every one):",
-    "reported, not gated."
+    "reported, not gated.",
+    "4.0 (2026-10-29): web_find_next_5mb_ms guard 100 -> 200. main itself reads 123-138 ms on the slower Linux",
+    "runner mode (same-runner A/B runs 40802244898 and 40831298662, 18 samples) and 80-84 on the faster one",
+    "(40831306873): the guard failed #99 twice on main's own number. 200 is 1.5x main's highest reading, as the",
+    "other guards; the target stays 50."
   ],
   "update_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 350, "guard": 380 },
   "append_1mb_minstr":          { "where": "linux-callgrind", "unit": "Minstr", "target": 16,   "guard": 17 },
@@ -421,7 +425,7 @@
   "web_drag_5mb_ms":            { "where": "linux-webkit", "unit": "ms",     "target": 340,  "guard": 650 },
   "web_theme_1mb_ms":           { "where": "linux-webkit", "unit": "ms",     "target": 250,  "guard": 446 },
   "web_theme_5mb_ms":           { "where": "linux-webkit", "unit": "ms",     "target": 1300, "guard": 2600 },
-  "web_find_next_5mb_ms":       { "where": "linux-webkit", "unit": "ms",     "target": 50,   "guard": 100 },
+  "web_find_next_5mb_ms":       { "where": "linux-webkit", "unit": "ms",     "target": 50,   "guard": 200 },
   "web_find_next_1mb_selected_ms": { "where": "linux-webkit", "unit": "ms",  "target": 25,   "guard": 50 },
   "web_insert_middle_5mb_ms":   { "where": "linux-webkit", "unit": "ms",     "target": 17,   "guard": 40 },
   "web_stream_frame_p95_5mb_ms": { "where": "linux-webkit", "unit": "ms",    "target": 31,   "guard": 34 },

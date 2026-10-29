@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 97,
-   "style": "efef7570",
+   "style": "fca0636c",
    "content": "75628c97",
    "text": "CLAUDE.md - Swagger UI Codebase Guide"
   },
@@ -15,7 +15,7 @@
    "kind": "quote",
    "top": 109,
    "h": 122,
-   "style": "dd4773f7",
+   "style": "35e8a93f",
    "content": "3187320d",
    "text": "Last Updated: 2026-02-24Version: 5.32.0 (in deve"
   },
@@ -24,7 +24,7 @@
    "kind": "rule",
    "top": 230,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -33,7 +33,7 @@
    "kind": "heading",
    "top": 278,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "8b816bc2",
    "text": "Table of Contents"
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 320,
    "h": 28,
-   "style": "5c50ad9d",
+   "style": "100a2b63",
    "content": "2118ba68",
    "text": "Repository Overview"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 348,
    "h": 28,
-   "style": "ba49c85d",
+   "style": "163e8de7",
    "content": "aaeac0e5",
    "text": "Project Architecture"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 377,
    "h": 28,
-   "style": "fbb384f2",
+   "style": "6bf936b4",
    "content": "005cc63b",
    "text": "Development Setup"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 405,
    "h": 28,
-   "style": "bf64593f",
+   "style": "c24de8a9",
    "content": "de9bbc98",
    "text": "Build System"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 433,
    "h": 28,
-   "style": "dcfe1088",
+   "style": "2997c41e",
    "content": "6a4d5292",
    "text": "Testing Infrastructure"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 462,
    "h": 28,
-   "style": "f6f6570d",
+   "style": "3ce3a193",
    "content": "90d89bcb",
    "text": "Code Style & Conventions"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 490,
    "h": 28,
-   "style": "4b53b632",
+   "style": "29d877f0",
    "content": "9322f7c4",
    "text": "Git Workflow"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 518,
    "h": 28,
-   "style": "9b162a93",
+   "style": "afa3e401",
    "content": "fcb419c1",
    "text": "Plugin Architecture"
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 547,
    "h": 28,
-   "style": "cec1bf50",
+   "style": "acb12076",
    "content": "1193f8a6",
    "text": "Key Files & Directories"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 575,
    "h": 28,
-   "style": "b51b7e2b",
+   "style": "9b29b469",
    "content": "a58d132e",
    "text": "Common Workflows"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 603,
    "h": 45,
-   "style": "bb63fe29",
+   "style": "1d00b367",
    "content": "071f0cf4",
    "text": "Important Guidelines"
   },
@@ -141,7 +141,7 @@
    "kind": "rule",
    "top": 648,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -150,7 +150,7 @@
    "kind": "heading",
    "top": 695,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "2118ba68",
    "text": "Repository Overview"
   },
@@ -159,7 +159,7 @@
    "kind": "heading",
    "top": 738,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "861ffbda",
    "text": "What is Swagger UI?"
   },
@@ -168,7 +168,7 @@
    "kind": "paragraph",
    "top": 780,
    "h": 96,
-   "style": "2faec0ed",
+   "style": "b673f7c1",
    "content": "8b83c7e5",
    "text": "Swagger UI is a tool that allows developers to v"
   },
@@ -177,7 +177,7 @@
    "kind": "heading",
    "top": 875,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "09e7babf",
    "text": "Multi-Package Monorepo Structure"
   },
@@ -186,7 +186,7 @@
    "kind": "paragraph",
    "top": 917,
    "h": 32,
-   "style": "ba0a167b",
+   "style": "9772b8cd",
    "content": "74957275",
    "text": "This repository publishes three different npm pa"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 950,
    "h": 155,
-   "style": "a1c6ac23",
+   "style": "f6a9a939",
    "content": "dda39c8a",
    "text": "swagger-ui (main package)Traditional npm module "
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 1104,
    "h": 126,
-   "style": "4e0c8347",
+   "style": "69d7bee9",
    "content": "88d9bed3",
    "text": "swagger-ui-dist (distribution package)Dependency"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 1231,
    "h": 164,
-   "style": "3a9e7e54",
+   "style": "7fd51152",
    "content": "f32f3941",
    "text": "swagger-ui-react (React component)React wrapper "
   },
@@ -222,7 +222,7 @@
    "kind": "heading",
    "top": 1395,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "47fba3c2",
    "text": "OpenAPI Specification Compatibility"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 1437,
    "h": 28,
-   "style": "3748f2bb",
+   "style": "2924c589",
    "content": "f70d0bb4",
    "text": "Current Support: OpenAPI 2.0, 3.0.x, 3.1.x"
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 1465,
    "h": 45,
-   "style": "4164be41",
+   "style": "c0ba0457",
    "content": "5f75da9c",
    "text": "Latest Version: v5.31.0 (supports up to OpenAPI "
   },
@@ -249,7 +249,7 @@
    "kind": "heading",
    "top": 1510,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "38e70ee4",
    "text": "License"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 1552,
    "h": 44,
-   "style": "4e26e52d",
+   "style": "abb11505",
    "content": "3f6412f5",
    "text": "Apache 2.0 - See LICENSE and NOTICE files for de"
   },
@@ -267,7 +267,7 @@
    "kind": "rule",
    "top": 1595,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -276,7 +276,7 @@
    "kind": "heading",
    "top": 1643,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "aaeac0e5",
    "text": "Project Architecture"
   },
@@ -285,7 +285,7 @@
    "kind": "heading",
    "top": 1685,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "4fd4bad7",
    "text": "Technology Stack"
   },
@@ -294,7 +294,7 @@
    "kind": "paragraph",
    "top": 1727,
    "h": 32,
-   "style": "b01d3df3",
+   "style": "16f97ba9",
    "content": "76e3fa54",
    "text": "Core Framework:"
   },
@@ -303,7 +303,7 @@
    "kind": "listItem",
    "top": 1759,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "1b391389",
    "text": "React 18 (>=16.8.0 <20) - UI components"
   },
@@ -312,7 +312,7 @@
    "kind": "listItem",
    "top": 1788,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "64db4c2e",
    "text": "Redux 5.0.1 - State management"
   },
@@ -321,7 +321,7 @@
    "kind": "listItem",
    "top": 1816,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "db25486b",
    "text": "Redux Immutable 4.0.0 - Immutable state"
   },
@@ -330,7 +330,7 @@
    "kind": "listItem",
    "top": 1844,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "cae5b17e",
    "text": "Immutable.js 3.x - Immutable data structures"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 1873,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "a38fb2ba",
    "text": "React Redux 9.2.0 - React-Redux bindings"
   },
@@ -348,7 +348,7 @@
    "kind": "paragraph",
    "top": 1918,
    "h": 32,
-   "style": "1199e1de",
+   "style": "7c9af938",
    "content": "ed770447",
    "text": "API & Schema Processing:"
   },
@@ -357,7 +357,7 @@
    "kind": "listItem",
    "top": 1950,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "4149a0a1",
    "text": "swagger-client 3.36.0 - OpenAPI client"
   },
@@ -366,7 +366,7 @@
    "kind": "listItem",
    "top": 1978,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "4c96b2d8",
    "text": "js-yaml 4.1.1 - YAML parsing"
   },
@@ -375,7 +375,7 @@
    "kind": "listItem",
    "top": 2006,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "52a82c64",
    "text": "remarkable 2.0.1 - Markdown rendering"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 2051,
    "h": 32,
-   "style": "530036ee",
+   "style": "5eccdc78",
    "content": "d70f5533",
    "text": "Security:"
   },
@@ -393,7 +393,7 @@
    "kind": "listItem",
    "top": 2084,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "193caaaf",
    "text": "DOMPurify 3.2.6 - HTML sanitization (CRITICAL fo"
   },
@@ -402,7 +402,7 @@
    "kind": "listItem",
    "top": 2112,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "90bb99f4",
    "text": "serialize-error 8.1.0 - Error serialization"
   },
@@ -411,7 +411,7 @@
    "kind": "paragraph",
    "top": 2157,
    "h": 32,
-   "style": "b3ac0ea2",
+   "style": "eab8f1d8",
    "content": "98cda336",
    "text": "Build Tools:"
   },
@@ -420,7 +420,7 @@
    "kind": "listItem",
    "top": 2189,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "cf43495a",
    "text": "Webpack 5.97.1 - Module bundling"
   },
@@ -429,7 +429,7 @@
    "kind": "listItem",
    "top": 2218,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "6f6a55fc",
    "text": "Babel 7.26.x - JavaScript transpilation"
   },
@@ -438,7 +438,7 @@
    "kind": "listItem",
    "top": 2246,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "fc48b913",
    "text": "sass-embedded 1.86.0 - SCSS compilation"
   },
@@ -447,7 +447,7 @@
    "kind": "listItem",
    "top": 2274,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "9b2cf3c9",
    "text": "PostCSS - CSS processing"
   },
@@ -456,7 +456,7 @@
    "kind": "paragraph",
    "top": 2319,
    "h": 32,
-   "style": "5430ca00",
+   "style": "d9e7cd42",
    "content": "34c49c93",
    "text": "Testing:"
   },
@@ -465,7 +465,7 @@
    "kind": "listItem",
    "top": 2352,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "41f46f60",
    "text": "Jest 29.7.0 - Unit testing"
   },
@@ -474,7 +474,7 @@
    "kind": "listItem",
    "top": 2380,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "fa23fb7e",
    "text": "Cypress 14.2.0 - E2E testing"
   },
@@ -483,7 +483,7 @@
    "kind": "listItem",
    "top": 2408,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "a732f0c1",
    "text": "Enzyme 3.11.0 - React component testing"
   },
@@ -492,7 +492,7 @@
    "kind": "paragraph",
    "top": 2453,
    "h": 32,
-   "style": "f00189ca",
+   "style": "2d9c10b0",
    "content": "0e552910",
    "text": "Development:"
   },
@@ -501,7 +501,7 @@
    "kind": "listItem",
    "top": 2486,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "ee2e8579",
    "text": "ESLint 8.57.0 - JavaScript linting"
   },
@@ -510,7 +510,7 @@
    "kind": "listItem",
    "top": 2514,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "e48748e2",
    "text": "Prettier 3.5.3 - Code formatting"
   },
@@ -519,7 +519,7 @@
    "kind": "listItem",
    "top": 2542,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "9e6e2430",
    "text": "Stylelint 16.19.1 - CSS linting"
   },
@@ -528,7 +528,7 @@
    "kind": "listItem",
    "top": 2570,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "51337c0d",
    "text": "Husky 9.1.7 - Git hooks"
   },
@@ -537,7 +537,7 @@
    "kind": "listItem",
    "top": 2599,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "e593509d",
    "text": "lint-staged 15.5.0 - Pre-commit linting"
   },
@@ -546,7 +546,7 @@
    "kind": "heading",
    "top": 2644,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "835fa7af",
    "text": "Plugin-Based Architecture"
   },
@@ -555,7 +555,7 @@
    "kind": "paragraph",
    "top": 2686,
    "h": 58,
-   "style": "e086f265",
+   "style": "8f013d87",
    "content": "9a200f72",
    "text": "Swagger UI uses a sophisticated plugin system po"
   },
@@ -564,7 +564,7 @@
    "kind": "listItem",
    "top": 2744,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "aeb268a6",
    "text": "Plugin registration and lifecycle"
   },
@@ -573,7 +573,7 @@
    "kind": "listItem",
    "top": 2772,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "9f310b78",
    "text": "Redux store creation and middleware"
   },
@@ -582,7 +582,7 @@
    "kind": "listItem",
    "top": 2801,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "0b0ac7ce",
    "text": "State plugin combination"
   },
@@ -591,7 +591,7 @@
    "kind": "listItem",
    "top": 2829,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "e2fc5a70",
    "text": "Action/selector binding"
   },
@@ -600,7 +600,7 @@
    "kind": "listItem",
    "top": 2857,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "d9872d50",
    "text": "Configuration management"
   },
@@ -609,7 +609,7 @@
    "kind": "paragraph",
    "top": 2902,
    "h": 32,
-   "style": "1eddd729",
+   "style": "421bf643",
    "content": "d3dd803c",
    "text": "26 Core Plugins (in src/core/plugins/):"
   },
@@ -618,7 +618,7 @@
    "kind": "listItem",
    "top": 2934,
    "h": 28,
-   "style": "5c9cd20b",
+   "style": "a0de4115",
    "content": "31019445",
    "text": "auth - Authentication handling"
   },
@@ -627,7 +627,7 @@
    "kind": "listItem",
    "top": 2963,
    "h": 28,
-   "style": "15549557",
+   "style": "951cb1c1",
    "content": "4bcc115c",
    "text": "configs - Configuration management"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 2991,
    "h": 28,
-   "style": "0ac4eca6",
+   "style": "30f7b3bc",
    "content": "a95241c8",
    "text": "deep-linking - URL-based navigation"
   },
@@ -645,7 +645,7 @@
    "kind": "listItem",
    "top": 3019,
    "h": 28,
-   "style": "0ac4eca6",
+   "style": "30f7b3bc",
    "content": "e2dee45d",
    "text": "download-url - Spec downloading"
   },
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 3048,
    "h": 28,
-   "style": "195bf1da",
+   "style": "86dc8894",
    "content": "7e574058",
    "text": "err - Error handling and transformation"
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 3076,
    "h": 28,
-   "style": "55bf9155",
+   "style": "f530a2a7",
    "content": "9d481c16",
    "text": "filter - API filtering"
   },
@@ -672,7 +672,7 @@
    "kind": "listItem",
    "top": 3104,
    "h": 28,
-   "style": "2e4b79ad",
+   "style": "a191fc1f",
    "content": "eef0d715",
    "text": "icons - Icon components"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 3133,
    "h": 28,
-   "style": "f50fbd48",
+   "style": "d10b4442",
    "content": "6011ce31",
    "text": "json-schema-2020-12 - JSON Schema 2020-12 suppor"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 3161,
    "h": 28,
-   "style": "506a3115",
+   "style": "e0ce36ab",
    "content": "da1edf11",
    "text": "json-schema-2020-12-samples - Sample generation"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 3189,
    "h": 28,
-   "style": "f4658a7e",
+   "style": "831e8714",
    "content": "33f7c2aa",
    "text": "json-schema-5 - JSON Schema Draft 5 support"
   },
@@ -708,7 +708,7 @@
    "kind": "listItem",
    "top": 3217,
    "h": 28,
-   "style": "457a7ba6",
+   "style": "48c22a18",
    "content": "db6473fd",
    "text": "json-schema-5-samples - Sample generation for Dr"
   },
@@ -717,7 +717,7 @@
    "kind": "listItem",
    "top": 3246,
    "h": 28,
-   "style": "55bf9155",
+   "style": "f530a2a7",
    "content": "615c989b",
    "text": "layout - Layout system"
   },
@@ -726,7 +726,7 @@
    "kind": "listItem",
    "top": 3274,
    "h": 28,
-   "style": "0258386f",
+   "style": "7ac916a9",
    "content": "7563e838",
    "text": "logs - Logging"
   },
@@ -735,7 +735,7 @@
    "kind": "listItem",
    "top": 3302,
    "h": 28,
-   "style": "0258386f",
+   "style": "7ac916a9",
    "content": "3efe94ea",
    "text": "oas3 - OpenAPI 3.0.x support"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 3331,
    "h": 28,
-   "style": "2e4b79ad",
+   "style": "a191fc1f",
    "content": "2896cf20",
    "text": "oas31 - OpenAPI 3.1.x support"
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 3359,
    "h": 28,
-   "style": "2e4b79ad",
+   "style": "a191fc1f",
    "content": "84199220",
    "text": "oas32 - OpenAPI 3.2.x support"
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 3387,
    "h": 28,
-   "style": "ef13e134",
+   "style": "0d29c422",
    "content": "02d5944b",
    "text": "on-complete - Completion callbacks"
   },
@@ -771,7 +771,7 @@
    "kind": "listItem",
    "top": 3416,
    "h": 28,
-   "style": "60b8b883",
+   "style": "770b1529",
    "content": "a105460a",
    "text": "request-snippets - Code snippet generation"
   },
@@ -780,7 +780,7 @@
    "kind": "listItem",
    "top": 3444,
    "h": 28,
-   "style": "ef13e134",
+   "style": "0d29c422",
    "content": "ab9c9eb2",
    "text": "safe-render - Safe component rendering"
   },
@@ -789,7 +789,7 @@
    "kind": "listItem",
    "top": 3472,
    "h": 28,
-   "style": "0258386f",
+   "style": "7ac916a9",
    "content": "d29ad599",
    "text": "spec - Specification handling"
   },
@@ -798,7 +798,7 @@
    "kind": "listItem",
    "top": 3500,
    "h": 28,
-   "style": "07f2aab0",
+   "style": "757ee87e",
    "content": "1524f7eb",
    "text": "swagger-client - API client integration"
   },
@@ -807,7 +807,7 @@
    "kind": "listItem",
    "top": 3529,
    "h": 28,
-   "style": "f50fbd48",
+   "style": "d10b4442",
    "content": "6b26c64d",
    "text": "syntax-highlighting - Code highlighting"
   },
@@ -816,7 +816,7 @@
    "kind": "listItem",
    "top": 3557,
    "h": 28,
-   "style": "0258386f",
+   "style": "7ac916a9",
    "content": "2bdd6fa2",
    "text": "util - Utilities"
   },
@@ -825,7 +825,7 @@
    "kind": "listItem",
    "top": 3585,
    "h": 28,
-   "style": "2ff6226c",
+   "style": "5aedd5d2",
    "content": "2cb19e28",
    "text": "versions - Version detection"
   },
@@ -834,7 +834,7 @@
    "kind": "listItem",
    "top": 3614,
    "h": 28,
-   "style": "0258386f",
+   "style": "7ac916a9",
    "content": "5d989e68",
    "text": "view - View rendering"
   },
@@ -843,7 +843,7 @@
    "kind": "listItem",
    "top": 3642,
    "h": 45,
-   "style": "e2eb745d",
+   "style": "e688a22f",
    "content": "592622a4",
    "text": "view-legacy - Legacy view support"
   },
@@ -852,7 +852,7 @@
    "kind": "rule",
    "top": 3687,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -861,7 +861,7 @@
    "kind": "heading",
    "top": 3734,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "005cc63b",
    "text": "Development Setup"
   },
@@ -870,7 +870,7 @@
    "kind": "heading",
    "top": 3777,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "347504e0",
    "text": "Prerequisites"
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 3819,
    "h": 28,
-   "style": "87ac37e2",
+   "style": "3a001078",
    "content": "d327d224",
    "text": "Node.js: >=24.21.0 (Node 24.x recommended, as de"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 3847,
    "h": 28,
-   "style": "7d0ce2ee",
+   "style": "ba533ce8",
    "content": "162b300c",
    "text": "npm: >=11.18.0"
   },
@@ -897,7 +897,7 @@
    "kind": "listItem",
    "top": 3875,
    "h": 28,
-   "style": "452595ea",
+   "style": "a8697b18",
    "content": "eb019a7d",
    "text": "Git: Any version"
   },
@@ -906,7 +906,7 @@
    "kind": "listItem",
    "top": 3903,
    "h": 45,
-   "style": "31b636b3",
+   "style": "d7ffacb9",
    "content": "96b3abef",
    "text": "JDK 7+: Required for Nightwatch.js integration t"
   },
@@ -915,7 +915,7 @@
    "kind": "heading",
    "top": 3948,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "b0cfc3c2",
    "text": "Installation Steps"
   },
@@ -924,7 +924,7 @@
    "kind": "code",
    "top": 3990,
    "h": 322,
-   "style": "29da191e",
+   "style": "d2e452a2",
    "content": "82682718",
    "text": "# Clone the repository git clone https://github."
   },
@@ -933,7 +933,7 @@
    "kind": "heading",
    "top": 4312,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "71d07519",
    "text": "Development Server"
   },
@@ -942,7 +942,7 @@
    "kind": "paragraph",
    "top": 4354,
    "h": 70,
-   "style": "83c78516",
+   "style": "d2808f8e",
    "content": "6aca31a5",
    "text": "The npm run dev command starts a hot-reloading W"
   },
@@ -951,7 +951,7 @@
    "kind": "heading",
    "top": 4423,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "2990e21e",
    "text": "Using Local API Definitions"
   },
@@ -960,7 +960,7 @@
    "kind": "paragraph",
    "top": 4465,
    "h": 44,
-   "style": "fe8a44ae",
+   "style": "d1c798d6",
    "content": "0e3c09e5",
    "text": "Edit dev-helpers/dev-helper-initializer.js to ch"
   },
@@ -969,7 +969,7 @@
    "kind": "code",
    "top": 4509,
    "h": 142,
-   "style": "070d05c7",
+   "style": "6c2feb6b",
    "content": "6d629adc",
    "text": "// Replace url: \"https://petstore.swagger.io/v2/"
   },
@@ -978,7 +978,7 @@
    "kind": "paragraph",
    "top": 4651,
    "h": 70,
-   "style": "921986a3",
+   "style": "ee17ed4b",
    "content": "0d519da3",
    "text": "Important: Local files must be in the dev-helper"
   },
@@ -987,7 +987,7 @@
    "kind": "rule",
    "top": 4720,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -996,7 +996,7 @@
    "kind": "heading",
    "top": 4768,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "de9bbc98",
    "text": "Build System"
   },
@@ -1005,7 +1005,7 @@
    "kind": "heading",
    "top": 4810,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "c33393a7",
    "text": "Babel Environments"
   },
@@ -1014,7 +1014,7 @@
    "kind": "paragraph",
    "top": 4852,
    "h": 32,
-   "style": "3c3a9f83",
+   "style": "c58e30b1",
    "content": "18edb3b9",
    "text": "Three Babel environments configured in babel.con"
   },
@@ -1023,7 +1023,7 @@
    "kind": "listItem",
    "top": 4884,
    "h": 28,
-   "style": "bf1b59c1",
+   "style": "c0fddbbb",
    "content": "c804c27e",
    "text": "development/production - Browser builds with mod"
   },
@@ -1032,7 +1032,7 @@
    "kind": "listItem",
    "top": 4913,
    "h": 28,
-   "style": "15d10dc8",
+   "style": "e6d77472",
    "content": "2bbef78a",
    "text": "commonjs - CommonJS modules with modules: \"commo"
   },
@@ -1041,7 +1041,7 @@
    "kind": "listItem",
    "top": 4941,
    "h": 45,
-   "style": "e81011e3",
+   "style": "ef377a09",
    "content": "d85917d7",
    "text": "esm - ES modules with modules: false for modern "
   },
@@ -1050,7 +1050,7 @@
    "kind": "heading",
    "top": 4986,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "196d525b",
    "text": "Babel Aliases"
   },
@@ -1059,7 +1059,7 @@
    "kind": "code",
    "top": 5028,
    "h": 122,
-   "style": "0d3f2e42",
+   "style": "e5d3993e",
    "content": "51262c47",
    "text": "{ root: \".\", core: \"./src/core\" }"
   },
@@ -1068,7 +1068,7 @@
    "kind": "heading",
    "top": 5150,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "c67849a2",
    "text": "Browserslist Environments"
   },
@@ -1077,7 +1077,7 @@
    "kind": "paragraph",
    "top": 5191,
    "h": 32,
-   "style": "483c3de9",
+   "style": "b871fa0b",
    "content": "7f34a5ed",
    "text": "Defined in .browserslistrc:"
   },
@@ -1086,7 +1086,7 @@
    "kind": "listItem",
    "top": 5224,
    "h": 28,
-   "style": "2b2e4294",
+   "style": "e01b2aee",
    "content": "6049bcc3",
    "text": "[browser-production] - Production browser target"
   },
@@ -1095,7 +1095,7 @@
    "kind": "listItem",
    "top": 5252,
    "h": 28,
-   "style": "457a7ba6",
+   "style": "48c22a18",
    "content": "77260e0a",
    "text": "[browser-development] - Latest Chrome, Firefox, "
   },
@@ -1104,7 +1104,7 @@
    "kind": "listItem",
    "top": 5280,
    "h": 28,
-   "style": "f79c3106",
+   "style": "abcfbb18",
    "content": "8f1aa478",
    "text": "[isomorphic-production] - Browser + Node targets"
   },
@@ -1113,7 +1113,7 @@
    "kind": "listItem",
    "top": 5309,
    "h": 28,
-   "style": "5515370c",
+   "style": "a146cf0e",
    "content": "8523023f",
    "text": "[node-production] - Maintained Node versions"
   },
@@ -1122,7 +1122,7 @@
    "kind": "listItem",
    "top": 5337,
    "h": 45,
-   "style": "f3e3add7",
+   "style": "430806d5",
    "content": "0697a778",
    "text": "[node-development] - Node 24"
   },
@@ -1131,7 +1131,7 @@
    "kind": "heading",
    "top": 5382,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "006806bf",
    "text": "Build Commands"
   },
@@ -1140,7 +1140,7 @@
    "kind": "code",
    "top": 5424,
    "h": 302,
-   "style": "98587c5d",
+   "style": "bfe9e875",
    "content": "54396821",
    "text": "# Full build (stylesheets + all bundles) npm run"
   },
@@ -1149,7 +1149,7 @@
    "kind": "heading",
    "top": 5726,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "a7299904",
    "text": "Build Output (dist/)"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 5767,
    "h": 28,
-   "style": "a4f1bada",
+   "style": "1899fee0",
    "content": "7c429508",
    "text": "swagger-ui.js - Core bundle (CommonJS)"
   },
@@ -1167,7 +1167,7 @@
    "kind": "listItem",
    "top": 5796,
    "h": 28,
-   "style": "07f2aab0",
+   "style": "757ee87e",
    "content": "0157abcd",
    "text": "swagger-ui.css - Compiled styles"
   },
@@ -1176,7 +1176,7 @@
    "kind": "listItem",
    "top": 5824,
    "h": 28,
-   "style": "5792dbf0",
+   "style": "fce1ff5a",
    "content": "51de1208",
    "text": "swagger-ui-bundle.js - Isomorphic bundle"
   },
@@ -1185,7 +1185,7 @@
    "kind": "listItem",
    "top": 5852,
    "h": 28,
-   "style": "a24d9fa3",
+   "style": "85a5895d",
    "content": "9e09bcb8",
    "text": "swagger-ui-standalone-preset.js - Standalone pre"
   },
@@ -1194,7 +1194,7 @@
    "kind": "listItem",
    "top": 5881,
    "h": 28,
-   "style": "f79c3106",
+   "style": "abcfbb18",
    "content": "eb6ceaf4",
    "text": "swagger-ui-es-bundle.js - ES module bundle"
   },
@@ -1203,7 +1203,7 @@
    "kind": "listItem",
    "top": 5909,
    "h": 28,
-   "style": "e1bce233",
+   "style": "e2230a91",
    "content": "12f7fecf",
    "text": "swagger-ui-es-bundle-core.js - ES module core"
   },
@@ -1212,7 +1212,7 @@
    "kind": "listItem",
    "top": 5937,
    "h": 45,
-   "style": "2633140d",
+   "style": "3ce37e93",
    "content": "c3878685",
    "text": "oauth2-redirect.html - OAuth2 redirect page"
   },
@@ -1221,7 +1221,7 @@
    "kind": "heading",
    "top": 5982,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "91755967",
    "text": "Webpack Configurations"
   },
@@ -1230,7 +1230,7 @@
    "kind": "paragraph",
    "top": 6024,
    "h": 32,
-   "style": "281e685d",
+   "style": "e554b2d7",
    "content": "814048bb",
    "text": "Located in webpack/ directory:"
   },
@@ -1239,7 +1239,7 @@
    "kind": "listItem",
    "top": 6056,
    "h": 28,
-   "style": "b5397fa2",
+   "style": "38f4ce64",
    "content": "affc376f",
    "text": "_config-builder.js - Base configuration"
   },
@@ -1248,7 +1248,7 @@
    "kind": "listItem",
    "top": 6085,
    "h": 28,
-   "style": "15549557",
+   "style": "951cb1c1",
    "content": "58a47763",
    "text": "core.js - Core build"
   },
@@ -1257,7 +1257,7 @@
    "kind": "listItem",
    "top": 6113,
    "h": 28,
-   "style": "df3d05f8",
+   "style": "f1df99f2",
    "content": "42f579cb",
    "text": "bundle.js - Bundle build"
   },
@@ -1266,7 +1266,7 @@
    "kind": "listItem",
    "top": 6141,
    "h": 28,
-   "style": "f4658a7e",
+   "style": "831e8714",
    "content": "f5a1b863",
    "text": "standalone.js - Standalone build"
   },
@@ -1275,7 +1275,7 @@
    "kind": "listItem",
    "top": 6170,
    "h": 28,
-   "style": "0ac4eca6",
+   "style": "30f7b3bc",
    "content": "9335ad66",
    "text": "es-bundle.js - ES bundle"
   },
@@ -1284,7 +1284,7 @@
    "kind": "listItem",
    "top": 6198,
    "h": 28,
-   "style": "5515370c",
+   "style": "a146cf0e",
    "content": "823f3987",
    "text": "es-bundle-core.js - ES core bundle"
   },
@@ -1293,7 +1293,7 @@
    "kind": "listItem",
    "top": 6226,
    "h": 28,
-   "style": "07f2aab0",
+   "style": "757ee87e",
    "content": "53696f03",
    "text": "stylesheets.js - CSS build"
   },
@@ -1302,7 +1302,7 @@
    "kind": "listItem",
    "top": 6254,
    "h": 28,
-   "style": "55bf9155",
+   "style": "f530a2a7",
    "content": "75b987ee",
    "text": "dev.js - Development server"
   },
@@ -1311,7 +1311,7 @@
    "kind": "listItem",
    "top": 6283,
    "h": 45,
-   "style": "d2082f43",
+   "style": "70ae69cd",
    "content": "f7fc6870",
    "text": "dev-e2e.js - E2E testing server"
   },
@@ -1320,7 +1320,7 @@
    "kind": "rule",
    "top": 6328,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1329,7 +1329,7 @@
    "kind": "heading",
    "top": 6375,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "6a4d5292",
    "text": "Testing Infrastructure"
   },
@@ -1338,7 +1338,7 @@
    "kind": "heading",
    "top": 6418,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "37ca7b3b",
    "text": "Unit Tests (Jest)"
   },
@@ -1347,7 +1347,7 @@
    "kind": "paragraph",
    "top": 6459,
    "h": 44,
-   "style": "2b2b6d2e",
+   "style": "bb3f1196",
    "content": "bbc87a00",
    "text": "Configuration: config/jest/jest.unit.config.js"
   },
@@ -1356,7 +1356,7 @@
    "kind": "paragraph",
    "top": 6503,
    "h": 44,
-   "style": "f440caa5",
+   "style": "ffcdf0ad",
    "content": "72380fc4",
    "text": "Environment: jsdom (simulates browser environmen"
   },
@@ -1365,7 +1365,7 @@
    "kind": "paragraph",
    "top": 6547,
    "h": 44,
-   "style": "900907ac",
+   "style": "7132be64",
    "content": "64421288",
    "text": "Location: test/unit/"
   },
@@ -1374,7 +1374,7 @@
    "kind": "paragraph",
    "top": 6590,
    "h": 44,
-   "style": "90631276",
+   "style": "4d079bee",
    "content": "de15c0b8",
    "text": "Command:"
   },
@@ -1383,7 +1383,7 @@
    "kind": "code",
    "top": 6634,
    "h": 62,
-   "style": "a13be730",
+   "style": "3db727ec",
    "content": "ce87cb8f",
    "text": "npm run test:unit"
   },
@@ -1392,7 +1392,7 @@
    "kind": "paragraph",
    "top": 6696,
    "h": 32,
-   "style": "27c02b3b",
+   "style": "519d1cb5",
    "content": "aad6957b",
    "text": "Key Features:"
   },
@@ -1401,7 +1401,7 @@
    "kind": "listItem",
    "top": 6728,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "cf0a3fce",
    "text": "37 unit test files"
   },
@@ -1410,7 +1410,7 @@
    "kind": "listItem",
    "top": 6756,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "77259c79",
    "text": "Tests for core plugins, components, system"
   },
@@ -1419,7 +1419,7 @@
    "kind": "listItem",
    "top": 6785,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "48e0b08c",
    "text": "XSS security tests"
   },
@@ -1428,7 +1428,7 @@
    "kind": "listItem",
    "top": 6813,
    "h": 28,
-   "style": "d9b6ed68",
+   "style": "10ba864e",
    "content": "ffed53be",
    "text": "Silent mode enabled by default (set to false for"
   },
@@ -1437,7 +1437,7 @@
    "kind": "listItem",
    "top": 6841,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "2000a9ee",
    "text": "Module name mapper for SVG and standalone import"
   },
@@ -1446,7 +1446,7 @@
    "kind": "listItem",
    "top": 6869,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "24fd43d9",
    "text": "Transform ignore patterns for node_modules excep"
   },
@@ -1455,7 +1455,7 @@
    "kind": "paragraph",
    "top": 6914,
    "h": 32,
-   "style": "fbc42793",
+   "style": "323c005d",
    "content": "df57c4dd",
    "text": "Setup Files:"
   },
@@ -1464,7 +1464,7 @@
    "kind": "listItem",
    "top": 6947,
    "h": 28,
-   "style": "1b388f7d",
+   "style": "261e33a3",
    "content": "823ead90",
    "text": "test/unit/jest-shim.js - Polyfills and shims"
   },
@@ -1473,7 +1473,7 @@
    "kind": "listItem",
    "top": 6975,
    "h": 45,
-   "style": "f3e3add7",
+   "style": "430806d5",
    "content": "f123a058",
    "text": "test/unit/setup.js - Test environment setup"
   },
@@ -1482,7 +1482,7 @@
    "kind": "heading",
    "top": 7020,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "4bbe2bce",
    "text": "E2E Tests (Cypress)"
   },
@@ -1491,7 +1491,7 @@
    "kind": "paragraph",
    "top": 7062,
    "h": 44,
-   "style": "81b6bbfb",
+   "style": "b589c123",
    "content": "e6af7a73",
    "text": "Configuration: cypress.config.js"
   },
@@ -1500,7 +1500,7 @@
    "kind": "paragraph",
    "top": 7105,
    "h": 44,
-   "style": "12b103b6",
+   "style": "a117612e",
    "content": "cd4068c4",
    "text": "Location: test/e2e-cypress/"
   },
@@ -1509,7 +1509,7 @@
    "kind": "paragraph",
    "top": 7149,
    "h": 44,
-   "style": "e8fb65a0",
+   "style": "239e48a8",
    "content": "4327aceb",
    "text": "Base URL: http://localhost:3230/"
   },
@@ -1518,7 +1518,7 @@
    "kind": "paragraph",
    "top": 7193,
    "h": 44,
-   "style": "9321f824",
+   "style": "30d9503c",
    "content": "9f8e2c6b",
    "text": "Commands:"
   },
@@ -1527,7 +1527,7 @@
    "kind": "code",
    "top": 7236,
    "h": 262,
-   "style": "8ce66fc7",
+   "style": "f1963923",
    "content": "2844d5ee",
    "text": "# Run all E2E tests npm run cy:ci # Interactive "
   },
@@ -1536,7 +1536,7 @@
    "kind": "paragraph",
    "top": 7498,
    "h": 32,
-   "style": "995c17be",
+   "style": "7f43f15c",
    "content": "7f802ad4",
    "text": "Structure:"
   },
@@ -1545,7 +1545,7 @@
    "kind": "listItem",
    "top": 7530,
    "h": 28,
-   "style": "dfa749da",
+   "style": "01a4f68c",
    "content": "845a5e6d",
    "text": "test/e2e-cypress/e2e/ - Test specs (99 test file"
   },
@@ -1554,7 +1554,7 @@
    "kind": "listItem",
    "top": 7559,
    "h": 28,
-   "style": "f52bd8f5",
+   "style": "13afe6cb",
    "content": "d822da2c",
    "text": "test/e2e-cypress/static/ - Test fixtures and doc"
   },
@@ -1563,7 +1563,7 @@
    "kind": "listItem",
    "top": 7587,
    "h": 45,
-   "style": "dfe607ae",
+   "style": "a42d7978",
    "content": "6d8b0b26",
    "text": "test/e2e-cypress/support/ - Test helpers and com"
   },
@@ -1572,7 +1572,7 @@
    "kind": "paragraph",
    "top": 7632,
    "h": 32,
-   "style": "790502dc",
+   "style": "b1affa76",
    "content": "937fa30b",
    "text": "Test Categories:"
   },
@@ -1581,7 +1581,7 @@
    "kind": "listItem",
    "top": 7664,
    "h": 28,
-   "style": "f85e6734",
+   "style": "d154ab62",
    "content": "542737ee",
    "text": "a11y/**/*cy.js - Accessibility tests"
   },
@@ -1590,7 +1590,7 @@
    "kind": "listItem",
    "top": 7693,
    "h": 28,
-   "style": "89ee5dbe",
+   "style": "a7805100",
    "content": "e5529bb0",
    "text": "security/**/*cy.js - Security tests"
   },
@@ -1599,7 +1599,7 @@
    "kind": "listItem",
    "top": 7721,
    "h": 28,
-   "style": "07f2aab0",
+   "style": "757ee87e",
    "content": "23651a46",
    "text": "bugs/**/*cy.js - Bug regression tests"
   },
@@ -1608,7 +1608,7 @@
    "kind": "listItem",
    "top": 7749,
    "h": 45,
-   "style": "f3e3add7",
+   "style": "430806d5",
    "content": "12dbea27",
    "text": "features/**/*cy.js - Feature tests"
   },
@@ -1617,7 +1617,7 @@
    "kind": "paragraph",
    "top": 7794,
    "h": 44,
-   "style": "e9b810ff",
+   "style": "55285e37",
    "content": "0adc0aa4",
    "text": "Mock API Server:"
   },
@@ -1626,7 +1626,7 @@
    "kind": "code",
    "top": 7838,
    "h": 62,
-   "style": "2b337b24",
+   "style": "51289072",
    "content": "53979047",
    "text": "npm run cy:mock-api # JSON Server on port 3204"
   },
@@ -1635,7 +1635,7 @@
    "kind": "heading",
    "top": 7899,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "029c41c6",
    "text": "Artifact Tests"
   },
@@ -1644,7 +1644,7 @@
    "kind": "paragraph",
    "top": 7941,
    "h": 44,
-   "style": "a4364233",
+   "style": "6f5520db",
    "content": "51109fd4",
    "text": "Configuration: config/jest/jest.artifact.config."
   },
@@ -1653,7 +1653,7 @@
    "kind": "paragraph",
    "top": 7985,
    "h": 44,
-   "style": "af55657f",
+   "style": "7865db27",
    "content": "24715d2c",
    "text": "Purpose: Verify build artifacts export correctly"
   },
@@ -1662,7 +1662,7 @@
    "kind": "paragraph",
    "top": 8029,
    "h": 44,
-   "style": "90631276",
+   "style": "4d079bee",
    "content": "de15c0b8",
    "text": "Command:"
   },
@@ -1671,7 +1671,7 @@
    "kind": "code",
    "top": 8072,
    "h": 62,
-   "style": "877a98b3",
+   "style": "ac2f0eb5",
    "content": "e586c8db",
    "text": "npm run test:artifact"
   },
@@ -1680,7 +1680,7 @@
    "kind": "heading",
    "top": 8134,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "f8a11f16",
    "text": "Complete Test Suite"
   },
@@ -1689,7 +1689,7 @@
    "kind": "code",
    "top": 8176,
    "h": 62,
-   "style": "6bc1e85c",
+   "style": "f2e845c2",
    "content": "61e3b3da",
    "text": "npm test # Runs: lint-errors + test:unit + cy:ci"
   },
@@ -1698,7 +1698,7 @@
    "kind": "heading",
    "top": 8238,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "30d949a5",
    "text": "CI/CD Testing"
   },
@@ -1707,7 +1707,7 @@
    "kind": "paragraph",
    "top": 8279,
    "h": 44,
-   "style": "9d691eea",
+   "style": "63aecc82",
    "content": "98665432",
    "text": "GitHub Actions Workflow: .github/workflows/nodej"
   },
@@ -1716,7 +1716,7 @@
    "kind": "paragraph",
    "top": 8323,
    "h": 32,
-   "style": "fcd6779a",
+   "style": "c895904c",
    "content": "b62361fb",
    "text": "Two Jobs:"
   },
@@ -1725,7 +1725,7 @@
    "kind": "listItem",
    "top": 8355,
    "h": 28,
-   "style": "cb82109c",
+   "style": "514dc9e2",
    "content": "37308c5d",
    "text": "build - Lint, unit tests, build, artifact tests"
   },
@@ -1734,7 +1734,7 @@
    "kind": "listItem",
    "top": 8384,
    "h": 45,
-   "style": "660263b7",
+   "style": "9e9f2039",
    "content": "8ecb3a40",
    "text": "e2e-tests - Cypress tests (matrix strategy with "
   },
@@ -1743,7 +1743,7 @@
    "kind": "paragraph",
    "top": 8429,
    "h": 44,
-   "style": "be175bca",
+   "style": "972f66d2",
    "content": "dfd6fdab",
    "text": "Branches: main, next"
   },
@@ -1752,7 +1752,7 @@
    "kind": "rule",
    "top": 8472,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -1761,7 +1761,7 @@
    "kind": "heading",
    "top": 8520,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "90d89bcb",
    "text": "Code Style & Conventions"
   },
@@ -1770,7 +1770,7 @@
    "kind": "heading",
    "top": 8562,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "e403eb22",
    "text": "ESLint Configuration"
   },
@@ -1779,7 +1779,7 @@
    "kind": "paragraph",
    "top": 8604,
    "h": 44,
-   "style": "63573884",
+   "style": "bf01278c",
    "content": "c9fc0e60",
    "text": "File: .eslintrc.js"
   },
@@ -1788,7 +1788,7 @@
    "kind": "paragraph",
    "top": 8648,
    "h": 44,
-   "style": "81a9024b",
+   "style": "1ba49753",
    "content": "f6d8a57c",
    "text": "Parser: @babel/eslint-parser"
   },
@@ -1797,7 +1797,7 @@
    "kind": "paragraph",
    "top": 8691,
    "h": 32,
-   "style": "32de085b",
+   "style": "61d07dcd",
    "content": "af156363",
    "text": "Key Rules:"
   },
@@ -1806,7 +1806,7 @@
    "kind": "listItem",
    "top": 8723,
    "h": 28,
-   "style": "bb11b1d4",
+   "style": "9509f2a2",
    "content": "9a882071",
    "text": "semi: [2, \"never\"] - No semicolons"
   },
@@ -1815,7 +1815,7 @@
    "kind": "listItem",
    "top": 8752,
    "h": 28,
-   "style": "93fbca2b",
+   "style": "5ed790e9",
    "content": "de653530",
    "text": "quotes: [2, \"double\"] - Double quotes (allow tem"
   },
@@ -1824,7 +1824,7 @@
    "kind": "listItem",
    "top": 8780,
    "h": 28,
-   "style": "5515370c",
+   "style": "a146cf0e",
    "content": "3db336f9",
    "text": "no-unused-vars: 2 - Error on unused variables"
   },
@@ -1833,7 +1833,7 @@
    "kind": "listItem",
    "top": 8808,
    "h": 54,
-   "style": "1480f5da",
+   "style": "e684f708",
    "content": "b90168c0",
    "text": "camelcase: [\"error\"] - Enforce camelCase (with e"
   },
@@ -1842,7 +1842,7 @@
    "kind": "listItem",
    "top": 8863,
    "h": 54,
-   "style": "c15224aa",
+   "style": "289baa48",
    "content": "e0c50691",
    "text": "no-console: [2, {allow: [\"warn\", \"error\"]}] - On"
   },
@@ -1851,7 +1851,7 @@
    "kind": "listItem",
    "top": 8917,
    "h": 28,
-   "style": "5792dbf0",
+   "style": "fce1ff5a",
    "content": "9851b7a5",
    "text": "react/jsx-no-bind: 1 - Warning for JSX bind"
   },
@@ -1860,7 +1860,7 @@
    "kind": "listItem",
    "top": 8945,
    "h": 28,
-   "style": "a28a8866",
+   "style": "2b5d15b8",
    "content": "a66389bd",
    "text": "react/jsx-filename-extension: 2 - JSX only in .j"
   },
@@ -1869,7 +1869,7 @@
    "kind": "listItem",
    "top": 8974,
    "h": 45,
-   "style": "e6dac70a",
+   "style": "f06da500",
    "content": "7466056a",
    "text": "import/no-extraneous-dependencies: 2 - Error on "
   },
@@ -1878,7 +1878,7 @@
    "kind": "paragraph",
    "top": 9019,
    "h": 32,
-   "style": "e41bec8d",
+   "style": "2dff19bb",
    "content": "6426aebc",
    "text": "Extends:"
   },
@@ -1887,7 +1887,7 @@
    "kind": "listItem",
    "top": 9051,
    "h": 28,
-   "style": "b5397fa2",
+   "style": "38f4ce64",
    "content": "a08a69d5",
    "text": "eslint:recommended"
   },
@@ -1896,7 +1896,7 @@
    "kind": "listItem",
    "top": 9079,
    "h": 28,
-   "style": "f52bd8f5",
+   "style": "13afe6cb",
    "content": "cc89ba9b",
    "text": "plugin:react/recommended"
   },
@@ -1905,7 +1905,7 @@
    "kind": "listItem",
    "top": 9107,
    "h": 45,
-   "style": "2a23cb60",
+   "style": "2949b922",
    "content": "c69e2f03",
    "text": "plugin:prettier/recommended"
   },
@@ -1914,7 +1914,7 @@
    "kind": "heading",
    "top": 9152,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "1e7e0918",
    "text": "Prettier Configuration"
   },
@@ -1923,7 +1923,7 @@
    "kind": "paragraph",
    "top": 9194,
    "h": 44,
-   "style": "2b90eae5",
+   "style": "5f0bf50d",
    "content": "df9520d2",
    "text": "File: .prettierrc.yaml"
   },
@@ -1932,7 +1932,7 @@
    "kind": "paragraph",
    "top": 9238,
    "h": 44,
-   "style": "a8bff5c3",
+   "style": "f0da12fb",
    "content": "2bb3a156",
    "text": "Settings:"
   },
@@ -1941,7 +1941,7 @@
    "kind": "code",
    "top": 9281,
    "h": 142,
-   "style": "eb579a1d",
+   "style": "2160fb41",
    "content": "30a9895f",
    "text": "semi: false # No semicolons trailingComma: es5 #"
   },
@@ -1950,7 +1950,7 @@
    "kind": "paragraph",
    "top": 9423,
    "h": 44,
-   "style": "c78958e3",
+   "style": "398d36fb",
    "content": "0e5b6f29",
    "text": "IMPORTANT: Prettier requires @prettier pragma co"
   },
@@ -1959,7 +1959,7 @@
    "kind": "code",
    "top": 9467,
    "h": 102,
-   "style": "cda8c18b",
+   "style": "0ad96bc1",
    "content": "89029cf8",
    "text": "/** * @prettier */"
   },
@@ -1968,7 +1968,7 @@
    "kind": "heading",
    "top": 9569,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "5b65b311",
    "text": "Stylelint Configuration"
   },
@@ -1977,7 +1977,7 @@
    "kind": "paragraph",
    "top": 9610,
    "h": 44,
-   "style": "da9b0956",
+   "style": "dbba79de",
    "content": "ec90e556",
    "text": "File: stylelint.config.js"
   },
@@ -1986,7 +1986,7 @@
    "kind": "paragraph",
    "top": 9654,
    "h": 44,
-   "style": "723bc247",
+   "style": "a5f27ebf",
    "content": "92eeba67",
    "text": "Custom Syntax: postcss-scss"
   },
@@ -1995,7 +1995,7 @@
    "kind": "paragraph",
    "top": 9698,
    "h": 32,
-   "style": "e9c9de1e",
+   "style": "91d948ec",
    "content": "7b18fbce",
    "text": "Rules:"
   },
@@ -2004,7 +2004,7 @@
    "kind": "listItem",
    "top": 9730,
    "h": 28,
-   "style": "d4f8847c",
+   "style": "2b59df02",
    "content": "7174198a",
    "text": "Uses stylelint-prettier plugin"
   },
@@ -2013,7 +2013,7 @@
    "kind": "listItem",
    "top": 9758,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "964202fb",
    "text": "Prettier integration without pragma requirement"
   },
@@ -2022,7 +2022,7 @@
    "kind": "heading",
    "top": 9803,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "5225f39c",
    "text": "Pre-commit Hooks"
   },
@@ -2031,7 +2031,7 @@
    "kind": "paragraph",
    "top": 9845,
    "h": 44,
-   "style": "9e8bf708",
+   "style": "b4b6b870",
    "content": "1d865d81",
    "text": "Husky: .husky/pre-commit runs npx lint-staged"
   },
@@ -2040,7 +2040,7 @@
    "kind": "paragraph",
    "top": 9889,
    "h": 44,
-   "style": "d240c4be",
+   "style": "f6558516",
    "content": "1359d2f1",
    "text": "Lint-staged Configuration: .lintstagedrc"
   },
@@ -2049,7 +2049,7 @@
    "kind": "code",
    "top": 9932,
    "h": 122,
-   "style": "663bfa89",
+   "style": "a110efc9",
    "content": "50a81b91",
    "text": "{ \"*.{js,jsx}\": [\"eslint --max-warnings 0\"], \"*."
   },
@@ -2058,7 +2058,7 @@
    "kind": "paragraph",
    "top": 10054,
    "h": 44,
-   "style": "a36f29d1",
+   "style": "20866609",
    "content": "ccd223e8",
    "text": "Critical: All staged JS/JSX/SCSS files are linte"
   },
@@ -2067,7 +2067,7 @@
    "kind": "heading",
    "top": 10098,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "995fb0a6",
    "text": "File Structure Conventions"
   },
@@ -2076,7 +2076,7 @@
    "kind": "paragraph",
    "top": 10140,
    "h": 32,
-   "style": "91689e42",
+   "style": "0202ad94",
    "content": "da67c421",
    "text": "TypeScript (REQUIRED for all new files):"
   },
@@ -2085,7 +2085,7 @@
    "kind": "listItem",
    "top": 10172,
    "h": 28,
-   "style": "fd6ed86f",
+   "style": "3a0043dd",
    "content": "583300bf",
    "text": "All new source files must be written in TypeScri"
   },
@@ -2094,7 +2094,7 @@
    "kind": "listItem",
    "top": 10200,
    "h": 28,
-   "style": "d16ae1c1",
+   "style": "7560fedf",
    "content": "5a9aff99",
    "text": "Use .tsx for React components, .ts for all other"
   },
@@ -2103,7 +2103,7 @@
    "kind": "listItem",
    "top": 10229,
    "h": 71,
-   "style": "20cffa11",
+   "style": "1539f177",
    "content": "8ac1bed2",
    "text": "Existing .js / .jsx files are not required to be"
   },
@@ -2112,7 +2112,7 @@
    "kind": "paragraph",
    "top": 10300,
    "h": 32,
-   "style": "ce382db8",
+   "style": "01502bb6",
    "content": "3109d2c9",
    "text": "Components:"
   },
@@ -2121,7 +2121,7 @@
    "kind": "listItem",
    "top": 10332,
    "h": 28,
-   "style": "425d3c05",
+   "style": "3ffea123",
    "content": "358f6436",
    "text": "Location: src/core/components/"
   },
@@ -2130,7 +2130,7 @@
    "kind": "listItem",
    "top": 10360,
    "h": 28,
-   "style": "8eb8b152",
+   "style": "cf9096c0",
    "content": "4160fe56",
    "text": "Extension: .tsx (React components — TypeScript)"
   },
@@ -2139,7 +2139,7 @@
    "kind": "listItem",
    "top": 10388,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "14a45990",
    "text": "Format: PascalCase for component names"
   },
@@ -2148,7 +2148,7 @@
    "kind": "paragraph",
    "top": 10433,
    "h": 32,
-   "style": "fa518ab1",
+   "style": "4fed6063",
    "content": "c124397f",
    "text": "Styles:"
   },
@@ -2157,7 +2157,7 @@
    "kind": "listItem",
    "top": 10466,
    "h": 28,
-   "style": "b18feb81",
+   "style": "deccebd3",
    "content": "4844608d",
    "text": "Location: src/style/"
   },
@@ -2166,7 +2166,7 @@
    "kind": "listItem",
    "top": 10494,
    "h": 28,
-   "style": "e39647ec",
+   "style": "6abf6fc2",
    "content": "8ce42316",
    "text": "Extension: .scss"
   },
@@ -2175,7 +2175,7 @@
    "kind": "listItem",
    "top": 10522,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "475ecacc",
    "text": "Format: SCSS with PostCSS processing"
   },
@@ -2184,7 +2184,7 @@
    "kind": "listItem",
    "top": 10551,
    "h": 45,
-   "style": "f2869b7a",
+   "style": "adc25978",
    "content": "0a1b999d",
    "text": "Dark mode: _dark-mode.scss"
   },
@@ -2193,7 +2193,7 @@
    "kind": "paragraph",
    "top": 10596,
    "h": 32,
-   "style": "6f0e192d",
+   "style": "8091fd2b",
    "content": "585aaf68",
    "text": "Tests:"
   },
@@ -2202,7 +2202,7 @@
    "kind": "listItem",
    "top": 10628,
    "h": 28,
-   "style": "2b94278e",
+   "style": "80038a40",
    "content": "05e13da8",
    "text": "Unit: test/unit/ (mirrors source structure)"
   },
@@ -2211,7 +2211,7 @@
    "kind": "listItem",
    "top": 10656,
    "h": 28,
-   "style": "359ce4cd",
+   "style": "6153ee0f",
    "content": "1107be1e",
    "text": "E2E: test/e2e-cypress/e2e/"
   },
@@ -2220,7 +2220,7 @@
    "kind": "listItem",
    "top": 10685,
    "h": 71,
-   "style": "f2563ae7",
+   "style": "42e0d589",
    "content": "78387da7",
    "text": "Naming: *.test.ts, *.spec.ts, *.cy.ts (Cypress) "
   },
@@ -2229,7 +2229,7 @@
    "kind": "rule",
    "top": 10756,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2238,7 +2238,7 @@
    "kind": "heading",
    "top": 10803,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "9322f7c4",
    "text": "Git Workflow"
   },
@@ -2247,7 +2247,7 @@
    "kind": "heading",
    "top": 10845,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "17e79582",
    "text": "Branch Strategy"
   },
@@ -2256,7 +2256,7 @@
    "kind": "paragraph",
    "top": 10887,
    "h": 32,
-   "style": "370c6106",
+   "style": "3e0975a8",
    "content": "914e4802",
    "text": "Main Branches:"
   },
@@ -2265,7 +2265,7 @@
    "kind": "listItem",
    "top": 10920,
    "h": 28,
-   "style": "5c9cd20b",
+   "style": "a0de4115",
    "content": "8c7d1804",
    "text": "main - Production releases"
   },
@@ -2274,7 +2274,7 @@
    "kind": "listItem",
    "top": 10948,
    "h": 45,
-   "style": "0a32488c",
+   "style": "4fd579ca",
    "content": "47bfd39d",
    "text": "next - Next version development"
   },
@@ -2283,7 +2283,7 @@
    "kind": "paragraph",
    "top": 10993,
    "h": 32,
-   "style": "2fafdeb7",
+   "style": "db1f15f1",
    "content": "4ec1ac1f",
    "text": "Feature Branches:"
   },
@@ -2292,7 +2292,7 @@
    "kind": "listItem",
    "top": 11025,
    "h": 28,
-   "style": "59eacb0e",
+   "style": "b7064e7c",
    "content": "e0392821",
    "text": "Should branch from main or next"
   },
@@ -2301,7 +2301,7 @@
    "kind": "listItem",
    "top": 11054,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "e16e380e",
    "text": "Use descriptive names"
   },
@@ -2310,7 +2310,7 @@
    "kind": "heading",
    "top": 11099,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "9970b618",
    "text": "Commit Conventions"
   },
@@ -2319,7 +2319,7 @@
    "kind": "paragraph",
    "top": 11140,
    "h": 44,
-   "style": "33914c8f",
+   "style": "04170c87",
    "content": "73b11674",
    "text": "Format: Conventional Commits (enforced by commit"
   },
@@ -2328,7 +2328,7 @@
    "kind": "paragraph",
    "top": 11184,
    "h": 44,
-   "style": "ddb46122",
+   "style": "f6dddc9a",
    "content": "7f802ad4",
    "text": "Structure:"
   },
@@ -2337,7 +2337,7 @@
    "kind": "code",
    "top": 11228,
    "h": 142,
-   "style": "a2417c6b",
+   "style": "1c85a3a3",
    "content": "dd3406d5",
    "text": "<type>(<scope>): <subject> <body> <footer>"
   },
@@ -2346,7 +2346,7 @@
    "kind": "paragraph",
    "top": 11369,
    "h": 32,
-   "style": "1ff0fca0",
+   "style": "74d859b2",
    "content": "9b9c4d00",
    "text": "Types:"
   },
@@ -2355,7 +2355,7 @@
    "kind": "listItem",
    "top": 11402,
    "h": 28,
-   "style": "5c9cd20b",
+   "style": "a0de4115",
    "content": "09564386",
    "text": "feat - New feature"
   },
@@ -2364,7 +2364,7 @@
    "kind": "listItem",
    "top": 11430,
    "h": 28,
-   "style": "195bf1da",
+   "style": "86dc8894",
    "content": "70294672",
    "text": "fix - Bug fix"
   },
@@ -2373,7 +2373,7 @@
    "kind": "listItem",
    "top": 11458,
    "h": 28,
-   "style": "0258386f",
+   "style": "7ac916a9",
    "content": "18884e3a",
    "text": "docs - Documentation changes"
   },
@@ -2382,7 +2382,7 @@
    "kind": "listItem",
    "top": 11487,
    "h": 28,
-   "style": "2e4b79ad",
+   "style": "a191fc1f",
    "content": "9d337770",
    "text": "style - Code style changes (formatting)"
   },
@@ -2391,7 +2391,7 @@
    "kind": "listItem",
    "top": 11515,
    "h": 28,
-   "style": "2ff6226c",
+   "style": "5aedd5d2",
    "content": "46440d0b",
    "text": "refactor - Code refactoring"
   },
@@ -2400,7 +2400,7 @@
    "kind": "listItem",
    "top": 11543,
    "h": 28,
-   "style": "0258386f",
+   "style": "7ac916a9",
    "content": "1c61ec71",
    "text": "test - Test additions/changes"
   },
@@ -2409,7 +2409,7 @@
    "kind": "listItem",
    "top": 11572,
    "h": 28,
-   "style": "2e4b79ad",
+   "style": "a191fc1f",
    "content": "396aaa15",
    "text": "chore - Build/tooling changes"
   },
@@ -2418,7 +2418,7 @@
    "kind": "listItem",
    "top": 11600,
    "h": 45,
-   "style": "0a32488c",
+   "style": "4fd579ca",
    "content": "885e5a90",
    "text": "perf - Performance improvements"
   },
@@ -2427,7 +2427,7 @@
    "kind": "paragraph",
    "top": 11645,
    "h": 44,
-   "style": "4704b7b0",
+   "style": "f683b1e8",
    "content": "b887aaa1",
    "text": "Example:"
   },
@@ -2436,7 +2436,7 @@
    "kind": "code",
    "top": 11688,
    "h": 162,
-   "style": "3c161689",
+   "style": "2457ac21",
    "content": "3b4e5dc2",
    "text": "feat(oas3): add support for OpenAPI 3.1.1 callba"
   },
@@ -2445,7 +2445,7 @@
    "kind": "heading",
    "top": 11850,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "58527d8a",
    "text": "Pull Request Process"
   },
@@ -2454,7 +2454,7 @@
    "kind": "paragraph",
    "top": 11892,
    "h": 44,
-   "style": "9fdd2e90",
+   "style": "dadf3f68",
    "content": "6a52e6f0",
    "text": "Template: .github/pull_request_template.md"
   },
@@ -2463,7 +2463,7 @@
    "kind": "paragraph",
    "top": 11936,
    "h": 32,
-   "style": "ee619da2",
+   "style": "d0f45544",
    "content": "e2ef4f02",
    "text": "Required Sections:"
   },
@@ -2472,7 +2472,7 @@
    "kind": "listItem",
    "top": 11968,
    "h": 28,
-   "style": "a89c29cf",
+   "style": "36e7b2ad",
    "content": "6b25f874",
    "text": "Description - Detailed change description"
   },
@@ -2481,7 +2481,7 @@
    "kind": "listItem",
    "top": 11996,
    "h": 28,
-   "style": "78b54708",
+   "style": "dc71be9a",
    "content": "3ff319e2",
    "text": "Motivation and Context - Why the change is neede"
   },
@@ -2490,7 +2490,7 @@
    "kind": "listItem",
    "top": 12025,
    "h": 28,
-   "style": "bac86f95",
+   "style": "1c96eeef",
    "content": "d386dece",
    "text": "How Has This Been Tested? - Manual testing detai"
   },
@@ -2499,7 +2499,7 @@
    "kind": "listItem",
    "top": 12053,
    "h": 45,
-   "style": "09a2bb29",
+   "style": "a55aee7f",
    "content": "cc5700cf",
    "text": "Screenshots - If UI changes"
   },
@@ -2508,7 +2508,7 @@
    "kind": "paragraph",
    "top": 12098,
    "h": 32,
-   "style": "2c5834a6",
+   "style": "ad9113f0",
    "content": "7164074f",
    "text": "Checklist:"
   },
@@ -2517,7 +2517,7 @@
    "kind": "listItem",
    "top": 12130,
    "h": 28,
-   "style": "e2d08d22",
+   "style": "21e52698",
    "content": "2c0d025b",
    "text": "Code type (no code/dependencies/bug fix/improvem"
   },
@@ -2526,7 +2526,7 @@
    "kind": "listItem",
    "top": 12158,
    "h": 28,
-   "style": "33931dae",
+   "style": "bc5f8bf4",
    "content": "e98efe25",
    "text": "Breaking changes identification"
   },
@@ -2535,7 +2535,7 @@
    "kind": "listItem",
    "top": 12186,
    "h": 28,
-   "style": "33931dae",
+   "style": "bc5f8bf4",
    "content": "df874b33",
    "text": "Documentation updates"
   },
@@ -2544,7 +2544,7 @@
    "kind": "listItem",
    "top": 12214,
    "h": 28,
-   "style": "33931dae",
+   "style": "bc5f8bf4",
    "content": "28ccac59",
    "text": "Test coverage"
   },
@@ -2553,7 +2553,7 @@
    "kind": "listItem",
    "top": 12242,
    "h": 45,
-   "style": "99996263",
+   "style": "6551880d",
    "content": "ed9e0e3a",
    "text": "All tests passing"
   },
@@ -2562,7 +2562,7 @@
    "kind": "paragraph",
    "top": 12286,
    "h": 32,
-   "style": "e90c8381",
+   "style": "7dd80d0f",
    "content": "d6cd6fb8",
    "text": "CI Checks:"
   },
@@ -2571,7 +2571,7 @@
    "kind": "listItem",
    "top": 12319,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "c042619d",
    "text": "ESLint (error-only mode)"
   },
@@ -2580,7 +2580,7 @@
    "kind": "listItem",
    "top": 12347,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "656a9d5b",
    "text": "Unit tests (Jest)"
   },
@@ -2589,7 +2589,7 @@
    "kind": "listItem",
    "top": 12375,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "2bcbdef2",
    "text": "Build verification"
   },
@@ -2598,7 +2598,7 @@
    "kind": "listItem",
    "top": 12404,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "5cdf3d26",
    "text": "Artifact tests"
   },
@@ -2607,7 +2607,7 @@
    "kind": "listItem",
    "top": 12432,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "efd5a8ee",
    "text": "E2E tests (Cypress)"
   },
@@ -2616,7 +2616,7 @@
    "kind": "heading",
    "top": 12477,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "86dd78e7",
    "text": "Release Process"
   },
@@ -2625,7 +2625,7 @@
    "kind": "paragraph",
    "top": 12519,
    "h": 44,
-   "style": "3c5088f2",
+   "style": "60e582aa",
    "content": "99710cdd",
    "text": "Tool: release-it with conventional-changelog"
   },
@@ -2634,7 +2634,7 @@
    "kind": "paragraph",
    "top": 12562,
    "h": 44,
-   "style": "90631276",
+   "style": "4d079bee",
    "content": "de15c0b8",
    "text": "Command:"
   },
@@ -2643,7 +2643,7 @@
    "kind": "code",
    "top": 12606,
    "h": 62,
-   "style": "6d9f7931",
+   "style": "904e738b",
    "content": "60f0b5fd",
    "text": "npm run automated-release"
   },
@@ -2652,7 +2652,7 @@
    "kind": "paragraph",
    "top": 12668,
    "h": 32,
-   "style": "665abff6",
+   "style": "a55211ac",
    "content": "818ef141",
    "text": "Workflows:"
   },
@@ -2661,7 +2661,7 @@
    "kind": "listItem",
    "top": 12700,
    "h": 28,
-   "style": "b61e26b4",
+   "style": "11eb0afe",
    "content": "cff16089",
    "text": ".github/workflows/release-swagger-ui.yml"
   },
@@ -2670,7 +2670,7 @@
    "kind": "listItem",
    "top": 12728,
    "h": 28,
-   "style": "f4439b22",
+   "style": "ef6dc900",
    "content": "a148bde8",
    "text": ".github/workflows/release-swagger-ui-dist.yml"
   },
@@ -2679,7 +2679,7 @@
    "kind": "listItem",
    "top": 12757,
    "h": 28,
-   "style": "0bf69987",
+   "style": "04115eed",
    "content": "9bd6ec77",
    "text": ".github/workflows/release-swagger-ui-react.yml"
   },
@@ -2688,7 +2688,7 @@
    "kind": "listItem",
    "top": 12785,
    "h": 45,
-   "style": "982c1ea1",
+   "style": "4559829f",
    "content": "428deb83",
    "text": ".github/workflows/release-swagger-ui-packagist.y"
   },
@@ -2697,7 +2697,7 @@
    "kind": "rule",
    "top": 12830,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -2706,7 +2706,7 @@
    "kind": "heading",
    "top": 12877,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "fcb419c1",
    "text": "Plugin Architecture"
   },
@@ -2715,7 +2715,7 @@
    "kind": "heading",
    "top": 12920,
    "h": 42,
-   "style": "ae4d9275",
+   "style": "35a5e7a9",
    "content": "d3712dd1",
    "text": "Core System (src/core/system.js)"
   },
@@ -2724,7 +2724,7 @@
    "kind": "paragraph",
    "top": 12962,
    "h": 70,
-   "style": "ff8916de",
+   "style": "2a963bd6",
    "content": "515cb875",
    "text": "The plugin system is the heart of Swagger UI. It"
   },
@@ -2733,7 +2733,7 @@
    "kind": "heading",
    "top": 13031,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "16253817",
    "text": "Plugin Structure"
   },
@@ -2742,7 +2742,7 @@
    "kind": "paragraph",
    "top": 13073,
    "h": 44,
-   "style": "6262683b",
+   "style": "6a3cf443",
    "content": "da4200c9",
    "text": "Each plugin is a JavaScript object/function that"
   },
@@ -2751,7 +2751,7 @@
    "kind": "code",
    "top": 13117,
    "h": 342,
-   "style": "cf4bab7e",
+   "style": "4514b2d8",
    "content": "2b46ff7d",
    "text": "{ statePlugins: { [pluginName]: { actions: {}, /"
   },
@@ -2760,7 +2760,7 @@
    "kind": "heading",
    "top": 13458,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "fced728f",
    "text": "Key Plugin Locations"
   },
@@ -2769,7 +2769,7 @@
    "kind": "paragraph",
    "top": 13500,
    "h": 44,
-   "style": "c05097dd",
+   "style": "f72b7e75",
    "content": "cdfbd3bc",
    "text": "Core Plugins: src/core/plugins/"
   },
@@ -2778,7 +2778,7 @@
    "kind": "paragraph",
    "top": 13544,
    "h": 32,
-   "style": "b7b0a987",
+   "style": "5119a6c9",
    "content": "3c31a217",
    "text": "Each plugin has:"
   },
@@ -2787,7 +2787,7 @@
    "kind": "listItem",
    "top": 13576,
    "h": 28,
-   "style": "97486800",
+   "style": "69212ca6",
    "content": "f35d4292",
    "text": "index.js - Main export"
   },
@@ -2796,7 +2796,7 @@
    "kind": "listItem",
    "top": 13605,
    "h": 28,
-   "style": "ac429b44",
+   "style": "3ef2dcaa",
    "content": "c234cda7",
    "text": "actions.js - Redux actions"
   },
@@ -2805,7 +2805,7 @@
    "kind": "listItem",
    "top": 13633,
    "h": 28,
-   "style": "ef13e134",
+   "style": "0d29c422",
    "content": "79973991",
    "text": "reducers.js - Redux reducers"
   },
@@ -2814,7 +2814,7 @@
    "kind": "listItem",
    "top": 13661,
    "h": 28,
-   "style": "0ac4eca6",
+   "style": "30f7b3bc",
    "content": "6c991c92",
    "text": "selectors.js - State selectors"
   },
@@ -2823,7 +2823,7 @@
    "kind": "listItem",
    "top": 13689,
    "h": 28,
-   "style": "d2556757",
+   "style": "ab104eb1",
    "content": "c1404141",
    "text": "wrap-actions.js - Action middleware"
   },
@@ -2832,7 +2832,7 @@
    "kind": "listItem",
    "top": 13718,
    "h": 28,
-   "style": "5515370c",
+   "style": "a146cf0e",
    "content": "2c56cd53",
    "text": "wrap-selectors.js - Selector middleware"
   },
@@ -2841,7 +2841,7 @@
    "kind": "listItem",
    "top": 13746,
    "h": 45,
-   "style": "e7173c8c",
+   "style": "59e0a532",
    "content": "50a4013b",
    "text": "Component files (.jsx)"
   },
@@ -2850,7 +2850,7 @@
    "kind": "heading",
    "top": 13791,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "0452b910",
    "text": "Creating a Plugin"
   },
@@ -2859,7 +2859,7 @@
    "kind": "paragraph",
    "top": 13833,
    "h": 44,
-   "style": "3bce4f55",
+   "style": "05d5d67d",
    "content": "30947ffb",
    "text": "See documentation: docs/customization/plugin-api"
   },
@@ -2868,7 +2868,7 @@
    "kind": "heading",
    "top": 13876,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "1f1f23b9",
    "text": "Cross-Plugin Import Guidelines"
   },
@@ -2877,7 +2877,7 @@
    "kind": "paragraph",
    "top": 13918,
    "h": 70,
-   "style": "d4334193",
+   "style": "f46fcd3b",
    "content": "dec65b3a",
    "text": "IMPORTANT: Avoid cross-plugin imports to maintai"
   },
@@ -2886,7 +2886,7 @@
    "kind": "paragraph",
    "top": 13988,
    "h": 32,
-   "style": "897066b2",
+   "style": "692d9978",
    "content": "2ff257ff",
    "text": "Pattern to Follow:"
   },
@@ -2895,7 +2895,7 @@
    "kind": "listItem",
    "top": 14020,
    "h": 54,
-   "style": "f3b7e312",
+   "style": "94c8bb24",
    "content": "3a182399",
    "text": "Each plugin should be self-contained with its ow"
   },
@@ -2904,7 +2904,7 @@
    "kind": "listItem",
    "top": 14075,
    "h": 54,
-   "style": "65cd7bd6",
+   "style": "ed4426e0",
    "content": "bf6940cc",
    "text": "When OAS version plugins (oas3, oas31, oas32) ne"
   },
@@ -2913,7 +2913,7 @@
    "kind": "listItem",
    "top": 14129,
    "h": 71,
-   "style": "6fc4721e",
+   "style": "20195704",
    "content": "b028e15f",
    "text": "Wrap components should import from their own plu"
   },
@@ -2922,7 +2922,7 @@
    "kind": "paragraph",
    "top": 14200,
    "h": 44,
-   "style": "857cd385",
+   "style": "43c639bd",
    "content": "a7c8f5d6",
    "text": "Example Structure:"
   },
@@ -2931,7 +2931,7 @@
    "kind": "code",
    "top": 14243,
    "h": 229,
-   "style": "a103e09a",
+   "style": "5baecc90",
    "content": "0d7c1289",
    "text": "src/core/plugins/oas32/ ├── json-schema-2020-12-"
   },
@@ -2940,7 +2940,7 @@
    "kind": "paragraph",
    "top": 14472,
    "h": 32,
-   "style": "2fafdeb7",
+   "style": "db1f15f1",
    "content": "83400395",
    "text": "Why This Matters:"
   },
@@ -2949,7 +2949,7 @@
    "kind": "listItem",
    "top": 14505,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "101e4cb1",
    "text": "Prevents tight coupling between plugins"
   },
@@ -2958,7 +2958,7 @@
    "kind": "listItem",
    "top": 14533,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "dffc3f25",
    "text": "Makes plugins easier to test in isolation"
   },
@@ -2967,7 +2967,7 @@
    "kind": "listItem",
    "top": 14561,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "a448d61c",
    "text": "Allows independent versioning and updates"
   },
@@ -2976,7 +2976,7 @@
    "kind": "listItem",
    "top": 14589,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "2ac78bdd",
    "text": "Reduces risk of breaking changes across plugins"
   },
@@ -2985,7 +2985,7 @@
    "kind": "listItem",
    "top": 14618,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "678cc7dc",
    "text": "Improves code maintainability"
   },
@@ -2994,7 +2994,7 @@
    "kind": "paragraph",
    "top": 14663,
    "h": 32,
-   "style": "b3ac0ea2",
+   "style": "eab8f1d8",
    "content": "f0a45fdf",
    "text": "Exceptions:"
   },
@@ -3003,7 +3003,7 @@
    "kind": "listItem",
    "top": 14695,
    "h": 28,
-   "style": "974eeb5b",
+   "style": "1f183ce9",
    "content": "bbd0bbf9",
    "text": "Shared core utilities in src/core/utils/ are acc"
   },
@@ -3012,7 +3012,7 @@
    "kind": "listItem",
    "top": 14723,
    "h": 28,
-   "style": "969a685b",
+   "style": "abf8a559",
    "content": "1683eb80",
    "text": "System-level functions in src/core/system.js are"
   },
@@ -3021,7 +3021,7 @@
    "kind": "listItem",
    "top": 14752,
    "h": 45,
-   "style": "de713e9a",
+   "style": "62487424",
    "content": "818d318b",
    "text": "Base components in src/core/components/ are acce"
   },
@@ -3030,7 +3030,7 @@
    "kind": "heading",
    "top": 14797,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "b254c0c3",
    "text": "Preset System"
   },
@@ -3039,7 +3039,7 @@
    "kind": "paragraph",
    "top": 14838,
    "h": 44,
-   "style": "b583eeb6",
+   "style": "67393a2e",
    "content": "20c29c9b",
    "text": "Base Preset: src/core/presets/base.js"
   },
@@ -3048,7 +3048,7 @@
    "kind": "paragraph",
    "top": 14882,
    "h": 44,
-   "style": "bfe3b85f",
+   "style": "7807d3b7",
    "content": "fd1c6933",
    "text": "Standalone Preset: src/standalone/presets/standa"
   },
@@ -3057,7 +3057,7 @@
    "kind": "paragraph",
    "top": 14926,
    "h": 44,
-   "style": "4e26e52d",
+   "style": "abb11505",
    "content": "0519d85e",
    "text": "Presets are collections of plugins bundled toget"
   },
@@ -3066,7 +3066,7 @@
    "kind": "rule",
    "top": 14969,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -3075,7 +3075,7 @@
    "kind": "heading",
    "top": 15017,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "1193f8a6",
    "text": "Key Files & Directories"
   },
@@ -3084,7 +3084,7 @@
    "kind": "heading",
    "top": 15059,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "d0b8504e",
    "text": "Critical Source Files"
   },
@@ -3093,7 +3093,7 @@
    "kind": "code",
    "top": 15101,
    "h": 297,
-   "style": "b350f791",
+   "style": "4b4e567b",
    "content": "ec8e9c53",
    "text": "src/ ├── core/ │ ├── system.js # Plugin system &"
   },
@@ -3102,7 +3102,7 @@
    "kind": "heading",
    "top": 15398,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "42ca95f2",
    "text": "Configuration Files"
   },
@@ -3111,7 +3111,7 @@
    "kind": "code",
    "top": 15440,
    "h": 212,
-   "style": "a2086e97",
+   "style": "b1f4076d",
    "content": "736e58c0",
    "text": ". ├── package.json # Dependencies & scripts ├── "
   },
@@ -3120,7 +3120,7 @@
    "kind": "heading",
    "top": 15651,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "306a6b7f",
    "text": "Build & Tooling"
   },
@@ -3129,7 +3129,7 @@
    "kind": "code",
    "top": 15693,
    "h": 280,
-   "style": "eaac33c6",
+   "style": "4a105e32",
    "content": "9b491f6b",
    "text": "webpack/ ├── _config-builder.js # Base Webpack c"
   },
@@ -3138,7 +3138,7 @@
    "kind": "heading",
    "top": 15973,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "12f8f721",
    "text": "Documentation"
   },
@@ -3147,7 +3147,7 @@
    "kind": "code",
    "top": 16015,
    "h": 314,
-   "style": "511e2e1e",
+   "style": "3a96e85e",
    "content": "e15e674c",
    "text": "docs/ ├── usage/ │ ├── installation.md │ ├── con"
   },
@@ -3156,7 +3156,7 @@
    "kind": "heading",
    "top": 16329,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "0535d93b",
    "text": "Testing"
   },
@@ -3165,7 +3165,7 @@
    "kind": "code",
    "top": 16371,
    "h": 195,
-   "style": "f918c6fd",
+   "style": "49d94313",
    "content": "177c7fb3",
    "text": "test/ ├── unit/ # Jest unit tests (37 files) │ ├"
   },
@@ -3174,7 +3174,7 @@
    "kind": "heading",
    "top": 16565,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "2644f84b",
    "text": "Distribution"
   },
@@ -3183,7 +3183,7 @@
    "kind": "code",
    "top": 16607,
    "h": 263,
-   "style": "42cbfe97",
+   "style": "894ededf",
    "content": "31817d58",
    "text": "flavors/ └── swagger-ui-react/ # React component"
   },
@@ -3192,7 +3192,7 @@
    "kind": "rule",
    "top": 16870,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -3201,7 +3201,7 @@
    "kind": "heading",
    "top": 16917,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "a58d132e",
    "text": "Common Workflows"
   },
@@ -3210,7 +3210,7 @@
    "kind": "heading",
    "top": 16960,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "1efe22a0",
    "text": "Making Code Changes"
   },
@@ -3219,7 +3219,7 @@
    "kind": "listItem",
    "top": 17002,
    "h": 108,
-   "style": "25b3f675",
+   "style": "4c700feb",
    "content": "698319b1",
    "text": "Read before modifying:# ALWAYS read files before"
   },
@@ -3228,7 +3228,7 @@
    "kind": "listItem",
    "top": 17109,
    "h": 153,
-   "style": "d7935211",
+   "style": "5a826f47",
    "content": "44a5132d",
    "text": "Follow the style guide:Use double quotesNo semic"
   },
@@ -3237,7 +3237,7 @@
    "kind": "listItem",
    "top": 17262,
    "h": 148,
-   "style": "cca747a6",
+   "style": "7b2e405c",
    "content": "6b6503e8",
    "text": "Run linters:npm run lint # Check for errors and "
   },
@@ -3246,7 +3246,7 @@
    "kind": "listItem",
    "top": 17410,
    "h": 157,
-   "style": "4f1e0aaf",
+   "style": "aa4d74a1",
    "content": "ab68771d",
    "text": "Test your changes:npm run test:unit # Run unit t"
   },
@@ -3255,7 +3255,7 @@
    "kind": "heading",
    "top": 17567,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "c46bc56e",
    "text": "Adding a New Component"
   },
@@ -3264,7 +3264,7 @@
    "kind": "listItem",
    "top": 17609,
    "h": 28,
-   "style": "63f136cd",
+   "style": "6c15eaeb",
    "content": "931748c3",
    "text": "Create component in src/core/components/ or appr"
   },
@@ -3273,7 +3273,7 @@
    "kind": "listItem",
    "top": 17637,
    "h": 28,
-   "style": "6657d42a",
+   "style": "93fba050",
    "content": "003bd528",
    "text": "Use .tsx extension (TypeScript — required for al"
   },
@@ -3282,7 +3282,7 @@
    "kind": "listItem",
    "top": 17665,
    "h": 28,
-   "style": "edea6324",
+   "style": "cc7edb7e",
    "content": "680759d1",
    "text": "Add @prettier pragma"
   },
@@ -3291,7 +3291,7 @@
    "kind": "listItem",
    "top": 17694,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "21ae202f",
    "text": "Follow React best practices (functional componen"
   },
@@ -3300,7 +3300,7 @@
    "kind": "listItem",
    "top": 17722,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "fbfed74d",
    "text": "Add PropTypes validation"
   },
@@ -3309,7 +3309,7 @@
    "kind": "listItem",
    "top": 17750,
    "h": 28,
-   "style": "179e0805",
+   "style": "5f27ae8b",
    "content": "8c7f4e63",
    "text": "Create corresponding test in test/unit/"
   },
@@ -3318,7 +3318,7 @@
    "kind": "listItem",
    "top": 17778,
    "h": 45,
-   "style": "c9633019",
+   "style": "7db4e20f",
    "content": "f173c4cf",
    "text": "Export from plugin's index.js if needed"
   },
@@ -3327,7 +3327,7 @@
    "kind": "heading",
    "top": 17823,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "2e0c1038",
    "text": "Adding a New Plugin"
   },
@@ -3336,7 +3336,7 @@
    "kind": "listItem",
    "top": 17865,
    "h": 28,
-   "style": "2e0dd3db",
+   "style": "357dc349",
    "content": "bc4eb97b",
    "text": "Create directory in src/core/plugins/[plugin-nam"
   },
@@ -3345,7 +3345,7 @@
    "kind": "listItem",
    "top": 17894,
    "h": 28,
-   "style": "44518704",
+   "style": "ceadebda",
    "content": "5ff4449e",
    "text": "Create index.ts with plugin structure (TypeScrip"
   },
@@ -3354,7 +3354,7 @@
    "kind": "listItem",
    "top": 17922,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "d170660d",
    "text": "Add actions, reducers, selectors as needed"
   },
@@ -3363,7 +3363,7 @@
    "kind": "listItem",
    "top": 17950,
    "h": 28,
-   "style": "9227810a",
+   "style": "ef36cfa0",
    "content": "d2c814d0",
    "text": "Register plugin in preset (e.g., src/core/preset"
   },
@@ -3372,7 +3372,7 @@
    "kind": "listItem",
    "top": 17978,
    "h": 28,
-   "style": "c9f81aa4",
+   "style": "a50cf762",
    "content": "0705d623",
    "text": "Add tests in test/unit/core/plugins/[plugin-name"
   },
@@ -3381,7 +3381,7 @@
    "kind": "listItem",
    "top": 18007,
    "h": 45,
-   "style": "5a9c62f6",
+   "style": "654be1e8",
    "content": "f0bf0ea2",
    "text": "Document the plugin"
   },
@@ -3390,7 +3390,7 @@
    "kind": "heading",
    "top": 18052,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "feb76c61",
    "text": "Fixing a Bug"
   },
@@ -3399,7 +3399,7 @@
    "kind": "listItem",
    "top": 18094,
    "h": 96,
-   "style": "d014ab57",
+   "style": "2fc5a1b1",
    "content": "17c92609",
    "text": "Reproduce the bug:Add a failing test in test/uni"
   },
@@ -3408,7 +3408,7 @@
    "kind": "listItem",
    "top": 18190,
    "h": 125,
-   "style": "9bf209a1",
+   "style": "e1a8f677",
    "content": "984b9da5",
    "text": "Fix the issue:Make minimal changes to fix the bu"
   },
@@ -3417,7 +3417,7 @@
    "kind": "listItem",
    "top": 18315,
    "h": 128,
-   "style": "bf12e385",
+   "style": "a8edd22b",
    "content": "9a972f6e",
    "text": "Verify:npm run test:unit npm run build npm run t"
   },
@@ -3426,7 +3426,7 @@
    "kind": "listItem",
    "top": 18442,
    "h": 134,
-   "style": "32220518",
+   "style": "f96c9c56",
    "content": "2226cf58",
    "text": "Create PR:Reference the issue numberInclude befo"
   },
@@ -3435,7 +3435,7 @@
    "kind": "heading",
    "top": 18577,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "c2050ccd",
    "text": "Adding a Feature"
   },
@@ -3444,7 +3444,7 @@
    "kind": "listItem",
    "top": 18618,
    "h": 125,
-   "style": "b174bb52",
+   "style": "9cf3ac20",
    "content": "296adbfc",
    "text": "Plan the feature:Review existing architectureIde"
   },
@@ -3453,7 +3453,7 @@
    "kind": "listItem",
    "top": 18743,
    "h": 125,
-   "style": "b494edfd",
+   "style": "d39418bb",
    "content": "db9e28ac",
    "text": "Implement:Follow plugin architecture patternsAdd"
   },
@@ -3462,7 +3462,7 @@
    "kind": "listItem",
    "top": 18868,
    "h": 153,
-   "style": "476c5c42",
+   "style": "cbe46c60",
    "content": "e662bcf0",
    "text": "Test thoroughly:Unit tests for logicComponent te"
   },
@@ -3471,7 +3471,7 @@
    "kind": "listItem",
    "top": 19021,
    "h": 134,
-   "style": "1568b7ac",
+   "style": "97d15e6e",
    "content": "b2efbc39",
    "text": "Document:Update docs/ if user-facingAdd JSDoc co"
   },
@@ -3480,7 +3480,7 @@
    "kind": "heading",
    "top": 19155,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "70925e00",
    "text": "Security Considerations"
   },
@@ -3489,7 +3489,7 @@
    "kind": "listItem",
    "top": 19197,
    "h": 153,
-   "style": "5954250d",
+   "style": "448f88d3",
    "content": "850cdfff",
    "text": "XSS Prevention:ALWAYS use DOMPurify for user-pro"
   },
@@ -3498,7 +3498,7 @@
    "kind": "listItem",
    "top": 19350,
    "h": 125,
-   "style": "74a487c4",
+   "style": "b3c115c6",
    "content": "11683fba",
    "text": "Input Validation:Validate API responsesHandle ma"
   },
@@ -3507,7 +3507,7 @@
    "kind": "listItem",
    "top": 19475,
    "h": 97,
-   "style": "d4f88833",
+   "style": "7611ea99",
    "content": "099faca1",
    "text": "Dependency Security:npm run security-audit # Run"
   },
@@ -3516,7 +3516,7 @@
    "kind": "heading",
    "top": 19572,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "e45b9480",
    "text": "Working with OpenAPI Specs"
   },
@@ -3525,7 +3525,7 @@
    "kind": "paragraph",
    "top": 19614,
    "h": 32,
-   "style": "f6c2bc1b",
+   "style": "ccb085bd",
    "content": "bedf18ef",
    "text": "Testing Different Versions:"
   },
@@ -3534,7 +3534,7 @@
    "kind": "listItem",
    "top": 19646,
    "h": 28,
-   "style": "3ae59156",
+   "style": "3e66f2d0",
    "content": "11d5dcd4",
    "text": "OAS 2.0: Use src/core/plugins/swagger-client/"
   },
@@ -3543,7 +3543,7 @@
    "kind": "listItem",
    "top": 19675,
    "h": 28,
-   "style": "ec470850",
+   "style": "5c47a11e",
    "content": "dc26a2cf",
    "text": "OAS 3.0.x: Use src/core/plugins/oas3/"
   },
@@ -3552,7 +3552,7 @@
    "kind": "listItem",
    "top": 19703,
    "h": 28,
-   "style": "f12a1689",
+   "style": "536f29bb",
    "content": "4a573307",
    "text": "OAS 3.1.x: Use src/core/plugins/oas31/"
   },
@@ -3561,7 +3561,7 @@
    "kind": "listItem",
    "top": 19731,
    "h": 45,
-   "style": "ed16bbaa",
+   "style": "f6a09eb8",
    "content": "a01bff23",
    "text": "OAS 3.2.x: Use src/core/plugins/oas32/"
   },
@@ -3570,7 +3570,7 @@
    "kind": "paragraph",
    "top": 19776,
    "h": 32,
-   "style": "ee619da2",
+   "style": "d0f45544",
    "content": "6a22d56e",
    "text": "Adding Test Specs:"
   },
@@ -3579,7 +3579,7 @@
    "kind": "listItem",
    "top": 19809,
    "h": 28,
-   "style": "981972f2",
+   "style": "0a6c5c18",
    "content": "78a660a7",
    "text": "Add to test/e2e-cypress/static/documents/"
   },
@@ -3588,7 +3588,7 @@
    "kind": "listItem",
    "top": 19837,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "96c350ba",
    "text": "Reference in E2E tests"
   },
@@ -3597,7 +3597,7 @@
    "kind": "rule",
    "top": 19882,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -3606,7 +3606,7 @@
    "kind": "heading",
    "top": 19929,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "071f0cf4",
    "text": "Important Guidelines"
   },
@@ -3615,7 +3615,7 @@
    "kind": "heading",
    "top": 19972,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "dca1493d",
    "text": "DO's ✅"
   },
@@ -3624,7 +3624,7 @@
    "kind": "listItem",
    "top": 20013,
    "h": 28,
-   "style": "cce41e85",
+   "style": "273395af",
    "content": "e690a412",
    "text": "Always read files before modifying them"
   },
@@ -3633,7 +3633,7 @@
    "kind": "listItem",
    "top": 20042,
    "h": 54,
-   "style": "2d8797ae",
+   "style": "9c0579ac",
    "content": "9796b1b8",
    "text": "Write all new files in TypeScript - use .ts for "
   },
@@ -3642,7 +3642,7 @@
    "kind": "listItem",
    "top": 20096,
    "h": 28,
-   "style": "ac0881bd",
+   "style": "063d8057",
    "content": "287c8189",
    "text": "Follow the no-semicolon convention"
   },
@@ -3651,7 +3651,7 @@
    "kind": "listItem",
    "top": 20124,
    "h": 28,
-   "style": "94e37609",
+   "style": "ed539a0b",
    "content": "fec150b3",
    "text": "Use double quotes for strings"
   },
@@ -3660,7 +3660,7 @@
    "kind": "listItem",
    "top": 20153,
    "h": 28,
-   "style": "abf73216",
+   "style": "70dce22c",
    "content": "0c9cec14",
    "text": "Add @prettier pragma to all new files"
   },
@@ -3669,7 +3669,7 @@
    "kind": "listItem",
    "top": 20181,
    "h": 28,
-   "style": "917d399c",
+   "style": "2bd2e55e",
    "content": "28d41687",
    "text": "Use .tsx extension for new React components (Typ"
   },
@@ -3678,7 +3678,7 @@
    "kind": "listItem",
    "top": 20209,
    "h": 28,
-   "style": "026b740d",
+   "style": "52b1ff17",
    "content": "3e995147",
    "text": "Write tests for new features and bug fixes"
   },
@@ -3687,7 +3687,7 @@
    "kind": "listItem",
    "top": 20238,
    "h": 28,
-   "style": "a23b2dc2",
+   "style": "440fa260",
    "content": "827e47cb",
    "text": "Run linters before committing (automatic via hus"
   },
@@ -3696,7 +3696,7 @@
    "kind": "listItem",
    "top": 20266,
    "h": 28,
-   "style": "2fc2ce58",
+   "style": "6209045a",
    "content": "9e5e41ce",
    "text": "Use DOMPurify for HTML sanitization"
   },
@@ -3705,7 +3705,7 @@
    "kind": "listItem",
    "top": 20294,
    "h": 28,
-   "style": "3a0695df",
+   "style": "66879aa1",
    "content": "20581d5e",
    "text": "Follow conventional commit format"
   },
@@ -3714,7 +3714,7 @@
    "kind": "listItem",
    "top": 20322,
    "h": 28,
-   "style": "0f5b6574",
+   "style": "bd1a6012",
    "content": "c2a57404",
    "text": "Update documentation for user-facing changes"
   },
@@ -3723,7 +3723,7 @@
    "kind": "listItem",
    "top": 20351,
    "h": 28,
-   "style": "0f818c4f",
+   "style": "c372ca41",
    "content": "1a322065",
    "text": "Test with multiple OpenAPI spec versions"
   },
@@ -3732,7 +3732,7 @@
    "kind": "listItem",
    "top": 20379,
    "h": 28,
-   "style": "6062e81d",
+   "style": "5399983f",
    "content": "9342eb65",
    "text": "Check browser compatibility (see .browserslistrc"
   },
@@ -3741,7 +3741,7 @@
    "kind": "listItem",
    "top": 20407,
    "h": 28,
-   "style": "fd3c778b",
+   "style": "de92e341",
    "content": "b4defa14",
    "text": "Use the plugin architecture - don't modify core "
   },
@@ -3750,7 +3750,7 @@
    "kind": "listItem",
    "top": 20436,
    "h": 28,
-   "style": "e1082fa6",
+   "style": "9236ea2c",
    "content": "cc88f474",
    "text": "Preserve backward compatibility unless explicitl"
   },
@@ -3759,7 +3759,7 @@
    "kind": "listItem",
    "top": 20464,
    "h": 28,
-   "style": "cf8f691f",
+   "style": "b2ac20d5",
    "content": "0e8df3fe",
    "text": "Run full test suite before submitting PR"
   },
@@ -3768,7 +3768,7 @@
    "kind": "listItem",
    "top": 20492,
    "h": 71,
-   "style": "a9967893",
+   "style": "bec78a1d",
    "content": "2af7f2ba",
    "text": "Keep plugins self-contained - avoid cross-plugin"
   },
@@ -3777,7 +3777,7 @@
    "kind": "heading",
    "top": 20563,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "0f29bac6",
    "text": "DON'Ts ❌"
   },
@@ -3786,7 +3786,7 @@
    "kind": "listItem",
    "top": 20605,
    "h": 54,
-   "style": "6816eec4",
+   "style": "2a6378ae",
    "content": "223423b9",
    "text": "Don't write new files in plain JavaScript - all "
   },
@@ -3795,7 +3795,7 @@
    "kind": "listItem",
    "top": 20659,
    "h": 28,
-   "style": "4a58ec0d",
+   "style": "2f0c695b",
    "content": "584898d9",
    "text": "Don't use semicolons - project convention"
   },
@@ -3804,7 +3804,7 @@
    "kind": "listItem",
    "top": 20688,
    "h": 28,
-   "style": "ae7cc92b",
+   "style": "aa379c45",
    "content": "9f11c20d",
    "text": "Don't use single quotes - use double quotes"
   },
@@ -3813,7 +3813,7 @@
    "kind": "listItem",
    "top": 20716,
    "h": 28,
-   "style": "cad22fe0",
+   "style": "1b78a042",
    "content": "ee9e13be",
    "text": "Don't skip the @prettier pragma - required for f"
   },
@@ -3822,7 +3822,7 @@
    "kind": "listItem",
    "top": 20744,
    "h": 28,
-   "style": "65935fba",
+   "style": "bb1c392c",
    "content": "e6185e21",
    "text": "Don't put React in .ts files - use .tsx for JSX"
   },
@@ -3831,7 +3831,7 @@
    "kind": "listItem",
    "top": 20772,
    "h": 28,
-   "style": "c26e4404",
+   "style": "3a9976ca",
    "content": "fc9b1702",
    "text": "Don't commit files in dev-helpers/ (except core "
   },
@@ -3840,7 +3840,7 @@
    "kind": "listItem",
    "top": 20801,
    "h": 28,
-   "style": "9d1035b1",
+   "style": "821c2e9f",
    "content": "223c1587",
    "text": "Don't commit build artifacts (dist/ is gitignore"
   },
@@ -3849,7 +3849,7 @@
    "kind": "listItem",
    "top": 20829,
    "h": 28,
-   "style": "f09f766c",
+   "style": "2d7388a2",
    "content": "c8d0c8e0",
    "text": "Don't skip tests - they run in CI"
   },
@@ -3858,7 +3858,7 @@
    "kind": "listItem",
    "top": 20857,
    "h": 28,
-   "style": "66e79852",
+   "style": "3cb37004",
    "content": "848a3112",
    "text": "Don't bypass ESLint - pre-commit hook enforces"
   },
@@ -3867,7 +3867,7 @@
    "kind": "listItem",
    "top": 20886,
    "h": 28,
-   "style": "5bb3e354",
+   "style": "b1500c16",
    "content": "16f94603",
    "text": "Don't use console.log - only console.warn and co"
   },
@@ -3876,7 +3876,7 @@
    "kind": "listItem",
    "top": 20914,
    "h": 28,
-   "style": "1d4270d2",
+   "style": "109275b4",
    "content": "94568ac7",
    "text": "Don't render unsanitized HTML - XSS vulnerabilit"
   },
@@ -3885,7 +3885,7 @@
    "kind": "listItem",
    "top": 20942,
    "h": 28,
-   "style": "033e7906",
+   "style": "1b8064c8",
    "content": "7219a37e",
    "text": "Don't modify package-lock.json manually"
   },
@@ -3894,7 +3894,7 @@
    "kind": "listItem",
    "top": 20971,
    "h": 28,
-   "style": "25843473",
+   "style": "00c24f91",
    "content": "e13b83db",
    "text": "Don't push directly to main or next"
   },
@@ -3903,7 +3903,7 @@
    "kind": "listItem",
    "top": 20999,
    "h": 28,
-   "style": "05b26961",
+   "style": "3dd0d263",
    "content": "d1c25d2d",
    "text": "Don't ignore Cypress test failures"
   },
@@ -3912,7 +3912,7 @@
    "kind": "listItem",
    "top": 21027,
    "h": 28,
-   "style": "969d42fa",
+   "style": "1d9c7d2c",
    "content": "0ff8de91",
    "text": "Don't add dependencies without justification"
   },
@@ -3921,7 +3921,7 @@
    "kind": "listItem",
    "top": 21055,
    "h": 28,
-   "style": "90e37de9",
+   "style": "94a5b3b3",
    "content": "96717a79",
    "text": "Don't break the build - verify with npm run buil"
   },
@@ -3930,7 +3930,7 @@
    "kind": "listItem",
    "top": 21084,
    "h": 71,
-   "style": "22fa1336",
+   "style": "f484800c",
    "content": "46d62044",
    "text": "Don't import from other plugins - create self-co"
   },
@@ -3939,7 +3939,7 @@
    "kind": "heading",
    "top": 21155,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "39614a35",
    "text": "When Working with AI Assistants"
   },
@@ -3948,7 +3948,7 @@
    "kind": "paragraph",
    "top": 21197,
    "h": 32,
-   "style": "64f35a1d",
+   "style": "d622f6bb",
    "content": "cbd27d34",
    "text": "Before Making Changes:"
   },
@@ -3957,7 +3957,7 @@
    "kind": "listItem",
    "top": 21229,
    "h": 28,
-   "style": "24be6c01",
+   "style": "f49b95ef",
    "content": "865055eb",
    "text": "Read the affected files completely"
   },
@@ -3966,7 +3966,7 @@
    "kind": "listItem",
    "top": 21257,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "2d8c32ee",
    "text": "Understand the plugin architecture"
   },
@@ -3975,7 +3975,7 @@
    "kind": "listItem",
    "top": 21286,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "16e7c618",
    "text": "Check for existing tests"
   },
@@ -3984,7 +3984,7 @@
    "kind": "listItem",
    "top": 21314,
    "h": 45,
-   "style": "5a9c62f6",
+   "style": "654be1e8",
    "content": "1072f44c",
    "text": "Review related documentation"
   },
@@ -3993,7 +3993,7 @@
    "kind": "paragraph",
    "top": 21359,
    "h": 32,
-   "style": "2ab718ca",
+   "style": "87f4e0d4",
    "content": "26244a79",
    "text": "During Development:"
   },
@@ -4002,7 +4002,7 @@
    "kind": "listItem",
    "top": 21391,
    "h": 28,
-   "style": "24be6c01",
+   "style": "f49b95ef",
    "content": "9ccc72a0",
    "text": "Make minimal, focused changes"
   },
@@ -4011,7 +4011,7 @@
    "kind": "listItem",
    "top": 21419,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "c5dbe1d0",
    "text": "Follow existing patterns in the codebase"
   },
@@ -4020,7 +4020,7 @@
    "kind": "listItem",
    "top": 21448,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "6fe178b9",
    "text": "Add tests alongside code changes"
   },
@@ -4029,7 +4029,7 @@
    "kind": "listItem",
    "top": 21476,
    "h": 45,
-   "style": "5a9c62f6",
+   "style": "654be1e8",
    "content": "0d0d1692",
    "text": "Run linters frequently"
   },
@@ -4038,7 +4038,7 @@
    "kind": "paragraph",
    "top": 21521,
    "h": 32,
-   "style": "a95829fa",
+   "style": "3b806214",
    "content": "29ab926a",
    "text": "After Changes:"
   },
@@ -4047,7 +4047,7 @@
    "kind": "listItem",
    "top": 21553,
    "h": 28,
-   "style": "24be6c01",
+   "style": "f49b95ef",
    "content": "3b512267",
    "text": "Verify all tests pass"
   },
@@ -4056,7 +4056,7 @@
    "kind": "listItem",
    "top": 21582,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "4e1a596c",
    "text": "Check build completes successfully"
   },
@@ -4065,7 +4065,7 @@
    "kind": "listItem",
    "top": 21610,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "7eac70de",
    "text": "Test artifact exports"
   },
@@ -4074,7 +4074,7 @@
    "kind": "listItem",
    "top": 21638,
    "h": 28,
-   "style": "9a535005",
+   "style": "32139183",
    "content": "9d649a6c",
    "text": "Review for security issues"
   },
@@ -4083,7 +4083,7 @@
    "kind": "listItem",
    "top": 21667,
    "h": 45,
-   "style": "5a9c62f6",
+   "style": "654be1e8",
    "content": "05ba78b3",
    "text": "Update relevant documentation"
   },
@@ -4092,7 +4092,7 @@
    "kind": "paragraph",
    "top": 21711,
    "h": 32,
-   "style": "77991e8f",
+   "style": "136765b9",
    "content": "3ddd737b",
    "text": "Communication:"
   },
@@ -4101,7 +4101,7 @@
    "kind": "listItem",
    "top": 21744,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "3efd1151",
    "text": "Be explicit about file locations"
   },
@@ -4110,7 +4110,7 @@
    "kind": "listItem",
    "top": 21772,
    "h": 28,
-   "style": "a9b56cea",
+   "style": "26aa6110",
    "content": "be592af4",
    "text": "Use line number references (e.g., src/core/syste"
   },
@@ -4119,7 +4119,7 @@
    "kind": "listItem",
    "top": 21800,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "62497403",
    "text": "Provide context for changes"
   },
@@ -4128,7 +4128,7 @@
    "kind": "listItem",
    "top": 21829,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "2ac2be63",
    "text": "Mention any breaking changes clearly"
   },
@@ -4137,7 +4137,7 @@
    "kind": "heading",
    "top": 21874,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "49b7db8e",
    "text": "Performance Considerations"
   },
@@ -4146,7 +4146,7 @@
    "kind": "listItem",
    "top": 21916,
    "h": 125,
-   "style": "52e7d846",
+   "style": "3e0e78ac",
    "content": "917837a8",
    "text": "Immutable.js:Use Immutable data structures for s"
   },
@@ -4155,7 +4155,7 @@
    "kind": "listItem",
    "top": 22040,
    "h": 125,
-   "style": "436b0ef6",
+   "style": "480cdd54",
    "content": "0e85b325",
    "text": "React:Use React.memo for pure componentsImplemen"
   },
@@ -4164,7 +4164,7 @@
    "kind": "listItem",
    "top": 22165,
    "h": 125,
-   "style": "6d66b9c8",
+   "style": "ca50a41e",
    "content": "44ef5eb1",
    "text": "Redux:Use reselect for memoized selectorsKeep re"
   },
@@ -4173,7 +4173,7 @@
    "kind": "listItem",
    "top": 22290,
    "h": 134,
-   "style": "fcc5b624",
+   "style": "35f6f5ba",
    "content": "6c437983",
    "text": "Bundle Size:Check bundle size with npm run deps-"
   },
@@ -4182,7 +4182,7 @@
    "kind": "heading",
    "top": 22424,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "31750047",
    "text": "Debugging Tips"
   },
@@ -4191,7 +4191,7 @@
    "kind": "paragraph",
    "top": 22466,
    "h": 44,
-   "style": "586c6924",
+   "style": "3d5babcc",
    "content": "4e286619",
    "text": "Development Server:"
   },
@@ -4200,7 +4200,7 @@
    "kind": "code",
    "top": 22510,
    "h": 122,
-   "style": "c2c9b36e",
+   "style": "f726d2c0",
    "content": "f025a463",
    "text": "npm run dev # Open http://localhost:3200/ # Hot "
   },
@@ -4209,7 +4209,7 @@
    "kind": "paragraph",
    "top": 22631,
    "h": 32,
-   "style": "39956f85",
+   "style": "69381e1b",
    "content": "cc5b6f0d",
    "text": "Redux DevTools:"
   },
@@ -4218,7 +4218,7 @@
    "kind": "listItem",
    "top": 22664,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "457b1ce4",
    "text": "Extension supported"
   },
@@ -4227,7 +4227,7 @@
    "kind": "listItem",
    "top": 22692,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "b86a0c13",
    "text": "State inspection available"
   },
@@ -4236,7 +4236,7 @@
    "kind": "listItem",
    "top": 22720,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "90794c8b",
    "text": "Time-travel debugging"
   },
@@ -4245,7 +4245,7 @@
    "kind": "paragraph",
    "top": 22765,
    "h": 44,
-   "style": "5d5f3b25",
+   "style": "2bf4bb5d",
    "content": "ab0cab47",
    "text": "Cypress Interactive Mode:"
   },
@@ -4254,7 +4254,7 @@
    "kind": "code",
    "top": 22809,
    "h": 122,
-   "style": "2ed5862a",
+   "style": "d3309266",
    "content": "76fde44b",
    "text": "npm run cy:dev # Visual test runner # Step-throu"
   },
@@ -4263,7 +4263,7 @@
    "kind": "paragraph",
    "top": 22931,
    "h": 44,
-   "style": "efb3abae",
+   "style": "6e43d046",
    "content": "fdc1c22b",
    "text": "Jest Watch Mode:"
   },
@@ -4272,7 +4272,7 @@
    "kind": "code",
    "top": 22974,
    "h": 102,
-   "style": "c8d597e5",
+   "style": "7f8e55eb",
    "content": "c5cbc0e7",
    "text": "npm run test:unit -- --watch # Re-run on file ch"
   },
@@ -4281,7 +4281,7 @@
    "kind": "paragraph",
    "top": 23076,
    "h": 32,
-   "style": "2fa1fd9e",
+   "style": "879bdd64",
    "content": "840890d7",
    "text": "Source Maps:"
   },
@@ -4290,7 +4290,7 @@
    "kind": "listItem",
    "top": 23108,
    "h": 28,
-   "style": "06eeb074",
+   "style": "d48f2472",
    "content": "f1e47737",
    "text": "Generated for all builds"
   },
@@ -4299,7 +4299,7 @@
    "kind": "listItem",
    "top": 23137,
    "h": 28,
-   "style": "e9f96b78",
+   "style": "a01c5056",
    "content": "d7882871",
    "text": "Enable in browser DevTools"
   },
@@ -4308,7 +4308,7 @@
    "kind": "listItem",
    "top": 23165,
    "h": 45,
-   "style": "13a7d78b",
+   "style": "52d7730d",
    "content": "0a0fbeef",
    "text": "Original source debugging"
   },
@@ -4317,7 +4317,7 @@
    "kind": "rule",
    "top": 23210,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -4326,7 +4326,7 @@
    "kind": "heading",
    "top": 23257,
    "h": 42,
-   "style": "423aef9a",
+   "style": "0cdf05e8",
    "content": "be59c669",
    "text": "Quick Reference"
   },
@@ -4335,7 +4335,7 @@
    "kind": "heading",
    "top": 23300,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "5d431007",
    "text": "Essential Commands"
   },
@@ -4344,7 +4344,7 @@
    "kind": "code",
    "top": 23342,
    "h": 582,
-   "style": "d2843eae",
+   "style": "4101846e",
    "content": "54b4833c",
    "text": "# Development npm run dev # Start dev server (po"
   },
@@ -4353,7 +4353,7 @@
    "kind": "heading",
    "top": 23923,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "2448f4a3",
    "text": "File Paths"
   },
@@ -4362,7 +4362,7 @@
    "kind": "code",
    "top": 23965,
    "h": 222,
-   "style": "86a3b9ab",
+   "style": "432b3067",
    "content": "8576e077",
    "text": "Core System: src/core/system.js Main Entry: src/"
   },
@@ -4371,7 +4371,7 @@
    "kind": "heading",
    "top": 24187,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "b40aee47",
    "text": "Port Reference"
   },
@@ -4380,7 +4380,7 @@
    "kind": "listItem",
    "top": 24229,
    "h": 28,
-   "style": "9255c70b",
+   "style": "ba950c31",
    "content": "0045b755",
    "text": "3200 - Development server (webpack-dev-server)"
   },
@@ -4389,7 +4389,7 @@
    "kind": "listItem",
    "top": 24257,
    "h": 28,
-   "style": "e7aa07d7",
+   "style": "894748dd",
    "content": "e228be29",
    "text": "3002 - Static file server (local-web-server)"
   },
@@ -4398,7 +4398,7 @@
    "kind": "listItem",
    "top": 24285,
    "h": 28,
-   "style": "e7aa07d7",
+   "style": "894748dd",
    "content": "74423a93",
    "text": "3204 - Mock API server (json-server)"
   },
@@ -4407,7 +4407,7 @@
    "kind": "listItem",
    "top": 24314,
    "h": 45,
-   "style": "c25201de",
+   "style": "148adcd0",
    "content": "53be3c39",
    "text": "3230 - E2E test server (webpack-dev-server)"
   },
@@ -4416,7 +4416,7 @@
    "kind": "rule",
    "top": 24359,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -4425,7 +4425,7 @@
    "kind": "heading",
    "top": 24406,
    "h": 42,
-   "style": "798df76f",
+   "style": "87d715e7",
    "content": "853fd701",
    "text": "Additional Resources"
   },
@@ -4434,7 +4434,7 @@
    "kind": "heading",
    "top": 24449,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "12f8f721",
    "text": "Documentation"
   },
@@ -4443,7 +4443,7 @@
    "kind": "listItem",
    "top": 24490,
    "h": 28,
-   "style": "f3f485c2",
+   "style": "5b3a86d4",
    "content": "307e3da7",
    "text": "Setup Guide: docs/development/setting-up.md"
   },
@@ -4452,7 +4452,7 @@
    "kind": "listItem",
    "top": 24519,
    "h": 28,
-   "style": "d5024de2",
+   "style": "c4b1e434",
    "content": "bf43ecf5",
    "text": "Scripts Reference: docs/development/scripts.md"
   },
@@ -4461,7 +4461,7 @@
    "kind": "listItem",
    "top": 24547,
    "h": 28,
-   "style": "6caeee0c",
+   "style": "736775a2",
    "content": "0b8d2f83",
    "text": "Plugin API: docs/customization/plugin-api.md"
   },
@@ -4470,7 +4470,7 @@
    "kind": "listItem",
    "top": 24575,
    "h": 28,
-   "style": "84360f57",
+   "style": "4dcf1eed",
    "content": "cc5f8758",
    "text": "Configuration: docs/usage/configuration.md"
   },
@@ -4479,7 +4479,7 @@
    "kind": "listItem",
    "top": 24604,
    "h": 45,
-   "style": "6b3c14fa",
+   "style": "11020d00",
    "content": "df7ffe6f",
    "text": "OAuth2 Setup: docs/usage/oauth2.md"
   },
@@ -4488,7 +4488,7 @@
    "kind": "heading",
    "top": 24649,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "874f785f",
    "text": "External Links"
   },
@@ -4497,7 +4497,7 @@
    "kind": "listItem",
    "top": 24690,
    "h": 28,
-   "style": "1139d6ef",
+   "style": "73de3115",
    "content": "51974b23",
    "text": "Homepage: https://swagger.io/tools/swagger-ui/"
   },
@@ -4506,7 +4506,7 @@
    "kind": "listItem",
    "top": 24719,
    "h": 28,
-   "style": "438b553c",
+   "style": "02dd161a",
    "content": "bf0caf66",
    "text": "Repository: https://github.com/swagger-api/swagg"
   },
@@ -4515,7 +4515,7 @@
    "kind": "listItem",
    "top": 24747,
    "h": 28,
-   "style": "444d500d",
+   "style": "c893553b",
    "content": "c94bd3ae",
    "text": "npm (main): https://www.npmjs.com/package/swagge"
   },
@@ -4524,7 +4524,7 @@
    "kind": "listItem",
    "top": 24775,
    "h": 28,
-   "style": "d0112a49",
+   "style": "7c8fcf17",
    "content": "4afd16ac",
    "text": "npm (dist): https://www.npmjs.com/package/swagge"
   },
@@ -4533,7 +4533,7 @@
    "kind": "listItem",
    "top": 24804,
    "h": 28,
-   "style": "ef997cce",
+   "style": "5ec079d8",
    "content": "cc2e537a",
    "text": "npm (react): https://www.npmjs.com/package/swagg"
   },
@@ -4542,7 +4542,7 @@
    "kind": "listItem",
    "top": 24832,
    "h": 45,
-   "style": "b776e18e",
+   "style": "17e7a868",
    "content": "0cf8a920",
    "text": "OpenAPI Spec: https://spec.openapis.org/"
   },
@@ -4551,7 +4551,7 @@
    "kind": "heading",
    "top": 24877,
    "h": 42,
-   "style": "8c989533",
+   "style": "0675792f",
    "content": "d559270e",
    "text": "Community"
   },
@@ -4560,7 +4560,7 @@
    "kind": "listItem",
    "top": 24919,
    "h": 28,
-   "style": "ef580f03",
+   "style": "0be55435",
    "content": "d8625a07",
    "text": "Issues: https://github.com/swagger-api/swagger-u"
   },
@@ -4569,7 +4569,7 @@
    "kind": "listItem",
    "top": 24947,
    "h": 54,
-   "style": "dfd4fa80",
+   "style": "f280917e",
    "content": "7fc8bd7d",
    "text": "Good First Issues: https://github.com/swagger-ap"
   },
@@ -4578,7 +4578,7 @@
    "kind": "listItem",
    "top": 25001,
    "h": 28,
-   "style": "706cc21d",
+   "style": "94228e93",
    "content": "7aa146fb",
    "text": "Security: security@swagger.io"
   },
@@ -4587,7 +4587,7 @@
    "kind": "listItem",
    "top": 25030,
    "h": 71,
-   "style": "e52705fb",
+   "style": "da4b5671",
    "content": "69e53b39",
    "text": "Contributing: https://github.com/swagger-api/.gi"
   },
@@ -4596,7 +4596,7 @@
    "kind": "rule",
    "top": 25100,
    "h": 47,
-   "style": "2cfb4fcd",
+   "style": "7c833945",
    "content": "811c9dc5",
    "text": ""
   },
@@ -4605,7 +4605,7 @@
    "kind": "paragraph",
    "top": 25148,
    "h": 70,
-   "style": "202af297",
+   "style": "9ce2361f",
    "content": "9c52e715",
    "text": "Note: This document should be updated whenever m"
   }
