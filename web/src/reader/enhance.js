@@ -711,16 +711,29 @@ export function whenColoured(blocks, then, line = 0) {
 }
 
 let firstPaint = null;   // the hold of a document's first paint, the document hidden meanwhile
-/** After the frame that shows the document: rAF runs before the paint, the task it queues runs after. */
+let unshown = false;     // a document shown anew, its first frame still to come
+/** The first paint of a document shown anew waits for `xs` too (with the document hidden). */
+function holdFirst(xs, dy, upto) {
+  if (!firstPaint) {
+    firstPaint = hold(xs, () => { firstPaint = null; doc.classList.remove('hold'); }, dy, upto);
+    if (firstPaint) doc.classList.add('hold');
+  } else for (const x of xs) { firstPaint.cbs.add(x); ask(x, URGENT, dy, upto); if (!waits(x)) firstPaint.cbs.delete(x); }
+}
+/**
+ * After the frame that shows the document: rAF runs before the paint, the
+ * task it queues runs after. (A first paint held since, its place restored
+ * meanwhile: after the frame that shows that.)
+ */
 export function afterShown(f) {
-  const next = () => requestAnimationFrame(() => setTimeout(f, 0));
+  const next = () => requestAnimationFrame(() => setTimeout(() => { if (firstPaint) afterShown(f); else f(); }, 0));
   if (firstPaint) { const then = firstPaint.then; firstPaint.then = () => { then(); next(); }; } else next();
 }
 
 /**
  * A jump about to scroll by `off()` (aimAt): whether it waits for the code
- * it would show, `again` called then. While a first paint waits, the
- * document is hidden: that code joins it, and the jump goes now.
+ * it would show, `again` called then. Before a document shown anew has
+ * been painted (its place restored), or while its first paint waits, it is
+ * hidden: that code waits with it, and the jump goes now.
  */
 export function holdJump(el, off, again) {
   cancelJump();
@@ -733,10 +746,7 @@ export function holdJump(el, off, again) {
   for (let e = nextItem(blk); e; e = nextItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.push(e); }
   const cbs = pending(blocks);
   if (!cbs.length) return false;
-  if (firstPaint) {
-    for (const cb of cbs) { firstPaint.cbs.add(cb); ask(cb, URGENT, d); if (!waits(cb)) firstPaint.cbs.delete(cb); }
-    return false;
-  }
+  if (firstPaint || unshown) { holdFirst(cbs, d); return false; }
   jumpHold = hold(cbs, () => { jumpHold = null; again(); }, d);
   return !!jumpHold;
 }
@@ -861,15 +871,17 @@ export function renderLazy(near = inViewport, first = false) {
     if (near(cb)) onScreen.push(cb);
     codeObserver.observe(cb);
   }
+  // (A first open estimating what is on screen reads no layout: as much
+  // of each block as a screen could show, lines of at least 18 px.)
+  const upto = near === inViewport ? undefined : Math.ceil((innerHeight + 120) / 18);
+  if (first) {
+    unshown = true;
+    requestAnimationFrame(() => { unshown = false; });
+  }
   // (Not before the highlighter has started: the first window at launch
   // shows its code plain first, as before, rather than wait for that.)
-  if (first && !firstPaint && hl.started) {
-    // (A first open estimating what is on screen reads no layout: as much
-    // of each block as a screen could show, lines of at least 18 px.)
-    firstPaint = hold(onScreen, () => { firstPaint = null; doc.classList.remove('hold'); }, 0,
-      near === inViewport ? undefined : Math.ceil((innerHeight + 120) / 18));
-    if (firstPaint) doc.classList.add('hold');
-  } else for (const cb of onScreen) ask(cb, SCREEN, 0, near === inViewport ? undefined : Math.ceil((innerHeight + 120) / 18));
+  if (first && !firstPaint && hl.started) holdFirst(onScreen, 0, upto);
+  else for (const cb of onScreen) ask(cb, SCREEN, 0, upto);
   // The page's diagrams, without a search of the whole page in every patch.
   for (const m of diagrams) {
     if (!m.isConnected) { diagrams.delete(m); continue; }
