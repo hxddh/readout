@@ -370,6 +370,13 @@ hr { border: 0; border-top: 1px solid var(--rule); margin: 2em 0; }
 /* Rounded corners, but not so round that a small inline icon becomes a blob. */
 img { max-width: 100%; height: auto; border-radius: min(6px, 12%); }
 p.img-only img { display: block; }
+/* An image a landing showed before it loaded, its size not given (enhance.js:
+   reserve): a box for a picture until it has, then its own size. A line's
+   own, inline; one standing alone, the column's width. The screen's only. */
+@media screen {
+  img.reserved { height: 1.25em; width: auto; aspect-ratio: 1; vertical-align: text-bottom; }
+  p.img-only img.reserved { width: 100%; height: auto; aspect-ratio: 16 / 9; }
+}
 
 mark {
   color: inherit;

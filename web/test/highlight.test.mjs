@@ -248,6 +248,40 @@ const doc = items => ({ version: 1, reset: true, rewrite: false, marks: [], dele
   }
 }
 
+// A first window at launch restoring a place on code, the highlighter not
+// started yet (it starts with the first appearance, in the same task): the
+// place shows in the document's first frame, its code plain, as a first
+// paint at launch does (3.9.1: 2-7 ms), not after the code is coloured
+// (640-740 ms showing the top, the place lost to a scroll meanwhile).
+{
+  const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
+  collectPageErrors(page, errors);
+  await page.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await page.goto(`${base}/reader.html`);
+  await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'));
+  const items = [...Array.from({ length: 150 }, (_, k) => ['paragraph', `<p>Paragraph ${k} with some words to fill the line and push the code further down the page.</p>`]),
+    ['code', code('typescript', Array.from({ length: 30 }, (_, i) => `export const v${i}: number = ${i} * 2; // line ${i}`).join('\n'))],
+    ...Array.from({ length: 40 }, (_, k) => ['paragraph', `<p>After ${k}.</p>`])];
+  const r = await page.evaluate(async d => {
+    window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 });
+    const started = window.readout.highlighter?.();
+    window.readout.apply(d);
+    window.readout.scrollToAnchor({ slot: 151, offset: 0, ratio: 0 });
+    const t0 = performance.now(), el = document.querySelector('.blk[data-slot="151"]'), doc = document.getElementById('ro-doc');
+    let elsewhere = 0, landed = -1;
+    while (performance.now() - t0 < 4000) {
+      await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+      if (doc.classList.contains('hold') || getComputedStyle(doc).visibility === 'hidden') continue;
+      if (Math.abs(el.getBoundingClientRect().top) <= 2) { landed = performance.now() - t0; break; }
+      elsewhere++;
+    }
+    return { started, landed: Math.round(landed), elsewhere };
+  }, doc(items));
+  check('a first window at launch restoring a place on code lands in its first frame, without waiting for the highlighter',
+    r.started === 'starting' && r.landed >= 0 && r.landed < 300 && r.elsewhere === 0, JSON.stringify(r));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();
