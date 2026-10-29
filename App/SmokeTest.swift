@@ -991,6 +991,10 @@ enum SmokeTest {
             return try? JSONSerialization.jsonObject(with: data)
         }
         let stateBefore = await pageState()
+        // Every scroll from here on, with the page's time and the frame it
+        // came in (rAF count): what moved the place, the page's own moves
+        // (in its trace) or anything else (WebKit's own scroll anchoring).
+        _ = try? await webView.evaluateJavaScript("(() => { window.__scrolls = []; let f = 0; const tick = () => { f++; requestAnimationFrame(tick); }; requestAnimationFrame(tick); addEventListener('scroll', () => window.__scrolls.push([Math.round(performance.now()), f, Math.round(scrollY)]), { passive: true }); return 1; })()")
         let started = Date()
         let before = appliedCount
         mark(out, "await-refill")
@@ -1028,6 +1032,10 @@ enum SmokeTest {
         if let text = try? await webView.evaluateJavaScript("JSON.stringify(window.readout.trace ? window.readout.trace() : [])") as? String,
            let data = text.data(using: .utf8), let trace = try? JSONSerialization.jsonObject(with: data) {
             json["trace"] = trace
+        }
+        if let text = try? await webView.evaluateJavaScript("JSON.stringify(window.__scrolls || [])") as? String,
+           let data = text.data(using: .utf8), let scrolls = try? JSONSerialization.jsonObject(with: data) {
+            json["scrolls"] = scrolls   // [page ms, frame, scrollY] for every scroll event during the refill
         }
         if let now = try? await webView.evaluateJavaScript("Math.round(performance.now())") as? Double { json["page_now_ms"] = now }
         json["seconds_waited"] = Date().timeIntervalSince(started)

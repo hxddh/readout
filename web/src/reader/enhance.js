@@ -111,7 +111,7 @@ function columns(s) {
 
 // Not so many that they starve a column of sentences: the columns' longest
 // kept lines together take at most NW_ROOM characters (a little over half
-// the column at the table's size, 35 em), else the column of the longest
+// the column at the table's size, 42.5 em), else the column of the longest
 // identifiers breaks them after their separators. Counted, not measured:
 // no layout, and the same in any window.
 const NW_ROOM = 40;

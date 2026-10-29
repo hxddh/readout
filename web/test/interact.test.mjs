@@ -96,12 +96,12 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
 // 1. A table that scrolled in a narrow window fits again once the window
 //    (which sizes the column) leaves it room.
 {
-  const page = await newPage({ width: 520, height: 800 });
+  const page = await newPage({ width: 400, height: 800 });
   const long = 'A full sentence of reasoning about the option, as agents write in comparison tables. '.repeat(2);
   // Headers that cannot wrap (no-break spaces): short cells that can wrap do
   // so before a table scrolls (typography.test.mjs).
-  const html = `<div class="table-wrap"><table><thead><tr><th>Option&nbsp;name</th><th>Rationale</th><th>Monthly&nbsp;cost</th><th>Risk&nbsp;level</th><th>Owner&nbsp;team</th><th>Status</th></tr></thead><tbody>
-<tr><td>A</td><td>${long}</td><td>12</td><td>low</td><td>team-a</td><td>ok</td></tr><tr><td>B</td><td>${long}</td><td>40</td><td>high</td><td>team-b</td><td>ok</td></tr></tbody></table></div>`;
+  const html = `<div class="table-wrap"><table><thead><tr><th>Option&nbsp;name</th><th>Rationale</th><th>Monthly&nbsp;cost</th><th>Risk&nbsp;level</th><th>Status</th></tr></thead><tbody>
+<tr><td>A</td><td>${long}</td><td>12</td><td>low</td><td>ok</td></tr><tr><td>B</td><td>${long}</td><td>40</td><td>high</td><td>ok</td></tr></tbody></table></div>`;
   await page.evaluate(p => window.readout.apply(p), patch(1, [{ op: 'insert', slot: 1, after: 0, html, kind: 'table' }], { reset: true }));
   await page.waitForTimeout(300);
   const scrolls = () => page.evaluate(() => document.querySelector('.table-wrap').classList.contains('scrolls'));
