@@ -716,38 +716,6 @@ public final class DocumentSession {
         return out
     }
 
-    // MARK: Serving the page
-
-    /// Index in `blocks` by slot, built when the page first asks for blocks
-    /// in a version (`serve`): nothing on the update path keeps it. Blocks
-    /// change place or slot only in a patch, which is a new version.
-    private var slotIndex: [Int: Int] = [:]
-    private var slotIndexVersion = -1
-
-    /// The block with `slot` in the current version, nil when none.
-    public func block(slot: Int) -> Block? {
-        if slotIndexVersion == version, let i = slotIndex[slot], i < blocks.count, blocks[i].slot == slot { return blocks[i] }
-        if slotIndexVersion != version || slotIndex[slot] != nil || slotIndex.count != blocks.count {
-            slotIndex = [:]
-            slotIndex.reserveCapacity(blocks.count)
-            for i in blocks.indices { slotIndex[blocks[i].slot] = i }
-            slotIndexVersion = version
-        }
-        guard let i = slotIndex[slot], i < blocks.count, blocks[i].slot == slot else { return nil }
-        return blocks[i]
-    }
-
-    /// The reply to the page's request (`PageMessage.blocks`) for the HTML
-    /// of `slots` in `version` (`BlockReply`): always this version's.
-    public func serve(slots: [Int], version asked: Int, request: Int) -> BlockReply {
-        var served: [BlockReply.Served] = [], missing: [Int] = [], seen = Set<Int>()
-        served.reserveCapacity(slots.count)
-        for slot in slots where seen.insert(slot).inserted {
-            if let b = block(slot: slot) { served.append(.init(slot: slot, html: b.html)) } else { missing.append(slot) }
-        }
-        return BlockReply(request: request, version: version, stale: asked != version, blocks: served, missing: missing)
-    }
-
     private func allocSlot() -> Int { defer { nextSlot += 1 }; return nextSlot }
     private func allocDeletionID() -> Int { defer { nextDeletionID += 1 }; return nextDeletionID }
 
