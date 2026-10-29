@@ -1,6 +1,6 @@
 // Mermaid diagrams, loaded on first use and rendered one at a time.
 import { doc, root, strings, inViewport, pageTheme, quicklook } from './core.js';
-import { lazyObserver } from './enhance.js';
+import { lazyObserver, shown } from './enhance.js';
 
 // Drawings by look and source, most recently used last. An agent writing a
 // diagram makes a source of every few characters it adds: at most CACHE_MAX
@@ -303,12 +303,17 @@ export function setupMermaid(block) {
 
 const mermaidQueue = [];
 let mermaidBusy = false, mermaidDraws = 0;
-export function renderMermaid(block) {
+// What a frame waits for (`now`, enhance.js: hold): drawn first, without waiting for the page to be still.
+const urgent = new WeakSet();
+export function renderMermaid(block, now = false) {
   block.classList.add('busy');
   pruneQueue();
-  if (!mermaidQueue.includes(block)) mermaidQueue.push(block);
+  const i = mermaidQueue.indexOf(block);
+  if (now) { urgent.add(block); if (i >= 0) mermaidQueue.splice(i, 1); mermaidQueue.unshift(block); }
+  else if (i < 0) mermaidQueue.push(block);
   pumpMermaid();
 }
+const quiet = block => urgent.has(block) ? null : scrollQuiet();
 // The queue waits while the reader scrolls (scrollQuiet), and an agent may
 // replace a diagram meanwhile: what left the page is dropped then.
 function pruneQueue() {
@@ -336,7 +341,7 @@ async function pumpMermaid() {
         if (block.isConnected) mermaidQueue.push(block);
         return true;
       };
-      await scrollQuiet();
+      await quiet(block);
       if (gone()) continue;
       const m = await loadMermaid().catch(() => null);
       if (!m) break;
@@ -347,7 +352,7 @@ async function pumpMermaid() {
       if (!out) {
         const id = `mmd-${++mermaidSeq}`;
         try {
-          await scrollQuiet();
+          await quiet(block);
           if (gone()) continue;
           mermaidDraws++;
           out = { svg: await draw(m, id, src), id };
@@ -384,6 +389,8 @@ async function pumpMermaid() {
       delete block.dataset.stale;
       delete block.dataset.waiting;
       block.classList.remove('busy');
+      urgent.delete(block);
+      shown(block);
       const slot = diagramSlot(block);
       if (slot) { slot.src = src; if (out.svg) slot.node = fresh; }
     }

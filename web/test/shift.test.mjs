@@ -17,7 +17,8 @@
 //     first screen and above a place restored. The window's toolbar inset
 //     (52 px), a 900×900 window.
 //
-// Before the page kept its first frame (a9e7da3), in px (worst sample; the
+// Each case at most MAX_SHIFT, gated. Before the page kept its first frame
+// (a9e7da3), in px (worst sample; the
 // rest at most 0.4): a diagram on screen drawn after the frame, 894 (the
 // diagram itself, or the blocks under it); inline math typeset after it, 12;
 // an image loading after it, 251.
@@ -34,7 +35,6 @@ import { collectPageErrors } from './pageerrors.mjs';
 
 // The most any case may shift, in px (rounding of a fractional position).
 const MAX_SHIFT = 1;
-const GATE = false;   // reported only, until the page keeps its first frame
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const BUILD = process.env.READOUT_WEB_BUILD || 'build/Web';
@@ -184,8 +184,8 @@ function report(name, ...rs) {
   for (const x of rs) { delete x.log; delete x.trace; delete x.first; }
   const early = Math.max(...rs.map(x => x.opens ? x.early : 0));
   const bad = r.shift < 0 || r.shift > MAX_SHIFT || early > 0;
-  console.log(`${GATE && bad ? 'FAIL' : bad ? 'shift' : 'ok'}: ${name}: ${r.shift} px [${rs.map(x => x.shift).join(', ')}] (first frame at ${r.firstFrame} ms${r.shift > 0 ? `; ${r.what}, ${r.at} ms after it` : ''}${early ? `; ${early} frames before it showed the document elsewhere` : ''})`);
-  if (GATE && bad) failures++;
+  console.log(`${bad ? 'FAIL' : 'ok'}: ${name}: ${r.shift} px [${rs.map(x => x.shift).join(', ')}] (first frame at ${r.firstFrame} ms${r.shift > 0 ? `; ${r.what}, ${r.at} ms after it` : ''}${early ? `; ${early} frames before it showed the document elsewhere` : ''})`);
+  if (bad) failures++;
   results[name] = { ...r, samples: rs.map(x => x.shift) };
 }
 
