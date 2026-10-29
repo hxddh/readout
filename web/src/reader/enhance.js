@@ -140,7 +140,7 @@ function setupTable(t) {
   }
   if (!prose) return;
   let room = kept.reduce((s, c) => s + c.most, 0);
-  for (const col of [...kept].filter(c => c.codes.length).sort((a, b) => b.most - a.most)) {
+  for (const col of kept.filter(c => c.codes.length).sort((a, b) => b.most - a.most)) {
     if (room <= NW_ROOM) break;
     for (const c of col.codes) delete c.dataset.nw;
     room -= col.most;
