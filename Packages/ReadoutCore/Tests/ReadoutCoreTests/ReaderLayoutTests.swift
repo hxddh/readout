@@ -54,7 +54,8 @@ import Testing
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("web/src/reader.css"), encoding: .utf8)
-        #expect(css.contains("--measure: min(35rem, 100vw - 2 * var(--gutter));"))
+        #expect(css.contains("--measure: 35rem;"))   // #ro-doc's max-width: the window less the gutters below it
+        #expect(css.contains("max-width: calc(var(--measure) + var(--gutter) * 2);"))
         #expect(css.contains("--gutter: 28px;"))
         #expect(css.contains("font-size: clamp(calc(var(--fs) * 1px), calc(var(--fs) * (1px + (100vw - 900px) / 3600)), calc(var(--fs) * 1.25px));"))
     }
