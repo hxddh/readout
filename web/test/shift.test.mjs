@@ -5,6 +5,7 @@
 // looks at (the block at the top, the block restored, the jump's target,
 // find's match) and of every other block that frame shows. The shift is
 // the largest distance any of them moved from where that frame showed it.
+// A document opened shows no frame before the one that shows its place.
 //
 // (a) a 1 MB document (the corpus patches chained, as perf.test.mjs) opened
 //     at the top, and opened with its place restored mid-document, on a
@@ -17,6 +18,8 @@
 // Before the page kept its first frame (a9e7da3), in px (worst sample; the
 // rest at most 0.4): a diagram on screen drawn after the frame, 894 (the
 // diagram itself, or the blocks under it); inline math typeset after it, 12.
+// A place restored into a page that showed another document: 6 frames of
+// the document elsewhere (where the old place was) before its own.
 //
 // Usage: node test/shift.test.mjs   (after node build.mjs)
 import { webkit } from 'playwright';
@@ -103,7 +106,8 @@ function recorder() {
     const rectOf = x => typeof x === 'function' ? x() : x && x.isConnected ? x.getBoundingClientRect() : null;
     const debug = !!window.SHIFT_DEBUG, log = [];
     const chunks = () => [...doc.children].map(c => `${c.className} ${Math.round(c.getBoundingClientRect().height)}`);
-    let tracked = null, first = 0, frames = 0, was = null, done = false;
+    // early: frames that showed the document before the first that shows the target.
+    let tracked = null, first = 0, frames = 0, early = 0, was = null, done = false;
     const max = { px: 0, what: null, at: 0 };
     const probe = document.body.appendChild(document.createElement('div'));
     probe.style.cssText = 'position: fixed; top: 0; left: 0; width: 1px; height: 1px; visibility: hidden; pointer-events: none';
@@ -115,7 +119,8 @@ function recorder() {
       if (!tracked) {
         const t = !doc.classList.contains('hold') && target();
         const r = t && rectOf(t);
-        if (r && r.bottom > inset() && r.top < innerHeight) {
+        if (!doc.classList.contains('hold') && !(r && r.bottom > inset() && r.top < innerHeight)) early++;
+        else if (r) {
           first = now;
           tracked = [{ name: 'target', x: t, top: r.top }];
           // Every other block on screen (in the chunks on screen: one in a chunk skipped would be laid out to answer).
@@ -136,7 +141,7 @@ function recorder() {
       }
       if (debug) was = chunks();
       if (tracked && now - first >= ms) {
-        end({ shift: Math.round(max.px * 10) / 10, what: max.what, at: max.at, firstFrame: Math.round(first - t0), frames,
+        end({ shift: Math.round(max.px * 10) / 10, what: max.what, at: max.at, firstFrame: Math.round(first - t0), frames, early,
           ...(debug ? { log, first: Math.round(first - t0), trace: window.readout.trace().filter(e => e.t >= t0).map(e => ({ ...e, t: Math.round(e.t - t0) })).slice(0, 60) } : {}) });
       } else if (!tracked && now - t0 > 8000) end({ shift: -1, what: 'never shown', frames });
     };
@@ -164,20 +169,22 @@ function recorder() {
   window.blk = slot => () => document.querySelector(`#ro-doc .blk[data-slot="${slot}"]`);
 }
 
-// `rs`: the case's samples; it shifts as much as the worst of them.
+// `rs`: the case's samples; it shifts as much as the worst of them. A
+// document opened (`opens`) shows no frame before the one with its place.
 function report(name, ...rs) {
   const r = rs.reduce((a, b) => (b.shift < 0 || a.shift < 0 ? (b.shift < 0 ? b : a) : b.shift > a.shift ? b : a));
   for (const x of rs) if (x.log && x.shift > MAX_SHIFT) console.log('  ', JSON.stringify({ first: x.first, log: x.log, trace: x.trace }));
   for (const x of rs) { delete x.log; delete x.trace; delete x.first; }
-  const bad = r.shift < 0 || r.shift > MAX_SHIFT;
-  console.log(`${GATE && bad ? 'FAIL' : bad ? 'shift' : 'ok'}: ${name}: ${r.shift} px [${rs.map(x => x.shift).join(', ')}] (first frame at ${r.firstFrame} ms${r.shift > 0 ? `; ${r.what}, ${r.at} ms after it` : ''})`);
+  const early = Math.max(...rs.map(x => x.opens ? x.early : 0));
+  const bad = r.shift < 0 || r.shift > MAX_SHIFT || early > 0;
+  console.log(`${GATE && bad ? 'FAIL' : bad ? 'shift' : 'ok'}: ${name}: ${r.shift} px [${rs.map(x => x.shift).join(', ')}] (first frame at ${r.firstFrame} ms${r.shift > 0 ? `; ${r.what}, ${r.at} ms after it` : ''}${early ? `; ${early} frames before it showed the document elsewhere` : ''})`);
   if (GATE && bad) failures++;
   results[name] = { ...r, samples: rs.map(x => x.shift) };
 }
 
 // What the app sends to restore a place: the block, its top `offset` px above the top of the view.
 const restore = (p, ops, version, slot, offset) => p.evaluate(([d, a]) => window.shift(() => { window.readout.apply(d); window.readout.scrollToAnchor(a); },
-  () => document.querySelector(`#ro-doc .blk[data-slot="${a.slot}"]`)), [reset(ops, version), { slot, offset, ratio: 0 }]);
+  () => document.querySelector(`#ro-doc .blk[data-slot="${a.slot}"]`)), [reset(ops, version), { slot, offset, ratio: 0 }]).then(r => ({ ...r, opens: true }));
 
 // Blocks drawn after they are set up: a diagram, a formula, a paragraph with
 // inline math (and the chain to look for one in, from that corpus file on).
