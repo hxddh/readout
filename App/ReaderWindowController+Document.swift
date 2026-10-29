@@ -83,7 +83,7 @@ extension ReaderWindowController {
                 self.webView.setAppearance(strings: ReaderStrings.all)
             }
             // A whole document: encoded off the main thread, still delivered before the calls below.
-            self.webView.callEncodingOffMain("apply", self.webView.page(patch))
+            self.webView.callEncodingOffMain("apply", patch.page)
             // After the apply: in place of the page's own "Rewritten since you last read".
             if let commitNotice { self.webView.call("notice", Self.text(commitNotice)) }
             SmokeTest.run(controller: self, webView: self.webView)
@@ -201,9 +201,9 @@ extension ReaderWindowController {
                 if patch.reset {
                     // A whole document (a rewrite): encoded off the main thread,
                     // still delivered before the calls below.
-                    self.webView.callEncodingOffMain("apply", self.webView.page(patch))
+                    self.webView.callEncodingOffMain("apply", patch.page)
                 } else {
-                    self.webView.call("apply", self.webView.page(patch))
+                    self.webView.call("apply", patch.page)
                 }
                 if let restore { self.restorePlace(restore) }
             }
@@ -430,7 +430,7 @@ extension ReaderWindowController {
         if let restore { lastAnchor = restore }
         webView.whenReady { [weak self] in
             guard let self else { return }
-            self.webView.callEncodingOffMain("apply", self.webView.page(patch))
+            self.webView.callEncodingOffMain("apply", patch.page)
             if let restore { self.restorePlace(restore) }
             then?(patch)
         }

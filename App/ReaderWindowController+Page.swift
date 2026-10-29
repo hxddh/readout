@@ -28,7 +28,7 @@ extension ReaderWindowController {
             guard let self else { return }
             self.applyAppearance()
             self.sendKnownImages()
-            self.webView.callEncodingOffMain("apply", self.webView.page(self.session.fullPayload(rewrite: false)))
+            self.webView.callEncodingOffMain("apply", self.session.fullPayload(rewrite: false).page)
         }
         // The new page has found nothing yet (and a search queued for the old one does not run).
         endFind()
@@ -120,11 +120,6 @@ extension ReaderWindowController {
                 : current == 0 ? String(format: NSLocalizedString("– of %d", comment: "Find field: matches an edit brought, none current yet"), total)
                 : String(format: NSLocalizedString("%d of %d", comment: "Find field: the current match of how many"), current, total)
             SmokeTest.noteFound()
-        case .blocks(let version, let slots, let request):
-            // Asked only by a page that announced `lean`, the only page with
-            // `window.readout.blocks`: the HTML of the version shown now.
-            guard webView.pageProtocol.lean else { break }
-            webView.call("blocks", session.serve(slots: slots, version: version, request: request))
         case .ready, .error:
             break   // handled by ReaderWebView
         }
