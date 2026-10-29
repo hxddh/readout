@@ -24,6 +24,9 @@
 // an image loading after it, 251.
 // A place restored into a page that showed another document: 6 frames of
 // the document elsewhere (where the old place was) before its own.
+// (The first frame waits for the code and math it shows, not for diagrams
+// or images: those not drawn or loaded get a box they keep while on screen,
+// enhance.js: reserve. perf.test.mjs: web_land_*: how long that would wait.)
 //
 // Usage: node test/shift.test.mjs   (after node build.mjs)
 import { webkit } from 'playwright';

@@ -7,7 +7,7 @@ import { doc, root, strings, post, inViewport, prevItem, nextItem } from './core
 import { captureAnchor, restoreAnchor } from './anchor.js';
 import { setupRemoteImage } from './remote.js';
 import { renderMath, typesetting } from './math.js';
-import { renderMermaid, setupMermaid, sweepLater } from './mermaid.js';
+import { renderMermaid, setupMermaid, sweepLater, placeCached } from './mermaid.js';
 
 export function enhance(el) {
   hl.stopWarmUp();   // a document is shown: its own blocks load what they need
@@ -18,7 +18,7 @@ export function enhance(el) {
   for (const r of el.querySelectorAll('.remote-img')) setupRemoteImage(r);
   for (const m of el.querySelectorAll('.mermaid-block')) { setupMermaid(m); diagrams.add(m); }
   if (el.querySelector('.math, .math-block')) renderMath(el);
-  for (const img of el.querySelectorAll('img')) if (!img.complete) images.push(img);
+  for (const img of el.querySelectorAll('img')) if (!img.complete && !(img.getAttribute('width') && img.getAttribute('height'))) images.push(img);
   setLang(el);
   markCjkEmphasis(el);
   markCodeBeforePunct(el);
@@ -648,11 +648,13 @@ function part(cb, lang, html, code, done, first) {
 }
 
 /**
- * `cb` shows coloured (all of it, or what the screen shows of it), a
- * diagram drawn, math typeset, an image loaded: what waited for it goes on.
+ * `cb` shows coloured (all of it, or what the screen shows of it), math
+ * typeset: what waited for it goes on; a diagram drawn (or an image loaded)
+ * in the box a landing kept for it: its own height once off screen.
  */
 export function shown(cb) {
   for (const h of [...holds]) if (h.cbs.delete(cb) && !h.cbs.size) release(h);
+  if (reserved.has(cb) && out.has(cb)) unreserve(cb);
 }
 
 function markDiff(root, id) {
@@ -665,11 +667,11 @@ function markDiff(root, id) {
 }
 
 // Holds: what waits for code on screen to be coloured (`then`), and for
-// diagrams there to be drawn, math typeset and images loaded (each then the
-// height it keeps: after the frame that shows it, it would move what is
-// below it, or what is above it, the place kept), for HOLD_MS at most: what highlighting it on
-// this thread took the frame before (the lines a block shows where the
-// reader lands come first). A document's
+// math there to be typeset (then the height it keeps: after the frame that
+// shows it, it would move what is below it, or what is above it, the place
+// kept), for HOLD_MS at most: what highlighting it on this thread took the
+// frame before (the lines a block shows where the reader lands come first).
+// (Diagrams and images are not waited for: they get a box, reserve.) A document's
 // first paint waits with the document hidden (a reset: none of the old
 // document is left; code it shows again is coloured at once, keepColours,
 // and waits for nothing); a jump waits before it scrolls; find, before it
@@ -702,20 +704,63 @@ function release(h) {
   h.then();
 }
 // Code not coloured on screen yet (neither all of it, nor its lines on
-// screen); a diagram not drawn (not one an agent is still writing: it is
-// drawn once its source is still); math waiting for KaTeX; an image loading.
+// screen); math waiting for KaTeX.
 const isCode = x => x.classList.contains('code-block'), isDiagram = x => x.classList.contains('mermaid-block');
-const waits = cb => isCode(cb) ? cb.dataset.hl === 'pending' && !slow.has(cb) && !(inPart.has(cb) && !inPart.get(cb).kept)
-  : isDiagram(cb) ? !cb.classList.contains('done') && !cb.querySelector('.mermaid-error') && !cb.dataset.waiting
-  : cb.localName === 'img' ? !cb.complete : typesetting.has(cb);
+const waits = cb => isCode(cb) ? cb.dataset.hl === 'pending' && !slow.has(cb) && !(inPart.has(cb) && !inPart.get(cb).kept) : typesetting.has(cb);
 const slow = new WeakSet();   // blocks whose grammar was not loaded when asked for
-const pending = blocks => blocks.flatMap(b => [...b.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block, .math, .math-block, img')].filter(waits));
-/** What a hold waits for, asked for first: code highlighted, a diagram drawn (math is typeset once KaTeX is in, an image once it has loaded). */
+const pending = blocks => blocks.flatMap(b => [...b.querySelectorAll('.code-block[data-hl="pending"], .math, .math-block')].filter(waits));
+/** What a hold waits for, asked for first: code highlighted (math is typeset once KaTeX is in). */
 function urge(x, dy, upto) {
   if (isCode(x)) ask(x, URGENT, dy, upto);
-  else if (isDiagram(x) && waits(x)) renderMermaid(x, true);
-  else if (x.localName === 'img') for (const type of ['load', 'error']) x.addEventListener(type, () => shown(x), { once: true });
 }
+
+// Diagrams and images a landing shows (a first paint, a jump) not drawn or
+// loaded yet are not waited for: Mermaid's load and layout, or an image's
+// load, take up to seconds. The landing gives each a box instead, the
+// height it keeps while on screen (reader.css: .reserved): drawn or loaded,
+// it is fitted in it, and takes its own height once it is off screen (the
+// page keeps the place then: anchor.js). A diagram drawn before (in the
+// cache) is put in at once; an image with its size (ReadoutCore gives a
+// local one's) has its box already; a diagram an agent is still writing is
+// drawn once its source is still, as anywhere.
+const reserved = new Set();
+const out = new WeakSet();   // reserved, and off screen
+const finished = x => isDiagram(x) ? x.classList.contains('done') || !!x.querySelector('.mermaid-error') : x.complete;
+const reserveObserver = new IntersectionObserver(entries => {
+  for (const e of entries) {
+    if (e.isIntersecting) { out.delete(e.target); continue; }
+    out.add(e.target);
+    if (finished(e.target)) unreserve(e.target);
+  }
+});
+/** Boxes for the diagrams and images in `xs` not drawn or loaded. */
+function reserve(xs) {
+  for (const x of reserved) if (!x.isConnected) unreserve(x);
+  for (const x of xs) {
+    if (reserved.has(x) || !x.isConnected || finished(x)) continue;
+    if (isDiagram(x)) {
+      if (x.dataset.waiting || placeCached(x)) continue;
+      // As tall as its source would show, within 240 px and 60% of the window.
+      const lines = (x.querySelector('.mermaid-src')?.textContent.match(/\n/g)?.length ?? 0) + 1;
+      x.style.setProperty('--reserve', `${Math.round(Math.min(Math.max(lines * 22, 240), innerHeight * 0.6))}px`);
+      renderMermaid(x, true);
+    } else {
+      if (x.getAttribute('width') && x.getAttribute('height')) continue;
+      for (const type of ['load', 'error']) x.addEventListener(type, () => shown(x), { once: true });
+    }
+    x.classList.add('reserved');
+    reserved.add(x);
+    reserveObserver.observe(x);
+  }
+}
+function unreserve(x) {
+  reserved.delete(x);
+  out.delete(x);
+  reserveObserver.unobserve(x);
+  x.classList.remove('reserved');
+  x.style.removeProperty('--reserve');
+}
+const toReserve = blocks => blocks.flatMap(b => [...b.querySelectorAll('.mermaid-block, img')]);
 
 /**
  * `then` once the code in `blocks` is coloured as far as `line` and a
@@ -749,7 +794,8 @@ export function afterShown(f) {
 
 /**
  * A jump about to scroll by `off()` (aimAt): whether it waits for the code
- * (the diagrams, math, images) it would show, `again` called then. Before
+ * (the math) it would show, `again` called then; the diagrams and images it
+ * shows get their boxes (reserve) before it scrolls. Before
  * a document shown anew has been painted (its place restored), or while
  * its first paint waits, it is hidden: what the jump shows waits with it,
  * and the jump goes now.
@@ -763,6 +809,7 @@ export function holdJump(el, off, again) {
   const blocks = [blk];
   for (let e = prevItem(blk); e; e = prevItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.unshift(e); }
   for (let e = nextItem(blk); e; e = nextItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.push(e); }
+  reserve(toReserve(blocks));
   const cbs = pending(blocks);
   if (!cbs.length) return false;
   if (firstPaint || unshown) { holdFirst(cbs, d); return false; }
@@ -898,10 +945,11 @@ export function renderLazy(near = inViewport, first = false) {
   if (first) {
     unshown = true;
     requestAnimationFrame(() => { unshown = false; });
-    // Its diagrams, math and images on screen too. (Its code not before the
-    // highlighter has started: the first window at launch shows its code
-    // plain first, as before, rather than wait for that.)
-    const later = [...diagrams, ...typesetting, ...imgs].filter(x => x.isConnected && waits(x) && near(x));
+    // Its math on screen too, and boxes for its diagrams and images there.
+    // (Its code not before the highlighter has started: the first window at
+    // launch shows its code plain first, as before, rather than wait for that.)
+    reserve([...diagrams, ...imgs].filter(x => x.isConnected && near(x)));
+    const later = [...typesetting].filter(x => x.isConnected && waits(x) && near(x));
     holdFirst(hl.started ? [...onScreen, ...later] : later, 0, upto);
   }
   if (!first || !hl.started) for (const cb of onScreen) ask(cb, SCREEN, 0, upto);
@@ -911,5 +959,5 @@ export function renderLazy(near = inViewport, first = false) {
     if (!m.classList.contains('done') && !m.classList.contains('busy') && !m.dataset.waiting) lazyObserver.observe(m);
   }
 }
-let images = [];   // images set up since the last renderLazy(), still loading
+let images = [];   // images set up since the last renderLazy(), still loading, their size not given
 const diagrams = new Set();   // every diagram block set up (enhance), until it leaves the page
