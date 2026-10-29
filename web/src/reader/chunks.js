@@ -417,7 +417,8 @@ export function flushStarts() {
  * Decided per block, not by a sibling selector, so the gap is the same with
  * the list item first in the next chunk, and as chunks split or join.
  * patch.js notes the blocks a change can concern (noteLead: a block written
- * and the one before it, the one before a block removed); a reset, all.
+ * and the one before it, the one before a block removed); a reset, each
+ * lead-in paragraph it makes (the page is all new: no query of the page).
  */
 const leadNoted = new Set();
 const shownBlock = (e, step) => { for (e = e && step(e); e; e = step(e)) if (e.classList.contains('blk')) return e; return null; };
@@ -429,10 +430,7 @@ export function leadIns(all = false) {
   // A reset: the page is new, nothing to keep a place or a height for (and
   // a height asked for here would lay out the whole page before its first frame).
   if (all) {
-    for (const p of doc.querySelectorAll('.chunk > .k-paragraph > p.lead')) {
-      const el = p.parentElement, n = shownBlock(el, nextItem);
-      if (p === el.firstElementChild && n?.classList.contains('k-listItem')) el.classList.add('lead-list');
-    }
+    for (const el of noted) if (shownBlock(el, nextItem)?.classList.contains('k-listItem')) el.classList.add('lead-list');
     return;
   }
   for (const el of noted) {
