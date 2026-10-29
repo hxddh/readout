@@ -6,7 +6,7 @@
    "kind": "heading",
    "top": 12,
    "h": 59,
-   "style": "178a991d",
+   "style": "fdd0abd3",
    "content": "f91e20ad",
    "text": "Rust/codex-rs"
   },
@@ -15,7 +15,7 @@
    "kind": "paragraph",
    "top": 71,
    "h": 32,
-   "style": "5a6e0c44",
+   "style": "021687e8",
    "content": "fed0c134",
    "text": "In the codex-rs folder where the rust code lives"
   },
@@ -24,7 +24,7 @@
    "kind": "listItem",
    "top": 103,
    "h": 54,
-   "style": "94f66b70",
+   "style": "c2f85a24",
    "content": "35b7543d",
    "text": "Crate names are prefixed with codex-. For exampl"
   },
@@ -33,7 +33,7 @@
    "kind": "listItem",
    "top": 157,
    "h": 28,
-   "style": "176da19c",
+   "style": "690d45d0",
    "content": "a35d5676",
    "text": "When using format! and you can inline variables "
   },
@@ -42,7 +42,7 @@
    "kind": "listItem",
    "top": 186,
    "h": 54,
-   "style": "14d78081",
+   "style": "0b1eb9cd",
    "content": "551c726a",
    "text": "Install any commands the repo relies on (for exa"
   },
@@ -51,7 +51,7 @@
    "kind": "listItem",
    "top": 240,
    "h": 321,
-   "style": "ea020f1b",
+   "style": "4cea82db",
    "content": "389c5b65",
    "text": "Never add or modify any code related to CODEX_SA"
   },
@@ -60,7 +60,7 @@
    "kind": "listItem",
    "top": 561,
    "h": 54,
-   "style": "97e639e5",
+   "style": "fbf09549",
    "content": "43237f5d",
    "text": "Always collapse if statements per https://rust-l"
   },
@@ -69,7 +69,7 @@
    "kind": "listItem",
    "top": 615,
    "h": 54,
-   "style": "be0cbde5",
+   "style": "3ccc1951",
    "content": "c91ce8fe",
    "text": "Always inline format! args when possible per htt"
   },
@@ -78,7 +78,7 @@
    "kind": "listItem",
    "top": 669,
    "h": 80,
-   "style": "3d5690ad",
+   "style": "cee446a1",
    "content": "8f298e06",
    "text": "Use method references over closures when possibl"
   },
@@ -87,7 +87,7 @@
    "kind": "listItem",
    "top": 750,
    "h": 106,
-   "style": "d8575567",
+   "style": "11b5a07b",
    "content": "b1febe88",
    "text": "Avoid bool or ambiguous Option parameters that f"
   },
@@ -96,7 +96,7 @@
    "kind": "listItem",
    "top": 856,
    "h": 458,
-   "style": "7a6ef122",
+   "style": "9652197e",
    "content": "81c75009",
    "text": "When you cannot make that API change and still n"
   },
@@ -105,7 +105,7 @@
    "kind": "listItem",
    "top": 1314,
    "h": 28,
-   "style": "22e9d363",
+   "style": "530525d7",
    "content": "24d30686",
    "text": "When possible, make match statements exhaustive "
   },
@@ -114,7 +114,7 @@
    "kind": "listItem",
    "top": 1342,
    "h": 54,
-   "style": "3859bd92",
+   "style": "a7377e96",
    "content": "cfab51a6",
    "text": "Newly added traits should include doc comments t"
   },
@@ -123,7 +123,7 @@
    "kind": "listItem",
    "top": 1396,
    "h": 273,
-   "style": "bb07c11f",
+   "style": "dfae26af",
    "content": "4c3aad1d",
    "text": "Discourage both #[async_trait] and #[allow(async"
   },
@@ -132,7 +132,7 @@
    "kind": "listItem",
    "top": 1670,
    "h": 54,
-   "style": "3859bd92",
+   "style": "a7377e96",
    "content": "b1718f3f",
    "text": "When writing tests, prefer comparing the equalit"
   },
@@ -141,7 +141,7 @@
    "kind": "listItem",
    "top": 1724,
    "h": 28,
-   "style": "176da19c",
+   "style": "690d45d0",
    "content": "1f4be4d0",
    "text": "Do not add tests for values that are statically "
   },
@@ -150,7 +150,7 @@
    "kind": "listItem",
    "top": 1752,
    "h": 28,
-   "style": "176da19c",
+   "style": "690d45d0",
    "content": "5637abbb",
    "text": "Do not add negative tests for logic that was rem"
   },
@@ -159,7 +159,7 @@
    "kind": "listItem",
    "top": 1781,
    "h": 80,
-   "style": "01d8ef90",
+   "style": "770c96bc",
    "content": "c280939c",
    "text": "Do not add general product or user-facing docume"
   },
@@ -168,7 +168,7 @@
    "kind": "listItem",
    "top": 1861,
    "h": 28,
-   "style": "176da19c",
+   "style": "690d45d0",
    "content": "9437b93e",
    "text": "Prefer private modules and explicitly exported p"
   },
@@ -177,7 +177,7 @@
    "kind": "listItem",
    "top": 1889,
    "h": 54,
-   "style": "7842669c",
+   "style": "d08b6af0",
    "content": "e2cd415e",
    "text": "If you change ConfigToml or nested config types,"
   },
@@ -186,7 +186,7 @@
    "kind": "listItem",
    "top": 1943,
    "h": 106,
-   "style": "cf24fdb4",
+   "style": "b96b4d00",
    "content": "d8ec4dc1",
    "text": "When working with MCP tool calls, prefer using c"
   },
@@ -195,7 +195,7 @@
    "kind": "listItem",
    "top": 2050,
    "h": 54,
-   "style": "f4716a09",
+   "style": "91789505",
    "content": "e1fc92be",
    "text": "Do not call reset_client_session unnecessarily; "
   },
@@ -204,7 +204,7 @@
    "kind": "listItem",
    "top": 2104,
    "h": 80,
-   "style": "fe5801a4",
+   "style": "e7fa4d38",
    "content": "67244dfd",
    "text": "If you change Rust dependencies (Cargo.toml or C"
   },
@@ -213,7 +213,7 @@
    "kind": "listItem",
    "top": 2184,
    "h": 132,
-   "style": "31570a7c",
+   "style": "f92eeeec",
    "content": "41ca5db1",
    "text": "Bazel does not automatically make source-tree fi"
   },
@@ -222,7 +222,7 @@
    "kind": "listItem",
    "top": 2317,
    "h": 28,
-   "style": "176da19c",
+   "style": "690d45d0",
    "content": "82b8c74f",
    "text": "Do not create small helper methods that are refe"
   },
@@ -231,7 +231,7 @@
    "kind": "listItem",
    "top": 2345,
    "h": 132,
-   "style": "4fce1989",
+   "style": "01d70739",
    "content": "5ae417c1",
    "text": "For tracing async work, instrument the function "
   },
@@ -240,7 +240,7 @@
    "kind": "listItem",
    "top": 2477,
    "h": 460,
-   "style": "654910cd",
+   "style": "82766c69",
    "content": "0768e843",
    "text": "Avoid large modules: Prefer adding new modules i"
   },
@@ -249,7 +249,7 @@
    "kind": "listItem",
    "top": 2937,
    "h": 97,
-   "style": "07d3b812",
+   "style": "e737f22a",
    "content": "16a60285",
    "text": "When running Rust commands (e.g. just fix or jus"
   },
@@ -258,7 +258,7 @@
    "kind": "paragraph",
    "top": 3034,
    "h": 84,
-   "style": "1aaddfff",
+   "style": "a3053ca3",
    "content": "2f4067bd",
    "text": "Run just fmt (in the codex-rs directory) automat"
   },
@@ -267,7 +267,7 @@
    "kind": "listItem",
    "top": 3119,
    "h": 54,
-   "style": "4cb9f476",
+   "style": "a722c45a",
    "content": "7a0736b8",
    "text": "Do not run cargo test directly. Use just test so"
   },
@@ -276,7 +276,7 @@
    "kind": "listItem",
    "top": 3173,
    "h": 54,
-   "style": "f6086c98",
+   "style": "728fbf74",
    "content": "ab708984",
    "text": "Run the test for the specific project that was c"
   },
@@ -285,7 +285,7 @@
    "kind": "listItem",
    "top": 3227,
    "h": 175,
-   "style": "4284984e",
+   "style": "fd369242",
    "content": "f04022a6",
    "text": "Once those pass, if any changes were made in com"
   },
@@ -294,7 +294,7 @@
    "kind": "paragraph",
    "top": 3402,
    "h": 122,
-   "style": "c23ef972",
+   "style": "fe30ff60",
    "content": "95452de7",
    "text": "Before finalizing a large change to codex-rs, ru"
   },
@@ -303,7 +303,7 @@
    "kind": "heading",
    "top": 3524,
    "h": 65,
-   "style": "01804252",
+   "style": "dfef3f92",
    "content": "1aef8056",
    "text": "The codex-core crate"
   },
@@ -312,7 +312,7 @@
    "kind": "paragraph",
    "top": 3589,
    "h": 122,
-   "style": "d69541e2",
+   "style": "0ae5f66c",
    "content": "b8cb6aee",
    "text": "Over time, the codex-core crate (defined in code"
   },
@@ -321,7 +321,7 @@
    "kind": "paragraph",
    "top": 3710,
    "h": 44,
-   "style": "0b5f1715",
+   "style": "bebfd153",
    "content": "29379747",
    "text": "To that end: resist adding code to codex-core!"
   },
@@ -330,7 +330,7 @@
    "kind": "paragraph",
    "top": 3754,
    "h": 58,
-   "style": "dbd897b2",
+   "style": "44c3c2fe",
    "content": "67121000",
    "text": "Particularly when introducing a new concept/feat"
   },
@@ -339,7 +339,7 @@
    "kind": "listItem",
    "top": 3812,
    "h": 54,
-   "style": "8fd1a2bd",
+   "style": "5460af11",
    "content": "0531b94e",
    "text": "There is an existing crate other than codex-core"
   },
@@ -348,7 +348,7 @@
    "kind": "listItem",
    "top": 3867,
    "h": 71,
-   "style": "52467cdc",
+   "style": "9fe1f344",
    "content": "2b767d29",
    "text": "It is time to introduce a new crate to the Cargo"
   },
@@ -357,7 +357,7 @@
    "kind": "paragraph",
    "top": 3938,
    "h": 70,
-   "style": "9074b62d",
+   "style": "54cb0fef",
    "content": "3c4262ff",
    "text": "Likewise, when reviewing code, do not hesitate t"
   },
@@ -366,7 +366,7 @@
    "kind": "heading",
    "top": 4007,
    "h": 65,
-   "style": "bec213fd",
+   "style": "ebfbbd3d",
    "content": "a693de57",
    "text": "Code Review Rules"
   },
@@ -375,7 +375,7 @@
    "kind": "heading",
    "top": 4072,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "e65f055b",
    "text": "Crate API surface"
   },
@@ -384,7 +384,7 @@
    "kind": "paragraph",
    "top": 4114,
    "h": 44,
-   "style": "ccea4f40",
+   "style": "9e255bfe",
    "content": "cd24d7b8",
    "text": "Keep crate API surfaces as small as possible. Av"
   },
@@ -393,7 +393,7 @@
    "kind": "heading",
    "top": 4158,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "998809b3",
    "text": "Model visible context"
   },
@@ -402,7 +402,7 @@
    "kind": "paragraph",
    "top": 4200,
    "h": 70,
-   "style": "05a41dd1",
+   "style": "be800a7b",
    "content": "63503d0a",
    "text": "Codex maintains a context (history of messages) "
   },
@@ -411,7 +411,7 @@
    "kind": "listItem",
    "top": 4269,
    "h": 28,
-   "style": "da0124ce",
+   "style": "e9cd2a5a",
    "content": "1e37c827",
    "text": "No history rewrite - the context must be built u"
   },
@@ -420,7 +420,7 @@
    "kind": "listItem",
    "top": 4298,
    "h": 28,
-   "style": "50e9441a",
+   "style": "dbdd8b3e",
    "content": "75a7c701",
    "text": "Avoid frequent changes to context that cause cac"
   },
@@ -429,7 +429,7 @@
    "kind": "listItem",
    "top": 4326,
    "h": 54,
-   "style": "5d4e7248",
+   "style": "522eaedc",
    "content": "3109fb97",
    "text": "No unbounded items - everything injected in the "
   },
@@ -438,7 +438,7 @@
    "kind": "listItem",
    "top": 4380,
    "h": 28,
-   "style": "50e9441a",
+   "style": "dbdd8b3e",
    "content": "be83e502",
    "text": "No items larger than 10K tokens."
   },
@@ -447,7 +447,7 @@
    "kind": "listItem",
    "top": 4409,
    "h": 54,
-   "style": "5d4e7248",
+   "style": "522eaedc",
    "content": "4e7f6322",
    "text": "Highlight new individual items that can cross >1"
   },
@@ -456,7 +456,7 @@
    "kind": "listItem",
    "top": 4463,
    "h": 71,
-   "style": "4ea2a048",
+   "style": "9273c580",
    "content": "70318dda",
    "text": "All injected fragments must be defined as struct"
   },
@@ -465,7 +465,7 @@
    "kind": "heading",
    "top": 4534,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "3408caa1",
    "text": "Breaking changes"
   },
@@ -474,7 +474,7 @@
    "kind": "paragraph",
    "top": 4576,
    "h": 32,
-   "style": "5a6e0c44",
+   "style": "021687e8",
    "content": "dd949d80",
    "text": "Search for breaking changes in external integrat"
   },
@@ -483,7 +483,7 @@
    "kind": "listItem",
    "top": 4608,
    "h": 28,
-   "style": "75ed73e0",
+   "style": "e191491c",
    "content": "10e68989",
    "text": "app-server APIs"
   },
@@ -492,7 +492,7 @@
    "kind": "listItem",
    "top": 4636,
    "h": 28,
-   "style": "60ca2556",
+   "style": "cd81edaa",
    "content": "7caf6b1f",
    "text": "raw response item events (rawResponseItem/*), ev"
   },
@@ -501,7 +501,7 @@
    "kind": "listItem",
    "top": 4665,
    "h": 28,
-   "style": "176da19c",
+   "style": "690d45d0",
    "content": "41b112f3",
    "text": "CLI parameters"
   },
@@ -510,7 +510,7 @@
    "kind": "listItem",
    "top": 4693,
    "h": 28,
-   "style": "176da19c",
+   "style": "690d45d0",
    "content": "0cda3efd",
    "text": "configuration loading"
   },
@@ -519,7 +519,7 @@
    "kind": "listItem",
    "top": 4721,
    "h": 45,
-   "style": "0359fd4b",
+   "style": "4e208c5b",
    "content": "1d20d387",
    "text": "resuming sessions from existing rollouts"
   },
@@ -528,7 +528,7 @@
    "kind": "heading",
    "top": 4766,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "038b9f0e",
    "text": "Test authoring guidance"
   },
@@ -537,7 +537,7 @@
    "kind": "paragraph",
    "top": 4808,
    "h": 70,
-   "style": "04d84ab5",
+   "style": "000e3e53",
    "content": "f4ac1429",
    "text": "For agent changes prefer integration tests over "
   },
@@ -546,7 +546,7 @@
    "kind": "paragraph",
    "top": 4878,
    "h": 32,
-   "style": "5a6e0c44",
+   "style": "021687e8",
    "content": "52a7bef4",
    "text": "Features that change the agent logic MUST add an"
   },
@@ -555,7 +555,7 @@
    "kind": "listItem",
    "top": 4910,
    "h": 71,
-   "style": "5fafd3e8",
+   "style": "e090bc20",
    "content": "e7ffca30",
    "text": "Provide a list of major logic changes and user-f"
   },
@@ -564,7 +564,7 @@
    "kind": "paragraph",
    "top": 4981,
    "h": 70,
-   "style": "05a41dd1",
+   "style": "be800a7b",
    "content": "9ffba6fc",
    "text": "If unit tests are needed, put them in a dedicate"
   },
@@ -573,7 +573,7 @@
    "kind": "paragraph",
    "top": 5051,
    "h": 70,
-   "style": "05a41dd1",
+   "style": "be800a7b",
    "content": "50083716",
    "text": "Check whether there are existing helpers to make"
   },
@@ -582,7 +582,7 @@
    "kind": "heading",
    "top": 5120,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "86788752",
    "text": "Change size guidance (800 lines)"
   },
@@ -591,7 +591,7 @@
    "kind": "paragraph",
    "top": 5162,
    "h": 70,
-   "style": "05a41dd1",
+   "style": "be800a7b",
    "content": "97ae07fe",
    "text": "Unless the change is mechanical the total number"
   },
@@ -600,7 +600,7 @@
    "kind": "paragraph",
    "top": 5232,
    "h": 96,
-   "style": "5474be3e",
+   "style": "90d033f0",
    "content": "6354ad1a",
    "text": "If the change is larger, explore whether it can "
   },
@@ -609,7 +609,7 @@
    "kind": "heading",
    "top": 5327,
    "h": 65,
-   "style": "bec213fd",
+   "style": "ebfbbd3d",
    "content": "350f8cd0",
    "text": "TUI style conventions"
   },
@@ -618,7 +618,7 @@
    "kind": "paragraph",
    "top": 5392,
    "h": 44,
-   "style": "ce601c5c",
+   "style": "59f6a2ce",
    "content": "adff9a4c",
    "text": "See codex-rs/tui/styles.md."
   },
@@ -627,7 +627,7 @@
    "kind": "heading",
    "top": 5436,
    "h": 65,
-   "style": "bec213fd",
+   "style": "ebfbbd3d",
    "content": "f46f9a06",
    "text": "TUI code conventions"
   },
@@ -636,7 +636,7 @@
    "kind": "listItem",
    "top": 5501,
    "h": 213,
-   "style": "31ec3e49",
+   "style": "52befd31",
    "content": "fb0043c2",
    "text": "Use concise styling helpers from ratatui’s Styli"
   },
@@ -645,7 +645,7 @@
    "kind": "heading",
    "top": 5714,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "395872f4",
    "text": "TUI Styling (ratatui)"
   },
@@ -654,7 +654,7 @@
    "kind": "listItem",
    "top": 5756,
    "h": 54,
-   "style": "7da797fe",
+   "style": "dcbb3b6a",
    "content": "f67152b7",
    "text": "Prefer Stylize helpers: use \"text\".dim(), .bold("
   },
@@ -663,7 +663,7 @@
    "kind": "listItem",
    "top": 5811,
    "h": 80,
-   "style": "5c89e7da",
+   "style": "a7c60a36",
    "content": "8df1ae96",
    "text": "Prefer simple conversions: use \"text\".into() for"
   },
@@ -672,7 +672,7 @@
    "kind": "listItem",
    "top": 5891,
    "h": 54,
-   "style": "52efe610",
+   "style": "aace060c",
    "content": "143d8acc",
    "text": "Computed styles: if the Style is computed at run"
   },
@@ -681,7 +681,7 @@
    "kind": "listItem",
    "top": 5945,
    "h": 54,
-   "style": "d7419b0c",
+   "style": "aa4bc120",
    "content": "6296f9e1",
    "text": "Avoid hardcoded white: do not use .white(); pref"
   },
@@ -690,7 +690,7 @@
    "kind": "listItem",
    "top": 6000,
    "h": 54,
-   "style": "3859bd92",
+   "style": "a7377e96",
    "content": "9d713144",
    "text": "Chaining: combine helpers by chaining for readab"
   },
@@ -699,7 +699,7 @@
    "kind": "listItem",
    "top": 6054,
    "h": 80,
-   "style": "5c89e7da",
+   "style": "a7c60a36",
    "content": "b4ec3c73",
    "text": "Single items: prefer \"text\".into(); use Line::fr"
   },
@@ -708,7 +708,7 @@
    "kind": "listItem",
    "top": 6134,
    "h": 80,
-   "style": "5c89e7da",
+   "style": "a7c60a36",
    "content": "c6bb2172",
    "text": "Building lines: use vec![…].into() to construct "
   },
@@ -717,7 +717,7 @@
    "kind": "listItem",
    "top": 6214,
    "h": 106,
-   "style": "cc9b2581",
+   "style": "237ec9b5",
    "content": "346ced74",
    "text": "Avoid churn: don’t refactor between equivalent f"
   },
@@ -726,7 +726,7 @@
    "kind": "listItem",
    "top": 6321,
    "h": 97,
-   "style": "5d1fc1b9",
+   "style": "c99471e1",
    "content": "783b2328",
    "text": "Compactness: prefer the form that stays on one l"
   },
@@ -735,7 +735,7 @@
    "kind": "heading",
    "top": 6418,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "5aaccab6",
    "text": "Text wrapping"
   },
@@ -744,7 +744,7 @@
    "kind": "listItem",
    "top": 6459,
    "h": 28,
-   "style": "75ed73e0",
+   "style": "e191491c",
    "content": "23cd51df",
    "text": "Always use textwrap::wrap to wrap plain strings."
   },
@@ -753,7 +753,7 @@
    "kind": "listItem",
    "top": 6488,
    "h": 54,
-   "style": "3859bd92",
+   "style": "a7377e96",
    "content": "2991b4a5",
    "text": "If you have a ratatui Line and you want to wrap "
   },
@@ -762,7 +762,7 @@
    "kind": "listItem",
    "top": 6542,
    "h": 54,
-   "style": "3859bd92",
+   "style": "a7377e96",
    "content": "5a4a16c6",
    "text": "If you need to indent wrapped lines, use the ini"
   },
@@ -771,7 +771,7 @@
    "kind": "listItem",
    "top": 6596,
    "h": 97,
-   "style": "885e6a05",
+   "style": "7aa19bcd",
    "content": "49c53aac",
    "text": "If you have a list of lines and you need to pref"
   },
@@ -780,7 +780,7 @@
    "kind": "heading",
    "top": 6693,
    "h": 65,
-   "style": "bec213fd",
+   "style": "ebfbbd3d",
    "content": "00dfd3c2",
    "text": "Tests"
   },
@@ -789,7 +789,7 @@
    "kind": "heading",
    "top": 6758,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "08b35866",
    "text": "Test module organization"
   },
@@ -798,7 +798,7 @@
    "kind": "listItem",
    "top": 6800,
    "h": 61,
-   "style": "b1e2fe41",
+   "style": "f8d68609",
    "content": "76636095",
    "text": "When adding a new test module, define its conten"
   },
@@ -807,7 +807,7 @@
    "kind": "listItem",
    "top": 6862,
    "h": 154,
-   "style": "bb9b86ae",
+   "style": "52b6132a",
    "content": "25509158",
    "text": "Use an explicit #[path = \"..._tests.rs\"] attribu"
   },
@@ -816,7 +816,7 @@
    "kind": "listItem",
    "top": 7015,
    "h": 97,
-   "style": "c82a032d",
+   "style": "cfafae35",
    "content": "e79844ab",
    "text": "This applies only when introducing a new test mo"
   },
@@ -825,7 +825,7 @@
    "kind": "heading",
    "top": 7112,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "01427990",
    "text": "Snapshot tests"
   },
@@ -834,7 +834,7 @@
    "kind": "paragraph",
    "top": 7154,
    "h": 70,
-   "style": "e10e81ba",
+   "style": "b250cac8",
    "content": "2265f2cf",
    "text": "This repo uses snapshot tests (via insta), espec"
   },
@@ -843,7 +843,7 @@
    "kind": "paragraph",
    "top": 7224,
    "h": 122,
-   "style": "64e0d9d2",
+   "style": "9ad075e0",
    "content": "20c0f238",
    "text": "Requirement: any change that affects user-visibl"
   },
@@ -852,7 +852,7 @@
    "kind": "paragraph",
    "top": 7345,
    "h": 32,
-   "style": "5a6e0c44",
+   "style": "021687e8",
    "content": "3b8b3982",
    "text": "When UI or text output changes intentionally, up"
   },
@@ -861,7 +861,7 @@
    "kind": "listItem",
    "top": 7378,
    "h": 59,
-   "style": "6e137e45",
+   "style": "812ae799",
    "content": "e270ea74",
    "text": "Run tests to generate any updated snapshots: jus"
   },
@@ -870,7 +870,7 @@
    "kind": "listItem",
    "top": 7436,
    "h": 59,
-   "style": "3e93e668",
+   "style": "b71d733c",
    "content": "a1126f4d",
    "text": "Check what’s pending: cargo insta pending-snapsh"
   },
@@ -879,7 +879,7 @@
    "kind": "listItem",
    "top": 7495,
    "h": 85,
-   "style": "042fef33",
+   "style": "c1c3972f",
    "content": "052a66db",
    "text": "Review changes by reading the generated *.snap.n"
   },
@@ -888,7 +888,7 @@
    "kind": "listItem",
    "top": 7579,
    "h": 74,
-   "style": "c12cba9e",
+   "style": "7dc1a752",
    "content": "a6a778dd",
    "text": "Only if you intend to accept all new snapshots i"
   },
@@ -897,7 +897,7 @@
    "kind": "paragraph",
    "top": 7653,
    "h": 32,
-   "style": "5a6e0c44",
+   "style": "021687e8",
    "content": "db69dd0e",
    "text": "If you don’t have the tool:"
   },
@@ -906,7 +906,7 @@
    "kind": "listItem",
    "top": 7685,
    "h": 45,
-   "style": "8e4943a2",
+   "style": "ed504452",
    "content": "c2059772",
    "text": "cargo install --locked cargo-insta"
   },
@@ -915,7 +915,7 @@
    "kind": "heading",
    "top": 7730,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "1720366d",
    "text": "Benchmarks"
   },
@@ -924,7 +924,7 @@
    "kind": "paragraph",
    "top": 7772,
    "h": 70,
-   "style": "26d5a6af",
+   "style": "bd9c9b69",
    "content": "25f0e5b9",
    "text": "cargo benchmarks can be run with just bench, use"
   },
@@ -933,7 +933,7 @@
    "kind": "paragraph",
    "top": 7842,
    "h": 70,
-   "style": "f1c686df",
+   "style": "a826eded",
    "content": "76ae0f09",
    "text": "Use just bench-smoke to dry-run the benchmark fo"
   },
@@ -942,7 +942,7 @@
    "kind": "heading",
    "top": 7911,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "e82469e6",
    "text": "Test assertions"
   },
@@ -951,7 +951,7 @@
    "kind": "listItem",
    "top": 7953,
    "h": 54,
-   "style": "7da797fe",
+   "style": "dcbb3b6a",
    "content": "19632083",
    "text": "Tests should use pretty_assertions::assert_eq fo"
   },
@@ -960,7 +960,7 @@
    "kind": "listItem",
    "top": 8007,
    "h": 54,
-   "style": "b2003740",
+   "style": "84f2eb1c",
    "content": "9989fbc0",
    "text": "Prefer deep equals comparisons whenever possible"
   },
@@ -969,7 +969,7 @@
    "kind": "listItem",
    "top": 8062,
    "h": 71,
-   "style": "52467cdc",
+   "style": "9fe1f344",
    "content": "02a2bff0",
    "text": "Avoid mutating process environment in tests; pre"
   },
@@ -978,7 +978,7 @@
    "kind": "heading",
    "top": 8133,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "732af4c2",
    "text": "Spawning workspace binaries in tests (Cargo vs B"
   },
@@ -987,7 +987,7 @@
    "kind": "listItem",
    "top": 8174,
    "h": 163,
-   "style": "b72d62d2",
+   "style": "88d2f99a",
    "content": "31f09cc3",
    "text": "Prefer codex_utils_cargo_bin::cargo_bin(\"...\") o"
   },
@@ -996,7 +996,7 @@
    "kind": "listItem",
    "top": 8337,
    "h": 97,
-   "style": "84f57a08",
+   "style": "299c45a0",
    "content": "1b2d660e",
    "text": "When locating fixture files or test resources un"
   },
@@ -1005,7 +1005,7 @@
    "kind": "heading",
    "top": 8434,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "2b4a3a10",
    "text": "Integration tests"
   },
@@ -1014,7 +1014,7 @@
    "kind": "heading",
    "top": 8476,
    "h": 36,
-   "style": "7807eba4",
+   "style": "559a87f0",
    "content": "87065b04",
    "text": "codex_core integration testing"
   },
@@ -1023,7 +1023,7 @@
    "kind": "listItem",
    "top": 8512,
    "h": 61,
-   "style": "05e5b04b",
+   "style": "b1c61dd3",
    "content": "3522a518",
    "text": "Prefer the utilities in core_test_support::respo"
   },
@@ -1032,7 +1032,7 @@
    "kind": "listItem",
    "top": 8573,
    "h": 61,
-   "style": "ea498c07",
+   "style": "2cf7dd6f",
    "content": "84beccdd",
    "text": "Use TestCodexBuilder::build_with_auto_env() by d"
   },
@@ -1041,7 +1041,7 @@
    "kind": "listItem",
    "top": 8634,
    "h": 61,
-   "style": "c2e36ed9",
+   "style": "b46ed4f1",
    "content": "1547e8a4",
    "text": "All mount_sse* helpers return a ResponseMock; ho"
   },
@@ -1050,7 +1050,7 @@
    "kind": "listItem",
    "top": 8696,
    "h": 61,
-   "style": "eab50890",
+   "style": "16f96b78",
    "content": "dd230935",
    "text": "Use ResponseMock::single_request() when a test s"
   },
@@ -1059,7 +1059,7 @@
    "kind": "listItem",
    "top": 8757,
    "h": 87,
-   "style": "2aac7d86",
+   "style": "9830282e",
    "content": "9bdd3890",
    "text": "ResponsesRequest exposes helpers (body_json, inp"
   },
@@ -1068,7 +1068,7 @@
    "kind": "listItem",
    "top": 8844,
    "h": 35,
-   "style": "c2e50126",
+   "style": "0a3ea112",
    "content": "a265a4e2",
    "text": "Build SSE payloads with the provided ev_* constr"
   },
@@ -1077,7 +1077,7 @@
    "kind": "listItem",
    "top": 8880,
    "h": 35,
-   "style": "647cd201",
+   "style": "647cbae5",
    "content": "a3513302",
    "text": "Prefer wait_for_event over wait_for_event_with_t"
   },
@@ -1086,7 +1086,7 @@
    "kind": "listItem",
    "top": 8915,
    "h": 35,
-   "style": "b94c8c93",
+   "style": "bebcf817",
    "content": "a967e44f",
    "text": "Prefer mount_sse_once over mount_sse_once_match "
   },
@@ -1095,7 +1095,7 @@
    "kind": "listItem",
    "top": 8951,
    "h": 297,
-   "style": "b1eef520",
+   "style": "9ecee8d4",
    "content": "73a5b531",
    "text": "Typical pattern:let mock = responses::mount_sse_"
   },
@@ -1104,7 +1104,7 @@
    "kind": "heading",
    "top": 9248,
    "h": 36,
-   "style": "7807eba4",
+   "style": "559a87f0",
    "content": "ba637b82",
    "text": "app-server integration testing"
   },
@@ -1113,7 +1113,7 @@
    "kind": "listItem",
    "top": 9284,
    "h": 28,
-   "style": "75ed73e0",
+   "style": "e191491c",
    "content": "a821c2e7",
    "text": "Tests should exercise app-server's public JSON-R"
   },
@@ -1122,7 +1122,7 @@
    "kind": "listItem",
    "top": 9312,
    "h": 28,
-   "style": "176da19c",
+   "style": "690d45d0",
    "content": "949dd19b",
    "text": "Use similar server mocking as for core integrati"
   },
@@ -1131,7 +1131,7 @@
    "kind": "listItem",
    "top": 9340,
    "h": 123,
-   "style": "90769c0f",
+   "style": "5db0214f",
    "content": "2c1c1647",
    "text": "Use TestAppServer::builder().build() and TestApp"
   },
@@ -1140,7 +1140,7 @@
    "kind": "heading",
    "top": 9463,
    "h": 65,
-   "style": "bec213fd",
+   "style": "ebfbbd3d",
    "content": "2b40f9ef",
    "text": "App-server API Development Best Practices"
   },
@@ -1149,7 +1149,7 @@
    "kind": "paragraph",
    "top": 9528,
    "h": 32,
-   "style": "5b24ffc2",
+   "style": "189012c6",
    "content": "eab3c999",
    "text": "These guidelines apply to app-server protocol wo"
   },
@@ -1158,7 +1158,7 @@
    "kind": "listItem",
    "top": 9561,
    "h": 28,
-   "style": "ea66d1f4",
+   "style": "b208c898",
    "content": "fb19d46e",
    "text": "app-server-protocol/src/protocol/common.rs"
   },
@@ -1167,7 +1167,7 @@
    "kind": "listItem",
    "top": 9589,
    "h": 45,
-   "style": "5cc91493",
+   "style": "4cc33bc3",
    "content": "d1b6d17d",
    "text": "app-server-protocol/src/protocol/v2.rs"
   },
@@ -1176,7 +1176,7 @@
    "kind": "heading",
    "top": 9634,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "a9217b2d",
    "text": "Core Rules"
   },
@@ -1185,7 +1185,7 @@
    "kind": "listItem",
    "top": 9676,
    "h": 54,
-   "style": "7da797fe",
+   "style": "dcbb3b6a",
    "content": "58d25a2d",
    "text": "All active API development should happen in app-"
   },
@@ -1194,7 +1194,7 @@
    "kind": "listItem",
    "top": 9730,
    "h": 54,
-   "style": "4183c053",
+   "style": "b1a305ef",
    "content": "0d882b39",
    "text": "Follow payload naming consistently: *Params for "
   },
@@ -1203,7 +1203,7 @@
    "kind": "listItem",
    "top": 9784,
    "h": 54,
-   "style": "81b2e3e0",
+   "style": "a0786ae4",
    "content": "5833bf76",
    "text": "Expose RPC methods as <resource>/<method> and ke"
   },
@@ -1212,7 +1212,7 @@
    "kind": "listItem",
    "top": 9839,
    "h": 80,
-   "style": "eb4315d8",
+   "style": "0829b4a4",
    "content": "f6612f34",
    "text": "Always expose fields as camelCase on the wire wi"
   },
@@ -1221,7 +1221,7 @@
    "kind": "listItem",
    "top": 9919,
    "h": 80,
-   "style": "7918b68b",
+   "style": "2a85b3c7",
    "content": "6c231296",
    "text": "Always expose string enum values as camelCase on"
   },
@@ -1230,7 +1230,7 @@
    "kind": "listItem",
    "top": 9999,
    "h": 80,
-   "style": "eb998397",
+   "style": "6bbdf2bb",
    "content": "f6bc2ce3",
    "text": "Exception: config RPC payloads are expected to u"
   },
@@ -1239,7 +1239,7 @@
    "kind": "listItem",
    "top": 10080,
    "h": 54,
-   "style": "f6be2ca9",
+   "style": "d8c9eecd",
    "content": "ef2f2b61",
    "text": "Always set #[ts(export_to = \"v2/\")] on v2 reques"
   },
@@ -1248,7 +1248,7 @@
    "kind": "listItem",
    "top": 10134,
    "h": 106,
-   "style": "8cd6aa1d",
+   "style": "71ca60c1",
    "content": "42734310",
    "text": "Never use #[serde(skip_serializing_if = \"Option:"
   },
@@ -1257,7 +1257,7 @@
    "kind": "listItem",
    "top": 10240,
    "h": 54,
-   "style": "097c7af8",
+   "style": "caf07f9c",
    "content": "8bf0a518",
    "text": "Keep Rust and TS wire renames aligned. If a fiel"
   },
@@ -1266,7 +1266,7 @@
    "kind": "listItem",
    "top": 10294,
    "h": 54,
-   "style": "4ba11601",
+   "style": "8865b715",
    "content": "a65b69d0",
    "text": "For discriminated unions, use explicit tagging i"
   },
@@ -1275,7 +1275,7 @@
    "kind": "listItem",
    "top": 10349,
    "h": 54,
-   "style": "97d16a73",
+   "style": "750099a7",
    "content": "b1d3ca94",
    "text": "Prefer plain String IDs at the API boundary (do "
   },
@@ -1284,7 +1284,7 @@
    "kind": "listItem",
    "top": 10403,
    "h": 54,
-   "style": "88064af5",
+   "style": "75e79091",
    "content": "63b4efa6",
    "text": "Timestamps should be integer Unix seconds (i64) "
   },
@@ -1293,7 +1293,7 @@
    "kind": "listItem",
    "top": 10457,
    "h": 123,
-   "style": "c20a39fd",
+   "style": "435315bd",
    "content": "de90b122",
    "text": "For experimental API surface area: use #[experim"
   },
@@ -1302,7 +1302,7 @@
    "kind": "heading",
    "top": 10580,
    "h": 42,
-   "style": "8b104ca5",
+   "style": "a7f96be7",
    "content": "a3462879",
    "text": "Client->server request payloads (*Params)"
   },
@@ -1311,7 +1311,7 @@
    "kind": "listItem",
    "top": 10622,
    "h": 80,
-   "style": "034967b0",
+   "style": "4c4bd854",
    "content": "0aa042fc",
    "text": "Every optional field must be annotated with #[ts"
   },
@@ -1320,7 +1320,7 @@
    "kind": "listItem",
    "top": 10702,
    "h": 80,
-   "style": "f192662f",
+   "style": "45380db3",
    "content": "37e4e626",
    "text": "Optional collection fields (for example Vec, Has"
   },
@@ -1329,7 +1329,7 @@
    "kind": "listItem",
    "top": 10783,
    "h": 80,
-   "style": "e2433c30",
+   "style": "b260a694",
    "content": "c7fb7ccc",
    "text": "When you want omission to mean false for boolean"
   },
@@ -1338,7 +1338,7 @@
    "kind": "listItem",
    "top": 10863,
    "h": 97,
-   "style": "92190d5c",
+   "style": "55fe4d74",
    "content": "f3bab1f5",
    "text": "For new list methods, implement cursor paginatio"
   },
@@ -1347,7 +1347,7 @@
    "kind": "heading",
    "top": 10960,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "427e1e3f",
    "text": "Development Workflow"
   },
@@ -1356,7 +1356,7 @@
    "kind": "listItem",
    "top": 11002,
    "h": 80,
-   "style": "e242451e",
+   "style": "6e88f162",
    "content": "188593ac",
    "text": "Regenerate schema fixtures when API shapes chang"
   },
@@ -1365,7 +1365,7 @@
    "kind": "listItem",
    "top": 11082,
    "h": 28,
-   "style": "ab67c9f8",
+   "style": "7cd064bc",
    "content": "27cc3adc",
    "text": "Validate with just test -p codex-app-server-prot"
   },
@@ -1374,7 +1374,7 @@
    "kind": "listItem",
    "top": 11110,
    "h": 97,
-   "style": "c79f1e63",
+   "style": "c0ca561b",
    "content": "16816992",
    "text": "Avoid boilerplate tests that only assert experim"
   },
@@ -1383,7 +1383,7 @@
    "kind": "heading",
    "top": 11207,
    "h": 65,
-   "style": "bec213fd",
+   "style": "ebfbbd3d",
    "content": "4290de6a",
    "text": "Python Development Best Practices"
   },
@@ -1392,7 +1392,7 @@
    "kind": "heading",
    "top": 11273,
    "h": 42,
-   "style": "153e5b68",
+   "style": "ae8f6e4e",
    "content": "94ec72a9",
    "text": "Ignore Python 2 compatibility"
   },
@@ -1401,7 +1401,7 @@
    "kind": "paragraph",
    "top": 11314,
    "h": 44,
-   "style": "c9755a17",
+   "style": "e539b9ed",
    "content": "98819542",
    "text": "This project uses Python 3+. You should not use "
   },
@@ -1410,7 +1410,7 @@
    "kind": "paragraph",
    "top": 11358,
    "h": 96,
-   "style": "18885496",
+   "style": "f267c1ac",
    "content": "b0a6d06f",
    "text": "If you need to worry about feature compatibility"
   },
@@ -1419,7 +1419,7 @@
    "kind": "heading",
    "top": 11454,
    "h": 65,
-   "style": "bec213fd",
+   "style": "ebfbbd3d",
    "content": "54789765",
    "text": "Platform Support"
   },
@@ -1428,7 +1428,7 @@
    "kind": "paragraph",
    "top": 11519,
    "h": 70,
-   "style": "05a41dd1",
+   "style": "be800a7b",
    "content": "53a619f3",
    "text": "Tests and features must support Linux, macOS and"
   },
@@ -1437,7 +1437,7 @@
    "kind": "paragraph",
    "top": 11588,
    "h": 96,
-   "style": "283095af",
+   "style": "10c56921",
    "content": "388d17d5",
    "text": "Codex supports running connected app-server and "
   }
