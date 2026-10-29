@@ -1,0 +1,127 @@
+name: Perf A/B
+# Two refs measured on ONE runner each (Linux WebKit page speed; the macOS
+# smoke-test timings), interleaved A B B A, so that a PR's speed is judged
+# against its base without runner-to-runner noise. Actions ▸ Perf A/B ▸ Run
+# workflow, or: gh workflow run perf-ab.yml -f a=main -f b=<branch or sha>.
+# Linux runs B's perf.test on both builds (one harness, its metrics); macOS
+# runs each side's own smoke harness on its own app. Tables in the run's
+# summary (tools/perf-ab-table.py), every run's JSON in its artifacts.
+on:
+  workflow_dispatch:
+    inputs:
+      a:
+        description: "A: the baseline ref (branch, tag or SHA)"
+        default: main
+        type: string
+      b:
+        description: "B: the ref measured against it"
+        required: true
+        type: string
+      rounds:
+        description: "Rounds of A B B A (each gives two runs per side)"
+        default: "3"
+        type: string
+      mac:
+        description: "Also the macOS smoke timings (about 5 min per run)"
+        default: true
+        type: boolean
+permissions:
+  contents: read
+jobs:
+  linux:
+    name: Page speed A/B (Linux WebKit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build A and B side by side
+        env: { A: "${{ inputs.a }}", B: "${{ inputs.b }}" }
+        run: |
+          set -euo pipefail
+          git fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
+          resolve() { git rev-parse --verify -q "origin/$1^{commit}" || git rev-parse --verify "$1^{commit}"; }
+          git worktree add "$RUNNER_TEMP/A" "$(resolve "$A")"
+          git worktree add "$RUNNER_TEMP/B" "$(resolve "$B")"
+          for s in A B; do (cd "$RUNNER_TEMP/$s/web" && npm ci && npm run build); done
+          (cd "$RUNNER_TEMP/B/web" && npx playwright install --with-deps webkit)
+          echo "A = $A ($(git -C "$RUNNER_TEMP/A" rev-parse --short HEAD)), B = $B ($(git -C "$RUNNER_TEMP/B" rev-parse --short HEAD))" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Interleaved runs (B's perf.test on both builds)
+        env: { ROUNDS: "${{ inputs.rounds }}" }
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          n=0
+          for round in $(seq "$ROUNDS"); do
+            for s in A B B A; do
+              n=$((n+1))
+              (cd "$RUNNER_TEMP/B/web" && READOUT_WEB_BUILD="$RUNNER_TEMP/$s/web/build/Web" node test/perf.test.mjs > "$GITHUB_WORKSPACE/out/$n-$s.log" 2>&1); echo "run $n $s exit $?"
+              cp "$RUNNER_TEMP/B/web/test/out/perf-web.json" "out/$n-$s.json" || true
+              rm -f "$RUNNER_TEMP/B/web/test/out/perf-web.json"
+            done
+          done
+      - name: Table
+        if: always()
+        run: python3 "$RUNNER_TEMP/B/tools/perf-ab-table.py" out "Linux WebKit page speed" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: perf-ab-linux
+          path: out/
+  mac:
+    name: Smoke timings A/B (macOS)
+    if: inputs.mac
+    runs-on: macOS-26
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build A and B side by side (Release, arm64, ad hoc signed)
+        env: { A: "${{ inputs.a }}", B: "${{ inputs.b }}" }
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          git fetch -q origin '+refs/heads/*:refs/remotes/origin/*'
+          resolve() { git rev-parse --verify -q "origin/$1^{commit}" || git rev-parse --verify "$1^{commit}"; }
+          git worktree add "$RUNNER_TEMP/A" "$(resolve "$A")"
+          git worktree add "$RUNNER_TEMP/B" "$(resolve "$B")"
+          for s in A B; do
+            (cd "$RUNNER_TEMP/$s" && (cd web && npm ci && npm run build) && xcodegen generate \
+              && xcodebuild -project Readout.xcodeproj -scheme Readout -configuration Release -derivedDataPath build \
+                   -destination 'generic/platform=macOS' MARKETING_VERSION=0.0.0 CURRENT_PROJECT_VERSION=ab \
+                   ARCHS=arm64 ONLY_ACTIVE_ARCH=NO build > "$RUNNER_TEMP/build-$s.log" 2>&1 \
+              && mkdir -p dist && ditto build/Build/Products/Release/Readout.app dist/Readout.app \
+              && chmod +x tools/sign.sh && tools/sign.sh dist/Readout.app "-") || { tail -50 "$RUNNER_TEMP/build-$s.log"; exit 1; }
+          done
+          echo "A = $A ($(git -C "$RUNNER_TEMP/A" rev-parse --short HEAD)), B = $B ($(git -C "$RUNNER_TEMP/B" rev-parse --short HEAD))" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Interleaved smoke runs (each side's own harness, from /Applications)
+        env: { ROUNDS: "${{ inputs.rounds }}" }
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          n=0
+          for round in $(seq "$ROUNDS"); do
+            for s in A B B A; do
+              n=$((n+1))
+              rm -rf /Applications/Readout.app "$RUNNER_TEMP/smoke-$n"
+              ditto "$RUNNER_TEMP/$s/dist/Readout.app" /Applications/Readout.app
+              (cd "$RUNNER_TEMP/$s" && python3 tools/smoke-run.py /Applications/Readout.app/Contents/MacOS/Readout "$RUNNER_TEMP/smoke-$n" "$RUNNER_TEMP/out-$n" > "$GITHUB_WORKSPACE/out/$n-$s.log" 2>&1); echo "run $n $s exit $?"
+              cp "$RUNNER_TEMP/out-$n/timings.json" "out/$n-$s.json" || true
+            done
+          done
+      - name: Table
+        if: always()
+        run: python3 "$RUNNER_TEMP/B/tools/perf-ab-table.py" out "macOS smoke timings" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: perf-ab-mac
+          path: out/

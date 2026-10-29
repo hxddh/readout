@@ -4,7 +4,7 @@ import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resiz
 import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, noteLead, leadIns, prevBlock, roughRect, unstale, cvOn } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
-import { enhance, renderLazy, forgetBlock } from './enhance.js';
+import { enhance, renderLazy, forgetBlock, afterShown, askEarly } from './enhance.js';
 import { sources, tight, setLinks } from './copy.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
 
@@ -175,6 +175,11 @@ export function apply(p) {
     document.getElementById('ro-empty')?.remove();
   }
 
+  // A document shown anew from its top: the code its first screen may show
+  // is asked for as its block is made (askEarly), by the heights estimated
+  // above it (lines of at least 18 px).
+  const reach = window.innerHeight + 120;
+  let above = p.reset && fromTop ? 0 : Infinity;
   for (const op of p.ops) {
     if (op.op === 'remove') {
       const el = slots.get(op.slot);
@@ -203,6 +208,10 @@ export function apply(p) {
     } else if (op.op === 'insert') {
       headingsTouched ||= op.kind === 'heading';
       const el = makeBlock(op);
+      if (above < reach) {
+        for (const cb of el.querySelectorAll('.code-block')) askEarly(cb, Math.ceil((reach - above) / 18));
+        above += estimateOp(op);
+      }
       const after = op.after ? slots.get(op.after) : null;
       if (!p.reset) noteNext(after ? nextItem(after) : op.after ? null : firstItem());
       if (after) placeItem(el, after, estimateOp(op));
@@ -312,7 +321,8 @@ export function apply(p) {
 
   // (Code coming on screen is highlighted before the flash's class changes
   // make the page's style stale again: it measures first.)
-  renderLazy(firstLarge ? estimatedOnScreen() : undefined);
+  // (A document shown anew: its first paint waits for the code on screen.)
+  renderLazy(firstLarge ? estimatedOnScreen() : undefined, !!p.reset && slots.size > 0);
 
   // A flash still running restarts under the other animation name
   // (reader.css), without a forced style and layout to restart it. A block
@@ -328,16 +338,17 @@ export function apply(p) {
   scheduleRail();
   if (headingsTouched) headingsChanged();
   post({ type: 'applied', version: p.version });
-  // After the frame that shows it: rAF runs before the paint, the task it
-  // queues runs after. The current section is found then too: the page is
-  // laid out by that frame, so asking costs no layout of its own.
-  requestAnimationFrame(() => setTimeout(() => {
+  // After the frame that shows it (afterShown: rAF runs before the paint,
+  // the task it queues runs after; a first paint waiting for its code, once
+  // it shows). The current section is found then too: the page is laid out
+  // by that frame, so asking costs no layout of its own.
+  afterShown(() => {
     const se = document.scrollingElement;
     entry.y = Math.round(se.scrollTop);
     entry.height = se.scrollHeight;
     reportActiveHeading();
     post({ type: 'painted', version: p.version });
-  }, 0));
+  });
 }
 
 

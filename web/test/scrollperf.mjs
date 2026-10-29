@@ -1,5 +1,6 @@
 // Scrolling a large document, measured in the page (perf.test.mjs): frame
-// gaps, the page's own longest callback, and blank area, while the reader
+// gaps, the page's own longest callback and those over 50 ms, blank area and
+// frames showing code not coloured yet, while the reader
 // scrolls down through parts not seen yet three ways: a steady 2400 px/s,
 // flings (9000 px/s decaying), and the browser's own wheel events (120 px
 // notches every 50 ms, the platform's scrolling path).
@@ -31,6 +32,11 @@ export async function instrument(page) {
     }
     const ael = EventTarget.prototype.addEventListener;
     EventTarget.prototype.addEventListener = function (t, f, o) { return ael.call(this, t, /^(scroll|wheel)$/.test(t) ? wrap(f) : f, o); };
+    // The highlighting worker's answers (enhance.js: the HTML put in place).
+    if (window.Worker) {
+      const set = Object.getOwnPropertyDescriptor(Worker.prototype, 'onmessage')?.set;
+      if (set) Object.defineProperty(Worker.prototype, 'onmessage', { set(f) { set.call(this, wrap(f)); }, configurable: true });
+    }
   });
 }
 
@@ -38,7 +44,7 @@ const MODES = ['wheel', 'fling', 'input'];
 
 /** Scrolls `page` (a document applied and settled) each way for `ms`, from three places not seen yet. */
 export async function scrollPasses(page, { ms = 6000, inset = 0 } = {}) {
-  const out = { gaps: [], blank: [], own: [] };
+  const out = { gaps: [], blank: [], own: [], plain: {} };
   await page.mouse.move(450, 450);
   for (const [i, mode] of MODES.entries()) {
     await page.evaluate(i => window.scrollTo(0, Math.round(document.scrollingElement.scrollHeight * (0.15 + 0.25 * i))), i);
@@ -62,23 +68,26 @@ export async function scrollPasses(page, { ms = 6000, inset = 0 } = {}) {
       const blank = () => {
         let u = null;
         for (let y = inset + 2; !u && y < vh; y += 16) { const hit = document.elementFromPoint(450, y); u = hit && (hit.closest('.blk') || hit.closest('.chunk')); }
-        let px = 0;
+        let px = 0, plain = 0;
         for (; u; u = next(u)) {
           const r = u.getBoundingClientRect();
           if (r.top >= vh) break;
           const shown = !isChunk(u) && (u.firstElementChild ?? u).checkVisibility(cvAuto);
           if (!shown) px += Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, inset));
+          // Code shown not coloured yet (enhance.js).
+          else if (u.querySelector('.code-block[data-hl="pending"]')) plain += Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, inset));
         }
-        return Math.round(px);
+        return [Math.round(px), Math.round(plain)];
       };
-      const gaps = [], blanks = [];
+      const gaps = [], blanks = [], plains = [];
       let last = performance.now(), v = 0, flingAt = -1e9;
       const t0 = last;
       const frame = Object.assign(now => {
         const dt = now - last;
         gaps.push(dt); last = now;
-        blanks.push(blank());
-        if (se.scrollTop >= se.scrollHeight - vh - 1 || now - t0 > ms || window.__stop) return resolve({ gaps: gaps.slice(1), blanks: blanks.slice(1) });
+        const [b, p] = blank();
+        blanks.push(b); plains.push(p);
+        if (se.scrollTop >= se.scrollHeight - vh - 1 || now - t0 > ms || window.__stop) return resolve({ gaps: gaps.slice(1), blanks: blanks.slice(1), plains: plains.slice(1) });
         const s = Math.min(dt, 100) / 1000;
         if (mode === 'wheel') window.scrollBy(0, 2400 * s);
         else if (mode === 'fling') {
@@ -98,13 +107,14 @@ export async function scrollPasses(page, { ms = 6000, inset = 0 } = {}) {
     const r = await run;
     out.gaps.push(...r.gaps);
     out.blank.push(...r.blanks);
+    out.plain[mode] = r.plains.filter(p => p > 0).length;
     out.own.push(...await page.evaluate(() => { window.__ownOn = false; return window.__own.slice(); }));
   }
   return out;
 }
 
 /** The numbers perf-web.json reports for a set of passes. */
-export function summary({ gaps, blank, own }) {
+export function summary({ gaps, blank, own, plain = {} }) {
   const s = gaps.slice().sort((a, b) => a - b);
   const r1 = x => Math.round(x * 10) / 10;
   return {
@@ -114,7 +124,9 @@ export function summary({ gaps, blank, own }) {
     long: gaps.filter(g => g > 50).length,
     blankPx: blank.reduce((a, b) => a + b, 0),
     blankFrames: blank.filter(b => b > 0).length,
+    plainFrames: plain,
     ownMax: Math.round(Math.max(0, ...own)),
+    ownLong: own.filter(t => t > 50).length,
     ownPerFrame: Math.round(own.reduce((a, b) => a + b, 0) / Math.max(1, gaps.length) * 10) / 10,
   };
 }

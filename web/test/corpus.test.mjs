@@ -124,26 +124,30 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
     }), i);
   }
   // A block can be passed before its observer fires (a fast walk on a cold
-  // page): bring each one still waiting into view, one at a time, and let
-  // the observer see it before the next.
+  // page), or before its highlighting arrives (a block out of reach is no
+  // longer asked for): bring each one still waiting into view, one at a
+  // time, and let it be done (code: highlighted, in the worker) before the next.
   for (let round = 0; round < 400; round++) {
     const waiting = await page.evaluate(() => {
       // Content of a closed <details> renders when it is opened, not before.
       const next = [...document.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block:not(.done):not(.busy)')]
         .find(e => !e.querySelector('.mermaid-error') && !e.closest('details:not([open])'));
       next?.scrollIntoView({ block: 'center' });
+      if (next?.classList.contains('code-block')) next.dataset.walk = '';
       return !!next;
     });
     if (!waiting) break;
     await page.waitForTimeout(50);
+    await until(page, () => !document.querySelector('.code-block[data-walk][data-hl="pending"]'), 20000).catch(() => {});
+    await page.evaluate(() => { for (const e of document.querySelectorAll('[data-walk]')) delete e.dataset.walk; });
   }
   await until(page, () =>
-    ![...document.querySelectorAll('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .code-block[data-hl="recheck"], .mermaid-block.busy')]
+    ![...document.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block.busy')]
       .some(e => !e.closest('details:not([open])'))
     && [...document.querySelectorAll('.mermaid-block')].every(b => b.classList.contains('done') || b.querySelector('.mermaid-error') || b.closest('details:not([open])'))
     && !document.querySelector('.math:not(.done), .math-block:not(.done)'),
   30000).catch(async () => {
-    const left = await page.evaluate(() => [...document.querySelectorAll('.code-block[data-hl="pending"], .code-block[data-hl="loading"], .mermaid-block:not(.done), .math:not(.done), .math-block:not(.done)')]
+    const left = await page.evaluate(() => [...document.querySelectorAll('.code-block[data-hl="pending"], .mermaid-block:not(.done), .math:not(.done), .math-block:not(.done)')]
       .slice(0, 5).map(e => `${e.className}${e.dataset.lang ? ` (${e.dataset.lang}: ${e.dataset.hl})` : ''}`));
     errors.push(`lazy rendering did not settle within 30 s: ${left.join('; ')}`);
   });

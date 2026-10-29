@@ -593,17 +593,27 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
     ? '<div class="code-block" data-lang="js"><pre><code>const answer = 42;</code></pre></div>'
     : `<p>para ${i} ${'lorem ipsum dolor sit amet '.repeat(6)}</p>`, i => i % 50 === 1 ? 'heading' : i % 7 === 0 ? 'code' : 'paragraph');
   big.ops.forEach(o => { if (o.kind === 'heading') o.anchor = `s${o.slot}`; });
+  // Its fence language loaded and compiled while it parses, as the app has it (readout.prepare).
+  await page.evaluate(() => window.readout.prepare(['js']));
+  for (let i = 0; i < 800 && !(await page.evaluate(() => performance.getEntriesByName('readout-hl-prepared').length > 0)); i++) await page.waitForTimeout(25);
   const first = await page.evaluate(p => {
     window.__counting = true;
     window.readout.apply(p);
     window.__counting = false;
     const reads = { ...window.__layoutReads };
-    const code7 = document.querySelector('.blk[data-slot="7"] .code-block').dataset.hl;
-    return new Promise(r => requestAnimationFrame(() => setTimeout(() => setTimeout(() => r({ reads, code7,
-      active: window.__msgs.filter(m => m.type === 'activeHeading').length }), 50), 0)));
+    // The code on screen in the first frame that shows the document (its
+    // paint waits for that code: enhance.js, hold).
+    return new Promise(r => {
+      const frame = () => requestAnimationFrame(() => setTimeout(() => {
+        if (getComputedStyle(document.getElementById('ro-doc')).visibility === 'hidden') return frame();
+        const code7 = document.querySelector('.blk[data-slot="7"] .code-block').dataset.hl;
+        setTimeout(() => r({ reads, code7, active: window.__msgs.filter(m => m.type === 'activeHeading').length }), 50);
+      }, 0));
+      frame();
+    });
   }, big);
   check('the first open of a large document reads no layout before its first frame',
-    Object.keys(first.reads).length === 0 && first.code7 !== 'pending' && first.active >= 1, JSON.stringify(first));
+    Object.keys(first.reads).length === 0 && first.code7 === 'done' && first.active >= 1, JSON.stringify(first));
   // Heights from the resize observer: a block above the reader that grows does not push them down.
   await scrollToBlock(page, 300);
   // Measured once the page has settled (the blocks the scroll brought on
@@ -886,17 +896,20 @@ const cvWrites = page => page.evaluate(() => { window.__cvObserver.disconnect();
   const page = await newPage();
   await page.evaluate(() => window.readout.warm());
   await page.waitForTimeout(1500);   // grammars preloaded, as in a warmed app window
-  // TypeScript: one of the three grammars the app preloads (highlight.js PRELOAD).
+  // TypeScript: one of the three grammars the app preloads (highlighter.js PRELOAD).
   const ops = Array.from({ length: 600 }, (_, k) => k % 5 === 0
     ? { op: 'insert', slot: k + 1, after: k, kind: 'code', html: `<div class="code-block" data-lang="ts"><pre><code>const a${k} = ${k};\nfunction f${k}() { return a${k} * 2; }</code></pre></div>` }
     : { op: 'insert', slot: k + 1, after: k, kind: 'paragraph', html: `<p>Para ${k} ${'lorem ipsum '.repeat(10)}</p>` });
   const r = await page.evaluate(ops => new Promise(res => {
     window.readout.apply({ version: 1, reset: true, rewrite: false, marks: [], deletions: [], ops });
     window.readout.scrollToAnchor({ slot: 301, offset: 0, ratio: 0 });
-    requestAnimationFrame(() => {
+    // The first frame that shows the document (its paint waits for the code on screen: enhance.js, hold).
+    const frame = () => requestAnimationFrame(() => {
+      if (getComputedStyle(document.getElementById('ro-doc')).visibility === 'hidden') return frame();
       const vis = [...document.querySelectorAll('.code-block')].filter(c => { const b = c.getBoundingClientRect(); return b.bottom > 0 && b.top < innerHeight; });
       res({ onScreen: vis.length, states: vis.map(c => c.dataset.hl) });
     });
+    frame();
   }), ops);
   check('code on screen at a resumed place is highlighted in its first frame', r.onScreen > 0 && r.states.every(s => s === 'done'), JSON.stringify(r));
   await page.close();

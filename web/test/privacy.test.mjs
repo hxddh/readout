@@ -15,7 +15,9 @@ const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/ja
 const server = http.createServer((req, res) => {
   const p = join('build/Web', decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
-  res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream' });
+  // The worker's own policy, as the app's scheme handler serves it (Shared/ReaderWebView.swift: workerPolicy).
+  const worker = req.url.split('?')[0] === '/hl-worker.js' ? { 'content-security-policy': "default-src 'none'; script-src 'self'" } : {};
+  res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream', ...worker });
   res.end(readFileSync(p));
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -181,6 +183,40 @@ check('still no direct requests after click', escaped === 0, `escaped=${escaped}
   check('every kind of diagram draws from bundled chunks', kinds.every(k => k === 'done'), JSON.stringify(kinds));
   check('diagrams make no external requests and miss no file', external.length === 0 && missing.length === 0 && escaped === 0,
     JSON.stringify({ external, missing }));
+}
+
+// Highlighting runs in a worker (hl-worker.js) from the app's own files: the
+// page lets a worker come from its own origin only (worker-src 'self': no
+// blob:, no data:, no other host), the worker's script is served with a
+// policy of its own (no network; the app's scheme handler sends the same),
+// and code full of addresses highlighted makes no request but for the
+// worker's modules. The page itself loads none of Shiki: no highlighting
+// runs on its thread.
+{
+  const requests = [];
+  page.on('request', r => requests.push(r.url()));
+  const csp = await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]').content);
+  const workerSrc = /(?:^|;)\s*worker-src ([^;]*)/.exec(csp)?.[1].trim();
+  check('the page allows a worker from its own origin only', workerSrc === "'self'", csp);
+  const urls = [`${T}/x.js`, `//${TRACK}/y.css`, `https://${TRACK}/z.png`];
+  const code = (lang, text) => `<div class="code-block" data-lang="${lang}"><pre><code>${text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</code></pre></div>`;
+  const blocks = [
+    code('html', `<script src="${urls[0]}"></script>\n<link rel="stylesheet" href="${urls[1]}">\n<img src="${urls[2]}">`),
+    code('css', `@import url("${urls[1]}");\nbody { background: url(${urls[2]}); }`),
+    code('js', `import x from "${urls[0]}";\nfetch("${urls[2]}");\nnew Worker("${urls[0]}");`),
+    code('md', `![a](${urls[2]})\n[link](${urls[0]})`),
+  ];
+  const r = await page.evaluate(async blocks => {
+    window.readout.apply({ version: 3, reset: true, rewrite: false, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
+      ops: blocks.map((html, i) => ({ op: 'insert', slot: i + 1, after: i, kind: 'code', html })) });
+    for (let i = 0; i < 400 && document.querySelector('.code-block[data-hl="pending"]'); i++) await new Promise(r => setTimeout(r, 25));
+    const own = performance.getEntriesByType('resource').map(e => e.name).filter(n => /\/chunks\/(core|engine-javascript|github-(light|dark)-default|javascript|html|css|markdown)-/.test(n));
+    return { states: [...document.querySelectorAll('.code-block')].map(c => c.dataset.hl), engine: window.readout.highlighter(), own };
+  }, blocks);
+  await page.waitForTimeout(500);
+  check('code full of addresses is highlighted in the worker', r.states.every(s => s === 'done') && r.engine === 'worker', JSON.stringify(r));
+  check('the page itself loads none of the highlighter', r.own.length === 0, JSON.stringify(r.own));
+  check('highlighting makes no external request', escaped === 0 && requests.every(u => u.startsWith(`${base}/`)), JSON.stringify(requests.filter(u => !u.startsWith(`${base}/`))));
 }
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));

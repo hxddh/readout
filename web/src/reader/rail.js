@@ -1,6 +1,6 @@
 // The change rail: one tick per unread change, positioned by document offset.
 import { strings, quicklook } from './core.js';
-import { unreadElements, focusBlock, visit, pulse } from './marks.js';
+import { unreadElements, focusBlock, visit, pulse, once } from './marks.js';
 import { scrollToElement, topInset } from './anchor.js';
 import { roughRect } from './chunks.js';
 
@@ -57,7 +57,8 @@ function drawRail() {
       .replace('%d', i + 1).replace('%d', list.length).replace('%@', kind);
     tick.setAttribute('aria-label', label);
     tick.title = label;
-    tick.addEventListener('click', () => { scrollToElement(el, { center: true }); focusBlock(el); pulse(el); visit(el); });
+    // (Read once it lands: a jump onto code not coloured yet waits for it.)
+    tick.addEventListener('click', () => { scrollToElement(el, { center: true, landed: once(() => visit(el)) }); focusBlock(el); pulse(el); });
     rail.appendChild(tick);
   }
 }

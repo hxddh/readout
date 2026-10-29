@@ -131,6 +131,13 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                         let rendered = (value as? NSNumber)?.intValue ?? -1
                         log.notice("preview \(how, privacy: .public): rendered \(rendered, privacy: .public) of \(blocks, privacy: .public) blocks in \(ms, privacy: .public) ms")
                     }
+                    // Where its code is highlighted: a worker, or the page
+                    // itself where an extension's page cannot start one (CI's log).
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak webView] in
+                        webView?.evaluateJavaScript("window.readout.highlighter()") { value, _ in
+                            log.notice("preview highlighter: \(value as? String ?? "unknown", privacy: .public)")
+                        }
+                    }
                 }
                 webView.whenReady { [weak webView] in
                     guard let webView else { return }
