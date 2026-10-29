@@ -48,7 +48,8 @@ final class AppSettings: ObservableObject {
         }
         workspaces = ws ?? []
         editor = Editor(rawValue: d.string(forKey: "editor") ?? "") ?? .system
-        // A stored choice is the user's own and is kept (OpenLatestKey).
+        // A stored on or off is kept; any other stored key (3.8's ⌥⌘R or
+        // ⌃⌥R) reads as on, ⌃⌥⌘R (HotKeyChoice).
         hotKey = HotKeyChoice(stored: d.string(forKey: "hotKey"))
         let fs = d.double(forKey: "fontSize")
         fontSize = fs == 0 ? 16 : fs

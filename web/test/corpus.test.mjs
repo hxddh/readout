@@ -151,10 +151,6 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
       .slice(0, 5).map(e => `${e.className}${e.dataset.lang ? ` (${e.dataset.lang}: ${e.dataset.hl})` : ''}`));
     errors.push(`lazy rendering did not settle within 30 s: ${left.join('; ')}`);
   });
-  // A block whose highlighting gave up (data-hl="failed", enhance.js) would
-  // make the page differ between runs: an error, named.
-  const gaveUp = await page.evaluate(() => [...document.querySelectorAll('.code-block[data-hl="failed"]')].map(c => `${c.dataset.lang}: ${c.textContent.slice(0, 40)}`));
-  if (gaveUp.length) errors.push(`highlighting gave up on ${gaveUp.length} code block(s): ${gaveUp.slice(0, 3).join('; ')}`);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(200);

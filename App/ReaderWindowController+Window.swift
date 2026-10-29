@@ -279,11 +279,31 @@ final class UnreadDotView: NSView {
 /// hides the outline (the toolbar button and View ▸ Show Sidebar both send
 /// toggleSidebar: here), so the choice holds against the window's width.
 final class ReaderSplitController: NSSplitViewController {
-    /// Called before the toggle, with whether it shows the outline.
+    /// Called before the toggle, with whether it shows the outline. Also
+    /// when the reader drags the divider so the outline collapses or comes
+    /// back: that is their choice for this window too, as the toggle is.
     var willToggleSidebar: ((Bool) -> Void)?
+    private var wasCollapsed: Bool?
+
+    private var sidebar: NSSplitViewItem? { splitViewItems.first { $0.behavior == .sidebar } }
 
     override func toggleSidebar(_ sender: Any?) {
-        if let item = splitViewItems.first(where: { $0.behavior == .sidebar }) { willToggleSidebar?(item.isCollapsed) }
+        if let item = sidebar { willToggleSidebar?(item.isCollapsed) }
         super.toggleSidebar(sender)
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        NotificationCenter.default.addObserver(self, selector: #selector(subviewsResized),
+                                               name: NSSplitView.didResizeSubviewsNotification, object: splitView)
+    }
+
+    /// A collapse (or uncollapse) while the mouse button is down is the
+    /// divider dragged; the window's own fit and the toggle happen with it up.
+    @objc private func subviewsResized(_ note: Notification) {
+        guard let item = sidebar else { return }
+        defer { wasCollapsed = item.isCollapsed }
+        guard let was = wasCollapsed, was != item.isCollapsed, NSEvent.pressedMouseButtons & 1 != 0 else { return }
+        willToggleSidebar?(was)
     }
 }

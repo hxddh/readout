@@ -99,10 +99,11 @@ function markCjkEmphasis(el) {
 // Table cells. A short cell (16 columns or fewer, a CJK character counting
 // two) and a short identifier in code (32 characters or fewer) stay on one
 // line while the column has room: "S1 / GREEN" or `actions/configure-pages`
-// broken in two read badly. A longer identifier may break after a separator
-// (ReadoutCore's <wbr>, as in any inline code). Only while the table fits
-// that way: one they would push past the column wraps them again, and
-// scrolls only if it is still too wide (measureTables).
+// broken in two read badly. A longer one may break after a slash (a <wbr>
+// the page adds, here only: a path in a cell would otherwise squeeze the
+// column of sentences beside it). Only while the table fits that way: one
+// they would push past the column wraps them again, and scrolls only if it
+// is still too wide (measureTables).
 const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦\u{1f000}-\u{1faff}\u{20000}-\u{3fffd}]/u;
 function columns(s) {
   let n = 0;
@@ -113,7 +114,7 @@ function columns(s) {
 // Not so many that they starve a column of sentences: the columns' longest
 // kept lines together take at most NW_ROOM characters (a little over half
 // the column at the table's size, 42.5 em), else the column of the longest
-// identifiers breaks them after their separators. Counted, not measured:
+// identifiers wraps them as any text. Counted, not measured:
 // no layout, and the same in any window.
 const NW_ROOM = 40;
 function setupTable(t) {
@@ -129,7 +130,7 @@ function setupTable(t) {
       let codes = 0;
       for (const c of cell.querySelectorAll('code')) {
         const len = c.textContent.length;
-        if (len > 32) continue;
+        if (len > 32) { breakAfterSlashes(c); continue; }
         c.dataset.nw = '';
         col.codes.push(c);
         col.most = Math.max(col.most, len);
@@ -144,6 +145,20 @@ function setupTable(t) {
     if (room <= NW_ROOM) break;
     for (const c of col.codes) delete c.dataset.nw;
     room -= col.most;
+  }
+}
+
+function breakAfterSlashes(el) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.includes('/')) nodes.push(n);
+  for (const n of nodes) {
+    const frag = document.createDocumentFragment();
+    n.data.split('/').forEach((part, i, all) => {
+      if (part) frag.append(part);
+      if (i < all.length - 1) frag.append('/', document.createElement('wbr'));
+    });
+    n.replaceWith(frag);
   }
 }
 
