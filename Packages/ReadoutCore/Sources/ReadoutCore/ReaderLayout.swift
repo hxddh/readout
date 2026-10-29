@@ -5,7 +5,7 @@ import Foundation
 ///
 /// The page's text grows with its width (html's font-size: the reader's size
 /// up to 900 px, 1.25 times it from 1800 px, smoothly between) and its column
-/// is 35 em of that text, or the width less its gutters. A wide window shows
+/// is 42.5 em of that text (3.9's column at Actual Size), or the width less its gutters. A wide window shows
 /// the outline (the sidebar) by itself once the page beside it still has
 /// comfortable margins around the column, and hides it once it no longer
 /// would. The reader's own Show/Hide Sidebar holds in that window
@@ -22,7 +22,7 @@ public enum ReaderLayout {
 
     /// The text column's width (px) in a page `width` px wide.
     public static func column(width: Double, fontSize: Double) -> Double {
-        min(35 * rootSize(width: width, fontSize: fontSize), width - 2 * gutter)
+        min(42.5 * rootSize(width: width, fontSize: fontSize), width - 2 * gutter)
     }
 
     /// The margin each side of the column the page keeps beside the outline:

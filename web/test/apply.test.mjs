@@ -2215,7 +2215,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
 
 // 4.0 (#99 smoke "refill"): a document reset and the reader's place put back
 // (scrollToAnchor, as the app does after a refill) with a table above it
-// whose short cells only fit the 35 rem column wrapped (.nw-off, measured by
+// whose short cells only fit the 42.5 rem column wrapped (.nw-off, measured by
 // the page a frame later, 42 px taller then): the anchor stays within 1 px.
 {
   const p = await browser.newPage({ viewport: { width: 900, height: 589 } });
