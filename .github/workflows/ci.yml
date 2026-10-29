@@ -114,7 +114,7 @@ jobs:
     name: Web tests (WebKit)
     needs: changes
     if: needs.changes.outputs.linux == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - name: Build readout-dump in the background (copy round trips)
