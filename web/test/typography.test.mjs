@@ -1028,7 +1028,7 @@ const v36 = patch([
 {
   const tb = patch([
     ['paragraph', '<p id="b-p">The text column stays as it is.</p>'],
-    ['code', `<div class="code-block" id="b-long" data-lang="ts"><pre><code>${'const result = await client.send(new GetObjectCommand({ Bucket, Key, Range }));'}</code></pre></div>`],
+    ['code', `<div class="code-block" id="b-long" data-lang="ts"><pre><code>${'const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key, Range: range }));'}</code></pre></div>`],
     ['code', `<div class="code-block" id="b-huge" data-lang="ts"><pre><code>${longLine} ${longLine}</code></pre></div>`],
     ['code', '<div class="code-block" id="b-short" data-lang="sh"><pre><code>npm test</code></pre></div>'],
     ['listItem', `<ul class="li-block li-first li-last"><li>In a list:<div class="code-block" id="b-li"><pre><code>${longLine}</code></pre></div></li></ul>`],
@@ -1084,7 +1084,7 @@ const v36 = patch([
     await page.evaluate(p => window.readout.apply(p), tb);
     await page.waitForTimeout(150);
     const n = await measure(page);
-    const fits = width === 1200;   // 1.35 x 680 px and 4 rem each side (1046 px) fit in 1200 px, not in 860
+    const fits = width === 1200;   // 1.35 x 737 px and 4 rem each side (1132 px; the text 1.08 times) fit in 1200 px, not in 860
     check(`at ${width} px code ${fits ? 'widens' : 'keeps the column'}`, fits ? Math.abs(n.long[1] - 1.35 * n.col[1]) < 1 : Math.abs(n.long[1] - n.col[1]) < 0.5 && n.sideways <= 0, JSON.stringify(n));
     // Widening to the right only, a table keeps 4 rem from the window's edge.
     check(`at ${width} px a table keeps the text's left edge and 4 rem from the window's edge`, Math.abs(n.table[0] - n.col[0]) < 0.5 && n.table[0] + n.table[1] <= n.vw - 64 + 0.5 && n.sideways <= 0, JSON.stringify(n));
@@ -1835,7 +1835,7 @@ for (const dark of [false, true]) {
 }
 
 // P4.4 No width setting: the column is 42.5 em of the text (3.9's), so a
-//      line holds 3.9's 85-100 Latin and 40-48 Chinese characters at every text size and
+//      line holds 3.9's 80-100 Latin and 40-48 Chinese characters at every text size and
 //      window; the text grows with the window (the reader's size up to 900
 //      px, 1.25 times it from 1800 px, smoothly between), the reader's ⌘+ and
 //      ⌘− multiply it, and Actual Size returns to the automatic size. In a
@@ -1867,14 +1867,17 @@ for (const dark of [false, true]) {
   }
   check('P4.4 the text grows with the window: 16 px to 900 px, then smoothly to 20 px (1.25) at 1800 px and wider', curve.every(c => Math.abs(c.root - 16 * scale(c.vw)) < 0.05), JSON.stringify(curve));
   check('P4.4 the column is 42.5 em of the text in every wide window (or the window less its gutters), code in step', curve.every(c => Math.abs(c.col - Math.min(42.5 * c.root, c.vw - 56)) < 0.6 && Math.abs(c.code / c.root - 0.89) < 0.01 && c.sideways <= 0), JSON.stringify(curve));
-  check('P4.4 a line holds 3.9\'s 85-100 Latin characters and 40-48 Chinese ones in every window', curve.filter(c => c.vw >= 900).every(c => c.latin >= 85 && c.latin <= 100 && c.han >= 40 && c.han <= 48), JSON.stringify(curve));
+  check('P4.4 a line holds 3.9\'s 80-100 Latin characters and 40-48 Chinese ones in every window', curve.filter(c => c.vw >= 900).every(c => c.latin >= 80 && c.latin <= 100 && c.han >= 40 && c.han <= 48), JSON.stringify(curve));
   await page.setViewportSize({ width: 1600, height: 800 });
   const m = [];
   for (const fs of [13, 16, 20, 24, 16]) {
     await page.evaluate(fs => window.readout.setAppearance({ fontSize: fs }), fs);
-    m.push({ fs, ...(await state(page)), latin: await perLine(page, 'm-latin') });
+    m.push({ fs, ...(await state(page)), latin: await perLine(page, 'm-latin'), han: await perLine(page, 'm-han') });
   }
-  check('P4.4 the reader\'s size multiplies the window\'s (1600 px: 1.19), Actual Size back to the automatic size; the characters per line stay', m.every(x => Math.abs(x.root - x.fs * scale(1600)) < 0.05) && m[4].root === m[1].root && m.every(x => Math.abs(x.latin - m[1].latin) <= 3), JSON.stringify(m));
+  // Han breaks between any two characters, so its count is exact; a Latin
+  // line of this sample ends 83 or 90 characters in, a word apart,
+  // whichever the sub-pixel width allows, at any size: one word's slack.
+  check('P4.4 the reader\'s size multiplies the window\'s (1600 px: 1.19), Actual Size back to the automatic size; the characters per line stay', m.every(x => Math.abs(x.root - x.fs * scale(1600)) < 0.05) && m[4].root === m[1].root && m.every(x => Math.abs(x.han - m[1].han) <= 1 && Math.abs(x.latin - m[1].latin) <= 8), JSON.stringify(m));
   const sizes = [];
   for (const vw of [760, 640, 480, 360]) {
     await page.setViewportSize({ width: vw, height: 800 });
