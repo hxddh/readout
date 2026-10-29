@@ -721,8 +721,9 @@ function urge(x, dy, upto) {
 // it is fitted in it, and takes its own height once it is off screen (the
 // page keeps the place then: anchor.js). A diagram drawn before (in the
 // cache) is put in at once; an image with its size (ReadoutCore gives a
-// local one's) has its box already; a diagram an agent is still writing is
-// drawn once its source is still, as anywhere.
+// local one's) has its box already. A diagram is drawn when it would be
+// anyway (lazyObserver: once the page is still), not before the landing's
+// frame: Mermaid's layout holds the page for a few hundred milliseconds.
 const reserved = new Set();
 const out = new WeakSet();   // reserved, and off screen
 const finished = x => isDiagram(x) ? x.classList.contains('done') || !!x.querySelector('.mermaid-error') : x.complete;
@@ -743,7 +744,6 @@ function reserve(xs) {
       // As tall as its source would show, within 240 px and 60% of the window.
       const lines = (x.querySelector('.mermaid-src')?.textContent.match(/\n/g)?.length ?? 0) + 1;
       x.style.setProperty('--reserve', `${Math.round(Math.min(Math.max(lines * 22, 240), innerHeight * 0.6))}px`);
-      renderMermaid(x, true);
     } else {
       if (x.getAttribute('width') && x.getAttribute('height')) continue;
       for (const type of ['load', 'error']) x.addEventListener(type, () => shown(x), { once: true });
