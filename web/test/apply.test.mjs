@@ -2247,7 +2247,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await p.goto(`${base}/reader.html`);
   for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const ops = [];
   for (let i = 1; i <= 90; i++) {
     const kind = i % 15 === 7 ? 'code' : i % 15 === 11 ? 'table' : 'paragraph';

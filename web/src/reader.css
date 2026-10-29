@@ -139,9 +139,8 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 #ro-doc {
   max-width: calc(var(--measure) + var(--gutter) * 2);
   margin: 0 auto;
-  /* The page scrolls under the window toolbar (--top-inset tall): at rest the
-     document starts the same distance below it, whatever its height. */
-  padding: calc(var(--top-inset, 0px) + 12px) var(--gutter) 30vh;
+  /* The app gives WebKit the window toolbar's inset: 12 px below it. */
+  padding: 12px var(--gutter) 30vh;
   position: relative;
   /* A long URL or word breaks rather than scrolling the page sideways. */
   overflow-wrap: break-word;
