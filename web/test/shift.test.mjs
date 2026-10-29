@@ -13,11 +13,14 @@
 //     document (a pooled page taken), some with a diagram, a formula or
 //     inline math on screen, and jumps onto those; (c) outline jumps, N and
 //     find landing in a 5 MB document and in a code-heavy one (700 blocks
-//     of 90-line code). The window's toolbar inset (52 px), a 900×900 window.
+//     of 90-line code); (d) an image loading as a document opens, on its
+//     first screen and above a place restored. The window's toolbar inset
+//     (52 px), a 900×900 window.
 //
 // Before the page kept its first frame (a9e7da3), in px (worst sample; the
 // rest at most 0.4): a diagram on screen drawn after the frame, 894 (the
-// diagram itself, or the blocks under it); inline math typeset after it, 12.
+// diagram itself, or the blocks under it); inline math typeset after it, 12;
+// an image loading after it, 251.
 // A place restored into a page that showed another document: 6 frames of
 // the document elsewhere (where the old place was) before its own.
 //
@@ -26,6 +29,7 @@ import { webkit } from 'playwright';
 import http from 'node:http';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
+import { PNG } from 'pngjs';
 import { collectPageErrors } from './pageerrors.mjs';
 
 // The most any case may shift, in px (rounding of a fractional position).
@@ -34,7 +38,10 @@ const GATE = false;   // reported only, until the page keeps its first frame
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 const BUILD = process.env.READOUT_WEB_BUILD || 'build/Web';
+// An image (slow/…: a 480×270 picture 400 ms after it is asked for, as a large local file might be).
+const picture = PNG.sync.write(new PNG({ width: 480, height: 270 }));
 const server = http.createServer((req, res) => {
+  if (req.url.startsWith('/slow/')) return setTimeout(() => { res.writeHead(200, { 'content-type': 'image/png' }); res.end(picture); }, 400);
   const p = join(BUILD, decodeURIComponent(req.url.split('?')[0]));
   if (!existsSync(p)) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'content-type': types[extname(p)] || 'application/octet-stream' });
@@ -239,6 +246,18 @@ const mid = ops => ops[Math.floor(ops.length * 0.5)].slot;
     beside.push(await p.evaluate(slot => window.shift(() => window.readout.scrollToSlot(slot), window.blk(slot)), ops[i - 1].slot));
   }
   report('jump beside a diagram, a formula, inline math', ...beside);
+  await p.close();
+}
+
+// ---- Images loading as a document opens: on its first screen, and above a place restored.
+{
+  const p = await newPage();
+  const ops = (n, at) => Array.from({ length: 150 }, (_, k) => ({ op: 'insert', slot: k + 1, after: k, kind: 'paragraph',
+    html: at.includes(k) ? `<p><img src="slow/${n}-${k}.png" alt=""></p>` : `<p>Paragraph ${k + 1} ${'of the plan, with words to wrap over a line or two '.repeat(3)}</p>` }));
+  report('open with an image on screen', await p.evaluate(d => window.shift(() => window.readout.apply(d),
+    () => document.querySelector('#ro-doc .blk[data-slot="1"]')), reset(ops(1, [3]))));
+  await p.evaluate(() => window.still());
+  report('restore beside an image', await restore(p, ops(2, [60]), 2, 63, -500));
   await p.close();
 }
 
