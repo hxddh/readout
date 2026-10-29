@@ -299,8 +299,10 @@ h1, h2, h3, h4, h5, h6 {
 .k-heading h2 { letter-spacing: -0.01em; }
 /* Han and kana are set solid: tracking them in pulls the characters together. */
 .k-heading:is(:lang(zh), :lang(ja)) :is(h1, h2) { letter-spacing: 0; }
-/* h5 and h6 (smaller) in the secondary colour (AA: 6.3:1 light, 7.0:1 dark). */
-.k-heading :is(h5, h6) { color: var(--text-2); }
+/* h5 and h6 (smaller) in the secondary colour (AA: 6.3:1 light, 7.0:1 dark).
+   Two rules, not :is(h5, h6): WebKit files a rule under its last tag name,
+   and checks one ending in :is() against every element. */
+.k-heading h5, .k-heading h6 { color: var(--text-2); }
 /* Headings that wrap break into lines of even length. */
 h1, h2, h3, h4 { text-wrap: balance; }
 
