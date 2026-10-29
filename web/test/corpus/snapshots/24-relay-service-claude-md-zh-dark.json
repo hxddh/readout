@@ -60,7 +60,7 @@
    "kind": "table",
    "top": 442,
    "h": 224,
-   "style": "2024e506",
+   "style": "e8a9b666",
    "content": "321094fa",
    "text": "层级目录职责框架层src/routes/, src/middleware/HTTP 路由、请求验"
   },
@@ -627,7 +627,7 @@
    "kind": "table",
    "top": 4086,
    "h": 439,
-   "style": "cfbeeea6",
+   "style": "40bc541b",
    "content": "a63f8135",
    "text": "问题排查方向Redis 连接失败检查 REDIS_HOST/PORT/PASSWORD管理员登录"
   },

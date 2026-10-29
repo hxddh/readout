@@ -344,10 +344,6 @@ code {
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
-/* In a table's cell a long one may break anywhere (counted in the cell's
-   narrowest width), so it does not widen the table past the column: 3.9
-   broke it after its slashes with <wbr>, 4.0 adds none (#99). */
-:is(td, th):not([data-nw]) code:not([data-nw]) { overflow-wrap: anywhere; }   /* a long one: a short one stays whole (enhance.js) */
 /* Before full-width punctuation, which brings its own space (enhance.js);
    a path link keeps its outline even. */
 code.before-punct:not(.path-link) { padding-right: 0.08em; }

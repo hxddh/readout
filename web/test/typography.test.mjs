@@ -902,7 +902,7 @@ const v36 = patch([
   ['code', '<div class="code-block" id="c-console" data-lang="console"><pre><code>$ npm test\nall checks passed</code></pre></div>'],
   ['table', '<div class="table-wrap"><table id="t-cells"><thead><tr><th>Action</th><th>Status</th><th>Notes</th></tr></thead><tbody>'
     + '<tr><td><code id="t-code">actions/configure-pages</code></td><td id="t-short">S1 / GREEN</td><td id="t-long">A longer note that is allowed to wrap onto more than one line in a narrow column like this one.</td></tr>'
-    + '<tr><td><code id="t-path">src/a/very/long/path/to/some/deeply/nested/module.ts</code></td><td id="t-zh">部分覆盖</td><td id="t-br">one<br>two</td></tr></tbody></table></div>'],
+    + '<tr><td><code id="t-path">src/a/nested/mod.ts</code></td><td id="t-zh">部分覆盖</td><td id="t-br">one<br>two</td></tr></tbody></table></div>'],
 ]);
 
 {
@@ -994,15 +994,17 @@ const v36 = patch([
   check('a token in the code block\'s own colours is no span of its own', own.spans > 0 && own.own === 0, JSON.stringify(own));
 
   // T2. Short cells and identifiers stay on one line while the table fits; a
-  //     long path wraps (anywhere, overflow-wrap); a cell with a <br> may wrap.
+  //     path stays whole; a cell with a <br> may wrap.
   const cells = await page.evaluate(() => {
     const lines = el => { const r = document.createRange(); r.selectNodeContents(el); return new Set([...r.getClientRects()].filter(b => b.width > 0).map(b => Math.round(b.top))).size; };
     const $ = id => document.getElementById(id);
     return { code: lines($('t-code')), short: lines($('t-short')), zh: lines($('t-zh')), long: lines($('t-long')), path: (el => { const out = []; const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); for (let t; (t = w.nextNode());) for (let i = 0; i < t.data.length; i++) { const r = document.createRange(); r.setStart(t, i); r.setEnd(t, i + 1); const top = Math.round(r.getClientRects()[0].top); if (!out.length || out[out.length - 1].top !== top) out.push({ top, text: '' }); out[out.length - 1].text += t.data[i]; } return out.map(l => l.text); })($('t-path')),
-      codeNw: getComputedStyle($('t-code')).whiteSpace, brNw: getComputedStyle($('t-br')).whiteSpace, scrolls: $('t-cells').parentElement.classList.contains('scrolls') };
+      codeNw: getComputedStyle($('t-code')).whiteSpace, brNw: getComputedStyle($('t-br')).whiteSpace, scrolls: $('t-cells').parentElement.classList.contains('scrolls'), page: document.scrollingElement.scrollWidth - innerWidth };
   });
   check('short cells and identifiers in a table stay on one line', cells.code === 1 && cells.short === 1 && cells.zh === 1 && cells.codeNw === 'nowrap', JSON.stringify(cells));
-  check('a long cell still wraps, a cell with a line break is left alone, a long path wraps in its cell (4.0: no break opportunities of its own)', cells.long > 1 && cells.brNw !== 'nowrap' && cells.path.length > 1 && !cells.scrolls, JSON.stringify(cells));
+  // (4.0: a path has no break opportunities of its own: 3.9 put <wbr> after the
+  // slashes of one over 32 characters, which cost speed, #99.)
+  check('a long cell still wraps, a cell with a line break is left alone, a path stays whole', cells.long > 1 && cells.brNw !== 'nowrap' && cells.path.length === 1 && !cells.scrolls && cells.page <= 0, JSON.stringify(cells));
   await page.close();
 }
 
