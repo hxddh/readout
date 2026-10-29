@@ -2231,6 +2231,23 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.close();
 }
 
+// A table (raw HTML) whose first row spans two columns no other row fills,
+// and cells of words: the kept identifiers' columns have a hole there, and
+// the table is still made (enhance.js setupTable; Codex on #104).
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 589 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
+  const table = '<div class="table-wrap"><table><tbody><tr><td colspan="2">A long sentence of words that is no identifier at all, wider than any kept cell</td><td><code>actions/configure-pages</code></td></tr></tbody></table></div>';
+  const ops = [{ op: 'insert', slot: 1, after: 0, kind: 'table', html: table }, { op: 'insert', slot: 2, after: 1, kind: 'paragraph', html: '<p>After the table.</p>' }];
+  await p.evaluate(x => window.readout.apply(x), { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p.waitForTimeout(200);
+  check('a table with a spanned column no row fills is made, and the blocks after it', await p.evaluate(() => !!document.querySelector('.blk[data-slot="2"]') && !!document.querySelector('.table-wrap code[data-nw]')));
+  await p.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 
 await browser.close();
