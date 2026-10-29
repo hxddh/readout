@@ -287,24 +287,25 @@ for (const width of [1100, 600]) {
   await page.close();
 }
 
-// 1b. A tall diagram a first paint showed before it was drawn keeps its box
-//     on screen (enhance.js: reserve), the drawing fitted in it; printed, it
-//     is at its own size (the box is the screen's only).
+// 1b. A tall diagram a first paint showed before it was drawn takes its own
+//     size once drawn, on screen too (enhance.js: grows), never squashed;
+//     printed, the same.
 {
   page = await open(800);
-  const tall = patch([['mermaid', `<div class="mermaid-block"><pre class="mermaid-src">flowchart TD\n  ${Array.from({ length: 12 }, (_, i) => `N${i} --> N${i + 1}`).join('\n  ')}</pre></div>`]]);
+  const tall = patch([['paragraph', '<p>Above the diagram.</p>'], ['mermaid', `<div class="mermaid-block"><pre class="mermaid-src">flowchart TD\n  ${Array.from({ length: 12 }, (_, i) => `N${i} --> N${i + 1}`).join('\n  ')}</pre></div>`]]);
   await page.evaluate(p => window.readout.apply(p), tall);
   await until(page, () => !!document.querySelector('.mermaid-block.done svg'));
   const size = () => page.evaluate(() => {
     const b = document.querySelector('.mermaid-block'), svg = b.querySelector('svg'), vb = svg.viewBox.baseVal, r = svg.getBoundingClientRect();
-    return { reserved: b.classList.contains('reserved'), block: Math.round(b.getBoundingClientRect().height), svg: Math.round(r.height), natural: Math.round(r.width * vb.height / vb.width) };
+    return { svg: Math.round(r.height), natural: Math.round(r.width * vb.height / vb.width), block: Math.round(b.getBoundingClientRect().height),
+      above: Math.round(document.querySelector('#ro-doc .blk').getBoundingClientRect().top), y: Math.round(scrollY) };
   });
   const screen = await size();
   await page.emulateMedia({ media: 'print' });
   const printed = await size();
   await page.emulateMedia({ media: 'screen' });
-  check('a tall diagram drawn after the first paint keeps its box on screen', screen.reserved && screen.svg < screen.natural - 50 && screen.svg <= screen.block, JSON.stringify(screen));
-  check('printed, a diagram in its box is at its own size', printed.reserved && Math.abs(printed.svg - printed.natural) <= 1 && printed.block >= printed.svg, JSON.stringify(printed));
+  check('a tall diagram drawn after the first paint takes its own size on screen', Math.abs(screen.svg - screen.natural) <= 1 && screen.block >= screen.svg && screen.y === 0, JSON.stringify(screen));
+  check('printed, a diagram drawn after the first paint is at its own size', Math.abs(printed.svg - printed.natural) <= 1 && printed.block >= printed.svg, JSON.stringify(printed));
   await page.close();
 }
 

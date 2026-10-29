@@ -4,7 +4,7 @@
 // the viewport.
 import * as hl from '../highlight.js';
 import { doc, root, strings, post, inViewport, prevItem, nextItem } from './core.js';
-import { captureAnchor, restoreAnchor } from './anchor.js';
+import { captureAnchor, restoreAnchor, keepPlace } from './anchor.js';
 import { setupRemoteImage } from './remote.js';
 import { renderMath, typesetting } from './math.js';
 import { renderMermaid, setupMermaid, sweepLater, placeCached } from './mermaid.js';
@@ -648,12 +648,10 @@ function part(cb, lang, html, code, done, first) {
 
 /**
  * `cb` shows coloured (all of it, or what the screen shows of it), math
- * typeset: what waited for it goes on; a diagram drawn (or an image loaded)
- * in the box a landing kept for it: its own height once off screen.
+ * typeset: what waited for it goes on.
  */
 export function shown(cb) {
   for (const h of [...holds]) if (h.cbs.delete(cb) && !h.cbs.size) release(h);
-  if (reserved.has(cb) && out.has(cb)) unreserve(cb);
 }
 
 function markDiff(root, id) {
@@ -670,7 +668,7 @@ function markDiff(root, id) {
 // shows it, it would move what is below it, or what is above it, the place
 // kept), for HOLD_MS at most: what highlighting it on this thread took the
 // frame before (the lines a block shows where the reader lands come first).
-// (Diagrams and images are not waited for: they get a box, reserve.) A document's
+// (Diagrams and images are not waited for: reserve.) A document's
 // first paint waits with the document hidden (a reset: none of the old
 // document is left; code it shows again is coloured at once, keepColours,
 // and waits for nothing); a jump waits before it scrolls; find, before it
@@ -715,67 +713,42 @@ function urge(x, dy, upto) {
 
 // Diagrams and images a landing shows (a first paint, a jump) not drawn or
 // loaded yet are not waited for: Mermaid's load and layout, or an image's
-// load, take up to seconds. Each gets a box instead, the height it keeps
-// while on screen (reader.css: .reserved): drawn or loaded, it is fitted in
-// it, and takes its own height once it is off screen (the page keeps the
-// place then: anchor.js). A diagram's box is the height its source shows
-// in the landing's frame (keepBox); an image's, a box for a picture (one
-// with its size, ReadoutCore gives a local one's, has its own already). A
-// diagram drawn before (in the cache) is put in at once; one not is drawn
-// when it would be anyway (lazyObserver: once the page is still), not
-// before the landing's frame: Mermaid's layout holds the page for a few
-// hundred milliseconds.
-const reserved = new Set();
-const out = new WeakSet();   // reserved, and off screen
+// load, take up to seconds. A diagram shows its source until it is drawn
+// (when it would be anyway, lazyObserver: once the page is still; one drawn
+// before, in the cache, is put in at once); an image without its size (a
+// local one has it from ReadoutCore) a box for a picture (reader.css:
+// .reserved). Drawn or loaded, each takes its own size at once, the
+// reader's place kept (grows): what is below it moves down, once; the text
+// they are on does not.
+const landedOn = new WeakMap();   // what a landing showed not drawn or loaded yet -> the block it landed on (null: the top)
 const finished = x => isDiagram(x) ? x.classList.contains('done') || !!x.querySelector('.mermaid-error') : x.complete;
-const reserveObserver = new IntersectionObserver(entries => {
-  for (const e of entries) {
-    if (e.isIntersecting) { out.delete(e.target); continue; }
-    out.add(e.target);
-    if (finished(e.target)) unreserve(e.target);
-  }
-});
-/** Boxes for the diagrams and images in `xs` not drawn or loaded. */
-function reserve(xs) {
-  for (const x of reserved) if (!x.isConnected) unreserve(x);
+/** The diagrams and images in `xs` not drawn or loaded (a landing on `at`): marked, an image given its box. */
+function reserve(xs, at = null) {
   for (const x of xs) {
-    if (reserved.has(x) || !x.isConnected || finished(x)) continue;
+    if (landedOn.has(x) || !x.isConnected || finished(x)) continue;
     if (isDiagram(x)) {
-      // (Its box is the height its source shows, taken when it is drawn: keepBox.)
-      if (!x.dataset.waiting && !placeCached(x)) landedOn.add(x);
+      if (!x.dataset.waiting && !placeCached(x)) landedOn.set(x, at);
       continue;
     }
     if (x.getAttribute('width') && x.getAttribute('height')) continue;
-    for (const type of ['load', 'error']) x.addEventListener(type, () => shown(x), { once: true });
-    box(x);
+    landedOn.set(x, at);
+    x.classList.add('reserved');
+    for (const type of ['load', 'error']) x.addEventListener(type, () => grows(x, () => x.classList.remove('reserved')), { once: true });
   }
 }
-function box(x) {
-  x.classList.add('reserved');
-  reserved.add(x);
-  reserveObserver.observe(x);
-}
-const landedOn = new WeakSet();   // diagrams a landing showed before they were drawn
 /**
- * Before a drawing is put in `block` (mermaid.js): one a landing showed
- * before it was drawn, on screen now, keeps the height it shows (its
- * source's) as its box. (Taken then, not at the landing: a box set there
- * would lay its chunk out once more before the landing's frame.)
+ * `change` (a diagram's drawing put in, mermaid.js; an image loaded): to
+ * one a landing showed, with the reader's place kept (anchor.js: keepPlace):
+ * the block the landing put them on, while it is on screen, else the block
+ * at the top, stays where it is; what is on its far side moves.
  */
-export function keepBox(block) {
-  if (!landedOn.has(block)) return;
-  landedOn.delete(block);
-  const r = block.getBoundingClientRect();
-  if (r.bottom <= 0 || r.top >= innerHeight) return;
-  block.style.setProperty('--reserve', getComputedStyle(block).height);
-  box(block);
-}
-function unreserve(x) {
-  reserved.delete(x);
-  out.delete(x);
-  reserveObserver.unobserve(x);
-  x.classList.remove('reserved');
-  x.style.removeProperty('--reserve');
+export function grows(x, change) {
+  if (!landedOn.has(x)) return change();
+  const at = landedOn.get(x);
+  landedOn.delete(x);
+  const r = at?.isConnected ? at.getBoundingClientRect() : null;
+  if (r && r.bottom > 0 && r.top < innerHeight) keepPlace(change, { anchor: { slot: +at.dataset.slot, offset: -r.top, ratio: 0 } });
+  else keepPlace(change);
 }
 const toReserve = blocks => blocks.flatMap(b => [...b.querySelectorAll('.mermaid-block, img')]);
 
@@ -811,8 +784,8 @@ export function afterShown(f) {
 
 /**
  * A jump about to scroll by `off()` (aimAt): whether it waits for the code
- * (the math) it would show, `again` called then; the diagrams and images it
- * shows get their boxes (reserve) before it scrolls. Before
+ * (the math) it would show, `again` called then (its diagrams and images
+ * are not waited for: reserve). Before
  * a document shown anew has been painted (its place restored), or while
  * its first paint waits, it is hidden: what the jump shows waits with it,
  * and the jump goes now.
@@ -826,7 +799,7 @@ export function holdJump(el, off, again) {
   const blocks = [blk];
   for (let e = prevItem(blk); e; e = prevItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.unshift(e); }
   for (let e = nextItem(blk); e; e = nextItem(e)) { if (!e.classList.contains('blk')) continue; if (!shows(e)) break; blocks.push(e); }
-  reserve(toReserve(blocks));
+  reserve(toReserve(blocks), blk);
   // (Its code not before the highlighter has started, as a first paint's:
   // the first window at launch lands at once, its code plain first.)
   const cbs = pending(blocks).filter(x => hl.started || !isCode(x));
@@ -964,7 +937,7 @@ export function renderLazy(near = inViewport, first = false) {
   if (first) {
     unshown = true;
     requestAnimationFrame(() => { unshown = false; });
-    // Its math on screen too, and boxes for its diagrams and images there.
+    // Its math on screen too (its diagrams and images: reserve).
     // (Its code not before the highlighter has started: the first window at
     // launch shows its code plain first, as before, rather than wait for that.)
     if (diagrams.size || imgs.length) reserve([...diagrams, ...imgs].filter(x => x.isConnected && near(x)));

@@ -23,9 +23,13 @@
 // an image loading after it, 251.
 // A place restored into a page that showed another document: 6 frames of
 // the document elsewhere (where the old place was) before its own.
-// (The first frame waits for the code and math it shows, not for diagrams
-// or images: those not drawn or loaded get a box they keep while on screen,
-// enhance.js: reserve. perf.test.mjs: web_land_*: how long that would wait.)
+// The first frame waits for the code and math it shows, not for diagrams or
+// images (perf.test.mjs: web_land_*: how long that would wait): one not
+// drawn or loaded takes its own size when it is (enhance.js: grows), the
+// reader's place (the block a jump or a place restored landed on, else the
+// block at the top) kept. The place and every block on
+// its side of it may not move; the blocks on its far side may move once
+// for each (counted, not gated in px).
 //
 // Usage: node test/shift.test.mjs   (after node build.mjs)
 import { webkit } from 'playwright';
@@ -115,7 +119,7 @@ function recorder() {
     const debug = !!window.SHIFT_DEBUG, log = [];
     const chunks = () => [...doc.children].map(c => `${c.className} ${Math.round(c.getBoundingClientRect().height)}`);
     // early: frames that showed the document before the first that shows the target.
-    let tracked = null, first = 0, frames = 0, early = 0, was = null, done = false;
+    let tracked = null, first = 0, frames = 0, early = 0, was = null, done = false, grows = 0, moves = 0;
     const max = { px: 0, what: null, at: 0 };
     const probe = document.body.appendChild(document.createElement('div'));
     probe.style.cssText = 'position: fixed; top: 0; left: 0; width: 1px; height: 1px; visibility: hidden; pointer-events: none';
@@ -137,10 +141,31 @@ function recorder() {
             const r = b.getBoundingClientRect();
             if (shown(r) && b !== t && b.classList.contains('blk')) tracked.push({ name: `slot ${b.dataset.slot} ${b.className}`, x: b, top: r.top });
           }
+          // A diagram or image on screen not drawn or loaded yet takes its own
+          // size once it is: the blocks on its far side from the reader's
+          // place (the block at the top, kept) may move, once each; the
+          // place and the blocks on its side may not.
+          // (The place: the block a jump or a place restored landed on, else the block at the top.)
+          const at = window.readout.captureAnchor();
+          const anchor = t instanceof Element && t.classList.contains('blk') ? t : at && doc.querySelector(`.blk[data-slot="${at.slot}"]`);
+          const before = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+          const growing = [...doc.querySelectorAll('.mermaid-block:not(.done), img')]
+            .filter(g => (g.localName === 'img' ? !g.complete : !g.querySelector('.mermaid-error')) && shown(g.getBoundingClientRect()))
+            .map(g => g.closest('.blk')).filter(Boolean);
+          grows = growing.length;
+          for (const k of tracked) {
+            const b = k.x instanceof Element ? k.x.closest('.blk') : null;
+            k.far = !!anchor && !!b && b !== anchor && growing.some(g => g === anchor || before(anchor, g) ? before(g, b) : (b === g || before(b, g)));
+            k.moves = 0; k.d = 0;
+          }
         }
       } else {
         const ds = tracked.map(t => { const r = rectOf(t.x); return r ? r.top - t.top : 0; });
-        ds.forEach((d, i) => { if (Math.abs(d) > max.px) Object.assign(max, { px: Math.abs(d), what: tracked[i].name, at: Math.round(now - first) }); });
+        ds.forEach((d, i) => {
+          const k = tracked[i];
+          if (k.far) { if (Math.abs(d - k.d) >= 0.5) { k.moves++; k.d = d; moves = Math.max(moves, k.moves); } }
+          else if (Math.abs(d) > max.px) Object.assign(max, { px: Math.abs(d), what: k.name, at: Math.round(now - first) });
+        });
         if (debug && log.length < 200) {
           const cs = chunks(), moved = ds.some(d => Math.abs(d) >= 0.5);
           log.push(['F', Math.round(now - t0), Math.round(document.scrollingElement.scrollTop), ...ds.map(Math.round),
@@ -149,7 +174,7 @@ function recorder() {
       }
       if (debug) was = chunks();
       if (tracked && now - first >= ms) {
-        end({ shift: Math.round(max.px * 10) / 10, what: max.what, at: max.at, firstFrame: Math.round(first - t0), frames, early,
+        end({ shift: Math.round(max.px * 10) / 10, what: max.what, at: max.at, firstFrame: Math.round(first - t0), frames, early, grows, moves,
           ...(debug ? { log, first: Math.round(first - t0), trace: window.readout.trace().filter(e => e.t >= t0).map(e => ({ ...e, t: Math.round(e.t - t0) })).slice(0, 60) } : {}) });
       } else if (!tracked && now - t0 > 8000) end({ shift: -1, what: 'never shown', frames });
     };
@@ -184,8 +209,11 @@ function report(name, ...rs) {
   for (const x of rs) if (x.log && x.shift > MAX_SHIFT) console.log('  ', JSON.stringify({ first: x.first, log: x.log, trace: x.trace }));
   for (const x of rs) { delete x.log; delete x.trace; delete x.first; }
   const early = Math.max(...rs.map(x => x.opens ? x.early : 0));
-  const bad = r.shift < 0 || r.shift > MAX_SHIFT || early > 0;
-  console.log(`${bad ? 'FAIL' : 'ok'}: ${name}: ${r.shift} px [${rs.map(x => x.shift).join(', ')}] (first frame at ${r.firstFrame} ms${r.shift > 0 ? `; ${r.what}, ${r.at} ms after it` : ''}${early ? `; ${early} frames before it showed the document elsewhere` : ''})`);
+  // A block past a diagram or image growing moves at most once for each.
+  const again = rs.filter(x => x.moves > x.grows);
+  const bad = r.shift < 0 || r.shift > MAX_SHIFT || early > 0 || again.length > 0;
+  const grew = rs.some(x => x.grows) ? `; past what grew, moved ${rs.map(x => `${x.moves}/${x.grows}`).join(', ')}` : '';
+  console.log(`${bad ? 'FAIL' : 'ok'}: ${name}: ${r.shift} px [${rs.map(x => x.shift).join(', ')}] (first frame at ${r.firstFrame} ms${r.shift > 0 ? `; ${r.what}, ${r.at} ms after it` : ''}${early ? `; ${early} frames before it showed the document elsewhere` : ''}${grew})`);
   if (bad) failures++;
   results[name] = { ...r, samples: rs.map(x => x.shift) };
 }
@@ -231,6 +259,14 @@ const mid = ops => ops[Math.floor(ops.length * 0.5)].slot;
     await p.evaluate(() => window.still());
   }
   report('restore beside a diagram, a formula, inline math', ...beside);
+  // A place inside a diagram not drawn yet (its top 80 px above the view):
+  // it grows from where it is, what is below it moves.
+  {
+    const other = chain(1_000_000, 3);
+    const i = other.findIndex((o, j) => j > other.length * 0.6 && o.kind === 'mermaid');
+    report('restore inside a diagram', await restore(p, other, 20, other[i].slot, 80));
+    await p.evaluate(() => window.still());
+  }
   await p.close();
 }
 {
