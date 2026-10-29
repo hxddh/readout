@@ -680,10 +680,11 @@ details ul, details ol { padding-left: 1.5em; }
 }
 .mermaid-block.done .mermaid-src { display: none; }
 /* A diagram a landing showed before it was drawn (enhance.js: reserve): the
-   box it keeps while on screen, the drawing fitted in it. */
-.mermaid-block.reserved { height: var(--reserve); overflow: hidden; }
+   box it keeps while on screen, the drawing fitted in its height (its width
+   as always: a wide one scrolls in its block). */
+.mermaid-block.reserved { height: var(--reserve); overflow-y: hidden; }
 .mermaid-block.reserved > .mermaid-svg { height: 100%; }
-.mermaid-block.reserved svg { max-height: 100%; min-width: 0 !important; }
+.mermaid-block.reserved svg { max-height: 100%; }
 .mermaid-error { font-size: var(--fs-xs); color: var(--text-2); margin-top: 0.5em; text-align: left; }
 .mermaid-error::before { content: "⚠︎ "; color: var(--warning); }
 
