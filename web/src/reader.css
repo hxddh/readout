@@ -23,8 +23,13 @@
   --pop-bg: #ffffff;          /* a popover over the page */
   --pop-shadow: 0 0 0 1px var(--rule), 0 6px 24px rgba(0, 0, 0, 0.12);
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
+  --code-fill: rgb(29 29 31 / 3%);   /* inline code's fill: 3% of the text colour */
 
-  /* In rem, so ⌘+ and ⌘− keep the characters per line (680 px at 16 px). */
+  /* The text column: 42.5 rem (3.9's), in rem so ⌘+ and ⌘− keep the
+     characters per line (680 px at 16 px); a narrower window is narrower by
+     itself (#ro-doc's max-width), and there --bleed is 0. No width setting
+     (View ▸ Wide Text is gone). Not min(…, 100vw − gutters): the same
+     column, and 4–5% slower to first paint a 1 MB page (same-runner A/B, #99). */
   --measure: 42.5rem;
   --size: 16px;
   --lh: 1.65;
@@ -67,6 +72,7 @@
   --pop-bg: #333336;
   --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
   --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
+  --code-fill: rgb(232 232 234 / 5%);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -88,11 +94,10 @@
     --pop-bg: #333336;
     --pop-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 10px 32px rgba(0, 0, 0, 0.55);
     --mark-bg: color-mix(in srgb, #ffb800 34%, transparent);   /* warm gold, not olive; text 6:1 */
+    --code-fill: rgb(232 232 234 / 5%);
     color-scheme: dark;
   }
 }
-
-:root[data-width="wide"] { --measure: 57.5rem; }
 
 * { box-sizing: border-box; }
 
@@ -113,6 +118,11 @@ html {
 }
 
 body { margin: 0; }
+/* The page keeps the reader's place itself (anchor.js: restores, and what
+   grows above the reader made up for). WebKit's own scroll anchoring (macOS
+   26) moved the page as well when a table above grew after a restore, so
+   the place moved twice (#99 smoke: refill, 42 px). */
+html, body { overflow-anchor: none; }
 pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 /* Native selection colour: it follows the accent and greys in an inactive window. */
 
@@ -173,7 +183,8 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    A table too wide for the column widens to the right only, as far as it
    needs (--tb-w, measured), up to the same 0.35 column and never closer than
    4 rem to the window's edge: its first column, which is read down like the
-   text, and its change bar stay on the text's edge. */
+   text, and its change bar stay on the text's edge. So does one whose short
+   cells wrap again to fit (nw-off): widened, they need wrap less. */
 @property --out { syntax: "<length>"; inherits: true; initial-value: 0px; }
 #ro-doc > .chunk > .blk:is(.k-code, .k-table) {
   --bleed: clamp(0px, (100vw - 8rem - 1.35 * var(--measure)) * 1000, 0.175 * var(--measure));
@@ -186,12 +197,12 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
 :root[data-code-wrap="on"] #ro-doc > .chunk > .blk.k-code { --out: 0px; }
 #ro-doc > .chunk > .blk.k-code > .code-block { margin-inline: calc(-1 * var(--out)); }
 @media not print {
-  #ro-doc > .chunk > .blk.k-table:has(> .table-wrap.scrolls) {
+  #ro-doc > .chunk > .blk.k-table:has(> .table-wrap:is(.scrolls, .nw-off)) {
     --out-end: clamp(0px, var(--tb-w, 0px) - var(--measure), min(var(--bleed) * 1000, 2 * var(--bleed), (100vw - var(--measure)) / 2 - 4rem));
     margin-inline-end: calc(-1 * (var(--gutter) + var(--out-end)));
     padding-inline-end: calc(var(--gutter) + var(--out-end));
   }
-  #ro-doc > .chunk > .blk.k-table > .table-wrap.scrolls { margin-inline-end: calc(-1 * var(--out-end)); }
+  #ro-doc > .chunk > .blk.k-table > .table-wrap:is(.scrolls, .nw-off) { margin-inline-end: calc(-1 * var(--out-end)); }
 }
 .blk.cjk { line-height: var(--lh-cjk); line-break: strict; }
 /* CJK emphasis: upright (Han and kana have no italic), with emphasis dots
@@ -311,23 +322,31 @@ sup, sub { line-height: 0; }
 /* Struck-through text stays readable (AA). */
 del { color: var(--text-2); }
 
-/* Inline code, keys and samples: the code size, relative to the text they sit
-   in (a heading's, a table's), so 0.84em of body text is --fs-code. */
+/* Inline code reads with the sentence around it (agent documents are dense
+   with it): relative to the text it sits in (a heading's, a table's), at
+   0.89 em, which puts SF Mono's x-height at about 0.9 of SF Pro's, on a
+   faint tint of the text colour (a colour per theme), so it shows on any
+   surface (page, alert, table header) in both themes, with little padding.
+   An inline's padding never changes the line's height. A long path or
+   identifier wraps as any text does, and breaks anywhere only when a part
+   is wider than the whole column (overflow-wrap). Not font-size-adjust, a
+   color-mix() fill, or break opportunities of ReadoutCore's own (<wbr>, a
+   zero-width space): each made the page measurably slower in WebKit than
+   3.9 (same-runner A/B, #99). */
 code {
   font-family: var(--mono);
-  font-size: 0.84em;
-  /* A long path or identifier breaks rather than running past the column. */
+  font-size: 0.89em;
   overflow-wrap: break-word;
-  background: var(--fill);
-  border-radius: 5px;
-  padding: 0.12em 0.36em;
+  background: var(--code-fill);
+  border-radius: 4px;
+  padding: 0.08em 0.24em;
   /* Broken across lines, each piece keeps its padding and rounded ends. */
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
 /* Before full-width punctuation, which brings its own space (enhance.js);
    a path link keeps its outline even. */
-code.before-punct:not(.path-link) { padding-right: 0.12em; }
+code.before-punct:not(.path-link) { padding-right: 0.08em; }
 code.path-link {
   cursor: pointer;
   color: var(--link);
@@ -380,6 +399,17 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: var(--flow); }
 }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):first-child { margin-top: 0; }
 :is(blockquote, .alert) > :is(.code-block, .table-wrap, blockquote, .alert, .math-block, .mermaid-block):last-child { margin-bottom: 0; }
+/* A paragraph ending with a colon (p.lead, ReadoutCore) leads into the list
+   right under it: they read as one unit, the list close under it rather than
+   a paragraph's gap away. At the top level (the list items are blocks of
+   their own: the paragraph's block ends with the shorter gap, and its change
+   bar and flash with it) and in an item, a quote, an alert or a disclosure. */
+#ro-doc > .chunk > .k-paragraph.lead-list { --flow: 0.4rem; }   /* patch.js marks it: chunks.js leadIns */
+/* In a block: the list's top margin, negative, collapses with the lead-in's
+   own (a paragraph's gap) to 0.4rem. Not :has(): a sibling selector in it is
+   matched again on every change to a parent's children in a large page. */
+p.lead + :is(ul, ol) { margin-top: calc(0.4rem - var(--flow)); }
+.li-block li > p.lead + :is(ul, ol) { margin-top: calc(0.4rem - 0.5em); }
 li { margin: 0.12em 0; }
 /* Each item is a block of its own: half the gap on each side of it. */
 #ro-doc > .chunk > .blk > .li-block > li { margin-top: 0.06em; }
@@ -449,7 +479,6 @@ blockquote > :last-child { margin-bottom: 0; }
   --surface: var(--fill);
 }
 .alert > :last-child { margin-bottom: 0; }
-.alert code { background: var(--fill-2); }
 .alert { --cb-bg: var(--fill-2); }
 .alert-title { font-weight: 650; color: var(--alert-c); margin: 0 0 0.25em; font-size: var(--fs-sm); }
 .alert-note { --alert-c: var(--note); }
@@ -478,8 +507,6 @@ th, td { padding: 0.45em 0.9em 0.45em 0; text-align: left; vertical-align: top; 
 th:last-child, td:last-child { padding-right: 0; }
 th { font-weight: 650; border-bottom-color: var(--text-3); white-space: nowrap; }
 td { font-variant-numeric: tabular-nums; }
-/* Code in a cell: a little larger than in body text (the cell's text is smaller). */
-td code, th code { font-size: 0.9em; }
 /* Short cells, identifiers and headers stay on one line while the table
    fits that way; when they would push it past the column, they wrap again
    (.nw-off, enhance.js) and it scrolls only if it is still too wide. */
@@ -852,6 +879,7 @@ details ul, details ol { padding-left: 1.5em; }
     --caution: #c9342b;
     --pop-bg: #ffffff;
     --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
+    --code-fill: rgb(29 29 31 / 3%);
     color-scheme: light;
   }
   :root[data-theme="dark"] .shiki span, :root:not([data-theme="light"]) .shiki span { color: var(--shiki-light); }

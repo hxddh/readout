@@ -21,7 +21,7 @@
 // On a mismatch: the changed blocks are listed, the actual image and a diff
 // image are written to test/out/corpus, and the run fails.
 //
-// Usage: node test/corpus.test.mjs [--update] [name-filter]
+// Usage: node test/corpus.test.mjs [--update] [--repeat=N] [name-filter[,name-filter...]]
 //   --update  rewrite baselines. Baselines must come from CI's WebKit (fonts
 //             differ between machines): use the corpus-actual artifact.
 import { webkit } from 'playwright';
@@ -33,7 +33,11 @@ import pixelmatch from 'pixelmatch';
 
 const args = process.argv.slice(2);
 const update = args.includes('--update');
-const filter = args.find(a => !a.startsWith('--')) || '';
+// --repeat=N: render each document N times; any render that differs from
+// the first (snapshot or pixels) fails as not deterministic.
+const repeat = Math.max(1, +(args.find(a => a.startsWith('--repeat='))?.slice(9) || 1));
+// Name filters, comma-separated: a document whose name has any of them.
+const filters = (args.find(a => !a.startsWith('--')) || '').split(',');
 
 const CORPUS = 'test/corpus';
 const SNAPS = `${CORPUS}/snapshots`;
@@ -59,7 +63,7 @@ const server = http.createServer((req, res) => {
 const base = `http://127.0.0.1:${server.address().port}`;
 
 const browser = await webkit.launch();
-const docs = readdirSync(`${CORPUS}/patches`).filter(f => f.endsWith('.json') && f.includes(filter)).sort();
+const docs = readdirSync(`${CORPUS}/patches`).filter(f => f.endsWith('.json') && filters.some(x => f.includes(x))).sort();
 let failures = 0;
 const summary = [];
 
@@ -93,7 +97,7 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
   }, debug);
   await page.goto(`${base}/reader.html`);
   await until(page, () => window.readout && window.__msgs.some(m => m.type === 'ready'), 30000);
-  await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', width: 'narrow', fontSize: 16 }), dark);
+  await page.evaluate(d => window.readout.setAppearance({ dark: d, accent: '#0a84ff', fontSize: 16 }), dark);
   await page.evaluate(p => window.readout.apply(p), patch);
   // Large documents use content-visibility, so chunks never scrolled near
   // keep estimated heights. Lay every chunk out as one near the screen is
@@ -147,6 +151,10 @@ async function render(patch, dark, debug = process.env.CORPUS_DEBUG === '1') {
       .slice(0, 5).map(e => `${e.className}${e.dataset.lang ? ` (${e.dataset.lang}: ${e.dataset.hl})` : ''}`));
     errors.push(`lazy rendering did not settle within 30 s: ${left.join('; ')}`);
   });
+  // A block whose highlighting gave up (data-hl="failed", enhance.js) would
+  // make the page differ between runs: an error, named.
+  const gaveUp = await page.evaluate(() => [...document.querySelectorAll('.code-block[data-hl="failed"]')].map(c => `${c.dataset.lang}: ${c.textContent.slice(0, 40)}`));
+  if (gaveUp.length) errors.push(`highlighting gave up on ${gaveUp.length} code block(s): ${gaveUp.slice(0, 3).join('; ')}`);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(200);
@@ -289,6 +297,16 @@ for (const file of docs) {
     const { snapshot, top, tiles, errors } = await render(patch, theme === 'dark');
     tiles.forEach((png, i) => writeFileSync(`${OUT}/full/${name}-${i + 1}.png`, png));
     const problems = [...errors];
+    for (let k = 2; k <= repeat; k++) {
+      const again = await render(patch, theme === 'dark');
+      const moved = again.snapshot.blocks.findIndex((b, i) => !snapshot.blocks[i] || b.style !== snapshot.blocks[i].style || b.h !== snapshot.blocks[i].h);
+      const a = PNG.sync.read(top), b = PNG.sync.read(again.top);
+      const px = a.width === b.width && a.height === b.height ? pixelmatch(a.data, b.data, null, a.width, a.height, { threshold: PIXEL_THRESHOLD }) : -1;
+      if (moved >= 0 || again.snapshot.blocks.length !== snapshot.blocks.length || px < 0 || px / (a.width * a.height) > MAX_DIFF_RATIO) {
+        problems.push(`render ${k} of ${repeat} differs from the first (${moved >= 0 ? `block #${moved} ${again.snapshot.blocks[moved]?.kind}` : 'top pixels'}${px > 0 ? `, ${px} px` : ''}): not deterministic`);
+        break;
+      }
+    }
     const s = compareSnapshot(name, snapshot);
     if (s) problems.push(s);
     const t = compareTop(name, top);
@@ -314,5 +332,5 @@ for (const file of docs) {
 await browser.close();
 server.close();
 if (summary.length) console.log(`changed: ${summary.join(', ')}\nActual baselines: ${OUT}/actual; diffs and full pages: ${OUT}.`);
-console.log(`${docs.length} documents x 2 themes, ${failures} failing`);
+console.log(`${docs.length} documents x 2 themes${repeat > 1 ? `, each rendered ${repeat} times` : ''}, ${failures} failing`);
 process.exit(failures ? 1 : 0);

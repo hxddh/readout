@@ -298,27 +298,23 @@ function setAppearance(o) {
     root.style.setProperty('--accent', o.accent);
     root.style.setProperty('--accent-soft', `color-mix(in srgb, ${o.accent} ${pageTheme() === 'dark' ? 18 : 12}%, transparent)`);
   }
-  // Width and type size reflow every block, the one being read included.
-  const width = o.width && o.width !== root.dataset.width;
-  const size = o.fontSize && root.style.getPropertyValue('--size') !== `${o.fontSize}px`;
-  if (width || size) {
+  // Type size reflows every block, the one being read included. (The
+  // column's width follows the window and the type size by itself: reader.css.)
+  if (o.fontSize && root.style.getPropertyValue('--size') !== `${o.fontSize}px`) {
     const anchor = captureAnchor(), bottom = atBottom();
     keepPlace(() => {
-      if (width) root.dataset.width = o.width;
-      if (size) root.style.setProperty('--size', `${o.fontSize}px`);
+      root.style.setProperty('--size', `${o.fontSize}px`);
       measureTables();   // the column decides which tables scroll
     }, { ratio: true, anchor, bottom });
     // Diagram text follows the reading size. A diagram in view is drawn
     // again a moment later at its new size: the reader keeps the same place
     // through that too, unless they have scrolled since.
-    if (size) {
-      const y = document.scrollingElement.scrollTop;
-      rerenderMermaid().then(() => {
-        if (document.scrollingElement.scrollTop !== y) return;
-        holdPlace(anchor, bottom, true);
-        rebaselineHeights();
-      });
-    }
+    const y = document.scrollingElement.scrollTop;
+    rerenderMermaid().then(() => {
+      if (document.scrollingElement.scrollTop !== y) return;
+      holdPlace(anchor, bottom, true);
+      rebaselineHeights();
+    });
   }
   if (o.strings) {
     mergeStrings(o.strings);

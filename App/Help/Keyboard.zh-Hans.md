@@ -37,7 +37,6 @@
 | <kbd>⌘F</kbd> | 查找 |
 | <kbd>⌘G</kbd> / <kbd>⇧⌘G</kbd> | 查找下一个 / 上一个 |
 | <kbd>⌘+</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | 放大 / 缩小 / 实际大小 |
-| <kbd>⌥⌘\</kbd> | 窄栏 / 宽栏 |
 | <kbd>⌃⌘S</kbd> | 显示 / 隐藏边栏 |
 | <kbd>⌃⌘F</kbd> | 全屏 |
 | <kbd>⌘,</kbd> | 设置 |

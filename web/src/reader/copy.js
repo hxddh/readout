@@ -516,6 +516,8 @@ export function htmlOf(range) {
   const math = within && within.closest('.math, .math-block, .math-display');
   if (math) box.replaceChildren(math.cloneNode(true));
   box.querySelectorAll('.wd-panel, .del-pop, .del-mark, button, .cb-tools').forEach(e => e.remove());
+  // Where a long URL may break (ReadoutCore's <wbr>) is the page's, not the text's.
+  box.querySelectorAll('wbr').forEach(e => e.remove());
   for (const m of box.querySelectorAll('.mermaid-block')) {
     const pre = document.createElement('pre');
     pre.appendChild(document.createElement('code')).textContent = m.querySelector('.mermaid-src')?.textContent ?? '';

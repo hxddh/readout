@@ -173,7 +173,7 @@ check("chrome: the subtitle names the folder only without a tab bar",
       chrome.get("subtitle") == ("" if chrome.get("tab_bar_visible") else chrome.get("folder")), live)
 tip, path = chrome.get("tab_tooltip") or "", chrome.get("path") or ""
 check("chrome: the tab tooltip is the file's path", bool(tip) and (tip == path or path.endswith(tip.lstrip("~"))), live)
-# The toolbar: sidebar, next change, find; no text-width item (View ▸ Wide Text stays).
+# The toolbar: sidebar, next change, find; no text-width item (the column sizes itself).
 check("chrome: no text-width toolbar item", "readout.width" not in (chrome.get("toolbar") or []), live)
 check("chrome: the next-change item and find field are in the toolbar",
       {"readout.nextChange", "readout.search"} <= set(chrome.get("toolbar") or []), live)

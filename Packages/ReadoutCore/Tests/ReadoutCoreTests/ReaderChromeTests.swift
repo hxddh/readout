@@ -102,9 +102,11 @@ import Testing
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         for name in ["Keyboard.md", "Keyboard.zh-Hans.md"] {
             let text = try String(contentsOf: root.appendingPathComponent("App/Help/\(name)"), encoding: .utf8)
-            for key in ["⌘E", "⇧⌘R", "⌥⌘C", "⌘P", "⌥⌘W", "⌘K", "⌥⌘\\"] {
+            for key in ["⌘E", "⇧⌘R", "⌥⌘C", "⌘P", "⌥⌘W", "⌘K"] {
                 #expect(text.contains(key), "\(name) lacks \(key)")
             }
+            // 4.0: no text-width key (View ▸ Wide Text is gone: the column sizes itself).
+            #expect(!text.contains("⌥⌘\\"), "\(name) still lists ⌥⌘\\")
         }
     }
 

@@ -98,9 +98,10 @@ function markCjkEmphasis(el) {
 // Table cells. A short cell (16 columns or fewer, a CJK character counting
 // two) and a short identifier in code (32 characters or fewer) stay on one
 // line while the column has room: "S1 / GREEN" or `actions/configure-pages`
-// broken in two read badly. A longer identifier may break after a slash.
-// Only while the table fits that way: one they would push past the column
-// wraps them again, and scrolls only if it is still too wide (measureTables).
+// broken in two read badly. A longer identifier may break after a separator
+// (ReadoutCore's <wbr>, as in any inline code). Only while the table fits
+// that way: one they would push past the column wraps them again, and
+// scrolls only if it is still too wide (measureTables).
 const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦\u{1f000}-\u{1faff}\u{20000}-\u{3fffd}]/u;
 function columns(s) {
   let n = 0;
@@ -108,29 +109,40 @@ function columns(s) {
   return n;
 }
 
+// Not so many that they starve a column of sentences: the columns' longest
+// kept lines together take at most NW_ROOM characters (a little over half
+// the column at the table's size, 35 em), else the column of the longest
+// identifiers breaks them after their separators. Counted, not measured:
+// no layout, and the same in any window.
+const NW_ROOM = 40;
 function setupTable(t) {
-  for (const c of t.querySelectorAll('td code, th code')) {
-    const s = c.textContent;
-    if (s.length <= 32) c.dataset.nw = '';
-    else if (s.includes('/')) breakAfterSlashes(c);
+  const kept = [];      // per column: its longest kept line, and its kept code
+  let prose = false;    // a cell of words wider than a kept one
+  for (const row of t.querySelectorAll('tr')) {
+    let i = 0;
+    for (const cell of row.children) {
+      const col = kept[i] ??= { most: 0, codes: [] };
+      i += cell.colSpan || 1;
+      const n = columns(cell.textContent.trim());
+      if (n && n <= 16 && !cell.querySelector('br')) { cell.dataset.nw = ''; col.most = Math.max(col.most, n); continue; }
+      let codes = 0;
+      for (const c of cell.querySelectorAll('code')) {
+        const len = c.textContent.length;
+        if (len > 32) continue;
+        c.dataset.nw = '';
+        col.codes.push(c);
+        col.most = Math.max(col.most, len);
+        codes += len;
+      }
+      if (n > codes + 16) prose = true;
+    }
   }
-  for (const cell of t.querySelectorAll('td, th')) {
-    const n = columns(cell.textContent.trim());
-    if (n && n <= 16 && !cell.querySelector('br')) cell.dataset.nw = '';
-  }
-}
-
-function breakAfterSlashes(el) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  const nodes = [];
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.data.includes('/')) nodes.push(n);
-  for (const n of nodes) {
-    const frag = document.createDocumentFragment();
-    n.data.split('/').forEach((part, i, all) => {
-      if (part) frag.append(part);
-      if (i < all.length - 1) frag.append('/', document.createElement('wbr'));
-    });
-    n.replaceWith(frag);
+  if (!prose) return;
+  let room = kept.reduce((s, c) => s + c.most, 0);
+  for (const col of kept.filter(c => c.codes.length).sort((a, b) => b.most - a.most)) {
+    if (room <= NW_ROOM) break;
+    for (const c of col.codes) delete c.dataset.nw;
+    room -= col.most;
   }
 }
 

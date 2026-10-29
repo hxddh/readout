@@ -1,7 +1,7 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, firstItem, nextItem, lastItem, prevItem } from './core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
-import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, roughRect, unstale, cvOn } from './chunks.js';
+import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, noteLead, leadIns, prevBlock, roughRect, unstale, cvOn } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
 import { enhance, renderLazy, forgetBlock, afterShown, askEarly } from './enhance.js';
@@ -54,8 +54,9 @@ function makeBlock(op) {
 const estimateOp = op => estimateHeight(op.kind, op.html);
 
 function fillBlock(el, op) {
-  // A flash running stays (apply restarts it under its other name).
-  const flash = ['flash', 'flash-alt'].filter(c => el.classList.contains(c));
+  // A flash running stays (apply restarts it under its other name), and a
+  // lead-in's shorter gap (decided again after the patch: chunks.js leadIns).
+  const flash = ['flash', 'flash-alt', 'lead-list'].filter(c => el.classList.contains(c));
   el.className = `blk k-${op.kind}${op.cjk ? ' cjk' : ''}`;   // drops marks and wd-has; renderMarks restores them
   if (flash.length) el.classList.add(...flash);
   if (op.anchor) el.dataset.anchor = op.anchor; else delete el.dataset.anchor;
@@ -182,7 +183,7 @@ export function apply(p) {
   for (const op of p.ops) {
     if (op.op === 'remove') {
       const el = slots.get(op.slot);
-      if (el) { headingsTouched ||= el.classList.contains('k-heading'); noteNext(nextItem(el)); resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); unplace(el); slots.delete(op.slot); }
+      if (el) { headingsTouched ||= el.classList.contains('k-heading'); noteNext(nextItem(el)); noteLead(prevBlock(el)); resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); unplace(el); slots.delete(op.slot); }
     } else if (op.op === 'replace') {
       const el = slots.get(op.slot);
       if (!el) continue;
@@ -198,6 +199,7 @@ export function apply(p) {
       const wasMarked = el.className.match(/m-(inserted|modified|state)/)?.[0];
       const wasRead = el.classList.contains('m-read');
       fillBlock(el, op);
+      noteLead(el); noteLead(prevBlock(el));
       if (op.change === 'content') forgetDiff(op.slot);
       // A silent re-render keeps the mark as it was, read or not.
       if (wasMarked && op.change === 'silent') { el.classList.add(wasMarked); if (wasRead) el.classList.add('m-read'); }
@@ -216,6 +218,8 @@ export function apply(p) {
       else if (op.after) placeLast(el, estimateOp(op));
       else placeItem(el, null, estimateOp(op));
       slots.set(op.slot, el);
+      if (!p.reset) { noteLead(el); noteLead(prevBlock(el)); }
+      else if (op.kind === 'paragraph' && op.html.startsWith('<p class="lead"')) noteLead(el);   // a lead-in: leadIns(true)
       resizeObserver.observe(el);
       if (!p.reset) { changed.add(op.slot); inserted.push(el); maybeVisible.push(el); }
     }
@@ -267,6 +271,7 @@ export function apply(p) {
   // (A heading's margin from its neighbour in the chunk first, then its flush start: each change counted once.)
   const nextOnes = settleNext();
   flushStarts();
+  leadIns(!!p.reset);
   for (const c of touched) if (c.isConnected) heights.set(c, firstLarge ? estimateOf(c) : c.getBoundingClientRect().height);
   touched.clear();
   // Not a block in a chunk skipped (WebKit would lay the chunk out to answer):

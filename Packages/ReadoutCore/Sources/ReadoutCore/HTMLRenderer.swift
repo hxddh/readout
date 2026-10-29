@@ -223,6 +223,15 @@ struct HTMLRenderer {
         return after == t.endIndex || t[after] == " " || t[after] == "\t"
     }
 
+    /// The paragraph ends with a colon (`:` or `：`, emphasis around it
+    /// allowed): it leads into what follows, and the page sets a list right
+    /// under it close to it, as one unit (`p.lead`).
+    static func isLeadIn(_ p: Paragraph) -> Bool {
+        guard let last = p.children.reversed().first(where: { !($0 is SoftBreak || $0 is LineBreak) }),
+              let c = edge(last, last: true) else { return false }
+        return c == 0x3A || c == 0xFF1A
+    }
+
     /// The paragraph holds one image and nothing else (a link around it allowed).
     static func isImageOnly(_ p: Paragraph) -> Bool {
         func content(_ m: Markup) -> [Markup] {
@@ -246,7 +255,8 @@ struct HTMLRenderer {
             if Self.isKeyValueLines(p) { r.softBreak = "<br>" }
             let body = r.inline(p)
             if tight { return body }
-            return Self.isImageOnly(p) ? "<p class=\"img-only\">\(body)</p>" : "<p>\(body)</p>"
+            if Self.isImageOnly(p) { return "<p class=\"img-only\">\(body)</p>" }
+            return Self.isLeadIn(p) ? "<p class=\"lead\">\(body)</p>" : "<p>\(body)</p>"
         case let h as Heading:
             return "<h\(h.level)>\(inline(h))</h\(h.level)>"
         case let q as BlockQuote:

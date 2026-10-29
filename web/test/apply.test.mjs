@@ -36,7 +36,7 @@ await page.addInitScript(() => {
 });
 await page.goto(`${base}/reader.html`);
 await page.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+await page.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
 
 let failures = 0;
 function check(name, cond, extra = '') {
@@ -386,7 +386,7 @@ check('an edited rail tick is as strong as an added one', tickOpacity.length ===
   await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; window.READOUT_CUT_FIRST_PART = true; });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const r = await p.evaluate(async () => {
     const block = (slot, after) => ({ op: 'insert', slot, after, kind: 'code',
       html: `<div class="code-block" data-lang="ruby"><pre><code># note\nx = [${Array.from({ length: 300 }, (_, k) => `a${k} + ${k} * c`).join(', ')}]\ny = "a #{1} b"\ndef f(y) = y * 2</code></pre></div>` });
@@ -915,7 +915,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   await p.evaluate(x => window.readout.apply(x), fixReset(300, i => i % 10 === 1 ? `<h2>Section ${i}</h2>` : code(i), i => i % 10 === 1 ? 'heading' : 'code'));
   await p.waitForTimeout(1500);
   const lit = await p.evaluate(() => [...document.querySelectorAll('.code-block')].filter(c => c.dataset.hl !== 'pending').map(c => +c.closest('.blk').dataset.slot));
@@ -934,7 +934,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   // The grammar loaded and compiled first, as a window's page has it: the
   // app names the document's fence languages while it parses (readout.prepare).
   await p.evaluate(() => window.readout.prepare(['ts']));
@@ -1067,7 +1067,7 @@ const toTop = (slot, at = 0) => page.evaluate(([slot, at]) => {
   });
   await p.goto(`${base}/reader.html`);
   await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
   const mm = v => `<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A[Stream ${v}] --> B[End]</pre></div>`;
   const drawnAs = v => p.evaluate(v => new Promise(res => { const t0 = performance.now(); const f = () => { const t = document.querySelector('.blk[data-slot="2"] .mermaid-svg')?.textContent || ''; if (t.includes(`Stream ${v}`)) res(true); else if (performance.now() - t0 > 5000) res(false); else setTimeout(f, 10); }; f(); }), v);
   await p.evaluate(x => window.readout.apply(x), fixReset(5, i => i === 2 ? mm(0) : `<p>para ${i}</p>`, i => i === 2 ? 'mermaid' : 'paragraph'));
@@ -1400,7 +1400,7 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   check('removing the top block keeps the reader at the next one', a.slot === 41 && Math.abs(a.offset) <= 2, JSON.stringify(a));
 }
 
-// Font size, column width and window size reflow every block: the reader keeps their place.
+// Font size and window size (which sizes the column) reflow every block: the reader keeps their place.
 {
   await page.evaluate(p => window.readout.apply(p), fixReset(100));
   await toTop(80);
@@ -1410,19 +1410,16 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   const sync = await page.evaluate(() => window.readout.captureAnchor());
   await page.waitForTimeout(500);
   const font = await page.evaluate(() => window.readout.captureAnchor());
-  await page.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
-  await page.waitForTimeout(500);
-  const wide = await page.evaluate(() => window.readout.captureAnchor());
   await page.setViewportSize({ width: 560, height: 700 });
   await page.waitForTimeout(600);
   const narrow = await page.evaluate(() => window.readout.captureAnchor());
   await page.setViewportSize({ width: 900, height: 700 });
   await page.waitForTimeout(600);
   const back = await page.evaluate(() => window.readout.captureAnchor());
-  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16, width: 'narrow' }));
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16 }));
   const restored = await page.evaluate(() => window.readout.captureAnchor());
-  const steps = [sync, font, wide, narrow, back, restored].map(a => a.slot);
-  check('font size, width and window resize keep the reading position',
+  const steps = [sync, font, narrow, back, restored].map(a => a.slot);
+  check('font size and window resize keep the reading position',
     a0.slot === 80 && steps.every(s => s === 80) && Math.abs(restored.offset) <= 3, JSON.stringify({ steps, offset: restored.offset }));
 }
 
@@ -1718,7 +1715,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   check('writing on into the last block keeps a following reader at the end', gaps.every(g => g <= 1), JSON.stringify(gaps));
 }
 
-// Font size, column width, find mode and window size reflow the page: a
+// Font size, find mode and window size reflow the page: a
 // reader following the end stays at the end, and goes on following.
 {
   await page.evaluate(p => window.readout.apply(p), fixReset(40));
@@ -1728,9 +1725,6 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.evaluate(() => window.readout.setAppearance({ fontSize: 19 }));
   await page.waitForTimeout(300);
   gaps.font = await gapToEnd();
-  await page.evaluate(() => window.readout.setAppearance({ width: 'wide' }));
-  await page.waitForTimeout(300);
-  gaps.width = await gapToEnd();
   await page.setViewportSize({ width: 640, height: 700 });
   await page.waitForTimeout(600);
   gaps.resize = await gapToEnd();
@@ -1739,10 +1733,10 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   await page.setViewportSize({ width: 900, height: 700 });
   await page.waitForTimeout(600);
   gaps.back = await gapToEnd();
-  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16, width: 'narrow' }));
+  await page.evaluate(() => window.readout.setAppearance({ fontSize: 16 }));
   await page.waitForTimeout(300);
   gaps.restored = await gapToEnd();
-  check('font size, width and window resize keep a following reader at the end',
+  check('font size and window resize keep a following reader at the end',
     Object.values(gaps).every(g => g <= 1), JSON.stringify(gaps));
 }
 
@@ -2030,7 +2024,7 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   });
   await short.goto(`${base}/reader.html`);
   await short.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16, topInset: 80 }));
+  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 80 }));
   await short.evaluate(p => window.readout.apply(p), { ...fixBase, version: 1, reset: true, ops: [] });
   const emptyTop = await short.evaluate(() => { window.scrollTo(0, 10000); return document.scrollingElement.scrollTop; });
   await short.waitForTimeout(200);
@@ -2202,7 +2196,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
     await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
     await p.goto(`${base}/reader.html`);
     await p.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-    await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', width: 'narrow', fontSize: 16 }));
+    await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
     await p.evaluate(x => window.readout.apply(x), { ...fixReset(1), ops: [...fixReset(1).ops, ...ops] });
     for (let i = 0; i < 300 && await p.evaluate(() => document.querySelectorAll('.mermaid-block.done').length < 2); i++) await p.waitForTimeout(50);
     const r = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.mermaid-block')].map(b => {
@@ -2217,6 +2211,73 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   check('two diagrams with the same classDef name keep their own colours; their sheets are named the same whichever is drawn first',
     one[950]?.fill === 'rgb(255, 0, 0)' && one[951]?.fill === 'rgb(0, 0, 255)' && two[950]?.fill === 'rgb(255, 0, 0)' && two[951]?.fill === 'rgb(0, 0, 255)'
     && one[950].sheet !== one[951].sheet && one[950].sheet === two[950].sheet && one[951].sheet === two[951].sheet, JSON.stringify({ one, two }));
+}
+
+// 4.0 (#99 smoke "refill"): a document reset and the reader's place put back
+// (scrollToAnchor, as the app does after a refill) with a table above it
+// whose short cells only fit the column wrapped (.nw-off, measured by
+// the page a frame later, 42 px taller then): the anchor stays within 1 px.
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 589 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, topInset: 52 }));
+  const cell = (s, i) => `<td>${s} ${i}</td>`;
+  const pool = ['S1 / GREEN', 'Medium risk', 'Owner team', 'Drop-in', 'Platform', 'Quarterly', 'Reviewed', 'Ready now', 'Pinned'];
+  const reset = (version, list) => ({ version, reset: true, rewrite: false, ops: list, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  // As many short cells as it takes for the table to fit only wrapped
+  // (nw-off): the column (and so the count) differs with the build.
+  let ops = [];
+  for (let n = 3; n <= pool.length; n++) {
+    const row = i => `<tr><td><code>actions/configure-pages-${i}</code></td>${pool.slice(0, n).map(cell).join('')}<td>Inputs changed between majors; check the changelog</td></tr>`;
+    const table = `<div class="table-wrap"><table><thead><tr><th>Action</th>${pool.slice(0, n).map((_, k) => `<th>K${k}</th>`).join('')}<th>Notes</th></tr></thead><tbody>${[1, 2, 3, 4].map(row).join('')}</tbody></table></div>`;
+    ops = [];
+    for (let i = 1; i <= 60; i++) ops.push({ op: 'insert', slot: 3000 + i, after: i === 1 ? 0 : 2999 + i, kind: i === 20 ? 'table' : 'paragraph', html: i === 20 ? table : `<p>Paragraph ${i} of a plan an agent wrote, long enough to wrap once or twice in the column of the reader.</p>` });
+    await p.evaluate(x => window.readout.apply(x), reset(1, ops));
+    await p.waitForTimeout(300);
+    if (await p.evaluate(() => document.querySelector('.table-wrap').classList.contains('nw-off'))) break;
+  }
+  await p.waitForTimeout(300);
+  const before = await p.evaluate(() => { const t = document.querySelector('.table-wrap'); return { nwOff: t.classList.contains('nw-off'), scrolls: t.classList.contains('scrolls') }; });
+  // The reader with slot 3025, five blocks under the table, at the top; the place as the app keeps it.
+  await p.evaluate(() => { const e = document.querySelector('.blk[data-slot="3025"]'); window.scrollBy(0, e.getBoundingClientRect().top - 52 + 21); });
+  await p.waitForTimeout(300);
+  const anchor = await p.evaluate(() => window.readout.captureAnchor());
+  // Refill: emptied, then written back; the app puts the place back right after the refill.
+  await p.evaluate(x => window.readout.apply(x), reset(2, []));
+  await p.waitForTimeout(200);
+  const t0 = await p.evaluate(() => performance.now());
+  const placed = await p.evaluate(([x, a]) => { window.readout.apply(x); window.readout.scrollToAnchor(a); const e = document.querySelector(`.blk[data-slot="${a.slot}"]`); return e.getBoundingClientRect().top; }, [reset(3, ops), anchor]);
+  await p.waitForTimeout(800);
+  const after = await p.evaluate(([t0, slot]) => ({ top: document.querySelector(`.blk[data-slot="${slot}"]`).getBoundingClientRect().top,
+    compensate: window.readout.trace().filter(e => e.type === 'compensate' && e.t >= t0).map(e => e.delta) }), [t0, anchor.slot]);
+  check('a reset and its place put back with a wrapping table above: the place holds (<= 1 px)',
+    before.nwOff && Math.abs(after.top - placed) <= 1, JSON.stringify({ before, placed, after }));
+  // WebKit's own scroll anchoring stays off: the page's compensation and it
+  // moved the place twice on macOS 26 (read from the source: this WebKit has
+  // no overflow-anchor and drops it from the CSSOM).
+  const css = readFileSync(new URL('../src/reader.css', import.meta.url), 'utf8');
+  check('the page turns off WebKit\'s scroll anchoring (it keeps the place itself)', /\nhtml, body \{ overflow-anchor: none; \}/.test(css));
+  await p.close();
+}
+
+// A table (raw HTML) whose first row spans two columns no other row fills,
+// and cells of words: the kept identifiers' columns have a hole there, and
+// the table is still made (enhance.js setupTable; Codex on #104).
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 589 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
+  const table = '<div class="table-wrap"><table><tbody><tr><td colspan="2">A long sentence of words that is no identifier at all, wider than any kept cell</td><td><code>actions/configure-pages</code></td></tr></tbody></table></div>';
+  const ops = [{ op: 'insert', slot: 1, after: 0, kind: 'table', html: table }, { op: 'insert', slot: 2, after: 1, kind: 'paragraph', html: '<p>After the table.</p>' }];
+  await p.evaluate(x => window.readout.apply(x), { version: 1, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
+  await p.waitForTimeout(200);
+  check('a table with a spanned column no row fills is made, and the blocks after it', await p.evaluate(() => !!document.querySelector('.blk[data-slot="2"]') && !!document.querySelector('.table-wrap code[data-nw]')));
+  await p.close();
 }
 
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
