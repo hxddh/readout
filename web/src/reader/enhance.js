@@ -113,7 +113,7 @@ function columns(s) {
 // Not so many that they starve a column of sentences: the columns' longest
 // kept lines together take at most NW_ROOM characters (a little over half
 // the column at the table's size, 42.5 em), else the column of the longest
-// identifiers breaks them after their slashes. Counted, not measured:
+// identifiers wraps them as any text. Counted, not measured:
 // no layout, and the same in any window.
 const NW_ROOM = 40;
 function setupTable(t) {
@@ -142,7 +142,7 @@ function setupTable(t) {
   let room = kept.reduce((s, c) => s + c.most, 0);
   for (const col of kept.filter(c => c.codes.length).sort((a, b) => b.most - a.most)) {
     if (room <= NW_ROOM) break;
-    for (const c of col.codes) { delete c.dataset.nw; breakAfterSlashes(c); }
+    for (const c of col.codes) delete c.dataset.nw;
     room -= col.most;
   }
 }
