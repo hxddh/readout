@@ -118,7 +118,6 @@ extension ReaderWindowController {
         layoutObservation = nil
         // Nothing to undo in a closed window; the actions hold the controller.
         undoStack.removeAllActions()
-        AppSettings.shared.showSidebar = !sidebarItem.isCollapsed
         onClose?(self)
     }
 
@@ -157,6 +156,39 @@ extension ReaderWindowController {
     }
 
     func windowDidEndLiveResize(_ notification: Notification) { saveFrame() }
+
+    func windowDidResize(_ notification: Notification) { fitSidebar() }
+
+    // MARK: Outline
+
+    /// Whether this window has room for the outline beside the page (its
+    /// content width, the outline's width, the reader's text size).
+    private func sidebarFits() -> Bool {
+        guard let window else { return false }
+        let width = window.contentRect(forFrameRect: window.frame).width
+        return ReaderLayout.sidebarFits(windowWidth: Double(width), sidebarWidth: Double(sidebarWidth),
+                                        fontSize: AppSettings.shared.fontSize, shown: !sidebarItem.isCollapsed)
+    }
+
+    /// Shows or hides the outline as the window's width (and the reader's
+    /// choice in it) calls for, without animating: the page lays out once
+    /// at its new width and keeps the reader's place (reader.js: resize).
+    func fitSidebar() {
+        guard sidebarItem != nil else { return }
+        if !sidebarItem.isCollapsed {
+            let w = sidebarItem.viewController.view.frame.width
+            if w > 0 { sidebarWidth = w }
+        }
+        let show = sidebarFit.shown(fits: sidebarFits())
+        if show == !sidebarItem.isCollapsed { return }
+        sidebarItem.isCollapsed = !show
+    }
+
+    /// Show/Hide Sidebar (the toolbar button, View ▸ Show Sidebar, ⌃⌘S): the
+    /// reader's choice for this window when it goes against its width.
+    func sidebarToggled(show: Bool) {
+        sidebarFit.toggled(to: show, fits: sidebarFits())
+    }
 
     static let frameName = "ReaderWindow"
 
@@ -240,5 +272,18 @@ final class UnreadDotView: NSView {
         let d = Self.diameter
         NSColor.controlAccentColor.setFill()
         NSBezierPath(ovalIn: NSRect(x: bounds.midX - d / 2, y: bounds.midY - d / 2, width: d, height: d)).fill()
+    }
+}
+
+/// The reader window's split view: tells the window when the reader shows or
+/// hides the outline (the toolbar button and View ▸ Show Sidebar both send
+/// toggleSidebar: here), so the choice holds against the window's width.
+final class ReaderSplitController: NSSplitViewController {
+    /// Called before the toggle, with whether it shows the outline.
+    var willToggleSidebar: ((Bool) -> Void)?
+
+    override func toggleSidebar(_ sender: Any?) {
+        if let item = splitViewItems.first(where: { $0.behavior == .sidebar }) { willToggleSidebar?(item.isCollapsed) }
+        super.toggleSidebar(sender)
     }
 }
