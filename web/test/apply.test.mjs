@@ -2009,14 +2009,16 @@ const toEnd = () => page.evaluate(() => window.scrollTo(0, document.scrollingEle
   });
   await short.goto(`${base}/reader.html`);
   await short.waitForFunction(() => window.readout && window.__msgs.some(m => m.type === 'ready'));
-  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16 }));
+  // (Large type: the empty page is taller than the window, and scrolls.)
+  await short.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 64 }));
   await short.evaluate(p => window.readout.apply(p), { ...fixBase, version: 1, reset: true, ops: [] });
   const emptyTop = await short.evaluate(() => { window.scrollTo(0, 10000); return document.scrollingElement.scrollTop; });
   await short.waitForTimeout(200);
   await short.evaluate(p => window.readout.apply(p), { ...fixBase, version: 2, reset: false, ops: fixReset(60).ops, marks: [] });
-  const first = await short.evaluate(() => Math.round(document.querySelector('.blk[data-slot="1"]').getBoundingClientRect().top));
+  const [first, y] = await short.evaluate(() => [Math.round(document.querySelector('.blk[data-slot="1"]').getBoundingClientRect().top), Math.round(document.scrollingElement.scrollTop)]);
   await short.close();
-  check('content arriving in an empty page shows from the top, not from its end', emptyTop > 0 && first >= 0 && first < 160, JSON.stringify({ emptyTop, first }));
+  // (Where the empty page was scrolled to, at most: the first block on screen.)
+  check('content arriving in an empty page shows from the top, not from its end', emptyTop > 0 && y <= emptyTop && first < 160, JSON.stringify({ emptyTop, first, y }));
 }
 
 // A file emptied and written again: scrolling the empty page in between
