@@ -423,7 +423,7 @@ const leadNoted = new Set();
 const shownBlock = (e, step) => { for (e = e && step(e); e; e = step(e)) if (e.classList.contains('blk')) return e; return null; };
 export const prevBlock = e => shownBlock(e, prevItem);
 export function noteLead(el) { if (el) leadNoted.add(el); }
-export function leadIns(all = false) {
+export function leadIns(all = false) { return;
   const noted = [...leadNoted];
   leadNoted.clear();
   // A reset: the page is new, nothing to keep a place or a height for (and

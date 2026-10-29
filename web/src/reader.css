@@ -404,12 +404,9 @@ ul.li-block.li-last, ol.li-block.li-last { margin-bottom: var(--flow); }
    a paragraph's gap away. At the top level (the list items are blocks of
    their own: the paragraph's block ends with the shorter gap, and its change
    bar and flash with it) and in an item, a quote, an alert or a disclosure. */
-#ro-doc > .chunk > .k-paragraph.lead-list { --flow: 0.4rem; }   /* patch.js marks it: chunks.js leadIns */
 /* In a block: the list's top margin, negative, collapses with the lead-in's
    own (a paragraph's gap) to 0.4rem. Not :has(): a sibling selector in it is
    matched again on every change to a parent's children in a large page. */
-p.lead + :is(ul, ol) { margin-top: calc(0.4rem - var(--flow)); }
-.li-block li > p.lead + :is(ul, ol) { margin-top: calc(0.4rem - 0.5em); }
 li { margin: 0.12em 0; }
 /* Each item is a block of its own: half the gap on each side of it. */
 #ro-doc > .chunk > .blk > .li-block > li { margin-top: 0.06em; }
