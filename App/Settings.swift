@@ -37,8 +37,6 @@ final class AppSettings: ObservableObject {
     @Published var codeWrap: Bool { didSet { d.set(codeWrap, forKey: "codeWrap") } }
     @Published var checkForUpdatesAutomatically: Bool { didSet { d.set(checkForUpdatesAutomatically, forKey: "checkForUpdatesAutomatically") } }
     @Published var lastUpdateCheck: Date? { didSet { d.set(lastUpdateCheck, forKey: "lastUpdateCheck") } }
-    /// The column's width in rem (reader.css --measure) at `textWidth`.
-    var measure: Double { textWidth == "wide" ? ReaderLayout.wideMeasure : ReaderLayout.standardMeasure }
     /// The chosen global shortcut could not be registered (another app holds it). Not stored.
     @Published var hotKeyInUse = false
 
