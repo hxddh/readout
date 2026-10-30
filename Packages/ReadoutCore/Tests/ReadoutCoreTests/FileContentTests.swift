@@ -37,6 +37,26 @@ import Testing
         #expect(d.text == "中")
     }
 
+    /// Only an incomplete UTF-8 sequence at the end is a cut: a Latin-1 or
+    /// Windows-1252 character before the last line break is another
+    /// encoding, and dropping bytes would lose text.
+    @Test func otherEncodingsAreNotATruncatedTail() {
+        for (bytes, start) in [(Data([0x63, 0x61, 0x66, 0xE9, 0x0A]), "caf"), (Data([0x35, 0x80, 0x0A]), "5")] {
+            let d = FileContent.decode(bytes)
+            #expect(!d.truncatedTail)
+            #expect(d.fallbackEncoding != nil)
+            #expect(d.text.hasPrefix(start) && d.text.hasSuffix("\n"))
+            #expect(d.text.components(separatedBy: "\n").count == 2)
+        }
+        // Ending in ASCII, or continuation bytes with no lead byte before them: no cut.
+        #expect(!FileContent.decode(Data([0xE9, 0x61])).truncatedTail)
+        let cut = FileContent.decode(Data("a中".utf8).prefix(3))
+        #expect(cut.truncatedTail && cut.text == "a")
+        let cut2 = FileContent.decode(Data("a 🚀".utf8).dropLast(1))
+        #expect(cut2.truncatedTail && cut2.text == "a ")
+        #expect(FileContent.incompleteTail(Data([0x61, 0x80, 0x80])) == 0)
+    }
+
     @Test func halfWriteVerdicts() {
         #expect(FileContent.verdict(newSize: 0, previousSize: 100, secondsSincePreviousWrite: 5, truncatedTail: false, retriesSoFar: 0) == .waitForMore)
         #expect(FileContent.verdict(newSize: 10, previousSize: 100, secondsSincePreviousWrite: 0.2, truncatedTail: false, retriesSoFar: 0) == .waitForMore)

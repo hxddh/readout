@@ -89,7 +89,7 @@ extension ReaderWindowController {
     }
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? {
-        loaded && session.blocks.isEmpty ? idleUndo : undoStack
+        loadState == .loaded && session.blocks.isEmpty ? idleUndo : undoStack
     }
 
     // MARK: Window
@@ -139,7 +139,7 @@ extension ReaderWindowController {
             noteLookedAt()   // looked at: the tab's dot stays only for unread changes
         }
         updateSubtitle()
-        if loaded { refreshRepository() }
+        if loadState == .loaded { refreshRepository() }
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
         sendWindowKey()
         // A key window in a tab group is its selected tab.
@@ -162,12 +162,13 @@ extension ReaderWindowController {
     // MARK: Outline
 
     /// Whether this window has room for the outline beside the page (its
-    /// content width, the outline's width, the reader's text size).
+    /// content width, the outline's width, the reader's text size and text width).
     private func sidebarFits() -> Bool {
         guard let window else { return false }
         let width = window.contentRect(forFrameRect: window.frame).width
         return ReaderLayout.sidebarFits(windowWidth: Double(width), sidebarWidth: Double(sidebarWidth),
-                                        fontSize: AppSettings.shared.fontSize, shown: !sidebarItem.isCollapsed)
+                                        fontSize: AppSettings.shared.fontSize, shown: !sidebarItem.isCollapsed,
+                                        measure: AppSettings.shared.measure)
     }
 
     /// Shows or hides the outline as the window's width (and the reader's

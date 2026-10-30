@@ -1,7 +1,7 @@
 // The page's side of syntax highlighting: Shiki runs in a worker
 // (hl-worker.js, highlighter.js), so no highlighting is ever a task on the
 // page's main thread. A code block asks for its HTML with a priority (on
-// screen, near, far: enhance.js), and gets it back when the worker has it;
+// screen, near, far: reader/code.js), and gets it back when the worker has it;
 // the worker loads and compiles the grammars too (warm, prepareLangs).
 //
 // Where a worker cannot run (it cannot be made, or fails to start), the page

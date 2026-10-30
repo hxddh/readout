@@ -14,7 +14,7 @@ extension ReaderWindowController {
         if target.scheme == ReadoutURL.scheme { return ReaderWebView.isReaderPage(target) ? .allow : .cancel }
         // A file dropped onto the window arrives as a navigation.
         if target.isFileURL { (NSApp.delegate as? AppDelegate)?.open(target) }
-        else if action.navigationType == .linkActivated { NSWorkspace.shared.open(target) }
+        else if action.navigationType == .linkActivated { openExternal(target) }
         return .cancel
     }
 
@@ -150,9 +150,17 @@ extension ReaderWindowController {
                                               },
                                               candidates: resolver.candidates(for:)) else { return }
         switch target {
-        case .external(let u), .file(let u):
-            // No app for it (a file name with a line that is not there, "main.swift:42"): say so.
-            if !NSWorkspace.shared.open(u) { NSSound.beep() }
+        case .external(let u): openExternal(u)
+        case .file(let u):
+            var dir: ObjCBool = false
+            let isDirectory = fm.fileExists(atPath: u.path, isDirectory: &dir) && dir.boolValue
+            if LinkTarget.runsWhenOpened(u, isDirectory: isDirectory, isExecutable: fm.isExecutableFile(atPath: u.path)) {
+                // An app, a script, an installer: shown in Finder, never run from a document.
+                NSWorkspace.shared.activateFileViewerSelecting([u])
+            } else if !NSWorkspace.shared.open(u) {
+                // No app for it (a file name with a line that is not there, "main.swift:42"): say so.
+                NSSound.beep()
+            }
         case .source(let u, let line, let column): EditorOpener.open(path: u.path, line: line, column: column)
         case .sameDocument(let fragment): scrollToAnchor(fragment: fragment)
         case .markdown(let u, let fragment): (NSApp.delegate as? AppDelegate)?.open(u, anchor: fragment, from: self)
@@ -162,8 +170,27 @@ extension ReaderWindowController {
         }
     }
 
+    /// A link out of the document: opened by the system when its scheme is
+    /// one that only shows something (the web, mail); any other (an app's own
+    /// URL scheme can act on what it is given) is refused, and said so.
+    private func openExternal(_ u: URL) {
+        guard LinkTarget.isSafeExternalScheme(u) else {
+            NSSound.beep()
+            showNotice(String(format: NSLocalizedString("Readout doesn't open %@ links.", comment: "Notice above the document after a link with a scheme Readout refuses; %@ is the scheme, like 'ssh:'"),
+                              (u.scheme ?? "") + ":"))
+            return
+        }
+        // No app for it (a file name with a line that is not there, "main.swift:42"): say so.
+        if !NSWorkspace.shared.open(u) { NSSound.beep() }
+    }
+
     /// Scrolls to the heading whose slug matches the fragment (GitHub-style).
+    /// Before the document is shown it waits: a fragment asked for then
+    /// (opened again at a section while loading) wins over the saved position.
     func scrollToAnchor(fragment: String) {
+        guard loadState == .loaded else { whenLoaded.anchor = fragment; return }
+        // Loaded, the page not ready (a new page, a renderer that crashed): after its apply.
+        guard webView.isReady else { return webView.whenReady { [weak self] in self?.scrollToAnchor(fragment: fragment) } }
         let slug = fragment.lowercased()
         if let block = session.blocks.first(where: {
             $0.kind == .heading && ($0.anchor == slug || $0.anchor?.lowercased() == slug)

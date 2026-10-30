@@ -164,4 +164,104 @@ import Testing
         #expect(!cuts.contains(6) && !cuts.contains(12) && !cuts.contains(18))
         #expect(cuts.contains(2) && cuts.contains(14) && cuts.contains(22))
     }
+
+    @Test func emptyListItemMatchesIncremental() {
+        expectIncrementalMatchesFull("-\r\n  ```\r\n\t]\r\n  ```\r\n```\r\n\r\n#")
+        expectIncrementalMatchesFull("1.\n   ```\n   code\n\n   more\n   ```\n\nafter\n")
+        expectIncrementalMatchesFull("2) d\n-\n[\n<e>\n```\n\nt")
+    }
+
+    @Test func setextDashUnderlineMatchesIncremental() {
+        expectIncrementalMatchesFull("x\n-\n<e>\n```\n\n```\n\nx")
+        expectIncrementalMatchesFull("Title\n--\n<span>x</span>\n```\n\nin code?\n```\n\nend\n")
+    }
+
+    @Test func multiLineDisplayMathMatchesIncremental() {
+        expectIncrementalMatchesFull("$$\n1. $$\n<n s=\"\">\n```\n\nh")
+        expectIncrementalMatchesFull("$$\nf(x) = x^2\n- 2x + 1\n$$\n<custom>\n```\nx\n\ny\n```\n")
+        expectIncrementalMatchesFull("Intro\n\n$$\nf(x) = x^2\n- 2x + 1\n$$\n\n```\ncode\n\n# not a heading\n```\n")
+    }
+
+    /// Found by `DifferentialFuzzTests`.
+    @Test func fuzzedCasesMatchIncremental() {
+        expectIncrementalMatchesFull("1. <t>\ne\n<n s=\"\">\n<script\n\nx")             // HTML right after a list marker
+        expectIncrementalMatchesFull("[^n]\n[^n]:\n#\n-\t\n<g c=\"\">\n$$ $$")          // empty item with a tab
+        expectIncrementalMatchesFull("-\n\t```\n\n\ne")                                   // tab-indented fence in an item
+        expectIncrementalMatchesFull("```\r\n```\r\n1.     ,\r\n<t>\r\n,\r\n```<details\r\n```\r\n\r\nd")   // `1.     code`
+        expectIncrementalMatchesFull("<details\n\n#")                                        // `<details` at the end of a line
+        expectIncrementalMatchesFull("[^n]\n[^n]:\n#\n-\t1\n<g c=\"\">\n$$ $$")          // a tab after the marker
+        expectIncrementalMatchesFull("-\t\tcode\n<g c=\"\">\n$x$\n\nend")                 // a tab after the marker, then code
+        expectIncrementalMatchesFull("> 1.     code\n> <g c=\"\">\n> $x$\n\nend")             // `1.     code` in a quote
+        expectIncrementalMatchesFull("1. ---\nd\n<e>\n<!X\n\na")                           // an item holding a break
+        expectIncrementalMatchesFull("- # Title\nd\n<e>\n<!X\n\na")                        // an item holding a heading
+        expectIncrementalMatchesFull(" #\n\nn")                                             // an empty heading after a space
+        expectIncrementalMatchesFull("- -\n>\n  ~~~\nd\n[^n]:\n#")                          // `>` alone ends the item
+        expectIncrementalMatchesFull("d\n>     d\ne\n<r>\n```\n\ne")                        // indented code in a new quote
+        expectIncrementalMatchesFull("- 1.\nd\n  ```\n]\n\nn")                              // an empty item in an item
+        expectIncrementalMatchesFull(">-\nd\n<r>\n```\n\ne")                                // an empty item in a quote
+        expectIncrementalMatchesFull(">#\n.\n<e>\n```\n\n#")                                // a heading in a quote
+        expectIncrementalMatchesFull(">d\n>-\nd\n<e>\n```\n\n#")                           // a setext underline in a quote
+        expectIncrementalMatchesFull("[^n]:\n<r>\n<!X\n\n#\n<e>\n[^n]:")                     // a footnote definition, then raw HTML
+        expectIncrementalMatchesFull("[^n]:\n<m>\n<!--\n\ne\n<?\n-->\n[^n]:")
+        expectIncrementalMatchesFull("1.\r\n    1. <v>\r\n#######\r\n<i>\r\nd\r\n<!A\r\n\r\n#")    // a nested item indented 4
+        // A line left of a nested item's content may still be in the outer item.
+        expectIncrementalMatchesFull("-\n  -\n  ```\n```\n\n#")
+        expectIncrementalMatchesFull("- Step one\n  - detail\n  ```bash\n  make $X\n\n  # not a heading\n  ```\n- Step two\n")
+        // A block quote right after a list marker.
+        expectIncrementalMatchesFull("1. >```\nx\n<t>\n```\n\n\u{8667}")
+        expectIncrementalMatchesFull("1. >\n\u{FF1A}\n<m>\n<!E\n\n#")
+        // Raw HTML in a block quote ends with the quote.
+        expectIncrementalMatchesFull("[^n]\n[^n]:\n#\n><!A\n>$]")
+        expectIncrementalMatchesFull("><!A\nD\n<t>\n```\n\ne")
+        expectIncrementalMatchesFull("[^n]\n[^n]:\na\n><p\n\t$$ $$")
+        expectIncrementalMatchesFull("> <details>\n> <summary>More</summary>\n>\n> Price $x$ inside.\n>\n> </details>\n\nAfter $y$.\n")
+    }
+
+    /// Found by the test above: a fence left open to the end holds the
+    /// blank lines after its last line, and its cached HTML (keyed by its
+    /// source, which stops at the last non-blank line) was that of the same
+    /// code with more or fewer of them.
+    @Test func openFenceAtTheEndRendersAsTheFullParse() {
+        let a = "Intro.\n\n```\ncode\n- item\n\n", b = "Intro.\n\n```\ncode\n- item", c = a + "\n"
+        for (x, y) in [(a, b), (b, a), (a, c), (c, a)] {
+            let p = IncrementalParser(), cache = MarkdownParser.RenderCache()
+            cache.beginGeneration(); _ = p.parse(x, cache: cache)
+            cache.beginGeneration()
+            #expect(p.parse(y, cache: cache).blocks == MarkdownParser.parse(y).blocks, "\(y.debugDescription)")
+        }
+    }
+
+    /// Also found by the long fuzz runs (grown palette): the fragmenter read
+    /// HTML starts and ends by Character, so `>` followed by a variation
+    /// selector was no `>` to it (cmark-gfm reads bytes) and an HTML block
+    /// ended, or started, elsewhere than in the full parse.
+    @Test func variationSelectorAfterAnHTMLTagMatchesTheFullParse() {
+        for t in ["<details>\u{FE0F}\n\n#", "<script>\u{FE0F}\n\ne", "<!E\n>\u{FE0F}\n~~~\n>\n\n#",
+                  "<pre>\u{FE0F}\n[^n]:\nx", "<pre>\nx</pre>\u{FE0F}\n\nAfter.", "<!-- c -->\u{FE0F}\n\nAfter."] {
+            #expect(IncrementalParser().parse(t).blocks == MarkdownParser.parse(t).blocks, "\(t.debugDescription)")
+        }
+    }
+
+    /// cmark-gfm takes `- <NBSP>` for a list item (only space and tab are
+    /// white space there); the fragmenter took it for a paragraph, so an HTML
+    /// block opened in it ended elsewhere and text the full parse keeps in
+    /// an open comment showed.
+    @Test func nbspItemThenHTMLMatchesTheFullParse() {
+        let text = "- \u{00A0}\n  <tr\n<!--\n\nText after.\n"
+        let inc = IncrementalParser().parse(text), full = MarkdownParser.parse(text)
+        #expect(inc.blocks == full.blocks)   // 3.7: incremental ends the comment at line 3, full at 5
+        for t in ["- \u{00A0}\n  <div>\n\nAfter.", "- \u{3000}\n  ```\n\nx\n", "1. \u{00A0}x\n2. y\n\nz"] {
+            #expect(IncrementalParser().parse(t).blocks == MarkdownParser.parse(t).blocks, "\(t)")
+        }
+    }
+
+    /// Under a list item's paragraph, a lazy `=` is text to cmark-gfm, so
+    /// the item stays open and the fence below opens in it (the seed-938
+    /// family): the fragmenter closed the item and cut where cmark had code.
+    @Test func lazyEqualsIsNoUnderline() {
+        for t in ["- a\n=\nk\n  ```\n```\n\ne\n", "- [ ] t\n  =\n\n  =\n==\nlazy\n  ```\n```\n\nafter\n"] {
+            let inc = IncrementalParser().parse(t), full = MarkdownParser.parse(t)
+            #expect(inc.blocks == full.blocks && inc.title == full.title, "\(t.debugDescription)")
+        }
+    }
 }

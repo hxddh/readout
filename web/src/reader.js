@@ -2,17 +2,18 @@
 // stable, shows unread changes, and renders code, math and diagrams lazily
 // (web/src/reader/, a module each). This module: links, keys, copy, the native API.
 import * as hl from './highlight.js';
-import { doc, root, slots, post, smooth, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
+import { doc, root, slots, post, smooth, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings } from './reader/core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, atBottom, atEnd, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld, pulse } from './reader/marks.js';
 import { chunksHeld } from './reader/chunks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelButtons, setCodeWrap, highlightAll, measureTables, lazyHeld } from './reader/enhance.js';
+import { relabelButtons, setCodeWrap, measureTables, lazyHeld } from './reader/enhance.js';
+import { highlightAll } from './reader/code.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
-import { markdownOf, htmlOf, inDocument, sources, definitionsUsed, partIn } from './reader/copy.js';
+import { markdownOf, htmlOf, inDocument, blocksIn, sources, definitionsUsed, partIn } from './reader/copy.js';
 import { find, findEnd } from './reader/find.js';
 
 // ---------------------------------------------------------------- Links & keys
@@ -83,7 +84,14 @@ document.addEventListener('dragstart', ev => {
 let hadSelection = 'false/false';
 const textSelected = () => {
   const sel = getSelection();
-  return !!sel && !sel.isCollapsed && sel.rangeCount > 0 && doc.contains(sel.anchorNode) && sel.toString().trim() !== '';
+  if (!sel || sel.isCollapsed || !sel.rangeCount || !doc.contains(sel.anchorNode)) return false;
+  // Asked on every selectionchange: a drag across a large document would
+  // copy all of it to a string each time. Text at either end decides at once.
+  const r = sel.getRangeAt(0), a = r.startContainer, b = r.endContainer;
+  if (a.nodeType === Node.TEXT_NODE && /\S/.test(a.data.slice(r.startOffset, a === b ? r.endOffset : undefined))) return true;
+  if (a === b && a.nodeType === Node.TEXT_NODE) return false;
+  if (b.nodeType === Node.TEXT_NODE && /\S/.test(b.data.slice(0, r.endOffset))) return true;
+  return sel.toString().trim() !== '';
 };
 const focusedBlock = () => {
   const a = document.activeElement;
@@ -114,15 +122,9 @@ function selectedSlots() {
   if (!textSelected()) { const b = focusedBlock(); return b ? [+b.dataset.slot] : []; }
   const out = [];
   for (let i = 0; i < sel.rangeCount; i++) {
-    const r = sel.getRangeAt(i);
-    const touched = [];
-    let seen = false;
-    for (let e = firstItem(); e; e = nextItem(e)) {
-      if (!e.classList.contains('blk')) continue;
-      if (!r.intersectsNode(e)) { if (seen) break; continue; }
-      seen = true;
-      touched.push(e);
-    }
+    const r = inDocument(sel.getRangeAt(i));
+    if (!r) continue;
+    const touched = blocksIn(r);
     const hasText = e => partIn(r, e).toString().trim() !== '';
     while (touched.length && !hasText(touched[0])) touched.shift();
     while (touched.length && !hasText(touched[touched.length - 1])) touched.pop();
@@ -287,7 +289,7 @@ function setAppearance(o) {
     root.style.setProperty('--accent-soft', `color-mix(in srgb, ${o.accent} ${pageTheme() === 'dark' ? 18 : 12}%, transparent)`);
   }
   // Type size reflows every block, the one being read included. (The
-  // column's width follows the window and the type size by itself: reader.css.)
+  // column's width follows the type size by itself: reader.css.)
   if (o.fontSize && root.style.getPropertyValue('--fs') !== String(o.fontSize)) {
     const anchor = captureAnchor(), bottom = atBottom();
     keepPlace(() => {
@@ -303,6 +305,14 @@ function setAppearance(o) {
       holdPlace(anchor, bottom, true);
       rebaselineHeights();
     });
+  }
+  // The column's width (View ▸ Text Width) reflows every block too.
+  const width = o.textWidth === 'wide' ? 'wide' : o.textWidth ? 'standard' : null;
+  if (width && (root.dataset.width || 'standard') !== width) {
+    keepPlace(() => {
+      if (width === 'wide') root.dataset.width = 'wide'; else delete root.dataset.width;
+      measureTables();
+    }, { ratio: true });
   }
   if (o.strings) {
     mergeStrings(o.strings);
@@ -432,14 +442,14 @@ window.addEventListener('beforeprint', () => {
   clearTimeout(printFallback);
   setPrintDiagrams(true);
   highlightAll();
-  rebaselineHeights();
-  if (printAnchor) restoreAnchor(printAnchor, new Set());
+  if (printAnchor) keepPlace(() => {}, { anchor: printAnchor, bottom: false });
+  else rebaselineHeights();
 });
 window.addEventListener('afterprint', () => {
   printOpened.forEach(d => { d.open = false; });
   printOpened = [];
   setPrintDiagrams(false);   // redrawn in the page's theme, in place (from the cache)
-  rebaselineHeights();
-  if (printAnchor) restoreAnchor(printAnchor, new Set());
+  if (printAnchor) keepPlace(() => {}, { anchor: printAnchor, bottom: false });
+  else rebaselineHeights();
   printAnchor = null;
 });

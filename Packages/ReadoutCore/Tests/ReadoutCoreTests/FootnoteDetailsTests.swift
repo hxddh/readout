@@ -112,6 +112,18 @@ import Testing
         let doc = MarkdownParser.parse("First[^a].\n\nLater[^b].\n\n[^a]: A\n[^b]: B\n", cache: cache)
         #expect(doc.blocks[1].html.contains(">2</a>"))
     }
+
+    func html(_ md: String) -> String { MarkdownParser.parse(md).blocks.map(\.html).joined(separator: "\n") }
+
+    @Test func tightListInFootnoteStaysTight() {
+        let h = html("See the note[^a].\n\n[^a]: Note with a list:\n    - one\n    - two\n")
+        #expect(h.contains("<li>one</li>"), "\(h)")
+    }
+
+    @Test func looseListInFootnoteStaysLooseWhateverPrecedesIt() {
+        let h = html("Intro line one\nline two\nline three\nSee the note[^a].\n\n[^a]: Note with a list:\n\n    - one\n\n    - two\n")
+        #expect(h.contains("<li><p>one</p></li>"), "\(h)")
+    }
 }
 
 @Suite struct DetailsTests {

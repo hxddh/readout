@@ -1,9 +1,12 @@
 // Math with KaTeX, loaded on first use.
-import { shown } from './enhance.js';
+import { shown } from './holds.js';
 
-const mathCache = new Map();      // tex+display -> html
+const mathCache = new Map();      // tex+display -> html, least recently used first
+// Enough for every formula of a long document; an agent rewriting formulas
+// all day does not grow it without end.
+const MATH_CACHE_MAX = 2000;
 
-/** Math waiting for KaTeX to load (a first paint showing it waits too: enhance.js). */
+/** Math waiting for KaTeX to load (a first paint showing it waits too: holds.js). */
 export const typesetting = new Set();
 
 let katexPromise = null;
@@ -43,8 +46,10 @@ function typeset(katex, nodes) {
     if (html === undefined) {
       try { html = katex.renderToString(tex, { displayMode: display, throwOnError: false, output: 'htmlAndMathml', strict: 'ignore' }); }
       catch { html = null; }
-      mathCache.set(key, html);
+      if (mathCache.size >= MATH_CACHE_MAX) mathCache.delete(mathCache.keys().next().value);
     }
+    else mathCache.delete(key);
+    mathCache.set(key, html);
     if (html) { n.innerHTML = html; n.classList.add('done'); }
     shown(n);
   }

@@ -1,7 +1,7 @@
 // Find in page (find.js): the app's find field searches the page's text, in
 // a large document without laying out the blocks off screen.
 // Usage: BROWSER=webkit node test/find.test.mjs  (requires web/build.mjs to have run)
-import { chromium, webkit, firefox } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -17,11 +17,7 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 
-const engines = { webkit, chromium, firefox };
-const engineName = (process.env.BROWSER || 'webkit').toLowerCase();
-console.log(`engine: ${engineName}`);
-const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : {};
-const browser = await engines[engineName].launch(launchOpts);
+const browser = await launchBrowser();
 const errors = [];
 let failures = 0;
 function check(name, cond, extra = '') {

@@ -14,8 +14,10 @@ good measure, but Linux is the gate.
 `web/test/apply.test.mjs` drives `reader.html` through insert order, anchor
 stability, follow semantics, and fragment scroll.
 It runs in **WebKit — the engine that ships in WKWebView** — via Playwright.
-`BROWSER` selects the engine (`webkit` default, `chromium`/`firefox`
-available for debugging engine-specific behavior).
+`BROWSER` selects the engine for every suite (`webkit` default,
+`chromium`/`firefox` available for debugging engine-specific behavior;
+`web/test/engine.mjs`), and `CHROME_PATH` launches a browser binary of your
+own instead of Playwright's (for a machine without Playwright's WebKit).
 
 ```sh
 cd web && npm ci && npm run build

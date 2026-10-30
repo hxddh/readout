@@ -174,6 +174,32 @@ import Testing
         #expect(s.next("RO Doc") == "h-ro-doc-1")
     }
 
+    /// The escape applies to the anchor given, after de-duplication too, and
+    /// to mmd-* (diagram drawings' ids) as to ro-*.
+    @Test func reservedNamespaceEscapesAfterDeduplication() {
+        var s = Slugger()
+        #expect(s.next("ro") == "ro")
+        #expect(s.next("ro") == "h-ro-1")
+        #expect(s.next("RO") == "h-ro-2")
+        #expect(s.next("MMD 1") == "h-mmd-1")
+        #expect(s.next("mmd") == "mmd")
+        #expect(s.next("mmd") == "h-mmd-2")   // h-mmd-1 is taken
+        let doc = parse("## ro\n\n## ro\n\n## MMD 1\n")
+        #expect(doc.blocks.map { $0.anchor } == ["ro", "h-ro-1", "h-mmd-1"])
+    }
+
+    /// Raw HTML cannot name an element into the page's own namespaces, nor
+    /// slip an event handler in after a `/`.
+    @Test func sanitizeEscapesReservedIDsAndSlashedHandlers() {
+        #expect(HTML.sanitize("<div id=\"ro-doc\">x</div>") == "<div id=\"h-ro-doc\">x</div>")
+        #expect(HTML.sanitize("<a NAME='RO-rail'></a>") == "<a NAME='h-RO-rail'></a>")
+        #expect(HTML.sanitize("<span id=mmd-3></span><b id = \"ro-mmd-1\"></b>") == "<span id=h-mmd-3></span><b id = \"h-ro-mmd-1\"></b>")
+        #expect(HTML.sanitize("<p data-id=\"ro-x\" id=\"road\">") == "<p data-id=\"ro-x\" id=\"road\">")
+        #expect(HTML.sanitize("<img/src=\"a.png\"/onerror=alert(1)>") == "<img/src=\"a.png\">")
+        #expect(!HTML.sanitize("<img/onerror=alert(1)>").lowercased().contains("onerror"))
+        #expect(!HTML.sanitize("<div ONCLICK=\"x()\">").lowercased().contains("onclick"))
+    }
+
     @Test func explicitSlugCollisionStaysUnique() {
         let doc = parse("## Notes\n\n## Notes-1\n\n## Notes\n")
         let anchors = doc.blocks.map { $0.anchor }
@@ -328,6 +354,36 @@ import Testing
         #expect(ImageSize.parse(png)! == (640, 480))
         let gif: [UInt8] = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x20, 0x00, 0x10, 0x00] + [UInt8](repeating: 0, count: 20)
         #expect(ImageSize.parse(gif)! == (32, 16))
+    }
+
+    @Test func frontMatterWithTrailingSpaceOnFence() {
+        let doc = MarkdownParser.parse("--- \ntitle: Plan\n---\t\n\nBody\n")
+        #expect(doc.blocks.first?.kind == .frontMatter)
+        #expect(doc.blocks.first?.html.contains("Plan") == true)
+        #expect(doc.blocks.count == 2)
+        expectIncrementalMatchesFull("--- \ntitle: Plan\n---\n\nBody\n\nMore\n")
+    }
+
+    @Test func frontMatterBlockScalarsAndLists() {
+        let doc = MarkdownParser.parse("---\nname: reviewer\ndescription: >\n  Reviews pull requests\n  for style.\ntools:\n  - Read\n  - Grep\nnotes: |\n  line one\n  line two\n---\n\nBody\n")
+        let h = doc.blocks.first?.html ?? ""
+        #expect(h.contains("Reviews pull requests for style."), "\(h)")
+        #expect(!h.contains("&gt;<"), "\(h)")
+        #expect(h.contains("Read, Grep"), "\(h)")
+        #expect(h.contains("line one<br>line two"), "\(h)")
+    }
+
+    // 3.8 T4: each value is an element of its own, so the reader's key/value
+    // grid keeps a value with line breaks (a literal block with a blank line)
+    // in its column.
+    @Test func frontMatterValuesAreElements() {
+        let md = "---\ntitle: Plan\ndescription: |\n  line one\n\n  after a blank line\nstatus: draft\n---\n\nBody\n"
+        let h = MarkdownParser.parse(md).blocks.first?.html ?? ""
+        #expect(h.contains("<span class=\"fm-key\">title</span> <span class=\"fm-val\">Plan</span>"), "\(h)")
+        #expect(h.contains("<span class=\"fm-val\">line one<br>"), "\(h)")
+        #expect(h.contains("after a blank line</span></span>"), "\(h)")
+        #expect(h.components(separatedBy: "class=\"fm-val\"").count == 4, "\(h)")
+        expectIncrementalMatchesFull(md + "\nMore\n")
     }
 }
 

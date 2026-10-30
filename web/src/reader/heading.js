@@ -1,5 +1,5 @@
 // Reports the heading at the top of the viewport so the native TOC can follow.
-import { doc, slots, post, onKeptScroll } from './core.js';
+import { doc, slots, post, onKeptScroll, precedes } from './core.js';
 import { roughRect } from './chunks.js';
 
 let lastActive = null;
@@ -16,7 +16,23 @@ export function pinActiveHeading(slot) {
   report(slot);
 }
 
-export function headingsChanged() { headings = null; }
+export function headingsChanged() { headings = null; every = null; }
+
+let every = null;   // every heading block, in document order; reset with `headings`
+/** The heading block `el` is under (itself, when it is one); null before the first. */
+export function headingAtOrBefore(el, again = true) {
+  if (!every) every = Array.from(doc.querySelectorAll('#ro-doc > .chunk > .k-heading'));
+  // A binary search on document order: an edit far down a long document
+  // does not walk back block by block to its section's heading.
+  let lo = 0, hi = every.length - 1, found = null;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (every[mid] === el || precedes(every[mid], el)) { found = every[mid]; lo = mid + 1; } else hi = mid - 1;
+  }
+  // Asked in the middle of a patch (a heading removed or added since): the list again.
+  if (again && found && !found.isConnected) { every = null; return headingAtOrBefore(el, false); }
+  return found;
+}
 
 // The heading a context menu opens on, for its Copy Link to Section (the
 // app adds the item; WebKit gives the menu no way to ask). Told for every
@@ -36,7 +52,8 @@ export function reportActiveHeading() {
     if (slots.get(pin.slot)?.classList.contains('k-heading') && Math.abs(document.scrollingElement.scrollTop - pin.y) <= 2) return report(pin.slot);
     pin = null;
   }
-  if (!headings) headings = Array.from(doc.querySelectorAll('.k-heading'));
+  // The outline's levels only (Model.tocMaxLevel): past an h5 the section is still its h4's.
+  if (!headings) headings = Array.from(doc.querySelectorAll('.k-heading:has(> :is(h1, h2, h3, h4))'));
   // Headings are in document order, so their tops increase: binary search
   // for the last one at or above the line (nothing hides a heading).
   // (Jumps land a heading 16 px from the top.)

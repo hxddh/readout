@@ -143,3 +143,13 @@ public enum OpenLink {
                        root: root?.hasPrefix("/") == true ? root : nil)
     }
 }
+
+extension OpenLink {
+    /// `readout-open://open?path=…`: opens `path` in Readout (the About
+    /// panel's Acknowledgements link). Every character that is not unreserved
+    /// is percent-encoded, so "&" or "=" in a path stay in the value.
+    public static func url(path: String) -> URL? {
+        let value = path.addingPercentEncoding(withAllowedCharacters: EditorURL.queryValueAllowed) ?? path
+        return URL(string: "\(scheme)://open?path=\(value)")
+    }
+}

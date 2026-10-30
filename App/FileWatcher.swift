@@ -101,7 +101,13 @@ final class FileWatcher {
     private let onChange: (Change) -> Void
     /// The opened path (a symlink) now resolves to another file (its real path). On the main queue.
     private let onRetarget: (String) -> Void
-    private var stopped = false
+    /// Set on `queue`, read there and on the main queue: under a lock.
+    private let stoppedLock = NSLock()
+    private var _stopped = false
+    private var stopped: Bool {
+        get { stoppedLock.withLock { _stopped } }
+        set { stoppedLock.withLock { _stopped = newValue } }
+    }
 
     // Debounce: the first event after a quiet spell is reported at once; a
     // burst after it waits for 80 ms without events, but never more than

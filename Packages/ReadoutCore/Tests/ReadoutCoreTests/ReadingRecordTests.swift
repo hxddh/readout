@@ -2,13 +2,13 @@ import Foundation
 import Testing
 @testable import ReadoutCore
 
-/// 4.0 reads only the reading state 3.6 and later write. A record in an older
-/// format is no reading state at all: the file opens as if it were new, and
-/// nothing of the old record (its marks, its position) is applied.
-@Suite struct Legacy40Tests {
+/// The saved reading state (`ReadingRecord`): only what 3.6 and later write is read;
+/// an older record is no reading state at all, and the file opens as if it were new.
+@Suite struct ReadingRecordTests {
     func doc(_ s: String) -> ParsedDocument { MarkdownParser.parse(s) }
 
     let v1 = "# Plan\n\n1. First step of the plan.\n2. Second step of the plan.\n\nClosing words.\n"
+
     let v2 = "# Plan\n\n1. First step of the plan, revised.\n2. Second step of the plan.\n"
 
     func record(_ baseline: [BlockKey], index: Int?, excerpt: String?, at savedAt: Date) throws -> Data {

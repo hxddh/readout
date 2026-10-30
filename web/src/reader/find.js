@@ -11,7 +11,7 @@
 import { doc, slots, post, firstItem, nextItem, isChunk, precedes } from './core.js';
 import { aimAt, pinLanding, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
-import { whenColoured } from './enhance.js';
+import { whenColoured } from './holds.js';
 import { cv } from './chunks.js';
 
 // Not the document's text: controls, the MathML copy of a formula (its
@@ -372,7 +372,7 @@ function land(waited = false) {
   const m = matches[cur];
   const el = m.el;
   // Its code highlighted before the match is selected in it (highlighting
-  // replaces the text nodes): it waits for that (enhance.js), a moment. And
+  // replaces the text nodes): it waits for that (holds.js), a moment. And
   // a folded <details> it is in opened.
   colouring?.();
   colouring = landing = null;

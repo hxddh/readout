@@ -17,15 +17,30 @@ public enum MarkdownParser {
         return assemble([(offset: 0, fragment: parseFragment(lines, atDocumentStart: true, resolver: resolver, cache: cache))])
     }
 
-    /// Normalized source lines: no BOM, LF line endings.
+    /// Normalized source lines: no BOM, LF line endings, no reserved characters.
     static func sourceLines(_ rawSource: String) -> [String] {
         var source = rawSource
         if source.utf8.starts(with: [0xEF, 0xBB, 0xBF]) { source.removeFirst() }
         if FastBytes.contains(source, 0x0D) {
             source = source.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         }
+        source = replacingReserved(source)
         // Split on bytes: Character iteration is several times slower.
         return FastBytes.lines(source)
+    }
+
+    /// The private-use characters the parser stands in for text with,
+    /// U+E000–U+E004 (`MathProtector`'s tokens and filler, `Footnotes`'
+    /// placeholders), as U+FFFD: text in the source can never pose as one.
+    /// Every source line goes through here (`sourceLines`, and the window
+    /// `IncrementalParser.splice` splits); both are 3 bytes in UTF-8, so byte
+    /// offsets into the source still hold. (`CJKEmphasis`' markers are kept:
+    /// a block holding one is decided as written.)
+    static func replacingReserved(_ s: String) -> String {
+        guard FastBytes.contains(s, 0xEE, 0x80) else { return s }
+        var out = String.UnicodeScalarView()
+        for u in s.unicodeScalars { out.append(u.value >= 0xE000 && u.value <= 0xE004 ? "\u{FFFD}" : u) }
+        return String(out)
     }
 
     /// Adds document-wide context to fragments' blocks, in order: absolute

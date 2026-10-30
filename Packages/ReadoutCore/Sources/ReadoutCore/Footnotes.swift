@@ -138,6 +138,12 @@ enum Footnotes {
             while let o = rest.firstIndex(of: Footnotes.open), let c = rest[o...].firstIndex(of: Footnotes.close) {
                 out += rest[..<o]
                 let id = String(rest[rest.index(after: o)..<c])   // already escaped
+                // Only `placeholder` makes one (the source holds none: `MarkdownParser.replacingReserved`).
+                guard !id.isEmpty, !id.utf8.contains(where: { $0 == 0x22 || $0 == 0x27 || $0 == 0x3C || $0 == 0x3E }) else {
+                    out += "\u{FFFD}"
+                    rest = rest[rest.index(after: o)...]
+                    continue
+                }
                 let n: Int
                 if let known = number[id] { n = known } else { order.append(id); n = order.count; number[id] = n }
                 let k = (uses[id] ?? 0) + 1

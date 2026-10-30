@@ -143,4 +143,54 @@ import Testing
         #expect(fires.count >= 4)
         for (a, b) in zip(fires, fires.dropFirst()) { #expect(b - a <= 0.4 + 0.02 + 1e-9) }
     }
+
+    @Test func tabTitlesNameTheFileOnlyWhenTitlesRepeatInTheGroup() {
+        // Two documents titled "Plan" in one tab group: the file names tell
+        // them apart, first (3.8, U5: a narrow tab truncates the end, so the
+        // 3.7 order "Plan — fix.md" showed the same "Plan —…" on every tab).
+        #expect(ReaderChrome.tabTitles(titles: ["Plan", "plan", "Notes"], paths: ["/w/a/fix.md", "/w/b/refactor.md", "/w/notes.md"])
+                == ["fix.md — Plan", "refactor.md — plan", "Notes"])
+        // Same title and same file name (every agent's plan.md): the folder.
+        #expect(ReaderChrome.tabTitles(titles: ["Plan", "Plan"], paths: ["/w/app/plan.md", "/w/web/plan.md"])
+                == ["app — Plan", "web — Plan"])
+        // Folders that collide too: as much of the path as Open Recent shows.
+        #expect(ReaderChrome.tabTitles(titles: ["Plan", "Plan", "Plan"],
+                                       paths: ["/x/app/plans/plan.md", "/y/app/plans/plan.md", "/x/notes.md"])
+                == ["x/app/plans — Plan", "y/app/plans — Plan", "notes.md — Plan"])
+        // Distinct titles stay as they are, and a group of one is untouched.
+        #expect(ReaderChrome.tabTitles(titles: ["A", "B"], paths: ["/a.md", "/b.md"]) == ["A", "B"])
+        #expect(ReaderChrome.tabTitles(titles: ["Plan"], paths: ["/w/plan.md"]) == ["Plan"])
+        #expect(ReaderChrome.tabTitles(titles: [], paths: []) == [])
+    }
+
+    @Test func theEditorLineFollowsHowFarTheViewIsIntoTheTopBlock() {
+        // A 100-line code block scrolled 40 % under the toolbar opens at line 50 of 10…110.
+        #expect(ReaderChrome.editorLine(lines: 10...110, ratio: 0.4) == 50)
+        #expect(ReaderChrome.editorLine(lines: 10...110, ratio: 0) == 10)
+        #expect(ReaderChrome.editorLine(lines: 10...110, ratio: nil) == 10)
+        #expect(ReaderChrome.editorLine(lines: 10...110, ratio: -0.2) == 10)
+        #expect(ReaderChrome.editorLine(lines: 10...110, ratio: 1.7) == 110)
+        #expect(ReaderChrome.editorLine(lines: 10...110, ratio: .nan) == 10)
+        #expect(ReaderChrome.editorLine(lines: 7...7, ratio: 0.9) == 7)
+    }
+
+    @Test func aPlanOutsideItsProjectNamesIt() {
+        #expect(ReaderChrome.projectName(path: "/Users/me/.claude/plans/p.md", projectRoot: "/w/readout") == "readout")
+        // Inside its project, or without one: nothing changes.
+        #expect(ReaderChrome.projectName(path: "/w/readout/docs/p.md", projectRoot: "/w/readout") == nil)
+        #expect(ReaderChrome.projectName(path: "/w/readout/docs/p.md", projectRoot: "/w/readout/") == nil)
+        #expect(ReaderChrome.projectName(path: "/w/p.md", projectRoot: nil) == nil)
+        #expect(ReaderChrome.subtitle(status: nil, tasks: TaskStats(done: 3, total: 7), path: "/p/p.md", showsTabBar: true, project: "readout")
+                == .projectTasks(project: "readout", done: 3, total: 7))
+        #expect(ReaderChrome.subtitle(status: nil, tasks: TaskStats(), path: "/p/p.md", showsTabBar: true, project: "readout") == .folder("readout"))
+        #expect(ReaderChrome.subtitle(status: "The file was deleted.", tasks: TaskStats(), path: "/p/p.md", showsTabBar: true, project: "readout")
+                == .status("The file was deleted."))
+    }
+
+    @Test func theFolderListIsAsTallAsItsRows() {
+        #expect(ReaderChrome.folderListRows(0) == 2)
+        #expect(ReaderChrome.folderListRows(1) == 2)
+        #expect(ReaderChrome.folderListRows(4) == 4)
+        #expect(ReaderChrome.folderListRows(40) == 6)
+    }
 }

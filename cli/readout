@@ -69,6 +69,21 @@ newest_markdown() {
   done
 }
 
+# Hook JSON read as text, for what plutil does not read: JSON with a null in
+# it (Claude Code's "originalFile": null) is no property list. A key in quotes
+# followed by a colon is a key: in a string every quote is escaped.
+M=$(printf '\001')   # never in JSON: control characters in strings are escaped
+# What follows the first `"KEY": OPEN` ($2, a regex: \{, ", …); nothing without one.
+json_after() {
+  tr '\n\r' '  ' | LC_ALL=C sed -E -n "s/\"$1\"[[:space:]]*:[[:space:]]*$2/$M/; s/^[^$M]*$M//p"
+}
+# The string the input starts in (its opening quote taken by json_after), with
+# \" \\ and \/ decoded; nothing for one with any other escape (\n, \u…), which
+# would be decoded wrong.
+json_value() {
+  LC_ALL=C sed -E -n 's/^(([^"\\]|\\.)*)".*/\1/p' | LC_ALL=C sed -E -n '\,^([^\\]|\\["\\/])*$,!d; s,\\(["\\/]),\1,g; p'
+}
+
 # CFBundleShortVersionString of the Readout.app this script is in (through a
 # symlink such as ~/.local/bin/readout), else of the installed one.
 version() {
@@ -110,6 +125,11 @@ case "$1" in
     # Cursor names its workspace folders instead, the first one first.
     root=$(printf '%s' "$input" | /usr/bin/plutil -extract cwd raw -o - - 2>/dev/null) ||
       root=$(printf '%s' "$input" | /usr/bin/plutil -extract workspace_roots.0 raw -o - - 2>/dev/null)
+    # Not read by plutil (a null in the JSON, or no plutil): the same keys as text.
+    [ -n "$path" ] || path=$(printf '%s' "$input" | json_after tool_input '\{' | json_after file_path '"' | json_value)
+    [ -n "$path" ] || path=$(printf '%s' "$input" | json_after file_path '"' | json_value)
+    [ -n "$root" ] || root=$(printf '%s' "$input" | json_after cwd '"' | json_value)
+    [ -n "$root" ] || root=$(printf '%s' "$input" | json_after workspace_roots '\[[[:space:]]*"' | json_value)
     [ -n "$path" ] && is_markdown "$path" && [ -f "$path" ] && exec "$OPEN" -g -b "$APP_ID" "$(background_url "$path" "$root")"
     exit 0 ;;
   -b|--background)

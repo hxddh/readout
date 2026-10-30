@@ -2,7 +2,7 @@
 // document (first change, "nothing" from N), the notice the app shows, and
 // reading while focus is in the window's outline or find field.
 // Usage: BROWSER=webkit node test/flow.test.mjs  (requires web/build.mjs to have run)
-import { chromium, webkit, firefox } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -17,12 +17,7 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 
-const engines = { webkit, chromium, firefox };
-const engineName = (process.env.BROWSER || 'webkit').toLowerCase();
-if (!engines[engineName]) { console.error(`Unknown BROWSER=${process.env.BROWSER}`); process.exit(2); }
-console.log(`engine: ${engineName}`);
-const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : {};
-const browser = await engines[engineName].launch(launchOpts);
+const browser = await launchBrowser();
 
 let failures = 0;
 function check(name, cond, extra = '') {

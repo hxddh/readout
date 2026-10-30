@@ -27,7 +27,7 @@
 // Partial and cross-block selections are tried on every STRIDE-th block
 // (default 3, bounded for CI); COPY_STRIDE=1 tries every block.
 // Usage: node test/copy.test.mjs [--quick]
-import { webkit } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { execFileSync, execFile } from 'node:child_process';
@@ -84,7 +84,7 @@ function normalise(md) {
 }
 const nonBlank = ls => ls.filter(l => l.trim() !== '');
 
-const browser = await webkit.launch();
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
 const errors = [];
 collectPageErrors(page, errors);
@@ -343,7 +343,7 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
   if (!got.table.html.includes('<table') || /data-slot|tabindex|<button|class=/.test(got.table.html)) fail(`copy-cases: table rich text: ${got.table.html.slice(0, 200)}`);
   // Front matter's rich text is a table of keys and values, not spans that run together ("title Copy casesstatus draft").
   if (!got.all.html.includes('<table><tbody><tr><td>title</td><td>Copy cases</td></tr><tr><td>status</td><td>draft</td></tr>') || /title Copy casesstatus/.test(got.all.html.replace(/<[^>]+>/g, ''))) fail(`copy-cases: front matter rich text: ${got.all.html.slice(0, 300)}`);
-  // A value with line breaks (a literal block: the parser's <br>, ParserFixes36Tests) keeps them in its cell.
+  // A value with line breaks (a literal block: the parser's <br>, ParserTests) keeps them in its cell.
   {
     const html = await page.evaluate(() => {
       const fm = document.querySelector('#ro-doc .front-matter'), val = fm.querySelector('.fm-val'), was = val.innerHTML;

@@ -15,7 +15,7 @@
 // writes on screen.
 // Usage: node test/chunks.test.mjs  (requires web/build.mjs to have run;
 // SEEDS=1,21 runs only those; READOUT_WEB_BUILD serves another build)
-import { webkit } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -30,7 +30,7 @@ const server = http.createServer((req, res) => {
   res.end(readFileSync(p));
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
-const browser = await webkit.launch();
+const browser = await launchBrowser();
 const errors = [];
 let failures = 0;
 const check = (name, ok, detail = '') => { if (ok) console.log(`ok: ${name}`); else { failures++; console.log(`FAIL: ${name} ${detail}`); } };

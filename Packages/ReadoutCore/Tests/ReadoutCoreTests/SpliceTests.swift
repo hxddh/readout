@@ -482,8 +482,8 @@ import Testing
         // A relaunch from either baseline marks the same.
         let last = MarkdownParser.parse(versions.last!)
         let r1 = DocumentSession(), r2 = DocumentSession()
-        let pa = r1.load(last, baseline: SessionFixes37Tests.roundTrip(hinted.baseline))
-        let pb = r2.load(last, baseline: SessionFixes37Tests.roundTrip(plain.baseline))
+        let pa = r1.load(last, baseline: DocumentSessionTests.roundTrip(hinted.baseline))
+        let pb = r2.load(last, baseline: DocumentSessionTests.roundTrip(plain.baseline))
         #expect(try! Self.encoder.encode(pa) == (try! Self.encoder.encode(pb)))
         #expect(shared > 0 || versions.count < 4)
     }
@@ -515,5 +515,29 @@ import Testing
             versions.append(paragraphs.joined(separator: "\n\n"))
         }
         sessionsAgree(versions, seed: seed)
+    }
+
+    /// The splice keeps the raw source of the blocks it keeps: before the
+    /// change, and after it when they move by the lines added.
+    @Test func theSpliceCarriesTheRawSource() throws {
+        var paragraphs = (0..<60).map { "Paragraph \($0) of the plan with some words in it." }
+        paragraphs[40] = "Hard break here,  \nthen the next line."
+        let text = paragraphs.joined(separator: "\n\n") + "\n"
+        let p = IncrementalParser()
+        _ = p.parse(text)
+        // Two lines added before it: it is kept, moved down.
+        var edited = paragraphs
+        edited[20] = "Paragraph 20 grew\nby a line\nand another."
+        let next = edited.joined(separator: "\n\n") + "\n"
+        let doc = p.parse(next)
+        #expect(p.lastSpliced)
+        #expect(doc.blocks == MarkdownParser.parse(next).blocks)
+        let hard = try #require(doc.blocks.first { $0.source.hasPrefix("Hard break") })
+        #expect(hard.copySource == "Hard break here,  \nthen the next line.")
+        // An append after it: kept as it was.
+        let appended = next + "\nOne more paragraph.\n"
+        let doc2 = p.parse(appended)
+        #expect(p.lastSpliced)
+        #expect(doc2.blocks.first { $0.source.hasPrefix("Hard break") }?.copySource == hard.copySource)
     }
 }

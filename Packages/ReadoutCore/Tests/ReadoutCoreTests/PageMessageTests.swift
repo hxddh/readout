@@ -37,6 +37,41 @@ import Testing
         #expect(PageMessage(["type": "copyLink", "anchor": "plan"]) == nil)
         #expect(PageMessage(["type": "loadRemote", "url": "https://x/a.png"]) == nil)
     }
+
+    @Test func thePageSaysWhenToShowWhatItAdded() {
+        #expect(PageMessage(["type": "showUnread"]) == .showUnread)
+        // N with nothing unread left says so (on to the next document); D's "nothing" is a beep.
+        #expect(PageMessage(["type": "nothing", "jump": NSNumber(value: true)]) == .noUnread)
+        #expect(PageMessage(["type": "nothing", "jump": true]) == .noUnread)
+        #expect(PageMessage(["type": "nothing"]) == .nothing)
+        #expect(PageMessage(["type": "selection", "has": NSNumber(value: true)]) == .selection(has: true))
+        #expect(PageMessage(["type": "selection", "has": false]) == .selection(has: false))
+        #expect(PageMessage(["type": "selection"]) == nil)
+    }
+
+    /// Text selected and a focused block are told apart: the context menu
+    /// offers Copy as Quote for a text selection only (a right click elsewhere
+    /// leaves the focus on the block N went to), the Edit menu for either.
+    @Test func theSelectionMessageTellsTextFromAFocusedBlock() {
+        #expect(PageMessage(["type": "selection", "has": false, "focused": true]) == .selection(has: false, focused: true))
+        #expect(PageMessage(["type": "selection", "has": NSNumber(value: true), "focused": NSNumber(value: false)]) == .selection(has: true, focused: false))
+        #expect(PageMessage(["type": "selection", "has": true]) == .selection(has: true, focused: false))
+    }
+
+    @Test func aLandingOnAChangeDecodes() {
+        #expect(PageMessage(["type": "landed", "index": NSNumber(value: 2), "total": NSNumber(value: 5), "kind": "railEdited"])
+                == .landed(index: 2, total: 5, kind: "railEdited"))
+        #expect(PageMessage(["type": "landed", "index": NSNumber(value: 6), "total": NSNumber(value: 5), "kind": "railEdited"]) == nil)
+        #expect(PageMessage(["type": "landed", "index": NSNumber(value: 0), "total": NSNumber(value: 5), "kind": "railAdded"]) == nil)
+        #expect(PageMessage(["type": "landed", "index": NSNumber(value: 1), "total": NSNumber(value: 1)]) == nil)
+    }
+
+    @Test func aFindCountDecodes() {
+        #expect(PageMessage(["type": "found", "current": NSNumber(value: 3), "total": NSNumber(value: 12)]) == .found(current: 3, total: 12))
+        #expect(PageMessage(["type": "found", "current": NSNumber(value: 0), "total": NSNumber(value: 0)]) == .found(current: 0, total: 0))
+        #expect(PageMessage(["type": "found", "current": NSNumber(value: 4), "total": NSNumber(value: 3)]) == nil)
+        #expect(PageMessage(["type": "found", "total": NSNumber(value: 3)]) == nil)
+    }
 }
 
 @Suite struct LinkTargetTests {
@@ -114,5 +149,44 @@ import Testing
         #expect(resolve("src:4", existing: [], folders: ["/work/plans/src"]) == .file(URL(fileURLWithPath: "/work/plans/src")))
         #expect(resolve("other.md:12", existing: ["/work/plans/other.md"]) == .markdown(URL(fileURLWithPath: "/work/plans/other.md"), fragment: nil))
         #expect(resolve("other.md#L12", existing: []) == .markdown(URL(fileURLWithPath: "/work/plans/other.md"), fragment: "L12"))
+    }
+}
+
+/// 4.1: what the app asks about before it opens a link.
+@Suite struct LinkSafetyTests {
+    func runs(_ path: String, folder: Bool = false, executable: Bool = false) -> Bool {
+        LinkTarget.runsWhenOpened(URL(fileURLWithPath: path), isDirectory: folder, isExecutable: executable)
+    }
+
+    @Test func bundlesScriptsAndInstallersRunWhenOpened() {
+        for app in ["/A/Tool.app", "/A/Run.workflow", "/A/X.prefPane", "/A/S.saver", "/A/K.kext", "/A/E.appex", "/A/H.XPC"] {
+            #expect(runs(app, folder: true), "\(app)")
+        }
+        for file in ["run.command", "x.tool", "a.terminal", "go.sh", "b.zsh", "c.bash", "d.csh", "e.fish", "f.py", "g.rb",
+                     "h.pl", "i.scpt", "j.applescript", "k.jsa", "setup.pkg", "s.mpkg", "disk.dmg", "app.jar",
+                     "site.webloc", "s.inetloc", "f.fileloc", "link.URL"] {
+            #expect(runs("/work/" + file), "\(file)")
+        }
+    }
+
+    @Test func documentsAndFoldersDoNot() {
+        #expect(!runs("/work/src", folder: true))
+        #expect(!runs("/work/Notes.d", folder: true))
+        for file in ["shot.png", "spec.pdf", "data.csv", "readme", "main.swift", "Makefile"] { #expect(!runs("/work/" + file), "\(file)") }
+        // The executable bit: on a document it means nothing, anything else may run.
+        #expect(!runs("/work/shot.png", executable: true))
+        #expect(!runs("/work/notes.txt", executable: true))
+        #expect(runs("/work/build", executable: true))
+        #expect(runs("/work/run.swift", executable: true))
+    }
+
+    @Test func onlyWebAndMailSchemesAreSafe() {
+        for u in ["https://example.com", "HTTP://example.com/a", "mailto:a@b.c"] {
+            #expect(LinkTarget.isSafeExternalScheme(URL(string: u)!), "\(u)")
+        }
+        for u in ["tel:5551234", "ssh://host", "smb://nas/share", "x-apple.systempreferences:com.apple", "vscode://file/x",
+                  "file:///etc/passwd", "ftp://example.com/x"] {
+            #expect(!LinkTarget.isSafeExternalScheme(URL(string: u)!), "\(u)")
+        }
     }
 }

@@ -15,6 +15,10 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
 
     private static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "tif", "tiff", "heic", "avif", "ico"]
 
+    /// Tasks started and not stopped yet: a file read off the main thread is
+    /// delivered only to a task still here (WebKit throws on a stopped one).
+    private var running: Set<ObjectIdentifier> = []
+
     func webView(_ webView: WKWebView, start task: WKURLSchemeTask) {
         guard let url = task.request.url else { return fail(task, 400) }
         let fileURL: URL
@@ -22,10 +26,12 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
         case "app":
             let rel = url.path.hasPrefix("/") ? String(url.path.dropFirst()) : url.path
             let candidate = webRoot.appendingPathComponent(rel).standardizedFileURL
-            guard candidate.path.hasPrefix(webRoot.standardizedFileURL.path) else { return fail(task, 403) }
+            // With the slash: not a sibling folder whose name starts with "Web".
+            guard candidate.path.hasPrefix(webRoot.standardizedFileURL.path + "/") else { return fail(task, 403) }
             fileURL = candidate
         case "file":
-            let path = url.path.removingPercentEncoding ?? url.path
+            // Already decoded: a second decoding would read "%41" in a file name as "A".
+            let path = url.path
             guard Self.imageExtensions.contains((path as NSString).pathExtension.lowercased()) else { return fail(task, 403) }
             fileURL = URL(fileURLWithPath: path)
         case "remote":
@@ -44,7 +50,25 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
         default:
             return fail(task, 404)
         }
-        guard let data = try? Data(contentsOf: fileURL) else { return fail(task, 404) }
+        // The app's own files are small and on the app's disk: served at once.
+        // A document's image is read off the main thread (a large image, a
+        // slow or network volume), and delivered on it.
+        if url.host == "app" { return deliver(Self.regularFileContents(fileURL), from: fileURL, to: task) }
+        let id = ObjectIdentifier(task)
+        running.insert(id)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let data = Self.regularFileContents(fileURL)
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard let self, self.running.remove(id) != nil else { return }
+                    self.deliver(data, from: fileURL, to: task)
+                }
+            }
+        }
+    }
+
+    private func deliver(_ data: Data?, from fileURL: URL, to task: WKURLSchemeTask) {
+        guard let data, let url = task.request.url else { return fail(task, 404) }
         var headers = [
             "Content-Type": Self.mimeType(fileURL.pathExtension),
             "Content-Length": String(data.count),
@@ -61,7 +85,16 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
         task.didFinish()
     }
 
-    func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
+    func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) { running.remove(ObjectIdentifier(task)) }
+
+    /// The bytes of a regular file, through symlinks; nil for anything else
+    /// (a folder, a device, a FIFO a read would wait on forever).
+    nonisolated private static func regularFileContents(_ url: URL) -> Data? {
+        let real = url.resolvingSymlinksInPath()
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: real.path),
+              attributes[.type] as? FileAttributeType == .typeRegular else { return nil }
+        return try? Data(contentsOf: real)
+    }
 
     /// The highlighting worker's Content-Security-Policy (web/test/privacy.test.mjs serves the same).
     static let workerPolicy = "default-src 'none'; script-src 'self'"
@@ -336,7 +369,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
 
     func setAppearance(dark: Bool? = nil, accent: NSColor? = nil, fontSize: Double? = nil,
                        strings: [String: String]? = nil, codeWrap: Bool? = nil,
-                       mode: String? = nil) {
+                       mode: String? = nil, textWidth: String? = nil) {
         var o: [String: Any] = [:]
         if let dark { o["dark"] = dark }
         if let accent { o["accent"] = accent.hexString }
@@ -344,6 +377,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         if let strings { o["strings"] = strings }
         if let codeWrap { o["codeWrap"] = codeWrap }
         if let mode { o["mode"] = mode }
+        if let textWidth { o["textWidth"] = textWidth }
         guard let data = try? JSONSerialization.data(withJSONObject: o), let json = String(data: data, encoding: .utf8) else { return }
         call("setAppearance", json: json)
     }

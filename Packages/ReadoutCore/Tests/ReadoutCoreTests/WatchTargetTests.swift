@@ -344,5 +344,50 @@ private struct Scratch {
         #expect(out.split(separator: " ").last.flatMap { URL(string: String($0)) }.flatMap(OpenLink.parse)
                 == .init(path: s.real + "/plan.md", background: true, root: s.real + "/ws"))
     }
+
+    /// JSON with a null in it is no property list to plutil (Claude Code's
+    /// `"originalFile": null`): the keys are then read as text, a long
+    /// document in the payload, a key named in its text and escaped slashes included.
+    @Test func theHookReadsPayloadsWithNulls() throws {
+        let s = try Scratch()
+        s.write("plan.md")
+        try FileManager.default.createDirectory(atPath: s.real + "/my app", withIntermediateDirectories: true)
+        let long = String(repeating: #"Some text, \"file_path\": \"/elsewhere.md\"\n"#, count: 5_000)
+        let escaped = s.real.replacingOccurrences(of: "/", with: #"\/"#)
+        func request(_ stdin: String) throws -> OpenLink.Request? {
+            try runScript(["--hook"], cwd: "/", stdin: stdin).split(separator: " ").last.flatMap { URL(string: String($0)) }.flatMap(OpenLink.parse)
+        }
+        let claude = #"{"session_id":"s","cwd":"\#(s.real)/my app","tool_name":"Write","tool_input":{"file_path":"\#(escaped)\/plan.md","content":"\#(long)"},"tool_response":{"type":"create","filePath":"\#(s.real)/plan.md","originalFile":null,"structuredPatch":[]}}"#
+        #expect(try request(claude) == .init(path: s.real + "/plan.md", background: true, root: s.real + "/my app"))
+        let cursor = """
+            {
+              "conversation_id": null,
+              "file_path": "\(s.real)/plan.md",
+              "edits": [ { "old_string": null, "new_string": "\(long)" } ],
+              "workspace_roots": [ "\(s.real)/my app" ]
+            }
+            """
+        #expect(try request(cursor) == .init(path: s.real + "/plan.md", background: true, root: s.real + "/my app"))
+        // A path with an escape the script does not decode opens nothing rather than a wrong file.
+        #expect(try runScript(["--hook"], cwd: "/", stdin: #"{"tool_input":{"file_path":"\#(s.real)/plan.md"},"x":null}"#).isEmpty)
+    }
     #endif
+
+    @Test func theOpenLinkCarriesTheProjectRoot() {
+        let u = URL(string: "readout-open://open?background=1&path=%2Fh%2F.claude%2Fplans%2Fp.md&root=%2Fwork%2Fmy%20app")!
+        #expect(OpenLink.parse(u) == .init(path: "/h/.claude/plans/p.md", background: true, root: "/work/my app"))
+        // Without one, as before 3.6.
+        #expect(OpenLink.parse(URL(string: "readout-open://open?background=1&path=%2Fa.md")!)?.root == nil)
+        // A relative or empty root is no root.
+        #expect(OpenLink.parse(URL(string: "readout-open://open?path=%2Fa.md&root=work")!)?.root == nil)
+        #expect(OpenLink.parse(URL(string: "readout-open://open?path=%2Fa.md&root=")!)?.root == nil)
+    }
+
+    @Test func theAcknowledgementsLinkOpensTheFileInReadout() throws {
+        let path = "/Applications/Read out & co.app/Contents/Resources/Acknowledgements.md"
+        let url = try #require(OpenLink.url(path: path))
+        #expect(url.scheme == OpenLink.scheme)
+        let request = try #require(OpenLink.parse(url))
+        #expect(request.path == path && !request.background && request.anchor == nil && request.root == nil)
+    }
 }

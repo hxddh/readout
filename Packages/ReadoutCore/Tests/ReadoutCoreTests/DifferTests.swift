@@ -138,6 +138,142 @@ import Testing
             #expect(usedOld.intersection(d.removed).isEmpty)
         }
     }
+
+    func key(_ s: String, _ kind: BlockKind = .paragraph) -> BlockKey { BlockKey(fingerprint: XXHash64.hash(s), kind: kind, text: s) }
+
+    func ms(_ f: () -> Void) -> Double {
+        let start = DispatchTime.now().uptimeNanoseconds
+        f()
+        return Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
+    }
+
+    /// What `Differ.equalPairs` returned before it was bounded: the standard
+    /// library's Myers diff over the whole sequences.
+    static func referencePairs(_ a: [UInt64], _ b: [UInt64]) -> [(Int, Int)] {
+        let difference = b.difference(from: a)
+        var removed = Set<Int>(), inserted = Set<Int>()
+        for change in difference {
+            switch change {
+            case let .remove(offset, _, _): removed.insert(offset)
+            case let .insert(offset, _, _): inserted.insert(offset)
+            }
+        }
+        var pairs: [(Int, Int)] = []
+        var oi = 0, ni = 0
+        while oi < a.count && ni < b.count {
+            if removed.contains(oi) { oi += 1; continue }
+            if inserted.contains(ni) { ni += 1; continue }
+            pairs.append((oi, ni)); oi += 1; ni += 1
+        }
+        return pairs
+    }
+
+    /// A complete rewrite of a 10,000-block document took 3-6 s and 1.6 GB.
+    @Test func rewriteOfLargeDocumentIsCheap() {
+        let n = 10_000
+        let old = (0..<n).map { key("old block number \($0) alpha beta") }
+        let new = (0..<n).map { key("new block number \($0) gamma delta") }
+        var d: DiffResult? = nil
+        let t = ms { d = Differ.diff(old: old, new: new) }
+        #expect(d?.rewrite == true)
+        print("perf differ_rewrite_10k: \(String(format: "%.1f", t)) ms")
+        // Generous for a debug build on a shared runner (it took seconds in a release build).
+        #expect(t < 1000, "a \(n)-block rewrite took \(Int(t)) ms")
+    }
+
+    /// Every other block changed: Myers' work is (N + M) × D with D ~ N.
+    @Test func everyOtherBlockChangedIsCheapAndExact() {
+        let n = 10_000
+        let old = (0..<n).map { key("old block number \($0) alpha beta") }
+        let mixed = (0..<n).map { $0 % 2 == 0 ? old[$0] : key("changed block \($0) with other words entirely") }
+        var d: DiffResult? = nil
+        let t = ms { d = Differ.diff(old: old, new: mixed) }
+        print("perf differ_alternate_10k: \(String(format: "%.1f", t)) ms")
+        #expect(t < 1500, "every other block of \(n) changed took \(Int(t)) ms")
+        guard let d else { return }
+        #expect(!d.rewrite)
+        #expect(d.equalCount == n / 2)
+        // The changed blocks pair one for one (each a 1×1 gap of the same kind).
+        #expect(d.removed.isEmpty)
+        #expect(d.changes.enumerated().allSatisfy { i, c in i % 2 == 0 ? c == .equal(old: i) : c == .modified(old: i) })
+    }
+
+    /// Blocks moved around (many repeated) cost Myers a large D too: the result stays a valid alignment.
+    @Test func shuffledLargeDocumentIsBoundedAndValid() {
+        var rng = IncrementalParserTests.SplitMix64(state: 7)
+        let n = 6000
+        let old = (0..<n).map { key("block \($0 % 1500) text") }
+        var new = old
+        new.shuffle(using: &rng)
+        var d: DiffResult? = nil
+        let t = ms { d = Differ.diff(old: old, new: new) }
+        print("perf differ_shuffle_6k: \(String(format: "%.1f", t)) ms")
+        #expect(t < 3000, "a shuffled \(n)-block document took \(Int(t)) ms")
+        guard let d else { return }
+        var last = -1
+        for (j, c) in d.changes.enumerated() {
+            if case let .equal(o) = c { #expect(old[o].fingerprint == new[j].fingerprint && o > last); last = o }
+            if case let .modified(o) = c { #expect(o > last); last = o }
+        }
+    }
+
+    /// A large range of repeated blocks only (no fingerprint unique on both
+    /// sides to anchor on) still matches what survives, in bounded time.
+    @Test func repeatedBlocksWithoutAnchorsStillMatch() {
+        let a = key("Repeated block A."), b = key("Repeated block B.")
+        let old = Array(repeating: a, count: 2500) + Array(repeating: b, count: 2500)
+        let new = Array(repeating: b, count: 2500) + Array(repeating: a, count: 2500)
+        var d: DiffResult? = nil
+        let t = ms { d = Differ.diff(old: old, new: new) }
+        #expect(t < 1500, "\(Int(t)) ms")
+        #expect(d?.rewrite == false)
+        #expect((d?.equalCount ?? 0) >= 2500)
+    }
+
+    /// Rotated runs of repeated blocks keep what survives (A…F runs of 1,000 each, then B…F, A).
+    @Test func rotatedRunsOfRepeatedBlocksStillMatch() {
+        let letters = ["A", "B", "C", "D", "E", "F"].map { key("Repeated block \($0).") }
+        let old = letters.flatMap { Array(repeating: $0, count: 1000) }
+        let new = (letters.dropFirst() + [letters[0]]).flatMap { Array(repeating: $0, count: 1000) }
+        var d: DiffResult? = nil
+        let t = ms { d = Differ.diff(old: old, new: new) }
+        #expect(t < 1500, "\(Int(t)) ms")
+        #expect(d?.rewrite == false)
+        #expect((d?.equalCount ?? 0) >= 5000)
+    }
+
+    /// Runs of repeated blocks reordered: the runs that keep their order survive.
+    @Test func reorderedRunsKeepTheRunsInOrder() {
+        func blocks(_ runs: [Int]) -> [BlockKey] { runs.flatMap { Array(repeating: key("Repeated block \($0)."), count: 300) } }
+        let d = Differ.diff(old: blocks([2, 0, 1, 2, 3, 5, 1, 0, 6, 7]), new: blocks([7, 6, 5, 6, 4, 6, 7, 6, 3, 4]))
+        #expect(!d.rewrite)
+        #expect(d.equalCount >= 900)
+    }
+
+    /// Ordinary edits (also of long documents) get exactly the alignment they got before.
+    @Test func ordinaryEditsAlignAsBefore() {
+        var rng = IncrementalParserTests.SplitMix64(state: 36)
+        for round in 0..<300 {
+            let n = round % 10 == 0 ? Int.random(in: 1000...4000, using: &rng) : Int.random(in: 0...60, using: &rng)
+            // Few distinct values: many repeated fingerprints, where alignments can tie.
+            let alphabet = UInt64(Int.random(in: 2...40, using: &rng))
+            let a = (0..<n).map { _ in UInt64.random(in: 0..<alphabet, using: &rng) }
+            var b = a
+            for _ in 0..<Int.random(in: 0...(n > 100 ? 12 : 6), using: &rng) {
+                let at = b.isEmpty ? 0 : Int.random(in: 0..<b.count, using: &rng)
+                switch Int.random(in: 0..<3, using: &rng) {
+                case 0: b.insert(UInt64.random(in: 0..<(alphabet + 5), using: &rng), at: at)
+                case 1: if !b.isEmpty { b.remove(at: at) }
+                default: if !b.isEmpty { b[at] = UInt64.random(in: 0..<(alphabet + 5), using: &rng) }
+                }
+            }
+            let got = Differ.equalPairs(a, b)
+            let want = Self.referencePairs(a, b)
+            #expect(got.map { $0.map { [$0.0, $0.1] } } == want.map { [$0.0, $0.1] } || (got == nil && Differ.isRewrite(equal: want.count, old: a.count, new: b.count)),
+                    "round \(round): n \(n) alphabet \(alphabet) got \(got.map { $0.count } ?? -1) want \(want.count)")
+            if got == nil { #expect(Differ.isRewrite(equal: want.count, old: a.count, new: b.count), "round \(round)") }
+        }
+    }
 }
 
 @Suite struct SessionTests {

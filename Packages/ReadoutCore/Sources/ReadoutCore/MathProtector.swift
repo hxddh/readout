@@ -172,7 +172,7 @@ struct MathProtector {
     func soleDisplayMath(_ source: String) -> String? {
         let t = source.filter { $0 != MathProtector.filler }.trimmingCharacters(in: .whitespacesAndNewlines)
         guard t.first == MathProtector.open, t.last == MathProtector.close,
-              let n = Int(t.dropFirst().dropLast()), n < spans.count, spans[n].display, spans[n].footnote == nil else { return nil }
+              let n = Int(t.dropFirst().dropLast()), n >= 0, n < spans.count, spans[n].display, spans[n].footnote == nil else { return nil }
         return spans[n].tex
     }
 
@@ -527,7 +527,7 @@ struct MathProtector {
         while i < text.endIndex {
             let c = text[i]
             if c == MathProtector.open, let closeIdx = text[i...].firstIndex(of: MathProtector.close),
-               let n = Int(text[text.index(after: i)..<closeIdx]), n < spans.count {
+               let n = Int(text[text.index(after: i)..<closeIdx]), n >= 0, n < spans.count {
                 let span = spans[n]
                 if let fn = span.footnote {
                     out += Footnotes.placeholder(fn.id)
@@ -552,7 +552,7 @@ struct MathProtector {
         while i < text.endIndex {
             let c = text[i]
             if c == MathProtector.open, let closeIdx = text[i...].firstIndex(of: MathProtector.close),
-               let n = Int(text[text.index(after: i)..<closeIdx]), n < spans.count {
+               let n = Int(text[text.index(after: i)..<closeIdx]), n >= 0, n < spans.count {
                 out += spans[n].footnote == nil ? spans[n].tex : ""
                 i = text.index(after: closeIdx)
                 continue

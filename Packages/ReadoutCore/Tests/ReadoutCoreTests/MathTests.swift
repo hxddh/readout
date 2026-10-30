@@ -207,4 +207,51 @@ import Testing
         // It took seconds when every opener scanned the rest of the line.
         #expect(ms < 2000, "\(ms) ms")
     }
+
+    // MARK: Reserved characters in the source
+
+    /// The private-use characters the parser uses for math tokens and
+    /// footnote placeholders read as U+FFFD wherever they are in the source:
+    /// never math, a footnote reference or markup.
+    @Test func reservedCharactersAreReplaced() {
+        let math = "\u{E000}-1\u{E001}", note = "\u{E002}x\" id=\"ro-doc\u{E003}"
+        let text = """
+        # Title
+
+        Math $x$ and a note[^1].
+
+        Para \(math) and \(note) end.
+
+        Code `\(math) \(note)` end.
+
+        [link](<\(math)>) and [other](<\(note)>)
+
+        Filler \u{E004} too.
+
+        [^1]: The note.
+
+        """
+        let doc = MarkdownParser.parse(text)
+        let all = doc.blocks.map(\.html).joined()
+        for c in ["\u{E000}", "\u{E001}", "\u{E002}", "\u{E003}", "\u{E004}"] { #expect(!all.contains(c)) }
+        #expect(all.components(separatedBy: "math-inline").count == 2)
+        #expect(all.components(separatedBy: "data-footnote-ref").count == 2)
+        #expect(!all.contains("id=\"ro-doc\""))
+        #expect(all.contains("\u{FFFD}-1\u{FFFD}"))
+        #expect(all.contains("\u{FFFD}x&quot; id=&quot;ro-doc\u{FFFD}"))
+        #expect(!doc.blocks.map(\.text).joined().contains("\u{E000}"))
+        // Parsed in full and spliced into a previous version alike.
+        let p = IncrementalParser()
+        let before = text.replacingOccurrences(of: "Para \(math) and \(note) end.", with: "Para end.")
+        #expect(p.parse(before).blocks == MarkdownParser.parse(before).blocks)
+        #expect(p.parse(text).blocks == doc.blocks)
+        #expect(p.parse(text + "More \(math).\n").blocks == MarkdownParser.parse(text + "More \(math).\n").blocks)
+        // Without footnotes, an edit in the middle is spliced.
+        let plain = "# T\n\nOne.\n\nTwo.\n\nThree.\n"
+        let q = IncrementalParser()
+        _ = q.parse(plain)
+        let edited = plain.replacingOccurrences(of: "Two.", with: "Two \(math) \(note) $y$.")
+        #expect(q.parse(edited).blocks == MarkdownParser.parse(edited).blocks)
+        #expect(MarkdownParser.parse(edited).blocks.map(\.html).joined().components(separatedBy: "math-inline").count == 2)
+    }
 }

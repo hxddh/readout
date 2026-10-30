@@ -1,5 +1,6 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
+import { headingAtOrBefore } from './heading.js';
 import { doc, slots, heights, trace, keptScroll, onKeptScroll, isChunk, nextItem, prevItem, blockAfter, precedes } from './core.js';
 import { scheduleRail } from './rail.js';
 import { forceLayout, laidOut, estimateOf, neverLaidOut, cv, scrolledTo } from './chunks.js';
@@ -36,10 +37,7 @@ export function captureAnchor() {
   const offset = -r.top;
   // The share of the block above the viewport's edge, kept when its height changes.
   const ratio = r.height > 0 ? -r.top / r.height : 0;
-  let heading = null;
-  for (let e = el; e; e = prevItem(e)) {
-    if (e.classList.contains('k-heading')) { heading = e.dataset.anchor || null; break; }
-  }
+  const heading = headingAtOrBefore(el)?.dataset.anchor || null;
   // The neighbours stand in for the anchor block if a patch removes it.
   const prev = blockAfter(el, prevItem);
   const next = blockAfter(el);
@@ -201,8 +199,11 @@ export function resolveFragment(raw) {
   try { id = decodeURIComponent(id); } catch { /* keep raw */ }
   if (!id) return null;
   const lower = id.toLowerCase();
-  return doc.querySelector(`[id="${CSS.escape(id)}"], [id="${CSS.escape(lower)}"]`)
-    || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(lower)}"]`);
+  const find = l => doc.querySelector(`[id="${CSS.escape(id)}"], [id="${CSS.escape(l)}"]`)
+    || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(l)}"]`);
+  // Ids the reader keeps for itself (ro-, mmd-) are renamed h-… in the
+  // document (Slugger, HTML.sanitize): a link written to the name is found.
+  return find(lower) || (/^(?:ro|mmd)-/.test(lower) ? find(`h-${lower}`) : null);
 }
 
 let settleQueued = false;
@@ -314,6 +315,23 @@ function keptBlock(resized, chunks, firstChunks, above) {
   return null;
 }
 
+/**
+ * Of `changes` (element -> change in height, reported together), those that
+ * were entirely above the window before they changed: an element's bottom
+ * then is its bottom now less what it and everything before it grew by
+ * (`before`: what grew before the first of them). Chunks and the blocks of
+ * one chunk alike.
+ */
+function entirelyAbove(changes, before = 0) {
+  const above = new Set();
+  let grew = before;
+  for (const el of [...changes.keys()].sort((a, b) => precedes(a, b) ? -1 : 1)) {
+    grew += changes.get(el);
+    if (el.getBoundingClientRect().bottom - grew <= 1) above.add(el);
+  }
+  return above;
+}
+
 // Keeps the text the reader sees from moving when what is above it changes
 // height later (diagrams, math, images, a chunk content-visibility skipped
 // laid out). A chunk laid out for the first time before the kept block
@@ -345,12 +363,7 @@ export const resizeObserver = new ResizeObserver(entries => {
   if (resized.size || chunks.size) {
     // The chunks entirely above the window before they resized: their bottom
     // then is their bottom now less what they and the chunks before them grew by.
-    const above = new Set();
-    let grew = 0;
-    for (const c of [...chunks.keys()].sort((a, b) => precedes(a, b) ? -1 : 1)) {
-      grew += chunks.get(c);
-      if (c.getBoundingClientRect().bottom - grew <= 1) above.add(c);
-    }
+    const above = entirelyAbove(chunks);
     const kept = keptBlock(resized, chunks, firstChunks, above);
     if (kept && kept === landed?.el) {
       const d = kept.getBoundingClientRect().top - landed.top;
@@ -362,7 +375,14 @@ export const resizeObserver = new ResizeObserver(entries => {
         if (c === own) continue;
         if (kept && firstChunks.has(c) ? precedes(c, kept) : above.has(c)) delta += d;
       }
-      for (const [el, d] of resized) if (own && el.parentElement === own && el.getBoundingClientRect().bottom - d <= 1) delta += d;
+      // In the kept block's own chunk, block by block: a block's bottom then
+      // is its bottom now less what it and everything before it grew by.
+      if (own) {
+        let before = 0;
+        for (const [c, d] of chunks) if (c !== own && precedes(c, own)) before += d;
+        const mine = new Map([...resized].filter(([el]) => el.parentElement === own));
+        for (const el of entirelyAbove(mine, before)) delta += mine.get(el);
+      }
     }
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) {

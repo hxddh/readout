@@ -31,10 +31,14 @@ final class AppSettings: ObservableObject {
     @Published var editor: Editor { didSet { d.set(editor.rawValue, forKey: "editor") } }
     @Published var hotKey: HotKeyChoice { didSet { d.set(hotKey.rawValue, forKey: "hotKey") } }
     @Published var fontSize: Double { didSet { d.set(fontSize, forKey: "fontSize") } }
+    /// View ▸ Text Width: "standard" or "wide", the column the page lays the text in.
+    @Published var textWidth: String { didSet { d.set(textWidth, forKey: "textWidth") } }
     /// Wrap long lines in code blocks (toggled from any code block, remembered).
     @Published var codeWrap: Bool { didSet { d.set(codeWrap, forKey: "codeWrap") } }
     @Published var checkForUpdatesAutomatically: Bool { didSet { d.set(checkForUpdatesAutomatically, forKey: "checkForUpdatesAutomatically") } }
     @Published var lastUpdateCheck: Date? { didSet { d.set(lastUpdateCheck, forKey: "lastUpdateCheck") } }
+    /// The column's width in rem (reader.css --measure) at `textWidth`.
+    var measure: Double { textWidth == "wide" ? ReaderLayout.wideMeasure : ReaderLayout.standardMeasure }
     /// The chosen global shortcut could not be registered (another app holds it). Not stored.
     @Published var hotKeyInUse = false
 
@@ -53,6 +57,7 @@ final class AppSettings: ObservableObject {
         hotKey = HotKeyChoice(stored: d.string(forKey: "hotKey"))
         let fs = d.double(forKey: "fontSize")
         fontSize = fs == 0 ? 16 : fs
+        textWidth = d.string(forKey: "textWidth") == "wide" ? "wide" : "standard"
         codeWrap = d.bool(forKey: "codeWrap")
         checkForUpdatesAutomatically = d.object(forKey: "checkForUpdatesAutomatically") as? Bool ?? true
         lastUpdateCheck = d.object(forKey: "lastUpdateCheck") as? Date

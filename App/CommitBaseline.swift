@@ -8,10 +8,12 @@ import ReadoutCore
 /// install them); files outside a repository never run it.
 @MainActor
 enum CommitBaseline {
-    private static let queue = DispatchQueue(label: "Readout.CommitBaseline", qos: .userInitiated)
-    /// Found once per launch (on `queue`). Not found is asked again next
+    /// Concurrent: one window's slow git does not hold up another's.
+    private static let queue = DispatchQueue(label: "Readout.CommitBaseline", qos: .userInitiated, attributes: .concurrent)
+    /// Found once per launch (under `toolsLock`). Not found is asked again next
     /// time: a first `xcode-select` or git after boot can outlast the limit.
     nonisolated(unsafe) private static var toolsAvailable = false
+    nonisolated(unsafe) private static let toolsLock = NSLock()
 
     static func find(path: String, current: String, completion: @escaping @MainActor ([BlockKey]?) -> Void) {
         withGit(path: path, otherwise: nil, {
@@ -37,8 +39,12 @@ enum CommitBaseline {
         queue.async {
             var result = otherwise
             if GitBaseline.repository(containing: path, exists: { FileManager.default.fileExists(atPath: $0) }) != nil {
-                if !toolsAvailable { toolsAvailable = GitTools.available() }
-                if toolsAvailable { result = work() }
+                // Held while asking: windows opening together ask once.
+                let available = toolsLock.withLock { () -> Bool in
+                    if !toolsAvailable { toolsAvailable = GitTools.available() }
+                    return toolsAvailable
+                }
+                if available { result = work() }
             }
             let found = result
             DispatchQueue.main.async { MainActor.assumeIsolated { completion(found) } }

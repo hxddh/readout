@@ -67,6 +67,30 @@ public final class IncrementalParser: @unchecked Sendable {
         /// How many fragments have each key.
         var keyCount: [FragmentKey: Int]
         var result: ParsedDocument
+
+        /// Old lines `old` replaced by `newLines`, which start at byte `from`:
+        /// their line starts, and those after them moved by `byteShift`.
+        /// (`lines` itself is replaced before, to fragment the new version.)
+        mutating func replaceLineStarts(_ old: Range<Int>, with newLines: [String], from: Int, byteShift: Int) {
+            lineStarts.replaceSubrange(old, with: IncrementalParser.starts(newLines, from: from))
+            if byteShift != 0 { for i in (old.lowerBound + newLines.count)..<lineStarts.count { lineStarts[i] += byteShift } }
+        }
+
+        /// Old fragments `old` replaced by new ones (their line `ranges`,
+        /// `keys` and the fence states at their starts, `trackers`), those
+        /// after them moved by `lineShift` lines. `checkpoints` and `counts`
+        /// are for every fragment from the first new one on.
+        mutating func replaceFragments(_ old: Range<Int>, ranges: [Range<Int>], keys newKeys: [FragmentKey], trackers newTrackers: [FenceTracker],
+                                       lineShift: Int, checkpoints newCheckpoints: [MarkdownParser.Assembler.Checkpoint],
+                                       counts newCounts: [(cjk: Int, other: Int)]) {
+            let r = old.lowerBound, w = ranges.count
+            starts.replaceSubrange(old, with: ranges.map(\.lowerBound))
+            if lineShift != 0 { for i in (r + w)..<starts.count { starts[i] += lineShift } }
+            keys.replaceSubrange(old, with: newKeys)
+            trackers.replaceSubrange(old, with: newTrackers.prefix(w))
+            checkpoints.replaceSubrange(r..., with: newCheckpoints)
+            counts.replaceSubrange((r + 1)..., with: newCounts)
+        }
     }
 
     /// `doc` with the next identity, and what it kept of `base` (nil: nothing known).
@@ -255,6 +279,95 @@ public final class IncrementalParser: @unchecked Sendable {
             state = st
             return doc
         }
+        guard let run = Self.changedRun(st, oldLength: oldLen, newLength: newLen, commonPrefix: p, commonSuffix: q) else { return nil }
+        let changed = run.changed, oldSuffixFrom = run.oldSuffixFrom
+        let r = run.fragment, S = run.fragmentStart
+        let oldCount = st.lines.count
+        let byteShift = newLen - oldLen
+        // With footnotes defined, their numbers follow the order of the
+        // references: a change before one may renumber it. Without any, `[^`
+        // and `]:` after the change are text (a document defining links is
+        // parsed in full, never spliced): only a definition the change itself
+        // makes (looked for below) matters.
+        let footnotesDefined = !st.ids.isEmpty
+        if footnotesDefined { guard st.lastSpecial < S else { return nil } }
+        // The old lines replaced, before they go.
+        let removedMarker = CJKEmphasis.containsMarker(st.lines[changed..<oldSuffixFrom])
+        // The new lines: the old ones before the change, the window split, the old suffix.
+        let windowLines: [String] = new.utf8.withContiguousStorageIfAvailable { b in
+            FastBytes.lines(MarkdownParser.replacingReserved(String(decoding: UnsafeBufferPointer(rebasing: b[run.windowStart..<run.windowEnd]), as: UTF8.self)))
+        } ?? []
+        st.lines.replaceSubrange(changed..<oldSuffixFrom, with: windowLines)
+        let lineCount = st.lines.count
+        let delta = lineCount - oldCount
+        let suffixStart = lineCount - run.suffixCount
+        guard MarkdownParser.frontMatterEnd(st.lines) == st.frontMatterEnd else { return nil }
+        if footnotesDefined { guard Self.lastSpecial(st.lines, from: S, to: suffixStart) == nil else { return nil } }
+        // Fragment from S until back on an old boundary in the suffix with the same fence state.
+        var trackers: [FenceTracker] = []
+        var resync: Int? = nil
+        let walked = Self.walk(st.lines, start: S, i: S, fences: st.trackers[r], snapshots: &trackers, record: true) { j, fences in
+            guard j >= suffixStart else { return false }
+            let o = j - delta
+            let idx = Self.lastIndex(st.starts, atMost: o)
+            guard st.starts[idx] == o, idx > r, st.trackers[idx] == fences else { return false }
+            resync = idx
+            return true
+        }
+        let windowRanges = walked.ranges
+        let oldEnd = resync ?? st.starts.count   // old fragments r..<oldEnd are replaced
+        let windowEndLine = resync.map { st.starts[$0] + delta } ?? lineCount
+        // No definition from the change to where fragmenting is back in step,
+        // with the fences as they are now (a fence opened or closed by the
+        // change can turn a `[x]:` line that was code into one).
+        if !footnotesDefined && Self.defines(st.lines[S..<windowEndLine], fences: st.trackers[r]) { return nil }
+        // A marker character where the emphasis policy decides per block: as before.
+        if removedMarker || CJKEmphasis.containsMarker(st.lines[S..<windowEndLine]) { return nil }
+        let window = parseWindow(st.lines, ranges: windowRanges, footnoteIDs: st.ids, cache: cache)
+        // The document's CJK reading must not flip (it touches every block).
+        guard Self.readsAsCJK(st, replacing: r..<oldEnd, with: window.fragments) == st.mixedIsCJK else {
+            // Keep what was parsed: the full parse reuses it.
+            for (k, f) in window.fresh { previous[k] = f }
+            return nil
+        }
+
+        let assembled = assembleSplice(&st, from: r, resync: resync, lineShift: delta,
+                                       windowRanges: windowRanges, windowFragments: window.fragments)
+        retireReplaced(r..<oldEnd, of: &st, window: window, cache: cache)
+        lastReused = st.keys.count - (oldEnd - r) + window.keys.count - window.parsedCount
+        lastParsed = window.parsedCount
+
+        // The state for the next version, changed in place.
+        st.source = new
+        st.replaceLineStarts(changed..<oldSuffixFrom, with: windowLines, from: run.windowStart, byteShift: byteShift)
+        st.replaceFragments(r..<oldEnd, ranges: windowRanges, keys: window.keys, trackers: trackers, lineShift: delta,
+                            checkpoints: assembled.checkpoints, counts: assembled.counts)
+        st.result = assembled.doc
+        state = st
+        return assembled.doc
+    }
+
+    /// Where a new version differs from the previous one (`splice`).
+    private struct ChangedRun {
+        /// The first changed line.
+        let changed: Int
+        /// The first old line wholly in the common suffix (the old line count: none).
+        let oldSuffixFrom: Int
+        /// How many old lines are wholly in the common suffix.
+        let suffixCount: Int
+        /// The new source's bytes of the changed lines (from `changed` to the suffix).
+        let windowStart: Int
+        let windowEnd: Int
+        /// The fragment fragmenting resumes at, and its first line.
+        let fragment: Int
+        let fragmentStart: Int
+    }
+
+    /// The changed run of lines of the new version (`newLength` bytes), which
+    /// shares its first `p` and last `q` bytes with `st.source` (`oldLength`
+    /// bytes). Nil when the change is in the first fragment or the front matter.
+    private static func changedRun(_ st: SpliceState, oldLength oldLen: Int, newLength newLen: Int,
+                                   commonPrefix p: Int, commonSuffix q: Int) -> ChangedRun? {
         let oldCount = st.lines.count
         // The first changed line: the one holding byte p.
         let changed = Self.lastIndex(st.lineStarts, atMost: p)
@@ -276,74 +389,68 @@ public final class IncrementalParser: @unchecked Sendable {
         guard r >= 1 else { return nil }
         let S = st.starts[r]
         guard st.frontMatterEnd.map({ $0 < S }) ?? true else { return nil }
-        // With footnotes defined, their numbers follow the order of the
-        // references: a change before one may renumber it. Without any, `[^`
-        // and `]:` after the change are text (a document defining links is
-        // parsed in full, never spliced): only a definition the change itself
-        // makes (looked for below) matters.
-        let footnotesDefined = !st.ids.isEmpty
-        if footnotesDefined { guard st.lastSpecial < S else { return nil } }
-        // The old lines replaced, before they go.
-        let removedMarker = CJKEmphasis.containsMarker(st.lines[changed..<oldSuffixFrom])
-        // The new lines: the old ones before the change, the window split, the old suffix.
-        let windowLines: [String] = new.utf8.withContiguousStorageIfAvailable { b in
-            FastBytes.lines(String(decoding: UnsafeBufferPointer(rebasing: b[windowStart..<windowEnd]), as: UTF8.self))
-        } ?? []
-        st.lines.replaceSubrange(changed..<oldSuffixFrom, with: windowLines)
-        let lineCount = st.lines.count
-        let delta = lineCount - oldCount
-        let suffixStart = lineCount - suffixCount
-        guard MarkdownParser.frontMatterEnd(st.lines) == st.frontMatterEnd else { return nil }
-        if footnotesDefined { guard Self.lastSpecial(st.lines, from: S, to: suffixStart) == nil else { return nil } }
-        // Fragment from S until back on an old boundary in the suffix with the same fence state.
-        var trackers: [FenceTracker] = []
-        var resync: Int? = nil
-        let walked = Self.walk(st.lines, start: S, i: S, fences: st.trackers[r], snapshots: &trackers, record: true) { j, fences in
-            guard j >= suffixStart else { return false }
-            let o = j - delta
-            let idx = Self.lastIndex(st.starts, atMost: o)
-            guard st.starts[idx] == o, idx > r, st.trackers[idx] == fences else { return false }
-            resync = idx
-            return true
-        }
-        let windowRanges = walked.ranges
-        let fragmentCount = st.starts.count
-        let oldEnd = resync ?? fragmentCount   // old fragments r..<oldEnd are replaced
-        let windowEndLine = resync.map { st.starts[$0] + delta } ?? lineCount
-        // No definition from the change to where fragmenting is back in step,
-        // with the fences as they are now (a fence opened or closed by the
-        // change can turn a `[x]:` line that was code into one).
-        if !footnotesDefined && Self.defines(st.lines[S..<windowEndLine], fences: st.trackers[r]) { return nil }
-        // A marker character where the emphasis policy decides per block: as before.
-        if removedMarker || CJKEmphasis.containsMarker(st.lines[S..<windowEndLine]) { return nil }
-        // Keys and parses of the window's fragments.
-        var windowKeys: [FragmentKey] = []
+        return ChangedRun(changed: changed, oldSuffixFrom: oldSuffixFrom, suffixCount: suffixCount,
+                          windowStart: windowStart, windowEnd: windowEnd, fragment: r, fragmentStart: S)
+    }
+
+    /// The window's fragments, in order (`splice`).
+    private struct WindowParse {
+        let keys: [FragmentKey]
+        /// How many were parsed now (the rest were in `previous`).
+        let parsedCount: Int
+        /// Those parsed now, by key.
+        let fresh: [FragmentKey: MarkdownParser.Fragment]
+        let fragments: [MarkdownParser.Fragment]
+    }
+
+    /// Keys and parses of the window's fragments (`ranges` of `lines`): those
+    /// not in `previous` are parsed, each once.
+    private func parseWindow(_ lines: [String], ranges: [Range<Int>], footnoteIDs: Set<String>,
+                             cache: MarkdownParser.RenderCache?) -> WindowParse {
+        var keys: [FragmentKey] = []
         var jobs: [(slice: [String], key: FragmentKey)] = []
         var queued = Set<FragmentKey>()
-        for range in windowRanges {
-            let slice = Array(st.lines[range])
+        for range in ranges {
+            let slice = Array(lines[range])
             let key = FragmentKey(hash: XXHash64.hash(slice.joined(separator: "\n")), lineCount: slice.count, atStart: false, footnotes: 0)
-            windowKeys.append(key)
+            keys.append(key)
             if previous[key] == nil && queued.insert(key).inserted { jobs.append((slice, key)) }
         }
         cache?.resume()
-        let parsed = Self.parseFragments(jobs.map { ($0.slice, false) }, footnoteIDs: st.ids, resolver: resolver, cache: cache)
+        let parsed = Self.parseFragments(jobs.map { ($0.slice, false) }, footnoteIDs: footnoteIDs, resolver: resolver, cache: cache)
         var fresh: [FragmentKey: MarkdownParser.Fragment] = [:]
         for (job, f) in zip(jobs, parsed) { fresh[job.key] = f }
-        let windowFragments = windowKeys.map { fresh[$0] ?? previous[$0]! }
-        // The document's CJK reading must not flip (it touches every block).
-        var c = 0, o = 0
-        for f in windowFragments { let n = MarkdownParser.Assembler.counts(f); c += n.cjk; o += n.other }
-        let total = st.counts[fragmentCount]
-        let cjk = total.cjk - (st.counts[oldEnd].cjk - st.counts[r].cjk) + c
-        let other = total.other - (st.counts[oldEnd].other - st.counts[r].other) + o
-        guard (cjk > other) == st.mixedIsCJK else {
-            // Keep what was parsed: the full parse reuses it.
-            for (k, f) in fresh { previous[k] = f }
-            return nil
-        }
+        let fragments = keys.map { fresh[$0] ?? previous[$0]! }
+        return WindowParse(keys: keys, parsedCount: jobs.count, fresh: fresh, fragments: fragments)
+    }
 
-        // Assemble: the old blocks before the change, the window from the checkpoint, the rest.
+    /// Whether the document reads as CJK (`Assembler.mixedIsCJK`) once
+    /// `st`'s fragments `old` are replaced by `window`.
+    private static func readsAsCJK(_ st: SpliceState, replacing old: Range<Int>, with window: [MarkdownParser.Fragment]) -> Bool {
+        var c = 0, o = 0
+        for f in window { let n = MarkdownParser.Assembler.counts(f); c += n.cjk; o += n.other }
+        let total = st.counts[st.starts.count]
+        let cjk = total.cjk - (st.counts[old.upperBound].cjk - st.counts[old.lowerBound].cjk) + c
+        let other = total.other - (st.counts[old.upperBound].other - st.counts[old.lowerBound].other) + o
+        return cjk > other
+    }
+
+    /// A spliced version, and what `SpliceState` keeps of its assembly for
+    /// the fragments from the window on.
+    private struct SplicedAssembly {
+        let doc: ParsedDocument
+        let checkpoints: [MarkdownParser.Assembler.Checkpoint]
+        /// Prefix sums of prose counts after each of those fragments.
+        let counts: [(cjk: Int, other: Int)]
+    }
+
+    /// Assembles the spliced version: the old blocks before the change, the
+    /// window's fragments from the checkpoint at fragment `r`, the rest (the
+    /// old fragments from `resync` on, moved by `delta` lines). `st` lends
+    /// its blocks, anchors and anchor log, and gets the anchors and log back.
+    private func assembleSplice(_ st: inout SpliceState, from r: Int, resync: Int?, lineShift delta: Int,
+                                windowRanges: [Range<Int>], windowFragments: [MarkdownParser.Fragment]) -> SplicedAssembly {
+        let fragmentCount = st.starts.count
         let cp = st.checkpoints[r]
         let oldBodyEnd = st.result.blocks.count - (st.section == nil ? 0 : 1)
         // Nothing the rest's assembly reads changed (headings above it, anchors given): its blocks are kept.
@@ -428,12 +535,19 @@ public final class IncrementalParser: @unchecked Sendable {
         let doc = identified(spliced, base: st.result.generation,
                              prefix: prefixBlocks, suffix: suffixBlocks)
         asm.out = []
+        swap(&st.slugger, &asm.slugger)
+        swap(&st.slugLog, &asm.slugLog!)
+        return SplicedAssembly(doc: doc, checkpoints: windowCheckpoints + restCheckpoints, counts: windowCounts)
+    }
 
-        // Fragments and cached HTML that the replaced run alone held go.
-        let replacedKeys = Array(st.keys[r..<oldEnd])
-        for k in windowKeys { st.keyCount[k, default: 0] += 1 }
-        for (k, f) in fresh { previous[k] = f }
-        let live = Set(windowFragments.flatMap(\.cacheKeys))
+    /// Fragments and cached HTML that `st`'s fragments `old`, replaced by
+    /// `window`'s, alone held go; the window's fragments parsed now are kept.
+    private func retireReplaced(_ old: Range<Int>, of st: inout SpliceState, window: WindowParse,
+                                cache: MarkdownParser.RenderCache?) {
+        let replacedKeys = Array(st.keys[old])
+        for k in window.keys { st.keyCount[k, default: 0] += 1 }
+        for (k, f) in window.fresh { previous[k] = f }
+        let live = Set(window.fragments.flatMap(\.cacheKeys))
         for k in replacedKeys {
             let n = (st.keyCount[k] ?? 1) - 1
             if n <= 0 {
@@ -441,25 +555,6 @@ public final class IncrementalParser: @unchecked Sendable {
                 if let f = previous.removeValue(forKey: k) { cache?.drop(f.cacheKeys.filter { !live.contains($0) }) }
             } else { st.keyCount[k] = n }
         }
-        lastReused = st.keys.count - (oldEnd - r) + windowKeys.count - jobs.count
-        lastParsed = jobs.count
-
-        // The state for the next version, changed in place.
-        st.source = new
-        st.lineStarts.replaceSubrange(changed..<oldSuffixFrom, with: Self.starts(windowLines, from: windowStart))
-        if byteShift != 0 { for i in (changed + windowLines.count)..<st.lineStarts.count { st.lineStarts[i] += byteShift } }
-        let w = windowRanges.count
-        st.starts.replaceSubrange(r..<oldEnd, with: windowRanges.map(\.lowerBound))
-        if delta != 0 { for i in (r + w)..<st.starts.count { st.starts[i] += delta } }
-        st.keys.replaceSubrange(r..<oldEnd, with: windowKeys)
-        st.trackers.replaceSubrange(r..<oldEnd, with: trackers.prefix(w))
-        st.checkpoints.replaceSubrange(r..., with: windowCheckpoints + restCheckpoints)
-        st.counts.replaceSubrange((r + 1)..., with: windowCounts)
-        swap(&st.slugger, &asm.slugger)
-        swap(&st.slugLog, &asm.slugLog!)
-        st.result = doc
-        state = st
-        return doc
     }
 
     static func starts(_ lines: [String], from: Int) -> [Int] {
