@@ -20,9 +20,14 @@
    - Set `MARKETING_VERSION: "X.Y.Z"` in `project.yml`.
    - Add `docs/releases/X.Y.Z.md` (non-empty). See **Release notes** below.
    - Open a PR, wait for **all** CI checks to be green, merge.
-2. On the merged `main` commit, create and push the tag:
-   `git tag -a vX.Y.Z -m "Readout X.Y.Z" && git push origin vX.Y.Z`
-   (Tags are owner-only; see the branch/tag protection note below.)
+2. Tag the merged `main` commit, either way:
+   - **Actions ▸ Tag release ▸ Run workflow** (branch `main`, version
+     `X.Y.Z`): checks `project.yml` and `docs/releases/X.Y.Z.md` on main,
+     tags main's current commit `vX.Y.Z` and starts `release.yml` for it
+     (a tag pushed with the workflow's token starts no workflow by itself,
+     so it dispatches the release on the tag). Anyone who can run workflows
+     can release this way; preflight's checks are the same.
+   - Or by hand: `git tag -a vX.Y.Z -m "Readout X.Y.Z" && git push origin vX.Y.Z`.
 3. `release.yml` runs automatically: **preflight → verify → publish**.
 4. Watch it succeed. On any failure: do NOT retry blindly and do NOT
    bypass a check — read the log, fix forward on `main`, re-tag only if
@@ -185,4 +190,6 @@ If Apple rejects a submission, verify fails before anything is published.
   pass. Do not require "Verify signed product / Build, sign and smoke test":
   a PR that skips Verify never reports that name and would wait forever.
   Verify's gate is the push to `main` run that preflight requires.)
-- Tags `v*`: restrict creation to the repository owner (Rulesets).
+- Tags `v*`: restrict creation to the repository owner (Rulesets), with
+  GitHub Actions on the ruleset's bypass list so **Tag release** can create
+  them; or no tag rule at all.
