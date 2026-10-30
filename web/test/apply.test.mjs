@@ -123,7 +123,7 @@ const follows = [];
 for (const [slot, after] of [[202, 40], [203, 202]]) {
   await page.evaluate(([slot, after]) => window.readout.apply({
     version: 6, reset: false, rewrite: false,
-    ops: [{ op: 'insert', slot, after, html: `<p>${'appended at the end of the document '.repeat(52)}</p>`, kind: 'paragraph' }],
+    ops: [{ op: 'insert', slot, after, html: `<p>${'appended at the end of the document '.repeat(64)}</p>`, kind: 'paragraph' }],
     marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 },
   }), [slot, after]);
   follows.push(await page.evaluate(slot => {

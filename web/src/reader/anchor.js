@@ -315,6 +315,23 @@ function keptBlock(resized, chunks, firstChunks, above) {
   return null;
 }
 
+/**
+ * Of `changes` (element -> change in height, reported together), those that
+ * were entirely above the window before they changed: an element's bottom
+ * then is its bottom now less what it and everything before it grew by
+ * (`before`: what grew before the first of them). Chunks and the blocks of
+ * one chunk alike.
+ */
+function entirelyAbove(changes, before = 0) {
+  const above = new Set();
+  let grew = before;
+  for (const el of [...changes.keys()].sort((a, b) => precedes(a, b) ? -1 : 1)) {
+    grew += changes.get(el);
+    if (el.getBoundingClientRect().bottom - grew <= 1) above.add(el);
+  }
+  return above;
+}
+
 // Keeps the text the reader sees from moving when what is above it changes
 // height later (diagrams, math, images, a chunk content-visibility skipped
 // laid out). A chunk laid out for the first time before the kept block
@@ -346,12 +363,7 @@ export const resizeObserver = new ResizeObserver(entries => {
   if (resized.size || chunks.size) {
     // The chunks entirely above the window before they resized: their bottom
     // then is their bottom now less what they and the chunks before them grew by.
-    const above = new Set();
-    let grew = 0;
-    for (const c of [...chunks.keys()].sort((a, b) => precedes(a, b) ? -1 : 1)) {
-      grew += chunks.get(c);
-      if (c.getBoundingClientRect().bottom - grew <= 1) above.add(c);
-    }
+    const above = entirelyAbove(chunks);
     const kept = keptBlock(resized, chunks, firstChunks, above);
     if (kept && kept === landed?.el) {
       const d = kept.getBoundingClientRect().top - landed.top;
@@ -366,13 +378,10 @@ export const resizeObserver = new ResizeObserver(entries => {
       // In the kept block's own chunk, block by block: a block's bottom then
       // is its bottom now less what it and everything before it grew by.
       if (own) {
-        let grew = 0;
-        for (const [c, d] of chunks) if (c !== own && precedes(c, own)) grew += d;
-        const mine = [...resized].filter(([el]) => el.parentElement === own).sort(([a], [b]) => precedes(a, b) ? -1 : 1);
-        for (const [el, d] of mine) {
-          grew += d;
-          if (el.getBoundingClientRect().bottom - grew <= 1) delta += d;
-        }
+        let before = 0;
+        for (const [c, d] of chunks) if (c !== own && precedes(c, own)) before += d;
+        const mine = new Map([...resized].filter(([el]) => el.parentElement === own));
+        for (const el of entirelyAbove(mine, before)) delta += mine.get(el);
       }
     }
   }
