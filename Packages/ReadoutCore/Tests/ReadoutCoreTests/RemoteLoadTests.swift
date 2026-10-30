@@ -58,6 +58,10 @@ import Testing
             "http://intranet/a.png", "http://router/a.png", "http://localhost../a.png", "http://router.lan/a.png",
             "http://[::ffff:0:127.0.0.1]/a.png", "http://[64:ff9b:1::a00:1]/a.png", "http://[2002:7f00:1::]/a.png",
             "http://[2002:c0a8:101::1]/a.png", "http://[100::1]/a.png",
+            // 4.1: special-purpose blocks (protocol assignments, documentation, Teredo).
+            "http://192.0.0.8/a.png", "http://192.0.2.1/a.png", "http://198.51.100.7/a.png", "http://203.0.113.255/a.png",
+            "http://[2001::1]/a.png", "http://[2001:0:4136:e378:8000:63bf:3fff:fdd2]/a.png", "http://[2001:db8::1]/a.png",
+            "http://[::ffff:192.0.2.1]/a.png", "http://[2002:cb00:7101::]/a.png",
         ]
         for url in blocked {
             #expect(RemoteLoad.check(url) == .privateAddress, "\(url)")
@@ -71,6 +75,8 @@ import Testing
             "http://8.8.8.8/a.png", "http://172.32.0.1/a.png", "http://192.169.0.1/a.png",
             "http://[2606:4700:4700::1111]/a.png", "http://[::ffff:8.8.8.8]/a.png",
             "http://[64:ff9b::8.8.8.8]/a.png",
+            "http://192.0.1.1/a.png", "http://192.0.3.1/a.png", "http://198.51.101.1/a.png", "http://203.0.114.1/a.png",
+            "http://[2001:4860:4860::8888]/a.png", "http://[2001:db9::1]/a.png",
             // Digit-leading names made of hex letters are names, not numbers.
             "https://1a.de/a.png", "https://1feed.cafe/a.png", "https://0xdead.beef.com/a.png",
         ]

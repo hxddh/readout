@@ -2,9 +2,9 @@ import Foundation
 import Testing
 @testable import ReadoutCore
 
-/// 3.8 app shell: what wakes the app while it watches files (P8), and when
-/// the spare reader page is made again (P5).
-@Suite struct AppShell38Tests {
+/// What a watched folder leaves out (`WatchExclusions`): build output and version
+/// control, never the file shown or a watched folder.
+@Suite struct WatchExclusionsTests {
     @Test func aRepositoryRootDocumentLeavesBuildOutputAndVersionControlOut() {
         let paths = WatchExclusions.paths(for: ["/w/repo"], keep: ["/w/repo/PLAN.md"])
         #expect(paths.count == WatchExclusions.limit)
@@ -46,48 +46,5 @@ import Testing
                 #expect(!kept.lowercased().hasPrefix(p.lowercased()), "\(p) would hide \(kept)")
             }
         }
-    }
-
-    @Test func agentFolderEventsAskTheDiskOnlyAboutMarkdownDocuments() {
-        var asked: [String] = []
-        var known: Set<String> = ["/w/plans/old.md", "/w/plans/gone.md"]
-        let events = ["/w/plans/node_modules/x/index.js", "/w/plans/.git/index", "/w/plans/build.log",
-                      "/w/plans/new.md", "/w/plans/old.md", "/w/plans/gone.md", "/w/plans/node_modules/x/README.md",
-                      "/w/plans/.hidden.md", "/elsewhere/a.md"]
-        let writes = AgentFolders.writes(events, roots: ["/w/plans"], known: &known) { path in
-            asked.append(path)
-            return path != "/w/plans/gone.md"
-        }
-        // Build output, dependencies, hidden files and other folders never cost a stat.
-        #expect(asked == ["/w/plans/new.md", "/w/plans/old.md", "/w/plans/gone.md"])
-        #expect(writes.map(\.path) == ["/w/plans/new.md", "/w/plans/old.md"])
-        #expect(writes.map(\.isNew) == [true, false])
-        // Gone: forgotten, so writing it again is a new document.
-        #expect(known == ["/w/plans/old.md", "/w/plans/new.md"])
-    }
-
-    @Test func theNextSparePageWaitsForTheFirstPaintOrTheFallback() {
-        var plan = SparePagePlan()
-        // Nothing taken: a paint makes nothing.
-        #expect(plan.painted() == false)
-        let first = plan.taken()
-        #expect(plan.waiting)
-        // The page taken paints: the next spare page is made now, once.
-        #expect(plan.painted() == true)
-        #expect(plan.painted() == false)
-        // Its fallback timer fires later: nothing is owed any more.
-        #expect(plan.fallbackFired(first) == false)
-
-        // No paint within the fallback: the timer makes it.
-        let second = plan.taken()
-        #expect(plan.fallbackFired(second) == true)
-        #expect(plan.painted() == false)
-
-        // Taken twice before either timer fires: only the later timer counts.
-        let a = plan.taken(), b = plan.taken()
-        #expect(plan.fallbackFired(a) == false)
-        #expect(plan.waiting)
-        #expect(plan.fallbackFired(b) == true)
-        #expect(SparePagePlan.fallback == 3)
     }
 }

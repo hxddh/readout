@@ -343,7 +343,7 @@ if (leaves.inlineCode.text !== leaves.spanText) fail(`code span selection: ${JSO
   if (!got.table.html.includes('<table') || /data-slot|tabindex|<button|class=/.test(got.table.html)) fail(`copy-cases: table rich text: ${got.table.html.slice(0, 200)}`);
   // Front matter's rich text is a table of keys and values, not spans that run together ("title Copy casesstatus draft").
   if (!got.all.html.includes('<table><tbody><tr><td>title</td><td>Copy cases</td></tr><tr><td>status</td><td>draft</td></tr>') || /title Copy casesstatus/.test(got.all.html.replace(/<[^>]+>/g, ''))) fail(`copy-cases: front matter rich text: ${got.all.html.slice(0, 300)}`);
-  // A value with line breaks (a literal block: the parser's <br>, ParserFixes36Tests) keeps them in its cell.
+  // A value with line breaks (a literal block: the parser's <br>, ParserTests) keeps them in its cell.
   {
     const html = await page.evaluate(() => {
       const fm = document.querySelector('#ro-doc .front-matter'), val = fm.querySelector('.fm-val'), was = val.innerHTML;

@@ -31,7 +31,7 @@ import Glibc
 /// So bounded, a parse fits a GCD thread's 512 KB stack: swift-markdown's
 /// conversion and the renderer take about 3.3 KB a level in a release
 /// build (some 160 KB for 40), about 10 KB in a debug one (some 430 KB)
-/// (`CoreFixes38Tests.theDeepestDocumentsFitASmallStack`).
+/// (`NestingCapTests.theDeepestDocumentsFitASmallStack`).
 enum NestingCap {
     static let containers = 16
     static let inlines = 16

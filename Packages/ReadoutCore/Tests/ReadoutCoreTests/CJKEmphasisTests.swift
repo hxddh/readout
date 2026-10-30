@@ -2,36 +2,8 @@ import Foundation
 import Testing
 @testable import ReadoutCore
 
-/// 3.7 parser and rendering fixes. Each test failed on 3.6.0.
-@Suite struct ParserFixes37Tests {
-    func html(_ md: String) -> String { MarkdownParser.parse(md).blocks.map(\.html).joined(separator: "\n") }
-
-    /// The incremental parser (fresh, and after an edit from a neutral
-    /// version) gives exactly the full parse.
-    func expectIncrementalMatchesFull(_ text: String, _ note: Comment? = nil, sourceLocation: SourceLocation = #_sourceLocation) {
-        let full = MarkdownParser.parse(text)
-        let fresh = IncrementalParser().parse(text)
-        #expect(fresh.blocks == full.blocks && fresh.title == full.title, note, sourceLocation: sourceLocation)
-        let warm = IncrementalParser()
-        _ = warm.parse("Intro.\n\n" + text)
-        let edited = warm.parse(text)
-        #expect(edited.blocks == full.blocks && edited.title == full.title, note, sourceLocation: sourceLocation)
-    }
-
-    // MARK: L1: a tab-indented line after a table
-
-    /// A line indented by a tab (4 columns) after a table is not a row: the
-    /// fence tracker counted spaces only and saw a row where cmark ends the
-    /// table, so a fence after it split differently (fuzz seeds 480 and 530).
-    @Test func tabIndentedLineAfterTableMatchesIncremental() {
-        expectIncrementalMatchesFull("x|d\n-|-\n\td\n$$\n<a>\n```\n\ne")
-        expectIncrementalMatchesFull("$$ $$\n```\n```\n\nn|||\n-|-|-\n\t[^3]\n[^3]:")
-        expectIncrementalMatchesFull("| a | b |\n| - | - |\n\tcode\n```\nx\n```\n\nafter")
-        expectIncrementalMatchesFull("||\n|-|\n\tx\n```\n\ny")
-    }
-
-    // MARK: T5: a line break between wide CJK characters is no space
-
+/// A line break between wide CJK characters is no space (`CJKText`).
+@Suite struct CJKLineBreakTests {
     func paragraph(_ md: String) -> String { MarkdownParser.parse(md).blocks[0].html }
 
     @Test func softBreakBetweenWideCJKIsRemoved() {
@@ -53,8 +25,14 @@ import Testing
         // `Key：value` lines keep their line breaks.
         #expect(paragraph("状态：完成\n结果：通过") == "<p>状态：完成<br>结果：通过</p>")
     }
+}
 
-    // MARK: T10: CJK-friendly emphasis
+/// CJK-friendly emphasis (`CJKEmphasis`): `**` next to CJK punctuation, the
+/// markers never showing, and text outside CJK left as cmark parses it.
+@Suite struct CJKEmphasisTests {
+    func html(_ md: String) -> String { MarkdownParser.parse(md).blocks.map(\.html).joined(separator: "\n") }
+
+    func paragraph(_ md: String) -> String { MarkdownParser.parse(md).blocks[0].html }
 
     /// /tmp/claude-0/v37/type/docs/flank.md: CommonMark keeps the asterisks.
     @Test func emphasisNextToCJKPunctuation() {
@@ -375,5 +353,14 @@ import Testing
             _ = p.protect(md)
             #expect(p.emphasisMarks == 0, "\(md.debugDescription)")
         }
+    }
+
+    @Test func variationSelectorAfterDelimiterKeepsTheText() {
+        let a = MarkdownParser.parse("中文**\u{FE01}中文").blocks[0].html
+        #expect(!a.contains("<em></em>"), "\(a)")          // 3.7: <p>中文<em></em>︁中文</p>
+        #expect(a == "<p>中文**\u{FE01}中文</p>", "\(a)")   // markdown-it-cjk-friendly: literal **
+        let b = MarkdownParser.parse("**注意**\u{FE0E}中文**粗体**").blocks[0].html
+        #expect(b == "<p><strong>注意</strong>\u{FE0E}中文<strong>粗体</strong></p>", "\(b)")
+        // 3.7: <p><strong>注意<em></em>︎中文</strong>粗体**</p>
     }
 }

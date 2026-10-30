@@ -151,8 +151,10 @@ let stubDNS: RemoteFetcher.Resolver = { host in
         let response = HTTPURLResponse(url: task.originalRequest!.url!, statusCode: 302, httpVersion: nil, headerFields: nil)!
         func follow(_ target: String) -> URLRequest? {
             nonisolated(unsafe) var out: URLRequest?
+            let done = DispatchSemaphore(value: 0)
             fetcher.urlSession(fetcher.session, task: task, willPerformHTTPRedirection: response,
-                               newRequest: URLRequest(url: URL(string: target)!)) { out = $0 }
+                               newRequest: URLRequest(url: URL(string: target)!)) { out = $0; done.signal() }
+            done.wait()
             return out
         }
         #expect(follow("https://cdn.example.com/a.png")?.url?.host == "cdn.example.com")
@@ -160,6 +162,23 @@ let stubDNS: RemoteFetcher.Resolver = { host in
         #expect(follow("http://169.254.169.254/latest") == nil)
         #expect(follow("file:///etc/passwd") == nil)
         #expect(follow("https://intranet.test/a.png") == nil)
+    }
+
+    /// The redirect check resolves the new host off the session's delegate
+    /// queue (serial: a slow name held up every other download's callbacks).
+    @Test func redirectCheckDoesNotBlockTheDelegateQueue() {
+        let fetcher = RemoteFetcher(resolve: { _ in Thread.sleep(forTimeInterval: 1); return ["93.184.216.34"] })
+        defer { fetcher.invalidate() }
+        let task = fetcher.session.dataTask(with: URL(string: "https://example.com/a.png")!)
+        let response = HTTPURLResponse(url: task.originalRequest!.url!, statusCode: 302, httpVersion: nil, headerFields: nil)!
+        nonisolated(unsafe) var out: URLRequest?
+        let done = DispatchSemaphore(value: 0)
+        let start = Date()
+        fetcher.urlSession(fetcher.session, task: task, willPerformHTTPRedirection: response,
+                           newRequest: URLRequest(url: URL(string: "https://slow.test/a.png")!)) { out = $0; done.signal() }
+        #expect(Date().timeIntervalSince(start) < 0.5)
+        #expect(done.wait(timeout: .now() + 10) == .success)
+        #expect(out?.url?.host == "slow.test")
     }
 
     @Test func refusesNamesThatResolvePrivately() async {
@@ -217,7 +236,42 @@ let stubDNS: RemoteFetcher.Resolver = { host in
         #expect(cache.count == 0)
     }
 
+    /// An address loaded again replaces its image: the old bytes go, and
+    /// they no longer count against the capacity.
+    @Test func reloadingAnAddressReplacesItsBytes() {
+        var cache = RemoteImageCache(capacity: 100)
+        let first = cache.insert(image(40), url: "https://e.com/a.png")!
+        let other = cache.insert(image(30), url: "https://e.com/b.png")!
+        let second = cache.insert(image(50), url: "https://e.com/a.png")!
+        #expect(cache.totalBytes == 80)
+        #expect(cache.count == 2)
+        #expect(cache.image(for: first) == nil)
+        #expect(cache.image(for: other) != nil)   // not evicted for the stale copy
+        #expect(cache.token(forURL: "https://e.com/a.png") == second)
+        #expect(cache.known.count == 2)
+        // Filling up later evicts by what is really kept.
+        _ = cache.insert(image(20), url: "https://e.com/c.png")
+        #expect(cache.totalBytes == 100 && cache.count == 3)
+    }
+
     @Test func defaultCapacityHoldsSeveralMaxSizeImages() {
         #expect(RemoteImageCache.defaultCapacity >= 5 * RemoteLoad.maxBytes)
+    }
+
+    @Test func theCacheRemembersWhichAddressEachImageCameFrom() {
+        func image(_ bytes: Int) -> RemoteFetcher.Image { .init(data: Data(count: bytes), contentType: "image/png") }
+        var cache = RemoteImageCache(capacity: 100)
+        let a = cache.insert(image(40), url: "https://img.example/a.png")!
+        #expect(cache.token(forURL: "https://img.example/a.png") == a)
+        #expect(cache.token(forURL: "https://img.example/b.png") == nil)
+        // Loaded again: the new bytes.
+        let a2 = cache.insert(image(40), url: "https://img.example/a.png")!
+        #expect(cache.token(forURL: "https://img.example/a.png") == a2)
+        #expect(cache.known == ["https://img.example/a.png": a2])
+        // Evicted: forgotten, so the reader is asked again.
+        _ = cache.insert(image(40), url: "https://img.example/b.png")
+        _ = cache.insert(image(40), url: "https://img.example/c.png")
+        #expect(cache.token(forURL: "https://img.example/a.png") == nil)
+        #expect(Set(cache.known.keys) == ["https://img.example/b.png", "https://img.example/c.png"])
     }
 }
