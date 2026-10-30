@@ -162,13 +162,12 @@ extension ReaderWindowController {
     // MARK: Outline
 
     /// Whether this window has room for the outline beside the page (its
-    /// content width, the outline's width, the reader's text size and text width).
+    /// content width, the outline's width, the reader's text size).
     private func sidebarFits() -> Bool {
         guard let window else { return false }
         let width = window.contentRect(forFrameRect: window.frame).width
         return ReaderLayout.sidebarFits(windowWidth: Double(width), sidebarWidth: Double(sidebarWidth),
-                                        fontSize: AppSettings.shared.fontSize, shown: !sidebarItem.isCollapsed,
-                                        measure: AppSettings.shared.measure)
+                                        fontSize: AppSettings.shared.fontSize, shown: !sidebarItem.isCollapsed)
     }
 
     /// Shows or hides the outline as the window's width (and the reader's

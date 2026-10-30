@@ -106,16 +106,16 @@ What would paint code on screen before it is coloured waits for it instead, for 
 ### The column
 
 - **One tuned look.** No typography settings beyond the text size and the column's width (View ▸ Text Width).
-- **The column is 50 em of the body text** (Standard; 64 em with Wide). That is about 110 characters of Latin text in SF Pro and 52 of Chinese in PingFang at Actual Size, nearer 3.9's Wide Text (127) than its 680 px column (94), which read as narrow beside the tables, code and paths of agent documents. 4.0's 42.5 em column with text that grew to 1.25 times in a wide window is gone: a wide window gave larger text, not more room.
+- **The column follows the window** (4.2): the window less a margin each side of 5% of it (28 px at least), up to 80 em of the body text with Standard (about 1430 px at Actual Size, reached at about 1600 px) and with no limit with Wide. 4.0's 42.5 em column and 4.1's 50 em one each stopped at a fixed width and left a wide window mostly margin; the documents agents write are full of tables, code and paths, which want the room.
 - **The text grows a little with the window:** the reader's size up to a 900 px window, 1.12 times it from 1332 px, smoothly between.
-- **Wide code and tables use the room beside the column,** up to 72 em (84 with Wide) and never closer than 4 rem to the window's edge: code centred on the column, a table to the right only.
+- **Wide code and tables use the room beside the column** once the column has stopped growing (Standard, in a window past about 1650 px): up to 96 em and never closer than 4 rem to the window's edge, and only when there are 2 rem at least to gain; code centred on the column, a table to the right only.
 - **It is CSS alone** (the root font size, `clamp()` on the window width), so it is decided before the first paint, in Quick Look too, and costs a resize nothing beyond the reflow itself. The place the reader left (the same block, the same share of it at the top) is kept across any number of resizes.
 - **Text size.** ⌘+ and ⌘− multiply the automatic size and ⌘0 returns to it. Code and tables scale with it, and diagrams' text follows ⌘+ and ⌘− (the reader's size, not the window's growth).
-- **Narrow windows.** In a window narrower than the column, it is the window less its gutters. Wide code and tables still widen into the margins, a table also when its short cells wrap again to fit.
+- **Narrow windows.** Below 560 px the margins are the 28 px gutters.
 
 ### The outline
 
-A window wide enough for the outline beside the page, with margins of 6 rem around the column, shows the outline (the sidebar) by itself, and hides it once it no longer is (16 px of hysteresis, so a window resized across the point does not flicker). It is decided before the window shows, without animating, so the page lays out once and keeps the reader's place.
+A window wide enough for the outline beside a page that still has a 50 em column (`ReaderLayout.columnBesideOutline`; about 1130 px with a 220 px outline at Actual Size) shows the outline (the sidebar) by itself, and hides it once it no longer is (16 px of hysteresis, so a window resized across the point does not flicker). It is decided before the window shows, without animating, so the page lays out once and keeps the reader's place.
 
 Show/Hide Sidebar against what the width calls for holds in that window (hidden in a wide window, it stays hidden however wide it gets) until the reader toggles it again; one that agrees gives the window back to its width. The choice is the window's own and is not kept (no setting, and 3.9's remembered Show Sidebar is gone): a new window starts from its width. Quick Look has no outline.
 

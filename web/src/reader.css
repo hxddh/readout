@@ -25,14 +25,16 @@
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
   --code-fill: rgb(29 29 31 / 3%);   /* inline code's fill: 3% of the text colour */
 
-  /* The text column: 50 rem (about 110 characters of Latin text, 52 of
-     Chinese at Actual Size), or 64 rem with View ▸ Text Width ▸ Wide
-     (data-width, set by the app). Wide code and tables take more,
-     up to --wide, as far as the window has room (the bleed below). A narrower
-     window is narrower by itself (#ro-doc's max-width). Not min(…, 100vw −
-     gutters): the same column, and slower to first paint a 1 MB page (#99). */
-  --measure: 50rem;
-  --wide: 72rem;
+  /* The text column follows the window: the window less a margin each
+     side (5% of it, 28 px at least), up to 80 rem (about 175 characters of
+     Latin text at Actual Size), or with no limit with View ▸ Text Width ▸
+     Wide (data-width, set by the app). Wide code and tables take more, up to
+     --wide, where the window leaves room beside the column (the bleed
+     below). */
+  --side: max(var(--gutter), 5vw);
+  --cap: 80rem;
+  --measure: min(var(--cap), 100vw - 2 * var(--side));
+  --wide: 96rem;
   /* The reader's text size (⌘+ ⌘− ⌘0, set by the app; 16 is Actual Size). */
   --fs: 16;
   --lh: 1.65;
@@ -53,7 +55,7 @@
 
   color-scheme: light;
 }
-:root[data-width="wide"] { --measure: 64rem; --wide: 84rem; }
+:root[data-width="wide"] { --cap: 100000px; }
 
 /* Dark: chosen by the app (setAppearance), or by the system until the app
    has said which, so the first paint never flashes white. An explicit
@@ -197,7 +199,10 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    cells wrap again to fit (nw-off): widened, they need wrap less. */
 @property --out { syntax: "<length>"; inherits: true; initial-value: 0px; }
 #ro-doc > .chunk > .blk:is(.k-code, .k-table) {
-  --bleed: clamp(0px, (100vw - 8rem - var(--measure)) / 2, (var(--wide) - var(--measure)) / 2);
+  /* The room each side, used only when it is worth it (2 rem at least): a
+     block a few pixels wider than the text reads as a misalignment. */
+  --room: calc((100vw - 8rem - var(--measure)) / 2);
+  --bleed: clamp(0px, (var(--room) - 2rem) * 1000, min(var(--room), (var(--wide) - var(--measure)) / 2));
 }
 /* In the code's own font: 1ch is a column (the code is 0.84 of this size, --fs-code). */
 #ro-doc > .chunk > .blk.k-code {
