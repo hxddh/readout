@@ -320,7 +320,9 @@ const middleObserver = new IntersectionObserver(entries => {
   for (const e of entries) {
     const el = e.target;
     if (e.boundingClientRect.height <= 2 * window.innerHeight) continue;
-    if (e.isIntersecting) { if (!readTimers.has(el)) armRead(el); }
+    // The band's margins are a share of the window; whatever an engine takes
+    // that share of, the block counts only with half a screen of it in view.
+    if (e.isIntersecting && seen(el)) { if (!readTimers.has(el)) armRead(el); }
     else disarmRead(el);
   }
 }, { rootMargin: '-49% 0px -49% 0px' });
