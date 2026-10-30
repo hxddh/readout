@@ -1,0 +1,66 @@
+name: Tag release
+
+# Step 2 of docs/RELEASING.md without a local checkout: tags the current
+# main with vX.Y.Z (annotated) and starts release.yml for it. A tag pushed
+# with the workflow's own token starts no workflow by itself, so this one
+# dispatches release.yml on the tag, which then runs exactly as for a tag
+# pushed by hand (preflight, verify, publish). Nothing here relaxes a check:
+# preflight still requires main's CI on that commit and everything else.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, X.Y.Z (project.yml and docs/releases/X.Y.Z.md must already say so on main)"
+        required: true
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag main and start the release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Check the version against main
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::version must be X.Y.Z, got '$VERSION'"; exit 1; }
+          grep -q "MARKETING_VERSION: \"$VERSION\"" project.yml || { echo "::error::project.yml MARKETING_VERSION is not $VERSION"; exit 1; }
+          [ -s "docs/releases/$VERSION.md" ] || { echo "::error::docs/releases/$VERSION.md is missing or empty"; exit 1; }
+          if git rev-parse -q --verify "refs/tags/v$VERSION" > /dev/null; then
+            echo "::error::v$VERSION already exists (Actions ▸ Release ▸ Run workflow re-runs an existing tag)"; exit 1
+          fi
+
+      - name: Tag main
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            tag -a "v$VERSION" -m "Readout $VERSION" HEAD
+          git push origin "refs/tags/v$VERSION"
+          echo "Tagged $(git rev-parse --short HEAD) as v$VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Start the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref main -f tag="v$VERSION" -f dry_run=false
+          echo "Started Actions ▸ Release for v$VERSION" >> "$GITHUB_STEP_SUMMARY"
