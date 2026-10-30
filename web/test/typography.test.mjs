@@ -1890,7 +1890,8 @@ for (const dark of [false, true]) {
   }
   check('P4.4 the text grows with the window: 16 px to 900 px, then smoothly to 17.92 px (1.12) at 1332 px and wider', curve.every(c => Math.abs(c.root - 16 * scale(c.vw)) < 0.05), JSON.stringify(curve));
   check('P4.4 the column is the window less 5% each side (28 px at least), 80 em at most, code in step', curve.every(c => Math.abs(c.col - colOf(c.vw, c.root)) < 0.6 && Math.abs(c.code / c.root - 0.89) < 0.01 && c.sideways <= 0), JSON.stringify(curve));
-  check('P4.4 a line holds as many Chinese characters as the column has em, and a wider window holds more', curve.every(c => Math.abs(c.han - Math.floor(c.col / c.root)) <= 2) && curve.find(c => c.vw === 2400).latin > curve.find(c => c.vw === 1100).latin + 40, JSON.stringify(curve));
+  // (Han, not Latin: text-wrap: pretty evens out a short paragraph's Latin lines.)
+  check('P4.4 a line holds as many Chinese characters as the column has em, and a wider window holds more', curve.every(c => Math.abs(c.han - Math.floor(c.col / c.root)) <= 2) && curve.find(c => c.vw === 2400).han > curve.find(c => c.vw === 1100).han + 15, JSON.stringify(curve));
   await page.setViewportSize({ width: 1600, height: 800 });
   const m = [];
   for (const fs of [13, 16, 20, 24, 16]) {
