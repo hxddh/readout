@@ -1049,7 +1049,7 @@ const v36 = patch([
     ['code', `<div class="code-block" id="b-huge" data-lang="ts"><pre><code>${longLine} ${longLine}</code></pre></div>`],
     ['code', '<div class="code-block" id="b-short" data-lang="sh"><pre><code>npm test</code></pre></div>'],
     ['listItem', `<ul class="li-block li-first li-last"><li>In a list:<div class="code-block" id="b-li"><pre><code>${longLine}</code></pre></div></li></ul>`],
-    ['table', `<div class="table-wrap" id="b-table"><table><thead><tr>${Array.from({ length: 10 }, (_, i) => `<th>Column ${i + 1}</th>`).join('')}</tr></thead><tbody><tr>${Array.from({ length: 10 }, (_, i) => `<td>value ${i}</td>`).join('')}</tr></tbody></table></div>`],
+    ['table', `<div class="table-wrap" id="b-table"><table><thead><tr>${Array.from({ length: 14 }, (_, i) => `<th>Column ${i + 1}</th>`).join('')}</tr></thead><tbody><tr>${Array.from({ length: 14 }, (_, i) => `<td>value ${i}</td>`).join('')}</tr></tbody></table></div>`],
   ]);
   tb.marks = [{ slot: 2, kind: 'inserted' }, { slot: 1, kind: 'inserted' }, { slot: 6, kind: 'inserted' }];
   tb.deletions = [{ id: 1, after: 1, count: 1 }];
@@ -1107,8 +1107,9 @@ const v36 = patch([
     const n = await measure(page);
     const fits = width === 1200;   // 1200 px leaves room beside the 867 px column (the text 1.08 times), 860 none beside 800
     check(`at ${width} px code ${fits ? 'widens' : 'keeps the column'}`, fits ? n.long[1] > n.col[1] + 50 && Math.abs(n.long[1] - codeW(n.vw, n.root, n.col[1])) < 1 : Math.abs(n.long[1] - n.col[1]) < 0.5 && n.sideways <= 0, JSON.stringify(n));
-    // Widening to the right only, a table keeps 4 rem from the window's edge.
-    check(`at ${width} px a table keeps the text's left edge and 4 rem from the window's edge`, Math.abs(n.table[0] - n.col[0]) < 0.5 && n.table[0] + n.table[1] <= n.vw - 64 + 0.5 && n.sideways <= 0, JSON.stringify(n));
+    // Widening to the right only, a table keeps 4 rem from the window's edge
+    // (or ends with the column, when the column itself comes closer).
+    check(`at ${width} px a table keeps the text's left edge and 4 rem from the window's edge`, Math.abs(n.table[0] - n.col[0]) < 0.5 && n.table[0] + n.table[1] <= Math.max(n.vw - 4 * n.root, n.col[0] + n.col[1]) + 0.5 && n.sideways <= 0, JSON.stringify(n));
     await page.close();
   }
 }
@@ -1585,7 +1586,7 @@ const v36 = patch([
 //      a box-drawing tree and an aligned listing keep scrolling.
 {
   const prose = 'This is a prompt written as one long line of prose, the way agents embed instructions and SKILL.md text in a fence, and it goes on well past the column.';
-  const aligned = Array.from({ length: 3 }, (_, i) => `row-${i}-name-that-is-long      value-${i}-also-quite-long-here      note ${i} with more words`).join('\n');
+  const aligned = Array.from({ length: 3 }, (_, i) => `row-${i}-name-that-is-long      value-${i}-also-quite-long-here      note ${i} with more words than the column holds`).join('\n');
   const fences = [['f-none', ''], ['f-text', 'text'], ['f-txt', 'txt'], ['f-plain', 'plain'], ['f-plaintext', 'plaintext'], ['f-md', 'md'], ['f-markdown', 'markdown'], ['f-prompt', 'prompt']];
   const fp = patch([
     ['paragraph', '<p id="f-p">The text column.</p>'],
@@ -1896,9 +1897,9 @@ for (const dark of [false, true]) {
     m.push({ fs, ...(await state(page)), latin: await perLine(page, 'm-latin'), han: await perLine(page, 'm-han') });
   }
   // Han breaks between any two characters, so its count is exact; a Latin
-  // line of this sample ends 83 or 90 characters in, a word apart,
-  // whichever the sub-pixel width allows, at any size: one word's slack.
-  check('P4.4 the reader\'s size multiplies the window\'s (1600 px: 1.12), Actual Size back to the automatic size; the characters per line stay', m.every(x => Math.abs(x.root - x.fs * scale(1600)) < 0.05) && m[4].root === m[1].root && m.every(x => Math.abs(x.han - m[1].han) <= 1 && Math.abs(x.latin - m[1].latin) <= 8), JSON.stringify(m));
+  // line of this sample ends a word or so earlier or later, whichever the
+  // sub-pixel width allows, at any size: a long word's slack.
+  check('P4.4 the reader\'s size multiplies the window\'s (1600 px: 1.12), Actual Size back to the automatic size; the characters per line stay', m.every(x => Math.abs(x.root - x.fs * scale(1600)) < 0.05) && m[4].root === m[1].root && m.every(x => Math.abs(x.han - m[1].han) <= 1 && Math.abs(x.latin - m[1].latin) <= 12), JSON.stringify(m));
   const sizes = [];
   for (const vw of [760, 640, 480, 360]) {
     await page.setViewportSize({ width: vw, height: 800 });

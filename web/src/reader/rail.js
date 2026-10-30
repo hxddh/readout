@@ -39,26 +39,40 @@ function drawRail() {
   const track = window.innerHeight;
   // All reads before any write, so the page is laid out once.
   const rects = list.map(roughRect);
-  rail.replaceChildren();
+  // The ticks are kept and moved, not made again: the rail is drawn again
+  // after every scroll that changes what is unread, and every patch.
+  targets = list;
+  while (rail.children.length > list.length) rail.lastChild.remove();
   for (let i = 0; i < list.length; i++) {
     const el = list[i];
     const top = rects[i].top + scrollTop;
-    const tick = document.createElement('button');
-    tick.type = 'button';
+    let tick = rail.children[i];
+    if (!tick) {
+      tick = document.createElement('button');
+      tick.type = 'button';
+      tick.dataset.i = String(i);
+      rail.appendChild(tick);
+    }
     const key = kindKey(el);
     // Task changes fall back to "edited" until the app sends a word for them.
     const kind = strings[key] || (key === 'railTask' && strings.railEdited) || key;
     const height = Math.max(TICK_MIN_PX, (rects[i].height / total) * track);
     tick.style.top = `${Math.min(window.innerHeight - height, (top / total) * track)}px`;
-    if (height > TICK_MIN_PX) tick.style.height = `${height}px`;
+    tick.style.height = height > TICK_MIN_PX ? `${height}px` : '';
     const label = (strings.railChange || 'Unread change %d of %d: %@')
       .replace('%d', i + 1).replace('%d', list.length).replace('%@', kind);
-    tick.setAttribute('aria-label', label);
-    tick.title = label;
-    // (Read once it lands: a jump onto code not coloured yet waits for it.)
-    tick.addEventListener('click', () => { scrollToElement(el, { center: true, landed: once(() => visit(el)) }); focusBlock(el); pulse(el); });
-    rail.appendChild(tick);
+    if (tick.title !== label) { tick.setAttribute('aria-label', label); tick.title = label; }
   }
 }
+
+// The unread block each tick stands for, by its index (drawRail).
+let targets = [];
+rail.addEventListener('click', e => {
+  const tick = e.target instanceof Element ? e.target.closest('button[data-i]') : null;
+  const el = tick ? targets[+tick.dataset.i] : null;
+  if (!el?.isConnected) return;
+  // (Read once it lands: a jump onto code not coloured yet waits for it.)
+  scrollToElement(el, { center: true, landed: once(() => visit(el)) }); focusBlock(el); pulse(el);
+});
 
 window.addEventListener('resize', scheduleRail);

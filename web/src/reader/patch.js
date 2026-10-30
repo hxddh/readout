@@ -1,6 +1,6 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
 import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, firstItem, nextItem, lastItem, prevItem } from './core.js';
-import { captureAnchor, restoreAnchor, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
+import { captureAnchor, restoreAnchor, keepPlace, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
 import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, noteLead, leadIns, prevBlock, roughRect, unstale, cvOn } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
@@ -128,102 +128,11 @@ export function apply(p) {
   // fits the window (Readout beside the terminal the agent writes from)
   // follows it too: once it grows past the window, they see its end.
   const following = !isFirst && (place ? place.following : slots.size > 0 && (!!tail || atBottom() || (watching() && fitsOnScreen())));
-  // Only follow when the change is at (or below) the viewport: an insertion
-  // at the top of the document must not yank a bottom-dwelling reader.
-  // The anchor block itself counts: if it was edited, restoring it keeps us
-  // at the end anyway.
-  // Appending at the end is the live tail an agent writes: it counts as near
-  // whatever its predecessor's position (the page's bottom padding keeps the
-  // last block well above the bottom of the viewport). So does the agent
-  // writing on into that last block (a replace of it).
-  let changeNearViewport = false;
-  if (following && !p.reset) {
-    let last = lastItem();
-    while (last && !last.classList.contains('blk')) last = prevItem(last);
-    const lastSlot = last ? +last.dataset.slot : null;
-    for (const op of p.ops) {
-      if (op.op === 'remove') continue;
-      if (op.op === 'insert' && op.after === lastSlot) { changeNearViewport = true; break; }
-      if (op.op === 'replace' && op.slot === lastSlot) { changeNearViewport = true; break; }
-      const el = slots.get(op.slot);
-      // Inserted blocks have no element yet; locate via the predecessor.
-      const ref = el || (op.after ? slots.get(op.after) : null);
-      if (!ref) { changeNearViewport = true; break; }  // unknown position: stay safe, follow
-      const r = roughRect(ref);
-      if (r.top > window.innerHeight - 200) { changeNearViewport = true; break; }
-      if (anchor && op.slot === anchor.slot) { changeNearViewport = true; break; }
-    }
-  }
   // A rewrite is a new document: read from the reader's section, or its top,
   // with the notice saying so (not from its end, even for a reader who had
   // followed the old one to its end).
-  const follow = following && !p.rewrite && (p.reset || changeNearViewport);
-  const changed = new Set();
-  const rerendered = [];   // silent replaces: new HTML, no mark
-  const visibleChanged = [];
-  const inserted = [];
-  // Measured once after all the ops: a measurement between two DOM changes
-  // forces a layout each time.
-  const maybeVisible = [];
-  // The outline's headings are looked for again only when one changed.
-  let headingsTouched = !!p.reset;
-
-  if (p.reset) {
-    for (const el of slots.values()) { resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); }
-    slots.clear();
-    clearChunks();
-    document.getElementById('ro-empty')?.remove();
-  }
-
-  // A document shown anew from its top: the code its first screen may show
-  // is asked for as its block is made (askEarly), by the heights estimated
-  // above it (lines of at least 18 px).
-  const reach = window.innerHeight + 120;
-  let above = p.reset && fromTop ? 0 : Infinity;
-  for (const op of p.ops) {
-    if (op.op === 'remove') {
-      const el = slots.get(op.slot);
-      if (el) { headingsTouched ||= el.classList.contains('k-heading'); noteNext(nextItem(el)); noteLead(prevBlock(el)); resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); unplace(el); slots.delete(op.slot); }
-    } else if (op.op === 'replace') {
-      const el = slots.get(op.slot);
-      if (!el) continue;
-      // Only the source changed (it renders the same): the block stays as it
-      // is (an open <details>, a diagram drawn, the selection); copying sees the new source.
-      if (op.html == null) {
-        if (op.src != null) sources.set(el, op.src); else sources.delete(el);
-        if (op.tight) tight.add(el); else tight.delete(el);
-        continue;
-      }
-      headingsTouched ||= op.kind === 'heading' || el.classList.contains('k-heading');
-      noteNext(nextItem(el));
-      const wasMarked = el.className.match(/m-(inserted|modified|state)/)?.[0];
-      const wasRead = el.classList.contains('m-read');
-      fillBlock(el, op);
-      noteLead(el); noteLead(prevBlock(el));
-      if (op.change === 'content') forgetDiff(op.slot);
-      // A silent re-render keeps the mark as it was, read or not.
-      if (wasMarked && op.change === 'silent') { el.classList.add(wasMarked); if (wasRead) el.classList.add('m-read'); }
-      if (op.change !== 'silent') { changed.add(op.slot); if (!p.reset) maybeVisible.push(el); }
-      else rerendered.push(el);
-    } else if (op.op === 'insert') {
-      headingsTouched ||= op.kind === 'heading';
-      const el = makeBlock(op);
-      if (above < reach) {
-        for (const cb of el.querySelectorAll('.code-block')) askEarly(cb, Math.ceil((reach - above) / 18));
-        above += estimateOp(op);
-      }
-      const after = op.after ? slots.get(op.after) : null;
-      if (!p.reset) noteNext(after ? nextItem(after) : op.after ? null : firstItem());
-      if (after) placeItem(el, after, estimateOp(op));
-      else if (op.after) placeLast(el, estimateOp(op));
-      else placeItem(el, null, estimateOp(op));
-      slots.set(op.slot, el);
-      if (!p.reset) { noteLead(el); noteLead(prevBlock(el)); }
-      else if (op.kind === 'paragraph' && op.html.startsWith('<p class="lead"')) noteLead(el);   // a lead-in: leadIns(true)
-      resizeObserver.observe(el);
-      if (!p.reset) { changed.add(op.slot); inserted.push(el); maybeVisible.push(el); }
-    }
-  }
+  const follow = following && !p.rewrite && (p.reset || nearViewport(p, anchor));
+  const { changed, rerendered, inserted, maybeVisible, headingsTouched } = applyOps(p, p.reset && fromTop);
 
   const t1 = performance.now();
   updateCv(!!p.reset);
@@ -261,45 +170,13 @@ export function apply(p) {
   // Every change to the page is made by now: what follows reads its layout,
   // which is laid out once (a read between two changes lays it out again,
   // in a large document the cost of the whole patch over again).
-  for (const el of maybeVisible) if (el.isConnected && inViewport(el)) visibleChanged.push(el);
+  const visibleChanged = maybeVisible.filter(el => el.isConnected && inViewport(el));
 
-  // Re-baseline heights of touched blocks and chunks so the resize compensator does not count this patch twice.
-  // The first open of a large document reads no layout, but the resize
-  // compensator still needs a baseline: a chunk the first frame skips is its
-  // estimate, so chunks above a resumed position that are laid out at another
-  // height still keep the place.
-  // (A heading's margin from its neighbour in the chunk first, then its flush start: each change counted once.)
-  const nextOnes = settleNext();
-  flushStarts();
-  leadIns(!!p.reset);
-  for (const c of touched) if (c.isConnected) heights.set(c, firstLarge ? estimateOf(c) : c.getBoundingClientRect().height);
-  touched.clear();
-  // Not a block in a chunk skipped (WebKit would lay the chunk out to answer):
-  // it reports its size once the chunk is laid out, the chunk's change made up for as a whole.
-  const laid = el => !doc.classList.contains('cv') || el.checkVisibility({ contentVisibilityAuto: true });
-  for (const slot of changed) { const el = slots.get(slot); if (el && laid(el)) heights.set(el, el.getBoundingClientRect().height); else if (el) heights.delete(el); }
-  for (const el of rerendered) if (el.isConnected && laid(el)) heights.set(el, el.getBoundingClientRect().height); else heights.delete(el);
-  // Headings whose flush start changed (flushStarts): in a chunk skipped, their height was taken with it.
-  for (const el of [...flushed, ...nextOnes]) if (el.isConnected && laid(el)) heights.set(el, el.getBoundingClientRect().height);
-  flushed.clear();
-  if (p.reset && !firstLarge) for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
+  rebaselinePatch(p, changed, rerendered, firstLarge);
 
   if (isFirst) { firstTimings.blocks = Math.round(t1 - t0); firstTimings.layout = Math.round(performance.now() - t1); }
 
-  // Restore position in the same task, before the browser paints.
-  let restored = false;
-  if (follow) {
-    window.scrollTo(0, document.scrollingElement.scrollHeight);
-    for (const el of forced) baseline(el);
-  }
-  // Rewritten: none of the old blocks is left to keep the place by. The
-  // reader goes to the section they were in, if it is still there, else to
-  // the top (not wherever the old offset lands in the new text).
-  else if (p.rewrite && anchor) {
-    const h = anchor.heading && doc.querySelector(`.k-heading[data-anchor="${CSS.escape(anchor.heading)}"]`);
-    if (h) scrollToElement(h, { gap: 16 }); else window.scrollTo(0, 0);
-  }
-  else if (anchor) restored = restoreAnchor(anchor, changed);
+  const restored = restorePlace(p, { follow, forced, anchor, changed });
   // Emptied, refilled only in part, or cut short so the page cannot scroll
   // to the reader's place (it then sits at the end, which is not following):
   // hold on to the place until a later patch can restore it. Not a reader at
@@ -352,6 +229,154 @@ export function apply(p) {
   });
 }
 
+/**
+ * Whether a patch changes the document at (or below) the viewport, so a
+ * reader following the end follows it. An insertion at the top must not
+ * yank a bottom-dwelling reader. The anchor block itself counts: if it was
+ * edited, restoring it keeps the reader at the end anyway. Appending at the
+ * end is the live tail an agent writes: it counts as near whatever its
+ * predecessor's position (the page's bottom padding keeps the last block
+ * well above the bottom of the viewport). So does the agent writing on into
+ * that last block (a replace of it).
+ */
+function nearViewport(p, anchor) {
+  let last = lastItem();
+  while (last && !last.classList.contains('blk')) last = prevItem(last);
+  const lastSlot = last ? +last.dataset.slot : null;
+  for (const op of p.ops) {
+    if (op.op === 'remove') continue;
+    if (op.op === 'insert' && op.after === lastSlot) return true;
+    if (op.op === 'replace' && op.slot === lastSlot) return true;
+    const el = slots.get(op.slot);
+    // Inserted blocks have no element yet; locate via the predecessor.
+    const ref = el || (op.after ? slots.get(op.after) : null);
+    if (!ref) return true;  // unknown position: stay safe, follow
+    if (roughRect(ref).top > window.innerHeight - 200) return true;
+    if (anchor && op.slot === anchor.slot) return true;
+  }
+  return false;
+}
+
+/**
+ * Makes the patch's changes to the page: blocks removed, filled anew and
+ * inserted, in order. What changed is returned for the measurements made
+ * once every change is made (one between two changes forces a layout each time).
+ */
+function applyOps(p, showsTop) {
+  const changed = new Set();
+  const rerendered = [];   // silent replaces: new HTML, no mark
+  const inserted = [];
+  const maybeVisible = [];
+  // The outline's headings are looked for again only when one changed.
+  let headingsTouched = !!p.reset;
+
+  if (p.reset) {
+    for (const el of slots.values()) { resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); }
+    slots.clear();
+    clearChunks();
+    document.getElementById('ro-empty')?.remove();
+  }
+
+  // A document shown anew from its top: the code its first screen may show
+  // is asked for as its block is made (askEarly), by the heights estimated
+  // above it (lines of at least 18 px).
+  const reach = window.innerHeight + 120;
+  let above = showsTop ? 0 : Infinity;
+  for (const op of p.ops) {
+    if (op.op === 'remove') {
+      const el = slots.get(op.slot);
+      if (el) { headingsTouched ||= el.classList.contains('k-heading'); noteNext(nextItem(el)); noteLead(prevBlock(el)); resizeObserver.unobserve(el); forgetBlock(el); forgetMarks(el); unplace(el); slots.delete(op.slot); }
+    } else if (op.op === 'replace') {
+      const el = slots.get(op.slot);
+      if (!el) continue;
+      // Only the source changed (it renders the same): the block stays as it
+      // is (an open <details>, a diagram drawn, the selection); copying sees the new source.
+      if (op.html == null) {
+        if (op.src != null) sources.set(el, op.src); else sources.delete(el);
+        if (op.tight) tight.add(el); else tight.delete(el);
+        continue;
+      }
+      headingsTouched ||= op.kind === 'heading' || el.classList.contains('k-heading');
+      noteNext(nextItem(el));
+      const wasMarked = el.className.match(/m-(inserted|modified|state)/)?.[0];
+      const wasRead = el.classList.contains('m-read');
+      fillBlock(el, op);
+      noteLead(el); noteLead(prevBlock(el));
+      if (op.change === 'content') forgetDiff(op.slot);
+      // A silent re-render keeps the mark as it was, read or not.
+      if (wasMarked && op.change === 'silent') { el.classList.add(wasMarked); if (wasRead) el.classList.add('m-read'); }
+      if (op.change !== 'silent') { changed.add(op.slot); if (!p.reset) maybeVisible.push(el); }
+      else rerendered.push(el);
+    } else if (op.op === 'insert') {
+      headingsTouched ||= op.kind === 'heading';
+      const el = makeBlock(op);
+      if (above < reach) {
+        for (const cb of el.querySelectorAll('.code-block')) askEarly(cb, Math.ceil((reach - above) / 18));
+        above += estimateOp(op);
+      }
+      const after = op.after ? slots.get(op.after) : null;
+      if (!p.reset) noteNext(after ? nextItem(after) : op.after ? null : firstItem());
+      if (after) placeItem(el, after, estimateOp(op));
+      else if (op.after) placeLast(el, estimateOp(op));
+      else placeItem(el, null, estimateOp(op));
+      slots.set(op.slot, el);
+      if (!p.reset) { noteLead(el); noteLead(prevBlock(el)); }
+      else if (op.kind === 'paragraph' && op.html.startsWith('<p class="lead"')) noteLead(el);   // a lead-in: leadIns(true)
+      resizeObserver.observe(el);
+      if (!p.reset) { changed.add(op.slot); inserted.push(el); maybeVisible.push(el); }
+    }
+  }
+  return { changed, rerendered, inserted, maybeVisible, headingsTouched };
+}
+
+/**
+ * Re-baselines the heights the patch changed, so the resize compensator does
+ * not count it twice.
+ */
+function rebaselinePatch(p, changed, rerendered, firstLarge) {
+  // The first open of a large document reads no layout, but the resize
+  // compensator still needs a baseline: a chunk the first frame skips is its
+  // estimate, so chunks above a resumed position that are laid out at another
+  // height still keep the place.
+  // (A heading's margin from its neighbour in the chunk first, then its flush start: each change counted once.)
+  const nextOnes = settleNext();
+  flushStarts();
+  leadIns(!!p.reset);
+  for (const c of touched) if (c.isConnected) heights.set(c, firstLarge ? estimateOf(c) : c.getBoundingClientRect().height);
+  touched.clear();
+  // Not a block in a chunk skipped (WebKit would lay the chunk out to answer):
+  // it reports its size once the chunk is laid out, the chunk's change made up for as a whole.
+  const laid = el => !doc.classList.contains('cv') || el.checkVisibility({ contentVisibilityAuto: true });
+  for (const slot of changed) { const el = slots.get(slot); if (el && laid(el)) heights.set(el, el.getBoundingClientRect().height); else if (el) heights.delete(el); }
+  for (const el of rerendered) if (el.isConnected && laid(el)) heights.set(el, el.getBoundingClientRect().height); else heights.delete(el);
+  // Headings whose flush start changed (flushStarts): in a chunk skipped, their height was taken with it.
+  for (const el of [...flushed, ...nextOnes]) if (el.isConnected && laid(el)) heights.set(el, el.getBoundingClientRect().height);
+  flushed.clear();
+  if (p.reset && !firstLarge) for (const el of slots.values()) heights.set(el, el.getBoundingClientRect().height);
+}
+
+/**
+ * Puts the reader where the patch leaves them, in the same task, before the
+ * browser paints: at the end they follow, in their section of a rewrite, or
+ * at their own block. Whether their own block's place was restored.
+ */
+function restorePlace(p, { follow, forced, anchor, changed }) {
+  if (follow) {
+    window.scrollTo(0, document.scrollingElement.scrollHeight);
+    for (const el of forced) baseline(el);
+  }
+  // Rewritten: none of the old blocks is left to keep the place by. The
+  // reader goes to the section they were in, if it is still there, else to
+  // the top (not wherever the old offset lands in the new text).
+  else if (p.rewrite && anchor) {
+    const h = anchor.heading && doc.querySelector(`.k-heading[data-anchor="${CSS.escape(anchor.heading)}"]`);
+    if (h) scrollToElement(h, { gap: 16 }); else window.scrollTo(0, 0);
+  }
+  else if (anchor) return restoreAnchor(anchor, changed);
+  return false;
+}
+
+
 
 /**
  * Which code blocks a first open counts as on screen, from the chunks'
@@ -395,10 +420,7 @@ export function hideNotice(text) {
   if (notice.hidden || notice.textContent !== text) return;
   clearTimeout(showNotice.t);
   noticeWaiting = false;
-  const anchor = captureAnchor();
-  notice.hidden = true;
-  notice.style.opacity = '';
-  restoreAnchor(anchor, new Set());
+  keepPlace(() => { notice.hidden = true; notice.style.opacity = ''; }, { bottom: false });
 }
 
 export function noticeMaybeSeen() {
@@ -413,10 +435,7 @@ function countDownNotice() {
   showNotice.t = setTimeout(() => {
     notice.style.opacity = '0';
     showNotice.t = setTimeout(() => {
-      const anchor = captureAnchor();
-      notice.hidden = true;
-      notice.style.opacity = '';
-      restoreAnchor(anchor, new Set());
+      keepPlace(() => { notice.hidden = true; notice.style.opacity = ''; }, { bottom: false });
     }, NOTICE_FADE_MS);
   }, NOTICE_MS);
 }

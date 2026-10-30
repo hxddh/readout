@@ -447,14 +447,14 @@ window.addEventListener('beforeprint', () => {
   clearTimeout(printFallback);
   setPrintDiagrams(true);
   highlightAll();
-  rebaselineHeights();
-  if (printAnchor) restoreAnchor(printAnchor, new Set());
+  if (printAnchor) keepPlace(() => {}, { anchor: printAnchor, bottom: false });
+  else rebaselineHeights();
 });
 window.addEventListener('afterprint', () => {
   printOpened.forEach(d => { d.open = false; });
   printOpened = [];
   setPrintDiagrams(false);   // redrawn in the page's theme, in place (from the cache)
-  rebaselineHeights();
-  if (printAnchor) restoreAnchor(printAnchor, new Set());
+  if (printAnchor) keepPlace(() => {}, { anchor: printAnchor, bottom: false });
+  else rebaselineHeights();
   printAnchor = null;
 });

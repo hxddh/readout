@@ -2,7 +2,7 @@
 // between changes.
 import { doc, slots, strings, quicklook, post, inViewport, onKeptScroll, focused, isChunk, firstItem, nextItem, prevItem, precedes, smooth } from './core.js';
 import { place, unplace, roughRect, itemsChanged, noteNext } from './chunks.js';
-import { captureAnchor, restoreAnchor, atBottom, fitsOnScreen, pinLanding, baseline, aimAt } from './anchor.js';
+import { keepPlace, atBottom, fitsOnScreen, pinLanding, aimAt } from './anchor.js';
 import { scheduleRail } from './rail.js';
 
 let marked = new Map();   // slot -> kind (unread)
@@ -155,15 +155,10 @@ export function closePopups() {
   const pops = document.querySelectorAll('.del-pop');
   pops.forEach(p => p.remove());
   if (!openDiffs.size) return pops.length > 0;
-  const anchor = captureAnchor();
-  for (const slot of [...openDiffs]) {
-    closeDiff(slot);
-    const el = slots.get(slot);
-    if (el) baseline(el);
-  }
+  // The panels are part of their blocks, not new content (keepPlace re-baselines).
+  keepPlace(() => { for (const slot of [...openDiffs]) closeDiff(slot); });
   walk = [];
   autoDiff = null;
-  restoreAnchor(anchor, new Set());
   scheduleRail();
   return true;
 }
@@ -228,9 +223,7 @@ export function toggleDiffInView() {
   if (closed) return toggleDiff(+closed.dataset.slot);
   walk = [];
   if (all.some(el => +el.dataset.slot === autoDiff)) autoDiff = null;
-  const anchor = captureAnchor();
-  for (const el of all) { closeDiff(+el.dataset.slot); baseline(el); }
-  restoreAnchor(anchor, new Set());
+  keepPlace(() => { for (const el of all) closeDiff(+el.dataset.slot); });
   scheduleRail();
   return false;
 }
@@ -247,11 +240,8 @@ export function toggleDiff(slot) {
 function flipDiff(slot) {
   const el = slots.get(slot);
   if (!el || !diffOf.has(slot)) return false;
-  const anchor = captureAnchor();
-  if (openDiffs.has(slot)) closeDiff(slot); else showDiff(el, diffOf.get(slot));
-  // The panel is part of the block, not new content: keep the height baseline.
-  baseline(el);
-  restoreAnchor(anchor, new Set());
+  // The panel is part of the block, not new content: keepPlace re-baselines.
+  keepPlace(() => { if (openDiffs.has(slot)) closeDiff(slot); else showDiff(el, diffOf.get(slot)); });
   scheduleRail();
   return openDiffs.has(slot);
 }

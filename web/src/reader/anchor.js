@@ -1,5 +1,6 @@
 // Reading position: capture and restore the block at the top of the viewport,
 // compensate for blocks above it changing height, and resolve #fragments.
+import { headingAtOrBefore } from './heading.js';
 import { doc, slots, heights, trace, keptScroll, onKeptScroll, isChunk, nextItem, prevItem, blockAfter, precedes } from './core.js';
 import { scheduleRail } from './rail.js';
 import { forceLayout, laidOut, estimateOf, neverLaidOut, cv, scrolledTo } from './chunks.js';
@@ -36,10 +37,7 @@ export function captureAnchor() {
   const offset = -r.top;
   // The share of the block above the viewport's edge, kept when its height changes.
   const ratio = r.height > 0 ? -r.top / r.height : 0;
-  let heading = null;
-  for (let e = el; e; e = prevItem(e)) {
-    if (e.classList.contains('k-heading')) { heading = e.dataset.anchor || null; break; }
-  }
+  const heading = headingAtOrBefore(el)?.dataset.anchor || null;
   // The neighbours stand in for the anchor block if a patch removes it.
   const prev = blockAfter(el, prevItem);
   const next = blockAfter(el);
