@@ -282,6 +282,40 @@ const doc = items => ({ version: 1, reset: true, rewrite: false, marks: [], dele
   await page.close();
 }
 
+// 7. A block whose HTML arrived before it came within a screen (kept until
+//    it does), scrolled far out of reach and back: put in from what arrived,
+//    the worker not asked for it again (code.js: keep).
+{
+  const counted = () => {
+    window.__hlAsks = []; window.__hlDone = [];
+    const pm = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function (m) { if (m && m.op === 'hl') window.__hlAsks.push({ id: m.id, code: m.code }); return pm.apply(this, arguments); };
+    window.Worker = class extends window.Worker {
+      constructor(...a) { super(...a); this.addEventListener('message', e => { if (e.data?.op === 'done') window.__hlDone.push(e.data.id); }); }
+    };
+  };
+  const ts = Array.from({ length: 20 }, (_, i) => `export const kept${i}: number = ${i}; // kept_marker`).join('\n');
+  const items = [...Array.from({ length: 50 }, (_, i) => ['paragraph', `<p>Before ${i} ${'lorem ipsum '.repeat(8)}</p>`]), ['code', code('ts', ts)],
+    ...Array.from({ length: 300 }, (_, i) => ['paragraph', `<p>After ${i} ${'lorem ipsum '.repeat(8)}</p>`])];
+  const page = await open({ width: 900, height: 900 }, counted);
+  await page.evaluate(() => window.readout.prepare(['ts']));
+  await until(page, () => performance.getEntriesByName('readout-hl-prepared').length > 0);
+  await page.evaluate(p => window.readout.apply(p), doc(items));
+  const asks = () => page.evaluate(() => window.__hlAsks.filter(a => a.code.includes('kept_marker')).map(a => a.id));
+  const arrived = await until(page, () => window.__hlAsks.some(a => a.code.includes('kept_marker') && window.__hlDone.includes(a.id)), 10000);
+  const before = await page.evaluate(() => { const cb = document.querySelector('.code-block'); return { hl: cb.dataset.hl, top: Math.round(cb.getBoundingClientRect().top) }; });
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  await page.waitForTimeout(500);
+  const far = await page.evaluate(() => Math.round(-document.querySelector('.code-block').getBoundingClientRect().bottom / innerHeight));
+  await page.evaluate(() => document.querySelector('.code-block').scrollIntoView({ block: 'center' }));
+  const done = await until(page, () => document.querySelector('.code-block').dataset.hl === 'done', 5000);
+  await page.waitForTimeout(300);
+  const r = { arrived, before, far, done, asks: (await asks()).length };
+  check('HTML that arrived for a block, scrolled far away and back: put in without asking again',
+    r.arrived && r.before.hl === 'pending' && r.before.top > 2 * 900 && r.far > 4 && r.done && r.asks === 1, JSON.stringify(r));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();

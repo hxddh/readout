@@ -1,12 +1,12 @@
 // Math with KaTeX, loaded on first use.
-import { shown } from './enhance.js';
+import { shown } from './holds.js';
 
 const mathCache = new Map();      // tex+display -> html, least recently used first
 // Enough for every formula of a long document; an agent rewriting formulas
 // all day does not grow it without end.
 const MATH_CACHE_MAX = 2000;
 
-/** Math waiting for KaTeX to load (a first paint showing it waits too: enhance.js). */
+/** Math waiting for KaTeX to load (a first paint showing it waits too: holds.js). */
 export const typesetting = new Set();
 
 let katexPromise = null;

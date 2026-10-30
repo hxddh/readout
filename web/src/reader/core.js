@@ -35,6 +35,9 @@ export function blockAfter(e, step = nextItem) {
   for (e = e && step(e); e; e = step(e)) if (e.classList.contains('blk')) return e;
   return null;
 }
+// East Asian wide and full-width characters, and emoji: wider than a Latin
+// letter (a table cell's columns, enhance.js; a code line's, code.js).
+export const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦\u{1f000}-\u{1faff}\u{20000}-\u{3fffd}]/u;
 /** Scrolls animate, unless the document is large (an instant scroll compensating for a block laid out on the way would cut the animation short) or the reader asked for less motion. */
 export const smooth = () => !doc.classList.contains('cv') && !matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const precedes = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);

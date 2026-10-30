@@ -4,7 +4,9 @@ import { captureAnchor, restoreAnchor, keepPlace, anchorMiss, atBottom, fitsOnSc
 import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, noteLead, leadIns, prevBlock, roughRect, unstale, cvOn } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
 import { scheduleRail } from './rail.js';
-import { enhance, renderLazy, forgetBlock, afterShown, askEarly } from './enhance.js';
+import { enhance, renderLazy, forgetBlock } from './enhance.js';
+import { askOnScreen } from './code.js';
+import { afterShown } from './holds.js';
 import { sources, tight, setLinks } from './copy.js';
 import { reportActiveHeading, headingsChanged } from './heading.js';
 
@@ -278,7 +280,7 @@ function applyOps(p, showsTop) {
   }
 
   // A document shown anew from its top: the code its first screen may show
-  // is asked for as its block is made (askEarly), by the heights estimated
+  // is asked for as its block is made (askOnScreen), by the heights estimated
   // above it (lines of at least 18 px).
   const reach = window.innerHeight + 120;
   let above = showsTop ? 0 : Infinity;
@@ -311,7 +313,7 @@ function applyOps(p, showsTop) {
       headingsTouched ||= op.kind === 'heading';
       const el = makeBlock(op);
       if (above < reach) {
-        for (const cb of el.querySelectorAll('.code-block')) askEarly(cb, Math.ceil((reach - above) / 18));
+        for (const cb of el.querySelectorAll('.code-block')) askOnScreen(cb, Math.ceil((reach - above) / 18));
         above += estimateOp(op);
       }
       const after = op.after ? slots.get(op.after) : null;

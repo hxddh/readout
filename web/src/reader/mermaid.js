@@ -1,6 +1,7 @@
 // Mermaid diagrams, loaded on first use and rendered one at a time.
 import { doc, root, strings, inViewport, pageTheme, quicklook } from './core.js';
-import { lazyObserver, shown, grows } from './enhance.js';
+import { lazyObserver, grows } from './enhance.js';
+import { shown } from './holds.js';
 
 // Drawings by look and source, most recently used last. An agent writing a
 // diagram makes a source of every few characters it adds: at most CACHE_MAX

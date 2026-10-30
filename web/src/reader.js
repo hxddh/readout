@@ -2,17 +2,18 @@
 // stable, shows unread changes, and renders code, math and diagrams lazily
 // (web/src/reader/, a module each). This module: links, keys, copy, the native API.
 import * as hl from './highlight.js';
-import { doc, root, slots, post, smooth, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, firstItem, nextItem } from './reader/core.js';
+import { doc, root, slots, post, smooth, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings } from './reader/core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, atBottom, atEnd, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld, pulse } from './reader/marks.js';
 import { chunksHeld } from './reader/chunks.js';
 import { scheduleRail } from './reader/rail.js';
-import { relabelButtons, setCodeWrap, highlightAll, measureTables, lazyHeld } from './reader/enhance.js';
+import { relabelButtons, setCodeWrap, measureTables, lazyHeld } from './reader/enhance.js';
+import { highlightAll } from './reader/code.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
-import { markdownOf, htmlOf, inDocument, sources, definitionsUsed, partIn } from './reader/copy.js';
+import { markdownOf, htmlOf, inDocument, blocksIn, sources, definitionsUsed, partIn } from './reader/copy.js';
 import { find, findEnd } from './reader/find.js';
 
 // ---------------------------------------------------------------- Links & keys
@@ -121,15 +122,9 @@ function selectedSlots() {
   if (!textSelected()) { const b = focusedBlock(); return b ? [+b.dataset.slot] : []; }
   const out = [];
   for (let i = 0; i < sel.rangeCount; i++) {
-    const r = sel.getRangeAt(i);
-    const touched = [];
-    let seen = false;
-    for (let e = firstItem(); e; e = nextItem(e)) {
-      if (!e.classList.contains('blk')) continue;
-      if (!r.intersectsNode(e)) { if (seen) break; continue; }
-      seen = true;
-      touched.push(e);
-    }
+    const r = inDocument(sel.getRangeAt(i));
+    if (!r) continue;
+    const touched = blocksIn(r);
     const hasText = e => partIn(r, e).toString().trim() !== '';
     while (touched.length && !hasText(touched[0])) touched.shift();
     while (touched.length && !hasText(touched[touched.length - 1])) touched.pop();

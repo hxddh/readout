@@ -63,11 +63,11 @@ function contentText(n) {
 // ------------------------------------------------------------ Which blocks
 
 /**
- * The document's blocks the range touches with text, in order (as
- * selectedSlots). Found from the range's two ends: a range comparison costs
+ * The document's blocks range `r` (inside the document: inDocument) reaches
+ * into, in order. Found from the range's two ends: a range comparison costs
  * the node's index among its siblings, and a 5 MB document has 40 000 blocks.
  */
-function touchedBlocks(r) {
+export function blocksIn(r) {
   const first = endBlock(r.startContainer, r.startOffset, false);
   const last = endBlock(r.endContainer, r.endOffset, true);
   const out = [];
@@ -77,6 +77,17 @@ function touchedBlocks(r) {
     if (e === last) break;
   }
   if (out.length && out[out.length - 1] !== last) return [];   // the ends out of order
+  return out;
+}
+
+/**
+ * The document's blocks the range touches with text, in order: those it
+ * reaches into less any at its ends it holds no text of, the page's
+ * controls left out (selectedSlots counts their text, and no block without
+ * text at an end).
+ */
+function touchedBlocks(r) {
+  const out = blocksIn(r);
   let i = 0, j = out.length;
   while (i < j && !coversText(r, out[i])) i++;
   while (j > i && !coversText(r, out[j - 1])) j--;

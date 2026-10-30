@@ -147,7 +147,7 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
   overflow-wrap: break-word;
 }
 /* A document's first paint waits a moment for the code it shows to be
-   highlighted (enhance.js: hold); laid out meanwhile, only not painted. */
+   highlighted (holds.js: hold); laid out meanwhile, only not painted. */
 #ro-doc.hold { visibility: hidden; }
 
 /* The document's blocks come in chunks (chunks.js). Large documents let
@@ -188,7 +188,7 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
    never closer than 4 rem to the window's edge. The block itself widens
    (--out on each side), so its change bar, flash and edit mark stay beside
    it as on any other block. A code block widens as far as the room allows
-   or not at all (enhance.js gives its longest line in columns, --cb-cols): a
+   or not at all (code.js gives its longest line in columns, --cb-cols): a
    fill a few pixels wider than the text reads as a misalignment.
    A table too wide for the column widens to the right only, as far as it
    needs (--tb-w, measured), up to twice that room and never closer than
@@ -625,7 +625,7 @@ td.num, th.num { text-align: right; }
 
 /* Long code lines wrap when the reader turns wrapping on (remembered by the app). */
 :root[data-code-wrap="on"] .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-/* Prose in a fence always wraps, between words (enhance.js: .cb-prose). */
+/* Prose in a fence always wraps, between words (code.js: .cb-prose). */
 .code-block.cb-prose pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .code-block.cb-prose .cb-wrap { display: none; }
 :root[data-code-wrap="on"] .cb-wrap { color: var(--text); background: var(--fill-2); }

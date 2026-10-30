@@ -7,7 +7,6 @@
 // of the viewport are laid out ahead (`near`), so what scrolls in is drawn.
 import { doc, heights, isChunk, prevItem, blockAfter } from './core.js';
 import { resizeObserver } from './anchor.js';
-import { nearChunk } from './enhance.js';
 
 const CHUNK = 32;   // items a chunk is filled to as blocks arrive in order
 const SPAN = 4000;  // or estimated px (about four screens): long code is two or three blocks a chunk, a huge block one of its own
@@ -56,6 +55,29 @@ function show(c) {
   if (on) nearChunk(c);
   // Laid out from now on at its size, remembered when it is skipped again (account).
   if (on && stale.delete(c)) { c.classList.remove('stale'); c.style.removeProperty('--stale'); }
+}
+
+// Lazy work (code to highlight, code.js; a diagram to draw, enhance.js) is
+// triggered for anything near the viewport. In a chunk content-visibility
+// skips, a block is placed at the chunk's top until the chunk is laid out:
+// one far down a chunk near the screen would count as near too, and be
+// highlighted (its spans kept, and restyled with every theme switch) long
+// before it is read. It waits for its chunk to be laid out (nearChunk), and
+// is asked about again then.
+export const waitingForChunk = new Map();   // element -> its observer
+export const skippedChunk = el => {
+  const c = el.closest('#ro-doc > .chunk');
+  return !!c && doc.classList.contains('cv') && !c.classList.contains('near');
+};
+/** Chunk `c` is laid out from now on: what waited in it for that is asked about again, where it really is. */
+function nearChunk(c) {
+  for (const [el, o] of waitingForChunk) {
+    if (!el.isConnected) { waitingForChunk.delete(el); continue; }
+    if (!c.contains(el)) continue;
+    waitingForChunk.delete(el);
+    o.unobserve(el);
+    o.observe(el);
+  }
 }
 
 // A scroll of more than a screen at once (the scrollbar dragged, Home, End,
