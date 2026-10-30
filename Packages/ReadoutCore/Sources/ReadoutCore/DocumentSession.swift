@@ -79,6 +79,15 @@ public struct RenderPatch: Codable, Sendable {
     }
 }
 
+extension RenderPatch.Op {
+    /// An insert or replace carrying the whole of block `b`: its HTML, kind,
+    /// CJK flag, anchor and source.
+    fileprivate static func showing(_ op: Kind, _ b: Block, after: Int? = nil, change: Change? = nil, tight: Bool?) -> Self {
+        .init(op: op, slot: b.slot, after: after, html: b.html, change: change,
+              kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight)
+    }
+}
+
 /// Per-open-file state: slot identities, unread change marks and the reading baseline.
 public final class DocumentSession {
     /// How much removed text one deletion marker carries before it notes the rest.
@@ -101,7 +110,8 @@ public final class DocumentSession {
     private var linksDirty = false
     private var nextSlot = 1
     private var nextDeletionID = 1
-    public private(set) var marks: [Int: MarkKind] = [:]
+    /// The unread mark of each marked block, by slot.
+    public var marks: [Int: MarkKind] { unread.mapValues(\.kind) }
     public private(set) var deletions: [RenderPatch.Deletion] = []
     /// What the reader has read, to persist between launches: `load` with
     /// it marks exactly what is unread now. The current version's blocks
@@ -118,19 +128,33 @@ public final class DocumentSession {
     private var storedBaseline: [BlockKey] = []
     private var baselineStale = false
     private func setBaseline(_ keys: [BlockKey]) { storedBaseline = keys; baselineStale = false }
-    /// For each block marked modified: its Markdown source when last read.
-    private var readText: [Int: String] = [:]
-    /// The key of each block marked modified as last read: its fingerprint
-    /// (a change back is no change).
-    private var readKey: [Int: BlockKey] = [:]
+    /// What is unread about a marked block, and what of it was last read.
+    /// The read fields are set only for a `.modified` or `.state` mark,
+    /// `diff` only for a `.modified` one.
+    private struct Unread {
+        var kind: MarkKind
+        /// The block's Markdown source when last read.
+        var readText: String? = nil
+        /// The block's key as last read: its fingerprint (a change back is no change).
+        var readKey: BlockKey? = nil
+        /// Its task states when last read (known after a live update, not after a relaunch).
+        var readTasks: [Bool]? = nil
+        /// What changed since it was read (`WordDiff.html`).
+        var diff: String? = nil
+
+        /// The block's key as last read, `current` when no earlier version was kept.
+        func keyAsRead(current: BlockKey) -> BlockKey {
+            let read = readKey ?? current
+            return readTasks.map { read.with(taskState: $0) } ?? read
+        }
+    }
+    /// The marked blocks, by slot.
+    private var unread: [Int: Unread] = [:]
     /// The removed blocks of unread deletions as last read, by the slot they
     /// sit after (0: the top), in the order they were read; each with its deletion's id.
     private var removedKeys: [Int: [(id: Int, key: BlockKey)]] = [:]
     /// Keys of `blocks`, once computed for them (nil: not yet).
     private var blockKeys: [BlockKey]? = nil
-    /// Task states of those blocks when last read (known after a live update, not after a relaunch).
-    private var readTasks: [Int: [Bool]] = [:]
-    private var diffs: [Int: String] = [:]
     /// Comparisons and deletion texts the page already has: a patch carries
     /// each one once, not again with every later patch.
     private var sentDiffs: Set<Int> = []
@@ -138,7 +162,7 @@ public final class DocumentSession {
 
     public init() {}
 
-    public var unreadCount: Int { marks.count + deletions.count }
+    public var unreadCount: Int { unread.count + deletions.count }
 
     /// The outline entries (heading slots) whose own section holds an unread
     /// change: a marked block, or a deletion after one of its blocks. A
@@ -151,7 +175,7 @@ public final class DocumentSession {
         var section = 0   // before the first heading: no outline entry
         for b in blocks {
             if b.kind == .heading, let level = b.headingLevel, level <= ParsedDocument.tocMaxLevel { section = b.slot }
-            if section != 0, marks[b.slot] != nil || deletedAfter.contains(b.slot) { out.insert(section) }
+            if section != 0, unread[b.slot] != nil || deletedAfter.contains(b.slot) { out.insert(section) }
         }
         return out
     }
@@ -191,7 +215,7 @@ public final class DocumentSession {
             rewrite = d.rewrite
             // Checkbox states come from the baseline.
             if !d.rewrite {
-                applyMarks(d, shared: 0, oldLength: persisted.count, oldKey: { persisted[$0] }, oldSlot: { _ in nil },
+                applyMarks(d, shared: 0, old: OldVersion(count: 0, prefix: 0, tail: []), oldLength: persisted.count, oldKey: { persisted[$0] }, oldSlot: { _ in nil },
                            oldTasks: { persisted[$0].taskState }, oldTexts: { persisted[$0].wholeSource })
             }
             rebuildBaseline(keys)
@@ -221,9 +245,7 @@ public final class DocumentSession {
         var ops: [RenderPatch.Op] = []
         var prev = 0
         for (i, b) in blocks.enumerated() {
-            ops.append(.init(op: .insert, slot: b.slot, after: prev, html: b.html, change: nil,
-                             kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource,
-                             tight: Self.adjacent(blocks, i, before: nil, in: blocks)))
+            ops.append(.showing(.insert, b, after: prev, tight: Self.adjacent(blocks, i, before: nil, in: blocks)))
             prev = b.slot
         }
         return payload(ops: ops, reset: true, rewrite: rewrite)
@@ -237,9 +259,8 @@ public final class DocumentSession {
     /// rewriting the same text marks nothing (and a deletion of everything
     /// does not stay behind).
     private struct State {
-        var blocks: [Block], title: String?, marks: [Int: MarkKind], deletions: [RenderPatch.Deletion]
-        var baseline: [BlockKey], readText: [Int: String], readKey: [Int: BlockKey], readTasks: [Int: [Bool]]
-        var diffs: [Int: String], removedKeys: [Int: [(id: Int, key: BlockKey)]]
+        var blocks: [Block], title: String?, unread: [Int: Unread], deletions: [RenderPatch.Deletion]
+        var baseline: [BlockKey], removedKeys: [Int: [(id: Int, key: BlockKey)]]
     }
     private var beforeEmpty: State?
 
@@ -247,17 +268,15 @@ public final class DocumentSession {
     public func update(_ doc: ParsedDocument) -> RenderPatch? {
         if doc.blocks.isEmpty {
             if beforeEmpty == nil && !blocks.isEmpty {
-                beforeEmpty = State(blocks: blocks, title: title, marks: marks, deletions: deletions, baseline: baseline,
-                                    readText: readText, readKey: readKey, readTasks: readTasks, diffs: diffs,
+                beforeEmpty = State(blocks: blocks, title: title, unread: unread, deletions: deletions, baseline: baseline,
                                     removedKeys: removedKeys)
             }
         } else if let s = beforeEmpty {
             beforeEmpty = nil
-            blocks = s.blocks; title = s.title; marks = s.marks; deletions = s.deletions; setBaseline(s.baseline)
+            blocks = s.blocks; title = s.title; unread = s.unread; deletions = s.deletions; setBaseline(s.baseline)
             cachedToc = nil
             blockKeys = nil
             generation = 0
-            readText = s.readText; readKey = s.readKey; readTasks = s.readTasks; diffs = s.diffs
             removedKeys = s.removedKeys
             // The page shows the empty version: it gets the whole document, marked against the one before.
             if let p = apply(doc), p.reset { return p }
@@ -270,14 +289,16 @@ public final class DocumentSession {
 
     /// The parse `blocks` are (`ParsedDocument.generation`; 0: not known).
     private var generation: UInt64 = 0
-    /// While an update runs: how many blocks it had, the first `oldPrefix`
-    /// of which are still `blocks`' first, and the rest of them.
-    private var oldCount = 0
-    private var oldPrefix = 0
-    private var oldTail: [Block] = []
+    /// The version an update replaces: how many blocks it had, the first
+    /// `prefix` of which are still `blocks`' first, and the rest of them.
+    /// A load has none (`count` 0).
+    private struct OldVersion {
+        let count: Int
+        let prefix: Int
+        let tail: [Block]
+    }
     /// The blocks the last update knew unchanged at the start and end (for tests).
     private(set) var lastShared = (prefix: 0, suffix: 0)
-    private func oldBlock(_ o: Int) -> Block { o < oldPrefix ? blocks[o] : oldTail[o - oldPrefix] }
 
     private func apply(_ doc: ParsedDocument) -> RenderPatch? {
         let oldN = blocks.count, newN = doc.blocks.count
@@ -318,11 +339,8 @@ public final class DocumentSession {
             return fullPayload(rewrite: true)
         }
 
-        oldCount = oldN
-        oldPrefix = P
-        oldTail = P == 0 ? blocks : Array(blocks[P...])
-        defer { oldTail = []; oldPrefix = 0; oldCount = 0 }
-        let old = oldTail
+        let oldVersion = OldVersion(count: oldN, prefix: P, tail: P == 0 ? blocks : Array(blocks[P...]))
+        let old = oldVersion.tail
         // Assign slots.
         var tail = P == 0 ? doc.blocks : Array(doc.blocks[P...])
         for (n, c) in d.changes.enumerated() {
@@ -357,9 +375,9 @@ public final class DocumentSession {
                 let ob = old[o]
                 let wasTight = Self.adjacent(old, o, before: before, in: blocks)
                 if ob.taskState != b.taskState {
-                    ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .state, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
+                    ops.append(.showing(.replace, b, change: .state, tight: tight))
                 } else if ob.html != b.html || ob.cjk != b.cjk {
-                    ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .silent, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
+                    ops.append(.showing(.replace, b, change: .silent, tight: tight))
                 } else if ob.rawSource != b.rawSource || ob.source != b.source || wasTight != tight {
                     // A source that changed but renders the same (`*` for `-`, a
                     // blank line before it) still reaches the page's copy: without
@@ -368,16 +386,16 @@ public final class DocumentSession {
                     ops.append(.init(op: .replace, slot: b.slot, html: nil, change: .silent, kind: b.kind, src: b.copySource, tight: tight))
                 }
             case .modified:
-                ops.append(.init(op: .replace, slot: b.slot, html: b.html, change: .content, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
+                ops.append(.showing(.replace, b, change: .content, tight: tight))
             case .inserted:
-                ops.append(.init(op: .insert, slot: b.slot, after: prev, html: b.html, kind: b.kind, cjk: b.cjk, anchor: b.anchor, src: b.copySource, tight: tight))
+                ops.append(.showing(.insert, b, after: prev, tight: tight))
             }
             prev = b.slot
         }
 
         // Order changes are impossible here (no moves), so inserts by `after` reproduce the order.
         if P == 0 { blocks = tail } else { blocks.replaceSubrange(P..., with: tail) }
-        applyMarks(d, shared: P, oldLength: old.count, oldKey: { oldKeyTail[$0] }, oldSlot: { old[$0].slot },
+        applyMarks(d, shared: P, old: oldVersion, oldLength: old.count, oldKey: { oldKeyTail[$0] }, oldSlot: { old[$0].slot },
                    oldTasks: { old[$0].taskState }, oldTexts: { old[$0].source })
         rebuildBaseline(newKeys)
         if ops.isEmpty && !linksDirty { return nil }
@@ -386,10 +404,13 @@ public final class DocumentSession {
 
     /// Marks for the diff `d` of the blocks after the first `shared` (which
     /// are unchanged): its indices, and those the closures take, are of the
-    /// blocks after them, of which there were `oldLength`. Old blocks are
-    /// `oldBlock` (none on a load).
-    private func applyMarks(_ d: DiffResult, shared P: Int, oldLength: Int, oldKey: (Int) -> BlockKey, oldSlot oldSlotForIndex: (Int) -> Int?,
-                            oldTasks: (Int) -> [Bool]?, oldTexts: (Int) -> String) {
+    /// blocks after them, of which there were `oldLength`. The old blocks
+    /// themselves are `old`'s (none on a load).
+    private func applyMarks(_ d: DiffResult, shared P: Int, old: OldVersion, oldLength: Int, oldKey: (Int) -> BlockKey,
+                            oldSlot oldSlotForIndex: (Int) -> Int?, oldTasks: (Int) -> [Bool]?, oldTexts: (Int) -> String) {
+        let oldCount = old.count
+        /// Block `o` of the old version (of all its blocks).
+        func oldBlock(_ o: Int) -> Block { o < old.prefix ? blocks[o] : old.tail[o - old.prefix] }
         // Whether a slot is in the new version. Every slot asked about (of a
         // mark, a deletion's anchor, removed blocks' anchor) is an old block's
         // or one given now: marks, deletions and removed blocks are moved to
@@ -402,7 +423,7 @@ public final class DocumentSession {
         do {
             var known = Set(blocks.map(\.slot))
             for o in 0..<oldCount { known.insert(oldBlock(o).slot) }
-            let asked = Array(marks.keys) + deletions.map(\.after) + Array(removedKeys.keys)
+            let asked = Array(unread.keys) + deletions.map(\.after) + Array(removedKeys.keys)
             assert(asked.allSatisfy { $0 == 0 || known.contains($0) }, "a mark or anchor on a slot no block has")
         }
         #endif
@@ -414,45 +435,50 @@ public final class DocumentSession {
             let slot = blocks[n].slot
             switch c {
             case .inserted:
-                marks[slot] = .inserted
+                unread[slot] = Unread(kind: .inserted)
             case let .modified(o):
-                if marks[slot] != .inserted {
+                let mark = unread[slot]?.kind
+                if mark != .inserted {
+                    // (The kind is set below in every case that keeps the mark.)
+                    var u = unread[slot] ?? Unread(kind: .modified)
                     // Compared with the text as last read: the first change since then keeps it.
                     // (A checkbox change still unread already recorded the version read.)
-                    if marks[slot] != .modified && marks[slot] != .state {
-                        readText[slot] = oldTexts(o)
-                        readKey[slot] = oldKey(o)
+                    if mark != .modified && mark != .state {
+                        u.readText = oldTexts(o)
+                        u.readKey = oldKey(o)
                         // Unless a checkbox change since reading already recorded them.
-                        if readTasks[slot] == nil, let read = oldTasks(o) { readTasks[slot] = read }
+                        if u.readTasks == nil, let read = oldTasks(o) { u.readTasks = read }
                     }
                     // Changed back to what was read: the same content (fingerprint).
-                    let reverted = readKey[slot].map { $0.fingerprint == blocks[n].fingerprint } ?? false
+                    let reverted = u.readKey.map { $0.fingerprint == blocks[n].fingerprint } ?? false
                     if reverted {
                         // Changed back to the text that was read: no comparison to show,
                         // but a checkbox that differs from what was read is still news.
-                        let readState = readTasks[slot] ?? oldTasks(o)
-                        marks[slot] = readState.map { $0 != blocks[n].taskState } == true ? .state : nil
-                        diffs[slot] = nil
-                        // A state mark keeps the version read (its source shows the checkboxes as read).
-                        if marks[slot] != .state { readText[slot] = nil; readKey[slot] = nil }
-                        // A state mark keeps the checkboxes as read, so unticking clears it.
-                        readTasks[slot] = marks[slot] == .state ? readState : nil
+                        let readState = u.readTasks ?? oldTasks(o)
+                        if readState.map({ $0 != blocks[n].taskState }) == true {
+                            // A state mark keeps the version read (its source shows the
+                            // checkboxes as read), and the checkboxes as read, so unticking clears it.
+                            u.kind = .state
+                            u.diff = nil
+                            u.readTasks = readState
+                            unread[slot] = u
+                        } else {
+                            unread[slot] = nil
+                        }
                     } else {
-                        marks[slot] = .modified
-                        diffs[slot] = WordDiff.html(old: readText[slot] ?? oldTexts(o), new: blocks[n].source, budget: &budget)
+                        u.kind = .modified
+                        u.diff = WordDiff.html(old: u.readText ?? oldTexts(o), new: blocks[n].source, budget: &budget)
+                        unread[slot] = u
                         sentDiffs.remove(slot)
                     }
                 }
             case let .equal(o):
-                if let read = oldTasks(o), read != blocks[n].taskState, marks[slot] == nil {
-                    marks[slot] = .state
-                    readTasks[slot] = read   // the checkboxes as read
-                    // And the block as read, should it be removed before this is read.
-                    readText[slot] = oldTexts(o)
-                    readKey[slot] = oldKey(o)
-                } else if marks[slot] == .state, let read = readTasks[slot], read == blocks[n].taskState {
+                if let read = oldTasks(o), read != blocks[n].taskState, unread[slot] == nil {
+                    // The checkboxes as read, and the block as read, should it be removed before this is read.
+                    unread[slot] = Unread(kind: .state, readText: oldTexts(o), readKey: oldKey(o), readTasks: read)
+                } else if unread[slot]?.kind == .state, let read = unread[slot]?.readTasks, read == blocks[n].taskState {
                     // Ticked and unticked again before it was read: nothing new.
-                    marks[slot] = nil; readTasks[slot] = nil
+                    unread[slot] = nil
                 }
             }
         }
@@ -494,26 +520,25 @@ public final class DocumentSession {
             }
         }
         for o in d.removed {
+            let s = oldSlotForIndex(o)
             if oldCount > 0, absorbed(o) {
-                if let s = oldSlotForIndex(o) { marks[s] = nil }
+                if let s { unread[s] = nil }
                 continue
             }
-            if let s = oldSlotForIndex(o), marks[s] == .inserted {
+            if let s, unread[s]?.kind == .inserted {
                 // Inserted and removed before it was read: nothing to report.
-                marks[s] = nil
+                unread[s] = nil
                 continue
             }
+            // What was last read of a block with an unread edit or checkbox change.
+            let asRead: Unread? = s.flatMap { unread[$0] }.flatMap { $0.kind == .modified || $0.kind == .state ? $0 : nil }
             // The whole removed text as last read: an unread edit is never shown as what was removed.
-            let lastRead: String? = oldSlotForIndex(o).flatMap { slot -> String? in
-                guard marks[slot] == .modified || marks[slot] == .state else { return nil }
-                return readText[slot]
-            }
+            let lastRead: String? = asRead?.readText
             // The block as last read: before an unread edit, with the checkboxes as read.
             var removedKey = oldKey(o).with(removed: false)
-            if let s = oldSlotForIndex(o) {
-                if marks[s] == .modified || marks[s] == .state, let k = readKey[s] { removedKey = k }
-                if marks[s] == .modified || marks[s] == .state, let t = readTasks[s] { removedKey = removedKey.with(taskState: t) }
-                marks[s] = nil
+            if let s {
+                if let asRead { removedKey = asRead.keyAsRead(current: removedKey) }
+                unread[s] = nil
             }
             let after = anchorBefore(P + o)
             newRemoved.append((after, P + o, removedKey))
@@ -587,15 +612,11 @@ public final class DocumentSession {
                 entries.sorted { ($0.position, $0.order) < ($1.position, $1.order) }.filter { live.contains($0.id) }.map { ($0.id, $0.key) }
             }.filter { !$0.value.isEmpty }
         }
-        marks = marks.filter { isNew($0.key) }
-        readText = readText.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
-        readKey = readKey.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
-        readTasks = readTasks.filter { marks[$0.key] == .modified || marks[$0.key] == .state }
-        diffs = diffs.filter { marks[$0.key] == .modified }
+        unread = unread.filter { isNew($0.key) }
     }
 
     private func resetMarks() {
-        marks = [:]; deletions = []; readText = [:]; readKey = [:]; readTasks = [:]; diffs = [:]; sentDiffs = []; sentDeletions = []
+        unread = [:]; deletions = []; sentDiffs = []; sentDeletions = []
         removedKeys = [:]
     }
 
@@ -608,22 +629,18 @@ public final class DocumentSession {
 
     private func builtBaseline() -> [BlockKey] {
         let keys = blockKeys ?? blocks.map(BlockKey.init)
-        guard !marks.isEmpty || !deletions.isEmpty else { return keys }
+        guard !unread.isEmpty || !deletions.isEmpty else { return keys }
         func removedAfter(_ slot: Int) -> [BlockKey] { removedKeys[slot]?.map { $0.key.with(removed: true) } ?? [] }
         var out: [BlockKey] = removedAfter(0)
         out.reserveCapacity(keys.count + deletions.count)
         for (i, b) in blocks.enumerated() {
-            switch marks[b.slot] {
-            case .inserted?:
-                break
-            case .modified?:
-                let read = readKey[b.slot] ?? keys[i]
-                out.append(readTasks[b.slot].map { read.with(taskState: $0) } ?? read)
-            case .state?:
-                let read = readKey[b.slot] ?? keys[i]
-                out.append(readTasks[b.slot].map { read.with(taskState: $0) } ?? read)
+            switch unread[b.slot] {
             case nil:
                 out.append(keys[i])
+            case let u? where u.kind == .inserted:
+                break
+            case let u?:   // modified or state: the version read
+                out.append(u.keyAsRead(current: keys[i]))
             }
             out += removedAfter(b.slot)
         }
@@ -633,7 +650,7 @@ public final class DocumentSession {
     // MARK: Reading
 
     public func markRead(slots: [Int], deletionIDs: [Int]) {
-        for s in slots { marks[s] = nil; readText[s] = nil; readKey[s] = nil; readTasks[s] = nil; diffs[s] = nil }
+        for s in slots { unread[s] = nil }
         let ids = Set(deletionIDs)
         // Reading the removal of everything accepts the empty version: it is
         // no longer a passing truncation to look past.
@@ -647,7 +664,7 @@ public final class DocumentSession {
     /// Once the reader has caught up with the empty version (the baseline
     /// moved to it), what came before is no longer what was last read.
     private func dropBeforeEmptyIfRead() {
-        if beforeEmpty != nil && blocks.isEmpty && marks.isEmpty && deletions.isEmpty { beforeEmpty = nil }
+        if beforeEmpty != nil && blocks.isEmpty && unread.isEmpty && deletions.isEmpty { beforeEmpty = nil }
     }
 
     public func markAllRead() {
@@ -657,7 +674,7 @@ public final class DocumentSession {
     }
 
     public var currentMarks: [RenderPatch.Mark] {
-        marks.map { .init(slot: $0.key, kind: $0.value, diff: $0.value == .modified ? diffs[$0.key] : nil) }
+        unread.map { .init(slot: $0.key, kind: $0.value.kind, diff: $0.value.kind == .modified ? $0.value.diff : nil) }
             .sorted { $0.slot < $1.slot }
     }
 
@@ -670,7 +687,7 @@ public final class DocumentSession {
             for i in outDeletions.indices where sentDeletions.contains(outDeletions[i].id) { outDeletions[i].preview = nil }
         }
         sentDiffs = Set(outMarks.lazy.filter { $0.kind == .modified }.map(\.slot)).union(reset ? [] : sentDiffs)
-            .filter { marks[$0] == .modified }
+            .filter { unread[$0]?.kind == .modified }
         sentDeletions = Set(deletions.map(\.id))
         return (outMarks, outDeletions)
     }
