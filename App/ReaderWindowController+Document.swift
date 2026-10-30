@@ -23,10 +23,10 @@ extension ReaderWindowController {
         }) { [weak self] result in
             guard let self else { return }
             guard let result else {
-                self.loadFailed = true
-                if self.editedWhileLoading {
+                self.loadState = .failed
+                if self.whenLoaded.reread {
                     // It changed while the failed read ran: read it again now.
-                    self.editedWhileLoading = false
+                    self.whenLoaded.reread = false
                     self.retryLoadIfFailed()
                     return
                 }
@@ -35,7 +35,7 @@ extension ReaderWindowController {
                 self.model.status = gone ? NSLocalizedString("The file was deleted.", comment: "Status")
                                          : NSLocalizedString("The file could not be read.", comment: "Status")
                 // Nothing to print but the failure: a later read does not print on its own.
-                self.printWhenLoaded = false
+                self.whenLoaded.print = false
                 self.showLoadFailure()
                 return
             }
@@ -55,7 +55,7 @@ extension ReaderWindowController {
         guard let status = model.status else { return }
         showsLoadFailure = true
         webView.whenReady { [weak self] in
-            guard let self, self.showsLoadFailure, !self.loaded else { return }
+            guard let self, self.showsLoadFailure, self.loadState != .loaded else { return }
             self.webView.setAppearance(strings: ["empty": status])
             self.webView.call("apply", json: Self.emptyPatch)
         }
@@ -71,7 +71,7 @@ extension ReaderWindowController {
         let commitNotice = commitBaseline == nil ? nil : CommitNotice.after(rewrite: patch.rewrite, unread: session.unreadCount)
         // What is on disk already: an unchanged baseline is not written again.
         self.lastSavedBaseline = record?.baseline
-        self.loaded = true
+        self.loadState = .loaded
         self.contentPath = result.sourcePath
         self.deleted = false
         self.updateModel(patch, decoded: result.decoded)
@@ -89,13 +89,13 @@ extension ReaderWindowController {
             SmokeTest.run(controller: self, webView: self.webView)
             // An agent write that landed mid-load: re-read now that the
             // first patch is applied, so the fresh content wins.
-            if self.editedWhileLoading {
-                self.editedWhileLoading = false
+            if self.whenLoaded.reread {
+                self.whenLoaded.reread = false
                 self.fileChanged(.modified)
             }
-            if let pending = self.pendingAnchor {
+            if let pending = self.whenLoaded.anchor {
                 // Cross-file link target: the fragment wins over the saved position.
-                self.pendingAnchor = nil
+                self.whenLoaded.anchor = nil
                 self.scrollToAnchor(fragment: pending)
             } else if let slot = self.resumeSlot(from: record, rewritten: patch.rewrite) {
                 let anchor = ["slot": slot, "offset": record?.topOffset ?? 0, "ratio": 0] as [String: Any]
@@ -104,13 +104,13 @@ extension ReaderWindowController {
                 }
             }
             // Return in the find field while it loaded: searched now, behind the apply.
-            if let find = self.findWhenLoaded {
-                self.findWhenLoaded = nil
+            if let find = self.whenLoaded.find {
+                self.whenLoaded.find = nil
                 find()
             }
             // ⌘P while it loaded: now, queued behind the document's apply.
-            if self.printWhenLoaded {
-                self.printWhenLoaded = false
+            if self.whenLoaded.print {
+                self.whenLoaded.print = false
                 self.printDocument(nil)
             }
         }
@@ -134,18 +134,18 @@ extension ReaderWindowController {
         updateSubtitle()
         window?.invalidateRestorableState()
         rereadForRoot = true
-        if loaded { fileChanged(.modified) } else { editedWhileLoading = true }
+        if loadState == .loaded { fileChanged(.modified) } else { whenLoaded.reread = true }
     }
 
     /// Reads the file again when its first read failed.
     func retryLoadIfFailed() {
-        guard !loaded, loadFailed else { return }
-        loadFailed = false
+        guard loadState == .failed else { return }
+        loadState = .loading
         load()
     }
 
     func fileChanged(_ change: FileWatcher.Change) {
-        if !loaded && loadFailed {
+        if loadState == .failed {
             if change == .deleted {
                 deleted = true
                 model.status = NSLocalizedString("The file was deleted.", comment: "Status")
@@ -155,10 +155,10 @@ extension ReaderWindowController {
             }
             return
         }
-        guard loaded else {
+        guard loadState == .loaded else {
             // The first load is still parsing: don't drop the write, replay
             // it right after the initial patch instead.
-            editedWhileLoading = true
+            whenLoaded.reread = true
             return
         }
         if change == .deleted {
@@ -360,7 +360,7 @@ extension ReaderWindowController {
     }
 
     func saveNow() {
-        guard loaded, !retargetGate.isPending else { return }
+        guard loadState == .loaded, !retargetGate.isPending else { return }
         var index: Int? = nil
         var excerpt: String? = nil
         if let a = lastAnchor, let i = session.blocks.firstIndex(where: { $0.slot == a.slot }) {
@@ -450,7 +450,7 @@ extension ReaderWindowController {
     func compareWithLastCommit(rerun: Bool) {
         // Nothing loaded yet: nothing to compare. A loaded document with no
         // blocks (empty, or only whitespace) is compared: what was committed shows as removed.
-        guard loaded, !retargetGate.isPending else { return NSSound.beep() }
+        guard loadState == .loaded, !retargetGate.isPending else { return NSSound.beep() }
         let askedAt = contentGeneration
         // What the window shows, not the file on disk (a newer write may have reached it first).
         let displayed = session.blocks.map(BlockKey.init)

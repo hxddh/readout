@@ -161,21 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func open(_ url: URL, anchor: String? = nil, mode: OpenMode = .request, projectRoot: String? = nil,
               from source: ReaderWindowController? = nil) {
         SmokeTest.noteLaunchPhase("open_requested")
-        var url = url.standardizedFileURL
-        var isDir: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else {
-            NSSound.beep()
-            return
-        }
-        // A folder (`readout DIR`, one dropped on the Dock icon): its newest Markdown file.
-        if isDir.boolValue {
-            guard let newest = Self.newestMarkdown(in: url) else {
-                NSSound.beep()
-                return
-            }
-            url = newest
-        }
-        guard WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else {
+        guard let url = Self.resolveOpenTarget(url) else {
             NSSound.beep()
             return
         }
@@ -186,23 +172,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // reported by FSEvents under /private, is the same window.
         let key = WorkspaceIndex.realPath(url.path)
         if let existing = windows[key] {
-            // An open window follows the file by itself; bringing it forward is
-            // only for a request, and never activates Readout. A window whose
-            // first read failed reads again.
-            existing.retryLoadIfFailed()
-            if let projectRoot { existing.setProjectRoot(projectRoot) }
-            if mode == .request { existing.show() }
-            if let anchor { existing.scrollToAnchor(fragment: anchor) }
+            reopen(existing, anchor: anchor, mode: mode, projectRoot: projectRoot)
             return
         }
         let first = windows.isEmpty
         let controller = makeController(url, key: key, anchor: anchor, projectRoot: projectRoot)
+        cascade(controller, first: first)
+        place(controller, mode: mode, from: source)
+        // A background open leaves the window the reader is in alone, the welcome window included.
+        if mode == .request || !(NSApp.isActive && welcome?.isKeyWindow == true) { welcome?.close() }
+    }
+
+    /// The Markdown file an open request names: the file itself, or a
+    /// folder's (`readout DIR`, one dropped on the Dock icon) newest Markdown
+    /// file. Nil (the caller beeps) when it is missing or not Markdown.
+    private static func resolveOpenTarget(_ url: URL) -> URL? {
+        var url = url.standardizedFileURL
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) else { return nil }
+        if isDir.boolValue {
+            guard let newest = newestMarkdown(in: url) else { return nil }
+            url = newest
+        }
+        guard WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else { return nil }
+        return url
+    }
+
+    /// Opened again while its window is open: an open window follows the file
+    /// by itself; bringing it forward is only for a request, and never
+    /// activates Readout. A window whose first read failed reads again.
+    private func reopen(_ existing: ReaderWindowController, anchor: String?, mode: OpenMode, projectRoot: String?) {
+        existing.retryLoadIfFailed()
+        if let projectRoot { existing.setProjectRoot(projectRoot) }
+        if mode == .request { existing.show() }
+        if let anchor { existing.scrollToAnchor(fragment: anchor) }
+    }
+
+    /// A new window's frame: down and right of the frontmost reader window,
+    /// or centred when it is the first.
+    private func cascade(_ controller: ReaderWindowController, first: Bool) {
         if let front = NSApp.orderedWindows.first(where: { w in windows.values.contains { $0.window === w } }),
            let w = controller.window {
             w.setFrameTopLeftPoint(NSPoint(x: front.frame.minX + 26, y: front.frame.maxY - 26))
         } else if first {
             controller.window?.center()
         }
+    }
+
+    /// Shows a new window as `mode` says: in the background, a tab behind the
+    /// one being read; after a link followed in `source`, the next tab of its
+    /// window, in front; otherwise in front.
+    private func place(_ controller: ReaderWindowController, mode: OpenMode, from source: ReaderWindowController?) {
         let readers = NSApp.orderedWindows.filter { w in windows.values.contains { $0.window === w && $0 !== controller } }
         if mode == .background, let w = controller.window {
             if let current = readers.first {
@@ -227,8 +247,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         } else {
             controller.show()
         }
-        // A background open leaves the window the reader is in alone, the welcome window included.
-        if mode == .request || !(NSApp.isActive && welcome?.isKeyWindow == true) { welcome?.close() }
     }
 
     private func makeController(_ url: URL, key: String, anchor: String? = nil, projectRoot: String? = nil) -> ReaderWindowController {
@@ -331,10 +349,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         return true
     }
 
-    /// A symlink a window shows now points to another file: key the window by
-    /// that file, so opening the link again finds it and opening the old target
-    /// does not. When another window already shows the new file, that one keeps
-    /// the key, and this one stays open in `displaced` until it closes.
     /// The most recently modified Markdown file directly in `folder`.
     static func newestMarkdown(in folder: URL) -> URL? {
         let keys: [URLResourceKey] = [.contentModificationDateKey, .isRegularFileKey]
@@ -347,6 +361,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             .max { $0.1 < $1.1 }?.0
     }
 
+    /// A symlink a window shows now points to another file: key the window by
+    /// that file, so opening the link again finds it and opening the old target
+    /// does not. When another window already shows the new file, that one keeps
+    /// the key, and this one stays open in `displaced` until it closes.
     private func rekey(_ controller: ReaderWindowController) {
         let key = WorkspaceIndex.realPath(controller.url.path)
         guard windows[key] !== controller else { return }

@@ -188,7 +188,7 @@ extension ReaderWindowController {
     /// Before the document is shown it waits: a fragment asked for then
     /// (opened again at a section while loading) wins over the saved position.
     func scrollToAnchor(fragment: String) {
-        guard loaded else { pendingAnchor = fragment; return }
+        guard loadState == .loaded else { whenLoaded.anchor = fragment; return }
         // Loaded, the page not ready (a new page, a renderer that crashed): after its apply.
         guard webView.isReady else { return webView.whenReady { [weak self] in self?.scrollToAnchor(fragment: fragment) } }
         let slug = fragment.lowercased()

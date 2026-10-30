@@ -47,22 +47,40 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     var windowObservations: [NSKeyValueObservation] = []
 
     // File state (content tracking lives in `loader`)
-    var loaded = false
-    /// ⌘P before the first document was applied (`didLoad`): printed then.
-    var printWhenLoaded = false
-    /// A search made before the first document was applied: run after it.
-    var findWhenLoaded: (() -> Void)?
-    /// The first read failed: the next change on disk, or opening the file
-    /// again, reads it again instead of waiting for a load that never comes.
-    var loadFailed = false
-    /// A change that arrived while the first load was still parsing. Applied
-    /// right after the initial patch so early agent writes are never lost.
-    var editedWhileLoading = false
+
+    /// Where the window is in reading its document the first time.
+    enum LoadState {
+        /// The first read (or a retry of it) is running, or its document is
+        /// on its way to `didLoad`.
+        case loading
+        /// The first read failed: the next change on disk, or opening the file
+        /// again, reads it again instead of waiting for a load that never comes.
+        case failed
+        /// The first document has been applied (`didLoad`).
+        case loaded
+    }
+    var loadState = LoadState.loading
+
+    /// What was asked for before the first document was applied: `didLoad`
+    /// runs it once the document is in the page.
+    struct WhenLoaded {
+        /// A change that arrived while the first load was still parsing.
+        /// Applied right after the initial patch so early agent writes are
+        /// never lost; a failed read reads again instead.
+        var reread = false
+        /// ⌘P: printed then (not after a failed read).
+        var print = false
+        /// A search: run after the apply.
+        var find: (() -> Void)? = nil
+        /// Fragment from a cross-file link (other.md#section): scrolled to,
+        /// in place of the saved position.
+        var anchor: String? = nil
+    }
+    var whenLoaded = WhenLoaded()
+
     var deleted = false
     var lastAnchor: (slot: Int, offset: Double)?
     var saveWork: DispatchWorkItem?
-    /// Fragment from a cross-file link (other.md#section), scrolled to after load.
-    var pendingAnchor: String?
     /// The project folder the document's paths are relative to (an agent's
     /// working folder, from `readout --hook`), read by the loader's resolver.
     final class ProjectRootBox { var path: String? }
@@ -76,6 +94,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     var appliedOnce = false
     let openSignpost: OSSignpostIntervalState
 
+    /// The page shows why the first read failed (its empty state's strings
+    /// changed), until the first document is applied.
     var showsLoadFailure = false
 
     /// Where the reader was when the file went empty (an agent truncating it
@@ -159,7 +179,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         SmokeTest.noteLaunchPhase("window_init")
         self.webView = WebViewPool.shared.take()
-        self.pendingAnchor = pendingAnchor
+        self.whenLoaded = WhenLoaded(anchor: pendingAnchor)
 
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1060, height: 820),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
@@ -406,8 +426,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         // Before the first document is applied the page is empty (and its
         // apply not queued yet, so nothing would wait for it): print once
         // didLoad has queued it. Asked twice meanwhile, printed once.
-        guard loaded else {
-            printWhenLoaded = true
+        guard loadState == .loaded else {
+            whenLoaded.print = true
             return
         }
         // Diagrams and code are drawn lazily near the viewport: the page draws
@@ -425,7 +445,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     }
 
     /// The first document has been applied (CI).
-    var isLoaded: Bool { loaded }
+    var isLoaded: Bool { loadState == .loaded }
 
     private func runPrint() {
         guard let window else { return }
@@ -449,13 +469,13 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
             return session.unreadCount > 0
         case #selector(copyAsQuote(_:)):
             // Text selected, or else a block with the keyboard's focus (where N went).
-            return (hasSelection || hasFocusedBlock) && loaded
+            return (hasSelection || hasFocusedBlock) && loadState == .loaded
         case #selector(compareWithLastCommit(_:)):
             // A file in a git repository (git itself is asked when chosen).
-            return loaded && inRepository
+            return loadState == .loaded && inRepository
         case #selector(showWhatChanged(_:)):
             // As the page's D key: with nothing to compare, the page beeps.
-            return loaded
+            return loadState == .loaded
         default:
             return true
         }

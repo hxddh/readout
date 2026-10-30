@@ -89,7 +89,7 @@ extension ReaderWindowController {
     }
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? {
-        loaded && session.blocks.isEmpty ? idleUndo : undoStack
+        loadState == .loaded && session.blocks.isEmpty ? idleUndo : undoStack
     }
 
     // MARK: Window
@@ -139,7 +139,7 @@ extension ReaderWindowController {
             noteLookedAt()   // looked at: the tab's dot stays only for unread changes
         }
         updateSubtitle()
-        if loaded { refreshRepository() }
+        if loadState == .loaded { refreshRepository() }
         if window?.firstResponder === window { window?.makeFirstResponder(webView) }
         sendWindowKey()
         // A key window in a tab group is its selected tab.

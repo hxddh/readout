@@ -130,7 +130,7 @@ extension ReaderWindowController {
                 if ((value as? NSNumber)?.intValue ?? 0) == 0 { NSSound.beep() }
             }
         }
-        if loaded { webView.whenReady(search) } else { findWhenLoaded = search }
+        if loadState == .loaded { webView.whenReady(search) } else { whenLoaded.find = search }
     }
 
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
