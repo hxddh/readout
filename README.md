@@ -38,7 +38,7 @@ Rendering a document sends no network requests at all: remote images and media r
 
 ## Command line (optional)
 
-Readout needs no setup for agents: the folders in Settings are enough. If you also want a `readout` command, choose **Readout → Install Command Line Tool…**, which links `~/.local/bin/readout` to the script inside the app. Or link it yourself:
+Readout needs no setup for agents: the folders in Settings are enough. If you also want a `readout` command, choose **Readout → Install Command Line Tool…**, which shows (and copies) the command that links `~/.local/bin/readout` to the script inside the app. It is this:
 
 ```sh
 mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout

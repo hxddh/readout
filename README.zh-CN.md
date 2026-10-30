@@ -38,7 +38,7 @@ Readout 会通过 GitHub Releases 检查新版本（**Readout → 检查更新�
 
 ## 命令行（可选）
 
-配合 Agent 使用无需任何配置，设置里的文件夹就够了。如果还想要 `readout` 命令，选择 **Readout → 安装命令行工具…**，它会把 `~/.local/bin/readout` 链接到 App 里自带的脚本。也可以自己链接：
+配合 Agent 使用无需任何配置，设置里的文件夹就够了。如果还想要 `readout` 命令，选择 **Readout → 安装命令行工具…**，它会给出（并可拷贝）把 `~/.local/bin/readout` 链接到 App 里自带脚本的命令，即：
 
 ```sh
 mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout

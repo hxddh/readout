@@ -565,46 +565,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         for w in NSApp.windows where (w.isVisible || w.isMiniaturized) && w.styleMask.contains(.closable) { w.performClose(sender) }
     }
 
-    /// Readout ▸ Install Command Line Tool…: ~/.local/bin/readout, a link to the
-    /// script inside the app (README: Command line), its folder made when
-    /// missing. A link to another copy of Readout's script is replaced; any
-    /// other file only when the reader says so, and a folder never.
+    /// Readout ▸ Install Command Line Tool…: the command that links
+    /// ~/.local/bin/readout to the script inside the app (README: Command
+    /// line), with a button that copies it. Readout writes no file itself,
+    /// a link in the reader's own folders included: the reader runs it.
     @objc func installCommandLineTool(_ sender: Any?) {
         guard let script = Bundle.main.url(forResource: "readout", withExtension: nil) else { return NSSound.beep() }
-        let fm = FileManager.default
-        let bin = fm.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin", isDirectory: true)
-        let link = bin.appendingPathComponent("readout")
-        let shown = "~/.local/bin/readout"
-        // lstat: a link whose target is gone is there too.
-        if let type = (try? fm.attributesOfItem(atPath: link.path))?[.type] as? FileAttributeType {
-            let target = type == .typeSymbolicLink ? (try? fm.destinationOfSymbolicLink(atPath: link.path)) : nil
-            if type == .typeDirectory {
-                let alert = NSAlert()
-                alert.messageText = String(format: NSLocalizedString("%@ already exists.", comment: "Install Command Line Tool: something is in the way; %@ is ~/.local/bin/readout"), shown)
-                alert.informativeText = NSLocalizedString("It is a folder. Readout does not replace it.", comment: "Install Command Line Tool: a folder is in the way")
-                alert.runModal()
-                return
-            } else if target?.hasSuffix(".app/Contents/Resources/readout") != true {
-                let alert = NSAlert()
-                alert.messageText = String(format: NSLocalizedString("%@ already exists.", comment: "Install Command Line Tool: something is in the way; %@ is ~/.local/bin/readout"), shown)
-                alert.informativeText = NSLocalizedString("It is not Readout's command. Replace it with Readout's?", comment: "Install Command Line Tool: another file is in the way")
-                alert.addButton(withTitle: NSLocalizedString("Replace", comment: "Button"))
-                alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Button"))
-                guard alert.runModal() == .alertFirstButtonReturn else { return }
-            }
-            do { try fm.removeItem(at: link) } catch { NSAlert(error: error).runModal(); return }
-        }
-        do {
-            try fm.createDirectory(at: bin, withIntermediateDirectories: true)
-            try fm.createSymbolicLink(at: link, withDestinationURL: script)
-        } catch {
-            NSAlert(error: error).runModal()
-            return
-        }
+        let quoted = "'" + script.path.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        let command = "mkdir -p ~/.local/bin && ln -sf \(quoted) ~/.local/bin/readout"
         let alert = NSAlert()
-        alert.messageText = NSLocalizedString("The readout command is installed.", comment: "Install Command Line Tool: done")
-        alert.informativeText = String(format: NSLocalizedString("%@ links to the script inside Readout. Make sure ~/.local/bin is on your PATH: if the command is not found, add this line to ~/.zshrc and open a new terminal window:\n\nexport PATH=\"$HOME/.local/bin:$PATH\"", comment: "Install Command Line Tool: done; %@ is ~/.local/bin/readout"), shown)
-        alert.runModal()
+        alert.messageText = NSLocalizedString("Install the readout command", comment: "Install Command Line Tool: alert title")
+        alert.informativeText = String(format: NSLocalizedString("Run this in Terminal to link the readout command to the script inside Readout:\n\n%@\n\n~/.local/bin must be on your PATH: if the command is not found, add this line to ~/.zshrc and open a new terminal window:\n\nexport PATH=\"$HOME/.local/bin:$PATH\"", comment: "Install Command Line Tool: %@ is the ln command"), command)
+        alert.addButton(withTitle: NSLocalizedString("Copy Command", comment: "Button: copy the install command"))
+        alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Button"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(command, forType: .string)
     }
 
     /// Help ▸ Readout Help: the keyboard shortcuts bundled with the app, in
