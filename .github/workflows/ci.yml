@@ -155,10 +155,6 @@ jobs:
     needs: changes
     if: needs.changes.outputs.linux == 'true'
     runs-on: ubuntu-24.04
-    # TEMPORARY (release/4.1.0 only, removed before merge): the step that
-    # commits this run's baselines back to the PR branch needs to push.
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -189,24 +185,6 @@ jobs:
           name: corpus-actual
           path: web/test/out/corpus
           retention-days: 14
-      # TEMPORARY (release/4.1.0 only, removed before merge): 4.1 widens the
-      # text column, so every baseline changes. The session preparing the
-      # release cannot download artifacts; this commits the actual baselines
-      # to the PR branch for review there (docs/TESTING.md: accepting an
-      # intended rendering change).
-      - name: Commit the new baselines to the PR branch (temporary)
-        if: failure() && github.event_name == 'pull_request' && github.head_ref == 'release/4.1.0'
-        run: |
-          set -euo pipefail
-          git fetch --no-tags origin release/4.1.0
-          git worktree add "$RUNNER_TEMP/head" FETCH_HEAD
-          cp web/test/out/corpus/actual/snapshots/*.json "$RUNNER_TEMP/head/web/test/corpus/snapshots/"
-          cp web/test/out/corpus/actual/screenshots/*.png "$RUNNER_TEMP/head/web/test/corpus/screenshots/"
-          cd "$RUNNER_TEMP/head"
-          git add web/test/corpus/snapshots web/test/corpus/screenshots
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -m "Rendering baselines for the 4.1 column (WebKit, CI run ${{ github.run_id }})"
-          git push origin HEAD:release/4.1.0
 
   verify:
     name: Verify signed product
