@@ -72,6 +72,9 @@ final class WorkspaceIndex {
         // FSEvents reports real paths (/private/var/..., a symlinked folder's
         // target); map them back to the folder as the user added it.
         let realRoots = rootsCopy.map { (given: $0, real: Self.realPath($0)) }
+        // The scan stops short (depth, entries, packages): a document it did
+        // not reach is new only if it was made since watching started.
+        let watchingSince = now
         // The scan is queued before the stream starts, so on this serial queue
         // every event is judged against the files that were already there.
         queue.async { [weak self] in
@@ -100,9 +103,12 @@ final class WorkspaceIndex {
             // One removed or renamed away is forgotten: a later write is new again.
             let paths = events.filter(\.isFile).map { Self.givenPath($0.path, roots: realRoots) }
             let now = Date()
-            let hits: [(URL, Date, Bool)] = AgentFolders.writes(paths, roots: rootsCopy, known: &known.paths) {
-                FileManager.default.fileExists(atPath: $0)
-            }.map { (URL(fileURLWithPath: $0.path), now, $0.isNew) }
+            let hits: [(URL, Date, Bool)] = AgentFolders.writes(
+                paths, roots: rootsCopy, known: &known.paths,
+                exists: { FileManager.default.fileExists(atPath: $0) },
+                createdAt: { (try? FileManager.default.attributesOfItem(atPath: $0))?[.creationDate] as? Date },
+                watchingSince: watchingSince
+            ).map { (URL(fileURLWithPath: $0.path), now, $0.isNew) }
             guard !hits.isEmpty else { return }
             DispatchQueue.main.async {
                 guard let self, self.generation == gen else { return }

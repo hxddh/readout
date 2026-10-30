@@ -71,8 +71,13 @@ enum HTML {
         // GFM tagfilter: neutralize the opening "<" and keep the tag as written (<XMP stays XMP).
         s = deniedTagPattern.stringByReplacingMatches(in: s, range: NSRange(location: 0, length: (s as NSString).length),
                                                       withTemplate: "&lt;$1")
-        s = s.replacingOccurrences(of: #"\son[a-zA-Z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, with: "",
-                                   options: .regularExpression)
+        // After white space or a `/` (`<img/onerror=…>`), in any case.
+        s = s.replacingOccurrences(of: #"[\s/]on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, with: "",
+                                   options: [.regularExpression, .caseInsensitive])
+        // ids and names the page keeps for itself (ro-* chrome, mmd-* and
+        // ro-mmd-* diagram drawings) escaped as Slugger escapes headings'.
+        s = s.replacingOccurrences(of: #"([\s/](?:id|name)\s*=\s*["']?)((?:ro|mmd)-)"#, with: "$1h-$2",
+                                   options: [.regularExpression, .caseInsensitive])
         s = s.replacingOccurrences(of: "javascript:", with: "blocked:", options: .caseInsensitive)
         s = gateRemoteMedia(s, resolver: resolver)
         return s

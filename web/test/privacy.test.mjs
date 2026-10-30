@@ -3,7 +3,7 @@
 //   BROWSER=webkit node test/privacy.test.mjs   (CI; the shipping engine)
 // Usage: node test/privacy.test.mjs [TRACK_HOST]
 // Requires web/build.mjs to have run. Exits nonzero on any failure.
-import { chromium, webkit, firefox } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -22,10 +22,7 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 
-const engines = { webkit, chromium, firefox };
-const engineName = (process.env.BROWSER || 'webkit').toLowerCase();
-const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : {};
-const browser = await engines[engineName].launch(launchOpts);
+const browser = await launchBrowser();
 // deviceScaleFactor 2: every Mac is 2x, and srcset picks the remote candidate there.
 const page = await browser.newPage({ viewport: { width: 900, height: 700 }, deviceScaleFactor: 2 });
 const errors = [];

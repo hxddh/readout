@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 import ReadoutCore
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var windows: [String: ReaderWindowController] = [:]
     /// Windows whose symlink was retargeted to a file another window already
     /// shows: no longer found by path, still owned here until they close.
@@ -237,6 +237,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.windows = self.windows.filter { $0.value !== c }   // by identity: a retarget may have re-keyed it
             self.displaced.removeAll { $0 === c }
+            self.restoreDisplaced()
             self.updateDockBadge()
         }
         controller.onRetarget = { [weak self] c in self?.rekey(c) }
@@ -352,6 +353,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windows = windows.filter { $0.value !== controller }
         displaced.removeAll { $0 === controller }
         if windows[key] == nil { windows[key] = controller } else { displaced.append(controller) }
+    }
+
+    /// A window closed: a displaced window whose file no window is keyed by
+    /// now takes the key again, so opening that file finds it.
+    private func restoreDisplaced() {
+        for controller in displaced {
+            let key = WorkspaceIndex.realPath(controller.url.path)
+            guard windows[key] == nil else { continue }
+            windows[key] = controller
+            displaced.removeAll { $0 === controller }
+        }
     }
 
     /// Whether Readout still owns the window (saved on quit, released on close).
@@ -478,6 +490,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func smallerText(_ sender: Any?) { AppSettings.shared.fontSize = max(12, AppSettings.shared.fontSize - 1) }
     @objc func actualSizeText(_ sender: Any?) { AppSettings.shared.fontSize = 16 }
 
+    /// View ▸ Text Width ▸ Standard or Wide (the item's representedObject).
+    @objc func setTextWidth(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String, AppSettings.shared.textWidth != value else { return }
+        AppSettings.shared.textWidth = value
+    }
+
     @objc func checkForUpdates(_ sender: Any?) { UpdateChecker.check(interactive: true) }
 
     /// Readout ▸ About Readout: the standard panel, with one line for credits
@@ -504,9 +522,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Update: the same download). Never pops up, never activates — the
     /// reader keeps reading undisturbed.
     private func showUpdateMenuItem(name: String) {
-        guard let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu,
-              appMenu.item(withTag: 901) == nil else { return }
+        guard let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu else { return }
         let title = String(format: NSLocalizedString("%@ Is Available…", comment: "Menu: background update found; %@ is like 'Readout 3.0.2'"), name)
+        // A newer version found since: the item names it.
+        if let shown = appMenu.item(withTag: 901) { shown.title = title; return }
         let item = NSMenuItem(title: title, action: #selector(openPendingUpdate(_:)), keyEquivalent: "")
         item.tag = 901
         // Insert right after "Check for Updates…" (index 1), before the separator.
@@ -515,9 +534,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openPendingUpdate(_ sender: Any?) { UpdateChecker.showFoundUpdate() }
 
+    /// View ▸ Text Width: the chosen one is checked. Everything else here is always enabled.
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(setTextWidth(_:)) {
+            item.state = (item.representedObject as? String) == AppSettings.shared.textWidth ? .on : .off
+        }
+        return true
+    }
+
     /// File ▸ Close All (⌥⌘W, the alternate of Close).
     @objc func closeAll(_ sender: Any?) {
         for w in NSApp.windows where (w.isVisible || w.isMiniaturized) && w.styleMask.contains(.closable) { w.performClose(sender) }
+    }
+
+    /// Readout ▸ Install Command Line Tool…: ~/.local/bin/readout, a link to the
+    /// script inside the app (README: Command line), its folder made when
+    /// missing. A link to another copy of Readout's script is replaced; any
+    /// other file only when the reader says so, and a folder never.
+    @objc func installCommandLineTool(_ sender: Any?) {
+        guard let script = Bundle.main.url(forResource: "readout", withExtension: nil) else { return NSSound.beep() }
+        let fm = FileManager.default
+        let bin = fm.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin", isDirectory: true)
+        let link = bin.appendingPathComponent("readout")
+        let shown = "~/.local/bin/readout"
+        // lstat: a link whose target is gone is there too.
+        if let type = (try? fm.attributesOfItem(atPath: link.path))?[.type] as? FileAttributeType {
+            let target = type == .typeSymbolicLink ? (try? fm.destinationOfSymbolicLink(atPath: link.path)) : nil
+            if type == .typeDirectory {
+                let alert = NSAlert()
+                alert.messageText = String(format: NSLocalizedString("%@ already exists.", comment: "Install Command Line Tool: something is in the way; %@ is ~/.local/bin/readout"), shown)
+                alert.informativeText = NSLocalizedString("It is a folder. Readout does not replace it.", comment: "Install Command Line Tool: a folder is in the way")
+                alert.runModal()
+                return
+            } else if target?.hasSuffix(".app/Contents/Resources/readout") != true {
+                let alert = NSAlert()
+                alert.messageText = String(format: NSLocalizedString("%@ already exists.", comment: "Install Command Line Tool: something is in the way; %@ is ~/.local/bin/readout"), shown)
+                alert.informativeText = NSLocalizedString("It is not Readout's command. Replace it with Readout's?", comment: "Install Command Line Tool: another file is in the way")
+                alert.addButton(withTitle: NSLocalizedString("Replace", comment: "Button"))
+                alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Button"))
+                guard alert.runModal() == .alertFirstButtonReturn else { return }
+            }
+            do { try fm.removeItem(at: link) } catch { NSAlert(error: error).runModal(); return }
+        }
+        do {
+            try fm.createDirectory(at: bin, withIntermediateDirectories: true)
+            try fm.createSymbolicLink(at: link, withDestinationURL: script)
+        } catch {
+            NSAlert(error: error).runModal()
+            return
+        }
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString("The readout command is installed.", comment: "Install Command Line Tool: done")
+        alert.informativeText = String(format: NSLocalizedString("%@ links to the script inside Readout. Make sure ~/.local/bin is on your PATH: if the command is not found, add this line to ~/.zshrc and open a new terminal window:\n\nexport PATH=\"$HOME/.local/bin:$PATH\"", comment: "Install Command Line Tool: done; %@ is ~/.local/bin/readout"), shown)
+        alert.runModal()
     }
 
     /// Help ▸ Readout Help: the keyboard shortcuts bundled with the app, in
@@ -590,7 +659,8 @@ struct WelcomeView: View {
                 _ = p.loadObject(ofClass: URL.self) { url, _ in
                     guard let url else { return }
                     guard WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else {
-                        NSSound.beep()
+                        // Called on a background queue.
+                        DispatchQueue.main.async { NSSound.beep() }
                         return
                     }
                     DispatchQueue.main.async { onOpenURL(url) }

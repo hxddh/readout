@@ -94,6 +94,11 @@ function scrollQuiet() {
 // drawing has no sheet of its own. Mermaid's keyframes are in reader.css.
 // What its rules refer to in the drawing (url(#<id>-gradient): the stroke
 // of the boxes) is copied once into the page's own definitions for them.
+// The ids drawings are made with. Mermaid removes any element with the id it
+// draws with (and with it prefixed d or i): a capital letter keeps them out of
+// the slugs headings get (always lower case), and ro- out of what the
+// document's own HTML may name (HTML.sanitize renames those).
+const MMD = 'ro-Mmd-';
 const sheets = new Map();   // rules, scoped to "§", their references "¶" -> {name, refs}
 const names = new Set();
 const KEYFRAMES = /@keyframes\s+[\w-]+\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g;
@@ -114,7 +119,7 @@ function shareRules(css, id) {
     sheet = { name, refs: new Set(rules.match(/\u00b6[\w-]*/g)?.map(r => r.slice(1))) };
     sheets.set(rules, sheet);
     const st = document.createElement('style');
-    st.textContent = rules.split('\u00a7').join(`:is(#mmd-${sheet.name}, [data-mmd="${sheet.name}"])`).split('\u00b6').join(`#mmd-${sheet.name}`);
+    st.textContent = rules.split('\u00a7').join(`:is(#${MMD}${sheet.name}, [data-mmd="${sheet.name}"])`).split('\u00b6').join(`#${MMD}${sheet.name}`);
     document.head.appendChild(st);
   }
   return sheet;
@@ -135,7 +140,7 @@ function shareDefs(sheet, svg, id) {
     const el = parsed.getElementById(id + suffix);
     if (!el) continue;
     const copy = document.importNode(el, true);
-    copy.id = `mmd-${sheet.name}${suffix}`;
+    copy.id = `${MMD}${sheet.name}${suffix}`;
     defs.appendChild(copy);
     sheet.refs.delete(suffix);
   }
@@ -254,11 +259,11 @@ async function warmUp() {
   try {
     const m = await loadMermaid();
     await scrollQuiet();
-    await draw(m, 'mmd-warm', 'flowchart LR\n  a --> b');
+    await draw(m, `${MMD}warm`, 'flowchart LR\n  a --> b');
   } catch {
     // Only a head start: the page's diagrams load what they need anyway.
   } finally {
-    document.querySelectorAll('#dmmd-warm, #mmd-warm').forEach(e => e.remove());
+    document.querySelectorAll(`#d${MMD}warm, #${MMD}warm`).forEach(e => e.remove());
     mermaidBusy = false;
     pumpMermaid();
   }
@@ -346,7 +351,7 @@ async function pumpMermaid() {
       const key = theme + '\u0000' + src;
       let out = cacheGet(key);
       if (!out) {
-        const id = `mmd-${++mermaidSeq}`;
+        const id = `${MMD}${++mermaidSeq}`;
         try {
           await scrollQuiet();
           if (gone()) continue;
@@ -354,7 +359,7 @@ async function pumpMermaid() {
           out = { svg: await draw(m, id, src), id };
         } catch (err) {
           out = { error: diagramError(err) };
-          document.querySelectorAll(`#d${id}, #${id}`).forEach(e => e.remove());
+          document.querySelectorAll(`#d${CSS.escape(id)}, #${CSS.escape(id)}`).forEach(e => e.remove());
         }
         cacheSet(key, out);
       }
@@ -379,7 +384,7 @@ function place(block, out, src) {
     // The SVG's styles and markers refer to its id: every later copy on
     // the page (the same diagram twice, or from the cache) gets an id of its own.
     fresh.innerHTML = out.svg;
-    if (out.used) renameIds(fresh, out.id, `mmd-${++mermaidSeq}`);
+    if (out.used) renameIds(fresh, out.id, `${MMD}${++mermaidSeq}`);
     out.used = true;
     // Natural size, never narrower than three quarters of it (the block scrolls).
     const svg = fresh.querySelector('svg'), w = svg && svg.viewBox.baseVal && svg.viewBox.baseVal.width; if (w) svg.style.minWidth = `${Math.round(w * 0.75)}px`;

@@ -4,7 +4,7 @@
 // the viewport.
 import * as hl from '../highlight.js';
 import { doc, root, strings, post, inViewport, prevItem, nextItem } from './core.js';
-import { captureAnchor, restoreAnchor, keepPlace } from './anchor.js';
+import { keepPlace } from './anchor.js';
 import { setupRemoteImage } from './remote.js';
 import { renderMath, typesetting } from './math.js';
 import { renderMermaid, setupMermaid, sweepLater, placeCached } from './mermaid.js';
@@ -269,9 +269,8 @@ window.addEventListener('resize', () => {
  */
 export function setCodeWrap(on) {
   if ((root.dataset.codeWrap === 'on') === on) return;
-  const anchor = captureAnchor();
-  root.dataset.codeWrap = on ? 'on' : 'off';
-  restoreAnchor(anchor, new Set());
+  // The block read may be code: its place is kept as a share of it.
+  keepPlace(() => { root.dataset.codeWrap = on ? 'on' : 'off'; }, { ratio: true });
 }
 
 function toggleCodeWrap() {

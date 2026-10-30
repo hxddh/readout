@@ -29,7 +29,7 @@ export function renderMarks(marks, deletions, reset = false) {
     classed.delete(slot);
     if (!el) continue;
     el.classList.remove(`m-${kind}`, 'm-read');
-    if (!next.has(slot)) { disarmRead(el); readObserver.unobserve(el); }
+    if (!next.has(slot)) { disarmRead(el); unwatchRead(el); }
   }
   const before = marked;
   marked = new Map();
@@ -50,7 +50,7 @@ export function renderMarks(marks, deletions, reset = false) {
     if (el.classList.contains('m-read')) continue;
     marked.set(slot, m.kind);
     if (!reset && !before.has(slot)) arrivals.set(el, now);
-    readObserver.observe(el);
+    watchRead(el);
   }
   // Once read, the mark fades, but the comparison stays one click away in
   // the same place (the gutter of the block) until the block changes again.
@@ -76,7 +76,7 @@ export function renderMarks(marks, deletions, reset = false) {
       mark = makeDelMark(d.id);
       delMarks.set(d.id, mark);
       if (!reset) arrivals.set(mark, now);
-      readObserver.observe(mark);
+      watchRead(mark);
     }
     const title = d.count === 1 ? (strings.deletedOne || '1 block removed') : (strings.deletedMany || '%d blocks removed').replace('%d', d.count);
     const btn = mark.firstChild;
@@ -130,7 +130,7 @@ function makeDelMark(id) {
 }
 
 function dropDelMark(id, mark) {
-  readObserver.unobserve(mark);
+  unwatchRead(mark);
   disarmRead(mark);
   if (mark.isConnected) noteNext(nextItem(mark));
   if (isChunk(mark.parentElement)) unplace(mark); else mark.remove();
@@ -311,6 +311,21 @@ const readObserver = new IntersectionObserver(entries => {
     }
   }
 }, { threshold: readThresholds });
+// A block taller than about 100 screens never shows the 1% its first
+// threshold needs: the observer calls back only as it comes and goes, a
+// sliver of it on screen. A second one watches a line across the middle of
+// the window: a block more than two screens tall that covers it shows more
+// than half a screen.
+const middleObserver = new IntersectionObserver(entries => {
+  for (const e of entries) {
+    const el = e.target;
+    if (e.boundingClientRect.height <= 2 * window.innerHeight) continue;
+    if (e.isIntersecting) { if (!readTimers.has(el)) armRead(el); }
+    else disarmRead(el);
+  }
+}, { rootMargin: '-49% 0px -49% 0px' });
+function watchRead(el) { readObserver.observe(el); middleObserver.observe(el); }
+function unwatchRead(el) { readObserver.unobserve(el); middleObserver.unobserve(el); }
 
 /** On screen, but another window has the focus: read only at the end the reader follows. */
 export const watching = () => !document.hidden && !focused();
@@ -347,7 +362,7 @@ window.addEventListener('scroll', () => { if (waiting.size && watching()) restar
 
 /** A block leaving the page (removed, or the page reset): its dwell and arrival go with it. */
 export function forgetMarks(el) {
-  readObserver.unobserve(el);
+  unwatchRead(el);
   disarmRead(el);
   arrivals.delete(el);
 }
@@ -369,7 +384,7 @@ let pendingRead = { slots: [], deletions: [] };
 function markRead(el) {
   if (el.classList.contains('m-read')) return;
   disarmRead(el);
-  readObserver.unobserve(el);
+  unwatchRead(el);
   el.classList.add('m-read');
   if (el.classList.contains('del-mark')) pendingRead.deletions.push(+el.dataset.del);
   else { pendingRead.slots.push(+el.dataset.slot); marked.delete(+el.dataset.slot); }
@@ -632,7 +647,7 @@ export function markAllRead() {
   const read = unreadElements();
   for (const el of read) {
     el.classList.add('m-read');
-    readObserver.unobserve(el);
+    unwatchRead(el);
     disarmRead(el);
   }
   marked.clear();

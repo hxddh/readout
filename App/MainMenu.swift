@@ -17,6 +17,8 @@ enum MainMenu {
         app.addItem(item(NSLocalizedString("Check for Updates…", comment: "Menu"), #selector(AppDelegate.checkForUpdates(_:))))
         app.addItem(.separator())
         app.addItem(item(NSLocalizedString("Settings…", comment: "Menu"), #selector(AppDelegate.showSettings(_:)), ","))
+        app.addItem(item(NSLocalizedString("Install Command Line Tool…", comment: "Menu: link ~/.local/bin/readout to the script inside the app"),
+                         #selector(AppDelegate.installCommandLineTool(_:))))
         app.addItem(.separator())
         let services = NSMenuItem(title: NSLocalizedString("Services", comment: "Menu"), action: nil, keyEquivalent: "")
         let servicesMenu = NSMenu()
@@ -109,6 +111,17 @@ enum MainMenu {
         view.addItem(bigger2)
         view.addItem(item(NSLocalizedString("Smaller Text", comment: "Menu"), #selector(AppDelegate.smallerText(_:)), "-"))
         view.addItem(item(NSLocalizedString("Actual Size", comment: "Menu"), #selector(AppDelegate.actualSizeText(_:)), "0"))
+        // The column the text is laid in; the checked one is AppSettings.textWidth (AppDelegate.validateMenuItem).
+        let textWidth = NSMenuItem(title: NSLocalizedString("Text Width", comment: "Menu"), action: nil, keyEquivalent: "")
+        let textWidthMenu = NSMenu(title: textWidth.title)
+        for (title, value) in [(NSLocalizedString("Standard", comment: "Menu: View ▸ Text Width"), "standard"),
+                               (NSLocalizedString("Wide", comment: "Menu: View ▸ Text Width"), "wide")] {
+            let choice = item(title, #selector(AppDelegate.setTextWidth(_:)))
+            choice.representedObject = value
+            textWidthMenu.addItem(choice)
+        }
+        textWidth.submenu = textWidthMenu
+        view.addItem(textWidth)
         view.addItem(.separator())
         view.addItem(item(NSLocalizedString("Enter Full Screen", comment: "Menu"), #selector(NSWindow.toggleFullScreen(_:)), "f", [.command, .control]))
         add(view, to: main)

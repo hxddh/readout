@@ -330,7 +330,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         webView.underPageBackgroundColor = dark ? NSColor(srgbRed: 0x1e / 255, green: 0x1e / 255, blue: 0x1f / 255, alpha: 1) : .white
         webView.whenReady { [weak self] in
             self?.webView.setAppearance(dark: dark, accent: .controlAccentColor, fontSize: settings.fontSize,
-                                        strings: ReaderStrings.all, codeWrap: settings.codeWrap)
+                                        strings: ReaderStrings.all, codeWrap: settings.codeWrap, textWidth: settings.textWidth)
         }
         lastTopInset = -1
         DispatchQueue.main.async { [weak self] in self?.updateTopInset() }
@@ -339,6 +339,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     private func observeSettings() {
         let s = AppSettings.shared
         s.$fontSize.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance(); self?.fitSidebar() } }.store(in: &cancellables)
+        s.$textWidth.dropFirst().removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance(); self?.fitSidebar() } }.store(in: &cancellables)
         // A wrap toggled in one window applies to every open window.
         s.$codeWrap.dropFirst().removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.applyAppearance() } }.store(in: &cancellables)
         model.$unread.sink { [weak self] n in self?.updateChangeItem(n) }.store(in: &cancellables)

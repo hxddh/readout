@@ -4,7 +4,7 @@
 // reader's selection kept as the colour comes in, a worker that never
 // starts replaced by the page's own highlighter.
 // Usage: node test/highlight.test.mjs  (requires web/build.mjs to have run)
-import { webkit } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -23,7 +23,7 @@ const server = http.createServer((req, res) => {
   res.end(hangWorker && u === '/hl-worker.js' ? 'onmessage = () => {};' : readFileSync(p));
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
-const browser = await webkit.launch();
+const browser = await launchBrowser();
 const errors = [];
 let failures = 0;
 function check(name, cond, extra = '') {

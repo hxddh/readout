@@ -83,7 +83,14 @@ document.addEventListener('dragstart', ev => {
 let hadSelection = 'false/false';
 const textSelected = () => {
   const sel = getSelection();
-  return !!sel && !sel.isCollapsed && sel.rangeCount > 0 && doc.contains(sel.anchorNode) && sel.toString().trim() !== '';
+  if (!sel || sel.isCollapsed || !sel.rangeCount || !doc.contains(sel.anchorNode)) return false;
+  // Asked on every selectionchange: a drag across a large document would
+  // copy all of it to a string each time. Text at either end decides at once.
+  const r = sel.getRangeAt(0), a = r.startContainer, b = r.endContainer;
+  if (a.nodeType === Node.TEXT_NODE && /\S/.test(a.data.slice(r.startOffset, a === b ? r.endOffset : undefined))) return true;
+  if (a === b && a.nodeType === Node.TEXT_NODE) return false;
+  if (b.nodeType === Node.TEXT_NODE && /\S/.test(b.data.slice(0, r.endOffset))) return true;
+  return sel.toString().trim() !== '';
 };
 const focusedBlock = () => {
   const a = document.activeElement;
@@ -287,7 +294,7 @@ function setAppearance(o) {
     root.style.setProperty('--accent-soft', `color-mix(in srgb, ${o.accent} ${pageTheme() === 'dark' ? 18 : 12}%, transparent)`);
   }
   // Type size reflows every block, the one being read included. (The
-  // column's width follows the window and the type size by itself: reader.css.)
+  // column's width follows the type size by itself: reader.css.)
   if (o.fontSize && root.style.getPropertyValue('--fs') !== String(o.fontSize)) {
     const anchor = captureAnchor(), bottom = atBottom();
     keepPlace(() => {
@@ -303,6 +310,14 @@ function setAppearance(o) {
       holdPlace(anchor, bottom, true);
       rebaselineHeights();
     });
+  }
+  // The column's width (View ▸ Text Width) reflows every block too.
+  const width = o.textWidth === 'wide' ? 'wide' : o.textWidth ? 'standard' : null;
+  if (width && (root.dataset.width || 'standard') !== width) {
+    keepPlace(() => {
+      if (width === 'wide') root.dataset.width = 'wide'; else delete root.dataset.width;
+      measureTables();
+    }, { ratio: true });
   }
   if (o.strings) {
     mergeStrings(o.strings);

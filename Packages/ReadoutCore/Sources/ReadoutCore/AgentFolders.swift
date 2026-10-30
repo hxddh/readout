@@ -124,3 +124,37 @@ public struct AutoOpen: Sendable {
         return toOpen
     }
 }
+
+extension AgentFolders {
+    /// The Markdown documents a batch of file-system events in the agent
+    /// folders wrote, each with whether it is new to `known` (the files
+    /// already there), which this keeps up to date. A path's name is checked
+    /// before the disk is asked: build output and dependencies written into a
+    /// watched folder never cost a stat. A document that is gone is forgotten,
+    /// so writing it again later makes it new again.
+    ///
+    /// The initial scan is bounded (depth, entries, no package contents), so
+    /// a document not in `known` may have been there all along: it is new
+    /// only when it was created (`createdAt`, its birth time; nil: unknown)
+    /// no earlier than 2 s before `watchingSince`, when watching started.
+    /// The defaults count every document not in `known` as new.
+    public static func writes(_ paths: [String], roots: [String], known: inout Set<String>,
+                              exists: (String) -> Bool, createdAt: (String) -> Date? = { _ in nil },
+                              watchingSince: Date = .distantPast) -> [(path: String, isNew: Bool)] {
+        var out: [(path: String, isNew: Bool)] = []
+        for path in paths {
+            guard isCandidate(path, roots: roots) else { continue }
+            guard exists(path) else {
+                known.remove(path)
+                continue
+            }
+            guard known.insert(path).inserted else {
+                out.append((path, false))
+                continue
+            }
+            let created = createdAt(path)
+            out.append((path, created.map { $0 >= watchingSince.addingTimeInterval(-2) } ?? true))
+        }
+        return out
+    }
+}

@@ -1,6 +1,6 @@
 // Typography and layout details of the reader (3.3 refinements), in WebKit.
 // Usage: node test/typography.test.mjs  (requires web/build.mjs to have run)
-import { webkit } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -34,7 +34,7 @@ function check(name, cond, extra = '') {
   else { console.log(`FAIL: ${name} ${extra}`); failures++; }
 }
 
-const browser = await webkit.launch();
+const browser = await launchBrowser();
 const errors = [];
 
 async function open(width, dark = false) {
@@ -812,7 +812,7 @@ for (const dark of [false, true]) {
   await page.close();
 }
 
-// 2. The column's width and the text size: P4.4 below (4.0: no narrow or wide).
+// 2. The column's width and the text size: P4.4 below.
 
 // 6. Paragraphs and items ask for better line breaks (text-wrap: pretty; a
 //    no-op in a WebKit without it, which drops it from the CSSOM: read the source).
@@ -1037,14 +1037,15 @@ const v36 = patch([
 }
 
 // TB. In a wide window, a code block whose lines run past the column widens
-//     to 1.35 columns (centred, the text column unchanged); one that fits
+//     into the room beside it, up to 72 rem (centred, the text column
+//     unchanged, 4 rem from the window's edges at least); one that fits
 //     does not; nor in a narrower window, with wrapping on, or in print. A
 //     wide table widens to the right, as far as it needs (3.7). Change bars
 //     stay beside them.
 {
   const tb = patch([
     ['paragraph', '<p id="b-p">The text column stays as it is.</p>'],
-    ['code', `<div class="code-block" id="b-long" data-lang="ts"><pre><code>${'const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key, Range: range }));'}</code></pre></div>`],
+    ['code', `<div class="code-block" id="b-long" data-lang="ts"><pre><code>${'const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key, Range: range, ChecksumMode: mode }));'}</code></pre></div>`],
     ['code', `<div class="code-block" id="b-huge" data-lang="ts"><pre><code>${longLine} ${longLine}</code></pre></div>`],
     ['code', '<div class="code-block" id="b-short" data-lang="sh"><pre><code>npm test</code></pre></div>'],
     ['listItem', `<ul class="li-block li-first li-last"><li>In a list:<div class="code-block" id="b-li"><pre><code>${longLine}</code></pre></div></li></ul>`],
@@ -1065,9 +1066,12 @@ const v36 = patch([
       // As unread (a read mark has faded out).
       bars: { para: unread(blk('b-p')), table: unread(blk('b-table')),
         deletion: (b => b.getBoundingClientRect().left + parseFloat(getComputedStyle(b, '::before').left))(document.querySelector('.del-mark > button')) },
-      vw: innerWidth,
+      vw: innerWidth, root: parseFloat(getComputedStyle(document.documentElement).fontSize),
       sideways: document.scrollingElement.scrollWidth - innerWidth };
   });
+  // reader.css: the room on each side of the column, and how wide code widens in it.
+  const bleed = (vw, root, M) => Math.max(0, Math.min((vw - 8 * root - M) / 2, (72 * root - M) / 2));
+  const codeW = (vw, root, M) => M + 2 * bleed(vw, root, M);
   page = await open(1600);
   await page.evaluate(p => window.readout.apply(p), tb);
   await until(page, () => [...document.querySelectorAll('.code-block[data-lang]')].every(c => c.dataset.hl === 'done'));
@@ -1075,12 +1079,13 @@ const v36 = patch([
   const w = await measure(page);
   const M = w.col[1], centre = w.col[0] + M / 2;
   const centred = ([l, wd]) => Math.abs(l + wd / 2 - centre) < 1;
-  check('at 1600 px a long code block widens to 1.35 columns, centred, and no longer scrolls', Math.abs(w.long[1] - 1.35 * M) < 1 && centred(w.long) && !w.longScrolls, JSON.stringify(w));
-  check('a longer one widens as far and scrolls (with its shade)', Math.abs(w.huge[1] - 1.35 * M) < 1 && centred(w.huge) && w.hugeScrolls, JSON.stringify(w));
+  const W = codeW(w.vw, w.root, M);
+  check('at 1600 px a long code block widens to 72 rem, centred, and no longer scrolls', W > M + 100 && Math.abs(w.long[1] - W) < 1 && centred(w.long) && !w.longScrolls, JSON.stringify(w));
+  check('a longer one widens as far and scrolls (with its shade)', Math.abs(w.huge[1] - W) < 1 && centred(w.huge) && w.hugeScrolls, JSON.stringify(w));
   check('a code block that fits, and one in a list, keep the column', Math.abs(w.short[1] - M) < 0.5 && w.short[0] === w.col[0] && w.li < M, JSON.stringify(w));
   // 3.7 (T9): to the right only, so its first column and its change bar stay on the text's edge.
   // (4.0: widened, wrapping its short cells again if they still do not fit, nw-off.)
-  check('a wide table widens to the right only, as far as it needs', (w.tableScrolls || w.tableNwOff) && Math.abs(w.table[0] - w.col[0]) < 0.5 && w.table[1] > M + 10 && w.table[1] <= 1.35 * M + 1, JSON.stringify(w));
+  check('a wide table widens to the right only, as far as it needs', (w.tableScrolls || w.tableNwOff) && Math.abs(w.table[0] - w.col[0]) < 0.5 && w.table[1] > M + 10 && w.table[1] <= M + Math.min(2 * bleed(w.vw, w.root, M), (w.vw - M) / 2 - 4 * w.root) + 1, JSON.stringify(w));
   check('the change bar stays beside a widened code block, as beside text', Math.abs(w.barGap.long - w.barGap.para) < 0.5 && w.sideways <= 0, JSON.stringify(w));
   check('a widened table\'s change bar and a deletion marker line up with the text\'s change bars', Math.abs(w.bars.table - w.bars.para) < 0.5 && Math.abs(w.bars.deletion - w.bars.para) < 0.5, JSON.stringify(w.bars));
   const tbPrint = await (async () => { await page.emulateMedia({ media: 'print' }); const m = await page.evaluate(() => [document.getElementById('b-long').getBoundingClientRect().width, document.getElementById('b-p').getBoundingClientRect().width]); await page.emulateMedia({ media: 'screen' }); return m; })();
@@ -1088,20 +1093,20 @@ const v36 = patch([
   await page.evaluate(() => window.readout.setAppearance({ codeWrap: true }));
   const wrapped = await measure(page);
   check('with code wrapping on, code blocks keep the column', Math.abs(wrapped.long[1] - wrapped.col[1]) < 0.5, JSON.stringify(wrapped));
-  // 4.0: the column follows the type size (42.5 rem): code widens from it in step.
+  // The column follows the type size (50 rem): code widens from it in step.
   await page.evaluate(() => window.readout.setAppearance({ codeWrap: false, fontSize: 20 }));
   await page.waitForTimeout(100);
   const big = await page.evaluate(() => { const r = id => document.getElementById(id).getBoundingClientRect(); return { root: parseFloat(getComputedStyle(document.documentElement).fontSize), col: [r('b-p').left, r('b-p').width], long: [r('b-long').left, r('b-long').width], huge: [r('b-huge').left, r('b-huge').width], sideways: document.scrollingElement.scrollWidth - innerWidth }; });
-  const C = 42.5 * big.root;   // 20 px at 1600 px: 23.9 px
-  check('at 20 px the column is 42.5 rem and code that runs past it widens to 1.35 columns', Math.abs(big.col[1] - C) < 0.5 && Math.abs(big.long[1] - 1.35 * C) < 1 && Math.abs(big.huge[1] - 1.35 * C) < 1 && big.sideways <= 0, JSON.stringify(big));
+  const C = 50 * big.root, BW = codeW(1600, big.root, C);   // 20 px at 1600 px: 22.4 px
+  check('at 20 px the column is 50 rem and code that runs past it widens into the room left', Math.abs(big.col[1] - C) < 0.5 && Math.abs(big.long[1] - BW) < 1 && Math.abs(big.huge[1] - BW) < 1 && big.sideways <= 0, JSON.stringify(big));
   await page.close();
   for (const width of [860, 1200]) {
     page = await open(width);
     await page.evaluate(p => window.readout.apply(p), tb);
     await page.waitForTimeout(150);
     const n = await measure(page);
-    const fits = width === 1200;   // 1.35 x 737 px and 4 rem each side (1132 px; the text 1.08 times) fit in 1200 px, not in 860
-    check(`at ${width} px code ${fits ? 'widens' : 'keeps the column'}`, fits ? Math.abs(n.long[1] - 1.35 * n.col[1]) < 1 : Math.abs(n.long[1] - n.col[1]) < 0.5 && n.sideways <= 0, JSON.stringify(n));
+    const fits = width === 1200;   // 1200 px leaves room beside the 867 px column (the text 1.08 times), 860 none beside 800
+    check(`at ${width} px code ${fits ? 'widens' : 'keeps the column'}`, fits ? n.long[1] > n.col[1] + 50 && Math.abs(n.long[1] - codeW(n.vw, n.root, n.col[1])) < 1 : Math.abs(n.long[1] - n.col[1]) < 0.5 && n.sideways <= 0, JSON.stringify(n));
     // Widening to the right only, a table keeps 4 rem from the window's edge.
     check(`at ${width} px a table keeps the text's left edge and 4 rem from the window's edge`, Math.abs(n.table[0] - n.col[0]) < 0.5 && n.table[0] + n.table[1] <= n.vw - 64 + 0.5 && n.sideways <= 0, JSON.stringify(n));
     await page.close();
@@ -1850,13 +1855,13 @@ for (const dark of [false, true]) {
   await page.close();
 }
 
-// P4.4 No width setting: the column is 42.5 em of the text (3.9's), so a
-//      line holds 3.9's 80-100 Latin and 40-48 Chinese characters at every text size and
-//      window; the text grows with the window (the reader's size up to 900
-//      px, 1.25 times it from 1800 px, smoothly between), the reader's ⌘+ and
-//      ⌘− multiply it, and Actual Size returns to the automatic size. In a
-//      narrower window the column is the window less its gutters. An old
-//      caller's width: "wide" changes nothing.
+// P4.4 The column is 50 em of the text (4.1; 64 with Text Width ▸ Wide), so
+//      a line holds about 94-118 Latin and 47-57 Chinese characters at every
+//      text size and window; the text grows a little with the window (the
+//      reader's size up to 900 px, 1.12 times it from 1332 px, smoothly
+//      between), the reader's ⌘+ and ⌘− multiply it, and Actual Size returns
+//      to the automatic size. In a narrower window the column is the window
+//      less its gutters.
 {
   const latin = 'Agents write long plans and reports, and the reader keeps them readable: a line of text that the eye can follow back to its start without losing its place, in a window of any size and at any text size the reader chooses. '.repeat(3);
   const han = '在现有全局提示词存储的基础上，增加项目级别的提示词存储功能。项目提示词存储在项目根目录的文件中，实现团队共享和项目特定的提示词管理，并保持阅读的节奏。'.repeat(3);
@@ -1873,17 +1878,17 @@ for (const dark of [false, true]) {
   }, id);
   const state = pg => pg.evaluate(() => ({ root: parseFloat(getComputedStyle(document.documentElement).fontSize), col: document.getElementById('m-latin').getBoundingClientRect().width,
     code: parseFloat(getComputedStyle(document.getElementById('m-code')).fontSize), sideways: document.scrollingElement.scrollWidth - innerWidth }));
-  const scale = vw => Math.min(1.25, Math.max(1, 1 + (vw - 900) / 3600));
+  const scale = vw => Math.min(1.12, Math.max(1, 1 + (vw - 900) / 3600));
   page = await open(900);
   await page.evaluate(p => window.readout.apply(p), patch([['paragraph', `<p id="m-latin">${latin} <code id="m-code">src/app.ts</code></p>`], ['paragraph', `<p id="m-han">${han}</p>`, { cjk: true }]]));
   const curve = [];
-  for (const vw of [900, 1280, 1600, 1800, 2400, 700]) {
+  for (const vw of [900, 1100, 1332, 1600, 2400, 700]) {
     await page.setViewportSize({ width: vw, height: 800 });
     curve.push({ vw, ...(await state(page)), latin: await perLine(page, 'm-latin'), han: await perLine(page, 'm-han') });
   }
-  check('P4.4 the text grows with the window: 16 px to 900 px, then smoothly to 20 px (1.25) at 1800 px and wider', curve.every(c => Math.abs(c.root - 16 * scale(c.vw)) < 0.05), JSON.stringify(curve));
-  check('P4.4 the column is 42.5 em of the text in every wide window (or the window less its gutters), code in step', curve.every(c => Math.abs(c.col - Math.min(42.5 * c.root, c.vw - 56)) < 0.6 && Math.abs(c.code / c.root - 0.89) < 0.01 && c.sideways <= 0), JSON.stringify(curve));
-  check('P4.4 a line holds 3.9\'s 80-100 Latin characters and 40-48 Chinese ones in every window', curve.filter(c => c.vw >= 900).every(c => c.latin >= 80 && c.latin <= 100 && c.han >= 40 && c.han <= 48), JSON.stringify(curve));
+  check('P4.4 the text grows with the window: 16 px to 900 px, then smoothly to 17.92 px (1.12) at 1332 px and wider', curve.every(c => Math.abs(c.root - 16 * scale(c.vw)) < 0.05), JSON.stringify(curve));
+  check('P4.4 the column is 50 em of the text in every wide window (or the window less its gutters), code in step', curve.every(c => Math.abs(c.col - Math.min(50 * c.root, c.vw - 56)) < 0.6 && Math.abs(c.code / c.root - 0.89) < 0.01 && c.sideways <= 0), JSON.stringify(curve));
+  check('P4.4 a line holds 94-118 Latin characters and 47-57 Chinese ones in every window', curve.filter(c => c.vw >= 900).every(c => c.latin >= 94 && c.latin <= 118 && c.han >= 47 && c.han <= 57), JSON.stringify(curve));
   await page.setViewportSize({ width: 1600, height: 800 });
   const m = [];
   for (const fs of [13, 16, 20, 24, 16]) {
@@ -1893,16 +1898,21 @@ for (const dark of [false, true]) {
   // Han breaks between any two characters, so its count is exact; a Latin
   // line of this sample ends 83 or 90 characters in, a word apart,
   // whichever the sub-pixel width allows, at any size: one word's slack.
-  check('P4.4 the reader\'s size multiplies the window\'s (1600 px: 1.19), Actual Size back to the automatic size; the characters per line stay', m.every(x => Math.abs(x.root - x.fs * scale(1600)) < 0.05) && m[4].root === m[1].root && m.every(x => Math.abs(x.han - m[1].han) <= 1 && Math.abs(x.latin - m[1].latin) <= 8), JSON.stringify(m));
+  check('P4.4 the reader\'s size multiplies the window\'s (1600 px: 1.12), Actual Size back to the automatic size; the characters per line stay', m.every(x => Math.abs(x.root - x.fs * scale(1600)) < 0.05) && m[4].root === m[1].root && m.every(x => Math.abs(x.han - m[1].han) <= 1 && Math.abs(x.latin - m[1].latin) <= 8), JSON.stringify(m));
   const sizes = [];
   for (const vw of [760, 640, 480, 360]) {
     await page.setViewportSize({ width: vw, height: 800 });
     sizes.push({ vw, ...(await state(page)) });
   }
-  check('P4.4 in a narrower window the column is the window less its gutters', sizes.every(s => Math.abs(s.col - Math.min(680, s.vw - 56)) < 0.6 && s.sideways <= 0), JSON.stringify(sizes));
+  check('P4.4 in a narrower window the column is the window less its gutters', sizes.every(s => Math.abs(s.col - Math.min(800, s.vw - 56)) < 0.6 && s.sideways <= 0), JSON.stringify(sizes));
   await page.setViewportSize({ width: 900, height: 800 });
-  const old = await page.evaluate(() => { window.readout.setAppearance({ width: 'wide' }); return { col: document.getElementById('m-latin').getBoundingClientRect().width, attr: document.documentElement.hasAttribute('data-width') }; });
-  check('P4.4 there is no width setting: width "wide" changes nothing', Math.abs(old.col - 680) < 0.5 && !old.attr, JSON.stringify(old));
+  const col = () => page.evaluate(() => document.getElementById('m-latin').getBoundingClientRect().width);
+  await page.setViewportSize({ width: 1600, height: 800 });
+  await page.evaluate(() => window.readout.setAppearance({ textWidth: 'wide' }));
+  const wide = await col();
+  await page.evaluate(() => window.readout.setAppearance({ textWidth: 'standard' }));
+  const standard = await col();
+  check('P4.4 Text Width ▸ Wide makes the column 64 em, Standard 50 em', Math.abs(wide - 64 * 16 * scale(1600)) < 0.6 && Math.abs(standard - 50 * 16 * scale(1600)) < 0.6, JSON.stringify({ wide, standard }));
   await page.close();
   // Decided before the first paint: the size a wide window opens at is its size in the first frame.
   const pg = await browser.newPage({ viewport: { width: 1600, height: 800 } });

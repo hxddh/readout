@@ -126,13 +126,18 @@ public final class RemoteFetcher: NSObject, URLSessionDataDelegate, @unchecked S
                            willPerformHTTPRedirection response: HTTPURLResponse,
                            newRequest request: URLRequest,
                            completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
-        if let r = RemoteLoad.check(request.url?.absoluteString ?? "") ?? request.url.flatMap(checkResolution) {
-            entry(task)?.failure = .rejected(r)
-            completionHandler(nil)
-            task.cancel()
-            return
+        // Name resolution blocks: not on the delegate queue, which is serial
+        // (every other download's callbacks would wait behind it).
+        nonisolated(unsafe) let task = task
+        DispatchQueue.global(qos: .userInitiated).async { [self] in
+            if let r = RemoteLoad.check(request.url?.absoluteString ?? "") ?? request.url.flatMap(checkResolution) {
+                entry(task)?.failure = .rejected(r)
+                completionHandler(nil)
+                task.cancel()
+                return
+            }
+            completionHandler(request)
         }
-        completionHandler(request)
     }
 
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask,
@@ -223,12 +228,20 @@ public struct RemoteImageCache {
     }
 
     /// Stores `image`, loaded from `url`, and returns its new token.
+    /// The image it was loaded as before goes, bytes and all.
     public mutating func insert(_ image: RemoteFetcher.Image, url: String) -> String? {
+        guard image.data.count <= capacity else { return nil }
+        if let old = tokenForURL.removeValue(forKey: url) { remove(old) }
         guard let token = insert(image) else { return nil }
-        if let old = tokenForURL[url] { urlForToken[old] = nil }
         tokenForURL[url] = token
         urlForToken[token] = url
         return token
+    }
+
+    private mutating func remove(_ token: String) {
+        totalBytes -= entries.removeValue(forKey: token)?.data.count ?? 0
+        if let i = order.firstIndex(of: token) { order.remove(at: i) }
+        urlForToken[token] = nil
     }
 
     /// The token of the image loaded from `url`, while its bytes are kept.

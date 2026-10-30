@@ -46,11 +46,16 @@ public struct Slugger {
     }
 
     static func base(_ text: String) -> String {
-        let base = Slugger.slug(text)
-        // Reader chrome ids live under the ro-* namespace (see docs/design.md):
-        // a document slug starting with ro- would collide with them, so keep
-        // GitHub-compatible slugs otherwise and escape only this case.
-        return base.hasPrefix("ro-") ? "h-" + base : base
+        escaped(Slugger.slug(text))
+    }
+
+    /// Reader chrome ids live under the ro-* namespace and diagram drawings
+    /// under mmd-* (see docs/design.md): a document slug starting with either
+    /// would collide with them, so keep GitHub-compatible slugs otherwise and
+    /// escape only these (`h-ro-…`, `h-mmd-…`). Applied to the final anchor
+    /// too: two "ro" headings give "ro" and "h-ro-1".
+    static func escaped(_ slug: String) -> String {
+        slug.hasPrefix("ro-") || slug.hasPrefix("mmd-") ? "h-" + slug : slug
     }
 
     public mutating func next(_ text: String) -> String {
@@ -65,10 +70,10 @@ public struct Slugger {
         // actually unused.
         var n = seen[base] ?? 0
         var candidate = base
-        if n > 0 { candidate = "\(base)-\(n)" }
+        if n > 0 { candidate = Slugger.escaped("\(base)-\(n)") }
         while used.contains(candidate) {
             n += 1
-            candidate = "\(base)-\(n)"
+            candidate = Slugger.escaped("\(base)-\(n)")
         }
         log?.append(Undo(base: base, seen: seen[base], candidate: candidate))
         seen[base] = n + 1

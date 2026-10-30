@@ -36,7 +36,8 @@ export function reportActiveHeading() {
     if (slots.get(pin.slot)?.classList.contains('k-heading') && Math.abs(document.scrollingElement.scrollTop - pin.y) <= 2) return report(pin.slot);
     pin = null;
   }
-  if (!headings) headings = Array.from(doc.querySelectorAll('.k-heading'));
+  // The outline's levels only (Model.tocMaxLevel): past an h5 the section is still its h4's.
+  if (!headings) headings = Array.from(doc.querySelectorAll('.k-heading:has(> :is(h1, h2, h3, h4))'));
   // Headings are in document order, so their tops increase: binary search
   // for the last one at or above the line (nothing hides a heading).
   // (Jumps land a heading 16 px from the top.)

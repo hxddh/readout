@@ -145,6 +145,11 @@ public enum RemoteLoad {
     }
 
     static func isPublicIPv4(_ o: [Int]) -> Bool {
+        switch (o[0], o[1], o[2]) {
+        case (192, 0, 0): return false              // IETF protocol assignments
+        case (192, 0, 2), (198, 51, 100), (203, 0, 113): return false   // documentation
+        default: break
+        }
         switch (o[0], o[1]) {
         case (0, _), (10, _), (127, _): return false
         case (100, 64...127): return false          // carrier-grade NAT
@@ -166,6 +171,8 @@ public enum RemoteLoad {
         if b[0] == 0xff { return false }                                     // multicast
         if Array(b[0..<8]) == [1, 0, 0, 0, 0, 0, 0, 0] { return false }      // 100::/64 discard
         if Array(b[0..<6]) == [0, 0x64, 0xff, 0x9b, 0, 1] { return false }   // 64:ff9b:1::/48 local NAT64
+        if Array(b[0..<4]) == [0x20, 0x01, 0, 0] { return false }             // 2001::/32 Teredo
+        if Array(b[0..<4]) == [0x20, 0x01, 0x0d, 0xb8] { return false }       // 2001:db8::/32 documentation
         if b[0] == 0x20 && b[1] == 0x02 { return isPublicIPv4(b[2..<6].map(Int.init)) }  // 2002::/16 6to4
         if b[0..<8].allSatisfy({ $0 == 0 }) && b[8] == 0xff && b[9] == 0xff && b[10] == 0 && b[11] == 0 {
             return isPublicIPv4(b[12..<16].map(Int.init))                   // ::ffff:0:a.b.c.d translated

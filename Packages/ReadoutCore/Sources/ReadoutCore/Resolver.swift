@@ -1,4 +1,9 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 
 /// Resolves document-relative resources while rendering.
 public protocol ResourceResolver: Sendable {
@@ -241,8 +246,14 @@ public struct FileResolver: ResourceResolver {
 /// Reads pixel dimensions from PNG, GIF, JPEG and WebP headers without decoding.
 public enum ImageSize {
     public static func read(_ url: URL) -> (Int, Int)? {
-        guard let h = try? FileHandle(forReadingFrom: url) else { return nil }
-        defer { try? h.close() }
+        // A regular file only: reading a FIFO or a device would block the
+        // parse. Opened without waiting for a writer, then checked (the same
+        // file: nothing can be swapped in between).
+        let fd = open(url.path, O_RDONLY | O_NONBLOCK)
+        guard fd >= 0 else { return nil }
+        var info = stat()
+        guard fstat(fd, &info) == 0, UInt32(info.st_mode) & 0o170000 == 0o100000 else { close(fd); return nil }
+        let h = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
         guard let d = try? h.read(upToCount: 64 * 1024), d.count > 24 else { return nil }
         return parse([UInt8](d))
     }

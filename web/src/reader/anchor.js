@@ -201,8 +201,11 @@ export function resolveFragment(raw) {
   try { id = decodeURIComponent(id); } catch { /* keep raw */ }
   if (!id) return null;
   const lower = id.toLowerCase();
-  return doc.querySelector(`[id="${CSS.escape(id)}"], [id="${CSS.escape(lower)}"]`)
-    || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(lower)}"]`);
+  const find = l => doc.querySelector(`[id="${CSS.escape(id)}"], [id="${CSS.escape(l)}"]`)
+    || doc.querySelector(`.k-heading[data-anchor="${CSS.escape(l)}"]`);
+  // Ids the reader keeps for itself (ro-, mmd-) are renamed h-… in the
+  // document (Slugger, HTML.sanitize): a link written to the name is found.
+  return find(lower) || (/^(?:ro|mmd)-/.test(lower) ? find(`h-${lower}`) : null);
 }
 
 let settleQueued = false;
@@ -362,7 +365,17 @@ export const resizeObserver = new ResizeObserver(entries => {
         if (c === own) continue;
         if (kept && firstChunks.has(c) ? precedes(c, kept) : above.has(c)) delta += d;
       }
-      for (const [el, d] of resized) if (own && el.parentElement === own && el.getBoundingClientRect().bottom - d <= 1) delta += d;
+      // In the kept block's own chunk, block by block: a block's bottom then
+      // is its bottom now less what it and everything before it grew by.
+      if (own) {
+        let grew = 0;
+        for (const [c, d] of chunks) if (c !== own && precedes(c, own)) grew += d;
+        const mine = [...resized].filter(([el]) => el.parentElement === own).sort(([a], [b]) => precedes(a, b) ? -1 : 1);
+        for (const [el, d] of mine) {
+          grew += d;
+          if (el.getBoundingClientRect().bottom - grew <= 1) delta += d;
+        }
+      }
     }
   }
   if (delta !== 0 && document.scrollingElement.scrollTop > 0) {

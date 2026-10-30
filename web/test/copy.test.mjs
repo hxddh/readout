@@ -27,7 +27,7 @@
 // Partial and cross-block selections are tried on every STRIDE-th block
 // (default 3, bounded for CI); COPY_STRIDE=1 tries every block.
 // Usage: node test/copy.test.mjs [--quick]
-import { webkit } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { execFileSync, execFile } from 'node:child_process';
@@ -84,7 +84,7 @@ function normalise(md) {
 }
 const nonBlank = ls => ls.filter(l => l.trim() !== '');
 
-const browser = await webkit.launch();
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 900 } });
 const errors = [];
 collectPageErrors(page, errors);

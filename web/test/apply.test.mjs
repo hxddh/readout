@@ -2,7 +2,7 @@
 // follow semantics). Runs in WebKit by default (the production engine) via
 // Playwright; BROWSER selects the engine (webkit | chromium | firefox).
 // Usage: BROWSER=webkit node test/apply.test.mjs  (requires web/build.mjs to have run)
-import { chromium, webkit, firefox } from 'playwright';
+import { launchBrowser } from './engine.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -17,16 +17,7 @@ const server = http.createServer((req, res) => {
 }).listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 
-const engines = { webkit, chromium, firefox };
-const engineName = (process.env.BROWSER || 'webkit').toLowerCase();
-if (!engines[engineName]) {
-  console.error(`Unknown BROWSER=${process.env.BROWSER}; want webkit | chromium | firefox`);
-  process.exit(2);
-}
-console.log(`engine: ${engineName}`);
-// CHROME_PATH overrides the browser binary (local dev only; CI uses stock Playwright browsers).
-const launchOpts = process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : {};
-const browser = await engines[engineName].launch(launchOpts);
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
 const errors = [];
 collectPageErrors(page, errors);
@@ -1589,7 +1580,7 @@ const heading = (slot, text = 'Section') => `<h2 id="s${slot}">${text}</h2>`;
   await draw({ ...fixBase, version: ++fixVersion, reset: true,
     ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: block('graph TD\n  P[Probe] --> Q[Id]') }] }, 1);
   // The next diagram drawn takes the id after the probe's.
-  const next = await page.evaluate(() => `mmd-${+document.querySelector('.mermaid-svg svg').id.slice(4) + 1}`);
+  const next = await page.evaluate(() => `ro-Mmd-${+document.querySelector('.mermaid-svg svg').id.slice(7) + 1}`);
   const src = `graph TD\n  A["${next}"] --> B[Copy]`;
   await draw({ ...fixBase, version: ++fixVersion, reset: true,
     ops: [{ op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: block(src) },
@@ -2183,7 +2174,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
 
 // 4.0 (#99 smoke "refill"): a document reset and the reader's place put back
 // (scrollToAnchor, as the app does after a refill) with a table above it
-// whose short cells only fit the 42.5 rem column wrapped (.nw-off, measured by
+// whose short cells only fit the column wrapped (.nw-off, measured by
 // the page a frame later, 42 px taller then): the anchor stays within 1 px.
 {
   const p = await browser.newPage({ viewport: { width: 900, height: 589 } });
@@ -2272,7 +2263,7 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
     drift.push({ vw, root: s.root, drift: Math.round((s.above - f * s.h) * 10) / 10 });
   }
   check('resizing across the text-size curve keeps the same block at the same share of it at the top (drift <= 1 px)',
-    drift.every(d => Math.abs(d.drift) <= 1) && drift.some(d => d.root > 19), JSON.stringify(drift));
+    drift.every(d => Math.abs(d.drift) <= 1) && drift.some(d => d.root > 17.5), JSON.stringify(drift));
   await p.close();
 }
 
@@ -2296,6 +2287,64 @@ check('a ResizeObserver loop notice is not a page error, anything else is',
   await p.evaluate(x => window.readout.apply(x), { version: 2, reset: true, rewrite: false, ops: [{ op: 'insert', slot: 1, after: 0, kind: 'table', html: path }], marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } });
   await p.waitForTimeout(200);
   check('a long path in a table cell may break after its slashes', await p.evaluate(() => document.querySelectorAll('.table-wrap td code wbr').length === 4));
+  await p.close();
+}
+
+// 4.1: what moves the reader's place, and what a diagram may remove.
+{
+  const p = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  collectPageErrors(p, errors);
+  await p.addInitScript(() => { window.__msgs = []; window.webkit = { messageHandlers: { readout: { postMessage: m => window.__msgs.push(m) } } }; });
+  await p.goto(`${base}/reader.html`);
+  for (let i = 0; i < 200 && !(await p.evaluate(() => window.readout && window.__msgs.some(m => m.type === 'ready'))); i++) await p.waitForTimeout(25);
+  await p.evaluate(() => window.readout.setAppearance({ dark: false, accent: '#0a84ff', fontSize: 16, codeWrap: false }));
+  const frames = () => p.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 200)))));
+  const topOf = slot => p.evaluate(s => document.querySelector(`.blk[data-slot="${s}"]`).getBoundingClientRect().top, slot);
+  const reset = async ops => { await p.evaluate(x => window.readout.apply(x), { version: ++fixVersion, reset: true, rewrite: false, ops, marks: [], deletions: [], toc: [], tasks: { done: 0, total: 0 } }); await frames(); };
+  const to = async slot => { for (let k = 0; k < 2; k++) { await p.evaluate(s => window.scrollBy(0, document.querySelector(`.blk[data-slot="${s}"]`).getBoundingClientRect().top - 100), slot); await frames(); } };
+
+  // Code wrapping turned on and off: the place is kept once, not made up for
+  // again when the code blocks above report their new heights.
+  const ops = [];
+  for (let i = 1; i <= 80; i++) ops.push(i % 2
+    ? { op: 'insert', slot: i, after: i - 1, kind: 'code', html: `<div class="code-block" data-lang="js"><pre><code>${('const long = line(' + 'x, '.repeat(60) + ');\n').repeat(3)}</code></pre></div>` }
+    : { op: 'insert', slot: i, after: i - 1, kind: 'paragraph', html: `<p>Paragraph ${i}: ${'words of the plan '.repeat(12)}</p>` });
+  await reset(ops);
+  await to(50);
+  const t0 = await topOf(50);
+  await p.evaluate(() => window.readout.setAppearance({ codeWrap: true }));
+  const t1 = await topOf(50);
+  await frames();
+  const t2 = await topOf(50);
+  await p.evaluate(() => window.readout.setAppearance({ codeWrap: false }));
+  await frames();
+  const t3 = await topOf(50);
+  check('code wrapping on and off keeps the place (nothing made up for twice)', Math.abs(t2 - t1) <= 1 && Math.abs(t3 - t0) <= 1, JSON.stringify({ t0, t1, t2, t3 }));
+
+  // Two blocks above the reader in its own chunk grow in the same frame
+  // (formulas typeset together): both are made up for.
+  const paras = [];
+  for (let i = 1; i <= 30; i++) paras.push({ op: 'insert', slot: i, after: i - 1, kind: 'paragraph', html: `<p id="g${i}">Paragraph ${i}: ${'words of the plan '.repeat(8)}</p>` });
+  await reset(paras);
+  // Block 19 ends just above the window; 18 above it grows by more than that.
+  await to(20);
+  await p.evaluate(() => window.scrollBy(0, document.querySelector('.blk[data-slot="20"]').getBoundingClientRect().top + 3));
+  await frames();
+  const g0 = await topOf(20);
+  await p.evaluate(() => { document.getElementById('g18').style.paddingTop = '100px'; document.getElementById('g19').style.paddingTop = '20px'; });
+  await frames();
+  const g1 = await topOf(20);
+  check('two blocks above the reader growing at once are both made up for', Math.abs(g1 - g0) <= 1, JSON.stringify({ g0, g1 }));
+
+  // A heading whose slug looks like a diagram's id stays when diagrams are drawn.
+  await reset([
+    { op: 'insert', slot: 1, after: 0, kind: 'heading', html: '<h2 id="mmd-1">MMD 1</h2>', anchor: 'mmd-1' },
+    { op: 'insert', slot: 2, after: 1, kind: 'heading', html: '<h2 id="mmd-2">MMD 2</h2>', anchor: 'mmd-2' },
+    { op: 'insert', slot: 3, after: 2, kind: 'mermaid', html: '<div class="mermaid-block"><pre class="mermaid-src">graph TD\n  A --> B</pre></div>' },
+  ]);
+  for (let i = 0; i < 400 && !(await p.evaluate(() => document.querySelector('.mermaid-block.done'))); i++) await p.waitForTimeout(20);
+  check('drawing a diagram removes no heading whose id looks like its own',
+    await p.evaluate(() => !!document.querySelector('.mermaid-block.done') && !!document.getElementById('mmd-1') && !!document.getElementById('mmd-2')));
   await p.close();
 }
 

@@ -125,3 +125,15 @@
 "Check GitHub for updates weekly" = "每周从 GitHub 检查更新";
 "Includes open-source software: " = "包含开源软件：";
 "Acknowledgements" = "致谢";
+"Readout doesn't open %@ links." = "Readout 不打开 %@ 链接。";
+"Text Width" = "文本宽度";
+"Standard" = "标准";
+"Wide" = "宽";
+"Install Command Line Tool…" = "安装命令行工具…";
+"%@ already exists." = "%@ 已存在。";
+"It is a folder. Readout does not replace it." = "它是一个文件夹，Readout 不会替换它。";
+"It is not Readout's command. Replace it with Readout's?" = "它不是 Readout 的命令。要替换为 Readout 的命令吗？";
+"Replace" = "替换";
+"Cancel" = "取消";
+"The readout command is installed." = "readout 命令已安装。";
+"%@ links to the script inside Readout. Make sure ~/.local/bin is on your PATH: if the command is not found, add this line to ~/.zshrc and open a new terminal window:\n\nexport PATH=\"$HOME/.local/bin:$PATH\"" = "%@ 链接到 Readout 内的脚本。请确保 ~/.local/bin 在 PATH 中：如果找不到该命令，请将下面这行加入 ~/.zshrc，然后打开新的终端窗口：\n\nexport PATH=\"$HOME/.local/bin:$PATH\"";

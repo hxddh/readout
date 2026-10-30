@@ -287,7 +287,7 @@ public final class IncrementalParser: @unchecked Sendable {
         let removedMarker = CJKEmphasis.containsMarker(st.lines[changed..<oldSuffixFrom])
         // The new lines: the old ones before the change, the window split, the old suffix.
         let windowLines: [String] = new.utf8.withContiguousStorageIfAvailable { b in
-            FastBytes.lines(String(decoding: UnsafeBufferPointer(rebasing: b[windowStart..<windowEnd]), as: UTF8.self))
+            FastBytes.lines(MarkdownParser.replacingReserved(String(decoding: UnsafeBufferPointer(rebasing: b[windowStart..<windowEnd]), as: UTF8.self)))
         } ?? []
         st.lines.replaceSubrange(changed..<oldSuffixFrom, with: windowLines)
         let lineCount = st.lines.count

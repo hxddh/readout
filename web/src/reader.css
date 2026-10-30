@@ -25,15 +25,14 @@
   --mark-bg: color-mix(in srgb, #ffd60a 38%, transparent);
   --code-fill: rgb(29 29 31 / 3%);   /* inline code's fill: 3% of the text colour */
 
-  /* The text column: 42.5 em of the text (3.9's 42.5 rem, 680 px at
-     Actual Size), so every text size and window keeps 3.9's characters per
-     line (measured in WebKit on macOS: about 94 of Latin text in SF Pro, 44
-     of Chinese in PingFang). A narrower window is narrower by
-     itself (#ro-doc's max-width), and there --bleed is 0. No width setting:
-     in a wide window the text itself grows (html's font-size below), and
-     the column with it. Not min(…, 100vw − gutters): the same column, and
-     4–5% slower to first paint a 1 MB page (same-runner A/B, #99). */
-  --measure: 42.5rem;
+  /* The text column: 50 rem (about 110 characters of Latin text, 52 of
+     Chinese at Actual Size), or 64 rem with View ▸ Text Width ▸ Wide
+     (data-width, set by the app). Wide code and tables take more,
+     up to --wide, as far as the window has room (the bleed below). A narrower
+     window is narrower by itself (#ro-doc's max-width). Not min(…, 100vw −
+     gutters): the same column, and slower to first paint a 1 MB page (#99). */
+  --measure: 50rem;
+  --wide: 72rem;
   /* The reader's text size (⌘+ ⌘− ⌘0, set by the app; 16 is Actual Size). */
   --fs: 16;
   --lh: 1.65;
@@ -54,6 +53,7 @@
 
   color-scheme: light;
 }
+:root[data-width="wide"] { --measure: 64rem; --wide: 84rem; }
 
 /* Dark: chosen by the app (setAppearance), or by the system until the app
    has said which, so the first paint never flashes white. An explicit
@@ -109,13 +109,14 @@ html {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  /* The text grows with the window: the reader's size up to a content area
-     of 900 px, then smoothly to 1.25 times it at 1800 px and wider (1280 px:
-     1.11, 1600 px: 1.19), so a wide window is not mostly margin. Everything
-     in rem and em (the column, code, tables, the bleed) follows; CSS alone,
-     so it is decided before the first paint and costs a resize nothing but
-     the reflow it brings anyway. The reader's ⌘+ and ⌘− multiply it. */
-  font-size: clamp(calc(var(--fs) * 1px), calc(var(--fs) * (1px + (100vw - 900px) / 3600)), calc(var(--fs) * 1.25px));
+  /* The text grows a little with the window: the reader's size up to a
+     content area of 900 px, then smoothly to 1.12 times it at 1332 px and
+     wider (1100 px: 1.06). A wider window gives a wider column (Text Width)
+     and room for wide code and tables, not ever larger text. Everything in
+     rem and em (the column, code, tables, the bleed) follows; CSS alone, so
+     it is decided before the first paint and costs a resize nothing but the
+     reflow it brings anyway. The reader's ⌘+ and ⌘− multiply it. */
+  font-size: clamp(calc(var(--fs) * 1px), calc(var(--fs) * (1px + (100vw - 900px) / 3600)), calc(var(--fs) * 1.12px));
   line-height: var(--lh);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -181,22 +182,22 @@ pre, code, kbd, samp, td, th { hanging-punctuation: none; }
   padding-inline: calc(var(--gutter) + var(--out));
 }
 
-/* Wide code and tables. In a window with room to spare, a code block whose
-   lines run past the column widens into the margins on both sides, up to
-   1.35 times the column, centred on it (the text column stays as it is).
-   Only with the whole of that room: never up to the window's edge. The block
-   itself widens (--out on each side), so its change bar, flash and edit mark
-   stay beside it as on any other block. A code block widens all the way or
-   not at all (enhance.js gives its longest line in columns, --cb-cols): a
+/* Wide code and tables. Where the window has room beside the column, a
+   code block whose lines run past it widens into the margins on both sides,
+   centred on the column (the text column stays as it is), up to --wide and
+   never closer than 4 rem to the window's edge. The block itself widens
+   (--out on each side), so its change bar, flash and edit mark stay beside
+   it as on any other block. A code block widens as far as the room allows
+   or not at all (enhance.js gives its longest line in columns, --cb-cols): a
    fill a few pixels wider than the text reads as a misalignment.
    A table too wide for the column widens to the right only, as far as it
-   needs (--tb-w, measured), up to the same 0.35 column and never closer than
+   needs (--tb-w, measured), up to twice that room and never closer than
    4 rem to the window's edge: its first column, which is read down like the
    text, and its change bar stay on the text's edge. So does one whose short
    cells wrap again to fit (nw-off): widened, they need wrap less. */
 @property --out { syntax: "<length>"; inherits: true; initial-value: 0px; }
 #ro-doc > .chunk > .blk:is(.k-code, .k-table) {
-  --bleed: clamp(0px, (100vw - 8rem - 1.35 * var(--measure)) * 1000, 0.175 * var(--measure));
+  --bleed: clamp(0px, (100vw - 8rem - var(--measure)) / 2, (var(--wide) - var(--measure)) / 2);
 }
 /* In the code's own font: 1ch is a column (the code is 0.84 of this size, --fs-code). */
 #ro-doc > .chunk > .blk.k-code {

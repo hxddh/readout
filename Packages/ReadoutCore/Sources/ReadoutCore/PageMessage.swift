@@ -130,6 +130,39 @@ public enum LinkTarget: Equatable, Sendable {
     static let systemOpened: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "tif", "tiff", "heic",
                                             "avif", "ico", "pdf", "mov", "mp4", "m4v", "mp3", "m4a", "wav", "zip"]
 
+    /// Bundles (folders) the system runs or installs when opened.
+    static let runningBundles: Set<String> = ["app", "bundle", "workflow", "action", "prefpane", "saver",
+                                              "qlgenerator", "kext", "plugin", "appex", "xpc"]
+    /// Files the system runs, installs or follows somewhere else when opened:
+    /// scripts, installers, disk images, Java archives, location files.
+    static let runningFiles: Set<String> = ["command", "tool", "terminal", "sh", "zsh", "bash", "csh", "fish",
+                                            "py", "rb", "pl", "scpt", "scptd", "applescript", "jsa", "workflow",
+                                            "pkg", "mpkg", "dmg", "jar", "webloc", "inetloc", "fileloc", "url"]
+    /// Documents an executable bit means nothing for (files from a FAT
+    /// volume or an archive often carry one).
+    static let documents: Set<String> = systemOpened.union(["md", "markdown", "mdown", "mkd", "txt", "text", "rtf",
+                                                            "html", "htm", "json", "csv", "tsv", "log", "xml", "yaml",
+                                                            "yml", "toml", "docx", "xlsx", "pptx", "pages", "numbers", "key"])
+
+    /// Whether opening a `.file` target runs code (or installs it, or opens
+    /// another location): an application or other running bundle, a script,
+    /// an installer, a disk image, a location file, or an executable file
+    /// with no extension or one that is not a document's. The app asks
+    /// before opening it.
+    public static func runsWhenOpened(_ url: URL, isDirectory: Bool, isExecutable: Bool) -> Bool {
+        let ext = url.pathExtension.lowercased()
+        if isDirectory { return runningBundles.contains(ext) }
+        if runningFiles.contains(ext) { return true }
+        return isExecutable && (ext.isEmpty || !documents.contains(ext))
+    }
+
+    /// Whether an `.external` URL may be handed to the system without asking:
+    /// http, https and mailto only (other schemes open apps).
+    public static func isSafeExternalScheme(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https" || scheme == "mailto"
+    }
+
     /// - Parameters:
     ///   - documentURL: the file the link appears in (relative paths resolve against its folder).
     ///   - markdownExtensions: lowercased extensions Readout opens itself.

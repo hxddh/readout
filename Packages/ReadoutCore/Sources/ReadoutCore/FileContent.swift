@@ -18,10 +18,9 @@ public enum FileContent {
             return Decoded(text: s, fallbackEncoding: nil, truncatedTail: false)
         }
         // Incomplete multi-byte sequence at the end: decode the valid prefix.
-        for cut in 1...3 where bytes.count > cut {
-            if let s = String(data: bytes.dropLast(cut), encoding: .utf8) {
-                return Decoded(text: s, fallbackEncoding: nil, truncatedTail: true)
-            }
+        let cut = incompleteTail(bytes)
+        if cut > 0, let s = String(data: bytes.dropLast(cut), encoding: .utf8) {
+            return Decoded(text: s, fallbackEncoding: nil, truncatedTail: true)
         }
         #if canImport(Darwin)
         let gb = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue)))
@@ -31,6 +30,23 @@ public enum FileContent {
         #endif
         let s = String(decoding: bytes, as: UTF8.self)
         return Decoded(text: s, fallbackEncoding: replacementEncoding, truncatedTail: false)
+    }
+
+    /// How many bytes at the end are an incomplete UTF-8 sequence: a lead
+    /// byte (C2–F4) followed by fewer continuation bytes (80–BF) than it
+    /// needs. 0 when the bytes end otherwise (Latin-1 `é` or Windows-1252
+    /// `€` before a line break is another encoding, not a cut).
+    static func incompleteTail(_ bytes: Data) -> Int {
+        var i = bytes.endIndex, k = 0
+        while k < 3, i > bytes.startIndex {
+            i = bytes.index(before: i)
+            k += 1
+            let b = bytes[i]
+            if b >= 0x80 && b <= 0xBF { continue }
+            let length = b >= 0xC2 && b <= 0xDF ? 2 : b >= 0xE0 && b <= 0xEF ? 3 : b >= 0xF0 && b <= 0xF4 ? 4 : 0
+            return length > k ? k : 0
+        }
+        return 0
     }
 
     /// `fallbackEncoding` for bytes that are no known encoding: decoded as

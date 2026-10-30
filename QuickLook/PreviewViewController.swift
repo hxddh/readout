@@ -74,10 +74,11 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             webView.whenReady { [weak self, weak webView] in
                 log.notice("preview page ready in \(Int(Date().timeIntervalSince(created) * 1000), privacy: .public) ms")
                 guard let self, let webView else { return }
-                // The app's default text size (Actual Size), in the preview's appearance.
+                // The app's default text size (Actual Size) and column (Text Width ▸
+                // Standard), in the preview's appearance.
                 // First, so the grammars prepared below are the only ones loaded.
                 webView.setAppearance(dark: self.isDark, accent: .controlAccentColor, fontSize: 16,
-                                      strings: ReaderStrings.all, mode: "quicklook")
+                                      strings: ReaderStrings.all, mode: "quicklook", textWidth: "standard")
                 // Light or dark switched while the preview is open: it follows.
                 self.appearanceObservation = webView.observe(\.effectiveAppearance) { [weak self] _, _ in
                     DispatchQueue.main.async {

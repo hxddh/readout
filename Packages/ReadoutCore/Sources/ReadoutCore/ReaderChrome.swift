@@ -208,3 +208,9 @@ public struct WriteDebounce: Sendable, Equatable {
         lastFire = now
     }
 }
+
+extension ReaderChrome {
+    /// How many rows Settings' agent folder list is tall: its folders, at
+    /// least 2 (room to see where the next one goes), at most 6 (then it scrolls).
+    public static func folderListRows(_ count: Int) -> Int { min(max(count, 2), 6) }
+}
