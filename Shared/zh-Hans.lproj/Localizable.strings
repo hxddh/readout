@@ -138,6 +138,11 @@
 "No Earlier Versions" = "没有较早的版本";
 "+%d −%d blocks" = "+%d −%d 块";
 "Marked what changed since %@" = "已标出自 %@ 以来的改动";
+"Unread Changes" = "未读改动";
+"Nothing Unread" = "没有未读内容";
+"%d unread" = "%d 处未读";
+"not looked at yet" = "尚未查看";
+"changed since you read it" = "阅读后有改动";
 "Watch the folders your agents write in" = "监视智能体写入的文件夹";
 "Watching %d agent folders" = "正在监视 %d 个智能体文件夹";
 "The readout command is installed" = "readout 命令已安装";

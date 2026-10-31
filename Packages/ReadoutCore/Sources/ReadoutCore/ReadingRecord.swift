@@ -26,12 +26,17 @@ public struct ReadingRecord: Codable, Sendable, Equatable {
         public var topOffset: Double?
         public var topExcerpt: String?
         public var savedAt: Date
+        /// The unread changes left when it was saved (the changes inbox lists
+        /// a file not open that still has some). Nil in a position saved
+        /// without it.
+        public var unread: Int?
 
-        public init(_ record: ReadingRecord) {
+        public init(_ record: ReadingRecord, unread: Int? = nil) {
             topBlockIndex = record.topBlockIndex
             topOffset = record.topOffset
             topExcerpt = record.topExcerpt
             savedAt = record.savedAt
+            self.unread = unread
         }
     }
 
