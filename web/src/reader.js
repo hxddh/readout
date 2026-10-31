@@ -403,10 +403,39 @@ window.readout = {
   remoteReady,
   remoteFailed,
   remoteKnown,
-  warm: () => hl.warm(),
+  warm: () => { warmText(); return hl.warm(); },
   // The fence languages of the document being parsed (before its apply).
   prepare: langs => hl.prepareLangs(langs),
 };
+
+/**
+ * The spare page lays out, once and out of sight, text in each of the
+ * page's fonts and scripts (body and code, bold and italic, Han and kana
+ * and Hangul, the Chinese punctuation face), so a warm open's first layout
+ * finds the fonts and their fallbacks already made: a fresh WebContent
+ * process makes each the first time it lays one out (CTFontCreateWith...
+ * under the first apply's layout, 5.0 profiling).
+ */
+function warmText() {
+  if (warmText.done) return;
+  warmText.done = true;
+  const t0 = performance.now();
+  const el = document.createElement('div');
+  el.setAttribute('aria-hidden', 'true');
+  el.style.cssText = 'position:absolute;left:-10000px;top:0;width:40rem;visibility:hidden;pointer-events:none';
+  const latin = 'Readout 0123456789 — “quotes” … ‘a’ (x) [y] {z} & % # @ ✓ → ←';
+  const cjk = '中文排版，“引号”——省略…《书名》 日本語のかなカナ 한국어 문장';
+  el.innerHTML = [1, 1.25, 1.6, 2].map(em =>
+    `<p style="font-family:var(--font);font-size:${em}rem">${latin} <b>${latin}</b> <i>${latin}</i> <b><i>bold italic</i></b> ${cjk} <b>${cjk}</b></p>`).join('') +
+    `<p lang="zh" style="font-family:ro-zh-punct,var(--font)">${cjk} <b>${cjk}</b></p>` +
+    `<pre style="font-family:var(--mono);font-size:var(--fs-code)">const x = 1; // ${latin} <b>bold</b> <i>italic</i> ${cjk}</pre>` +
+    `<p style="font-family:var(--mono);font-size:0.89em">code span ${latin}</p>`;
+  document.body.appendChild(el);
+  void el.offsetHeight;
+  el.remove();
+  // How long it took, page time (SmokeTest: in warm_page_ms).
+  firstTimings.warm_text = Math.round(performance.now() - t0);
+}
 
 post({ type: 'ready' });
 
