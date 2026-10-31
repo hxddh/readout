@@ -413,7 +413,47 @@ extension ReaderWindowController {
         let keys = session.keys
         guard keys != lastRecordedKeys else { return }
         lastRecordedKeys = keys
-        BaselineStore.recordVersion(keys, at: Date(), for: contentPath.map { URL(fileURLWithPath: $0) } ?? url)
+        let path = contentPath
+        BaselineStore.recordVersion(keys, at: Date(), for: path.map { URL(fileURLWithPath: $0) } ?? url) { [weak self] history in
+            // Still the same file (not retargeted meanwhile): the timeline lists its versions.
+            guard let self, self.contentPath == path else { return }
+            self.history = history
+        }
+    }
+
+    // MARK: Compare with Earlier Version
+
+    /// View ▸ Compare with Earlier Version: the versions to choose from,
+    /// newest first, each with when it was seen and how much differs now.
+    func earlierVersions() -> [(index: Int, title: String)] {
+        guard loadState == .loaded, let history else { return [] }
+        let current = session.keys
+        let format = DateFormatter()
+        format.doesRelativeDateFormatting = true
+        format.dateStyle = .medium
+        format.timeStyle = .short
+        return history.earlier(than: current).map { i in
+            let d = DocumentHistory.difference(from: history.keys(of: i), to: current)
+            let what = String(format: NSLocalizedString("+%d −%d blocks", comment: "Menu: View ▸ Compare with Earlier Version, after the time: blocks the document has gained and lost since that version"), d.added, d.removed)
+            return (i, "\(format.string(from: history.versions[i].at))  \(what)")
+        }
+    }
+
+    /// The document marked against version `representedObject` of its
+    /// history: what changed since then unread; ⌘Z brings back what was read
+    /// before, as for Compare with Last Commit.
+    @objc func compareWithVersion(_ sender: NSMenuItem) {
+        guard loadState == .loaded, !retargetGate.isPending, let i = sender.representedObject as? Int,
+              let history, history.versions.indices.contains(i) else { return NSSound.beep() }
+        let before = session.baseline
+        let at = history.versions[i].at
+        reloadMarked(against: history.keys(of: i)) { [weak self] _ in
+            guard let self else { return }
+            let when = DateFormatter.localizedString(from: at, dateStyle: .medium, timeStyle: .short)
+            self.showNotice(String(format: NSLocalizedString("Marked what changed since %@", comment: "Notice above the document after View ▸ Compare with Earlier Version: the time of the version chosen"), when))
+        }
+        undoStack.registerUndo(withTarget: self) { $0.showMarked(against: before, againstCommit: false) }
+        undoStack.setActionName(NSLocalizedString("Compare with Earlier Version", comment: "Menu: mark the document again against a version Readout saw before"))
     }
 
     // MARK: Mark All as Read
@@ -508,7 +548,7 @@ extension ReaderWindowController {
 
     /// Marked against `baseline`, undoably: the commit's (`againstCommit`,
     /// with the notice that says so) or the reading state from before it.
-    private func showMarked(against baseline: [BlockKey], againstCommit: Bool) {
+    func showMarked(against baseline: [BlockKey], againstCommit: Bool) {
         let name = NSLocalizedString("Compare with Last Commit", comment: "Menu: mark the document again against its version in the last git commit")
         // Undoing it while the document is empty for a moment (an agent
         // truncating it) waits for the content; comparing an empty document does not.

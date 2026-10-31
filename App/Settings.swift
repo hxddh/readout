@@ -164,18 +164,18 @@ enum BaselineStore {
     /// The versions of `url` seen so far, beside its record (`DocumentHistory`).
     private static func historyFile(for url: URL) -> URL { dir.appendingPathComponent("\(key(for: url)).history.json") }
 
-    static func history(for url: URL) -> DocumentHistory {
-        queue.sync { DocumentHistory.decode(try? Data(contentsOf: historyFile(for: url))) }
-    }
-
     /// Adds the file's blocks as they are now to its history, behind any
-    /// save still queued for it.
-    static func recordVersion(_ keys: [BlockKey], at date: Date, for url: URL) {
+    /// save still queued for it; `done` gets the history as it is then, on
+    /// the main thread.
+    static func recordVersion(_ keys: [BlockKey], at date: Date, for url: URL,
+                              done: @escaping @MainActor (DocumentHistory) -> Void) {
         let target = historyFile(for: url)
         queue.async {
             var history = DocumentHistory.decode(try? Data(contentsOf: target))
-            guard history.record(keys, at: date), let data = try? JSONEncoder().encode(history) else { return }
-            try? data.write(to: target, options: .atomic)
+            if history.record(keys, at: date), let data = try? JSONEncoder().encode(history) {
+                try? data.write(to: target, options: .atomic)
+            }
+            DispatchQueue.main.async { MainActor.assumeIsolated { done(history) } }
         }
     }
 

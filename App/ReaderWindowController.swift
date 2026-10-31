@@ -114,6 +114,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     var lastSavedBaseline: [BlockKey]?
     /// The blocks last added to the file's history (`recordVersion`).
     var lastRecordedKeys: [BlockKey]?
+    /// The versions of the file seen so far (View ▸ Compare with Earlier Version), once read.
+    var history: DocumentHistory?
     /// The pending `recordVersionSoon`.
     var historyWork: DispatchWorkItem?
     var lastSavedAnchorExcerpt: String?
@@ -474,6 +476,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case #selector(copyAsQuote(_:)):
             // Text selected, or else a block with the keyboard's focus (where N went).
             return (hasSelection || hasFocusedBlock) && loadState == .loaded
+        case #selector(compareWithVersion(_:)):
+            return loadState == .loaded && !retargetGate.isPending
         case #selector(compareWithLastCommit(_:)):
             // A file in a git repository (git itself is asked when chosen).
             return loadState == .loaded && inRepository
