@@ -44,11 +44,26 @@ export function setColumn(rem) {
   }, { ratio: true });
 }
 
+/** The drag ends (released, cancelled, or the button found up): the last
+ *  width shown at once, and saved. */
+function endDrag() {
+  if (!drag) return;
+  const { rem } = drag;
+  drag = null;
+  if (frame) { cancelAnimationFrame(frame); frame = 0; }
+  root.classList.remove('col-dragging');
+  if (rem == null) return;
+  setColumn(rem);
+  post({ type: 'setTextWidth', rem });
+}
+
 document.addEventListener('pointermove', ev => {
   if (!drag) {
     root.classList.toggle('col-edge', ev.buttons === 0 && onEdge(ev));
     return;
   }
+  // Released where no pointerup reached the page: the drag is over.
+  if (!(ev.buttons & 1)) return endDrag();
   const remPx = parseFloat(getComputedStyle(root).fontSize) || 16;
   const rem = Math.min(MAX, Math.max(MIN, (2 * Math.abs(ev.clientX - edges().center)) / remPx));
   drag.rem = Math.round(rem);
@@ -61,15 +76,11 @@ document.addEventListener('pointerdown', ev => {
   ev.preventDefault();
   drag = { rem: null };
   root.classList.add('col-dragging');
+  // Its moves and its release, wherever the pointer goes.
+  try { root.setPointerCapture(ev.pointerId); } catch {}
 });
 
-document.addEventListener('pointerup', () => {
-  if (!drag) return;
-  const { rem } = drag;
-  drag = null;
-  root.classList.remove('col-dragging');
-  if (rem != null) post({ type: 'setTextWidth', rem });
-});
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) document.addEventListener(type, endDrag);
 
 document.addEventListener('dblclick', ev => {
   if (!onEdge(ev)) return;
