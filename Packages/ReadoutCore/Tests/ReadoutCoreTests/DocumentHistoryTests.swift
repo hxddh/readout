@@ -122,4 +122,11 @@ import Testing
         let same = DocumentHistory.difference(from: keys(v3), to: keys(v3))
         #expect(same.added == 0 && same.removed == 0)
     }
+
+    @Test func aVersionReadsBackAsTheSameBlocks() {
+        var h = DocumentHistory()
+        let text = "---\ntitle: Plan\n---\n\n# Plan\n\n- [x] first\n- [ ] second\n\n```swift\nlet a = 1\n```\n\n> quoted *text*\n"
+        h.record(keys(text), at: t0, limits: roomy)
+        #expect(keys(h.markdown(of: 0)) == keys(text))
+    }
 }

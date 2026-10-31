@@ -12,6 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var displaced: [ReaderWindowController] = []
     private var welcome: NSWindow?
     private var settingsWindow: NSWindow?
+    /// Earlier versions open in windows of their own (View ▸ Open Earlier Version), kept while open.
+    private var versionWindows: [VersionWindowController] = []
     private var hotKey: GlobalHotKey?
     private var cancellables: Set<AnyCancellable> = []
     private var openedAtLaunch = false
@@ -518,6 +520,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
         welcome?.makeKeyAndOrderFront(nil)
         NSApp.activate()
+    }
+
+    func showVersion(_ window: VersionWindowController) {
+        versionWindows.append(window)
+        window.onClose = { [weak self] w in self?.versionWindows.removeAll { $0 === w } }
+        window.showWindow(nil)
     }
 
     @objc func showSettings(_ sender: Any?) {
