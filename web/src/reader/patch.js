@@ -227,6 +227,8 @@ export function apply(p) {
     entry.y = Math.round(se.scrollTop);
     entry.height = se.scrollHeight;
     reportActiveHeading();
+    // Page time the first paint was reported (SmokeTest: cold_page_painted_at_ms).
+    firstTimings.painted_at ??= Math.round(performance.now());
     post({ type: 'painted', version: p.version });
   });
 }

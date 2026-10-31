@@ -106,6 +106,10 @@ export function holdFirst(xs, dy, upto) {
  * meanwhile: after the frame that shows that.)
  */
 export function afterShown(f) {
-  const next = () => requestAnimationFrame(() => setTimeout(() => { if (firstPaint) afterShown(f); else f(); }, 0));
+  const next = () => requestAnimationFrame(() => {
+    // The first frame after the first apply, page time (SmokeTest: cold_page_raf_at_ms).
+    firstTimings.raf_at ??= Math.round(performance.now());
+    setTimeout(() => { if (firstPaint) afterShown(f); else f(); }, 0);
+  });
   if (firstPaint) { const then = firstPaint.then; firstPaint.then = () => { then(); next(); }; } else next();
 }
