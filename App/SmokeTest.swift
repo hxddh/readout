@@ -131,6 +131,11 @@ enum SmokeTest {
     private static var pageFirstApply: [String: Any] = [:]
     /// The same, from each warm open's page (page time).
     private static var warmPageTimings: [[String: Any]] = []
+    /// Each warm open's longest wait of the app's main thread, from the
+    /// request to the first paint (ms), and when it began (ms after the
+    /// request): beside the page's own gap, whether a stalled page waits on
+    /// the app.
+    private static var warmNativeGaps: [[String: Double]] = []
     private static func readPageFirstApply(_ webView: WKWebView) async {
         if let text = try? await webView.evaluateJavaScript("JSON.stringify(window.readout.firstTimings())") as? String,
            let data = text.data(using: .utf8), let d = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { pageFirstApply = d }
@@ -168,7 +173,7 @@ enum SmokeTest {
         if let start = processStart { phases["process_start"] = start }
         let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint,
                                    "first_paint_samples_s": firstPaintSamples, "first_apply_samples_s": firstApplySamples,
-                                   "launch_phases_s": phases, "page_first_apply_ms": pageFirstApply, "warm_page_ms": warmPageTimings, "open_steps_s": openSteps,
+                                   "launch_phases_s": phases, "page_first_apply_ms": pageFirstApply, "warm_page_ms": warmPageTimings, "warm_native_gap_ms": warmNativeGaps, "open_steps_s": openSteps,
                                    "post_paint_input_delay_ms": postPaintInputDelay.map { $0 as Any } ?? NSNull()]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: dir.appendingPathComponent("timings-app.json"))
@@ -283,12 +288,19 @@ enum SmokeTest {
             if let second = ProcessInfo.processInfo.environment["READOUT_SMOKE_SECOND"] {
                 let secondURL = URL(fileURLWithPath: second)
                 for round in 1...3 {
+                    // A 5 ms beat on the main run loop (every mode) for this open.
+                    let gaps = MainGap()
+                    let beat = Timer(timeInterval: 0.005, repeats: true) { _ in gaps.tick() }
+                    RunLoop.main.add(beat, forMode: .common)
                     app?.open(secondURL)
                     // Keep it open until its first frame is on screen (or well past the guard).
                     let deadline = Date().addingTimeInterval(10)
                     while (firstPaintSamples[secondURL.path]?.count ?? 0) < round && Date() < deadline {
                         try? await Task.sleep(for: .milliseconds(50))
                     }
+                    beat.invalidate()
+                    warmNativeGaps.append(["gap": (gaps.gap * 1000).rounded(), "gap_at": (gaps.gapAt * 1000).rounded(),
+                                           "painted": ((firstPaintSamples[secondURL.path]?.last ?? 0) * 1000).rounded()])
                     // Its page's own timings of this open (a spare page: the open is its first apply).
                     if let page = app?.reader(for: secondURL)?.webView,
                        let text = try? await page.evaluateJavaScript("JSON.stringify(window.readout.firstTimings())") as? String,
@@ -1615,5 +1627,18 @@ extension NSView {
             if let match = sub as? T ?? sub.firstDescendant(ofType: type) { return match }
         }
         return nil
+    }
+}
+
+/// The longest a run loop went between two beats, and when that began
+/// (seconds after it was made): only ever touched on the main thread.
+private final class MainGap: @unchecked Sendable {
+    let start = Date()
+    private var last = Date()
+    private(set) var gap = 0.0, gapAt = 0.0
+    func tick() {
+        let now = Date()
+        if now.timeIntervalSince(last) > gap { gap = now.timeIntervalSince(last); gapAt = last.timeIntervalSince(start) }
+        last = now
     }
 }

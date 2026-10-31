@@ -217,6 +217,9 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
     # Each warm open's page timings (page time; report only): where the open's
     # time goes once the page has the document.
     timings["warm_page_ms"] = app.get("warm_page_ms") or []
+    # The app's main thread over the same opens: its longest wait and when
+    # it began, ms after the request (report only).
+    timings["warm_native_gap_ms"] = app.get("warm_native_gap_ms") or []
     # And the app's side of the warm opens: request to the document read and
     # parsed, and to the apply sent (seconds; report only).
     timings["warm_open_steps_s"] = for_second(app.get("open_steps_s", {})) or []

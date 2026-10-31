@@ -184,12 +184,6 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
         // Tab reaches links (to other documents, the web, source files) as it
         // reaches the paths in code spans; WebKit leaves them to ⌥Tab by default.
         config.preferences.tabFocusesLinks = true
-        // A page out of sight keeps running: WebKit suspends one by default,
-        // and the spare page (WebViewPool), made before any window shows it,
-        // then took about a second to resume once shown (a warm open's first
-        // frame came, its next one a second later). Reader pages sit idle when
-        // nothing changes, so a background tab costs nothing for it.
-        config.preferences.inactiveSchedulingPolicy = .none
         let ucc = WKUserContentController()
         config.userContentController = ucc
         super.init(frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: config)
