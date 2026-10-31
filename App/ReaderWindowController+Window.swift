@@ -110,6 +110,9 @@ extension ReaderWindowController {
         releaseHold()
         saveWork?.cancel()
         saveNow()
+        historyWork?.cancel()
+        historyWork = nil
+        recordVersion()
         watcher?.stop()
         watcher = nil
         cancellables.removeAll()

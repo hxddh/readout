@@ -78,6 +78,7 @@ extension ReaderWindowController {
         self.contentPath = result.sourcePath
         self.deleted = false
         self.updateModel(patch, decoded: result.decoded)
+        self.recordVersion()
         self.webView.whenReady { [weak self] in
             guard let self else { return }
             if self.showsLoadFailure {
@@ -191,6 +192,7 @@ extension ReaderWindowController {
             }
             // A whole document again (a reset) is shown at once: the page holds back only what a patch adds.
             self.updateModel(patch, decoded: result.decoded, holdIncrease: !patch.reset)
+            self.recordVersionSoon()
             let emptiedNow = !wasEmpty && self.session.blocks.isEmpty
             let restore = self.placeAfterRefill(wasEmpty: wasEmpty, patch: patch)
             self.webView.whenReady { [weak self] in
@@ -360,7 +362,9 @@ extension ReaderWindowController {
         refreshRepository()
         didSaveOnce = false
         lastSavedBaseline = nil
+        lastRecordedKeys = nil
         scheduleSave()
+        recordVersionSoon()
     }
 
     func saveNow() {
@@ -386,6 +390,30 @@ extension ReaderWindowController {
         BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset,
                                  topExcerpt: excerpt, savedAt: Date()),
                            for: contentPath.map { URL(fileURLWithPath: $0) } ?? url, baselineChanged: baselineChanged)
+    }
+
+    /// A change read into the session goes into the history within a
+    /// second: at most once a second while an agent streams a write in
+    /// (DocumentHistory keeps the state it settles in), and on a timer of
+    /// its own, which saves of the reading position never postpone.
+    func recordVersionSoon() {
+        guard historyWork == nil else { return }
+        let work = DispatchWorkItem { [weak self] in
+            self?.historyWork = nil
+            self?.recordVersion()
+        }
+        historyWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
+    }
+
+    /// The document as it is now, into its history, when it changed since
+    /// it was last recorded (on load, and after each change: `recordVersionSoon`).
+    func recordVersion() {
+        guard loadState == .loaded, !retargetGate.isPending else { return }
+        let keys = session.keys
+        guard keys != lastRecordedKeys else { return }
+        lastRecordedKeys = keys
+        BaselineStore.recordVersion(keys, at: Date(), for: contentPath.map { URL(fileURLWithPath: $0) } ?? url)
     }
 
     // MARK: Mark All as Read

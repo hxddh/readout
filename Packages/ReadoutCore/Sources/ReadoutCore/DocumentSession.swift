@@ -162,6 +162,14 @@ public final class DocumentSession {
 
     public init() {}
 
+    /// The current version's block keys (what `DocumentHistory` records).
+    public var keys: [BlockKey] {
+        if let k = blockKeys { return k }
+        let k = blocks.map(BlockKey.init)
+        blockKeys = k
+        return k
+    }
+
     public var unreadCount: Int { unread.count + deletions.count }
 
     /// The outline entries (heading slots) whose own section holds an unread
