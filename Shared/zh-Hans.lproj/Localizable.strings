@@ -134,6 +134,10 @@
 "Install the readout command" = "安装 readout 命令";
 "Run this in Terminal to link the readout command to the script inside Readout:\n\n%@\n\n~/.local/bin must be on your PATH: if the command is not found, add this line to ~/.zshrc and open a new terminal window:\n\nexport PATH=\"$HOME/.local/bin:$PATH\"" = "在终端中运行下面的命令，把 readout 命令链接到 Readout 内的脚本：\n\n%@\n\n~/.local/bin 必须在 PATH 中：如果找不到该命令，请将下面这行加入 ~/.zshrc，然后打开新的终端窗口：\n\nexport PATH=\"$HOME/.local/bin:$PATH\"";
 "Copy Command" = "拷贝命令";
+"Compare with Earlier Version" = "与较早版本比较";
+"No Earlier Versions" = "没有较早的版本";
+"+%d −%d blocks" = "+%d −%d 块";
+"Marked what changed since %@" = "已标出自 %@ 以来的改动";
 "Watch the folders your agents write in" = "监视智能体写入的文件夹";
 "Watching %d agent folders" = "正在监视 %d 个智能体文件夹";
 "Add Folder…" = "添加文件夹…";
