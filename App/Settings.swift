@@ -130,7 +130,7 @@ enum BaselineStore {
         /// The record for the file the content was read from, on the main
         /// thread: the prefetched one, or, when a symlink pointed elsewhere by
         /// the time it was read, that file's, also read off the main thread.
-        func record(forSourcePath source: String, _ completion: @escaping (Record?) -> Void) {
+        func record(forSourcePath source: String, _ completion: @escaping @MainActor @Sendable (Record?) -> Void) {
             guard BaselineKey.key(forPath: source) == key else {
                 let url = self.url
                 BaselineStore.queue.async(qos: .userInitiated) {
@@ -168,14 +168,15 @@ enum BaselineStore {
     /// save still queued for it; `done` gets the history as it is then, on
     /// the main thread.
     static func recordVersion(_ keys: [BlockKey], at date: Date, for url: URL,
-                              done: @escaping @MainActor (DocumentHistory) -> Void) {
+                              done: @escaping @MainActor @Sendable (DocumentHistory) -> Void) {
         let target = historyFile(for: url)
         queue.async {
             var history = DocumentHistory.decode(try? Data(contentsOf: target))
             if history.record(keys, at: date), let data = try? JSONEncoder().encode(history) {
                 try? data.write(to: target, options: .atomic)
             }
-            DispatchQueue.main.async { MainActor.assumeIsolated { done(history) } }
+            let recorded = history
+            DispatchQueue.main.async { MainActor.assumeIsolated { done(recorded) } }
         }
     }
 

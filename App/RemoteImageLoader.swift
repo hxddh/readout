@@ -30,7 +30,7 @@ final class RemoteImageLoader {
     /// Downloads `urlString` and completes on the main actor with the
     /// `readout://remote/<token>` URL string, or a `LoadError` whose message
     /// is shown in the placeholder.
-    func load(_ urlString: String, completion: @escaping @MainActor (Result<String, LoadError>) -> Void) {
+    func load(_ urlString: String, completion: @escaping @MainActor @Sendable (Result<String, LoadError>) -> Void) {
         // Loaded before (another window, a placeholder of the same image): the kept bytes.
         if let token = cache.token(forURL: urlString) {
             completion(.success("readout://remote/\(token)"))

@@ -7,7 +7,8 @@ import ReadoutCore
 /// The stream retains a box holding the handler (context retain/release), so a
 /// callback already running never sees freed memory, and `stop()` invalidates
 /// the stream on its own queue: once it returns, no callback runs any more.
-final class FSEventsStream {
+/// Confined to its queue (callbacks, stop): safe to hand to it.
+final class FSEventsStream: @unchecked Sendable {
     struct Event {
         let path: String
         let flags: FSEventStreamEventFlags
@@ -87,7 +88,8 @@ final class FSEventsStream {
 /// Watches one file for changes, surviving atomic replace (write temp + rename),
 /// delete/recreate and a symlink pointed at another file (`ln -sf`).
 /// Delivers debounced change notifications on the main queue.
-final class FileWatcher {
+/// Its state is touched on its queue only, its callbacks sent to the main thread: safe to hand to either.
+final class FileWatcher: @unchecked Sendable {
     enum Change { case modified, deleted }
 
     let url: URL

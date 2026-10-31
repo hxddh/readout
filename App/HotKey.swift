@@ -3,12 +3,13 @@ import Carbon.HIToolbox
 import ReadoutCore
 
 /// A single system-wide hotkey via the Carbon event API (no Accessibility permission required).
-final class GlobalHotKey {
+final class GlobalHotKey: @unchecked Sendable {
     private var ref: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
     private let action: () -> Void
-    private static var instances: [UInt32: GlobalHotKey] = [:]
-    private static var nextID: UInt32 = 1
+    // The Carbon handler and registration both run on the main thread.
+    nonisolated(unsafe) private static var instances: [UInt32: GlobalHotKey] = [:]
+    nonisolated(unsafe) private static var nextID: UInt32 = 1
     private let id: UInt32
 
     init?(keyCode: UInt32, modifiers: UInt32, action: @escaping () -> Void) {
