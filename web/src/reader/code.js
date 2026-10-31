@@ -5,7 +5,7 @@
 // code here, and hears from here when it shows: neither calls the other as
 // it loads).
 import * as hl from '../highlight.js';
-import { doc, WIDE } from './core.js';
+import { doc, WIDE, timed } from './core.js';
 import { waitingForChunk, skippedChunk } from './chunks.js';
 import { held, shown } from './holds.js';
 
@@ -363,12 +363,12 @@ function deliver(cb, f) {
     return;
   }
   flushArrived();   // (in order: what came before for it first)
-  f();
+  timed('code', f);
 }
 function flushArrived() {
   if (batchFrame) cancelAnimationFrame(batchFrame);
   batchFrame = 0;
-  for (const f of batched.splice(0)) f();
+  timed('code', () => { for (const f of batched.splice(0)) f(); });
 }
 
 // HTML that arrived for a block not within a screen yet is kept until it

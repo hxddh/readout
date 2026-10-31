@@ -383,7 +383,8 @@ window.readout = {
   trace: traceEntries,
   lazyHeld: () => ({ ...lazyHeld(), ...chunksHeld(), ...marksHeld() }),
   diagramWork,
-  firstTimings: () => ({ ...firstTimings, worker_ready: hl.readyTime(), highlighter: hl.engineName() }),
+  firstTimings: () => ({ ...firstTimings, worker_ready: hl.readyTime(), highlighter: hl.engineName(),
+    work: firstTimings.work && Object.fromEntries(Object.entries(firstTimings.work).map(([k, v]) => [k, Math.round(v)])) }),
   // Where code is highlighted: 'worker', 'page' where a worker cannot run, 'starting' (Quick Look's log).
   highlighter: () => hl.engineName(),
   // Tests: the grammars the highlighter has registered (a 'readout-hl-langs' mark).

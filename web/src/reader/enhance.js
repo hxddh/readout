@@ -3,7 +3,7 @@
 // links, math. Expensive work (highlighting, in a worker; diagrams) runs
 // lazily near the viewport.
 import * as hl from '../highlight.js';
-import { doc, root, strings, post, inViewport, prevItem, nextItem, WIDE } from './core.js';
+import { doc, root, strings, post, inViewport, prevItem, nextItem, WIDE, timed } from './core.js';
 import { keepPlace } from './anchor.js';
 import { waitingForChunk, skippedChunk } from './chunks.js';
 import { setupCode, keepColours, keptIn, forgetCode, askedBlocks, takeFresh, askOnScreen, newDocument } from './code.js';
@@ -249,7 +249,7 @@ export function lazyHeld() {
 // New tables are measured together, in the next frame.
 const queuedTables = new Set();
 function queueTable(t) {
-  if (!queuedTables.size) requestAnimationFrame(() => { const list = [...queuedTables]; queuedTables.clear(); measureTables(list); });
+  if (!queuedTables.size) requestAnimationFrame(() => { const list = [...queuedTables]; queuedTables.clear(); timed('tables', () => measureTables(list)); });
   queuedTables.add(t);
 }
 
@@ -258,7 +258,7 @@ let tablesQueued = false;
 window.addEventListener('resize', () => {
   if (tablesQueued) return;
   tablesQueued = true;
-  requestAnimationFrame(() => { tablesQueued = false; measureTables(); });
+  requestAnimationFrame(() => { tablesQueued = false; timed('tables', () => measureTables()); });
 });
 
 /**
