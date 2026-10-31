@@ -121,3 +121,14 @@ export function inViewport(el, margin = 0) {
   } else r = el.getBoundingClientRect();
   return r.bottom > -margin && r.top < window.innerHeight + margin;
 }
+
+/**
+ * Runs `f` in a task of its own, soon: a message to the page itself, not a
+ * timer. WebKit aligns a hidden page's timers to whole seconds, and a page
+ * is hidden until its window shows (the spare page, a window opening): a
+ * setTimeout(f, 0) there waited up to a second (5.0 profiling).
+ */
+const channel = new MessageChannel();
+const tasks = [];
+channel.port1.onmessage = () => { const f = tasks.shift(); if (f) f(); };
+export function task(f) { tasks.push(f); channel.port2.postMessage(0); }

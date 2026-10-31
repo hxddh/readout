@@ -10,7 +10,7 @@
 // (enhance.js: holdJump); find, before it selects a match in code
 // (highlighting replaces the text). An edit shows the code it keeps
 // coloured at once, the rest plain until it arrives.
-import { doc, firstTimings } from './core.js';
+import { doc, firstTimings, task } from './core.js';
 import { typesetting } from './math.js';
 import { urge as urgeCode, calm as calmCode, uncoloured } from './code.js';
 
@@ -109,7 +109,7 @@ export function afterShown(f) {
   const next = () => requestAnimationFrame(() => {
     // The first frame after the first apply, page time (SmokeTest: cold_page_raf_at_ms).
     firstTimings.raf_at ??= Math.round(performance.now());
-    setTimeout(() => { if (firstPaint) afterShown(f); else f(); }, 0);
+    task(() => { if (firstPaint) afterShown(f); else f(); });
   });
   if (firstPaint) { const then = firstPaint.then; firstPaint.then = () => { then(); next(); }; } else next();
 }

@@ -8,6 +8,7 @@
 // runs the same highlighter itself, one block part a task: the same answers,
 // on its own thread.
 import { resolveLang, serve } from './highlighter.js';
+import { task } from './reader/core.js';
 
 export { resolveLang };
 
@@ -81,7 +82,7 @@ export function startSoon(quicklook) {
 function later() {
   if (soon || ready) return;
   soon = true;
-  setTimeout(() => init(), 0);
+  task(() => init());
 }
 
 function init() {
