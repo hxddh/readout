@@ -16,6 +16,18 @@ import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
 import { markdownOf, htmlOf, inDocument, blocksIn, sources, definitionsUsed, partIn } from './reader/copy.js';
 // When this script ran, since the page started (SmokeTest: cold_page_script_at_ms).
 firstTimings.script_at = Math.round(performance.now());
+// The longest the page's main thread went without a turn until its first
+// paint was reported, and when that began (SmokeTest: cold_page_gap_ms,
+// cold_page_gap_at_ms): a 10 ms heartbeat, stopped once painted.
+{
+  let last = performance.now();
+  const beat = setInterval(() => {
+    const now = performance.now();
+    if (now - last > (firstTimings.gap ?? 0)) { firstTimings.gap = Math.round(now - last); firstTimings.gap_at = Math.round(last); }
+    last = now;
+    if (firstTimings.painted_at != null) clearInterval(beat);
+  }, 10);
+}
 import { find, findEnd } from './reader/find.js';
 
 // ---------------------------------------------------------------- Links & keys

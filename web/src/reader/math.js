@@ -39,6 +39,8 @@ export function renderMath(el) {
 }
 
 function typeset(katex, nodes) {
+  const t0 = performance.now();
+  firstTimings.katex_loaded_at ??= Math.round(t0);
   for (const n of nodes) {
     typesetting.delete(n);
     if (!n.isConnected || n.classList.contains('done')) continue;
@@ -56,4 +58,6 @@ function typeset(katex, nodes) {
     if (html) { n.innerHTML = html; n.classList.add('done'); }
     shown(n);
   }
+  // The first typesetting's own time (SmokeTest: cold_page_katex_ms).
+  firstTimings.katex ??= Math.round(performance.now() - t0);
 }
