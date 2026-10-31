@@ -77,12 +77,13 @@ enum SmokeTest {
     }
 
     /// Window request to each step of an open, per file, every open (seconds):
-    /// the document read and parsed (did_load), the apply sent to the page.
+    /// the document read and parsed (parsed), its reading state or git
+    /// baseline found too (did_load), the apply sent to the page.
     private static var openSteps: [String: [[String: Double]]] = [:]
     static func noteOpenStep(_ url: URL, _ step: String, seconds: Double) {
         guard outputDirectory != nil else { return }
         var list = openSteps[url.path, default: []]
-        if step == "did_load" || list.isEmpty { list.append([:]) }
+        if step == "parsed" || list.isEmpty { list.append([:]) }
         list[list.count - 1][step] = seconds
         openSteps[url.path] = list
     }

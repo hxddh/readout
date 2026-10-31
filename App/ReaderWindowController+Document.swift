@@ -39,6 +39,8 @@ extension ReaderWindowController {
                 self.showLoadFailure()
                 return
             }
+            // Read and parsed: what follows waits for the reading state, or git (SmokeTest).
+            SmokeTest.noteOpenStep(self.url, "parsed", seconds: Date().timeIntervalSince(self.openedAt))
             saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from
                 guard let self else { return }
                 guard record == nil else { return self.didLoad(result, record: record) }
