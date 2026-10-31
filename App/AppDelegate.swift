@@ -312,6 +312,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     /// changes, or opened behind and not looked at yet (N can go on to it).
     var anyUnread: Bool { readers.contains { $0.needsAttention } }
 
+    /// The changes inbox (View ▸ Unread Changes): the open documents
+    /// waiting for the reader and the agent folders' files changed since
+    /// they were last read, newest first, each with its menu title.
+    func inboxEntries() -> [(entry: ChangesInbox.Entry, title: String)] {
+        func modified(_ path: String) -> Date {
+            (try? URL(fileURLWithPath: path).resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+        }
+        let open = readers.map { r in
+            (path: WorkspaceIndex.realPath(r.url.path), unread: r.session.unreadCount, lookedAt: r.notedRecent, modified: modified(r.url.path))
+        }
+        let recent = WorkspaceIndex.shared.recent.map { (path: WorkspaceIndex.realPath($0.url.path), modified: $0.date) }
+        let entries = ChangesInbox.entries(open: open, recent: recent) { BaselineStore.lastRead(URL(fileURLWithPath: $0)) }
+        let names = ReaderChrome.recentTitles(entries.map(\.path))
+        return zip(entries, names).map { e, name in
+            let what = e.unread.map { $0 > 0 ? String(format: NSLocalizedString("%d unread", comment: "Menu: View ▸ Unread Changes, after a document's name: how many unread changes it has"), $0)
+                                             : NSLocalizedString("not looked at yet", comment: "Menu: View ▸ Unread Changes, after the name of a document opened behind and not looked at") }
+                ?? NSLocalizedString("changed since you read it", comment: "Menu: View ▸ Unread Changes, after the name of a file not open that changed since it was last read")
+            return (e, "\(name) — \(what)")
+        }
+    }
+
+    /// View ▸ Unread Changes: the document `representedObject`, in front, at its first change.
+    @objc func openInboxEntry(_ sender: NSMenuItem) {
+        guard let path = sender.representedObject as? String else { return }
+        let url = URL(fileURLWithPath: path)
+        if let open = reader(for: url) {
+            open.window?.tabGroup?.selectedWindow = open.window
+            open.show()
+            open.window?.makeKeyAndOrderFront(nil)
+            open.goToFirstChange()
+        } else {
+            self.open(url)
+        }
+    }
+
     /// The Dock icon's badge: how many open documents show the tab's dot
     /// (unread changes, or opened behind and not looked at yet).
     func updateDockBadge() {

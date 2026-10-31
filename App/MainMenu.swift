@@ -5,6 +5,7 @@ import ReadoutCore
 @MainActor
 enum MainMenu {
     private static let recentDelegate = RecentMenuDelegate()
+    private static let inboxDelegate = ChangesInboxMenu()
     private static let openLatestTag = 902
 
     static func build(appDelegate: AppDelegate) -> NSMenu {
@@ -103,6 +104,12 @@ enum MainMenu {
         // What changed since the last commit marked again (⌘Z undoes it); for files in a git repository. No key: none is free and obvious.
         view.addItem(item(NSLocalizedString("Compare with Last Commit", comment: "Menu: mark the document again against its version in the last git commit"),
                           #selector(ReaderWindowController.compareWithLastCommit(_:))))
+        // Every document waiting for the reader, open or not (ChangesInboxMenu).
+        let inbox = NSMenuItem(title: NSLocalizedString("Unread Changes", comment: "Menu: the documents with unread changes, open or in the agent folders"), action: nil, keyEquivalent: "")
+        let inboxMenu = NSMenu(title: inbox.title)
+        inboxMenu.delegate = inboxDelegate
+        inbox.submenu = inboxMenu
+        view.addItem(inbox)
         view.addItem(.separator())
         view.addItem(item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "+"))
         let bigger2 = item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "=")
@@ -220,4 +227,24 @@ final class RecentMenuDelegate: NSObject, NSMenuDelegate, NSMenuItemValidation {
     }
 
     @objc func clear(_ sender: Any?) { NSDocumentController.shared.clearRecentDocuments(nil) }
+}
+
+/// Fills View ▸ Unread Changes every time it opens (AppDelegate.inboxEntries).
+@MainActor
+final class ChangesInboxMenu: NSObject, NSMenuDelegate {
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        let entries = (NSApp.delegate as? AppDelegate)?.inboxEntries() ?? []
+        for e in entries {
+            let i = NSMenuItem(title: e.title, action: #selector(AppDelegate.openInboxEntry(_:)), keyEquivalent: "")
+            i.representedObject = e.entry.path
+            i.toolTip = e.entry.path
+            menu.addItem(i)
+        }
+        if entries.isEmpty {
+            let none = NSMenuItem(title: NSLocalizedString("Nothing Unread", comment: "Menu: View ▸ Unread Changes, when no document waits for the reader"), action: nil, keyEquivalent: "")
+            none.isEnabled = false
+            menu.addItem(none)
+        }
+    }
 }

@@ -179,6 +179,13 @@ enum BaselineStore {
         }
     }
 
+    /// When `url` was last read (its reading position or record last
+    /// saved), nil when never: the changes inbox's test for a file not open.
+    static func lastRead(_ url: URL) -> Date? {
+        [positionFile(for: url), file(for: url)]
+            .compactMap { try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }.max()
+    }
+
     /// Where the record and the position for `url` live (smoke test).
     static func recordFiles(for url: URL) -> (record: URL, position: URL) { (file(for: url), positionFile(for: url)) }
 
