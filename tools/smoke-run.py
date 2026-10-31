@@ -128,6 +128,9 @@ def launch_timings(app: dict, spawn: float) -> dict:
     for k in ("setAppearance", "blocks", "layout", "script_at", "apply_at", "hold", "worker_ready", "raf_at", "painted_at", "mermaid_at", "katex_at", "katex_loaded_at", "katex", "gap", "gap_at", "raf2_at", "task_at"):
         if isinstance(page.get(k), (int, float)):
             t[f"cold_page_{k.lower()}_ms"] = page[k]
+    # The page's own work in the frames until the first paint was reported, by kind (ms).
+    if isinstance(page.get("work"), dict):
+        t["cold_page_work_ms"] = page["work"]
     return t
 
 

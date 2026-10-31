@@ -5,7 +5,7 @@
 // frame that scrolls (5 MB of blocks: tens of milliseconds a frame, and each
 // block blank for the frame it came on screen in). Chunks within two screens
 // of the viewport are laid out ahead (`near`), so what scrolls in is drawn.
-import { doc, heights, isChunk, prevItem, blockAfter } from './core.js';
+import { doc, heights, isChunk, prevItem, blockAfter, timed } from './core.js';
 import { resizeObserver } from './anchor.js';
 
 const CHUNK = 32;   // items a chunk is filled to as blocks arrive in order
@@ -138,7 +138,7 @@ export function forceLayout(el, room = 0) {
     if (!isChunk(x) || forced.has(x) || x.classList.contains('near')) continue;
     forced.add(x);
     show(x);
-    requestAnimationFrame(() => requestAnimationFrame(() => { forced.delete(x); show(x); }));
+    requestAnimationFrame(() => requestAnimationFrame(() => { forced.delete(x); timed('chunks', () => show(x)); }));
   }
 }
 

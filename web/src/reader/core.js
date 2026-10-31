@@ -76,6 +76,19 @@ export function pageTheme() {
 const traceLog = [];
 /** The page's first setAppearance and first apply, in ms (the smoke test reports them). */
 export const firstTimings = {};
+/**
+ * Runs `f`, adding its time to firstTimings.work[name] until the first paint
+ * is reported (SmokeTest: which of the page's own work fills the frames
+ * after a first apply).
+ */
+export function timed(name, f) {
+  if (firstTimings.painted_at != null) return f();
+  const t0 = performance.now();
+  try { return f(); } finally {
+    const w = firstTimings.work ??= {};
+    w[name] = Math.round((w[name] ?? 0) + performance.now() - t0);
+  }
+}
 export function trace(type, data) {
   // A caller that gives `y` (null: filled in later) spares the layout reading it costs.
   const y = data && 'y' in data ? data.y : Math.round(document.scrollingElement.scrollTop);

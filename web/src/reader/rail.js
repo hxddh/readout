@@ -1,5 +1,5 @@
 // The change rail: one tick per unread change, positioned by document offset.
-import { strings, quicklook } from './core.js';
+import { strings, quicklook, timed } from './core.js';
 import { unreadElements, focusBlock, visit, pulse, once } from './marks.js';
 import { scrollToElement } from './anchor.js';
 import { roughRect } from './chunks.js';
@@ -16,7 +16,7 @@ const TICK_MIN_PX = 6;   // reader.css: #ro-rail > button min-height
 export function scheduleRail() {
   if (railQueued || quicklook) return;
   railQueued = true;
-  const draw = () => requestAnimationFrame(() => { railQueued = false; lastDraw = performance.now(); drawRail(); });
+  const draw = () => requestAnimationFrame(() => { railQueued = false; lastDraw = performance.now(); timed('rail', drawRail); });
   const wait = lastDraw + RAIL_INTERVAL_MS - performance.now();
   if (wait > 0) setTimeout(draw, wait); else draw();
 }
