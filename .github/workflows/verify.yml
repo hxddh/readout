@@ -254,6 +254,7 @@ jobs:
         run: python3 tools/perf-assert.py mac smoke-out/perf-core.json smoke-out/timings.json smoke-out/ql-timings.json
 
       - name: Print smoke values
+        if: always()
         run: |
           for f in smoke-out/*.json; do echo "== $f"; cat "$f"; echo; done
           # Each warm open's web process over 2 s (SmokeTest, spindump): its threads' call trees.

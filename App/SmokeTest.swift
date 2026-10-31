@@ -309,8 +309,12 @@ enum SmokeTest {
                     // spare it is about to take, sampled for 2 s (spindump, as
                     // root on the runner: WebContent is a system binary; its
                     // call tree printed by the workflow).
-                    sampleProcess(of: WebViewPool.shared.spareForSmokeTest, seconds: 2,
-                                  to: out.appendingPathComponent("sample-warm-\(round).txt"))
+                    // The last open only: spindump's own work slows the open
+                    // it samples, and the budget takes the fastest of the three.
+                    if round == 3 {
+                        sampleProcess(of: WebViewPool.shared.spareForSmokeTest, seconds: 2,
+                                      to: out.appendingPathComponent("sample-warm-\(round).txt"))
+                    }
                     app?.open(secondURL)
                     // Keep it open until its first frame is on screen (or well past the guard).
                     let deadline = Date().addingTimeInterval(10)
