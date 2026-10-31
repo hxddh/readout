@@ -20,6 +20,7 @@ firstTimings.script_at = Math.round(performance.now());
 // paint was reported (SmokeTest: cold_page_gap_ms, cold_page_gap_at_ms).
 heartbeat();
 import { find, findEnd } from './reader/find.js';
+import { setColumn } from './reader/colresize.js';
 
 // ---------------------------------------------------------------- Links & keys
 
@@ -311,10 +312,14 @@ function setAppearance(o) {
       rebaselineHeights();
     });
   }
-  // The column's width (View ▸ Text Width) reflows every block too.
-  const width = o.textWidth === 'wide' ? 'wide' : o.textWidth ? 'standard' : null;
-  if (width && (root.dataset.width || 'standard') !== width) {
-    keepPlace(() => {
+  // The column's width (View ▸ Text Width, or its edge dragged: rem) reflows every block too.
+  const custom = /^\d+$/.test(o.textWidth ?? '') ? +o.textWidth : null;
+  const width = custom != null ? 'custom' : o.textWidth === 'wide' ? 'wide' : o.textWidth ? 'standard' : null;
+  const cap = custom != null ? `${custom}rem` : '';
+  if (width && ((root.dataset.width || 'standard') !== width || root.style.getPropertyValue('--cap') !== cap)) {
+    if (custom != null) setColumn(custom);
+    else keepPlace(() => {
+      root.style.removeProperty('--cap');
       if (width === 'wide') root.dataset.width = 'wide'; else delete root.dataset.width;
       measureTables();
     }, { ratio: true });

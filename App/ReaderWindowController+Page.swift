@@ -96,6 +96,10 @@ extension ReaderWindowController {
             EditorOpener.open(path: path, line: line, column: column)
         case .setCodeWrap(let on):
             if AppSettings.shared.codeWrap != on { AppSettings.shared.codeWrap = on }
+        case .setTextWidth(let rem):
+            // Every window follows, as for View ▸ Text Width.
+            let width = rem.map { ReaderLayout.textWidth(rem: $0) } ?? "standard"
+            if AppSettings.shared.textWidth != width { AppSettings.shared.textWidth = width }
         case .nothing, .wrapped:
             // A key with nothing to go to (D with nothing in view), or N
             // wrapping past the last change back to the first.

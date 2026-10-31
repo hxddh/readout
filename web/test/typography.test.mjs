@@ -1916,6 +1916,26 @@ for (const dark of [false, true]) {
   await page.evaluate(() => window.readout.setAppearance({ textWidth: 'standard' }));
   const standard = await col();
   check('P4.4 at 2400 px Text Width ▸ Wide fills the window less its margins, Standard stops at 80 em', Math.abs(wide - colOf(2400, 16 * scale(2400), Infinity)) < 0.6 && Math.abs(standard - colOf(2400, 16 * scale(2400))) < 0.6, JSON.stringify({ wide, standard }));
+  // The column's edge dragged (colresize.js): the app keeps its width in rem.
+  await page.evaluate(() => window.readout.setAppearance({ textWidth: '50' }));
+  const fifty = await col();
+  const rootPx = 16 * scale(2400);
+  check('P4.4 a dragged width (rem) sets the column, Standard and Wide still undo it', Math.abs(fifty - 50 * rootPx) < 0.6, JSON.stringify({ fifty, want: 50 * rootPx }));
+  const edge = await page.evaluate(() => {
+    const d = document.getElementById('ro-doc'), r = d.getBoundingClientRect(), g = parseFloat(getComputedStyle(d).paddingLeft);
+    return { x: r.right - g + 4, center: r.left + r.width / 2 };
+  });
+  await page.mouse.move(edge.x, 300);
+  const grabbed = await page.evaluate(() => document.documentElement.classList.contains('col-edge'));
+  await page.mouse.down();
+  await page.mouse.move(edge.center + 30 * rootPx, 300, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(100);
+  const dragged = await col();
+  check('P4.4 dragging the column\'s edge sets its width live, centred (60 rem from 30 rem each side)', grabbed && Math.abs(dragged - 60 * rootPx) < rootPx, JSON.stringify({ grabbed, dragged, want: 60 * rootPx }));
+  await page.evaluate(() => window.readout.setAppearance({ textWidth: 'standard' }));
+  const back = await col();
+  check('P4.4 Standard again after a drag', Math.abs(back - standard) < 0.6, JSON.stringify({ back, standard }));
   await page.close();
   // Decided before the first paint: the size a wide window opens at is its size in the first frame.
   const pg = await browser.newPage({ viewport: { width: 1600, height: 800 } });

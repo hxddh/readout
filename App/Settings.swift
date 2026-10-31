@@ -55,7 +55,7 @@ final class AppSettings: ObservableObject {
         hotKey = HotKeyChoice(stored: d.string(forKey: "hotKey"))
         let fs = d.double(forKey: "fontSize")
         fontSize = fs == 0 ? 16 : fs
-        textWidth = d.string(forKey: "textWidth") == "wide" ? "wide" : "standard"
+        textWidth = ReaderLayout.textWidth(d.string(forKey: "textWidth"))
         codeWrap = d.bool(forKey: "codeWrap")
         checkForUpdatesAutomatically = d.object(forKey: "checkForUpdatesAutomatically") as? Bool ?? true
         lastUpdateCheck = d.object(forKey: "lastUpdateCheck") as? Date

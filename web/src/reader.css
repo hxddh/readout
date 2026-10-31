@@ -56,6 +56,9 @@
   color-scheme: light;
 }
 :root[data-width="wide"] { --cap: 100000px; }
+/* The column's edge, under the pointer and while dragged (colresize.js). */
+:root.col-edge, :root.col-dragging, :root.col-dragging * { cursor: col-resize; }
+:root.col-dragging { user-select: none; -webkit-user-select: none; }
 
 /* Dark: chosen by the app (setAppearance), or by the system until the app
    has said which, so the first paint never flashes white. An explicit

@@ -18,6 +18,10 @@ import Testing
         #expect(PageMessage(["type": "painted", "version": NSNumber(value: 1)]) == .painted)
         #expect(PageMessage(["type": "setCodeWrap", "on": NSNumber(value: true)]) == .setCodeWrap(on: true))
         #expect(PageMessage(["type": "setCodeWrap"]) == nil)
+        // The column's edge dragged: its width in rem; a double-click, back to Standard.
+        #expect(PageMessage(["type": "setTextWidth", "rem": NSNumber(value: 62)]) == .setTextWidth(rem: 62))
+        #expect(PageMessage(["type": "setTextWidth"]) == .setTextWidth(rem: nil))
+        #expect(PageMessage(["type": "setTextWidth", "rem": NSNumber(value: Double.infinity)]) == nil)
         // N with no change left: the page says so and the app beeps.
         #expect(PageMessage(["type": "nothing"]) == .nothing)
         #expect(PageMessage(["type": "wrapped"]) == .wrapped)
