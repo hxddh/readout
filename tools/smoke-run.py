@@ -211,6 +211,12 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
     timings["warm_open_to_applied_samples_ms"] = [round(v * 1000, 1) for v in applied_samples]
     timings["warm_open_to_applied_ms"] = (round(min(applied_samples) * 1000, 1)
                                           if len(applied_samples) == WARM_OPENS else None)
+    # Each warm open's page timings (page time; report only): where the open's
+    # time goes once the page has the document.
+    timings["warm_page_ms"] = app.get("warm_page_ms") or []
+    # And the app's side of the warm opens: request to the document read and
+    # parsed, and to the apply sent (seconds; report only).
+    timings["warm_open_steps_s"] = for_second(app.get("open_steps_s", {})) or []
     (out / "timings.json").write_text(json.dumps(timings, indent=1, sort_keys=True) + "\n")
     print(f"harness: timings {timings}")
 
