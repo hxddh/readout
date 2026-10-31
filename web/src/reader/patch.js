@@ -1,5 +1,5 @@
 // Applies RenderPatches from the native side while keeping the reader's place.
-import { firstTimings, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, firstItem, nextItem, lastItem, prevItem } from './core.js';
+import { firstTimings, heartbeat, doc, slots, heights, strings, post, inViewport, trace, onKeptScroll, focused, isChunk, firstItem, nextItem, lastItem, prevItem } from './core.js';
 import { captureAnchor, restoreAnchor, keepPlace, anchorMiss, atBottom, fitsOnScreen, resizeObserver, scrollToElement, baseline } from './anchor.js';
 import { forceLayout, place as placeItem, placeLast, unplace, reestimate, clearChunks, touched, estimateOf, itemEstimate, flushStarts, flushed, noteNext, settleNext, noteLead, leadIns, prevBlock, roughRect, unstale, cvOn } from './chunks.js';
 import { renderMarks, forgetDiff, watching, forgetMarks } from './marks.js';
@@ -115,6 +115,7 @@ export function apply(p) {
   if (p.reset || p.links) setLinks(p.links);
   const isFirst = first;
   first = false;
+  if (isFirst) heartbeat();
   const t0 = performance.now();
   // The document was emptied (truncated): the place it had before counts.
   if (held && slots.size > 0 && Math.abs(document.scrollingElement.scrollTop - held.top) > 2) held = null;   // the reader moved
