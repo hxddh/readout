@@ -140,7 +140,8 @@ extension ReaderWindowController {
         }
     }
 
-    private func openLink(_ href: String) {
+    /// A link followed in the document, or in an earlier version of it (VersionWindowController).
+    func openLink(_ href: String) {
         let fm = FileManager.default
         // A link to a source file is looked for where a path in a code span
         // is (the project, the repository's folders, the agent folders) before it is missing.

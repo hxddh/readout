@@ -477,6 +477,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         case #selector(copyAsQuote(_:)):
             // Text selected, or else a block with the keyboard's focus (where N went).
             return (hasSelection || hasFocusedBlock) && loadState == .loaded
+        case #selector(openVersion(_:)):
+            return loadState == .loaded
         case #selector(compareWithVersion(_:)):
             return loadState == .loaded && !retargetGate.isPending
         case #selector(compareWithLastCommit(_:)):
