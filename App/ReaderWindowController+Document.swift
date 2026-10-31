@@ -451,6 +451,21 @@ extension ReaderWindowController {
         showMarked(againstVersion: history.keys(of: i), at: history.versions[i].at)
     }
 
+    /// View ▸ Open Earlier Version: version `representedObject`, read-only in a
+    /// window of its own, marked against the version before it (what changed in it).
+    @objc func openVersion(_ sender: NSMenuItem) {
+        guard loadState == .loaded, let i = sender.representedObject as? Int,
+              let history, history.versions.indices.contains(i) else { return NSSound.beep() }
+        let path = contentPath ?? url.path
+        let when = DateFormatter.localizedString(from: history.versions[i].at, dateStyle: .medium, timeStyle: .short)
+        let title = String(format: NSLocalizedString("%@ — %@", comment: "Title of an earlier version's window: the file's name, then when Readout saw that version"),
+                           (path as NSString).lastPathComponent, when)
+        let window = VersionWindowController(title: title, markdown: history.markdown(of: i),
+                                             before: i > 0 ? history.keys(of: i - 1) : nil,
+                                             directory: URL(fileURLWithPath: path).deletingLastPathComponent(), reader: self)
+        (NSApp.delegate as? AppDelegate)?.showVersion(window)
+    }
+
     private static let compareWithVersionName = NSLocalizedString("Compare with Earlier Version", comment: "Menu: mark the document again against a version Readout saw before")
 
     private static func versionNotice(_ at: Date) -> String {

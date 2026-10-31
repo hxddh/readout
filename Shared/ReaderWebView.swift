@@ -425,6 +425,7 @@ enum ReaderStrings {
             "railLabel": NSLocalizedString("Unread changes", comment: "Accessibility label of the change rail beside the page"),
             "wrap": NSLocalizedString("Wrap", comment: "Code block button: wrap long lines"),
             "wrapTitle": NSLocalizedString("Wrap long lines in code blocks", comment: "Code block wrap button tooltip"),
+            "unfold": NSLocalizedString("Show %d more lines", comment: "Button under a long code block's first 3,000 lines; %d is how many lines it has after them"),
             "changesSince": NSLocalizedString("Changes since you last read", comment: "Label of the word-level comparison under an edited block"),
             "noEarlierText": NSLocalizedString("The earlier text was not kept, so there is nothing to compare with.", comment: "Comparison under an edited block when the old text is unknown"),
         ]

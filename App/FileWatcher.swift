@@ -21,8 +21,8 @@ final class FSEventsStream: @unchecked Sendable {
 
     /// What the stream's context retains.
     private final class Box {
-        let handler: ([Event]) -> Void
-        init(_ handler: @escaping ([Event]) -> Void) { self.handler = handler }
+        let handler: @Sendable ([Event]) -> Void
+        init(_ handler: @escaping @Sendable ([Event]) -> Void) { self.handler = handler }
     }
 
     private var stream: FSEventStreamRef?
@@ -31,7 +31,10 @@ final class FSEventsStream: @unchecked Sendable {
     /// `excluding`: folders whose events FSEvents filters out before the app
     /// is woken (at most WatchExclusions.limit).
     init?(paths: [String], latency: TimeInterval, queue: DispatchQueue, sinceNow: Bool = true, excluding: [String] = [],
-          handler: @escaping ([Event]) -> Void) {
+          // Sendable: it runs on `queue`, so a closure made on the main
+          // actor (WorkspaceIndex) must not take on its isolation (Swift 6
+          // checks that at run time, and traps).
+          handler: @escaping @Sendable ([Event]) -> Void) {
         self.queue = queue
         queue.markForRunSync()
         let box = Box(handler)
