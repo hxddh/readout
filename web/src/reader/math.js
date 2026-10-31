@@ -1,5 +1,6 @@
 // Math with KaTeX, loaded on first use.
 import { shown } from './holds.js';
+import { firstTimings } from './core.js';
 
 const mathCache = new Map();      // tex+display -> html, least recently used first
 // Enough for every formula of a long document; an agent rewriting formulas
@@ -12,6 +13,8 @@ export const typesetting = new Set();
 let katexPromise = null;
 // Its script and its style sheet (typeset without it, math is laid out at another height).
 function loadKatex() {
+  // When the first formula asked for KaTeX, page time (SmokeTest: cold_page_katex_at_ms).
+  firstTimings.katex_at ??= Math.round(performance.now());
   if (!katexPromise) {
     const load = el => new Promise((resolve, reject) => { el.onload = resolve; el.onerror = reject; document.head.appendChild(el); });
     const css = document.createElement('link');
@@ -36,6 +39,8 @@ export function renderMath(el) {
 }
 
 function typeset(katex, nodes) {
+  const t0 = performance.now();
+  firstTimings.katex_loaded_at ??= Math.round(t0);
   for (const n of nodes) {
     typesetting.delete(n);
     if (!n.isConnected || n.classList.contains('done')) continue;
@@ -53,4 +58,6 @@ function typeset(katex, nodes) {
     if (html) { n.innerHTML = html; n.classList.add('done'); }
     shown(n);
   }
+  // The first typesetting's own time (SmokeTest: cold_page_katex_ms).
+  firstTimings.katex ??= Math.round(performance.now() - t0);
 }

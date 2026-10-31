@@ -14,6 +14,20 @@ import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
 import { markdownOf, htmlOf, inDocument, blocksIn, sources, definitionsUsed, partIn } from './reader/copy.js';
+// When this script ran, since the page started (SmokeTest: cold_page_script_at_ms).
+firstTimings.script_at = Math.round(performance.now());
+// The longest the page's main thread went without a turn until its first
+// paint was reported, and when that began (SmokeTest: cold_page_gap_ms,
+// cold_page_gap_at_ms): a 10 ms heartbeat, stopped once painted.
+{
+  let last = performance.now();
+  const beat = setInterval(() => {
+    const now = performance.now();
+    if (now - last > (firstTimings.gap ?? 0)) { firstTimings.gap = Math.round(now - last); firstTimings.gap_at = Math.round(last); }
+    last = now;
+    if (firstTimings.painted_at != null) clearInterval(beat);
+  }, 10);
+}
 import { find, findEnd } from './reader/find.js';
 
 // ---------------------------------------------------------------- Links & keys
@@ -369,7 +383,7 @@ window.readout = {
   trace: traceEntries,
   lazyHeld: () => ({ ...lazyHeld(), ...chunksHeld(), ...marksHeld() }),
   diagramWork,
-  firstTimings: () => ({ ...firstTimings, highlighter: hl.engineName() }),
+  firstTimings: () => ({ ...firstTimings, worker_ready: hl.readyTime(), highlighter: hl.engineName() }),
   // Where code is highlighted: 'worker', 'page' where a worker cannot run, 'starting' (Quick Look's log).
   highlighter: () => hl.engineName(),
   // Tests: the grammars the highlighter has registered (a 'readout-hl-langs' mark).

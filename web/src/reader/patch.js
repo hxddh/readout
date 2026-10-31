@@ -176,7 +176,7 @@ export function apply(p) {
 
   rebaselinePatch(p, changed, rerendered, firstLarge);
 
-  if (isFirst) { firstTimings.blocks = Math.round(t1 - t0); firstTimings.layout = Math.round(performance.now() - t1); }
+  if (isFirst) { firstTimings.apply_at = Math.round(t0); firstTimings.blocks = Math.round(t1 - t0); firstTimings.layout = Math.round(performance.now() - t1); }
 
   const restored = restorePlace(p, { follow, forced, anchor, changed });
   // Emptied, refilled only in part, or cut short so the page cannot scroll
@@ -227,6 +227,8 @@ export function apply(p) {
     entry.y = Math.round(se.scrollTop);
     entry.height = se.scrollHeight;
     reportActiveHeading();
+    // Page time the first paint was reported (SmokeTest: cold_page_painted_at_ms).
+    firstTimings.painted_at ??= Math.round(performance.now());
     post({ type: 'painted', version: p.version });
   });
 }

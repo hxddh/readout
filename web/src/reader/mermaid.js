@@ -1,5 +1,5 @@
 // Mermaid diagrams, loaded on first use and rendered one at a time.
-import { doc, root, strings, inViewport, pageTheme, quicklook } from './core.js';
+import { doc, root, strings, inViewport, pageTheme, quicklook, firstTimings } from './core.js';
 import { lazyObserver, grows } from './enhance.js';
 import { shown } from './holds.js';
 
@@ -175,6 +175,8 @@ async function draw(m, id, src) {
 }
 
 function loadMermaid() {
+  // When the first diagram asked for Mermaid, page time (SmokeTest: cold_page_mermaid_at_ms).
+  firstTimings.mermaid_at ??= Math.round(performance.now());
   if (!mermaidPromise) {
     mermaidPromise = import(MERMAID_URL).then(mod => mod.default);
   }
