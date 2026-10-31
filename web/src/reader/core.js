@@ -85,8 +85,9 @@ export function timed(name, f) {
   if (firstTimings.painted_at != null) return f();
   const t0 = performance.now();
   try { return f(); } finally {
+    // Unrounded: many short runs add up (rounded when read: reader.js firstTimings()).
     const w = firstTimings.work ??= {};
-    w[name] = Math.round((w[name] ?? 0) + performance.now() - t0);
+    w[name] = (w[name] ?? 0) + performance.now() - t0;
   }
 }
 export function trace(type, data) {

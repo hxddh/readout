@@ -363,7 +363,7 @@ function deliver(cb, f) {
     return;
   }
   flushArrived();   // (in order: what came before for it first)
-  f();
+  timed('code', f);
 }
 function flushArrived() {
   if (batchFrame) cancelAnimationFrame(batchFrame);
