@@ -5,7 +5,8 @@ import ReadoutCore
 @MainActor
 enum MainMenu {
     private static let recentDelegate = RecentMenuDelegate()
-    private static let earlierDelegate = EarlierVersionsMenu()
+    private static let earlierDelegate = EarlierVersionsMenu(action: #selector(ReaderWindowController.compareWithVersion(_:)))
+    private static let openEarlierDelegate = EarlierVersionsMenu(action: #selector(ReaderWindowController.openVersion(_:)))
     private static let inboxDelegate = ChangesInboxMenu()
     private static let openLatestTag = 902
 
@@ -111,6 +112,12 @@ enum MainMenu {
         earlierMenu.delegate = earlierDelegate
         earlier.submenu = earlierMenu
         view.addItem(earlier)
+        // The same versions, each read-only in a window of its own.
+        let openEarlier = NSMenuItem(title: NSLocalizedString("Open Earlier Version", comment: "Menu: show a version Readout saw before, read-only in its own window"), action: nil, keyEquivalent: "")
+        let openEarlierMenu = NSMenu(title: openEarlier.title)
+        openEarlierMenu.delegate = openEarlierDelegate
+        openEarlier.submenu = openEarlierMenu
+        view.addItem(openEarlier)
         // Every document waiting for the reader, open or not (ChangesInboxMenu).
         let inbox = NSMenuItem(title: NSLocalizedString("Unread Changes", comment: "Menu: the documents with unread changes, open or in the agent folders"), action: nil, keyEquivalent: "")
         let inboxMenu = NSMenu(title: inbox.title)
@@ -236,16 +243,20 @@ final class RecentMenuDelegate: NSObject, NSMenuDelegate, NSMenuItemValidation {
     @objc func clear(_ sender: Any?) { NSDocumentController.shared.clearRecentDocuments(nil) }
 }
 
-/// Fills View ▸ Compare with Earlier Version from the front reader's history every time it opens.
+/// Fills View ▸ Compare with Earlier Version (and Open Earlier Version) from
+/// the front reader's history every time it opens; each item sends `action`.
 @MainActor
 final class EarlierVersionsMenu: NSObject, NSMenuDelegate {
+    private let action: Selector
+    init(action: Selector) { self.action = action }
+
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         let reader = NSApp.mainWindow?.windowController as? ReaderWindowController
         let versions = reader?.earlierVersions() ?? []
         for v in versions {
             // Up the responder chain, to the front reader (validateMenuItem).
-            let i = NSMenuItem(title: v.title, action: #selector(ReaderWindowController.compareWithVersion(_:)), keyEquivalent: "")
+            let i = NSMenuItem(title: v.title, action: action, keyEquivalent: "")
             i.representedObject = v.index
             menu.addItem(i)
         }

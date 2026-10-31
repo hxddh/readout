@@ -150,4 +150,6 @@
 "Install…" = "安装…";
 "Done" = "已完成";
 "To do" = "待完成";
+"Open Earlier Version" = "打开较早版本";
+"%@ — %@" = "%@ — %@";
 "Show %d more lines" = "显示其余 %d 行";
