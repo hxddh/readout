@@ -15,9 +15,10 @@ import Testing
 
     @Test func eachStateIsAVersionAndTheSameStateIsNotRecordedTwice() {
         var h = DocumentHistory()
-        #expect(h.record(keys(v1), at: t0, limits: roomy))
-        #expect(!h.record(keys(v1), at: t0.addingTimeInterval(60), limits: roomy))
-        #expect(h.record(keys(v2), at: t0.addingTimeInterval(120), limits: roomy))
+        let first = h.record(keys(v1), at: t0, limits: roomy)
+        let again = h.record(keys(v1), at: t0.addingTimeInterval(60), limits: roomy)
+        let second = h.record(keys(v2), at: t0.addingTimeInterval(120), limits: roomy)
+        #expect(first && !again && second)
         #expect(h.versions.count == 2)
         #expect(h.keys(of: 0) == keys(v1))
         #expect(h.keys(of: 1) == keys(v2))
