@@ -196,6 +196,19 @@ enum SmokeTest {
         }
     }
 
+    /// Samples `webView`'s WebContent process for `seconds` with spindump
+    /// (sudo without a password: CI runners only), in the background, into `file`.
+    private static func sampleProcess(of webView: WKWebView?, seconds: Int, to file: URL) {
+        guard let webView, webView.responds(to: NSSelectorFromString("_webProcessIdentifier")),
+              let pid = (webView.value(forKey: "_webProcessIdentifier") as? NSNumber)?.intValue, pid > 0 else { return }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
+        p.arguments = ["-n", "/usr/sbin/spindump", String(pid), String(seconds), "1", "-o", file.path]
+        p.standardOutput = FileHandle.nullDevice
+        p.standardError = FileHandle.nullDevice
+        try? p.run()
+    }
+
     static func didOpen() {
         guard let out = outputDirectory else { return }
         try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
@@ -292,6 +305,12 @@ enum SmokeTest {
                     let gaps = MainGap()
                     let beat = Timer(timeInterval: 0.005, repeats: true) { _ in gaps.tick() }
                     RunLoop.main.add(beat, forMode: .common)
+                    // What the page's web process does over the open: the
+                    // spare it is about to take, sampled for 2 s (spindump, as
+                    // root on the runner: WebContent is a system binary; its
+                    // call tree printed by the workflow).
+                    sampleProcess(of: WebViewPool.shared.spareForSmokeTest, seconds: 2,
+                                  to: out.appendingPathComponent("sample-warm-\(round).txt"))
                     app?.open(secondURL)
                     // Keep it open until its first frame is on screen (or well past the guard).
                     let deadline = Date().addingTimeInterval(10)

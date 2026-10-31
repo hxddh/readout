@@ -256,6 +256,11 @@ jobs:
       - name: Print smoke values
         run: |
           for f in smoke-out/*.json; do echo "== $f"; cat "$f"; echo; done
+          # Each warm open's web process over 2 s (SmokeTest, spindump): its threads' call trees.
+          for f in smoke-out/sample-warm-*.txt; do
+            [ -f "$f" ] || continue
+            echo "== $f"; awk '/^ *Thread 0x/{p=1} p' "$f" | cut -c1-220 | head -160
+          done
 
       - name: Assert smoke output
         run: |
