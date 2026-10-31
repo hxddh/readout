@@ -5,7 +5,7 @@
 // code here, and hears from here when it shows: neither calls the other as
 // it loads).
 import * as hl from '../highlight.js';
-import { doc, WIDE, timed } from './core.js';
+import { doc, WIDE, timed, strings } from './core.js';
 import { waitingForChunk, skippedChunk } from './chunks.js';
 import { held, shown } from './holds.js';
 
@@ -43,7 +43,7 @@ export const askedBlocks = () => asking;
  * its place before (keepColours).
  */
 export function setupCode(cb, old) {
-  const text = cb.querySelector('pre').textContent;
+  const text = foldLong(cb, cb.querySelector('pre').textContent);
   // Box-drawing characters (a directory tree, a diagram): tighter lines, so
   // the vertical strokes join up.
   if (/[─-╿]/.test(text)) cb.classList.add('cb-tree');
@@ -63,6 +63,69 @@ export function setupCode(cb, old) {
   cb.dataset.hl = 'pending';
   fresh.push(cb);
   if (old) keepLines(cb, text, old);
+}
+
+// A block of more than FOLD_LINES lines (a whole log, a generated file)
+// shows its first FOLD_LINES, then a button that shows the rest: laid out,
+// highlighted and kept in memory, all its lines cost the page (a block of
+// 28,000 lines: well over a gigabyte, and a landing frame of seconds). Its
+// whole code is kept, for Copy and for find, which shows the rest when a
+// match is in it (unfoldMatching).
+export const FOLD_LINES = 3000;
+const foldedCode = new WeakMap();   // folded block -> its whole code
+/** A block's whole code when it is folded (Copy copies all of it), else null. */
+export const foldedCodeOf = cb => foldedCode.get(cb) ?? null;
+function foldLong(cb, text) {
+  // (Printing: every line, coloured.)
+  if (cb.dataset.unfolded || everything) return text;
+  let cut = -1;
+  for (let n = 0; n < FOLD_LINES; n++) if ((cut = text.indexOf('\n', cut + 1)) < 0) return text;
+  const rest = text.slice(cut + 1).replace(/\n$/, '');
+  if (!rest) return text;
+  const more = rest.split('\n').length;
+  const shown = text.slice(0, cut + 1);
+  foldedCode.set(cb, text);
+  const pre = cb.querySelector('pre');
+  (pre.firstElementChild || pre).textContent = shown;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'cb-unfold';
+  btn.textContent = (strings.unfold || 'Show %d more lines').replace('%d', more.toLocaleString());
+  btn.addEventListener('click', ev => { ev.stopPropagation(); unfold(cb); });
+  pre.after(btn);
+  cb.dataset.folded = String(more);
+  return shown;
+}
+/** A folded block shows all its lines (its button, or find): plain, then highlighted as a block just made. */
+export function unfold(cb, { ask: now = true } = {}) {
+  const text = foldedCode.get(cb);
+  if (text == null || !cb.isConnected) return false;
+  foldedCode.delete(cb);
+  delete cb.dataset.folded;
+  cb.dataset.unfolded = '1';
+  cb.querySelector('.cb-unfold')?.remove();
+  forgetCode(cb);
+  state.delete(cb);
+  const old = cb.querySelector('pre');
+  const pre = old.cloneNode(false), code = (old.firstElementChild || old).cloneNode(false);
+  code.textContent = text;
+  if (code !== pre) pre.append(code);
+  old.replaceWith(pre);
+  setupCode(cb);
+  // Asked for now when the reader showed it; for find, as any block is when
+  // the landing comes near it (a hold waits for the lines it lands on).
+  const near = takeFresh(() => now);
+  for (const b of near) askOnScreen(b);
+  return true;
+}
+/** Find: the folded blocks whose whole code `matches`, shown whole first. */
+export function unfoldMatching(matches) {
+  let n = 0;
+  for (const cb of doc.querySelectorAll('.code-block[data-folded]')) {
+    const text = foldedCode.get(cb);
+    if (text != null && matches(text) && unfold(cb)) n++;
+  }
+  return n;
 }
 
 // Code a patch takes away coloured (a block replaced, or the document reset)
@@ -299,6 +362,8 @@ export function newDocument() { everything = false; }
 /** Highlights every code block not highlighted yet, wherever it is (printing). */
 export function highlightAll() {
   everything = true;
+  // Printed whole: a folded block shows all its lines first.
+  for (const cb of [...doc.querySelectorAll('.code-block[data-folded]')]) unfold(cb);
   for (const cb of [...keeping]) put(cb);
   for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) ask(cb, NEAR, 0, 0);
 }
