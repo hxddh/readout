@@ -5,6 +5,7 @@ import ReadoutCore
 @MainActor
 enum MainMenu {
     private static let recentDelegate = RecentMenuDelegate()
+    private static let earlierDelegate = EarlierVersionsMenu()
     private static let openLatestTag = 902
 
     static func build(appDelegate: AppDelegate) -> NSMenu {
@@ -103,6 +104,12 @@ enum MainMenu {
         // What changed since the last commit marked again (⌘Z undoes it); for files in a git repository. No key: none is free and obvious.
         view.addItem(item(NSLocalizedString("Compare with Last Commit", comment: "Menu: mark the document again against its version in the last git commit"),
                           #selector(ReaderWindowController.compareWithLastCommit(_:))))
+        // The versions Readout saw of the document, newest first (EarlierVersionsMenu).
+        let earlier = NSMenuItem(title: NSLocalizedString("Compare with Earlier Version", comment: "Menu: mark the document again against a version Readout saw before"), action: nil, keyEquivalent: "")
+        let earlierMenu = NSMenu(title: earlier.title)
+        earlierMenu.delegate = earlierDelegate
+        earlier.submenu = earlierMenu
+        view.addItem(earlier)
         view.addItem(.separator())
         view.addItem(item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "+"))
         let bigger2 = item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "=")
@@ -220,4 +227,25 @@ final class RecentMenuDelegate: NSObject, NSMenuDelegate, NSMenuItemValidation {
     }
 
     @objc func clear(_ sender: Any?) { NSDocumentController.shared.clearRecentDocuments(nil) }
+}
+
+/// Fills View ▸ Compare with Earlier Version from the front reader's history every time it opens.
+@MainActor
+final class EarlierVersionsMenu: NSObject, NSMenuDelegate {
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        let reader = NSApp.mainWindow?.windowController as? ReaderWindowController
+        let versions = reader?.earlierVersions() ?? []
+        for v in versions {
+            // Up the responder chain, to the front reader (validateMenuItem).
+            let i = NSMenuItem(title: v.title, action: #selector(ReaderWindowController.compareWithVersion(_:)), keyEquivalent: "")
+            i.representedObject = v.index
+            menu.addItem(i)
+        }
+        if versions.isEmpty {
+            let none = NSMenuItem(title: NSLocalizedString("No Earlier Versions", comment: "Menu: View ▸ Compare with Earlier Version, when Readout has seen only the version shown"), action: nil, keyEquivalent: "")
+            none.isEnabled = false
+            menu.addItem(none)
+        }
+    }
 }
