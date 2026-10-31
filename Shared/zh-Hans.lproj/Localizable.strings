@@ -143,4 +143,11 @@
 "%d unread" = "%d 处未读";
 "not looked at yet" = "尚未查看";
 "changed since you read it" = "阅读后有改动";
+"Watch the folders your agents write in" = "监视智能体写入的文件夹";
+"Watching %d agent folders" = "正在监视 %d 个智能体文件夹";
+"The readout command is installed" = "readout 命令已安装";
+"Open files from Terminal and agent hooks" = "从终端和智能体钩子打开文件";
+"Install…" = "安装…";
+"Done" = "已完成";
+"To do" = "待完成";
 "Show %d more lines" = "显示其余 %d 行";
