@@ -638,14 +638,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 // MARK: - Welcome
 
 struct WelcomeView: View {
-    /// Fixed size: open and open latest; a file dropped anywhere on it opens. Recent files live in File ▸ Open Recent.
-    static let height: CGFloat = 320
+    /// Fixed size: open and open latest, then the two steps of setting
+    /// Readout up (agent folders, the command line); a file dropped anywhere
+    /// on it opens. Recent files live in File ▸ Open Recent.
+    static let height: CGFloat = 430
 
     let onOpen: () -> Void
     let onOpenLatest: () -> Void
     let onOpenURL: (URL) -> Void
     @State private var targeted = false
+    @State private var cliInstalled = false
     @ObservedObject private var settings = AppSettings.shared
+
+    /// Whether ~/.local/bin/readout is there (Install Command Line Tool's link): looked at, never written.
+    private func refreshCLI() {
+        let link = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin/readout").path
+        cliInstalled = FileManager.default.fileExists(atPath: link)
+    }
+
+    /// Adds agent folders, as Settings' + does.
+    private func addFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = true
+        panel.prompt = NSLocalizedString("Add", comment: "Open panel button")
+        guard panel.runModal() == .OK else { return }
+        for url in panel.urls where !settings.workspaces.contains(url.path) { settings.workspaces.append(url.path) }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -685,9 +705,30 @@ struct WelcomeView: View {
             .controlSize(.large)
             .padding(.top, 24)
 
+            // Setting up, in one place: where agents write, and the command line.
+            VStack(spacing: 8) {
+                SetupRow(done: !settings.workspaces.isEmpty,
+                         title: settings.workspaces.isEmpty
+                            ? NSLocalizedString("Watch the folders your agents write in", comment: "Welcome: setup step, no agent folder yet")
+                            : String(format: NSLocalizedString("Watching %d agent folders", comment: "Welcome: setup step done; %d is how many"), settings.workspaces.count),
+                         action: NSLocalizedString("Add Folder…", comment: "Welcome: button that adds an agent folder"),
+                         perform: addFolder)
+                SetupRow(done: cliInstalled,
+                         title: cliInstalled
+                            ? NSLocalizedString("The readout command is installed", comment: "Welcome: setup step done")
+                            : NSLocalizedString("Open files from Terminal and agent hooks", comment: "Welcome: setup step, the command line tool not installed"),
+                         action: NSLocalizedString("Install…", comment: "Welcome: button that shows how to install the command line tool"),
+                         perform: { NSApp.sendAction(#selector(AppDelegate.installCommandLineTool(_:)), to: nil, from: nil); refreshCLI() })
+            }
+            .padding(.horizontal, 36)
+            .padding(.top, 26)
+
             Spacer(minLength: 24)
         }
         .frame(width: 460, height: Self.height)
+        .onAppear(perform: refreshCLI)
+        // Back from Terminal: the command may be there now.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refreshCLI() }
         // A Markdown file dropped anywhere on the window opens: a ring in the
         // accent colour while one is over it, nothing to read when there is none.
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.accentColor, lineWidth: 3).opacity(targeted ? 1 : 0).padding(4))
@@ -707,6 +748,28 @@ struct WelcomeView: View {
         }
     }
 
+}
+
+/// One step of setting Readout up on the welcome window: a check once done,
+/// what it is, and the button that does it.
+private struct SetupRow: View {
+    let done: Bool
+    let title: String
+    let action: String
+    let perform: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(done ? Color.accentColor : Color.secondary)
+                .accessibilityLabel(done ? NSLocalizedString("Done", comment: "Welcome: setup step state, for VoiceOver") : NSLocalizedString("To do", comment: "Welcome: setup step state, for VoiceOver"))
+            Text(title)
+                .font(.callout)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button(action, action: perform)
+                .controlSize(.small)
+        }
+    }
 }
 
 /// Brings reader windows back on the next launch, when System Settings ▸
