@@ -601,6 +601,40 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await page.close();
 }
 
+// ---------------------------------------------------------------- A folded long code block
+
+{
+  // code.js FOLD_LINES: a block of 3,500 lines shows its first 3,000, then a button.
+  const page = await open();
+  const lines = Array.from({ length: 3500 }, (_, i) => i === 3200 ? 'const folded_needle = 1;' : `const v${i} = ${i};`);
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 1, after: 0, kind: 'code',
+    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }]));
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => {
+    const cb = document.querySelector('.code-block');
+    return { folded: cb.dataset.folded, lines: cb.querySelector('pre').textContent.split('\n').filter(Boolean).length, button: cb.querySelector('.cb-unfold')?.textContent };
+  });
+  check('a code block of 3,500 lines shows its first 3,000, and a button for the other 500', before.folded === '500' && before.lines === 3000 && /500/.test(before.button ?? ''), JSON.stringify(before));
+  await page.evaluate(() => document.querySelector('.cb-copy').click());
+  const copied = await page.evaluate(() => window.__msgs.filter(m => m.type === 'copy').pop()?.text ?? '');
+  check('Copy copies all of a folded block', copied.split('\n').length === 3500 && copied.includes('folded_needle'), String(copied.split('\n').length));
+  const n = await find(page, 'folded_needle');
+  const after = await page.evaluate(() => {
+    const cb = document.querySelector('.code-block');
+    return { folded: cb.dataset.folded ?? null, button: !!cb.querySelector('.cb-unfold'), has: cb.querySelector('pre').textContent.includes('folded_needle') };
+  });
+  check('find shows a folded block whole when a match is in its folded lines, and lands on it', n === 1 && after.folded === null && !after.button && after.has && await selected(page) === 'folded_needle', JSON.stringify({ n, ...after, sel: await selected(page) }));
+  await page.evaluate(() => window.readout.findEnd());
+  // Its button shows the rest too.
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 1, after: 0, kind: 'code',
+    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }], 2));
+  await page.waitForTimeout(200);
+  await page.evaluate(() => document.querySelector('.cb-unfold').click());
+  const clicked = await page.evaluate(() => document.querySelector('.code-block pre').textContent.split('\n').filter(Boolean).length);
+  check('its button shows all its lines', clicked === 3500, String(clicked));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, JSON.stringify(errors));
 await browser.close();
 server.close();

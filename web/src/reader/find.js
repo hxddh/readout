@@ -13,6 +13,7 @@ import { aimAt, pinLanding, blocksOnScreen } from './anchor.js';
 import { noteLanding } from './marks.js';
 import { whenColoured } from './holds.js';
 import { cv } from './chunks.js';
+import { unfoldMatching } from './code.js';
 
 // Not the document's text: controls, the MathML copy of a formula (its
 // rendering is searched), a drawn diagram's source, a comparison panel.
@@ -514,6 +515,8 @@ export function find(text, backwards = false) {
     pos = null;
     re = new RegExp(q.split(/ +/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' +'), 'g');
   }
+  // A match in the folded lines of a long code block: the block shows all of them first.
+  if (unfoldMatching(text => { re.lastIndex = 0; return re.test(fold(text)); })) { changed(observer.takeRecords()); reread(); }
   // Next and Previous go on from the current match, unless the reader has
   // selected something else since, or clicked somewhere (the caret).
   const r = selRange();

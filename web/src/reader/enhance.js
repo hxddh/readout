@@ -6,7 +6,7 @@ import * as hl from '../highlight.js';
 import { doc, root, strings, post, inViewport, prevItem, nextItem, WIDE, timed } from './core.js';
 import { keepPlace } from './anchor.js';
 import { waitingForChunk, skippedChunk } from './chunks.js';
-import { setupCode, keepColours, keptIn, forgetCode, askedBlocks, takeFresh, askOnScreen, newDocument } from './code.js';
+import { setupCode, keepColours, keptIn, forgetCode, askedBlocks, takeFresh, askOnScreen, newDocument, foldedCodeOf } from './code.js';
 import { hold, drop, shown, waits, pending, isCode, holdFirst, shownAnew, unpainted } from './holds.js';
 import { setupRemoteImage } from './remote.js';
 import { renderMath, typesetting } from './math.js';
@@ -323,7 +323,8 @@ function addTools(cb) {
   setLabel(btn, strings.copy || 'Copy');
   btn.addEventListener('click', ev => {
     ev.stopPropagation();
-    const code = cb.querySelector('pre').innerText.replace(/\n$/, '');
+    // All of it, folded lines too (foldedCodeOf).
+    const code = (foldedCodeOf(cb) ?? cb.querySelector('pre').innerText).replace(/\n$/, '');
     post({ type: 'copy', text: code });
     setLabel(btn, strings.copied || 'Copied');
     setTimeout(() => setLabel(btn, strings.copy || 'Copy'), 1400);

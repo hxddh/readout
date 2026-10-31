@@ -143,3 +143,4 @@
 "%d unread" = "%d 处未读";
 "not looked at yet" = "尚未查看";
 "changed since you read it" = "阅读后有改动";
+"Show %d more lines" = "显示其余 %d 行";

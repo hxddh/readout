@@ -935,3 +935,11 @@ details ul, details ol { padding-left: 1.5em; }
   th { white-space: normal; }
   th, td { overflow-wrap: anywhere; padding-right: 0.6em; }
 }
+
+/* A long code block's fold (code.js FOLD_LINES): the rest of its lines, a click away. */
+.cb-unfold {
+  display: block; width: 100%; margin: 0; padding: 0.5em 1em;
+  border: 0; border-top: 1px solid var(--rule, rgb(0 0 0 / 8%)); background: var(--cb-bg);
+  color: var(--accent, var(--text-2)); font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer;
+}
+.cb-unfold:hover { text-decoration: underline; }
