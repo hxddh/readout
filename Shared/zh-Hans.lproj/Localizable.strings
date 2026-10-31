@@ -143,3 +143,5 @@
 "%d unread" = "%d 处未读";
 "not looked at yet" = "尚未查看";
 "changed since you read it" = "阅读后有改动";
+"Open Earlier Version" = "打开较早版本";
+"%@ — %@" = "%@ — %@";
