@@ -108,4 +108,18 @@ import Testing
         object["pool"] = []
         #expect(DocumentHistory.decode(try JSONSerialization.data(withJSONObject: object)).isEmpty)
     }
+
+    @Test func theTimelineListsEveryOtherVersionNewestFirstWithWhatDiffers() {
+        var h = DocumentHistory()
+        h.record(keys(v1), at: t0, limits: roomy)
+        h.record(keys(v2), at: t0.addingTimeInterval(60), limits: roomy)
+        h.record(keys(v3), at: t0.addingTimeInterval(120), limits: roomy)
+        #expect(h.earlier(than: keys(v3)) == [1, 0])
+        #expect(h.earlier(than: keys(v1)) == [2, 1])
+        // v1 → v3: one paragraph changed (one each way), one added.
+        let d = DocumentHistory.difference(from: h.keys(of: 0), to: keys(v3))
+        #expect(d.added == 2 && d.removed == 1)
+        let same = DocumentHistory.difference(from: keys(v3), to: keys(v3))
+        #expect(same.added == 0 && same.removed == 0)
+    }
 }

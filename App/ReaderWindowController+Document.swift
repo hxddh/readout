@@ -363,6 +363,8 @@ extension ReaderWindowController {
         didSaveOnce = false
         lastSavedBaseline = nil
         lastRecordedKeys = nil
+        // The versions listed are the new file's, once its first is recorded.
+        history = nil
         scheduleSave()
         recordVersionSoon()
     }
@@ -414,7 +416,64 @@ extension ReaderWindowController {
         let keys = session.keys
         guard keys != lastRecordedKeys else { return }
         lastRecordedKeys = keys
-        BaselineStore.recordVersion(keys, at: Date(), for: contentPath.map { URL(fileURLWithPath: $0) } ?? url)
+        let path = contentPath
+        BaselineStore.recordVersion(keys, at: Date(), for: path.map { URL(fileURLWithPath: $0) } ?? url) { [weak self] history in
+            // Still the same file (not retargeted meanwhile): the timeline lists its versions.
+            guard let self, self.contentPath == path else { return }
+            self.history = history
+        }
+    }
+
+    // MARK: Compare with Earlier Version
+
+    /// View ▸ Compare with Earlier Version: the versions to choose from,
+    /// newest first, each with when it was seen and how much differs now.
+    func earlierVersions() -> [(index: Int, title: String)] {
+        guard loadState == .loaded, let history else { return [] }
+        let current = session.keys
+        let format = DateFormatter()
+        format.doesRelativeDateFormatting = true
+        format.dateStyle = .medium
+        format.timeStyle = .short
+        return history.earlier(than: current).map { i in
+            let d = DocumentHistory.difference(from: history.keys(of: i), to: current)
+            let what = String(format: NSLocalizedString("+%d −%d blocks", comment: "Menu: View ▸ Compare with Earlier Version, after the time: blocks the document has gained and lost since that version"), d.added, d.removed)
+            return (i, "\(format.string(from: history.versions[i].at))  \(what)")
+        }
+    }
+
+    /// The document marked against version `representedObject` of its
+    /// history: what changed since then unread; ⌘Z brings back what was read
+    /// before, as for Compare with Last Commit.
+    @objc func compareWithVersion(_ sender: NSMenuItem) {
+        guard loadState == .loaded, !retargetGate.isPending, let i = sender.representedObject as? Int,
+              let history, history.versions.indices.contains(i) else { return NSSound.beep() }
+        showMarked(againstVersion: history.keys(of: i), at: history.versions[i].at)
+    }
+
+    private static let compareWithVersionName = NSLocalizedString("Compare with Earlier Version", comment: "Menu: mark the document again against a version Readout saw before")
+
+    private static func versionNotice(_ at: Date) -> String {
+        String(format: NSLocalizedString("Marked what changed since %@", comment: "Notice above the document after View ▸ Compare with Earlier Version: the time of the version chosen"),
+               DateFormatter.localizedString(from: at, dateStyle: .medium, timeStyle: .short))
+    }
+
+    /// Marked against an earlier version seen `at`, with its notice; undone
+    /// (`unmarkVersion`), and redone, as itself.
+    private func showMarked(againstVersion keys: [BlockKey], at: Date) {
+        let before = session.baseline
+        let notice = Self.versionNotice(at)
+        reloadMarked(against: keys) { [weak self] _ in self?.showNotice(notice) }
+        undoStack.registerUndo(withTarget: self) { $0.unmarkVersion(back: before, keys: keys, at: at) }
+        undoStack.setActionName(Self.compareWithVersionName)
+    }
+
+    /// Undone: what was read before, without the version's notice.
+    private func unmarkVersion(back before: [BlockKey], keys: [BlockKey], at: Date) {
+        let notice = Self.versionNotice(at)
+        reloadMarked(against: before) { [weak self] _ in self?.webView.call("hideNotice", notice) }
+        undoStack.registerUndo(withTarget: self) { $0.showMarked(againstVersion: keys, at: at) }
+        undoStack.setActionName(Self.compareWithVersionName)
     }
 
     // MARK: Mark All as Read
