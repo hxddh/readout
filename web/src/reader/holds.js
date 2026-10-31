@@ -10,7 +10,7 @@
 // (enhance.js: holdJump); find, before it selects a match in code
 // (highlighting replaces the text). An edit shows the code it keeps
 // coloured at once, the rest plain until it arrives.
-import { doc } from './core.js';
+import { doc, firstTimings } from './core.js';
 import { typesetting } from './math.js';
 import { urge as urgeCode, calm as calmCode, uncoloured } from './code.js';
 
@@ -90,7 +90,13 @@ export const unpainted = () => !!firstPaint || unshown;
 /** The first paint of a document shown anew waits for `xs` too (with the document hidden). */
 export function holdFirst(xs, dy, upto) {
   if (!firstPaint) {
-    firstPaint = hold(xs, () => { firstPaint = null; doc.classList.remove('hold'); }, dy, upto);
+    const t0 = performance.now();
+    firstPaint = hold(xs, () => {
+      firstPaint = null;
+      doc.classList.remove('hold');
+      // How long the first paint waited for the code it shows (SmokeTest: cold_page_hold_ms).
+      firstTimings.hold ??= Math.round(performance.now() - t0);
+    }, dy, upto);
     if (firstPaint) doc.classList.add('hold');
   } else for (const x of xs) { firstPaint.cbs.add(x); urge(x, dy, upto); if (!waits(x)) firstPaint.cbs.delete(x); }
 }

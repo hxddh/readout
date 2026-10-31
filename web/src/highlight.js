@@ -28,6 +28,9 @@ export let started = false;
 
 /** Where it runs: 'worker', 'page' (a worker could not), or 'starting' (the app's smoke test, Quick Look's log). */
 export function engineName() { return started ? mode : 'starting'; }
+let readyAt = null;
+/** Milliseconds from the page's start to the worker's ready, or null. */
+export function readyTime() { return readyAt; }
 
 function received(m) {
   if (m.op === 'done') {
@@ -36,7 +39,8 @@ function received(m) {
   } else if (m.op === 'part') asked.get(m.id)?.part(m.html, m.lines, m.first);
   else if (m.op === 'loading') asked.get(m.id)?.loading();
   else if (m.op === 'mark') performance.mark(m.name, { detail: m.detail });
-  else if (m.op === 'ready') { started = true; onReady(); }
+  // When the worker said it runs, since the page started (SmokeTest: cold_page_worker_ready_ms).
+  else if (m.op === 'ready') { started = true; readyAt ??= Math.round(performance.now()); onReady(); }
   else if (m.op === 'hello') alive = true;
   else if (m.op === 'failed') fallBack();
   // The spare warm-up goes on only while no document is shown, as the page sees it now.
