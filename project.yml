@@ -9,7 +9,7 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "4.2.0"
+    MARKETING_VERSION: "5.0.0"
     CURRENT_PROJECT_VERSION: "1"
     # Swift 6: data races are compile errors in the app and the Quick Look
     # extension, as in ReadoutCore.
