@@ -389,6 +389,7 @@ extension ReaderWindowController {
         lastSavedAnchorOffset = offset
         BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset,
                                  topExcerpt: excerpt, savedAt: Date()),
+                           unread: session.unreadCount,
                            for: contentPath.map { URL(fileURLWithPath: $0) } ?? url, baselineChanged: baselineChanged)
     }
 

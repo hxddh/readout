@@ -179,11 +179,14 @@ enum BaselineStore {
         }
     }
 
-    /// When `url` was last read (its reading position or record last
-    /// saved), nil when never: the changes inbox's test for a file not open.
-    static func lastRead(_ url: URL) -> Date? {
-        [positionFile(for: url), file(for: url)]
-            .compactMap { try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }.max()
+    /// When `url`'s reading state was last saved, and the unread changes it
+    /// had then; nil when it was never read: the changes inbox's test for a
+    /// file not open.
+    static func lastRead(_ url: URL) -> (at: Date, unread: Int)? {
+        let files = [positionFile(for: url), file(for: url)]
+        guard let at = files.compactMap({ try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }).max() else { return nil }
+        let position = (try? Data(contentsOf: positionFile(for: url))).flatMap { try? JSONDecoder().decode(Record.Position.self, from: $0) }
+        return (at, position?.unread ?? 0)
     }
 
     /// Where the record and the position for `url` live (smoke test).
@@ -192,9 +195,9 @@ enum BaselineStore {
     /// Saves the reading position, and the whole record when `baselineChanged`
     /// or when there is none under the key yet (a symlink now pointing to
     /// another file): `load` needs the record, not just the position.
-    static func save(_ record: Record, for url: URL, baselineChanged: Bool) {
+    static func save(_ record: Record, unread: Int, for url: URL, baselineChanged: Bool) {
         let target = file(for: url), positionTarget = positionFile(for: url)
-        let position = Record.Position(record)
+        let position = Record.Position(record, unread: unread)
         queue.async {
             if baselineChanged || !FileManager.default.fileExists(atPath: target.path), let data = try? JSONEncoder().encode(record) {
                 try? data.write(to: target, options: .atomic)
