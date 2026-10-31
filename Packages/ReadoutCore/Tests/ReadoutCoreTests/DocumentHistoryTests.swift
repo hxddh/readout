@@ -125,7 +125,7 @@ import Testing
 
     @Test func aVersionReadsBackAsTheSameBlocks() {
         var h = DocumentHistory()
-        let text = "# Plan\n\n- [x] first\n- [ ] second\n\n```swift\nlet a = 1\n```\n\n> quoted *text*\n"
+        let text = "---\ntitle: Plan\n---\n\n# Plan\n\n- [x] first\n- [ ] second\n\n```swift\nlet a = 1\n```\n\n> quoted *text*\n"
         h.record(keys(text), at: t0, limits: roomy)
         #expect(keys(h.markdown(of: 0)) == keys(text))
     }

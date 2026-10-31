@@ -10,8 +10,11 @@ final class VersionWindowController: NSWindowController, NSWindowDelegate {
     private let webView = ReaderWebView(bundle: .main)
     private let session = DocumentSession()
     var onClose: ((VersionWindowController) -> Void)?
+    /// The document's window: a link in the version is followed as one in the document is.
+    private weak var reader: ReaderWindowController?
 
-    init(title: String, markdown: String, before: [BlockKey]?, directory: URL) {
+    init(title: String, markdown: String, before: [BlockKey]?, directory: URL, reader: ReaderWindowController) {
+        self.reader = reader
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 760),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         window.title = title
@@ -22,6 +25,7 @@ final class VersionWindowController: NSWindowController, NSWindowDelegate {
         window.center()
         super.init(window: window)
         window.delegate = self
+        webView.onMessage = { [weak self] raw in self?.handle(raw) }
         let doc = MarkdownParser.parse(markdown, resolver: FileResolver(baseDirectory: directory))
         let patch = session.load(doc, baseline: before)
         let settings = AppSettings.shared
@@ -31,6 +35,28 @@ final class VersionWindowController: NSWindowController, NSWindowDelegate {
             self.webView.setAppearance(dark: dark, accent: .controlAccentColor, fontSize: settings.fontSize,
                                        strings: ReaderStrings.all, codeWrap: settings.codeWrap, textWidth: settings.textWidth)
             self.webView.callEncodingOffMain("apply", patch.page)
+        }
+    }
+
+    /// What a read-only page asks for: copying, and following links (one to
+    /// a heading of the version itself scrolls there). Nothing about reading.
+    private func handle(_ raw: [String: Any]) {
+        guard let msg = PageMessage(raw) else { return }
+        switch msg {
+        case .copy(let text):
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        case .open(let href):
+            if href.hasPrefix("#") {
+                let slug = (String(href.dropFirst()).removingPercentEncoding ?? "").lowercased()
+                if let block = session.blocks.first(where: { $0.kind == .heading && $0.anchor?.lowercased() == slug }) {
+                    webView.call("scrollToSlot", json: String(block.slot))
+                }
+            } else {
+                reader?.openLink(href)
+            }
+        default:
+            break
         }
     }
 

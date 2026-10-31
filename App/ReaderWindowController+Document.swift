@@ -462,7 +462,7 @@ extension ReaderWindowController {
                            (path as NSString).lastPathComponent, when)
         let window = VersionWindowController(title: title, markdown: history.markdown(of: i),
                                              before: i > 0 ? history.keys(of: i - 1) : nil,
-                                             directory: URL(fileURLWithPath: path).deletingLastPathComponent())
+                                             directory: URL(fileURLWithPath: path).deletingLastPathComponent(), reader: self)
         (NSApp.delegate as? AppDelegate)?.showVersion(window)
     }
 

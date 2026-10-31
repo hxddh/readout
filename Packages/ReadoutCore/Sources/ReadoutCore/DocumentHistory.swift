@@ -51,7 +51,9 @@ public struct DocumentHistory: Codable, Sendable, Equatable {
     /// between them (what opening it shows; link definitions, kept with no
     /// block, are not in it).
     public func markdown(of i: Int) -> String {
-        keys(of: i).map(\.wholeSource).joined(separator: "\n\n") + "\n"
+        // (Front matter keeps only its body as source: its fences put back.)
+        keys(of: i).map { $0.kind == .frontMatter ? "---\n" + $0.wholeSource + "\n---" : $0.wholeSource }
+            .joined(separator: "\n\n") + "\n"
     }
 
     /// The newest version's blocks, or nil when there is none.
