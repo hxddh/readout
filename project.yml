@@ -12,6 +12,10 @@ settings:
     MARKETING_VERSION: "4.2.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.0"
+    # Swift 6's data-race checks, as warnings first (5.0 mode): every one
+    # the app and the Quick Look extension have is fixed before 6.0 makes
+    # them errors.
+    SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "26.0"
     CODE_SIGN_STYLE: Manual
     CODE_SIGN_IDENTITY: "-"
