@@ -2,7 +2,7 @@
 // stable, shows unread changes, and renders code, math and diagrams lazily
 // (web/src/reader/, a module each). This module: links, keys, copy, the native API.
 import * as hl from './highlight.js';
-import { doc, root, slots, post, smooth, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings } from './reader/core.js';
+import { doc, root, slots, post, smooth, mergeStrings, enableQuicklook, pageTheme, trace, traceEntries, onKeptScroll, setWindowKey, firstTimings, heartbeat } from './reader/core.js';
 import { captureAnchor, restoreAnchor, anchorMiss, resolveFragment, scrollToElement, keepPlace, holdPlace, rebaselineHeights, atBottom, atEnd, pinLanding, aimAt, AIM_MS } from './reader/anchor.js';
 import { apply as applyPatch, showNotice, hideNotice, noticeMaybeSeen, restedAtEnd } from './reader/patch.js';
 import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLanding, restartDwell, marksHeld, pulse } from './reader/marks.js';
@@ -17,17 +17,8 @@ import { markdownOf, htmlOf, inDocument, blocksIn, sources, definitionsUsed, par
 // When this script ran, since the page started (SmokeTest: cold_page_script_at_ms).
 firstTimings.script_at = Math.round(performance.now());
 // The longest the page's main thread went without a turn until its first
-// paint was reported, and when that began (SmokeTest: cold_page_gap_ms,
-// cold_page_gap_at_ms): a 10 ms heartbeat, stopped once painted.
-{
-  let last = performance.now();
-  const beat = setInterval(() => {
-    const now = performance.now();
-    if (now - last > (firstTimings.gap ?? 0)) { firstTimings.gap = Math.round(now - last); firstTimings.gap_at = Math.round(last); }
-    last = now;
-    if (firstTimings.painted_at != null) clearInterval(beat);
-  }, 10);
-}
+// paint was reported (SmokeTest: cold_page_gap_ms, cold_page_gap_at_ms).
+heartbeat();
 import { find, findEnd } from './reader/find.js';
 
 // ---------------------------------------------------------------- Links & keys

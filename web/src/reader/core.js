@@ -90,6 +90,27 @@ export function timed(name, f) {
     w[name] = (w[name] ?? 0) + performance.now() - t0;
   }
 }
+/**
+ * A 10 ms heartbeat recording the longest the main thread went without a
+ * turn, and when that began (firstTimings.gap, gap_at), until the first
+ * paint is reported. A page with no document after IDLE_BEAT_MS (the spare
+ * page, which runs while out of sight) stops it; its first apply starts it
+ * again, afresh, so a warm open's gap is the open's own.
+ */
+let beat = 0;
+const IDLE_BEAT_MS = 5000;
+export function heartbeat() {
+  if (beat || firstTimings.painted_at != null) return;
+  const t0 = performance.now();
+  let last = t0;
+  if (firstTimings.gap_at != null) { delete firstTimings.gap; delete firstTimings.gap_at; }
+  beat = setInterval(() => {
+    const now = performance.now();
+    if (now - last > (firstTimings.gap ?? 0)) { firstTimings.gap = Math.round(now - last); firstTimings.gap_at = Math.round(last); }
+    last = now;
+    if (firstTimings.painted_at != null || (firstTimings.apply_at == null && now - t0 > IDLE_BEAT_MS)) { clearInterval(beat); beat = 0; }
+  }, 10);
+}
 export function trace(type, data) {
   // A caller that gives `y` (null: filled in later) spares the layout reading it costs.
   const y = data && 'y' in data ? data.y : Math.round(document.scrollingElement.scrollTop);
