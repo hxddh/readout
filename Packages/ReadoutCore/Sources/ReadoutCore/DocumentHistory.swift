@@ -47,6 +47,13 @@ public struct DocumentHistory: Codable, Sendable, Equatable {
     /// The blocks of version `i`.
     public func keys(of i: Int) -> [BlockKey] { versions[i].blocks.map { pool[$0] } }
 
+    /// Version `i` as Markdown again: its blocks' sources, a blank line
+    /// between them (what opening it shows; link definitions, kept with no
+    /// block, are not in it).
+    public func markdown(of i: Int) -> String {
+        keys(of: i).map(\.wholeSource).joined(separator: "\n\n") + "\n"
+    }
+
     /// The newest version's blocks, or nil when there is none.
     public var latest: [BlockKey]? { versions.isEmpty ? nil : keys(of: versions.count - 1) }
 
