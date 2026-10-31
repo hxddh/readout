@@ -1,8 +1,10 @@
 import AppKit
-import WebKit
+@preconcurrency import WebKit
 import ReadoutCore
 
 /// Serves `readout://app/...` from the bundled web renderer and `readout://file/...` images from disk.
+/// WebKit calls it on the main thread, and takes a task's answers there.
+@MainActor
 final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
     let webRoot: URL
     /// Serves `readout://remote/<token>` from natively proxied downloads.
@@ -56,12 +58,14 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
         if url.host == "app" { return deliver(Self.regularFileContents(fileURL), from: fileURL, to: task) }
         let id = ObjectIdentifier(task)
         running.insert(id)
+        nonisolated(unsafe) let task = task   // answered on the main thread only (below)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let data = Self.regularFileContents(fileURL)
+            let handler = self
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
-                    guard let self, self.running.remove(id) != nil else { return }
-                    self.deliver(data, from: fileURL, to: task)
+                    guard let handler, handler.running.remove(id) != nil else { return }
+                    handler.deliver(data, from: fileURL, to: task)
                 }
             }
         }
@@ -303,7 +307,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
 
     /// A script, run after every call made before it (including one whose
     /// argument is still being encoded off the main thread).
-    func run(_ script: String, completion: (@MainActor (Any?, Error?) -> Void)? = nil) {
+    func run(_ script: String, completion: (@MainActor @Sendable (Any?, Error?) -> Void)? = nil) {
         if pendingCalls.isEmpty {
             evaluateJavaScript(script, completionHandler: completion)
         } else {
@@ -317,7 +321,7 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
     /// An async function body (`return await …`), run in the page's world
     /// after every call made before it, as `run` does: never ahead of a
     /// document still being encoded.
-    func runAsync(_ body: String, completion: @escaping @MainActor (Result<Any, Error>) -> Void) {
+    func runAsync(_ body: String, completion: @escaping @MainActor @Sendable (Result<Any, Error>) -> Void) {
         if pendingCalls.isEmpty {
             callAsyncJavaScript(body, in: nil, in: .page, completionHandler: completion)
         } else {
@@ -337,21 +341,23 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.withoutEscapingSlashes]
             let json = (try? encoder.encode(value)).flatMap { String(data: $0, encoding: .utf8) }
+            let view = self
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     call.script = json.map { "window.readout.\(function)(\($0))" } ?? ""
-                    self?.drainCalls()
+                    view?.drainCalls()
                 }
             }
         }
     }
 
+    @MainActor
     private final class PendingCall {
         /// nil while encoding; "" when there is nothing to run.
         var script: String?
-        var completion: (@MainActor (Any?, Error?) -> Void)?
+        var completion: (@MainActor @Sendable (Any?, Error?) -> Void)?
         /// Set for `runAsync`: the script is an async function body.
-        var asyncCompletion: (@MainActor (Result<Any, Error>) -> Void)?
+        var asyncCompletion: (@MainActor @Sendable (Result<Any, Error>) -> Void)?
     }
     private var pendingCalls: [PendingCall] = []
     private static let encodeQueue = DispatchQueue(label: "Readout.encode", qos: .userInitiated)

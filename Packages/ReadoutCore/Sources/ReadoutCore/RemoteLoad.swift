@@ -137,7 +137,7 @@ public enum RemoteLoad {
             var buf = [CChar](repeating: 0, count: 1025)  // NI_MAXHOST
             if let addr = ai.pointee.ai_addr,
                getnameinfo(addr, ai.pointee.ai_addrlen, &buf, socklen_t(buf.count), nil, 0, NI_NUMERICHOST) == 0 {
-                out.append(String(cString: buf))
+                out.append(String(decoding: buf.prefix(while: { $0 != 0 }).map { UInt8(bitPattern: $0) }, as: UTF8.self))
             }
             node = ai.pointee.ai_next
         }

@@ -13,9 +13,9 @@ enum CommitBaseline {
     /// Found once per launch (under `toolsLock`). Not found is asked again next
     /// time: a first `xcode-select` or git after boot can outlast the limit.
     nonisolated(unsafe) private static var toolsAvailable = false
-    nonisolated(unsafe) private static let toolsLock = NSLock()
+    nonisolated private static let toolsLock = NSLock()
 
-    static func find(path: String, current: String, completion: @escaping @MainActor ([BlockKey]?) -> Void) {
+    static func find(path: String, current: String, completion: @escaping @MainActor @Sendable ([BlockKey]?) -> Void) {
         withGit(path: path, otherwise: nil, {
             GitBaseline.headText(for: path, current: current, git: ProcessGit()).map { MarkdownParser.parse($0).blocks.map(BlockKey.init) }
         }, completion: completion)
@@ -24,7 +24,7 @@ enum CommitBaseline {
     /// View ▸ Compare with Last Commit: the version the window `displayed`
     /// against the committed version of the file at `path` (its real path),
     /// with the guards of `find`. Only git's HEAD blob is read.
-    static func compare(path: String, displayed: [BlockKey], completion: @escaping @MainActor (CommitComparison) -> Void) {
+    static func compare(path: String, displayed: [BlockKey], completion: @escaping @MainActor @Sendable (CommitComparison) -> Void) {
         withGit(path: path, otherwise: .unavailable, {
             GitBaseline.compare(path: path, displayed: displayed, git: ProcessGit())
         }, completion: completion)
@@ -33,7 +33,7 @@ enum CommitBaseline {
     /// `work`'s result on `queue` for a file in a git repository with git
     /// there to ask, else `otherwise`; `completion` gets it on the main actor.
     private static func withGit<T: Sendable>(path: String, otherwise: T, _ work: @escaping @Sendable () -> T,
-                                             completion: @escaping @MainActor (T) -> Void) {
+                                             completion: @escaping @MainActor @Sendable (T) -> Void) {
         // The app's own files (help) are no one's commit.
         guard !path.hasPrefix(Bundle.main.bundleURL.resolvingSymlinksInPath().path + "/") else { return completion(otherwise) }
         queue.async {

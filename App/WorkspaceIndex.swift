@@ -77,24 +77,27 @@ final class WorkspaceIndex {
         let watchingSince = now
         // The scan is queued before the stream starts, so on this serial queue
         // every event is judged against the files that were already there.
+        let appearedRoots = appeared
         queue.async { [weak self] in
+            let index = self
             let (newest, all) = Self.scan(rootsCopy)
             known.paths = Set(all.map { Self.givenPath($0, roots: realRoots) })
             // Written into a folder that did not exist a moment ago: new documents.
             var fresh: [(url: URL, isNew: Bool)] = []
-            for a in appeared {
+            for a in appearedRoots {
                 for (url, date) in Self.scan([a.root]).newest where date >= a.since.addingTimeInterval(-2) {
                     fresh.append((url: url, isNew: true))
                 }
             }
+            let found = fresh
             DispatchQueue.main.async {
-                guard let self, self.generation == gen else { return }
+                guard let self = index, self.generation == gen else { return }
                 // The scan replaces what was kept meanwhile (on this queue no
                 // stream event of this generation came before it).
                 self.recent = []
                 self.record(newest)
                 self.finishScan()
-                if !fresh.isEmpty { self.onWrite?(fresh) }
+                if !found.isEmpty { self.onWrite?(found) }
             }
         }
         stream = FSEventsStream(paths: roots, latency: 0.3, queue: queue) { [weak self] events in
@@ -110,8 +113,9 @@ final class WorkspaceIndex {
                 watchingSince: watchingSince
             ).map { (URL(fileURLWithPath: $0.path), now, $0.isNew) }
             guard !hits.isEmpty else { return }
+            let index = self
             DispatchQueue.main.async {
-                guard let self, self.generation == gen else { return }
+                guard let self = index, self.generation == gen else { return }
                 self.record(hits.map { ($0.0, $0.1) })
                 self.onWrite?(hits.map { (url: $0.0, isNew: $0.2) })
             }
@@ -120,19 +124,21 @@ final class WorkspaceIndex {
         // above but before the stream started reaches neither. Look again now
         // that the stream runs, on its queue: what this finds is known to the
         // events after it, and what they found first is not reported twice.
-        guard !appeared.isEmpty else { return }
+        guard !appearedRoots.isEmpty else { return }
         queue.async { [weak self] in
+            let index = self
             var late: [(url: URL, isNew: Bool)] = []
-            for a in appeared {
+            for a in appearedRoots {
                 for (url, date) in Self.scan([a.root]).newest where date >= a.since.addingTimeInterval(-2) {
                     if known.paths.insert(Self.givenPath(url.path, roots: realRoots)).inserted { late.append((url: url, isNew: true)) }
                 }
             }
             guard !late.isEmpty else { return }
+            let found = late
             DispatchQueue.main.async {
-                guard let self, self.generation == gen else { return }
-                self.record(late.map { ($0.url, Date()) })
-                self.onWrite?(late)
+                guard let self = index, self.generation == gen else { return }
+                self.record(found.map { ($0.url, Date()) })
+                self.onWrite?(found)
             }
         }
     }

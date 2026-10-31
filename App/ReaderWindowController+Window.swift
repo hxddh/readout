@@ -60,11 +60,14 @@ extension ReaderWindowController {
     /// itself: its group is made or replaced (Show Tab Bar, Merge All Windows,
     /// a tab dragged out) while it stays key.
     private func observeTabBar() {
+        // (A KVO callback may come on any thread: on to the main one.)
         let changed: @Sendable () -> Void = { [weak self] in
-            DispatchQueue.main.async { MainActor.assumeIsolated { self?.tabsChanged() } }
+            let controller = self
+            DispatchQueue.main.async { MainActor.assumeIsolated { controller?.tabsChanged() } }
         }
         let selected: @Sendable () -> Void = { [weak self] in
-            DispatchQueue.main.async { MainActor.assumeIsolated { self?.selectedTabChanged() } }
+            let controller = self
+            DispatchQueue.main.async { MainActor.assumeIsolated { controller?.selectedTabChanged() } }
         }
         if windowObservations.isEmpty, let window {
             windowObservations = [

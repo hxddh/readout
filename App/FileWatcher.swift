@@ -7,7 +7,8 @@ import ReadoutCore
 /// The stream retains a box holding the handler (context retain/release), so a
 /// callback already running never sees freed memory, and `stop()` invalidates
 /// the stream on its own queue: once it returns, no callback runs any more.
-final class FSEventsStream {
+/// Confined to its queue (callbacks, stop): safe to hand to it.
+final class FSEventsStream: @unchecked Sendable {
     struct Event {
         let path: String
         let flags: FSEventStreamEventFlags
@@ -20,8 +21,8 @@ final class FSEventsStream {
 
     /// What the stream's context retains.
     private final class Box {
-        let handler: ([Event]) -> Void
-        init(_ handler: @escaping ([Event]) -> Void) { self.handler = handler }
+        let handler: @Sendable ([Event]) -> Void
+        init(_ handler: @escaping @Sendable ([Event]) -> Void) { self.handler = handler }
     }
 
     private var stream: FSEventStreamRef?
@@ -30,7 +31,10 @@ final class FSEventsStream {
     /// `excluding`: folders whose events FSEvents filters out before the app
     /// is woken (at most WatchExclusions.limit).
     init?(paths: [String], latency: TimeInterval, queue: DispatchQueue, sinceNow: Bool = true, excluding: [String] = [],
-          handler: @escaping ([Event]) -> Void) {
+          // Sendable: it runs on `queue`, so a closure made on the main
+          // actor (WorkspaceIndex) must not take on its isolation (Swift 6
+          // checks that at run time, and traps).
+          handler: @escaping @Sendable ([Event]) -> Void) {
         self.queue = queue
         queue.markForRunSync()
         let box = Box(handler)
@@ -87,7 +91,8 @@ final class FSEventsStream {
 /// Watches one file for changes, surviving atomic replace (write temp + rename),
 /// delete/recreate and a symlink pointed at another file (`ln -sf`).
 /// Delivers debounced change notifications on the main queue.
-final class FileWatcher {
+/// Its state is touched on its queue only, its callbacks sent to the main thread: safe to hand to either.
+final class FileWatcher: @unchecked Sendable {
     enum Change { case modified, deleted }
 
     let url: URL
