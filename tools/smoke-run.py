@@ -125,7 +125,7 @@ def launch_timings(app: dict, spawn: float) -> dict:
     # ran and its first apply came (since the page started), how long that
     # paint then waited for the code it shows, and when the highlighter's
     # worker said it runs.
-    for k in ("setAppearance", "blocks", "layout", "script_at", "apply_at", "hold", "worker_ready", "raf_at", "painted_at", "mermaid_at", "katex_at", "katex_loaded_at", "katex", "gap", "gap_at"):
+    for k in ("setAppearance", "blocks", "layout", "script_at", "apply_at", "hold", "worker_ready", "raf_at", "painted_at", "mermaid_at", "katex_at", "katex_loaded_at", "katex", "gap", "gap_at", "raf2_at", "task_at"):
         if isinstance(page.get(k), (int, float)):
             t[f"cold_page_{k.lower()}_ms"] = page[k]
     return t
