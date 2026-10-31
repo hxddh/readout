@@ -363,6 +363,8 @@ extension ReaderWindowController {
         didSaveOnce = false
         lastSavedBaseline = nil
         lastRecordedKeys = nil
+        // The versions listed are the new file's, once its first is recorded.
+        history = nil
         scheduleSave()
         recordVersionSoon()
     }
@@ -445,15 +447,32 @@ extension ReaderWindowController {
     @objc func compareWithVersion(_ sender: NSMenuItem) {
         guard loadState == .loaded, !retargetGate.isPending, let i = sender.representedObject as? Int,
               let history, history.versions.indices.contains(i) else { return NSSound.beep() }
+        showMarked(againstVersion: history.keys(of: i), at: history.versions[i].at)
+    }
+
+    private static let compareWithVersionName = NSLocalizedString("Compare with Earlier Version", comment: "Menu: mark the document again against a version Readout saw before")
+
+    private static func versionNotice(_ at: Date) -> String {
+        String(format: NSLocalizedString("Marked what changed since %@", comment: "Notice above the document after View ▸ Compare with Earlier Version: the time of the version chosen"),
+               DateFormatter.localizedString(from: at, dateStyle: .medium, timeStyle: .short))
+    }
+
+    /// Marked against an earlier version seen `at`, with its notice; undone
+    /// (`unmarkVersion`), and redone, as itself.
+    private func showMarked(againstVersion keys: [BlockKey], at: Date) {
         let before = session.baseline
-        let at = history.versions[i].at
-        reloadMarked(against: history.keys(of: i)) { [weak self] _ in
-            guard let self else { return }
-            let when = DateFormatter.localizedString(from: at, dateStyle: .medium, timeStyle: .short)
-            self.showNotice(String(format: NSLocalizedString("Marked what changed since %@", comment: "Notice above the document after View ▸ Compare with Earlier Version: the time of the version chosen"), when))
-        }
-        undoStack.registerUndo(withTarget: self) { $0.showMarked(against: before, againstCommit: false) }
-        undoStack.setActionName(NSLocalizedString("Compare with Earlier Version", comment: "Menu: mark the document again against a version Readout saw before"))
+        let notice = Self.versionNotice(at)
+        reloadMarked(against: keys) { [weak self] _ in self?.showNotice(notice) }
+        undoStack.registerUndo(withTarget: self) { $0.unmarkVersion(back: before, keys: keys, at: at) }
+        undoStack.setActionName(Self.compareWithVersionName)
+    }
+
+    /// Undone: what was read before, without the version's notice.
+    private func unmarkVersion(back before: [BlockKey], keys: [BlockKey], at: Date) {
+        let notice = Self.versionNotice(at)
+        reloadMarked(against: before) { [weak self] _ in self?.webView.call("hideNotice", notice) }
+        undoStack.registerUndo(withTarget: self) { $0.showMarked(againstVersion: keys, at: at) }
+        undoStack.setActionName(Self.compareWithVersionName)
     }
 
     // MARK: Mark All as Read
@@ -548,7 +567,7 @@ extension ReaderWindowController {
 
     /// Marked against `baseline`, undoably: the commit's (`againstCommit`,
     /// with the notice that says so) or the reading state from before it.
-    func showMarked(against baseline: [BlockKey], againstCommit: Bool) {
+    private func showMarked(against baseline: [BlockKey], againstCommit: Bool) {
         let name = NSLocalizedString("Compare with Last Commit", comment: "Menu: mark the document again against its version in the last git commit")
         // Undoing it while the document is empty for a moment (an agent
         // truncating it) waits for the content; comparing an empty document does not.
