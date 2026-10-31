@@ -619,6 +619,9 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   const copied = await page.evaluate(() => window.__msgs.filter(m => m.type === 'copy').pop()?.text ?? '');
   check('Copy copies all of a folded block', copied.split('\n').length === 3500 && copied.includes('folded_needle'), String(copied.split('\n').length));
   const n = await find(page, 'folded_needle');
+  // (The match is selected once its landing is painted, its code coloured: holds.js; 3,500 lines take a moment.)
+  const seen = [];
+  for (let i = 0; i < 30; i++) { seen.push(await selected(page)); if (seen.at(-1) === 'folded_needle') break; await page.waitForTimeout(100); }
   const after = await page.evaluate(() => {
     const cb = document.querySelector('.code-block');
     return { folded: cb.dataset.folded ?? null, button: !!cb.querySelector('.cb-unfold'), has: cb.querySelector('pre').textContent.includes('folded_needle') };
@@ -632,6 +635,21 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await page.evaluate(() => document.querySelector('.cb-unfold').click());
   const clicked = await page.evaluate(() => document.querySelector('.code-block pre').textContent.split('\n').filter(Boolean).length);
   check('its button shows all its lines', clicked === 3500, String(clicked));
+  // Find open while an agent puts the block in again, folded: the refreshed count has its folded match.
+  await find(page, 'folded_needle');
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 1, after: 0, kind: 'code',
+    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }], 3));
+  await page.waitForTimeout(400);
+  const live = await page.evaluate(() => ({ count: window.__msgs.filter(m => m.type === 'found').pop(), folded: document.querySelector('.code-block').dataset.folded ?? null }));
+  check('a block put in folded while find is open: its folded match still counted (shown whole)', live.count?.total === 1 && live.folded === null, JSON.stringify(live));
+  await page.evaluate(() => window.readout.findEnd());
+  // Printing shows every line.
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 1, after: 0, kind: 'code',
+    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }], 4));
+  await page.waitForTimeout(200);
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  const printed = await page.evaluate(() => document.querySelector('.code-block pre').textContent.split('\n').filter(Boolean).length);
+  check('printing shows every line of a folded block', printed === 3500, String(printed));
   await page.close();
 }
 

@@ -76,7 +76,8 @@ const foldedCode = new WeakMap();   // folded block -> its whole code
 /** A block's whole code when it is folded (Copy copies all of it), else null. */
 export const foldedCodeOf = cb => foldedCode.get(cb) ?? null;
 function foldLong(cb, text) {
-  if (cb.dataset.unfolded) return text;
+  // (Printing: every line, coloured.)
+  if (cb.dataset.unfolded || everything) return text;
   let cut = -1;
   for (let n = 0; n < FOLD_LINES; n++) if ((cut = text.indexOf('\n', cut + 1)) < 0) return text;
   const rest = text.slice(cut + 1).replace(/\n$/, '');
@@ -96,7 +97,7 @@ function foldLong(cb, text) {
   return shown;
 }
 /** A folded block shows all its lines (its button, or find): plain, then highlighted as a block just made. */
-export function unfold(cb) {
+export function unfold(cb, { ask: now = true } = {}) {
   const text = foldedCode.get(cb);
   if (text == null || !cb.isConnected) return false;
   foldedCode.delete(cb);
@@ -111,7 +112,10 @@ export function unfold(cb) {
   if (code !== pre) pre.append(code);
   old.replaceWith(pre);
   setupCode(cb);
-  for (const b of takeFresh(() => true)) askOnScreen(b);
+  // Asked for now when the reader showed it; for find, as any block is when
+  // the landing comes near it (a hold waits for the lines it lands on).
+  const near = takeFresh(() => now);
+  for (const b of near) askOnScreen(b);
   return true;
 }
 /** Find: the folded blocks whose whole code `matches`, shown whole first. */
@@ -358,6 +362,8 @@ export function newDocument() { everything = false; }
 /** Highlights every code block not highlighted yet, wherever it is (printing). */
 export function highlightAll() {
   everything = true;
+  // Printed whole: a folded block shows all its lines first.
+  for (const cb of [...doc.querySelectorAll('.code-block[data-folded]')]) unfold(cb);
   for (const cb of [...keeping]) put(cb);
   for (const cb of doc.querySelectorAll('.code-block[data-hl="pending"]')) ask(cb, NEAR, 0, 0);
 }

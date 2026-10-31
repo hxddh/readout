@@ -943,3 +943,4 @@ details ul, details ol { padding-left: 1.5em; }
   color: var(--accent, var(--text-2)); font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer;
 }
 .cb-unfold:hover { text-decoration: underline; }
+@media print { .cb-unfold { display: none; } }

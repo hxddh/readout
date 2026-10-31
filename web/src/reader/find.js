@@ -481,10 +481,15 @@ function later() { if (!refreshTimer) refreshTimer = setTimeout(refresh, 100); }
  * edit took it (its text nodes replaced). A search that found nothing
  * shows the count of what an edit brings ("– of 3") until the next Return.
  */
+/** Whether a folded code block's whole code has a match of the query (unfoldMatching). */
+const foldedMatch = text => { re.lastIndex = 0; return re.test(fold(text)); };
+
 function refresh() {
   refreshTimer = null;
   if (query == null) return;
   const t0 = performance.now();
+  // A long code block put in (or again) folded with a match in its folded lines: shown whole, counted.
+  if (unfoldMatching(foldedMatch)) changed(observer.takeRecords());
   if (reread()) search(around());
   const [i, exact] = resolve();
   if (i < 0) cur = -1; else goTo(base + i);
@@ -516,7 +521,7 @@ export function find(text, backwards = false) {
     re = new RegExp(q.split(/ +/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' +'), 'g');
   }
   // A match in the folded lines of a long code block: the block shows all of them first.
-  if (unfoldMatching(text => { re.lastIndex = 0; return re.test(fold(text)); })) { changed(observer.takeRecords()); reread(); }
+  if (unfoldMatching(foldedMatch)) { changed(observer.takeRecords()); reread(); }
   // Next and Previous go on from the current match, unless the reader has
   // selected something else since, or clicked somewhere (the caret).
   const r = selRange();
