@@ -176,7 +176,7 @@ export function apply(p) {
 
   rebaselinePatch(p, changed, rerendered, firstLarge);
 
-  if (isFirst) { firstTimings.apply_at = Math.round(t0); firstTimings.blocks = Math.round(t1 - t0); firstTimings.layout = Math.round(performance.now() - t1); }
+  if (isFirst) { firstTimings.apply_at = Math.round(t0); firstTimings.blocks = Math.round(t1 - t0); firstTimings.layout = Math.round(performance.now() - t1); firstTimings.visible_at_apply = document.visibilityState; }
 
   const restored = restorePlace(p, { follow, forced, anchor, changed });
   // Emptied, refilled only in part, or cut short so the page cannot scroll

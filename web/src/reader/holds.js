@@ -109,6 +109,7 @@ export function afterShown(f) {
   const next = () => requestAnimationFrame(() => {
     // The first frame after the first apply, page time (SmokeTest: cold_page_raf_at_ms).
     firstTimings.raf_at ??= Math.round(performance.now());
+    firstTimings.visible_at_raf ??= document.visibilityState;
     // The frame after it, and when a task queued now ran (SmokeTest:
     // cold_page_raf2_at_ms, cold_page_task_at_ms): a late second frame is a
     // busy page, a late task with frames on time is tasks held back.
