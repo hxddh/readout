@@ -67,9 +67,9 @@ enum UpdateChecker {
             // GitHub answers 403 (or 429) with no requests left when the hourly limit is used up.
             let rateLimited = (http?.statusCode == 403 || http?.statusCode == 429)
                 && http?.value(forHTTPHeaderField: "x-ratelimit-remaining") == "0"
-            let found = release
+            let fetched = release
             DispatchQueue.main.async {
-                guard let release = found else {
+                guard let release = fetched else {
                     // A failed check does not count as a check: otherwise one
                     // offline launch silences updates for another week.
                     if interactive {

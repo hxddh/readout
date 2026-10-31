@@ -13,7 +13,7 @@ enum CommitBaseline {
     /// Found once per launch (under `toolsLock`). Not found is asked again next
     /// time: a first `xcode-select` or git after boot can outlast the limit.
     nonisolated(unsafe) private static var toolsAvailable = false
-    private static let toolsLock = NSLock()
+    nonisolated private static let toolsLock = NSLock()
 
     static func find(path: String, current: String, completion: @escaping @MainActor @Sendable ([BlockKey]?) -> Void) {
         withGit(path: path, otherwise: nil, {

@@ -61,10 +61,11 @@ final class ReadoutSchemeHandler: NSObject, WKURLSchemeHandler {
         nonisolated(unsafe) let task = task   // answered on the main thread only (below)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let data = Self.regularFileContents(fileURL)
+            let handler = self
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
-                    guard let self, self.running.remove(id) != nil else { return }
-                    self.deliver(data, from: fileURL, to: task)
+                    guard let handler, handler.running.remove(id) != nil else { return }
+                    handler.deliver(data, from: fileURL, to: task)
                 }
             }
         }
@@ -340,10 +341,11 @@ final class ReaderWebView: WKWebView, WKScriptMessageHandler {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.withoutEscapingSlashes]
             let json = (try? encoder.encode(value)).flatMap { String(data: $0, encoding: .utf8) }
+            let view = self
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     call.script = json.map { "window.readout.\(function)(\($0))" } ?? ""
-                    self?.drainCalls()
+                    view?.drainCalls()
                 }
             }
         }
