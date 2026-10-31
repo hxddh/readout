@@ -125,7 +125,7 @@ def launch_timings(app: dict, spawn: float) -> dict:
     # ran and its first apply came (since the page started), how long that
     # paint then waited for the code it shows, and when the highlighter's
     # worker said it runs.
-    for k in ("setAppearance", "blocks", "layout", "script_at", "apply_at", "hold", "worker_ready", "raf_at", "painted_at", "mermaid_at", "katex_at", "katex_loaded_at", "katex", "gap", "gap_at"):
+    for k in ("setAppearance", "blocks", "layout", "script_at", "apply_at", "hold", "worker_ready", "raf_at", "painted_at", "mermaid_at", "katex_at", "katex_loaded_at", "katex", "gap", "gap_at", "raf2_at", "task_at"):
         if isinstance(page.get(k), (int, float)):
             t[f"cold_page_{k.lower()}_ms"] = page[k]
     return t
@@ -211,6 +211,12 @@ def write_timings(out: Path, clock: dict, second: Path) -> None:
     timings["warm_open_to_applied_samples_ms"] = [round(v * 1000, 1) for v in applied_samples]
     timings["warm_open_to_applied_ms"] = (round(min(applied_samples) * 1000, 1)
                                           if len(applied_samples) == WARM_OPENS else None)
+    # Each warm open's page timings (page time; report only): where the open's
+    # time goes once the page has the document.
+    timings["warm_page_ms"] = app.get("warm_page_ms") or []
+    # And the app's side of the warm opens: request to the document read and
+    # parsed, and to the apply sent (seconds; report only).
+    timings["warm_open_steps_s"] = for_second(app.get("open_steps_s", {})) or []
     (out / "timings.json").write_text(json.dumps(timings, indent=1, sort_keys=True) + "\n")
     print(f"harness: timings {timings}")
 

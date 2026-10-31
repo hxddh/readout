@@ -76,6 +76,18 @@ enum SmokeTest {
         firstPaintSamples[url.path, default: []].append(seconds)
     }
 
+    /// Window request to each step of an open, per file, every open (seconds):
+    /// the document read and parsed (parsed), its reading state or git
+    /// baseline found too (did_load), the apply sent to the page.
+    private static var openSteps: [String: [[String: Double]]] = [:]
+    static func noteOpenStep(_ url: URL, _ step: String, seconds: Double) {
+        guard outputDirectory != nil else { return }
+        var list = openSteps[url.path, default: []]
+        if step == "parsed" || list.isEmpty { list.append([:]) }
+        list[list.count - 1][step] = seconds
+        openSteps[url.path] = list
+    }
+
     /// Window request to the page's first apply, per file, every open
     /// (Readout's own share of an open, without the frame the system paints).
     private static var firstApplySamples: [String: [Double]] = [:]
@@ -117,6 +129,8 @@ enum SmokeTest {
     /// The first window's page, in ms: its first setAppearance, then the first
     /// apply's block work and the layout it reads (page time, report only).
     private static var pageFirstApply: [String: Any] = [:]
+    /// The same, from each warm open's page (page time).
+    private static var warmPageTimings: [[String: Any]] = []
     private static func readPageFirstApply(_ webView: WKWebView) async {
         if let text = try? await webView.evaluateJavaScript("JSON.stringify(window.readout.firstTimings())") as? String,
            let data = text.data(using: .utf8), let d = try? JSONSerialization.jsonObject(with: data) as? [String: Any] { pageFirstApply = d }
@@ -154,7 +168,7 @@ enum SmokeTest {
         if let start = processStart { phases["process_start"] = start }
         let json: [String: Any] = ["applied_at": appliedAt, "painted_at": paintedAt, "first_paint_s": firstPaint,
                                    "first_paint_samples_s": firstPaintSamples, "first_apply_samples_s": firstApplySamples,
-                                   "launch_phases_s": phases, "page_first_apply_ms": pageFirstApply,
+                                   "launch_phases_s": phases, "page_first_apply_ms": pageFirstApply, "warm_page_ms": warmPageTimings, "open_steps_s": openSteps,
                                    "post_paint_input_delay_ms": postPaintInputDelay.map { $0 as Any } ?? NSNull()]
         if let data = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]) {
             try? data.write(to: dir.appendingPathComponent("timings-app.json"))
@@ -274,6 +288,12 @@ enum SmokeTest {
                     let deadline = Date().addingTimeInterval(10)
                     while (firstPaintSamples[secondURL.path]?.count ?? 0) < round && Date() < deadline {
                         try? await Task.sleep(for: .milliseconds(50))
+                    }
+                    // Its page's own timings of this open (a spare page: the open is its first apply).
+                    if let page = app?.reader(for: secondURL)?.webView,
+                       let text = try? await page.evaluateJavaScript("JSON.stringify(window.readout.firstTimings())") as? String,
+                       let data = text.data(using: .utf8), let d = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        warmPageTimings.append(d)
                     }
                     app?.reader(for: secondURL)?.window?.close()
                     // The pool makes its next spare page once the page taken has

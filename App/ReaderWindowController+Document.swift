@@ -39,6 +39,8 @@ extension ReaderWindowController {
                 self.showLoadFailure()
                 return
             }
+            // Read and parsed: what follows waits for the reading state, or git (SmokeTest).
+            SmokeTest.noteOpenStep(self.url, "parsed", seconds: Date().timeIntervalSince(self.openedAt))
             saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from
                 guard let self else { return }
                 guard record == nil else { return self.didLoad(result, record: record) }
@@ -64,6 +66,7 @@ extension ReaderWindowController {
 
     func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?, commitBaseline: [BlockKey]? = nil) {
         SmokeTest.noteLaunchPhase("did_load")
+        SmokeTest.noteOpenStep(url, "did_load", seconds: Date().timeIntervalSince(openedAt))
         let patch = self.session.load(result.doc, baseline: record?.baseline ?? commitBaseline)
         contentGeneration += 1
         defer { refreshRepository() }   // once contentPath is set below
@@ -83,6 +86,7 @@ extension ReaderWindowController {
                 self.webView.setAppearance(strings: ReaderStrings.all)
             }
             // A whole document: encoded off the main thread, still delivered before the calls below.
+            SmokeTest.noteOpenStep(self.url, "apply_sent", seconds: Date().timeIntervalSince(self.openedAt))
             self.webView.callEncodingOffMain("apply", patch.page)
             // After the apply: in place of the page's own "Rewritten since you last read".
             if let commitNotice { self.webView.call("notice", Self.text(commitNotice)) }
