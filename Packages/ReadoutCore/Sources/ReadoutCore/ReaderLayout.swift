@@ -19,6 +19,25 @@ public enum ReaderLayout {
     public static let standardCap = 80.0
     public static let wideCap = Double.infinity
 
+    /// The narrowest and widest column (rem) the reader can drag the
+    /// column's edge to.
+    public static let customCapRange = 30.0...200.0
+
+    /// View ▸ Text Width as the app keeps it: "standard", "wide", or the
+    /// column's width in rem (whole), dragged at its edge. Anything else is
+    /// Standard.
+    public static func textWidth(_ stored: String?) -> String {
+        guard let stored else { return "standard" }
+        if stored == "wide" { return stored }
+        if let rem = Double(stored), rem.isFinite { return textWidth(rem: rem) }
+        return "standard"
+    }
+
+    /// The column dragged to `rem` wide, as the app keeps it.
+    public static func textWidth(rem: Double) -> String {
+        String(Int(min(max(rem, customCapRange.lowerBound), customCapRange.upperBound).rounded()))
+    }
+
     /// The narrowest column (rem) the page keeps beside the outline.
     public static let columnBesideOutline = 50.0
 

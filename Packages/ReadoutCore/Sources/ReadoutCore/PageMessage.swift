@@ -26,6 +26,9 @@ public enum PageMessage: Equatable, Sendable {
     case error(message: String)
     /// The reader turned code wrapping on or off (remembered for all windows).
     case setCodeWrap(on: Bool)
+    /// The reader dragged the column's edge to `rem` wide; nil: back to
+    /// Standard (a double-click on the edge).
+    case setTextWidth(rem: Double?)
     /// A key found nothing to go to (D with no comparison in view): the app beeps.
     case nothing
     /// N or Shift-N found no unread change left in the document
@@ -84,6 +87,10 @@ public enum PageMessage: Equatable, Sendable {
         case "setCodeWrap":
             guard let on = (msg["on"] as? NSNumber)?.boolValue ?? (msg["on"] as? Bool) else { return nil }
             self = .setCodeWrap(on: on)
+        case "setTextWidth":
+            let rem = (msg["rem"] as? NSNumber)?.doubleValue ?? (msg["rem"] as? Double)
+            if let rem, !rem.isFinite { return nil }
+            self = .setTextWidth(rem: rem)
         case "nothing":
             // N's (`jump`), not D's: there is no unread change left to go to.
             let jump = (msg["jump"] as? NSNumber)?.boolValue ?? (msg["jump"] as? Bool) ?? false
