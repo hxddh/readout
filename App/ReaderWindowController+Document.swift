@@ -78,6 +78,7 @@ extension ReaderWindowController {
         self.contentPath = result.sourcePath
         self.deleted = false
         self.updateModel(patch, decoded: result.decoded)
+        self.recordVersion()
         self.webView.whenReady { [weak self] in
             guard let self else { return }
             if self.showsLoadFailure {
@@ -360,11 +361,13 @@ extension ReaderWindowController {
         refreshRepository()
         didSaveOnce = false
         lastSavedBaseline = nil
+        lastRecordedKeys = nil
         scheduleSave()
     }
 
     func saveNow() {
         guard loadState == .loaded, !retargetGate.isPending else { return }
+        recordVersion()
         var index: Int? = nil
         var excerpt: String? = nil
         if let a = lastAnchor, let i = session.blocks.firstIndex(where: { $0.slot == a.slot }) {
@@ -386,6 +389,15 @@ extension ReaderWindowController {
         BaselineStore.save(.init(baseline: baseline, topBlockIndex: index, topOffset: offset,
                                  topExcerpt: excerpt, savedAt: Date()),
                            for: contentPath.map { URL(fileURLWithPath: $0) } ?? url, baselineChanged: baselineChanged)
+    }
+
+    /// The document as it is now, into its history, when it changed since
+    /// it was last recorded (on load, and on the save after each change).
+    func recordVersion() {
+        let keys = session.keys
+        guard keys != lastRecordedKeys else { return }
+        lastRecordedKeys = keys
+        BaselineStore.recordVersion(keys, at: Date(), for: contentPath.map { URL(fileURLWithPath: $0) } ?? url)
     }
 
     // MARK: Mark All as Read

@@ -112,6 +112,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     var unreadHold: DispatchWorkItem?
 
     var lastSavedBaseline: [BlockKey]?
+    /// The blocks last added to the file's history (`recordVersion`).
+    var lastRecordedKeys: [BlockKey]?
     var lastSavedAnchorExcerpt: String?
     var lastSavedAnchorIndex: Int?
     var lastSavedAnchorOffset: Double?
