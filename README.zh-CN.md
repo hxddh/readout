@@ -7,7 +7,9 @@
 
 ---
 
-<p align="center"><img src="docs/screenshot.png" width="720" alt="Readout 窗口：边栏是大纲，页边标出未读变更"></p>
+<p align="center"><img src="docs/screenshot.zh-CN.png" width="720" alt="Readout 5 窗口：中文界面中的中文计划，边栏是大纲与任务进度"></p>
+
+<p align="center"><a href="docs/screenshots.zh-CN.md">更多截图</a></p>
 
 Agent 会把计划、规格、分析报告和代码解释写成很长的 Markdown，而且会反复改写。Readout 是为此设计的只读阅读器：瞬间打开、排版干净、跟随 Agent 的写入实时更新，并清楚标出自你上次阅读以来哪里变了。
 

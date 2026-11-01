@@ -7,7 +7,9 @@
 
 ---
 
-<p align="center"><img src="docs/screenshot.png" width="720" alt="A Readout window: an agent's plan with its outline in the sidebar and unread changes marked in the margin"></p>
+<p align="center"><img src="docs/screenshot.png" width="720" alt="A Readout 5 window: an agent's plan with its outline in the sidebar, task progress in the subtitle, and unread changes marked in the margin"></p>
+
+<p align="center"><a href="docs/screenshots.md">More screenshots</a></p>
 
 Agents write plans, specs, reports and explanations as long Markdown files, and they keep rewriting them. Readout is a read-only viewer built for that: it opens instantly, renders cleanly, follows the file as the agent writes, and shows you exactly what changed since you last looked.
 
