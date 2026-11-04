@@ -114,7 +114,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     var lastSavedBaseline: [BlockKey]?
     /// The blocks last added to the file's history (`recordVersion`).
     var lastRecordedKeys: [BlockKey]?
-    /// The versions of the file seen so far (View ▸ Compare with Earlier Version), once read.
+    /// The versions of the file seen so far (View ▸ Compare With), once read.
     var history: DocumentHistory?
     /// The pending `recordVersionSoon`.
     var historyWork: DispatchWorkItem?

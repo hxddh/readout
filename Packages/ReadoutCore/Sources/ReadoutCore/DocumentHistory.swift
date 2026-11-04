@@ -33,8 +33,8 @@ public struct DocumentHistory: Codable, Sendable, Equatable {
             self.settle = settle
         }
 
-        /// 30 days, 200 versions, 8 MB of block text, 10 s.
-        public static let standard = Limits(maxAge: 30 * 86400, maxVersions: 200, maxTextBytes: 8 << 20, settle: 10)
+        /// 30 days, the last 20 versions, 8 MB of block text, 10 s.
+        public static let standard = Limits(maxAge: 30 * 86400, maxVersions: 20, maxTextBytes: 8 << 20, settle: 10)
     }
 
     public private(set) var pool: [BlockKey] = []

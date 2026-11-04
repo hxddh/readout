@@ -143,9 +143,12 @@ enum BaselineStore {
         }
     }
 
-    /// Waits for every queued save: called when the app quits, which would
-    /// otherwise exit before the last reading position is written.
-    static func flush() { queue.sync {} }
+    /// Waits for every queued save, and writes the histories not written
+    /// yet: called when the app quits, which would otherwise exit before the
+    /// last reading position is written.
+    static func flush() {
+        queue.sync { for target in histories.buffers.keys { writeHistory(target) } }
+    }
 
     /// The project folder an agent named for the file (`readout --hook`
     /// passes its working folder), beside the file's record, while it exists.
@@ -164,19 +167,55 @@ enum BaselineStore {
     /// The versions of `url` seen so far, beside its record (`DocumentHistory`).
     private static func historyFile(for url: URL) -> URL { dir.appendingPathComponent("\(key(for: url)).history.json") }
 
+    /// The histories of the files open, by history file: read once, then
+    /// recorded in memory and written at most every 5 s (HistoryBuffer).
+    /// Touched only on `queue`.
+    private final class Histories: @unchecked Sendable {
+        var buffers: [URL: HistoryBuffer] = [:]
+        var scheduled: Set<URL> = []
+    }
+    private static let histories = Histories()
+
     /// Adds the file's blocks as they are now to its history, behind any
     /// save still queued for it; `done` gets the history as it is then, on
-    /// the main thread.
+    /// the main thread. Written within 5 s, or when the window closes.
     static func recordVersion(_ keys: [BlockKey], at date: Date, for url: URL,
                               done: @escaping @MainActor @Sendable (DocumentHistory) -> Void) {
         let target = historyFile(for: url)
         queue.async {
-            var history = DocumentHistory.decode(try? Data(contentsOf: target))
-            if history.record(keys, at: date), let data = try? JSONEncoder().encode(history) {
-                try? data.write(to: target, options: .atomic)
-            }
-            let recorded = history
+            var buffer = histories.buffers[target] ?? HistoryBuffer(DocumentHistory.decode(try? Data(contentsOf: target)))
+            buffer.record(keys, at: date)
+            histories.buffers[target] = buffer
+            scheduleHistoryWrite(target)
+            let recorded = buffer.history
             DispatchQueue.main.async { MainActor.assumeIsolated { done(recorded) } }
+        }
+    }
+
+    /// On `queue`: the history of `target` written when it is due, once.
+    private static func scheduleHistoryWrite(_ target: URL) {
+        guard !histories.scheduled.contains(target), let due = histories.buffers[target]?.writeDue(now: Date()) else { return }
+        histories.scheduled.insert(target)
+        queue.asyncAfter(deadline: .now() + max(0, due.timeIntervalSinceNow)) {
+            histories.scheduled.remove(target)
+            writeHistory(target)
+        }
+    }
+
+    /// On `queue`: what was recorded of `target` since its last write, written.
+    private static func writeHistory(_ target: URL) {
+        guard var buffer = histories.buffers[target], buffer.dirty else { return }
+        if let data = try? JSONEncoder().encode(buffer.history) { try? data.write(to: target, options: .atomic) }
+        buffer.wrote(at: Date())
+        histories.buffers[target] = buffer
+    }
+
+    /// The window of `url` closes: its history written now, and no longer held.
+    static func closeHistory(for url: URL) {
+        let target = historyFile(for: url)
+        queue.async {
+            writeHistory(target)
+            histories.buffers[target] = nil
         }
     }
 
