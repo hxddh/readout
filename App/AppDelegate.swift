@@ -602,7 +602,8 @@ struct WelcomeView: View {
 
     let onOpen: () -> Void
     let onOpenLatest: () -> Void
-    let onOpenURL: (URL) -> Void
+    /// Called on the main thread, from the drop's background completion.
+    let onOpenURL: @MainActor @Sendable (URL) -> Void
     @State private var targeted = false
     @State private var cliInstalled = false
     @ObservedObject private var settings = AppSettings.shared
@@ -682,14 +683,13 @@ struct WelcomeView: View {
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.accentColor, lineWidth: 3).opacity(targeted ? 1 : 0).padding(4))
         .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
             for p in providers {
-                _ = p.loadObject(ofClass: URL.self) { url, _ in
+                // Called on a background queue: not isolated to the main actor
+                // (a closure that is would trap there), on to the main thread.
+                let open = onOpenURL
+                _ = p.loadObject(ofClass: URL.self) { @Sendable url, _ in
                     guard let url else { return }
-                    guard WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else {
-                        // Called on a background queue.
-                        DispatchQueue.main.async { NSSound.beep() }
-                        return
-                    }
-                    DispatchQueue.main.async { onOpenURL(url) }
+                    let markdown = WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased())
+                    DispatchQueue.main.async { MainActor.assumeIsolated { if markdown { open(url) } else { NSSound.beep() } } }
                 }
             }
             return true

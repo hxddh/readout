@@ -312,7 +312,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         // A tab bar shown or hidden moves the toolbar's edge without resizing
         // the window: the layout rect says so.
-        layoutObservation = window?.observe(\.contentLayoutRect) { [weak self] _, _ in
+        layoutObservation = window?.observe(\.contentLayoutRect) { @Sendable [weak self] _, _ in
             let controller = self
             DispatchQueue.main.async { MainActor.assumeIsolated { controller?.updateTopInset() } }
         }
