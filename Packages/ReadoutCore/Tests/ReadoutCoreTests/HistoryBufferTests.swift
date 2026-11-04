@@ -43,7 +43,8 @@ import Testing
         buffer.wrote(at: t0)
         #expect(buffer.writeDue(now: t0) == nil)
         // The same blocks again: no change, nothing to write.
-        #expect(!buffer.record(keys, at: t0.addingTimeInterval(1)))
+        let changed = buffer.record(keys, at: t0.addingTimeInterval(1))
+        #expect(!changed)
         #expect(buffer.writeDue(now: t0.addingTimeInterval(1)) == nil)
         buffer.record(MarkdownParser.parse("# Plan\n\nMore.\n").blocks.map(BlockKey.init), at: t0.addingTimeInterval(2))
         #expect(buffer.writeDue(now: t0.addingTimeInterval(2)) == t0.addingTimeInterval(5))
