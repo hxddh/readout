@@ -619,9 +619,10 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   const copied = await page.evaluate(() => window.__msgs.filter(m => m.type === 'copy').pop()?.text ?? '');
   check('Copy copies all of a folded block', copied.split('\n').length === 3500 && copied.includes('folded_needle'), String(copied.split('\n').length));
   const n = await find(page, 'folded_needle');
-  // (The match is selected once its landing is painted, its code coloured: holds.js; 3,500 lines take a moment.)
+  // (The match is selected once its landing is painted, its code coloured: holds.js; 3,500 lines take
+  // a moment, several seconds on a CI runner: up to 15 s.)
   const seen = [];
-  for (let i = 0; i < 30; i++) { seen.push(await selected(page)); if (seen.at(-1) === 'folded_needle') break; await page.waitForTimeout(100); }
+  for (let i = 0; i < 150; i++) { seen.push(await selected(page)); if (seen.at(-1) === 'folded_needle') break; await page.waitForTimeout(100); }
   const after = await page.evaluate(() => {
     const cb = document.querySelector('.code-block');
     return { folded: cb.dataset.folded ?? null, button: !!cb.querySelector('.cb-unfold'), has: cb.querySelector('pre').textContent.includes('folded_needle') };
