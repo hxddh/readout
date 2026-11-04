@@ -585,6 +585,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     /// Help ▸ Readout Help: the keyboard shortcuts bundled with the app, in
     /// Readout itself, in the reader's language.
+    /// Help ▸ Performance: the last opens and live updates, timed (ReaderPerf.log).
+    @objc func showPerformance(_ sender: Any?) {
+        let text = Self.performanceReport(ReaderPerf.log)
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString("Performance", comment: "Menu: Help ▸ Performance, how long the last opens and updates took")
+        alert.informativeText = text
+        alert.addButton(withTitle: NSLocalizedString("OK", comment: "Button"))
+        alert.addButton(withTitle: NSLocalizedString("Copy", comment: "Button: copy the performance report"))
+        if alert.runModal() == .alertSecondButtonReturn {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        }
+    }
+
+    static func performanceReport(_ log: PerfLog) -> String {
+        var lines: [String] = []
+        if log.opens.isEmpty {
+            lines.append(NSLocalizedString("No document opened yet.", comment: "Help ▸ Performance, before any open"))
+        } else {
+            lines.append(NSLocalizedString("Opens (asked for → on screen):", comment: "Help ▸ Performance: heading of the opens' times"))
+            for o in log.opens.reversed() {
+                lines.append("\(o.file)  \(o.painted.map(PerfLog.ms) ?? "–")  (" + String(format: NSLocalizedString("page %@", comment: "Help ▸ Performance: the time to the page's first apply"), PerfLog.ms(o.applied)) + ")")
+            }
+        }
+        if let median = PerfLog.median(log.updates), let slowest = log.updates.max() {
+            lines.append("")
+            lines.append(String(format: NSLocalizedString("Live updates (change on disk → shown): median %@, slowest %@, of %d", comment: "Help ▸ Performance: the last live updates' times"),
+                                PerfLog.ms(median), PerfLog.ms(slowest), log.updates.count))
+        }
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        lines.append("")
+        lines.append("Readout \(v), macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
+        return lines.joined(separator: "\n")
+    }
+
     @objc func openHelp(_ sender: Any?) {
         let name = ReaderChrome.helpFileName(preferredLanguages: Bundle.main.preferredLocalizations)
         guard let url = Bundle.main.resourceURL?.appendingPathComponent("Help/\(name)") else { return NSSound.beep() }

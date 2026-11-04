@@ -432,6 +432,8 @@ enum SmokeTest {
             }
         }
         var json: [String: Any] = ["menus": NSApp.mainMenu.map(tree) ?? []]
+        // Help ▸ Performance's text, after the opens and updates above.
+        json["performance"] = AppDelegate.performanceReport(ReaderPerf.log)
         if let edit = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == NSLocalizedString("Edit", comment: "Menu") })?.submenu {
             json["edit_menu"] = edit.items.compactMap { i in i.action.map { NSStringFromSelector($0) + (i.keyEquivalent.isEmpty ? "" : " " + i.keyEquivalent) } }
         }

@@ -142,6 +142,8 @@ enum MainMenu {
         // Help
         let help = NSMenu(title: NSLocalizedString("Help", comment: "Menu"))
         help.addItem(item(NSLocalizedString("Readout Help", comment: "Menu"), #selector(AppDelegate.openHelp(_:)), "?"))
+        // How long the last opens and live updates took, on this Mac.
+        help.addItem(item(NSLocalizedString("Performance", comment: "Menu: Help ▸ Performance, how long the last opens and updates took"), #selector(AppDelegate.showPerformance(_:))))
         NSApp.helpMenu = help
         add(help, to: main)
 

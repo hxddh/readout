@@ -146,3 +146,9 @@
 "Done" = "已完成";
 "To do" = "待完成";
 "Show %d more lines" = "显示其余 %d 行";
+"Performance" = "性能";
+"No document opened yet." = "还没有打开过文档。";
+"Opens (asked for → on screen):" = "打开（请求 → 显示）：";
+"page %@" = "页面 %@";
+"Live updates (change on disk → shown): median %@, slowest %@, of %d" = "实时更新（磁盘改动 → 显示）：中位数 %@，最慢 %@，共 %d 次";
+"OK" = "好";

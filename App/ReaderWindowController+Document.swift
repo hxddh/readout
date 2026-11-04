@@ -175,10 +175,12 @@ extension ReaderWindowController {
             rereadForRoot = false
             loader.forgetContent()
         }
+        if updateSeenAt == nil { updateSeenAt = Date() }
         loader.readChange { [weak self] change in
             guard let self else { return }
             defer { self.finishRetarget() }   // after the session took the new content
             guard case .content(let result) = change else {
+                self.updateSeenAt = nil   // nothing new: no update to time
                 if self.deleted { self.deleted = false; self.model.status = nil }
                 return
             }
@@ -187,6 +189,7 @@ extension ReaderWindowController {
             self.refreshRepository()
             let wasEmpty = self.session.blocks.isEmpty
             guard let patch = self.session.update(result.doc) else {
+                self.updateSeenAt = nil
                 self.model.status = nil
                 return
             }

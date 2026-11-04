@@ -92,6 +92,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     let openedAt = Date()
     var painted = false
     var appliedOnce = false
+    /// When the change being read was seen on disk (Help ▸ Performance's live updates).
+    var updateSeenAt: Date?
     let openSignpost: OSSignpostIntervalState
 
     /// The page shows why the first read failed (its empty state's strings

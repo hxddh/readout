@@ -75,8 +75,14 @@ extension ReaderWindowController {
                 // Window request to the page's first apply: Readout's own share
                 // of an open, without the frame the system paints it in.
                 appliedOnce = true
-                SmokeTest.noteFirstApply(url, seconds: Date().timeIntervalSince(openedAt))
+                let seconds = Date().timeIntervalSince(openedAt)
+                ReaderPerf.log.opened(url.lastPathComponent, applied: seconds)
+                SmokeTest.noteFirstApply(url, seconds: seconds)
                 SmokeTest.noteLaunchPhase("apply")
+            } else if let seen = updateSeenAt {
+                // A change on disk, read, parsed and applied by the page.
+                updateSeenAt = nil
+                ReaderPerf.log.updated(seconds: Date().timeIntervalSince(seen))
             }
         case .painted:
             SmokeTest.notePainted()
@@ -84,7 +90,9 @@ extension ReaderWindowController {
                 // First patch presented on screen: the open is done.
                 painted = true
                 ReaderPerf.signposter.endInterval("open", openSignpost)
-                SmokeTest.noteFirstPaint(url, seconds: Date().timeIntervalSince(openedAt))
+                let seconds = Date().timeIntervalSince(openedAt)
+                ReaderPerf.log.painted(url.lastPathComponent, seconds: seconds)
+                SmokeTest.noteFirstPaint(url, seconds: seconds)
                 SmokeTest.noteLaunchPhase("paint")
                 WebViewPool.shared.pagePainted()
             }
