@@ -365,8 +365,15 @@ check("Edit has Copy as Quote on ⇧⌘C, and no other item has that key",
       quote.get("key") == "⇧⌘c" and sum(1 for _, i in tree if (i.get("key") or "").lower() == "⇧⌘c") == 1, quote)
 what = by_action.get("showWhatChanged:") or {}
 check("View has Show What Changed, without a key", bool(what) and "key" not in what, what)
-compare = next((i for path, i in tree if i.get("action") == "compareWithLastCommit:" and path[0] == "View"), {})
-check("View has Compare with Last Commit, without a key", compare.get("title") == "Compare with Last Commit" and "key" not in compare, compare)
+# 5.1 S1: one View ▸ Compare With submenu (Last Commit, then the versions Readout saw);
+# Open Earlier Version and Unread Changes are gone.
+view_top = [i for i in next((m.get("items") or [] for m in menus.get("menus") or [] if m.get("title") == "View"), [])]
+view_titles = [i.get("title") for i in view_top if not i.get("separator")]
+check("View has one Compare With submenu, without a key, and no other history items",
+      view_titles.count("Compare With") == 1
+      and not any(t in view_titles for t in ("Compare with Last Commit", "Compare with Earlier Version", "Open Earlier Version", "Unread Changes")), view_titles)
+check("no item opens an earlier version or the unread inbox",
+      not any(i.get("action") in ("openVersion:", "openInboxEntry:") for _, i in tree), sorted(by_action))
 check("Help opens the bundled shortcuts", "openHelp:" in by_action, sorted(by_action))
 # 3.9 S1: Show Only Changes is gone, and ⇧⌘K with it.
 check("View has no Show Only Changes, and nothing is on ⇧⌘K",
@@ -560,6 +567,9 @@ check("git: an untracked file opens unmarked, without the notice",
 gc, gcu = gb.get("compare_tracked") or {}, gb.get("compare_untracked") or {}
 check("compare: enabled in a repository, not outside one",
       gc.get("enabled") is True and gcu.get("enabled") is True and gb.get("compare_enabled_outside") is False, gb)
+check("compare: View ▸ Compare With starts with Last Commit in a repository, and has none outside one",
+      ((gc.get("menu") or [{}])[0]).get("action") == "compareWithLastCommit:" and ((gc.get("menu") or [{}])[0]).get("title") == "Last Commit"
+      and not any(i.get("action") == "compareWithLastCommit:" for i in gb.get("compare_menu_outside") or [{"action": "compareWithLastCommit:"}]), gb)
 check("compare: a read document is marked against the last commit again, with the notice",
       gc.get("unread_read") == 0 and (gc.get("unread_compared") or 0) >= 2 and (gc.get("marks_compared") or 0) >= 2
       and gc.get("notice") == "Changes since the last commit", gb)
