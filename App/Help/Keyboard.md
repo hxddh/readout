@@ -14,7 +14,7 @@ A file is **waiting** when it has unread changes, or was opened in the backgroun
 | <kbd>Esc</kbd> | Close an open comparison or removed-text popup |
 | <kbd>Tab</kbd> / <kbd>⇧Tab</kbd> | Next / previous link or file path |
 
-**View ▸ Compare with Last Commit** marks the changes since the file's last git commit (<kbd>⌘Z</kbd> undoes it).
+**View ▸ Compare With** marks the changes since the file's last git commit, or since a version Readout saw before (<kbd>⌘Z</kbd> undoes it).
 
 ## Files
 

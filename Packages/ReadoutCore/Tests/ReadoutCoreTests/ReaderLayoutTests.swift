@@ -67,16 +67,13 @@ import Testing
         #expect(css.contains("font-size: clamp(calc(var(--fs) * 1px), calc(var(--fs) * (1px + (100vw - 900px) / 3600)), calc(var(--fs) * 1.12px));"))
     }
 
-    /// View ▸ Text Width as the app keeps it: Standard, Wide, or a dragged
-    /// width in whole rem, within the range the edge allows.
-    @Test func aDraggedWidthIsKeptInWholeRemWithinItsRange() {
+    /// View ▸ Text Width as the app keeps it: Standard or Wide; a width
+    /// an earlier version kept (dragged, in rem) is Standard.
+    @Test func theTextWidthIsStandardOrWide() {
         #expect(ReaderLayout.textWidth(nil) == "standard")
         #expect(ReaderLayout.textWidth("wide") == "wide")
         #expect(ReaderLayout.textWidth("standard") == "standard")
-        #expect(ReaderLayout.textWidth("62") == "62")
-        #expect(ReaderLayout.textWidth("12") == "30")
-        #expect(ReaderLayout.textWidth("999") == "200")
+        #expect(ReaderLayout.textWidth("62") == "standard")
         #expect(ReaderLayout.textWidth("narrow") == "standard")
-        #expect(ReaderLayout.textWidth(rem: 61.6) == "62")
     }
 }

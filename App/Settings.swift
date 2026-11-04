@@ -180,16 +180,6 @@ enum BaselineStore {
         }
     }
 
-    /// When `url`'s reading state was last saved, and the unread changes it
-    /// had then; nil when it was never read: the changes inbox's test for a
-    /// file not open.
-    static func lastRead(_ url: URL) -> (at: Date, unread: Int)? {
-        let files = [positionFile(for: url), file(for: url)]
-        guard let at = files.compactMap({ try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }).max() else { return nil }
-        let position = (try? Data(contentsOf: positionFile(for: url))).flatMap { try? JSONDecoder().decode(Record.Position.self, from: $0) }
-        return (at, position?.unread ?? 0)
-    }
-
     /// Where the record and the position for `url` live (smoke test).
     static func recordFiles(for url: URL) -> (record: URL, position: URL) { (file(for: url), positionFile(for: url)) }
 

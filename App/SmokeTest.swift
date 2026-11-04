@@ -865,6 +865,7 @@ enum SmokeTest {
         // Outside a repository (a plan in /tmp/…/plans): the item is disabled.
         if let plan = env["READOUT_SMOKE_HOOK_PLAN"], let hooked = app?.reader(for: URL(fileURLWithPath: plan)) {
             json["compare_enabled_outside"] = hooked.validateMenuItem(NSMenuItem(title: "", action: #selector(ReaderWindowController.compareWithLastCommit(_:)), keyEquivalent: ""))
+            json["compare_menu_outside"] = compareMenu(hooked)
         }
         write(json, to: out, "git-baseline.json")
     }
@@ -876,7 +877,7 @@ enum SmokeTest {
         let item = NSMenuItem(title: "", action: #selector(ReaderWindowController.compareWithLastCommit(_:)), keyEquivalent: "")
         let marks = "document.querySelectorAll('.m-inserted:not(.m-read), .m-modified:not(.m-read)').length"
         let notice = "document.getElementById('ro-notice').hidden ? '' : document.getElementById('ro-notice').textContent"
-        var json: [String: Any] = ["enabled": reader.validateMenuItem(item)]
+        var json: [String: Any] = ["enabled": reader.validateMenuItem(item), "menu": compareMenu(reader)]
         reader.markAllRead(nil)
         try? await Task.sleep(for: .milliseconds(500))
         json["unread_read"] = reader.model.unread
@@ -911,6 +912,13 @@ enum SmokeTest {
             json["redo_title"] = undo?.redoMenuItemTitle ?? ""
         }
         return json
+    }
+
+    /// View ▸ Compare With as it is for `reader`: each item's title and action.
+    private static func compareMenu(_ reader: ReaderWindowController) -> [[String: String]] {
+        let menu = NSMenu()
+        CompareWithMenu.fill(menu, for: reader)
+        return menu.items.filter { !$0.isSeparatorItem }.map { ["title": $0.title, "action": $0.action.map(NSStringFromSelector) ?? ""] }
     }
 
     /// Compare with Last Commit marked the document (the notice it showed).
