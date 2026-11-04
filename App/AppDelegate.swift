@@ -585,6 +585,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     /// Help ▸ Readout Help: the keyboard shortcuts bundled with the app, in
     /// Readout itself, in the reader's language.
+    /// Help ▸ Performance: the last opens and live updates, timed (ReaderPerf.log).
+    @objc func showPerformance(_ sender: Any?) {
+        let text = Self.performanceReport(ReaderPerf.log)
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString("Performance", comment: "Menu: Help ▸ Performance, how long the last opens and updates took")
+        alert.informativeText = text
+        alert.addButton(withTitle: NSLocalizedString("OK", comment: "Button"))
+        alert.addButton(withTitle: NSLocalizedString("Copy", comment: "Button: copy the performance report"))
+        if alert.runModal() == .alertSecondButtonReturn {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        }
+    }
+
+    static func performanceReport(_ log: PerfLog) -> String {
+        var lines: [String] = []
+        if log.opens.isEmpty {
+            lines.append(NSLocalizedString("No document opened yet.", comment: "Help ▸ Performance, before any open"))
+        } else {
+            lines.append(NSLocalizedString("Opens (asked for → on screen):", comment: "Help ▸ Performance: heading of the opens' times"))
+            for o in log.opens.reversed() {
+                lines.append("\(o.file)  \(o.painted.map(PerfLog.ms) ?? "–")  (" + String(format: NSLocalizedString("page %@", comment: "Help ▸ Performance: the time to the page's first apply"), PerfLog.ms(o.applied)) + ")")
+            }
+        }
+        if let median = PerfLog.median(log.updates), let slowest = log.updates.max() {
+            lines.append("")
+            lines.append(String(format: NSLocalizedString("Live updates (change on disk → shown): median %@, slowest %@, of %d", comment: "Help ▸ Performance: the last live updates' times"),
+                                PerfLog.ms(median), PerfLog.ms(slowest), log.updates.count))
+        }
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        lines.append("")
+        lines.append("Readout \(v), macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
+        return lines.joined(separator: "\n")
+    }
+
     @objc func openHelp(_ sender: Any?) {
         let name = ReaderChrome.helpFileName(preferredLanguages: Bundle.main.preferredLocalizations)
         guard let url = Bundle.main.resourceURL?.appendingPathComponent("Help/\(name)") else { return NSSound.beep() }
@@ -598,11 +633,12 @@ struct WelcomeView: View {
     /// Fixed size: open and open latest, then the two steps of setting
     /// Readout up (agent folders, the command line); a file dropped anywhere
     /// on it opens. Recent files live in File ▸ Open Recent.
-    static let height: CGFloat = 430
+    static let height: CGFloat = 390
 
     let onOpen: () -> Void
     let onOpenLatest: () -> Void
-    let onOpenURL: (URL) -> Void
+    /// Called on the main thread, from the drop's background completion.
+    let onOpenURL: @MainActor @Sendable (URL) -> Void
     @State private var targeted = false
     @State private var cliInstalled = false
     @ObservedObject private var settings = AppSettings.shared
@@ -636,17 +672,6 @@ struct WelcomeView: View {
             Text(NSLocalizedString("Read what your agents write.", comment: "Welcome subtitle"))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
-            // Plans are mentioned only while their folder is in Settings.
-            Text(AgentFolders.includesClaudePlans(settings.workspaces)
-                 ? NSLocalizedString("New plans in ~/.claude/plans open in Readout on their own. Add other agent folders in Settings.", comment: "Welcome: how documents arrive")
-                 : NSLocalizedString("New Markdown files in the agent folders you add in Settings open in Readout on their own.", comment: "Welcome: how documents arrive, ~/.claude/plans not in Settings"))
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 40)
-                .padding(.top, 8)
-
             HStack(spacing: 10) {
                 Button(NSLocalizedString("Open…", comment: "Button"), action: onOpen)
                     .keyboardShortcut("o", modifiers: .command)
@@ -667,7 +692,9 @@ struct WelcomeView: View {
                 SetupRow(done: !settings.workspaces.isEmpty,
                          title: settings.workspaces.isEmpty
                             ? NSLocalizedString("Watch the folders your agents write in", comment: "Welcome: setup step, no agent folder yet")
-                            : String(format: NSLocalizedString("Watching %d agent folders", comment: "Welcome: setup step done; %d is how many"), settings.workspaces.count),
+                            : settings.workspaces.count == 1
+                            ? NSLocalizedString("Watching 1 agent folder", comment: "Welcome: setup step done, one folder")
+                            : String(format: NSLocalizedString("Watching %d agent folders", comment: "Welcome: setup step done; %d is how many (2 or more)"), settings.workspaces.count),
                          action: NSLocalizedString("Add Folder…", comment: "Welcome: button that adds an agent folder"),
                          perform: addFolder)
                 SetupRow(done: cliInstalled,
@@ -691,14 +718,13 @@ struct WelcomeView: View {
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.accentColor, lineWidth: 3).opacity(targeted ? 1 : 0).padding(4))
         .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
             for p in providers {
-                _ = p.loadObject(ofClass: URL.self) { url, _ in
+                // Called on a background queue: not isolated to the main actor
+                // (a closure that is would trap there), on to the main thread.
+                let open = onOpenURL
+                _ = p.loadObject(ofClass: URL.self) { @Sendable url, _ in
                     guard let url else { return }
-                    guard WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased()) else {
-                        // Called on a background queue.
-                        DispatchQueue.main.async { NSSound.beep() }
-                        return
-                    }
-                    DispatchQueue.main.async { onOpenURL(url) }
+                    let markdown = WorkspaceIndex.markdownExtensions.contains(url.pathExtension.lowercased())
+                    DispatchQueue.main.async { MainActor.assumeIsolated { if markdown { open(url) } else { NSSound.beep() } } }
                 }
             }
             return true

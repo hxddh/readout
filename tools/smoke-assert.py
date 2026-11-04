@@ -375,6 +375,10 @@ check("View has one Compare With submenu, without a key, and no other history it
 check("no item opens an earlier version or the unread inbox",
       not any(i.get("action") in ("openVersion:", "openInboxEntry:") for _, i in tree), sorted(by_action))
 check("Help opens the bundled shortcuts", "openHelp:" in by_action, sorted(by_action))
+# 5.1 F3: Help ▸ Performance times the opens and live updates on this Mac.
+perf = menus.get("performance") or ""
+check("Help ▸ Performance lists the opens and live updates, in ms",
+      "showPerformance:" in by_action and "Opens (asked for → on screen):" in perf and " ms" in perf and "Live updates" in perf, perf)
 # 3.9 S1: Show Only Changes is gone, and ⇧⌘K with it.
 check("View has no Show Only Changes, and nothing is on ⇧⌘K",
       "toggleChangesOnly:" not in by_action and not any((i.get("key") or "").lower() == "⇧⌘k" for _, i in tree), sorted(by_action))

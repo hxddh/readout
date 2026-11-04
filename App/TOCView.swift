@@ -116,7 +116,7 @@ private struct TOCRow: View {
         HStack(spacing: 6) {
             Text(entry.title.isEmpty ? "—" : entry.title)
                 .font(entry.level <= minLevel ? .body.weight(.medium) : .body)
-                .lineLimit(2)
+                .lineLimit(1)   // one line, the whole heading in the tooltip (.help)
                 .truncationMode(.tail)
             Spacer(minLength: 4)
             if showsTasks {

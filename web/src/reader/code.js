@@ -43,6 +43,8 @@ export const askedBlocks = () => asking;
  * its place before (keepColours).
  */
 export function setupCode(cb, old) {
+  // A block the reader unfolded stays unfolded when an agent edits it.
+  if (old?.unfolded) cb.dataset.unfolded = '1';
   const text = foldLong(cb, cb.querySelector('pre').textContent);
   // Box-drawing characters (a directory tree, a diagram): tighter lines, so
   // the vertical strokes join up.
@@ -140,12 +142,14 @@ const leftIn = new Map();       // block element filled again -> its code blocks
 export function keepColours(el) {
   const old = [...el.querySelectorAll('.code-block')].map(x => {
     const s = state.get(x), pre = x.querySelector('pre'), v = s?.part, code = s?.code;
+    const unfolded = !!x.dataset.unfolded;
     if (x.dataset.hl === 'done' && code != null) {
       const key = `${x.dataset.lang}\0${code}`;
       leaving.set(key, pre);
-      return { lang: x.dataset.lang, code, pre, done: Infinity, key };
+      return { lang: x.dataset.lang, code, pre, done: Infinity, key, unfolded };
     }
-    return v && !v.kept ? { lang: x.dataset.lang, lines: v.lines, pre, done: v.done } : null;
+    if (v && !v.kept) return { lang: x.dataset.lang, lines: v.lines, pre, done: v.done, unfolded };
+    return unfolded ? { unfolded } : null;
   });
   if (old.some(Boolean)) leftIn.set(el, old);
 }
@@ -157,7 +161,7 @@ export function keptIn(el) {
 }
 function keepLines(cb, text, o) {
   // (Not a <pre> the same code elsewhere took: leaving no longer has it.)
-  if (!o || o.lang !== cb.dataset.lang || (o.key && leaving.get(o.key) !== o.pre)) return;
+  if (!o?.pre || o.lang !== cb.dataset.lang || (o.key && leaving.get(o.key) !== o.pre)) return;
   const lines = text.split('\n'), was = o.lines ?? o.code.split('\n');
   let k = 0;
   while (k < lines.length && k < was.length && k < o.done && lines[k] === was[k]) k++;

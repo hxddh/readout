@@ -69,4 +69,6 @@ final class WebViewPool: NSObject, WKNavigationDelegate {
 /// request to its first patch on screen; "applied" marks every patch.
 enum ReaderPerf {
     static let signposter = OSSignposter(subsystem: "io.github.hxddh.readout", category: "perf")
+    /// The last opens and live updates, for Help ▸ Performance.
+    @MainActor static var log = PerfLog()
 }

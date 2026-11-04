@@ -175,10 +175,12 @@ extension ReaderWindowController {
             rereadForRoot = false
             loader.forgetContent()
         }
+        if updateSeenAt == nil { updateSeenAt = Date() }
         loader.readChange { [weak self] change in
             guard let self else { return }
             defer { self.finishRetarget() }   // after the session took the new content
             guard case .content(let result) = change else {
+                self.updateSeenAt = nil   // nothing new: no update to time
                 if self.deleted { self.deleted = false; self.model.status = nil }
                 return
             }
@@ -187,6 +189,7 @@ extension ReaderWindowController {
             self.refreshRepository()
             let wasEmpty = self.session.blocks.isEmpty
             guard let patch = self.session.update(result.doc) else {
+                self.updateSeenAt = nil
                 self.model.status = nil
                 return
             }
@@ -358,7 +361,12 @@ extension ReaderWindowController {
     /// A read filled the session: when it was the retargeted file's, saves resume under its key.
     private func finishRetarget() {
         guard retargetGate.read(from: loader.lastSourcePath) else { return }
+        // The file shown before: its history written and no longer held
+        // (another window showing it reads it again from disk).
+        let previous = contentPath.map { URL(fileURLWithPath: $0) } ?? url
         contentPath = loader.lastSourcePath ?? contentPath
+        let current = contentPath.map { URL(fileURLWithPath: $0) } ?? url
+        if previous.path != current.path { BaselineStore.closeHistory(for: previous) }
         refreshRepository()
         didSaveOnce = false
         lastSavedBaseline = nil
@@ -427,7 +435,7 @@ extension ReaderWindowController {
     // MARK: Compare With (an earlier version)
 
     /// View ▸ Compare With: the versions to choose from,
-    /// newest first, each with when it was seen and how much differs now.
+    /// newest first, each named by when it was seen.
     func earlierVersions() -> [(index: Int, title: String)] {
         guard loadState == .loaded, let history else { return [] }
         let current = session.keys
@@ -435,11 +443,7 @@ extension ReaderWindowController {
         format.doesRelativeDateFormatting = true
         format.dateStyle = .medium
         format.timeStyle = .short
-        return history.earlier(than: current).map { i in
-            let d = DocumentHistory.difference(from: history.keys(of: i), to: current)
-            let what = String(format: NSLocalizedString("+%d −%d blocks", comment: "Menu: View ▸ Compare with Earlier Version, after the time: blocks the document has gained and lost since that version"), d.added, d.removed)
-            return (i, "\(format.string(from: history.versions[i].at))  \(what)")
-        }
+        return history.earlier(than: current).map { i in (i, format.string(from: history.versions[i].at)) }
     }
 
     /// The document marked against version `representedObject` of its

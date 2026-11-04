@@ -92,6 +92,8 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     let openedAt = Date()
     var painted = false
     var appliedOnce = false
+    /// When the change being read was seen on disk (Help ▸ Performance's live updates).
+    var updateSeenAt: Date?
     let openSignpost: OSSignpostIntervalState
 
     /// The page shows why the first read failed (its empty state's strings
@@ -114,7 +116,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
     var lastSavedBaseline: [BlockKey]?
     /// The blocks last added to the file's history (`recordVersion`).
     var lastRecordedKeys: [BlockKey]?
-    /// The versions of the file seen so far (View ▸ Compare with Earlier Version), once read.
+    /// The versions of the file seen so far (View ▸ Compare With), once read.
     var history: DocumentHistory?
     /// The pending `recordVersionSoon`.
     var historyWork: DispatchWorkItem?
@@ -312,7 +314,7 @@ final class ReaderWindowController: NSWindowController, NSWindowDelegate, NSTool
         }
         // A tab bar shown or hidden moves the toolbar's edge without resizing
         // the window: the layout rect says so.
-        layoutObservation = window?.observe(\.contentLayoutRect) { [weak self] _, _ in
+        layoutObservation = window?.observe(\.contentLayoutRect) { @Sendable [weak self] _, _ in
             let controller = self
             DispatchQueue.main.async { MainActor.assumeIsolated { controller?.updateTopInset() } }
         }

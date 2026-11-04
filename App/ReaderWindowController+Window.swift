@@ -60,7 +60,8 @@ extension ReaderWindowController {
     /// itself: its group is made or replaced (Show Tab Bar, Merge All Windows,
     /// a tab dragged out) while it stays key.
     private func observeTabBar() {
-        // (A KVO callback may come on any thread: on to the main one.)
+        // (A KVO callback may come on any thread: on to the main one. Each
+        // handler is @Sendable, so not isolated to the main actor, which would trap there.)
         let changed: @Sendable () -> Void = { [weak self] in
             let controller = self
             DispatchQueue.main.async { MainActor.assumeIsolated { controller?.tabsChanged() } }
@@ -71,16 +72,16 @@ extension ReaderWindowController {
         }
         if windowObservations.isEmpty, let window {
             windowObservations = [
-                window.observe(\.tabGroup) { _, _ in changed() },
-                window.observe(\.tabbedWindows) { _, _ in changed() },
+                window.observe(\.tabGroup) { @Sendable _, _ in changed() },
+                window.observe(\.tabbedWindows) { @Sendable _, _ in changed() },
             ]
         }
         guard let group = window?.tabGroup, group !== observedTabGroup else { return }
         observedTabGroup = group
         tabBarObservations = [
-            group.observe(\.isTabBarVisible) { _, _ in changed() },
-            group.observe(\.windows) { _, _ in changed() },
-            group.observe(\.selectedWindow) { _, _ in selected() },
+            group.observe(\.isTabBarVisible) { @Sendable _, _ in changed() },
+            group.observe(\.windows) { @Sendable _, _ in changed() },
+            group.observe(\.selectedWindow) { @Sendable _, _ in selected() },
         ]
     }
 
@@ -116,6 +117,7 @@ extension ReaderWindowController {
         historyWork?.cancel()
         historyWork = nil
         recordVersion()
+        BaselineStore.closeHistory(for: contentPath.map { URL(fileURLWithPath: $0) } ?? url)
         watcher?.stop()
         watcher = nil
         cancellables.removeAll()

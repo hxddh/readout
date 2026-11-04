@@ -33,8 +33,8 @@ public struct DocumentHistory: Codable, Sendable, Equatable {
             self.settle = settle
         }
 
-        /// 30 days, 200 versions, 8 MB of block text, 10 s.
-        public static let standard = Limits(maxAge: 30 * 86400, maxVersions: 200, maxTextBytes: 8 << 20, settle: 10)
+        /// 30 days, the last 20 versions, 8 MB of block text, 10 s.
+        public static let standard = Limits(maxAge: 30 * 86400, maxVersions: 20, maxTextBytes: 8 << 20, settle: 10)
     }
 
     public private(set) var pool: [BlockKey] = []
@@ -49,19 +49,6 @@ public struct DocumentHistory: Codable, Sendable, Equatable {
 
     /// The newest version's blocks, or nil when there is none.
     public var latest: [BlockKey]? { versions.isEmpty ? nil : keys(of: versions.count - 1) }
-
-    /// How many blocks `to` has that `from` lacks, and the other way round
-    /// (a changed block counts once each way): what a timeline entry says
-    /// about a version against the current one.
-    public static func difference(from: [BlockKey], to: [BlockKey]) -> (added: Int, removed: Int) {
-        var left: [UInt64: Int] = [:]
-        for k in from { left[k.fingerprint, default: 0] += 1 }
-        var added = 0
-        for k in to {
-            if let n = left[k.fingerprint], n > 0 { left[k.fingerprint] = n - 1 } else { added += 1 }
-        }
-        return (added, left.values.reduce(0, +))
-    }
 
     /// The versions to compare `current` with, newest first: every one but
     /// those that are `current` already.

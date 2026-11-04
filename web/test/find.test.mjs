@@ -636,17 +636,23 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await page.evaluate(() => document.querySelector('.cb-unfold').click());
   const clicked = await page.evaluate(() => document.querySelector('.code-block pre').textContent.split('\n').filter(Boolean).length);
   check('its button shows all its lines', clicked === 3500, String(clicked));
+  // An agent edits the block the reader unfolded: it stays unfolded (5.1 P5).
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'replace', slot: 1, kind: 'code',
+    html: `<div class="code-block" data-lang="js"><pre><code>${[...lines, 'const edited = 1;'].join('\n')}</code></pre></div>` }], 3, false));
+  await page.waitForTimeout(200);
+  const edited = await page.evaluate(() => { const cb = document.querySelector('.code-block'); return { folded: cb.dataset.folded ?? null, button: !!cb.querySelector('.cb-unfold'), lines: cb.querySelector('pre').textContent.split('\n').filter(Boolean).length }; });
+  check('a block the reader unfolded stays unfolded when an agent edits it', edited.folded === null && !edited.button && edited.lines === 3501, JSON.stringify(edited));
   // Find open while an agent puts the block in again, folded: the refreshed count has its folded match.
   await find(page, 'folded_needle');
   await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 1, after: 0, kind: 'code',
-    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }], 3));
+    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }], 4));
   await page.waitForTimeout(400);
   const live = await page.evaluate(() => ({ count: window.__msgs.filter(m => m.type === 'found').pop(), folded: document.querySelector('.code-block').dataset.folded ?? null }));
   check('a block put in folded while find is open: its folded match still counted (shown whole)', live.count?.total === 1 && live.folded === null, JSON.stringify(live));
   await page.evaluate(() => window.readout.findEnd());
   // Printing shows every line.
   await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 1, after: 0, kind: 'code',
-    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }], 4));
+    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }], 5));
   await page.waitForTimeout(200);
   await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
   const printed = await page.evaluate(() => document.querySelector('.code-block pre').textContent.split('\n').filter(Boolean).length);

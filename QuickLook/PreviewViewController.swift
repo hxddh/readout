@@ -80,7 +80,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 webView.setAppearance(dark: self.isDark, accent: .controlAccentColor, fontSize: 16,
                                       strings: ReaderStrings.all, mode: "quicklook", textWidth: "standard")
                 // Light or dark switched while the preview is open: it follows.
-                self.appearanceObservation = webView.observe(\.effectiveAppearance) { [weak self] _, _ in
+                self.appearanceObservation = webView.observe(\.effectiveAppearance) { @Sendable [weak self] _, _ in
                     let controller = self
                     DispatchQueue.main.async {
                         MainActor.assumeIsolated {
