@@ -35,17 +35,6 @@ public enum AgentFolders {
         (home as NSString).appendingPathComponent(".claude/plans")
     }
 
-    /// Whether `~/.claude/plans` is among the folders in Settings (spelled
-    /// with `~`, a trailing slash or `.` segments): the welcome window says
-    /// new plans open on their own only then.
-    public static func includesClaudePlans(_ folders: [String], home: String = NSHomeDirectory()) -> Bool {
-        let plans = (claudePlans(home: home) as NSString).standardizingPath
-        return folders.contains { folder in
-            let expanded = folder.hasPrefix("~") ? home + folder.dropFirst() : folder
-            return (expanded as NSString).standardizingPath == plans
-        }
-    }
-
     /// The deepest folder above `path` that exists (`~/.claude` or `~` for a
     /// missing `~/.claude/plans`): watched until the missing folder appears,
     /// instead of polling for it. Nil when `path` exists or nothing above it does.

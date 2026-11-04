@@ -598,7 +598,7 @@ struct WelcomeView: View {
     /// Fixed size: open and open latest, then the two steps of setting
     /// Readout up (agent folders, the command line); a file dropped anywhere
     /// on it opens. Recent files live in File ▸ Open Recent.
-    static let height: CGFloat = 430
+    static let height: CGFloat = 390
 
     let onOpen: () -> Void
     let onOpenLatest: () -> Void
@@ -636,17 +636,6 @@ struct WelcomeView: View {
             Text(NSLocalizedString("Read what your agents write.", comment: "Welcome subtitle"))
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
-            // Plans are mentioned only while their folder is in Settings.
-            Text(AgentFolders.includesClaudePlans(settings.workspaces)
-                 ? NSLocalizedString("New plans in ~/.claude/plans open in Readout on their own. Add other agent folders in Settings.", comment: "Welcome: how documents arrive")
-                 : NSLocalizedString("New Markdown files in the agent folders you add in Settings open in Readout on their own.", comment: "Welcome: how documents arrive, ~/.claude/plans not in Settings"))
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 40)
-                .padding(.top, 8)
-
             HStack(spacing: 10) {
                 Button(NSLocalizedString("Open…", comment: "Button"), action: onOpen)
                     .keyboardShortcut("o", modifiers: .command)
@@ -667,7 +656,9 @@ struct WelcomeView: View {
                 SetupRow(done: !settings.workspaces.isEmpty,
                          title: settings.workspaces.isEmpty
                             ? NSLocalizedString("Watch the folders your agents write in", comment: "Welcome: setup step, no agent folder yet")
-                            : String(format: NSLocalizedString("Watching %d agent folders", comment: "Welcome: setup step done; %d is how many"), settings.workspaces.count),
+                            : settings.workspaces.count == 1
+                            ? NSLocalizedString("Watching 1 agent folder", comment: "Welcome: setup step done, one folder")
+                            : String(format: NSLocalizedString("Watching %d agent folders", comment: "Welcome: setup step done; %d is how many (2 or more)"), settings.workspaces.count),
                          action: NSLocalizedString("Add Folder…", comment: "Welcome: button that adds an agent folder"),
                          perform: addFolder)
                 SetupRow(done: cliInstalled,

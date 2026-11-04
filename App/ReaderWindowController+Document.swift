@@ -427,7 +427,7 @@ extension ReaderWindowController {
     // MARK: Compare With (an earlier version)
 
     /// View ▸ Compare With: the versions to choose from,
-    /// newest first, each with when it was seen and how much differs now.
+    /// newest first, each named by when it was seen.
     func earlierVersions() -> [(index: Int, title: String)] {
         guard loadState == .loaded, let history else { return [] }
         let current = session.keys
@@ -435,11 +435,7 @@ extension ReaderWindowController {
         format.doesRelativeDateFormatting = true
         format.dateStyle = .medium
         format.timeStyle = .short
-        return history.earlier(than: current).map { i in
-            let d = DocumentHistory.difference(from: history.keys(of: i), to: current)
-            let what = String(format: NSLocalizedString("+%d −%d blocks", comment: "Menu: View ▸ Compare with Earlier Version, after the time: blocks the document has gained and lost since that version"), d.added, d.removed)
-            return (i, "\(format.string(from: history.versions[i].at))  \(what)")
-        }
+        return history.earlier(than: current).map { i in (i, format.string(from: history.versions[i].at)) }
     }
 
     /// The document marked against version `representedObject` of its
