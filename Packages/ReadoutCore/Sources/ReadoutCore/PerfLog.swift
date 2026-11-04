@@ -7,10 +7,13 @@ public struct PerfLog: Sendable, Equatable {
     /// One open: the window asked for, to its first patch applied by the
     /// page and to its first patch on screen.
     public struct Open: Sendable, Equatable {
+        /// Which open (its window): two files of the same name can open at once.
+        public var id: Int
         public var file: String
         public var applied: TimeInterval
         public var painted: TimeInterval?
-        public init(file: String, applied: TimeInterval, painted: TimeInterval? = nil) {
+        public init(id: Int, file: String, applied: TimeInterval, painted: TimeInterval? = nil) {
+            self.id = id
             self.file = file
             self.applied = applied
             self.painted = painted
@@ -26,14 +29,14 @@ public struct PerfLog: Sendable, Equatable {
 
     public init() {}
 
-    public mutating func opened(_ file: String, applied: TimeInterval) {
-        opens.append(Open(file: file, applied: applied))
+    public mutating func opened(_ id: Int, file: String, applied: TimeInterval) {
+        opens.append(Open(id: id, file: file, applied: applied))
         if opens.count > Self.kept { opens.removeFirst(opens.count - Self.kept) }
     }
 
-    /// The newest open of `file` without a paint time gets `seconds`.
-    public mutating func painted(_ file: String, seconds: TimeInterval) {
-        guard let i = opens.lastIndex(where: { $0.file == file && $0.painted == nil }) else { return }
+    /// Open `id`, without a paint time yet, gets `seconds`.
+    public mutating func painted(_ id: Int, seconds: TimeInterval) {
+        guard let i = opens.lastIndex(where: { $0.id == id && $0.painted == nil }) else { return }
         opens[i].painted = seconds
     }
 

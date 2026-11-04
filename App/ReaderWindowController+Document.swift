@@ -361,7 +361,12 @@ extension ReaderWindowController {
     /// A read filled the session: when it was the retargeted file's, saves resume under its key.
     private func finishRetarget() {
         guard retargetGate.read(from: loader.lastSourcePath) else { return }
+        // The file shown before: its history written and no longer held
+        // (another window showing it reads it again from disk).
+        let previous = contentPath.map { URL(fileURLWithPath: $0) } ?? url
         contentPath = loader.lastSourcePath ?? contentPath
+        let current = contentPath.map { URL(fileURLWithPath: $0) } ?? url
+        if previous.path != current.path { BaselineStore.closeHistory(for: previous) }
         refreshRepository()
         didSaveOnce = false
         lastSavedBaseline = nil

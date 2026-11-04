@@ -76,7 +76,7 @@ extension ReaderWindowController {
                 // of an open, without the frame the system paints it in.
                 appliedOnce = true
                 let seconds = Date().timeIntervalSince(openedAt)
-                ReaderPerf.log.opened(url.lastPathComponent, applied: seconds)
+                ReaderPerf.log.opened(ObjectIdentifier(self).hashValue, file: url.lastPathComponent, applied: seconds)
                 SmokeTest.noteFirstApply(url, seconds: seconds)
                 SmokeTest.noteLaunchPhase("apply")
             } else if let seen = updateSeenAt {
@@ -91,7 +91,7 @@ extension ReaderWindowController {
                 painted = true
                 ReaderPerf.signposter.endInterval("open", openSignpost)
                 let seconds = Date().timeIntervalSince(openedAt)
-                ReaderPerf.log.painted(url.lastPathComponent, seconds: seconds)
+                ReaderPerf.log.painted(ObjectIdentifier(self).hashValue, seconds: seconds)
                 SmokeTest.noteFirstPaint(url, seconds: seconds)
                 SmokeTest.noteLaunchPhase("paint")
                 WebViewPool.shared.pagePainted()
