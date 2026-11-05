@@ -7,7 +7,7 @@
 
 ---
 
-<p align="center"><img src="docs/screenshot.png" width="720" alt="A Readout 5 window: an agent's plan with its outline in the sidebar, task progress in the subtitle, and unread changes marked in the margin"></p>
+<p align="center"><img src="docs/screenshot.png" width="720" alt="A Readout 5 window: an agent's plan with its outline in the sidebar and task progress in the subtitle"></p>
 
 <p align="center"><a href="docs/screenshots.md">More screenshots</a></p>
 

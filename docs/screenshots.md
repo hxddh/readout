@@ -1,57 +1,39 @@
 # Readout 5 in pictures
 
-Readout 5.0.0 is a native macOS Markdown reader for the plans, specs and reports your coding
-agents write. This gallery shows the shipping app — not mockups — on macOS 26.3.1, captured at
-2× Retina resolution. [Download Readout 5.0.0](https://github.com/hxddh/readout/releases/tag/v5.0.0).
+Readout 5.2 is a native macOS Markdown reader for the plans, specs and reports your coding
+agents write. This gallery shows the app — not mockups — on macOS 26.3.1, captured at 2× Retina
+resolution. [Download Readout 5.2.0](https://github.com/hxddh/readout/releases/tag/v5.2.0).
 
 ## A plan that is still being written
 
-![A plan open in Readout with the outline on the left, task progress in the title, and unread changes marked in the right margin](screenshots/01-live-reading-en.png)
+![A plan open in Readout with the outline on the left and task progress in the title](screenshots/01-live-reading-en.png)
 
 Readout follows the file as an agent rewrites it. The paragraph you are reading stays in place;
-if you are at the end, the view follows the agent like a terminal. The outline lists headings
-and how many tasks in each section are done, the subtitle carries the overall count, and the
-thin blue bars in the right margin are changes you have not read yet.
+if you are at the end, the view follows the agent like a terminal. The outline lists headings and
+how many tasks in each section are done, on one line each (hover a heading for its full text), and
+the subtitle carries the overall count.
 
 ## See the words that changed
 
-![An edited frontmatter block showing "in progress" struck through and "ready to ship" added, under a “Marked what changed since” notice](screenshots/02-what-changed-en.png)
+![An edited frontmatter block showing "in progress" struck through and "ready to ship" added, under a “Changes since you last read” diff](screenshots/02-what-changed-en.png)
 
 Changes are marked block by block. On an edited block, Readout shows exactly which words changed
 since you last read it — here the plan's status moved from *in progress* to *ready to ship*.
 Press <kbd>D</kbd> to show or hide the comparison, <kbd>N</kbd> to go to the next change, and
-<kbd>⌘K</kbd> to mark everything read (<kbd>⌘Z</kbd> brings the marks back). The history notice
-above the document says which version you are comparing against.
+<kbd>⌘K</kbd> to mark everything read (<kbd>⌘Z</kbd> brings the marks back).
 
 ## Compare with any earlier version
 
-![The View menu's Compare with Earlier Version submenu listing two earlier versions with their times and block differences](screenshots/03-history-menu-en.png)
+![The View menu's Compare With submenu listing Last Commit and a version Readout saw, over a plan](screenshots/03-compare-with-en.png)
 
-Readout 5 keeps each version of a document it sees, for 30 days. **View ▸ Compare with Earlier
-Version** lists them, newest first, each with when it was seen and how much differs now
-(`+6 −3 blocks`, `+13 −6 blocks`). Choose one to mark everything that changed since that version;
+Readout keeps the last 20 versions of a document it sees. **View ▸ Compare With** lists **Last
+Commit** first for a file in a git repository, then the versions Readout saw, newest first, each
+named by when it saw them. Choose one to mark everything that changed since that version;
 <kbd>⌘Z</kbd> returns to what you had read.
-
-## Open an earlier version
-
-![An earlier version of the plan open read-only in its own window, with the date in the title and a change marked in the margin](screenshots/04-earlier-version-en.png)
-
-**View ▸ Open Earlier Version** opens a version read-only in a window of its own. The title says
-when Readout saw it, and the page is marked against the version before it, so you can see what
-changed in that version without touching the file on disk.
-
-## Everything waiting, in one place
-
-![The Unread Changes menu listing a changed report, a plan with 11 unread changes, and a notes file not looked at yet](screenshots/05-unread-changes-en.png)
-
-**View ▸ Unread Changes** gathers every document waiting for you, newest first: documents open
-with unread changes (`11 unread`), documents opened in the background that you have not looked at
-yet, and files in your agent folders that changed since you last read them. Choosing one takes you
-to its first change.
 
 ## Tabs that tell you where to look
 
-![Three document tabs, each with a blue unread dot, above the plan](screenshots/06-tabs-en.png)
+![Three document tabs, two with a blue unread dot, above a plan](screenshots/04-tabs-en.png)
 
 Open documents share one window as tabs, and a blue dot marks the tabs that have something new —
 unread changes, or a file opened behind you that you have not looked at. <kbd>N</kbd> walks the
@@ -59,7 +41,7 @@ changes in the current document and then moves on to the next waiting document.
 
 ## Chinese and English, set properly
 
-![A Chinese plan in the Chinese interface, with mixed Chinese and English text, a note and a task list](screenshots/07-chinese-reader-zh.png)
+![A Chinese plan in the Chinese interface, with mixed Chinese and English text, a note and a task list](screenshots/05-chinese-reader-zh.png)
 
 The typography is tuned for mixed Chinese and English: CJK punctuation, line breaking and a
 column that follows the window. The interface is localized too — this is Readout with its
@@ -67,28 +49,28 @@ Chinese menus, sidebar and task count.
 
 ## Code, diagrams and math in the dark
 
-![A dark-mode design note showing a Swift code block, a Mermaid flowchart and a KaTeX formula](screenshots/08-dark-diagram-en.png)
+![A dark-mode design note showing a Swift code block, a Mermaid flowchart and a KaTeX formula](screenshots/06-dark-diagram-en.png)
 
 GitHub-flavoured Markdown is rendered properly: syntax highlighting (Shiki), Mermaid diagrams and
 KaTeX math, in light or dark. Readout follows the system appearance; the same document keeps its
 diagram colours and code highlighting when the theme changes.
 
-## Set up once
+## Nothing to set up but your folders
 
-![The Readout welcome window with agent folders checked and the command-line step still to do](screenshots/09-welcome-en.png)
+![The Readout welcome window with one agent folder watched and no command-line step](screenshots/07-welcome-en.png)
 
-The welcome window sets Readout up in one place: add the folders your agents write in and install
-the `readout` command, each step checked once done. Claude Code's `~/.claude/plans` is watched by
-default. New Markdown files in those folders open in the background, without taking focus from
-your terminal.
+The welcome window asks only where your agents write: add the folders and it is done. Claude Code's
+`~/.claude/plans` is watched by default. New Markdown files in those folders open in the background,
+without taking focus from your terminal. The `readout` command is optional; the README has the
+one-line link for Terminal.
 
-## Also in 5.0
+## Also in Readout 5
 
-- Files open faster when Readout is already running: the spare page has its fonts ready before a
+- Opening a document while Readout runs is fast: a spare page has its fonts ready before the
   document arrives.
-- Code blocks longer than 3,000 lines fold after the first 3,000, with a button for the rest;
-  Copy, Find and printing still use every line.
+- Code blocks past 3,000 lines show their first 3,000 lines, with a button for the rest; Copy,
+  Find and Print still use every line.
 - Requires macOS 26. One universal app for Apple silicon and Intel Macs.
 
-[Download Readout 5.0.0](https://github.com/hxddh/readout/releases/tag/v5.0.0) ·
+[Download Readout 5.2.0](https://github.com/hxddh/readout/releases/tag/v5.2.0) ·
 [Source](https://github.com/hxddh/readout)
