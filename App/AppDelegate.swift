@@ -565,24 +565,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         for w in NSApp.windows where (w.isVisible || w.isMiniaturized) && w.styleMask.contains(.closable) { w.performClose(sender) }
     }
 
-    /// Readout ▸ Install Command Line Tool…: the command that links
-    /// ~/.local/bin/readout to the script inside the app (README: Command
-    /// line), with a button that copies it. Readout writes no file itself,
-    /// a link in the reader's own folders included: the reader runs it.
-    @objc func installCommandLineTool(_ sender: Any?) {
-        guard let script = Bundle.main.url(forResource: "readout", withExtension: nil) else { return NSSound.beep() }
-        let quoted = "'" + script.path.replacingOccurrences(of: "'", with: "'\\''") + "'"
-        let command = "mkdir -p ~/.local/bin && ln -sf \(quoted) ~/.local/bin/readout"
-        let alert = NSAlert()
-        alert.messageText = NSLocalizedString("Install the readout command", comment: "Install Command Line Tool: alert title")
-        alert.informativeText = String(format: NSLocalizedString("Run this in Terminal to link the readout command to the script inside Readout:\n\n%@\n\n~/.local/bin must be on your PATH: if the command is not found, add this line to ~/.zshrc and open a new terminal window:\n\nexport PATH=\"$HOME/.local/bin:$PATH\"", comment: "Install Command Line Tool: %@ is the ln command"), command)
-        alert.addButton(withTitle: NSLocalizedString("Copy Command", comment: "Button: copy the install command"))
-        alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Button"))
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(command, forType: .string)
-    }
-
     /// Help ▸ Readout Help: the keyboard shortcuts bundled with the app, in
     /// Readout itself, in the reader's language.
     /// Help ▸ Performance: the last opens and live updates, timed (ReaderPerf.log).
@@ -630,24 +612,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 // MARK: - Welcome
 
 struct WelcomeView: View {
-    /// Fixed size: open and open latest, then the two steps of setting
-    /// Readout up (agent folders, the command line); a file dropped anywhere
-    /// on it opens. Recent files live in File ▸ Open Recent.
-    static let height: CGFloat = 390
+    /// Fixed size: open and open latest, then the one step of setting
+    /// Readout up (agent folders); a file dropped anywhere on it opens. Recent files live in File ▸ Open Recent.
+    static let height: CGFloat = 356
 
     let onOpen: () -> Void
     let onOpenLatest: () -> Void
     /// Called on the main thread, from the drop's background completion.
     let onOpenURL: @MainActor @Sendable (URL) -> Void
     @State private var targeted = false
-    @State private var cliInstalled = false
     @ObservedObject private var settings = AppSettings.shared
-
-    /// Whether ~/.local/bin/readout is there (Install Command Line Tool's link): looked at, never written.
-    private func refreshCLI() {
-        let link = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin/readout").path
-        cliInstalled = FileManager.default.fileExists(atPath: link)
-    }
 
     /// Adds agent folders, as Settings' + does.
     private func addFolder() {
@@ -687,32 +661,21 @@ struct WelcomeView: View {
             .controlSize(.large)
             .padding(.top, 24)
 
-            // Setting up, in one place: where agents write, and the command line.
-            VStack(spacing: 8) {
-                SetupRow(done: !settings.workspaces.isEmpty,
-                         title: settings.workspaces.isEmpty
-                            ? NSLocalizedString("Watch the folders your agents write in", comment: "Welcome: setup step, no agent folder yet")
-                            : settings.workspaces.count == 1
-                            ? NSLocalizedString("Watching 1 agent folder", comment: "Welcome: setup step done, one folder")
-                            : String(format: NSLocalizedString("Watching %d agent folders", comment: "Welcome: setup step done; %d is how many (2 or more)"), settings.workspaces.count),
-                         action: NSLocalizedString("Add Folder…", comment: "Welcome: button that adds an agent folder"),
-                         perform: addFolder)
-                SetupRow(done: cliInstalled,
-                         title: cliInstalled
-                            ? NSLocalizedString("The readout command is installed", comment: "Welcome: setup step done")
-                            : NSLocalizedString("Open files from Terminal and agent hooks", comment: "Welcome: setup step, the command line tool not installed"),
-                         action: NSLocalizedString("Install…", comment: "Welcome: button that shows how to install the command line tool"),
-                         perform: { NSApp.sendAction(#selector(AppDelegate.installCommandLineTool(_:)), to: nil, from: nil); refreshCLI() })
-            }
+            // Setting up: the folders agents write in.
+            SetupRow(done: !settings.workspaces.isEmpty,
+                     title: settings.workspaces.isEmpty
+                        ? NSLocalizedString("Watch the folders your agents write in", comment: "Welcome: setup step, no agent folder yet")
+                        : settings.workspaces.count == 1
+                        ? NSLocalizedString("Watching 1 agent folder", comment: "Welcome: setup step done, one folder")
+                        : String(format: NSLocalizedString("Watching %d agent folders", comment: "Welcome: setup step done; %d is how many (2 or more)"), settings.workspaces.count),
+                     action: NSLocalizedString("Add Folder…", comment: "Welcome: button that adds an agent folder"),
+                     perform: addFolder)
             .padding(.horizontal, 36)
             .padding(.top, 26)
 
             Spacer(minLength: 24)
         }
         .frame(width: 460, height: Self.height)
-        .onAppear(perform: refreshCLI)
-        // Back from Terminal: the command may be there now.
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refreshCLI() }
         // A Markdown file dropped anywhere on the window opens: a ring in the
         // accent colour while one is over it, nothing to read when there is none.
         .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.accentColor, lineWidth: 3).opacity(targeted ? 1 : 0).padding(4))

@@ -127,6 +127,14 @@ jobs:
       - name: Build web renderer
         working-directory: web
         run: npm ci && npm run build
+      # Playwright's WebKit, kept between runs for the same Playwright
+      # version (package-lock): the download once took half an hour. The
+      # system libraries it needs are installed every time (--with-deps).
+      - name: Cache WebKit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-webkit-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
       - name: Install WebKit
         working-directory: web
         run: npx playwright install --with-deps webkit
@@ -165,6 +173,14 @@ jobs:
       - name: Build web renderer
         working-directory: web
         run: npm ci && npm run build
+      # Playwright's WebKit, kept between runs for the same Playwright
+      # version (package-lock): the download once took half an hour. The
+      # system libraries it needs are installed every time (--with-deps).
+      - name: Cache WebKit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-webkit-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
       - name: Install WebKit
         working-directory: web
         run: npx playwright install --with-deps webkit
