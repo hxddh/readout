@@ -16,7 +16,7 @@ Agents write plans, specs, reports and explanations as long Markdown files, and 
 ## What it does
 
 - **Live, without losing your place.** Readout watches the file (including atomic save-and-rename writes). Updates are applied block by block, so the paragraph you are reading stays put. If you are at the end, it follows the agent like a terminal.
-- **Shows what changed.** New and edited blocks get a thin bar in the margin; press <kbd>N</kbd> to go to the next one, and on an edited block it shows which words changed since you read it (or click the bar). Removed text leaves a small marker that opens to show it in full. Marks fade once you have actually read them. Press <kbd>⌘K</kbd> to mark everything read (<kbd>⌘Z</kbd> brings the marks back). Readout remembers what you had read, even across launches. **View → Compare With** marks what changed since the last git commit, or since any version Readout saw in the last 30 days (<kbd>⌘Z</kbd> undoes it).
+- **Shows what changed.** New and edited blocks get a thin bar in the margin; press <kbd>N</kbd> to go to the next one, and on an edited block it shows which words changed since you read it (or click the bar). Removed text leaves a small marker that opens to show it in full. Marks fade once you have actually read them. Press <kbd>⌘K</kbd> to mark everything read (<kbd>⌘Z</kbd> brings the marks back). Readout remembers what you had read, even across launches. **View → Compare With** marks what changed since the last git commit, or since one of the last 20 versions Readout saw of the file (<kbd>⌘Z</kbd> undoes it).
 - **Renders properly.** GitHub-flavoured Markdown: tables, task lists, alerts, typography tuned for mixed Chinese and English (a column that follows the window, up to about 175 characters, or the whole window with **View → Text Width → Wide**), syntax highlighting (Shiki), math (KaTeX) and Mermaid diagrams. Code references like `src/app/main.swift:42`, and links such as `[main](src/app/main.swift#L42)`, open in your editor at that line (the file's default app, when it is VS Code, Cursor, Zed, Xcode or Sublime Text, or the editor chosen in Settings). A link to another Markdown document opens it as the next tab; <kbd>⌘W</kbd> takes you back.
 - **Outline with progress.** The sidebar lists headings and how many tasks in each section are done. It shows by itself when the window is wide enough and hides when it narrows; Show/Hide Sidebar overrides that for the window.
 - **Task progress and section links.** The window subtitle shows task progress; Control-click a heading to copy a link to its section.
@@ -40,7 +40,7 @@ Rendering a document sends no network requests at all: remote images and media r
 
 ## Command line (optional)
 
-Readout needs no setup for agents: the folders in Settings are enough. If you also want a `readout` command, choose **Readout → Install Command Line Tool…**, which shows (and copies) the command that links `~/.local/bin/readout` to the script inside the app. It is this:
+Readout needs no setup for agents: the folders in Settings are enough. If you also want a `readout` command in Terminal, link `~/.local/bin/readout` to the script inside the app:
 
 ```sh
 mkdir -p ~/.local/bin && ln -sf /Applications/Readout.app/Contents/Resources/readout ~/.local/bin/readout

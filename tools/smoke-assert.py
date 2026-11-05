@@ -375,6 +375,8 @@ check("View has one Compare With submenu, without a key, and no other history it
 check("no item opens an earlier version or the unread inbox",
       not any(i.get("action") in ("openVersion:", "openInboxEntry:") for _, i in tree), sorted(by_action))
 check("Help opens the bundled shortcuts", "openHelp:" in by_action, sorted(by_action))
+# 5.2: no Install Command Line Tool (agents need only the folders; hooks run the bundled script).
+check("no Install Command Line Tool item", "installCommandLineTool:" not in by_action, sorted(by_action))
 # 5.1 F3: Help ▸ Performance times the opens and live updates on this Mac.
 perf = menus.get("performance") or ""
 check("Help ▸ Performance lists the opens and live updates, in ms",
