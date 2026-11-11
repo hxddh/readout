@@ -657,6 +657,13 @@ const paras80 = Array.from({ length: 80 }, (_, i) => `<p>para ${i + 1}${[5, 40, 
   await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
   const printed = await page.evaluate(() => document.querySelector('.code-block pre').textContent.split('\n').filter(Boolean).length);
   check('printing shows every line of a folded block', printed === 3500, String(printed));
+  // Printing over: a long block an agent writes afterwards is folded again (5.2 folded none until the next document).
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await page.evaluate(p => window.readout.apply(p), patch([{ op: 'insert', slot: 2, after: 1, kind: 'code',
+    html: `<div class="code-block" data-lang="js"><pre><code>${lines.join('\n')}</code></pre></div>` }], 6, false));
+  await page.waitForTimeout(200);
+  const later = await page.evaluate(() => document.querySelectorAll('.code-block')[1]?.dataset.folded ?? null);
+  check('after printing, a long block written later is folded', later === '500', String(later));
   await page.close();
 }
 

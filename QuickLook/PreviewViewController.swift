@@ -24,17 +24,26 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     /// loaded (WebKit's process start and the page's load are most of a
     /// preview's time) while the extension stays running.
     private static var spare: ReaderWebView?
-    private static let spareWatch = SpareWatch()
+    private static let pageWatch = PageWatch()
     private static func makeSpare() {
         guard spare == nil else { return }
         let w = ReaderWebView(bundle: appBundle)
-        w.navigationDelegate = spareWatch
+        w.navigationDelegate = pageWatch
         spare = w
     }
-    /// The spare's web content process died while it waited (memory
-    /// pressure, a crash): it is dropped, and the next preview makes its own
+    /// Every page's navigation delegate. A preview shows the reader page and
+    /// nothing else: any other navigation (a link the page did not take
+    /// itself) is refused, so a click in a preview never loads a web page.
+    /// The spare's web content process dying while it waits (memory
+    /// pressure, a crash) drops it, and the next preview makes its own
     /// page, as without a spare (the app's WebViewPool does the same).
-    private final class SpareWatch: NSObject, WKNavigationDelegate {
+    private final class PageWatch: NSObject, WKNavigationDelegate {
+        @MainActor
+        func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
+            guard let target = action.request.url, ReaderWebView.isReaderPage(target) else { return .cancel }
+            return .allow
+        }
+
         func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
             MainActor.assumeIsolated {
                 if webView === PreviewViewController.spare { PreviewViewController.spare = nil }
@@ -48,7 +57,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         usedSpare = Self.spare != nil
         let w = Self.spare ?? ReaderWebView(bundle: Self.appBundle)
         Self.spare = nil
-        w.navigationDelegate = nil
+        w.navigationDelegate = Self.pageWatch
         w.autoresizingMask = [.width, .height]
         webView = w
         view = w

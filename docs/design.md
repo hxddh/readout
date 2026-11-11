@@ -196,12 +196,12 @@ Local images are served only when they are regular files, read off the main thre
 
 ### The git subprocess
 
-This is the one subprocess besides the editor (`xed`). The first open of a Markdown file with no saved reading state that lies in a git repository (a `.git` folder or file at or above it) runs `git show HEAD:./<name>` in the file's folder, so what changed since the last commit is marked against that commit ("Changes since the last commit"). The committed version becomes the file's saved baseline like any other read state (`GitBaseline`, `CommitBaseline`).
+This is the one subprocess besides the editor (`xed`), and it runs only when the reader chooses **View ▸ Compare with Last Commit**: opening a file never runs git (3.7–5.2 ran it on the first open of a file in a repository, which held up that open's first paint and let a folder made for it run a command). For a Markdown file that lies in a git repository (a `.git` folder or file at or above it) it runs `git show HEAD:./<name>` in the file's folder, and the document is marked against that commit ("Changes since the last commit"); ⌘Z brings back what was read (`GitBaseline`, `CommitBaseline`).
 
 - It runs only when `xcode-select -p` names an existing developer folder and `/usr/bin/git` exists (the `/usr/bin/git` shim would otherwise offer to install the command line tools).
 - It runs off the main thread, with a 1.5 s hard timeout and a 5 MB cap on its output.
-- Untracked files (git fails), Git LFS pointers, binary content and unchanged files are skipped silently, and files outside a repository never start it.
-- Nothing is written to the repository and nothing leaves the Mac (`GIT_TERMINAL_PROMPT=0`, `GIT_OPTIONAL_LOCKS=0`; `show` of a committed blob reads the local object store only).
+- Untracked files (git fails), Git LFS pointers and binary content are not compared (the notice says so), and files outside a repository never start it.
+- Nothing is written to the repository, nothing leaves the Mac and nothing the repository names is run: `GIT_NO_LAZY_FETCH=1` and `GIT_ALLOW_PROTOCOL=none` keep git to the local object store (a partial clone would otherwise fetch a missing blob from its remote, and a remote can be a command: `ext::`), with `GIT_TERMINAL_PROMPT=0` and `GIT_OPTIONAL_LOCKS=0`.
 
 ## Focus and resume
 

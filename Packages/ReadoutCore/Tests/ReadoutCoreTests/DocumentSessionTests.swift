@@ -384,15 +384,18 @@ import Testing
         #expect(Self.snapshot(s) == Self.snapshot(s2))
     }
 
-    /// A removed block whose text comes back still stays removed after a
-    /// relaunch, and what came back is new (as before the fix).
-    @Test func removedBlockTextAddedBackIsInsertedAfterRelaunch() {
+    /// A removed block that comes back as it was read, where it was, is
+    /// neither removed nor new: live, and after a relaunch (before 6.0 it
+    /// stayed removed and what came back was new).
+    @Test func removedBlockAddedBackIsAsItWasRead() {
         let s = DocumentSession()
         _ = s.load(doc(["A para one", "B para two", "C para three"]))
         _ = s.update(doc(["A para one", "C para three"]))
         let (s2, p) = relaunch(s, ["A para one", "B para two", "C para three"])
         #expect(!p.rewrite)
-        #expect(Self.snapshot(s2) == Snapshot(marks: ["1:inserted"], deleted: ["0:1"]))
+        #expect(Self.snapshot(s2) == Snapshot(marks: [], deleted: []))
+        _ = s.update(doc(["A para one", "B para two", "C para three"]))
+        #expect(Self.snapshot(s) == Snapshot(marks: [], deleted: []))
     }
 
     /// Random realistic edits (insertions, removals, appended words, word
@@ -522,5 +525,43 @@ import Testing
         }
         print("U7 corpus stream: \(removed) removed blocks in \(docsWithRemovals)")
         #expect(removed <= 2, "\(docsWithRemovals)")
+    }
+
+    /// An agent writes the file again from its start: truncated, then
+    /// streamed in over several reads. What comes back as it was read is
+    /// neither removed nor new (5.2 left the whole tail marked removed and
+    /// every block of it marked new).
+    @Test func aDocumentStreamedInAgainMarksOnlyWhatChanged() {
+        let blocks = (1...30).map { "Paragraph number \($0) of the plan, with its own words \($0 * 7)." }
+        let s = DocumentSession()
+        _ = s.load(doc(blocks))
+        let read = s.baseline
+        // The same text, a few blocks at a time.
+        for n in [3, 4, 11, 12, 30] { _ = s.update(doc(Array(blocks[..<n]))) }
+        #expect(s.unreadCount == 0, "\(s.marks) \(s.deletions)")
+        #expect(s.baseline == read)
+
+        // Again, with block 15 rewritten on the way and block 20 left out: those two are what is marked.
+        var changed = blocks
+        changed[14] = "Something else entirely stands here now."
+        changed.remove(at: 19)
+        for n in [2, 9, 16, 22, 29] { _ = s.update(doc(Array(changed[..<n]))) }
+        #expect(s.blocks.count == 29)
+        #expect(s.marks.count == 1)
+        #expect(s.marks[s.blocks[14].slot] != nil)
+        let removed = s.deletions.sorted { $0.id < $1.id }
+        #expect(removed.map(\.count) == [1, 1], "\(removed)")
+        #expect(Set(removed.map(\.after)) == [s.blocks[13].slot, s.blocks[18].slot])
+        #expect(removed.contains { $0.preview == blocks[14] } && removed.contains { $0.preview == blocks[19] })
+        // What was read is still the first version: reopening marks the same.
+        let again = DocumentSession()
+        _ = again.load(doc(changed), baseline: Self.roundTrip(s.baseline))
+        #expect(again.unreadCount == 3)
+
+        // A tail that is cut and stays cut is a deletion.
+        let cut = DocumentSession()
+        _ = cut.load(doc(blocks))
+        _ = cut.update(doc(Array(blocks[..<10])))
+        #expect(cut.deletions.map(\.count) == [20])
     }
 }

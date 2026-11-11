@@ -61,6 +61,87 @@ enum HTML {
         return "blocked:" + destination[destination.index(after: colon)...]
     }
 
+    /// Raw HTML with its tags' event handlers removed, `javascript:` in an
+    /// attribute's value turned into `blocked:`, and ids and names the page
+    /// keeps for itself (ro-* chrome, mmd-* and ro-mmd-* diagram drawings)
+    /// escaped as Slugger escapes headings'. Tags only, attribute by
+    /// attribute as HTML reads them: text between tags is the document's
+    /// (`<pre>retry once = true</pre>` keeps every word), and so is the rest
+    /// of a value (`href="/x/online=1"`). The page's Content-Security-Policy
+    /// runs no inline handler whatever this misses.
+    static func scrubTags(_ raw: String) -> String {
+        let u = Array(raw.utf8)
+        guard u.contains(0x3C) else { return raw }
+        let n = u.count
+        func isSpace(_ b: UInt8) -> Bool { b == 0x20 || b == 0x09 || b == 0x0A || b == 0x0C || b == 0x0D }
+        func isAlpha(_ b: UInt8) -> Bool { (b | 0x20) >= 0x61 && (b | 0x20) <= 0x7A }
+        func lower(_ r: Range<Int>) -> [UInt8] { u[r].map { $0 >= 0x41 && $0 <= 0x5A ? $0 | 0x20 : $0 } }
+        func hasPrefix(_ bytes: [UInt8], _ prefix: String) -> Bool { bytes.starts(with: Array(prefix.utf8)) }
+        let script = Array("javascript:".utf8), blocked = Array("blocked:".utf8)
+        var out: [UInt8] = []
+        out.reserveCapacity(n + 16)
+        var i = 0
+        while i < n {
+            // Text, up to a tag: `<` and a letter (`</` and a letter: an end tag's attributes do nothing, and are read alike).
+            guard u[i] == 0x3C, i + 1 < n, isAlpha(u[i + 1]) || (u[i + 1] == 0x2F && i + 2 < n && isAlpha(u[i + 2])) else {
+                out.append(u[i]); i += 1; continue
+            }
+            let nameStart = i
+            i += 2
+            while i < n, !isSpace(u[i]), u[i] != 0x2F, u[i] != 0x3E { i += 1 }
+            out.append(contentsOf: u[nameStart..<i])
+            // Its attributes, to the tag's `>` (or the end of the text).
+            while i < n, u[i] != 0x3E {
+                let start = i
+                while i < n, isSpace(u[i]) || u[i] == 0x2F { i += 1 }
+                guard i < n, u[i] != 0x3E else { out.append(contentsOf: u[start..<i]); break }
+                let name = i
+                i += 1   // (a name may start with `=`)
+                while i < n, !isSpace(u[i]), u[i] != 0x2F, u[i] != 0x3E, u[i] != 0x3D { i += 1 }
+                let nameEnd = i
+                var value = i..<i
+                var j = i
+                while j < n, isSpace(u[j]) { j += 1 }
+                if j < n, u[j] == 0x3D {
+                    j += 1
+                    while j < n, isSpace(u[j]) { j += 1 }
+                    if j < n, u[j] == 0x22 || u[j] == 0x27 {
+                        let quote = u[j]
+                        var k = j + 1
+                        while k < n, u[k] != quote { k += 1 }
+                        value = (j + 1)..<k
+                        i = min(k + 1, n)
+                    } else {
+                        var k = j
+                        while k < n, !isSpace(u[k]), u[k] != 0x3E { k += 1 }
+                        value = j..<k
+                        i = k
+                    }
+                }
+                let attribute = lower(name..<nameEnd)
+                if hasPrefix(attribute, "on") { continue }   // an event handler: left out, with its value
+                out.append(contentsOf: u[start..<value.lowerBound])
+                var text = Array(u[value])
+                if attribute == Array("id".utf8) || attribute == Array("name".utf8) {
+                    let folded = lower(value)
+                    if hasPrefix(folded, "ro-") || hasPrefix(folded, "mmd-") { text.insert(contentsOf: Array("h-".utf8), at: 0) }
+                } else {
+                    var folded = lower(value)
+                    var from = 0
+                    while let at = folded[from...].firstRange(of: script)?.lowerBound {
+                        text.replaceSubrange(at..<(at + script.count), with: blocked)
+                        folded.replaceSubrange(at..<(at + script.count), with: blocked)
+                        from = at + blocked.count
+                    }
+                }
+                out.append(contentsOf: text)
+                out.append(contentsOf: u[value.upperBound..<i])
+            }
+            if i < n { out.append(u[i]); i += 1 }   // the tag's `>`
+        }
+        return String(decoding: out, as: UTF8.self)
+    }
+
     /// GFM tagfilter plus removal of event handlers and javascript: URLs.
     /// Remote media sources are replaced with a click-to-load placeholder so
     /// raw HTML cannot phone home without the reader's consent — the same
@@ -71,14 +152,7 @@ enum HTML {
         // GFM tagfilter: neutralize the opening "<" and keep the tag as written (<XMP stays XMP).
         s = deniedTagPattern.stringByReplacingMatches(in: s, range: NSRange(location: 0, length: (s as NSString).length),
                                                       withTemplate: "&lt;$1")
-        // After white space or a `/` (`<img/onerror=…>`), in any case.
-        s = s.replacingOccurrences(of: #"[\s/]on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)"#, with: "",
-                                   options: [.regularExpression, .caseInsensitive])
-        // ids and names the page keeps for itself (ro-* chrome, mmd-* and
-        // ro-mmd-* diagram drawings) escaped as Slugger escapes headings'.
-        s = s.replacingOccurrences(of: #"([\s/](?:id|name)\s*=\s*["']?)((?:ro|mmd)-)"#, with: "$1h-$2",
-                                   options: [.regularExpression, .caseInsensitive])
-        s = s.replacingOccurrences(of: "javascript:", with: "blocked:", options: .caseInsensitive)
+        s = scrubTags(s)
         s = gateRemoteMedia(s, resolver: resolver)
         return s
     }

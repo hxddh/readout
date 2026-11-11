@@ -1507,6 +1507,27 @@ for (const n of [60, 400]) {
   await page.close();
 }
 
+// ---------------------------------------------------------------- A diagram's link
+
+{
+  // Mermaid draws `click A href "…"` as an SVG <a xlink:href>: the page hands it to the app as any link
+  // and goes nowhere itself (5.2 followed it: a preview in Quick Look, which has no app to refuse, left the document).
+  const page = await newPage();
+  const src = 'flowchart TD\n  A[Start] --&gt; B[End]\n  click A href &quot;https://example.com/elsewhere&quot;';
+  await page.evaluate(p => window.readout.apply(p), patch(1, [
+    { op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>` }], { reset: true }));
+  await page.waitForFunction(() => document.querySelector('.mermaid-block.done svg a'), null, { timeout: 15000 }).catch(() => {});
+  const requests = [];
+  page.on('request', r => { if (/example\.com/.test(r.url())) requests.push(r.url()); });
+  const drawn = await page.evaluate(() => !!document.querySelector('.mermaid-block svg a'));
+  if (drawn) await page.locator('.mermaid-block svg a').first().click();
+  await page.waitForTimeout(500);
+  const opened = await page.evaluate(() => window.__msgs.filter(m => m.type === 'open').map(m => m.href)).catch(() => 'the page left');
+  check('a diagram link is handed to the app, and the page stays', drawn && page.url().endsWith('/reader.html') && !requests.length
+    && JSON.stringify(opened) === '["https://example.com/elsewhere"]', JSON.stringify({ drawn, url: page.url(), requests, opened }));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join('; ').slice(0, 500));
 await browser.close();
 server.close();

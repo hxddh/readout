@@ -286,7 +286,7 @@ export function forgetCode(cb) {
 // has arrived (a document's first paint, a jump, find landing in code) wait
 // for it instead, for a moment at most (holds.js).
 const URGENT = -1, SCREEN = 0, NEAR = 1;   // URGENT: what a hold waits for (a jump, a first paint)
-let everything = false;   // all of it wanted coloured (printing: highlightAll), until the next document
+let everything = false;   // all of it wanted coloured (printing: highlightAll), until printing is over
 /** On screen: 0; else 1 and how many screens away. */
 function prioOf(r) {
   if (r.bottom > 0 && r.top < innerHeight) return SCREEN;
@@ -360,8 +360,9 @@ export function uncoloured(cb) {
   return cb.dataset.hl === 'pending' && !s.slow && !(s.part && !s.part.kept);
 }
 
-/** A document shown anew: printing's wish for all of it coloured (highlightAll) is over. */
-export function newDocument() { everything = false; }
+/** Printing is over, or a document is shown anew: code is folded, asked for and put in place by where the reader is again. */
+export function printingOver() { everything = false; }
+export const newDocument = printingOver;
 
 /** Highlights every code block not highlighted yet, wherever it is (printing). */
 export function highlightAll() {

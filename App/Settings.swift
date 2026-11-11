@@ -81,7 +81,7 @@ enum BaselineStore {
     }
 
     /// Keyed by the real path, as windows are: the same file reached through a
-    /// symlink or under /private/tmp shares one history.
+    /// symlink or under /private/tmp shares one record.
     private static func key(for url: URL) -> String { BaselineKey.key(forPath: url.path) }
 
     private static func file(forKey key: String) -> URL { dir.appendingPathComponent("\(key).json") }
@@ -143,11 +143,10 @@ enum BaselineStore {
         }
     }
 
-    /// Waits for every queued save, and writes the histories not written
-    /// yet: called when the app quits, which would otherwise exit before the
-    /// last reading position is written.
+    /// Waits for every queued save: called when the app quits, which would
+    /// otherwise exit before the last reading position is written.
     static func flush() {
-        queue.sync { for target in histories.buffers.keys { writeHistory(target) } }
+        queue.sync {}
     }
 
     /// The project folder an agent named for the file (`readout --hook`
@@ -162,61 +161,6 @@ enum BaselineStore {
     static func saveProjectRoot(_ root: String, for url: URL) {
         let target = rootFile(for: url)
         queue.async { try? Data(root.utf8).write(to: target, options: .atomic) }
-    }
-
-    /// The versions of `url` seen so far, beside its record (`DocumentHistory`).
-    private static func historyFile(for url: URL) -> URL { dir.appendingPathComponent("\(key(for: url)).history.json") }
-
-    /// The histories of the files open, by history file: read once, then
-    /// recorded in memory and written at most every 5 s (HistoryBuffer).
-    /// Touched only on `queue`.
-    private final class Histories: @unchecked Sendable {
-        var buffers: [URL: HistoryBuffer] = [:]
-        var scheduled: Set<URL> = []
-    }
-    private static let histories = Histories()
-
-    /// Adds the file's blocks as they are now to its history, behind any
-    /// save still queued for it; `done` gets the history as it is then, on
-    /// the main thread. Written within 5 s, or when the window closes.
-    static func recordVersion(_ keys: [BlockKey], at date: Date, for url: URL,
-                              done: @escaping @MainActor @Sendable (DocumentHistory) -> Void) {
-        let target = historyFile(for: url)
-        queue.async {
-            var buffer = histories.buffers[target] ?? HistoryBuffer(DocumentHistory.decode(try? Data(contentsOf: target)))
-            buffer.record(keys, at: date)
-            histories.buffers[target] = buffer
-            scheduleHistoryWrite(target)
-            let recorded = buffer.history
-            DispatchQueue.main.async { MainActor.assumeIsolated { done(recorded) } }
-        }
-    }
-
-    /// On `queue`: the history of `target` written when it is due, once.
-    private static func scheduleHistoryWrite(_ target: URL) {
-        guard !histories.scheduled.contains(target), let due = histories.buffers[target]?.writeDue(now: Date()) else { return }
-        histories.scheduled.insert(target)
-        queue.asyncAfter(deadline: .now() + max(0, due.timeIntervalSinceNow)) {
-            histories.scheduled.remove(target)
-            writeHistory(target)
-        }
-    }
-
-    /// On `queue`: what was recorded of `target` since its last write, written.
-    private static func writeHistory(_ target: URL) {
-        guard var buffer = histories.buffers[target], buffer.dirty else { return }
-        if let data = try? JSONEncoder().encode(buffer.history) { try? data.write(to: target, options: .atomic) }
-        buffer.wrote(at: Date())
-        histories.buffers[target] = buffer
-    }
-
-    /// The window of `url` closes: its history written now, and no longer held.
-    static func closeHistory(for url: URL) {
-        let target = historyFile(for: url)
-        queue.async {
-            writeHistory(target)
-            histories.buffers[target] = nil
-        }
     }
 
     /// Where the record and the position for `url` live (smoke test).
@@ -237,11 +181,14 @@ enum BaselineStore {
     }
 
     /// Drops records not opened for 90 days (a record whose position was saved
-    /// recently is kept, even when its baseline has not changed since).
+    /// recently is kept, even when its baseline has not changed since), and
+    /// the version histories 5.x kept beside them (6.0 keeps none).
     static func prune() {
         DispatchQueue.global(qos: .background).async {
             let fm = FileManager.default
-            guard let items = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return }
+            guard var items = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey]) else { return }
+            for i in items where i.lastPathComponent.hasSuffix(".history.json") { try? fm.removeItem(at: i) }
+            items.removeAll { $0.lastPathComponent.hasSuffix(".history.json") }
             let cutoff = Date().addingTimeInterval(-90 * 86400)
             func stem(_ u: URL) -> Substring { u.lastPathComponent.split(separator: ".").first ?? "" }
             func modified(_ u: URL) -> Date? { try? u.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate }
