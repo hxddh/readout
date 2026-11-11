@@ -22,15 +22,6 @@ since you last read it — here the plan's status moved from *in progress* to *r
 Press <kbd>D</kbd> to show or hide the comparison, <kbd>N</kbd> to go to the next change, and
 <kbd>⌘K</kbd> to mark everything read (<kbd>⌘Z</kbd> brings the marks back).
 
-## Compare with any earlier version
-
-![The View menu's Compare With submenu listing Last Commit and a version Readout saw, over a plan](screenshots/03-compare-with-en.png)
-
-Readout keeps the last 20 versions of a document it sees. **View ▸ Compare With** lists **Last
-Commit** first for a file in a git repository, then the versions Readout saw, newest first, each
-named by when it saw them. Choose one to mark everything that changed since that version;
-<kbd>⌘Z</kbd> returns to what you had read.
-
 ## Tabs that tell you where to look
 
 ![Three document tabs, two with a blue unread dot, above a plan](screenshots/04-tabs-en.png)

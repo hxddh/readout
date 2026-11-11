@@ -114,10 +114,6 @@ extension ReaderWindowController {
         releaseHold()
         saveWork?.cancel()
         saveNow()
-        historyWork?.cancel()
-        historyWork = nil
-        recordVersion()
-        BaselineStore.closeHistory(for: contentPath.map { URL(fileURLWithPath: $0) } ?? url)
         watcher?.stop()
         watcher = nil
         cancellables.removeAll()

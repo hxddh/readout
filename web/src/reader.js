@@ -9,7 +9,7 @@ import { jump, markAllRead, toggleDiff, toggleDiffInView, closePopups, noteLandi
 import { chunksHeld } from './reader/chunks.js';
 import { scheduleRail } from './reader/rail.js';
 import { relabelButtons, setCodeWrap, measureTables, lazyHeld } from './reader/enhance.js';
-import { highlightAll } from './reader/code.js';
+import { highlightAll, printingOver } from './reader/code.js';
 import { rerenderMermaid, renderAllMermaid, setPrintDiagrams, diagramWork } from './reader/mermaid.js';
 import { remoteReady, remoteFailed, remoteKnown, staticRemoteImages } from './reader/remote.js';
 import { reportActiveHeading, pinActiveHeading } from './reader/heading.js';
@@ -34,9 +34,11 @@ doc.addEventListener('click', ev => {
     openPath(path);
     return;
   }
-  const a = ev.target.closest('a[href]');
-  if (!a) return;
-  const href = a.getAttribute('href');
+  // A diagram's own links too (Mermaid's `click A href "…"` draws an SVG
+  // <a xlink:href>): the page itself never follows a link.
+  const a = ev.target.closest('a');
+  const href = a && (a.getAttribute('href') ?? a.getAttributeNS('http://www.w3.org/1999/xlink', 'href'));
+  if (href == null) return;
   ev.preventDefault();
   if (href.startsWith('#')) {
     const target = resolveFragment(href);
@@ -458,7 +460,7 @@ async function preparePrint() {
   // The app prints right away; should printing not begin, the diagrams go
   // back to the page's theme.
   clearTimeout(printFallback);
-  printFallback = setTimeout(() => setPrintDiagrams(false), 5000);
+  printFallback = setTimeout(() => { setPrintDiagrams(false); printingOver(); }, 5000);
   return true;
 }
 let printFallback = null;
@@ -484,6 +486,7 @@ window.addEventListener('afterprint', () => {
   printOpened.forEach(d => { d.open = false; });
   printOpened = [];
   setPrintDiagrams(false);   // redrawn in the page's theme, in place (from the cache)
+  printingOver();
   if (printAnchor) keepPlace(() => {}, { anchor: printAnchor, bottom: false });
   else rebaselineHeights();
   printAnchor = null;

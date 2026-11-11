@@ -7,13 +7,13 @@ public protocol GitRunning: Sendable {
     func run(_ arguments: [String], in directory: String) -> Data?
 }
 
-/// A file opened for the first time (no reading state saved) that lies in a
-/// git repository and differs from its last commit is marked against that
-/// commit: what the agent changed since is unread.
+/// View ▸ Compare with Last Commit: a file in a git repository marked
+/// against its last commit, so what the agent changed since is unread.
+/// Opening a file never runs git (6.0; 3.7–5.2 marked a file's first open so).
 public enum GitBaseline {
     /// Larger versions are not compared (nor read past this).
     public static let sizeLimit = 5 * 1024 * 1024
-    /// git gets this long; the first open waits for it no longer.
+    /// git gets this long.
     public static let timeout: TimeInterval = 1.5
 
     /// The nearest folder at or above the file's folder holding `.git` (a
@@ -31,17 +31,6 @@ public enum GitBaseline {
         return nil
     }
 
-    /// The text to mark the file's `current` text against, from the bytes of
-    /// its committed version: nil when that is the same text, too large, not
-    /// text, or a Git LFS pointer (the content is elsewhere). A file committed
-    /// empty is a baseline too (all of what it has now is new): a git that
-    /// failed or a file not committed gives no bytes at all (nil), not empty ones.
-    public static func baselineText(head: Data, current: String) -> String? {
-        guard let text = committedText(head: head),
-              MarkdownParser.sourceLines(text) != MarkdownParser.sourceLines(current) else { return nil }
-        return text
-    }
-
     /// The committed version's text, decoded as the app decodes the file
     /// (FileContent: UTF-8, UTF-16 with or without a byte order mark, …), so
     /// a UTF-16 file's NUL bytes are not taken for a binary's; nil when it is
@@ -51,14 +40,6 @@ public enum GitBaseline {
         if head.starts(with: Array("version https://git-lfs.github.com/spec/".utf8)) { return nil }
         let text = FileContent.decode(head).text
         return text.contains("\0") ? nil : text
-    }
-
-    /// The committed text to mark the file at `path` (its real path) against,
-    /// or nil: outside a repository, not committed (untracked, a new file),
-    /// unchanged since, or git missing, failing or too slow.
-    public static func headText(for path: String, current: String, git: GitRunning,
-                                exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }) -> String? {
-        head(of: path, git: git, exists: exists).flatMap { baselineText(head: $0, current: current) }
     }
 
     /// The bytes of the committed version of the file at `path`, or nil:
@@ -82,9 +63,15 @@ public struct ProcessGit: GitRunning {
         self.limit = limit
     }
 
+    /// git reads the local object store and nothing else. A repository can
+    /// name a remote to fetch missing objects from (a partial clone), and a
+    /// remote can be a command (`ext::`): a folder made so would run it on
+    /// `git show`. No object is fetched and no transport is allowed.
+    public static let environment = ["GIT_TERMINAL_PROMPT": "0", "GIT_OPTIONAL_LOCKS": "0", "GIT_PAGER": "cat", "LC_ALL": "C",
+                                     "GIT_NO_LAZY_FETCH": "1", "GIT_ALLOW_PROTOCOL": "none"]
+
     public func run(_ arguments: [String], in directory: String) -> Data? {
-        ProcessRunner.run(executable, arguments, in: directory, timeout: timeout, limit: limit,
-                          environment: ["GIT_TERMINAL_PROMPT": "0", "GIT_OPTIONAL_LOCKS": "0", "GIT_PAGER": "cat", "LC_ALL": "C"])
+        ProcessRunner.run(executable, arguments, in: directory, timeout: timeout, limit: limit, environment: Self.environment)
     }
 }
 
@@ -104,8 +91,8 @@ public enum GitTools {
     }
 }
 
-/// The notice above a document marked against its last commit (the first
-/// open of a file in a repository, View ▸ Compare with Last Commit).
+/// The notice above a document marked against its last commit
+/// (View ▸ Compare with Last Commit).
 public enum CommitNotice: Equatable, Sendable {
     /// What changed since the commit is marked.
     case marked

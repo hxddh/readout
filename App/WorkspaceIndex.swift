@@ -100,7 +100,11 @@ final class WorkspaceIndex {
                 if !found.isEmpty { self.onWrite?(found) }
             }
         }
-        stream = FSEventsStream(paths: roots, latency: 0.3, queue: queue) { [weak self] events in
+        // Build output, dependencies and version control directly in an agent
+        // folder (a project folder's node_modules, .git, …) never hold an
+        // agent's document (AgentFolders.skippedDirectories): FSEvents leaves
+        // them out, so an install or a build there does not wake the app.
+        stream = FSEventsStream(paths: roots, latency: 0.3, queue: queue, excluding: WatchExclusions.paths(for: realRoots.map(\.real))) { [weak self] events in
             // Markdown documents only, by name before any stat: build output
             // and dependencies written into an agent folder never cost one.
             // One removed or renamed away is forgotten: a later write is new again.

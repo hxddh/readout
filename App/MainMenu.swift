@@ -5,7 +5,6 @@ import ReadoutCore
 @MainActor
 enum MainMenu {
     private static let recentDelegate = RecentMenuDelegate()
-    private static let compareDelegate = CompareWithMenu()
     private static let openLatestTag = 902
 
     static func build(appDelegate: AppDelegate) -> NSMenu {
@@ -99,12 +98,8 @@ enum MainMenu {
         view.addItem(item(NSLocalizedString("Mark All as Read", comment: "Menu"), #selector(ReaderWindowController.markAllRead(_:)), "k"))
         // The page's D key, findable in the menu (a single letter is no menu key equivalent).
         view.addItem(item(NSLocalizedString("Show What Changed", comment: "Menu: show the word-level comparison of the edited blocks in view (the D key)"), #selector(ReaderWindowController.showWhatChanged(_:))))
-        // Mark the document again against its last commit or a version Readout saw (CompareWithMenu); ⌘Z undoes it.
-        let compare = NSMenuItem(title: NSLocalizedString("Compare With", comment: "Menu: View ▸ Compare With ▸ Last Commit, or a version Readout saw before"), action: nil, keyEquivalent: "")
-        let compareMenu = NSMenu(title: compare.title)
-        compareMenu.delegate = compareDelegate
-        compare.submenu = compareMenu
-        view.addItem(compare)
+        // Mark the document again against its last git commit; ⌘Z undoes it. Enabled for a file in a repository.
+        view.addItem(item(NSLocalizedString("Compare with Last Commit", comment: "Menu: mark the document again against its version in the last git commit"), #selector(ReaderWindowController.compareWithLastCommit(_:))))
         view.addItem(.separator())
         view.addItem(item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "+"))
         let bigger2 = item(NSLocalizedString("Bigger Text", comment: "Menu"), #selector(AppDelegate.biggerText(_:)), "=")
@@ -224,36 +219,4 @@ final class RecentMenuDelegate: NSObject, NSMenuDelegate, NSMenuItemValidation {
     }
 
     @objc func clear(_ sender: Any?) { NSDocumentController.shared.clearRecentDocuments(nil) }
-}
-
-/// Fills View ▸ Compare With from the front reader every time it opens:
-/// Last Commit (for a file in a git repository), then the versions Readout
-/// saw, newest first.
-@MainActor
-final class CompareWithMenu: NSObject, NSMenuDelegate {
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        Self.fill(menu, for: NSApp.mainWindow?.windowController as? ReaderWindowController)
-    }
-
-    /// `menu` as it is for `reader` (the smoke test fills one for a reader behind).
-    static func fill(_ menu: NSMenu, for reader: ReaderWindowController?) {
-        menu.removeAllItems()
-        // Up the responder chain, to the front reader (validateMenuItem).
-        if reader?.inRepository == true {
-            menu.addItem(NSMenuItem(title: NSLocalizedString("Last Commit", comment: "Menu: View ▸ Compare With ▸ Last Commit, the document's version in the last git commit"),
-                                    action: #selector(ReaderWindowController.compareWithLastCommit(_:)), keyEquivalent: ""))
-        }
-        let versions = reader?.earlierVersions() ?? []
-        if !versions.isEmpty, !menu.items.isEmpty { menu.addItem(.separator()) }
-        for v in versions {
-            let i = NSMenuItem(title: v.title, action: #selector(ReaderWindowController.compareWithVersion(_:)), keyEquivalent: "")
-            i.representedObject = v.index
-            menu.addItem(i)
-        }
-        if menu.items.isEmpty {
-            let none = NSMenuItem(title: NSLocalizedString("No Earlier Versions", comment: "Menu: View ▸ Compare With, when there is no commit and Readout has seen only the version shown"), action: nil, keyEquivalent: "")
-            none.isEnabled = false
-            menu.addItem(none)
-        }
-    }
 }

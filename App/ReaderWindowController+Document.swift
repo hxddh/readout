@@ -39,15 +39,10 @@ extension ReaderWindowController {
                 self.showLoadFailure()
                 return
             }
-            // Read and parsed: what follows waits for the reading state, or git (SmokeTest).
+            // Read and parsed: what follows waits for the reading state only (SmokeTest).
             SmokeTest.noteOpenStep(self.url, "parsed", seconds: Date().timeIntervalSince(self.openedAt))
             saved.record(forSourcePath: result.sourcePath) { [weak self] record in   // the file this read came from
-                guard let self else { return }
-                guard record == nil else { return self.didLoad(result, record: record) }
-                // Never opened before: in a git repository, marked against the last commit.
-                CommitBaseline.find(path: result.sourcePath, current: result.decoded.text) { [weak self] keys in
-                    self?.didLoad(result, record: nil, commitBaseline: keys)
-                }
+                self?.didLoad(result, record: record)
             }
         }
     }
@@ -64,21 +59,18 @@ extension ReaderWindowController {
     }
     private static let emptyPatch = #"{"version":0,"reset":true,"rewrite":false,"ops":[],"marks":[],"deletions":[]}"#
 
-    func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?, commitBaseline: [BlockKey]? = nil) {
+    func didLoad(_ result: DocumentLoader.ReadResult, record: BaselineStore.Record?) {
         SmokeTest.noteLaunchPhase("did_load")
         SmokeTest.noteOpenStep(url, "did_load", seconds: Date().timeIntervalSince(openedAt))
-        let patch = self.session.load(result.doc, baseline: record?.baseline ?? commitBaseline)
+        let patch = self.session.load(result.doc, baseline: record?.baseline)
         contentGeneration += 1
         defer { refreshRepository() }   // once contentPath is set below
-        // What is marked is what changed since the last commit, not since the reader last read it.
-        let commitNotice = commitBaseline == nil ? nil : CommitNotice.after(rewrite: patch.rewrite, unread: session.unreadCount)
         // What is on disk already: an unchanged baseline is not written again.
         self.lastSavedBaseline = record?.baseline
         self.loadState = .loaded
         self.contentPath = result.sourcePath
         self.deleted = false
         self.updateModel(patch, decoded: result.decoded)
-        self.recordVersion()
         self.webView.whenReady { [weak self] in
             guard let self else { return }
             if self.showsLoadFailure {
@@ -89,8 +81,6 @@ extension ReaderWindowController {
             // A whole document: encoded off the main thread, still delivered before the calls below.
             SmokeTest.noteOpenStep(self.url, "apply_sent", seconds: Date().timeIntervalSince(self.openedAt))
             self.webView.callEncodingOffMain("apply", patch.page)
-            // After the apply: in place of the page's own "Rewritten since you last read".
-            if let commitNotice { self.webView.call("notice", Self.text(commitNotice)) }
             SmokeTest.run(controller: self, webView: self.webView)
             // An agent write that landed mid-load: re-read now that the
             // first patch is applied, so the fresh content wins.
@@ -195,7 +185,6 @@ extension ReaderWindowController {
             }
             // A whole document again (a reset) is shown at once: the page holds back only what a patch adds.
             self.updateModel(patch, decoded: result.decoded, holdIncrease: !patch.reset)
-            self.recordVersionSoon()
             let emptiedNow = !wasEmpty && self.session.blocks.isEmpty
             let restore = self.placeAfterRefill(wasEmpty: wasEmpty, patch: patch)
             self.webView.whenReady { [weak self] in
@@ -361,20 +350,11 @@ extension ReaderWindowController {
     /// A read filled the session: when it was the retargeted file's, saves resume under its key.
     private func finishRetarget() {
         guard retargetGate.read(from: loader.lastSourcePath) else { return }
-        // The file shown before: its history written and no longer held
-        // (another window showing it reads it again from disk).
-        let previous = contentPath.map { URL(fileURLWithPath: $0) } ?? url
         contentPath = loader.lastSourcePath ?? contentPath
-        let current = contentPath.map { URL(fileURLWithPath: $0) } ?? url
-        if previous.path != current.path { BaselineStore.closeHistory(for: previous) }
         refreshRepository()
         didSaveOnce = false
         lastSavedBaseline = nil
-        lastRecordedKeys = nil
-        // The versions listed are the new file's, once its first is recorded.
-        history = nil
         scheduleSave()
-        recordVersionSoon()
     }
 
     func saveNow() {
@@ -401,83 +381,6 @@ extension ReaderWindowController {
                                  topExcerpt: excerpt, savedAt: Date()),
                            unread: session.unreadCount,
                            for: contentPath.map { URL(fileURLWithPath: $0) } ?? url, baselineChanged: baselineChanged)
-    }
-
-    /// A change read into the session goes into the history within a
-    /// second: at most once a second while an agent streams a write in
-    /// (DocumentHistory keeps the state it settles in), and on a timer of
-    /// its own, which saves of the reading position never postpone.
-    func recordVersionSoon() {
-        guard historyWork == nil else { return }
-        let work = DispatchWorkItem { [weak self] in
-            self?.historyWork = nil
-            self?.recordVersion()
-        }
-        historyWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
-    }
-
-    /// The document as it is now, into its history, when it changed since
-    /// it was last recorded (on load, and after each change: `recordVersionSoon`).
-    func recordVersion() {
-        guard loadState == .loaded, !retargetGate.isPending else { return }
-        let keys = session.keys
-        guard keys != lastRecordedKeys else { return }
-        lastRecordedKeys = keys
-        let path = contentPath
-        BaselineStore.recordVersion(keys, at: Date(), for: path.map { URL(fileURLWithPath: $0) } ?? url) { [weak self] history in
-            // Still the same file (not retargeted meanwhile): the timeline lists its versions.
-            guard let self, self.contentPath == path else { return }
-            self.history = history
-        }
-    }
-
-    // MARK: Compare With (an earlier version)
-
-    /// View ▸ Compare With: the versions to choose from,
-    /// newest first, each named by when it was seen.
-    func earlierVersions() -> [(index: Int, title: String)] {
-        guard loadState == .loaded, let history else { return [] }
-        let current = session.keys
-        let format = DateFormatter()
-        format.doesRelativeDateFormatting = true
-        format.dateStyle = .medium
-        format.timeStyle = .short
-        return history.earlier(than: current).map { i in (i, format.string(from: history.versions[i].at)) }
-    }
-
-    /// The document marked against version `representedObject` of its
-    /// history: what changed since then unread; ⌘Z brings back what was read
-    /// before, as for Compare with Last Commit.
-    @objc func compareWithVersion(_ sender: NSMenuItem) {
-        guard loadState == .loaded, !retargetGate.isPending, let i = sender.representedObject as? Int,
-              let history, history.versions.indices.contains(i) else { return NSSound.beep() }
-        showMarked(againstVersion: history.keys(of: i), at: history.versions[i].at)
-    }
-
-    private static let compareWithVersionName = NSLocalizedString("Compare with Earlier Version", comment: "Menu: mark the document again against a version Readout saw before")
-
-    private static func versionNotice(_ at: Date) -> String {
-        String(format: NSLocalizedString("Marked what changed since %@", comment: "Notice above the document after View ▸ Compare with Earlier Version: the time of the version chosen"),
-               DateFormatter.localizedString(from: at, dateStyle: .medium, timeStyle: .short))
-    }
-
-    /// Marked against an earlier version seen `at`, with its notice; undone
-    /// (`unmarkVersion`), and redone, as itself.
-    private func showMarked(againstVersion keys: [BlockKey], at: Date) {
-        let before = session.baseline
-        let notice = Self.versionNotice(at)
-        reloadMarked(against: keys) { [weak self] _ in self?.showNotice(notice) }
-        undoStack.registerUndo(withTarget: self) { $0.unmarkVersion(back: before, keys: keys, at: at) }
-        undoStack.setActionName(Self.compareWithVersionName)
-    }
-
-    /// Undone: what was read before, without the version's notice.
-    private func unmarkVersion(back before: [BlockKey], keys: [BlockKey], at: Date) {
-        let notice = Self.versionNotice(at)
-        reloadMarked(against: before) { [weak self] _ in self?.webView.call("hideNotice", notice) }
-        undoStack.registerUndo(withTarget: self) { $0.showMarked(againstVersion: keys, at: at) }
-        undoStack.setActionName(Self.compareWithVersionName)
     }
 
     // MARK: Mark All as Read
@@ -539,6 +442,7 @@ extension ReaderWindowController {
     /// View ▸ Compare with Last Commit: the document marked again against
     /// its committed version (`git show HEAD:`), what the agent changed since
     /// unread; ⌘Z brings back what was read before, as for Mark All as Read.
+    /// The only time Readout runs git: opening a file never does.
     @objc func compareWithLastCommit(_ sender: Any?) { compareWithLastCommit(rerun: false) }
 
     /// `rerun`: a read landed while the first comparison ran; this one is
@@ -606,7 +510,7 @@ extension ReaderWindowController {
     static func text(_ notice: CommitNotice) -> String {
         switch notice {
         case .marked:
-            return NSLocalizedString("Changes since the last commit", comment: "Notice above a document opened for the first time: its changes since the last git commit are marked")
+            return NSLocalizedString("Changes since the last commit", comment: "Notice above a document after Compare with Last Commit: its changes since the last git commit are marked")
         case .rewritten:
             return NSLocalizedString("Rewritten since the last commit", comment: "Notice above a document marked against its last git commit when most of it changed since (nothing is marked)")
         }

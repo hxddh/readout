@@ -127,11 +127,6 @@
 "Text Width" = "文本宽度";
 "Standard" = "标准";
 "Wide" = "宽";
-"Compare with Earlier Version" = "与较早版本比较";
-"No Earlier Versions" = "没有较早的版本";
-"Compare With" = "比较";
-"Last Commit" = "上次提交";
-"Marked what changed since %@" = "已标出自 %@ 以来的改动";
 "Watch the folders your agents write in" = "监视智能体写入的文件夹";
 "Watching %d agent folders" = "正在监视 %d 个智能体文件夹";
 "Watching 1 agent folder" = "正在监视 1 个智能体文件夹";

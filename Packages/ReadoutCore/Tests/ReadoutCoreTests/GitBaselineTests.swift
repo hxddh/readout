@@ -3,7 +3,7 @@ import Testing
 @testable import ReadoutCore
 
 /// The last commit as a baseline (`GitBaseline`, `CommitNotice`, `CommitComparison`):
-/// the first open marked against it, and Compare with Last Commit.
+/// View ▸ Compare with Last Commit.
 @Suite struct GitBaselineTests {
     struct FakeGit: GitRunning {
         var output: [String: Data] = [:]   // "dir|args" -> stdout
@@ -23,27 +23,14 @@ import Testing
         #expect(GitBaseline.repository(containing: "/p.md", exists: { _ in true }) == nil)
     }
 
-    @Test func theCommittedTextIsTheBaselineWhenItDiffers() {
-        let git = FakeGit(output: ["/w/app/docs|--no-pager show HEAD:./plan.md": Data("# Plan\n\nOld.\n".utf8)])
-        let exists = { (p: String) in p == "/w/app/.git" }
-        #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: git, exists: exists) == "# Plan\n\nOld.\n")
-        // Unchanged since the commit (line endings aside): nothing to mark.
-        #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\r\n\r\nOld.\r\n", git: git, exists: exists) == nil)
-        // Not committed (git fails): nothing.
-        #expect(GitBaseline.headText(for: "/w/app/docs/new.md", current: "x", git: git, exists: exists) == nil)
-        // Outside the repository: git is not asked.
-        #expect(GitBaseline.headText(for: "/elsewhere/docs/plan.md", current: "x", git: git, exists: exists) == nil)
-    }
-
-    @Test func pointersBinariesAndLargeFilesAreNoBaseline() {
+    @Test func pointersBinariesAndLargeFilesAreNotCompared() {
         let lfs = Data("version https://git-lfs.github.com/spec/v1\noid sha256:abc\nsize 12\n".utf8)
-        #expect(GitBaseline.baselineText(head: lfs, current: "# Plan") == nil)
-        #expect(GitBaseline.baselineText(head: Data([0x23, 0x00, 0x41]), current: "# Plan") == nil)
-        #expect(GitBaseline.baselineText(head: Data(count: GitBaseline.sizeLimit + 1), current: "# Plan") == nil)
-        // Committed empty (git succeeded with no bytes): everything there now is new.
-        #expect(GitBaseline.baselineText(head: Data(), current: "# Plan") == "")
-        #expect(GitBaseline.baselineText(head: Data(), current: "") == nil)
-        #expect(GitBaseline.baselineText(head: Data("# Old".utf8), current: "# Plan") == "# Old")
+        #expect(GitBaseline.committedText(head: lfs) == nil)
+        #expect(GitBaseline.committedText(head: Data([0x23, 0x00, 0x41])) == nil)
+        #expect(GitBaseline.committedText(head: Data(count: GitBaseline.sizeLimit + 1)) == nil)
+        // Committed empty (git succeeded with no bytes): a version to compare with.
+        #expect(GitBaseline.committedText(head: Data()) == "")
+        #expect(GitBaseline.committedText(head: Data("# Old".utf8)) == "# Old")
     }
 
     @Test func aDocumentOpenedAgainstTheCommitMarksWhatChangedSince() throws {
@@ -100,7 +87,6 @@ import Testing
         let empty = FakeGit(output: [show: Data()])
         #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\n\nNew.\n"), git: empty, exists: exists) == .baseline(keys("")))
         #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys(""), git: empty, exists: exists) == .unchanged)
-        #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: empty, exists: exists) == "")
     }
 
     /// What the window displays is compared, not the file on disk (which a
@@ -145,8 +131,6 @@ import Testing
             let git = FakeGit(output: [show: blob])
             #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys("# Plan\n\nNew.\n"), git: git, exists: exists) == .baseline(keys(old)))
             #expect(GitBaseline.compare(path: "/w/app/docs/plan.md", displayed: keys(old), git: git, exists: exists) == .unchanged)
-            // The first open (3.7's GitBaseline) too.
-            #expect(GitBaseline.headText(for: "/w/app/docs/plan.md", current: "# Plan\n\nNew.\n", git: git, exists: exists) == old)
         }
         // A binary still is not compared.
         #expect(GitBaseline.committedText(head: Data([0x89, 0x50, 0x4E, 0x47, 0x00, 0x00, 0x1A, 0x0A, 0x00, 0x0D])) == nil)
@@ -177,5 +161,38 @@ import Testing
         #expect(CommitNotice.after(rewrite: patch.rewrite, unread: s.unreadCount) == .marked)
         _ = s.reload(baseline: read)
         #expect(s.unreadCount == 0)
+    }
+
+    /// git reads the local object store only: a folder whose repository names
+    /// a command as the remote to fetch a missing object from (a partial
+    /// clone, `ext::`) ran it on `git show` in 5.2.
+    @Test func gitNeverFetchesOrRunsARemote() throws {
+        let gitPath = ["/usr/bin/git", "/usr/local/bin/git"].first { FileManager.default.isExecutableFile(atPath: $0) }
+        guard let gitPath else { return }
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("readout-git-\(UUID().uuidString)").path
+        try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+        let marker = dir + "/ran"
+        func git(_ arguments: String...) -> String {
+            let out = ProcessRunner.run(gitPath, arguments, in: dir, timeout: 20, limit: 1 << 20,
+                                        environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"])
+            return String(decoding: out ?? Data(), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        _ = git("init", "-q", ".")
+        try Data("# Plan\n".utf8).write(to: URL(fileURLWithPath: dir + "/plan.md"))
+        _ = git("add", "plan.md")
+        _ = git("-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "plan")
+        let reader = ProcessGit(executable: gitPath, timeout: 20)
+        #expect(reader.run(["--no-pager", "show", "HEAD:./plan.md"], in: dir) == Data("# Plan\n".utf8))
+        // The blob goes missing, and the repository says where to get it: a command.
+        let blob = git("rev-parse", "HEAD:plan.md")
+        try #require(blob.count >= 40)
+        try FileManager.default.removeItem(atPath: dir + "/.git/objects/" + blob.prefix(2) + "/" + blob.dropFirst(2))
+        _ = git("config", "extensions.partialClone", "origin")
+        _ = git("config", "remote.origin.promisor", "true")
+        _ = git("config", "protocol.ext.allow", "always")
+        _ = git("config", "remote.origin.url", "ext::sh -c touch% " + marker)
+        #expect(reader.run(["--no-pager", "show", "HEAD:./plan.md"], in: dir) == nil)
+        #expect(!FileManager.default.fileExists(atPath: marker))
     }
 }

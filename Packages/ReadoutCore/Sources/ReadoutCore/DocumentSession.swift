@@ -162,14 +162,6 @@ public final class DocumentSession {
 
     public init() {}
 
-    /// The current version's block keys (what `DocumentHistory` records).
-    public var keys: [BlockKey] {
-        if let k = blockKeys { return k }
-        let k = blocks.map(BlockKey.init)
-        blockKeys = k
-        return k
-    }
-
     public var unreadCount: Int { unread.count + deletions.count }
 
     /// The outline entries (heading slots) whose own section holds an unread
@@ -621,6 +613,70 @@ public final class DocumentSession {
             }.filter { !$0.value.isEmpty }
         }
         unread = unread.filter { isNew($0.key) }
+        restoreRemoved()
+    }
+
+    /// An agent that writes a file again from its start (truncating it, then
+    /// streaming it in) takes away everything after what it has written so
+    /// far and brings it back, a read at a time. A block that comes back as
+    /// it was read, where it was removed from, was neither removed nor is it
+    /// new: its insertion mark goes, and it leaves its deletion (which goes
+    /// with its last block). What the agent changed on the way stays marked:
+    /// the new block inserted, the one it replaced removed.
+    private func restoreRemoved() {
+        guard !removedKeys.isEmpty, unread.contains(where: { $0.value.kind == .inserted }) else { return }
+        let anchors = removedKeys.keys.sorted()
+        var index: [Int: Int] = [:]
+        do {
+            let wanted = Set(anchors)
+            for (i, b) in blocks.enumerated() where wanted.contains(b.slot) { index[b.slot] = i }
+        }
+        var touched: Set<Int> = []   // the deletions that lost a block
+        for anchor in anchors {
+            guard var here = removedKeys[anchor], anchor == 0 || index[anchor] != nil else { continue }
+            // The unread insertions right after the anchor, against the blocks removed there, in order.
+            var at = anchor
+            var n = anchor == 0 ? 0 : index[anchor]! + 1
+            while n < blocks.count, !here.isEmpty, unread[blocks[n].slot]?.kind == .inserted {
+                let b = blocks[n]
+                if let j = here.firstIndex(where: { $0.key.fingerprint == b.fingerprint && $0.key.kind == b.kind }) {
+                    touched.formUnion(here.map(\.id))
+                    unread[b.slot] = nil
+                    // Those removed before it stay where they are; the rest sit after it now.
+                    removedKeys[at] = j == 0 ? nil : Array(here[..<j])
+                    here = Array(here[(j + 1)...]) + (removedKeys[b.slot] ?? [])
+                    at = b.slot
+                }
+                n += 1
+            }
+            removedKeys[at] = here.isEmpty ? nil : here
+        }
+        guard !touched.isEmpty else { return }
+        // What is left of each such deletion, one for each place its blocks are at now, told to the page anew.
+        deletions.removeAll { touched.contains($0.id) }
+        for anchor in removedKeys.keys.sorted() {
+            var entries = removedKeys[anchor]!
+            var ids: [Int: Int] = [:]   // the deletion before -> the one now
+            for i in entries.indices where touched.contains(entries[i].id) {
+                let id = ids[entries[i].id] ?? allocDeletionID()
+                ids[entries[i].id] = id
+                entries[i].id = id
+            }
+            guard !ids.isEmpty else { continue }
+            removedKeys[anchor] = entries
+            for id in ids.values.sorted() {
+                var preview = ""
+                var count = 0
+                for e in entries where e.id == id {
+                    count += 1
+                    let text = Self.bounded(e.key.wholeSource)
+                    if preview.isEmpty { preview = text }
+                    else if preview.utf8.count + text.utf8.count + 2 <= Self.previewBytes { preview += "\n\n" + text }
+                    else if !preview.hasSuffix(Self.previewMore) { preview += Self.previewMore }
+                }
+                deletions.append(.init(id: id, after: anchor, count: count, preview: preview))
+            }
+        }
     }
 
     private func resetMarks() {

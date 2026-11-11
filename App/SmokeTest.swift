@@ -834,8 +834,9 @@ enum SmokeTest {
     }
 
     /// A file opened for the first time in a git repository, changed since
-    /// its last commit: what changed since is marked, and the notice says
-    /// against what. An untracked file beside it opens unmarked.
+    /// its last commit, opens unmarked, as an untracked file beside it does:
+    /// opening runs no git (6.0). View ▸ Compare with Last Commit marks what
+    /// changed since the commit, and the notice says against what.
     private static func commitBaseline(out: URL) async {
         let env = ProcessInfo.processInfo.environment
         guard let tracked = env["READOUT_SMOKE_GIT_FILE"], let untracked = env["READOUT_SMOKE_GIT_UNTRACKED"] else { return }
@@ -843,14 +844,13 @@ enum SmokeTest {
         var json: [String: Any] = ["tools": GitTools.available()]
         // What the lookup sees, so a failure can be explained. (This also
         // warms xcrun's lookup of git: the first git after a runner boots can
-        // outlast the 1.5 s limit, which a reader's first open accepts.)
+        // outlast the 1.5 s limit.)
         let real = RealPath.of(tracked)
         let dir = (real as NSString).deletingLastPathComponent
-        let current = (try? String(contentsOfFile: real, encoding: .utf8)) ?? ""
         let raw = ProcessGit().run(["--no-pager", "show", "HEAD:./" + (real as NSString).lastPathComponent], in: dir)
         let shell = ProcessRunner.run("/bin/sh", ["-c", "/usr/bin/git --no-pager show HEAD:./notes.md 2>&1; echo exit=$?"], in: dir, timeout: 5, limit: 100_000)
         json["diagnostics"] = ["real": real, "repository": GitBaseline.repository(containing: real, exists: { FileManager.default.fileExists(atPath: $0) }) ?? "",
-                               "raw_bytes": raw?.count ?? -1, "head_text": GitBaseline.headText(for: real, current: current, git: ProcessGit()) != nil,
+                               "raw_bytes": raw?.count ?? -1, "head_text": raw.flatMap(GitBaseline.committedText(head:)) != nil,
                                "shell": shell.map { String(decoding: $0, as: UTF8.self) } ?? "(nil)"]
         for (name, path) in [("tracked", tracked), ("untracked", untracked)] {
             let url = URL(fileURLWithPath: path)
@@ -867,7 +867,6 @@ enum SmokeTest {
         // Outside a repository (a plan in /tmp/…/plans): the item is disabled.
         if let plan = env["READOUT_SMOKE_HOOK_PLAN"], let hooked = app?.reader(for: URL(fileURLWithPath: plan)) {
             json["compare_enabled_outside"] = hooked.validateMenuItem(NSMenuItem(title: "", action: #selector(ReaderWindowController.compareWithLastCommit(_:)), keyEquivalent: ""))
-            json["compare_menu_outside"] = compareMenu(hooked)
         }
         write(json, to: out, "git-baseline.json")
     }
@@ -879,7 +878,7 @@ enum SmokeTest {
         let item = NSMenuItem(title: "", action: #selector(ReaderWindowController.compareWithLastCommit(_:)), keyEquivalent: "")
         let marks = "document.querySelectorAll('.m-inserted:not(.m-read), .m-modified:not(.m-read)').length"
         let notice = "document.getElementById('ro-notice').hidden ? '' : document.getElementById('ro-notice').textContent"
-        var json: [String: Any] = ["enabled": reader.validateMenuItem(item), "menu": compareMenu(reader)]
+        var json: [String: Any] = ["enabled": reader.validateMenuItem(item)]
         reader.markAllRead(nil)
         try? await Task.sleep(for: .milliseconds(500))
         json["unread_read"] = reader.model.unread
@@ -914,13 +913,6 @@ enum SmokeTest {
             json["redo_title"] = undo?.redoMenuItemTitle ?? ""
         }
         return json
-    }
-
-    /// View ▸ Compare With as it is for `reader`: each item's title and action.
-    private static func compareMenu(_ reader: ReaderWindowController) -> [[String: String]] {
-        let menu = NSMenu()
-        CompareWithMenu.fill(menu, for: reader)
-        return menu.items.filter { !$0.isSeparatorItem }.map { ["title": $0.title, "action": $0.action.map(NSStringFromSelector) ?? ""] }
     }
 
     /// Compare with Last Commit marked the document (the notice it showed).

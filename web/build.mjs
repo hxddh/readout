@@ -35,7 +35,9 @@ await esbuild.build({
 cpSync('src/reader.html', `${out}/reader.html`);
 cpSync('node_modules/katex/dist/katex.min.js', `${out}/vendor/katex/katex.min.js`);
 cpSync('node_modules/katex/dist/katex.min.css', `${out}/vendor/katex/katex.min.css`);
-cpSync('node_modules/katex/dist/fonts', `${out}/vendor/katex/fonts`, { recursive: true });
+// WOFF2 only: WebKit takes the first format of each @font-face it can use, which
+// is that one; the .woff and .ttf copies (0.9 MB of the app) were never loaded.
+cpSync('node_modules/katex/dist/fonts', `${out}/vendor/katex/fonts`, { recursive: true, filter: src => !/\.(woff|ttf)$/.test(src) });
 // Mermaid's ESM build: a small entry, shared chunks and one chunk per kind of
 // diagram, each loaded when first needed (the classic mermaid.min.js is all
 // 5.5 MB at once). Everything ships in the app; the source maps do not.
