@@ -1516,7 +1516,7 @@ for (const n of [60, 400]) {
   const src = 'flowchart TD\n  A[Start] --&gt; B[End]\n  click A href &quot;https://example.com/elsewhere&quot;';
   await page.evaluate(p => window.readout.apply(p), patch(1, [
     { op: 'insert', slot: 1, after: 0, kind: 'mermaid', html: `<div class="mermaid-block"><pre class="mermaid-src">${src}</pre></div>` }], { reset: true }));
-  await page.waitForFunction(() => document.querySelector('.mermaid-block.done svg a'), null, { timeout: 15000 }).catch(() => {});
+  for (let i = 0; i < 150 && !await page.evaluate(() => !!document.querySelector('.mermaid-block.done svg a')); i++) await page.waitForTimeout(100);
   const requests = [];
   page.on('request', r => { if (/example\.com/.test(r.url())) requests.push(r.url()); });
   const drawn = await page.evaluate(() => !!document.querySelector('.mermaid-block svg a'));
